@@ -26,6 +26,7 @@ from tap_grid.falsifier_testing import (
 from tap_grid.falsifiers import (
     DROPPED_FROM_OBSERVATION,
     PRESENT_AT_PROBE,
+    REIDENTIFIED,
     UNDETERMINED,
     Candidate,
     FalsifyContext,
@@ -409,6 +410,27 @@ class TestEc2InstanceFalsifier:
             "a terminated instance is an authoritative answer from the region that has it; the "
             "sweep must not continue into eu-west-1"
         )
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_terminated_response_naming_a_different_instance_is_not_trusted(self) -> None:
+        """AI review (PR #44): the terminated-state shortcut folds a successful response into
+        ``not_found`` WITHOUT going through classify()'s identity comparison — so it must check
+        identity itself before taking that shortcut. A response naming some other instance
+        (which real DescribeInstances-by-id never does, but nothing here should rest on that
+        alone) must fall through to the ordinary found path and come out REIDENTIFIED, not
+        silently retire the candidate under a state field that describes a different object."""
+        iid = _create(EC2_INSTANCE, {"instance_id": "i-expected"})
+        fake = _FakeEc2()
+        fake.answer(
+            "us-east-1",
+            "describe_instances",
+            "i-expected",
+            {"Reservations": [{"Instances": [{"InstanceId": "i-other", "State": {"Name": "terminated"}}]}]},
+        )
+        falsifier = Ec2InstanceFalsifier(client_for=fake.client_for, regions=["us-east-1"])
+        [verdict] = falsifier.batch_falsify([_candidate(iid)], _context())
+        assert verdict.verdict == REIDENTIFIED
+        assert unsupported(verdict) is None
 
     @pytest.mark.parametrize("state", ["pending", "running", "shutting-down", "stopping", "stopped"])
     @pytest.mark.spec("req-grid-reconcile-absence-states")

@@ -49,6 +49,25 @@ construction for a derived region lives inside ``_describe_one``'s guarded try/e
 before it, so a region string boto3 cannot resolve degrades that one candidate to
 ``UNDETERMINED(errored)`` rather than raising out of the whole batch.
 
+**One credential, this plugin's own current region scope — not a new limitation (AI review,
+PR #44).** Two related findings asked whether sweeping only *currently configured* regions
+under *one* credential could retire a row this run simply cannot see (a resource collected
+under a wider region scope that was later narrowed; a resource in another AWS account). Both
+describe a real class of risk, but neither is new here, and neither is this falsifier's to
+solve: ``AWS_SECRET_REF`` (``collectors/boto3_collector/credentials.py``) is a single constant
+key — "v0 has no per-instance config" is the module's own docstring — so the boto3 collector
+itself can observe exactly one account and exactly its own ``resolve_regions()`` scope; no
+``aws_core__aws_vpc`` / ``aws_ec2_instance`` / ``aws_security_group`` row on the grid can
+currently have been collected from anywhere this same falsifier cannot also reach, because
+nothing else populates those types. A region narrowed out of ``regions_allowed`` already stops
+the collector from observing that region's resources at all, on every run, not only a
+falsifier's; a falsifier that swept a wider scope than the collector currently uses would be
+the inconsistent choice, not this one. Multi-account / multi-credential support, if it
+arrives, is a `_default_session` change (and an equivalent to GitHub's reach-narrowing
+re-confirmation, ``tap_plugin.github_core.falsifiers._reach_after_probe``, would become the
+right shape here too) — flagged for whoever builds it, not solved by inventing scope this
+plugin does not have yet.
+
 **Cascade (``CONTAINMENT_EDGES``) — what exists, what does not, and why nothing here adds it.**
 
 - ``aws_core__aws_subnet`` is already covered: ``Vpc.CONTAINMENT_EDGES`` (``vpc.py``) declares
@@ -427,6 +446,13 @@ class Ec2InstanceFalsifier(_Ec2Falsifier):
     wasteful and wrong, since instance ids are not reused across regions). Every other state —
     ``pending``, ``running``, ``shutting-down``, ``stopping``, ``stopped`` — is ``found``:
     ``stopped`` is not gone, only not running.
+
+    The terminated shortcut only fires once the returned ``InstanceId`` is checked against the
+    requested id (AI review, PR #44): synthesizing ``not_found`` bypasses ``classify()``'s own
+    identity comparison (a genuine ``not_found`` status is never re-checked against identity —
+    the ClientError it came from already was, for the one id it named), so this is the one place
+    that check has to be made explicitly rather than inherited. A mismatch falls through to the
+    ordinary found path instead, where ``verdict_from_probe`` derives REIDENTIFIED on its own.
     """
 
     not_found_code = "InvalidInstanceID.NotFound"
@@ -449,7 +475,13 @@ class Ec2InstanceFalsifier(_Ec2Falsifier):
         instance = instances[0]
         state = str((instance.get("State") or {}).get("Name") or "")
         found_id = str(instance.get("InstanceId") or "")
-        if state == self._TERMINATED:
+        # Identity is checked BEFORE the terminated shortcut is trusted (AI review, PR #44): a
+        # response naming a different instance must go through the ordinary found path, whose
+        # source_id classify() compares against `expected` itself (yielding REIDENTIFIED, never
+        # a silent retirement of the candidate under a state field that describes some OTHER
+        # instance). A real DescribeInstances(InstanceIds=[id]) never returns a mismatched id,
+        # but the check costs nothing and does not rest that on trust.
+        if state == self._TERMINATED and found_id == source_id:
             return Probe(status="not_found", detail=f"HTTP 200, State.Name=terminated ({found_id})")
         return Probe(status="found", source_id=found_id, detail=f"HTTP 200, State.Name={state or 'unknown'}")
 
