@@ -105,6 +105,13 @@ TERMINATES_AT_CUSTOMER_DEVICE__aws_core = "edges/TERMINATES_AT_CUSTOMER_DEVICE.e
 CONSUMES_ENDPOINT_SERVICE__aws_core = "edges/CONSUMES_ENDPOINT_SERVICE.edge.json"
 FILTERS_VPC_DNS__aws_core = "edges/FILTERS_VPC_DNS.edge.json"
 ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
+OWNS_IAM_ROLE__aws_core = "edges/OWNS_IAM_ROLE.edge.json"
+OWNS_IAM_USER__aws_core = "edges/OWNS_IAM_USER.edge.json"
+OWNS_IAM_POLICY__aws_core = "edges/OWNS_IAM_POLICY.edge.json"
+OWNS_OIDC_PROVIDER__aws_core = "edges/OWNS_OIDC_PROVIDER.edge.json"
+OWNS_BUCKET__aws_core = "edges/OWNS_BUCKET.edge.json"
+TRUSTS_ACCOUNT__aws_core = "edges/TRUSTS_ACCOUNT.edge.json"
+ATTACHES_POLICY__aws_core = "edges/ATTACHES_POLICY.edge.json"
 HOSTS_VPC__aws_core = "edges/HOSTS_VPC.edge.json"
 HOSTS_SUBNET__aws_core = "edges/HOSTS_SUBNET.edge.json"
 HOSTS_EC2_INSTANCE__aws_core = "edges/HOSTS_EC2_INSTANCE.edge.json"
@@ -144,6 +151,9 @@ aws_core__aws_s3_bucket = "tap_plugin.aws_core.falsifiers.S3BucketFalsifier"
 aws_core__aws_iam_role = "tap_plugin.aws_core.falsifiers.IamRoleFalsifier"
 aws_core__aws_iam_user = "tap_plugin.aws_core.falsifiers.IamUserFalsifier"
 aws_core__aws_iam_policy = "tap_plugin.aws_core.falsifiers.IamPolicyFalsifier"
+# Account-scoped containment (aws-core-tap#43): OWNS_OIDC_PROVIDER__aws_core makes an IAM OIDC
+# provider reconcilable.
+aws_core__aws_iam_oidc_provider = "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"

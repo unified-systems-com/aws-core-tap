@@ -72,8 +72,19 @@
       },
       "allOf": [
         {
-          "description": "A contained type is read by one region-scoped aws_op listing (req-aws-core-regional-containment). regional: the parent is one per (account, region). aws_op: the engine paginates it, or sees that it could not, so it can say whether the listing reached its end; a custom_fn is opaque to the engine and cannot back a completeness claim.",
-          "if": { "required": ["containment"] },
+          "description": "Account-scoped containment (tap-plugin-aws-core#43, the containment_account shape below, marked by its required 'parent'): the listing is walked once per account, so the entry is global. A regional listing would be one walk per region and needs a scope node per account and region — that is req-aws-core-regional-containment's AwsAccountRegion, the other containment shape below.",
+          "if": {
+            "required": ["containment"],
+            "properties": { "containment": { "required": ["parent"] } }
+          },
+          "then": { "properties": { "scope": { "const": "global" } } }
+        },
+        {
+          "description": "Region-scoped containment (tap-plugin-aws-core#49, the containment_regional shape below, marked by the ABSENCE of 'parent'): the parent is one AwsAccountRegion per (account, region). aws_op: the engine paginates it, or sees that it could not, so it can say whether the listing reached its end; a custom_fn is opaque to the engine and cannot back a completeness claim.",
+          "if": {
+            "required": ["containment"],
+            "properties": { "containment": { "not": { "required": ["parent"] } } }
+          },
           "then": {
             "properties": {
               "scope": { "const": "regional" },
@@ -98,6 +109,39 @@
         }
       ]
     },
+    "containment": {
+      "description": "Declares that this entry's listing is a COMPLETE inventory the collector can fan retirement candidates out from (req-grid-reconcile-evidence / req-grid-reconcile-candidates): the collector emits a parent -> item edge (edge_type) for each item and, after submitting the batch, records the listing as a completeness surface. Two disjoint shapes, distinguished by whether 'parent' is present — never both on one entry (enforced by each shape's own additionalProperties:false plus the entry-level allOf pinning 'scope' to the matching value): containment_account (tap-plugin-aws-core#43) for a type that exists in exactly one account and is never shared, walked once per account; containment_regional (tap-plugin-aws-core#49) for a type read once per (account, region) under an AwsAccountRegion footprint, which may be RAM-shared into the account (owner_path).",
+      "oneOf": [
+        { "$ref": "#/$defs/containment_account" },
+        { "$ref": "#/$defs/containment_regional" }
+      ]
+    },
+    "containment_account": {
+      "description": "This entry's listing is the account's COMPLETE inventory of the type: the collector emits an account -> item edge (edge_type) for each item and, after submitting the batch, records the listing as a completeness surface (req-grid-reconcile-evidence) so that a later run that no longer lists an item can make it a retirement candidate for the type's falsifier (req-grid-reconcile-candidates). Declare it only for a type that exists in exactly one account and is never shared: a shared or regional type would let one credential's listing speak for another's objects. The source (an aws_op, or a custom_fn that accepts `walk=`) is what decides whether the listing was read to the end; nothing here asserts it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent", "relation", "edge_type", "why"],
+      "properties": {
+        "parent": {
+          "description": "What holds the listing. Only the account, today.",
+          "const": "account"
+        },
+        "relation": {
+          "description": "The surface's relation name in the source's own terms, recorded on the completeness statement (e.g. 'account.iam_roles').",
+          "type": "string",
+          "minLength": 1
+        },
+        "edge_type": {
+          "description": "The parent -> child containment edge slug. It must be declared in tap-plugin.toml and in the parent model's CONTAINMENT_EDGES (a test holds both).",
+          "type": "string",
+          "minLength": 1
+        },
+        "why": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
     "source": {
       "type": "object",
       "oneOf": [
@@ -115,7 +159,7 @@
         }
       ]
     },
-    "containment": {
+    "containment_regional": {
       "description": "Declares that this type is contained under the account's footprint in a region (req-aws-core-regional-containment). The collector emits the parent (one aws_account_region per account x region), one parent -> child edge of edge_type per owned resource, and records a completeness surface named relation for the region's listing — complete only when the listing ran to its end in a region positively known to be readable.",
       "type": "object",
       "additionalProperties": false,

@@ -67,9 +67,10 @@ from .credentials import (
     resolve_regions,
 )
 from .customfns import build_custom_fn_registry
-from .edges import EdgeError, emit_edges
+from .edges import EdgeError, account_entity_id, emit_containment, emit_edges
 from .hydrate import hydrate_item
 from .ledger import CallLedger
+from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
 from .organizations import OrganizationTree, collect_organization, organizations_client
 from .paths import eval_path
@@ -361,8 +362,13 @@ class Boto3Collector(CollectorBase):
         # import (the whole run's data lost); skip the repeat and say so instead.
         seen_nodes: set[str] = set()
         seen_edges: set[str] = set()
-        # One completeness surface per contained (entry, region) listing (req-grid-reconcile-evidence).
+        # One completeness surface per contained (entry, region) listing, region-scoped containment
+        # only (tap-plugin-aws-core#49, req-grid-reconcile-evidence).
         surfaces: list[dict[str, Any]] = []
+        #: One (containment declaration, walk) per account-scoped listing this run attempted — region-
+        #: scoped containment's counterpart to `surfaces` above; turned into completeness surfaces
+        #: after the batch is submitted (tap-plugin-aws-core#43, req-aws-collector-reconcile).
+        listings: list[tuple[dict[str, Any], ListingWalk]] = []
 
         # The parent of every regional containment: one footprint per (account, region) in scope,
         # emitted whether or not the region turned out readable.
@@ -402,7 +408,15 @@ class Boto3Collector(CollectorBase):
                             )
                         )
                     continue
-                listing = Listing() if contained else None
+                # Region-scoped containment (tap-plugin-aws-core#49) drives a `Listing`, tallied into
+                # `surfaces` below; account-scoped containment (tap-plugin-aws-core#43) drives a
+                # `ListingWalk`, tallied into `listings` and recorded once per run after the batch
+                # (its subject is the account itself, not a per-region footprint). `entry["scope"]`
+                # decides which applies — no entry declares both.
+                listing = Listing() if (contained and entry["scope"] == "regional") else None
+                walk = ListingWalk() if (contained and entry["scope"] != "regional") else None
+                if walk is not None:
+                    listings.append((contained, walk))
                 listed = False
                 try:
                     items = list(
@@ -411,6 +425,7 @@ class Boto3Collector(CollectorBase):
                             client_for=client_factory(session, region),
                             custom_fns=custom_fns,
                             fn_context=session,
+                            walk=walk,
                             truncated=listing.truncated if listing else None,
                         )
                     )
@@ -471,7 +486,7 @@ class Boto3Collector(CollectorBase):
                             dimensions=dimensions,
                         )
                         new_edges = list(emission.envelopes)
-                        if contained:
+                        if contained and entry["scope"] == "regional":
                             new_edges.extend(
                                 containment_envelopes(
                                     node,
@@ -489,6 +504,12 @@ class Boto3Collector(CollectorBase):
                                 edge_envelopes.append(envelope)
                         for warning in emission.warnings:
                             self.record_warn(_SITE_EDGE_DROPPED, "EDGE_DROPPED", warning)
+                        if contained and entry["scope"] != "regional":
+                            edge_envelopes.append(
+                                emit_containment(
+                                    node, contained, account_id=account_id, dimensions=dimensions
+                                )
+                            )
                 except (
                     SourceError,
                     EdgeError,
@@ -496,6 +517,14 @@ class Boto3Collector(CollectorBase):
                     BotoCoreError,
                     ClientError,
                 ) as exc:
+                    if walk is not None:
+                        # A listing that ended before the failure was read to the end but not carried
+                        # to the batch (admitted=false); one that had not ended is simply not known
+                        # to be complete (fail).
+                        if walk.complete is True:
+                            walk.drop(f"{type(exc).__name__} while processing the listed items")
+                        else:
+                            walk.fail(exc)
                     skipped += 1
                     self.record_warn(
                         _SITE_ENTRY_SKIPPED,
@@ -514,8 +543,8 @@ class Boto3Collector(CollectorBase):
                         else:
                             # The listing was read; what was done with it was not finished.
                             listing.processing.append(f"{type(exc).__name__}: {exc}")
-                if contained:
-                    # `listing` is always set here (`Listing() if contained else None`, above) —
+                if contained and entry["scope"] == "regional":
+                    # `listing` is always set here (`Listing() if ... else None`, above) —
                     # `surface_of`'s own `listing: Listing | None` parameter tolerates None
                     # regardless, so no assert is needed to narrow the type for a check that
                     # would vanish under `-O` anyway (Bandit B101).
@@ -594,13 +623,28 @@ class Boto3Collector(CollectorBase):
         # per-collector guard — see req-tap-cares-collector-grift-import-9.
         result = self.submit_grift(document, dangling_edge_mode="permissive")
         # Every listing this run read is recorded against the batch that carries its observations;
-        # `applied` is derived by the recorder from that batch's commit. The subject is the
-        # footprint's deterministic grid id, already real once the batch imported. A run that read
-        # no contained listing says so (a statement with zero surfaces, not no statement).
+        # `applied` is derived by the recorder from that batch's commit. Region-scoped containment's
+        # (tap-plugin-aws-core#49) subject is the footprint's deterministic grid id, already real
+        # once the batch imported. Account-scoped containment's (tap-plugin-aws-core#43) subject is
+        # the account node's own grid id, which this collector mints itself (identity.py) and which
+        # the batch above wrote: candidate derivation resolves it as a grid entity id and needs the
+        # account itself observed this run before it fans out from it
+        # (tap_grid/candidates.py::_derive_surface). A run that read no contained listing of either
+        # kind says so (a statement with zero surfaces, not no statement).
         collection_batch_id = str(document["batches"][0]["batch_entity"]["entity_id"])
         for surface in surfaces:
             self.record_surface(**surface, applied_batches=[collection_batch_id])
-        if not surfaces:
+        for containment, walk in listings:
+            self.record_surface(
+                **surface_statement(
+                    walk,
+                    relation=containment["relation"],
+                    edge_type=containment["edge_type"],
+                    subject=str(account_entity_id(account_id)),
+                    applied_batches=[collection_batch_id],
+                )
+            )
+        if not surfaces and not listings:
             self.declare_no_surfaces()
         self.record_info(
             _SITE_GRIFT_SUBMITTED,
