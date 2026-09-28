@@ -19,7 +19,7 @@ import uuid
 from typing import Any
 
 import pytest
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
 
@@ -89,14 +89,19 @@ class FakeEc2:
 class FakeSession:
     """A boto3-session-shaped double: ``.client('ec2', region_name=...)`` returns the one fake
     ec2 client, whatever region is asked (region routing itself is the collector's job, not the
-    falsifier's; the falsifier only needs to reach the right client)."""
+    falsifier's; the falsifier only needs to reach the right client). ``breaks_with`` makes
+    ``.client()`` itself raise, the way a bad region name or broken botocore config can, before
+    any network call is made."""
 
-    def __init__(self, ec2: FakeEc2) -> None:
+    def __init__(self, ec2: FakeEc2, *, breaks_with: Exception | None = None) -> None:
         self._ec2 = ec2
+        self._breaks_with = breaks_with
 
     def client(self, service: str, region_name: str | None = None) -> Any:
         assert service == "ec2", f"SubnetFalsifier must ask for ec2, asked for {service!r}"
         assert region_name, "SubnetFalsifier must pass a region"
+        if self._breaks_with is not None:
+            raise self._breaks_with
         return self._ec2
 
 
@@ -246,6 +251,34 @@ class TestSubnetFalsifierFourCases:
         [verdict] = falsifier.batch_falsify([_candidate(entity_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "errored"
+
+    def test_empty_account_id_is_scope_unknown_not_fail_open(self) -> None:
+        """_scope_check must fail CLOSED on an empty credential account, not skip the
+        comparison — a falsifier resolved to "" must never be read as "any account matches"."""
+        ec2 = FakeEc2()
+        entity_id = _create_subnet("subnet-empty-cred-account")
+        falsifier = SubnetFalsifier(session=FakeSession(ec2), account_id="")
+        [verdict] = falsifier.batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "scope_unknown"
+        assert ec2.calls == []
+
+    def test_client_construction_failure_is_undetermined_not_a_crash(self) -> None:
+        """botocore can raise while BUILDING a client (bad region, broken config) before any
+        network call — that must fail this one candidate closed, never escape judge() and
+        blank out the rest of the batch (judge_all is a plain list comprehension)."""
+        ec2 = FakeEc2()
+        broken = FakeSession(ec2, breaks_with=BotoCoreError())
+        ok_entity_id = _create_subnet("subnet-ok")
+        broken_entity_id = _create_subnet("subnet-client-breaks")
+        falsifier = SubnetFalsifier(session=broken, account_id=ACCOUNT_ID)
+        verdicts = {
+            v.entity_id: v
+            for v in falsifier.batch_falsify([_candidate(ok_entity_id), _candidate(broken_entity_id)], _context())
+        }
+        for verdict in verdicts.values():
+            assert verdict.verdict == UNDETERMINED
+            assert verdict.reason == "errored"
 
     def test_rate_limited_and_generic_error_codes(self) -> None:
         ec2 = FakeEc2()

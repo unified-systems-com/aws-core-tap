@@ -285,12 +285,18 @@ class _AwsFalsifier(Falsifier):
             return _undetermined(
                 candidate, "scope_unknown", "the grid holds no aws_account dimension for this resource"
             )
-        if account_id and account_id != expected_account:
+        # Fail CLOSED on an empty account_id too, not just a mismatched one: `_resolve` only
+        # short-circuits re-resolution on `is None` (`credentials.py::caller_account_id` returns
+        # a 12-digit string or the caller already turned the exception into UNDETERMINED, so ""
+        # should not occur in production) — but a falsifier is instantiated with an explicit
+        # `account_id=""` by nothing today, and this guard must not silently trust that credential
+        # if one ever were.
+        if not account_id or account_id != expected_account:
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"this credential resolves to account {account_id}, not {expected_account}: an absence here "
-                "says nothing about the resource's own account",
+                f"this credential resolves to account {account_id or '<empty>'}, not {expected_account}: an "
+                "absence here says nothing about the resource's own account",
             )
         return None
 
@@ -325,8 +331,12 @@ class SubnetFalsifier(_AwsFalsifier):
         expected = Expected(
             source_id=subnet_id, owner=expected_account, name=str(getattr(row, "name", "") or "") or None
         )
-        client = session.client("ec2", region_name=region)
+        # Client construction is INSIDE the try: botocore can raise while building a client
+        # (bad region name, broken config) with no network call made yet, and that must fail
+        # this one candidate closed, never escape judge() and take the rest of the batch's
+        # verdicts down with it (judge_all is a plain list comprehension over judge()).
         try:
+            client = session.client("ec2", region_name=region)
             result = client.describe_subnets(SubnetIds=[subnet_id])
         except ClientError as exc:
             status = probe_status_of(exc)
