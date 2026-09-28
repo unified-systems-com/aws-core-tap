@@ -15,7 +15,7 @@ import uuid
 from typing import Any
 
 import pytest
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from tap_grid.falsifier_testing import (
     CASE_DROPPED,
     CASE_FORBIDDEN,
@@ -249,6 +249,22 @@ class TestRegionSweep:
         verdicts = VpcFalsifier(session_factory=boom).batch_falsify(candidates, _context())
         assert [(v.verdict, v.reason) for v in verdicts] == [(UNDETERMINED, "errored")] * 2
         assert all("credential unavailable" in v.note for v in verdicts)
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_client_construction_failure_degrades_the_candidate_not_the_whole_batch(self) -> None:
+        """AI review (PR #44): client construction (``client_for(service, region)``) used to run
+        OUTSIDE ``_describe_one``'s guarded try/except. A region boto3 cannot build a client for
+        must answer UNDETERMINED(errored) for this candidate, never raise out of batch_falsify —
+        raising would cost every OTHER candidate of this type its verdict too
+        (tap_grid.falsifiers._judge answers a whole group errored when batch_falsify raises)."""
+
+        def client_for(service: str, region: str) -> Any:
+            raise BotoCoreError()
+
+        vid = _create(VPC, {"vpc_id": "vpc-unbuildable-region"})
+        falsifier = VpcFalsifier(client_for=client_for, regions=["not-a-real-region"])
+        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
 
 
 @pytest.mark.django_db

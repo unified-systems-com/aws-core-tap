@@ -41,8 +41,13 @@ reused across regions in the same partition, so one authoritative answer (found,
 instance confirmed terminated) settles it; ``not_found`` is only allowed to stand once *every*
 configured region has said so — a region that refused or errored could be hiding the object,
 so it is never let through as a retirement (fail closed). ``SubnetFalsifier`` shortcuts this:
-the model already carries ``availability_zone`` (e.g. ``us-east-1a``), so its region
-(``availability_zone[:-1]``) is tried first, before the sweep.
+the model already carries ``availability_zone`` (e.g. ``us-east-1a``), so its region is tried
+first, before the sweep — extracted with ``_STANDARD_REGION_PREFIX`` rather than
+``availability_zone[:-1]``, which mishandles a Local Zone or Wavelength Zone AZ
+(``us-west-2-lax-1a``'s parent region is ``us-west-2``, not ``us-west-2-lax-1``). Client
+construction for a derived region lives inside ``_describe_one``'s guarded try/except, not
+before it, so a region string boto3 cannot resolve degrades that one candidate to
+``UNDETERMINED(errored)`` rather than raising out of the whole batch.
 
 **Cascade (``CONTAINMENT_EDGES``) — what exists, what does not, and why nothing here adds it.**
 
@@ -85,6 +90,7 @@ carries an HTTP-style status/error-code summary only, mirroring the same discipl
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from collections.abc import Callable, Sequence
 from typing import Any
@@ -143,6 +149,15 @@ _THROTTLED_CODES = frozenset(
         "429",
     }
 )
+
+#: The standard AWS region a plain availability zone name is prefixed with — ``us-east-1`` out
+#: of ``us-east-1a``. Deliberately NOT ``az[:-1]`` (AI review, PR #44): a Local Zone or
+#: Wavelength Zone AZ (``us-west-2-lax-1a``, ``us-east-1-wl1-bos-wlz-1``) carries the parent
+#: region as this same leading ``xx-name-N`` shape, with an extra zone-specific suffix that
+#: ``[:-1]`` would fold into the "region" instead of discarding — producing a string boto3 has
+#: no endpoint for. Matching the shape explicitly and taking only the matched prefix handles
+#: both a standard AZ and every zone-suffixed variant the same way, without special-casing them.
+_STANDARD_REGION_PREFIX = re.compile(r"^([a-z]{2}(?:-gov)?-[a-z]+-\d+)")
 
 
 def _default_session() -> tuple[Any, list[str]]:
@@ -269,11 +284,22 @@ class _Ec2Falsifier(Falsifier):
 
         return client_for, regions
 
-    def _describe_one(self, client: ProbeClient, source_id: str) -> tuple[Probe, bool]:
+    def _describe_one(
+        self, client_for: Callable[[str, str], ProbeClient], region: str, source_id: str
+    ) -> tuple[Probe, bool]:
         """One region's answer for one id, and whether it is authoritative (a successful HTTP
         response — found, or an instance confirmed terminated) or region-local (a ``ClientError``,
-        which says nothing about any OTHER region and never stops the sweep on its own)."""
+        which says nothing about any OTHER region and never stops the sweep on its own).
+
+        Client construction happens INSIDE this try/except, not before it (AI review, PR #44):
+        a malformed or unsupported region (a Local/Wavelength Zone id that slipped past
+        ``_regions_for``'s parsing, say) must degrade this one candidate, not raise out of
+        ``judge`` and cost every other candidate of this type its verdict too
+        (``tap_grid.falsifiers._judge`` answers a whole group ``UNDETERMINED(errored)`` when a
+        falsifier's ``batch_falsify`` raises — fail closed, but coarser than it needs to be).
+        """
         try:
+            client = client_for(self.service, region)
             response = getattr(client, self._method())(**{self.ids_param: [source_id]})
         except ClientError as exc:
             return Probe(status=_error_status(exc, self.not_found_code), detail=_error_detail(exc)), False  # type: ignore[arg-type]
@@ -291,7 +317,7 @@ class _Ec2Falsifier(Falsifier):
         try_regions = self._regions_for(row, regions)
         seen_forbidden = seen_rate_limited = seen_errored = False
         for region in try_regions:
-            probe, authoritative = self._describe_one(client_for(self.service, region), expected.source_id)
+            probe, authoritative = self._describe_one(client_for, region, expected.source_id)
             if authoritative:
                 return verdict_from_probe(candidate, expected, probe)
             if probe.status == "forbidden":
@@ -366,8 +392,9 @@ class SubnetFalsifier(_Ec2Falsifier):
 
     def _regions_for(self, row: Any, regions: list[str]) -> list[str]:
         az = str(getattr(row, "availability_zone", "") or "")
-        if len(az) > 1 and az[-1].isalpha():
-            region = az[:-1]
+        match = _STANDARD_REGION_PREFIX.match(az)
+        if match:
+            region = match.group(1)
             return [region, *[r for r in regions if r != region]]
         return list(regions)
 
