@@ -9,7 +9,11 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_core', '0011_natural_keys_and_null_defaults'),
+        # Renumbered from 0012 (tap-plugin-aws-core#43 and #49 both minted the next migration
+        # after 0011 independently; #43's landed first, so this now depends on it rather than
+        # directly on 0011 — the two migrations touch disjoint models/fields, so no operation
+        # here needed to change, only the dependency and this file's own number).
+        ('aws_core', '0012_iam_ids_boundaries_trust_and_tags'),
         ('tap_grid', '0005_entity_natural_key_clear'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

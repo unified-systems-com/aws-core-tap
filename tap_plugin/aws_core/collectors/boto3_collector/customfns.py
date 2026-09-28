@@ -25,8 +25,10 @@ from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
 
-from .envelope import without_response_metadata
+from .envelope import jsonable, without_response_metadata
 from .hydrate import hydrate_item
+from .iam_trust import account_of_iam_arn, summarize_trust_policy
+from .listing import ListingWalk, page_says_more
 from .manifest import manifest_entries
 from .partition import (
     PARTITION_AWS,
@@ -36,7 +38,16 @@ from .partition import (
     partition_of_region,
     service_unavailable_reason,
 )
-from .source import CustomFnRegistry
+from .source import CustomFnRegistry, iter_listing
+
+
+def _hydrate_ops(entity_type: str) -> list[dict[str, str]]:
+    """The manifest-declared hydrate list for ``entity_type`` (the manifest is the source)."""
+    for entry in manifest_entries():
+        if entry["entity_type"] == entity_type:
+            ops: list[dict[str, str]] = entry.get("hydrate", [])
+            return ops
+    return []
 
 # The region used to reach a partition-global service ONLY when a caller supplies neither a
 # ``client_for`` nor a session with a region (unit tests, an ad-hoc call). At run time the
@@ -70,11 +81,7 @@ def _client_partition(client: Any) -> str:
 
 def _s3_hydrate_ops() -> list[dict[str, str]]:
     """The manifest-declared S3 hydrate list (manifest is the source)."""
-    for entry in manifest_entries():
-        if entry["entity_type"] == "aws_core__aws_s3_bucket":
-            ops: list[dict[str, str]] = entry.get("hydrate", [])
-            return ops
-    return []
+    return _hydrate_ops("aws_core__aws_s3_bucket")
 
 
 def _resolve_bucket_region(base_client: Any, bucket_name: str) -> str:
@@ -193,7 +200,9 @@ def _bucket_size_metrics(cw_client: Any, bucket_name: str) -> dict[str, Any]:
     }
 
 
-def s3_buckets_hydrated(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+def s3_buckets_hydrated(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
     """Enumerate S3 buckets and fan out each bucket's compliance sub-config.
 
     Yields one envelope per bucket: the ``ListBuckets`` item at the root
@@ -201,13 +210,20 @@ def s3_buckets_hydrated(session: Any, *, client_for: Any = None) -> Iterator[dic
     ``_hydrate_mapping`` siblings the hydrate template assembles, and the
     aggregate ``size_bytes`` / ``object_count`` / ``size_observed_at`` from
     CloudWatch storage metrics (req-aws-collector-s3-bucket-size).
+
+    The listing is paginated to its end: ``ListBuckets`` pages by continuation token and AWS supports
+    the unpaginated call only for accounts at the default 10,000-bucket quota, so a single call is a
+    silent truncation for a larger account. ``walk`` records whether the last page still reported more,
+    which is what decides whether the account's bucket list may be treated as complete. The client is the
+    engine's region-bound one, so a GovCloud account is listed against the GovCloud endpoint.
     """
-    base = _run_client(session, client_for, "s3") if client_for is not None else session.client("s3")
-    listing = without_response_metadata(base.list_buckets())
+    walk = walk if walk is not None else ListingWalk()
+    base = client_for("s3") if client_for is not None else session.client("s3")
+    buckets = list(iter_listing(base, "list_buckets", "Buckets[]", walk))
     hydrate_ops = _s3_hydrate_ops()
     partition = _client_partition(base)
 
-    for bucket in listing.get("Buckets", []):
+    for bucket in buckets:
         name = bucket.get("Name")
         if name and not bucket.get("BucketArn"):
             # ListBuckets echoes BucketArn on current API versions; if a partition's endpoint does
@@ -319,7 +335,10 @@ def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[d
     STS is reached in the run's region and IAM through its partition-global
     endpoint (``iam.us-gov.amazonaws.com`` in GovCloud) — both via the run's
     ``client_for``, never a literal ``us-east-1``, which is the wrong partition
-    for a GovCloud credential.
+    for a GovCloud credential. Without one (a unit test driving the function
+    directly), ``_run_client`` falls back to the session's own region, then the
+    partition's home region — never a bare literal (never reached by
+    ``Boto3Collector.run``).
     """
     sts = _run_client(session, client_for, "sts")
     identity = without_response_metadata(sts.get_caller_identity())
@@ -520,7 +539,140 @@ def eventbridge_rules_with_targets(session: Any, *, client_for: Any) -> Iterator
             yield {**rule, "_target_arns": target_arns, "_lambda_target_arns": lambda_arns}
 
 
-def iam_oidc_providers_described(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+def _iam_client(session: Any, client_for: Any) -> Any:
+    """The IAM client for a global listing: the engine's region-bound one, else ``_run_client``'s
+    session-region-then-partition-home-region fallback (never a bare ``us-east-1`` literal, which
+    is the wrong partition for a GovCloud credential)."""
+    return _run_client(session, client_for, "iam")
+
+
+def _account_summary_count(client: Any, key: str) -> int | None:
+    """One count out of IAM ``GetAccountSummary``, the total AWS itself keeps for a relation.
+
+    Read right after a listing ends and compared with the number of items the walk returned: a
+    disagreement is a rejection control, so the recorder refuses to call the surface reconcilable
+    (``req-grid-reconcile-evidence-3``), and it can only cost a missed retirement, never cause one. Any
+    failure (the permission is separate from the list permission), or a response that lacks the key,
+    is ``None``: no control, said as such.
+    """
+    try:
+        summary = without_response_metadata(client.get_account_summary()).get("SummaryMap") or {}
+    except BotoCoreError, ClientError:
+        return None
+    value = summary.get(key)
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _hydrated_slot(envelope: dict[str, Any], key: str) -> Any:
+    """The ``data`` of a hydrate slot that answered, else ``None`` (denied, absent and error are all
+    'not observed' here; the slot's own status stays in ``_hydrate`` for the run's HYDRATE_GAP warning)."""
+    slot = (envelope.get("_hydrate") or {}).get(key) or {}
+    return slot.get("data") if slot.get("status") == "ok" else None
+
+
+def _attached_policy_arns(data: Any) -> list[str] | None:
+    """Sorted ARNs from a ``ListAttached*Policies`` answer; ``None`` when it did not answer or was cut short."""
+    if not isinstance(data, dict) or page_says_more(data):
+        return None
+    return sorted(str(p["PolicyArn"]) for p in data.get("AttachedPolicies", []) if p.get("PolicyArn"))
+
+
+def _boundary_arn(detail: Any) -> str | None:
+    """'' when the entity was read and has no permissions boundary; ``None`` when it was not read."""
+    if not isinstance(detail, dict):
+        return None
+    return str((detail.get("PermissionsBoundary") or {}).get("PermissionsBoundaryArn") or "")
+
+
+def iam_roles_described(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's IAM roles (global) and read what ``ListRoles`` leaves out.
+
+    ``ListRoles`` is documented to omit ``PermissionsBoundary``, ``RoleLastUsed`` and ``Tags``, so each
+    role is read again with ``GetRole`` and its attached managed policies listed
+    (``ListAttachedRolePolicies``); the manifest's ``hydrate`` list names both. The trust policy is
+    summarised (:mod:`.iam_trust`) into the cross-account assume-role targets the organization rollout
+    is about. Every derived value is a ``_``-prefixed sibling the manifest's ``fields`` map projects;
+    ``None`` means the read that would have produced it did not answer, never 'none'.
+
+    The whole listing is read to its end and counted before the first per-role call, so the
+    ``GetAccountSummary`` control is taken next to the listing rather than after a long fan-out, and so
+    ``walk`` is decided by the listing alone. A role whose name is missing cannot be described: it clears
+    ``walk.admitted``.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    roles = list(iter_listing(client, "list_roles", "Roles[]", walk))
+    walk.count_reported = _account_summary_count(client, "Roles")
+    hydrate_ops = _hydrate_ops("aws_core__aws_iam_role")
+    for role in roles:
+        name = role.get("RoleName")
+        if not name:
+            walk.drop("a listed role carries no RoleName")
+            continue
+        envelope = hydrate_item(client, role, hydrate_ops, call_kwargs={"RoleName": name})
+        detail = (_hydrated_slot(envelope, "role") or {}).get("Role")
+        last_used = ((detail or {}).get("RoleLastUsed") or {}).get("LastUsedDate")
+        trust = summarize_trust_policy(role.get("AssumeRolePolicyDocument"), own_account=account_of_iam_arn(role.get("Arn"))) or {}
+        envelope["_permissions_boundary_arn"] = _boundary_arn(detail)
+        envelope["_last_used_at"] = None if detail is None else (jsonable(last_used) if last_used else "")
+        envelope["_attached_policy_arns"] = _attached_policy_arns(_hydrated_slot(envelope, "attached_policies"))
+        envelope["_trusted_account_ids"] = trust.get("trusted_account_ids")
+        envelope["_trusted_services"] = trust.get("trusted_services")
+        envelope["_trusts_wildcard_principal"] = trust.get("trusts_wildcard_principal")
+        yield envelope
+
+
+def iam_users_described(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's IAM users (global); read boundary, attached policies and MFA per user.
+
+    The same shape as :func:`iam_roles_described`: list to the end, take the ``GetAccountSummary``
+    control, then fan out (``GetUser``, ``ListAttachedUserPolicies``, ``ListMFADevices``). ``mfa_enabled``
+    is ``None`` when ``ListMFADevices`` did not answer: an unread device list is not 'no MFA'.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    users = list(iter_listing(client, "list_users", "Users[]", walk))
+    walk.count_reported = _account_summary_count(client, "Users")
+    hydrate_ops = _hydrate_ops("aws_core__aws_iam_user")
+    for user in users:
+        name = user.get("UserName")
+        if not name:
+            walk.drop("a listed user carries no UserName")
+            continue
+        envelope = hydrate_item(client, user, hydrate_ops, call_kwargs={"UserName": name})
+        detail = (_hydrated_slot(envelope, "user") or {}).get("User")
+        devices = _hydrated_slot(envelope, "mfa_devices")
+        password_last_used = user.get("PasswordLastUsed")
+        envelope["_permissions_boundary_arn"] = _boundary_arn(detail)
+        envelope["_password_last_used"] = jsonable(password_last_used) if password_last_used else ""
+        envelope["_attached_policy_arns"] = _attached_policy_arns(_hydrated_slot(envelope, "attached_policies"))
+        envelope["_mfa_enabled"] = bool(devices.get("MFADevices")) if isinstance(devices, dict) else None
+        yield envelope
+
+
+def iam_customer_policies_listed(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's customer-managed IAM policies (``ListPolicies(Scope=Local)``).
+
+    ``Scope=Local`` is the account's own policies: AWS-managed ones belong to AWS, are the same in every
+    account, and are not this account's to own or to lose. ``ListPolicies`` already returns everything the
+    model carries (id, default version, attachment count), so there is no fan-out.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    policies = list(iter_listing(client, "list_policies", "Policies[]", walk, Scope="Local"))
+    walk.count_reported = _account_summary_count(client, "Policies")
+    yield from policies
+
+
+def iam_oidc_providers_described(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
     """Enumerate IAM OIDC identity providers (global) and describe each.
 
     ``ListOpenIDConnectProviders`` returns ARNs only; ``GetOpenIDConnectProvider``
@@ -530,17 +682,30 @@ def iam_oidc_providers_described(session: Any, *, client_for: Any = None) -> Ite
     doesn't echo the ARN back).
 
     IAM is global; the client is the run's, bound through the partition's global
-    IAM endpoint (``iam.us-gov.amazonaws.com`` in GovCloud).
+    IAM endpoint (``iam.us-gov.amazonaws.com`` in GovCloud). The list call is not
+    paginated (AWS returns every provider of the account in one response), so
+    ``walk`` ends with that one call unless the response itself reports a continuation. A provider that
+    is listed but cannot be described is dropped from the batch, and that clears ``walk.admitted``:
+    the listing was complete, but the run did not process all of it, so an absence from the batch is not
+    evidence of deletion.
     """
-    client = _run_client(session, client_for, "iam")
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
     listing = without_response_metadata(client.list_open_id_connect_providers())
-    for entry in listing.get("OpenIDConnectProviderList", []):
+    entries = listing.get("OpenIDConnectProviderList", [])
+    if page_says_more(listing):
+        walk.stopped_short(len(entries), "the response reports a continuation")
+    else:
+        walk.reached_end(len(entries))
+    for entry in entries:
         arn = entry.get("Arn")
         if not arn:
+            walk.drop("a listed provider carries no Arn")
             continue
         try:
             details = without_response_metadata(client.get_open_id_connect_provider(OpenIDConnectProviderArn=arn))
         except BotoCoreError, ClientError:
+            walk.drop(f"{arn} was listed but GetOpenIDConnectProvider did not answer")
             continue
         yield {**details, "ProviderArn": arn}
 
@@ -825,6 +990,9 @@ _CUSTOM_FNS = {
     "iam_oidc_providers_described": iam_oidc_providers_described,
     "apigateway_http_apis_detailed": apigateway_http_apis_detailed,
     "cognito_user_pools_described": cognito_user_pools_described,
+    "iam_roles_described": iam_roles_described,
+    "iam_users_described": iam_users_described,
+    "iam_customer_policies_listed": iam_customer_policies_listed,
     "kms_keys_described": kms_keys_described,
     "sqs_queues_described": sqs_queues_described,
     "cloudtrail_trails_described": cloudtrail_trails_described,

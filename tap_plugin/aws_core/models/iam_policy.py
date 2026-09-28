@@ -31,7 +31,12 @@ class IamPolicy(BaseModel):
         "policy_arn": {"type": "string"},
         "path": {"type": "string"},
         "is_aws_managed": {"type": "boolean"},
+        "policy_id": {"type": ["string", "null"]},
+        "default_version_id": {"type": ["string", "null"]},
+        "attachment_count": {"type": ["integer", "null"]},
+        "is_attachable": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
+        "tags": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -39,7 +44,12 @@ class IamPolicy(BaseModel):
         "policy_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
         "path": {"validation": "jsonschema", "schema": {"type": "string"}},
         "is_aws_managed": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "policy_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "default_version_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "attachment_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
+        "is_attachable": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -47,7 +57,15 @@ class IamPolicy(BaseModel):
     policy_arn = models.CharField(max_length=512, blank=True, default="")
     path = models.CharField(max_length=512, blank=True, default="/")
     is_aws_managed = models.BooleanField(default=False)
+    # AWS's immutable policy id (ANPA...); NULL = not observed. A policy is looked up by its full ARN, so the id
+    # is what distinguishes a delete-and-recreate under the same ARN.
+    policy_id = models.CharField(max_length=64, blank=True, null=True, default=None, db_index=True)
+    default_version_id = models.CharField(max_length=32, blank=True, null=True, default=None)
+    # How many principals the policy is attached to. NULL = not observed.
+    attachment_count = models.IntegerField(blank=True, null=True, default=None)
+    is_attachable = models.BooleanField(blank=True, null=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_iam_policy"

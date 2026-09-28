@@ -116,13 +116,19 @@
       "entity_type": "aws_core__aws_iam_role",
       "service": "iam",
       "scope": "global",
-      "source": { "aws_op": "ListRoles" },
-      "why": "Enumerate IAM roles — assumption targets and the identity backbone for service permissions.",
+      "source": { "custom_fn": "iam_roles_described" },
+      "why": "Enumerate IAM roles — assumption targets and the identity backbone for service permissions. ListRoles is the account's complete inventory of roles (the walk is checked, and its count compared with GetAccountSummary), and each role is read again because ListRoles omits its permissions boundary and last-used time by AWS's own contract.",
       "persist_configuration": true,
       "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.iam_roles",
+        "edge_type": "OWNS_IAM_ROLE__aws_core",
+        "why": "An IAM role exists in exactly one account and is never shared; the account's ListRoles, read to its end, is the complete list of them. A role it stops naming is a question for the role's falsifier (GetRole), not a deletion."
+      },
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore iam ListRoles output shape (Role), 2026-09-23.",
+        "basis": "Read botocore iam ListRoles and GetRole output shapes (Role), ListAttachedRolePolicies, and custom_fn iam_roles_described, 2026-09-28.",
         "locations": [
           {
             "path": "AssumeRolePolicyDocument",
@@ -131,9 +137,27 @@
             "evidence": "reviewer_judgement"
           },
           {
+            "path": "_hydrate.role.data.Role.AssumeRolePolicyDocument",
+            "category": "access_policy",
+            "reason": "GetRole repeats the trust policy verbatim (with its sts:ExternalId conditions) inside the hydrate slot.",
+            "evidence": "reviewer_judgement"
+          },
+          {
             "path": "Description",
             "category": "free_text",
             "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.role.data.Role.Description",
+            "category": "free_text",
+            "reason": "GetRole repeats the operator-authored description inside the hydrate slot.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.role.data.Role.Tags",
+            "category": "customer_content",
+            "reason": "GetRole returns the role's tags inline. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
           },
           {
@@ -144,14 +168,33 @@
           }
         ]
       },
-      "items_path": "Roles[]",
+      "items_path": "[]",
       "natural_key": "Arn",
       "fields": {
         "name": "RoleName",
         "role_arn": "Arn",
         "path": "Path",
-        "max_session_duration": "MaxSessionDuration"
+        "max_session_duration": "MaxSessionDuration",
+        "role_id": "RoleId",
+        "permissions_boundary_arn": "_permissions_boundary_arn",
+        "last_used_at": "_last_used_at",
+        "attached_policy_arns": "_attached_policy_arns",
+        "trusted_account_ids": "_trusted_account_ids",
+        "trusted_services": "_trusted_services",
+        "trusts_wildcard_principal": "_trusts_wildcard_principal"
       },
+      "hydrate": [
+        {
+          "key": "role",
+          "op": "GetRole",
+          "why": "Permissions boundary and last-used time — ListRoles omits both by AWS's own contract."
+        },
+        {
+          "key": "attached_policies",
+          "op": "ListAttachedRolePolicies",
+          "why": "Managed policies attached to the role — what the role is granted."
+        }
+      ],
       "tags": {
         "source": "service",
         "op": "ListRoleTags",
@@ -169,6 +212,21 @@
           "key_kind": "arn",
           "edge_type": "FEDERATES_INTO_ROLE__aws_core",
           "direction": "inbound"
+        },
+        {
+          "value_path": "_trusted_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "TRUSTS_ACCOUNT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_attached_policy_arns",
+          "target_type": "aws_core__aws_iam_policy",
+          "key_kind": "arn",
+          "edge_type": "ATTACHES_POLICY__aws_core",
+          "direction": "outbound",
+          "transform": "customer_managed_policy_arn_or_none"
         }
       ]
     },
@@ -375,6 +433,12 @@
       "scope": "global",
       "source": { "custom_fn": "s3_buckets_hydrated" },
       "why": "Enumerate S3 buckets — object storage; content origins, state, and data stores.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.buckets",
+        "edge_type": "OWNS_BUCKET__aws_core",
+        "why": "An S3 bucket is owned by exactly one account and ListBuckets is account-wide across regions in the partition; read to its last continuation token it is the complete list of the account's buckets. A bucket it stops naming is a question for the bucket's falsifier, not a deletion."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
       "sensitivity": {
@@ -547,6 +611,12 @@
       "scope": "global",
       "source": { "custom_fn": "iam_oidc_providers_described" },
       "why": "Enumerate IAM OIDC identity providers — federated machine identities (e.g. GitHub Actions) that trust this account.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.oidc_providers",
+        "edge_type": "OWNS_OIDC_PROVIDER__aws_core",
+        "why": "An IAM OIDC provider exists in exactly one account; ListOpenIDConnectProviders returns every provider of the account in one unpaginated response. A provider it stops naming is a question for the provider's falsifier (GetOpenIDConnectProvider), not a deletion."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
       "sensitivity": {
@@ -585,6 +655,161 @@
         "path": "Tags",
         "shape": "list_kv",
         "why": "Resource tags — RGTA excludes IAM resources; per-service side-quest."
+      },
+      "edges": []
+    },
+    {
+      "entity_type": "aws_core__aws_iam_user",
+      "service": "iam",
+      "scope": "global",
+      "source": { "custom_fn": "iam_users_described" },
+      "why": "Enumerate IAM users — long-lived human and machine identities, the principals an organization rollout most needs to find. ListUsers is the account's complete inventory of them (walk checked, count compared with GetAccountSummary); each user is read again for the permissions boundary ListUsers omits, attached policies and MFA devices.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.iam_users",
+        "edge_type": "OWNS_IAM_USER__aws_core",
+        "why": "An IAM user exists in exactly one account and is never shared; the account's ListUsers, read to its end, is the complete list of them. A user it stops naming is a question for the user's falsifier (GetUser), not a deletion."
+      },
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListUsers and GetUser output shapes (User), ListAttachedUserPolicies, ListMFADevices, and custom_fn iam_users_described, 2026-09-28. Access keys, login profiles and MFA seeds are never requested; ListMFADevices returns device serial numbers only.",
+        "locations": [
+          {
+            "path": "UserName",
+            "category": "personal_data",
+            "reason": "An IAM user name is often a person's username or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.user.data.User.UserName",
+            "category": "personal_data",
+            "reason": "GetUser repeats the user name inside the hydrate slot.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.user.data.User.Tags",
+            "category": "customer_content",
+            "reason": "GetUser returns the user's tags inline. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.mfa_devices.data.MFADevices[].SerialNumber",
+            "category": "personal_data",
+            "reason": "A virtual MFA device serial is an ARN that embeds the user name; a hardware serial identifies a physical token.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "ListUserTags response placed in the envelope by the service tag lane. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "UserName",
+        "user_arn": "Arn",
+        "path": "Path",
+        "user_id": "UserId",
+        "mfa_enabled": "_mfa_enabled",
+        "permissions_boundary_arn": "_permissions_boundary_arn",
+        "password_last_used": "_password_last_used",
+        "attached_policy_arns": "_attached_policy_arns"
+      },
+      "hydrate": [
+        {
+          "key": "user",
+          "op": "GetUser",
+          "why": "Permissions boundary — ListUsers omits it by AWS's own contract."
+        },
+        {
+          "key": "attached_policies",
+          "op": "ListAttachedUserPolicies",
+          "why": "Managed policies attached directly to the user — what the user is granted."
+        },
+        {
+          "key": "mfa_devices",
+          "op": "ListMFADevices",
+          "why": "Registered MFA devices — whether the user has a second factor."
+        }
+      ],
+      "tags": {
+        "source": "service",
+        "op": "ListUserTags",
+        "params": {
+          "UserName": { "from": "UserName" }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — RGTA excludes IAM users; per-service side-quest."
+      },
+      "edges": [
+        {
+          "value_path": "_attached_policy_arns",
+          "target_type": "aws_core__aws_iam_policy",
+          "key_kind": "arn",
+          "edge_type": "ATTACHES_POLICY__aws_core",
+          "direction": "outbound",
+          "transform": "customer_managed_policy_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_policy",
+      "service": "iam",
+      "scope": "global",
+      "source": { "custom_fn": "iam_customer_policies_listed" },
+      "why": "Enumerate the account's customer-managed IAM policies (ListPolicies with Scope=Local) — the permission documents the account itself authors. AWS-managed policies are AWS's, identical in every account, and are deliberately not collected as this account's.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.iam_policies",
+        "edge_type": "OWNS_IAM_POLICY__aws_core",
+        "why": "A customer-managed policy exists in exactly one account and is never shared; ListPolicies(Scope=Local), read to its end, is the complete list of them. A policy it stops naming is a question for the policy's falsifier (GetPolicy), not a deletion."
+      },
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListPolicies output shape (Policy) and custom_fn iam_customer_policies_listed, 2026-09-28. Policy documents are never requested (no GetPolicyVersion).",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "ListPolicyTags response placed in the envelope by the service tag lane. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "PolicyName",
+        "policy_arn": "Arn",
+        "path": "Path",
+        "policy_id": "PolicyId",
+        "default_version_id": "DefaultVersionId",
+        "attachment_count": "AttachmentCount",
+        "is_attachable": "IsAttachable"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListPolicyTags",
+        "params": {
+          "PolicyArn": { "from": "Arn" }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — RGTA excludes IAM policies; per-service side-quest."
       },
       "edges": []
     },

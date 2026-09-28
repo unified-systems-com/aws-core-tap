@@ -152,6 +152,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     resolve_partition,
     resolve_regions,
 )
+from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import iam_endpoint_region
 from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
     INACTIVE_ACCOUNT_STATES,
     NESTED_UNDER_PARENT,
@@ -1420,10 +1421,64 @@ class S3BucketFalsifier(_AwsFalsifier):
         )
 
 
+# ---------------------------------------------------------------------------
+# IAM OIDC provider (tap-plugin-aws-core#43)
+# ---------------------------------------------------------------------------
+
+
+class IamOidcProviderFalsifier(_AwsFalsifier):
+    """``iam:GetOpenIDConnectProvider`` (global) in the candidate's own account; the response
+    carries no separate id to compare, since the request itself is by ARN.
+
+    A candidate reaches this falsifier only once ``OWNS_OIDC_PROVIDER__aws_core`` makes an OIDC
+    provider node reconcilable (tap-plugin-aws-core#43) — this class has no dependency on that; it
+    only judges whatever candidate it is handed, the same discipline ``SubnetFalsifier`` follows.
+
+    Identity is the provider's ARN, and ``GetOpenIDConnectProvider`` is looked up BY that ARN, so a
+    "found" response is definitionally about the requested object — the same reasoning
+    ``IamPolicyFalsifier`` (aws-core-tap#41) gives for why a customer-managed policy can never
+    answer ``REIDENTIFIED``. Ownership is implicit in the ARN's own account segment
+    (``arn:<partition>:iam::<account>:oidc-provider/...``), which is exactly what
+    ``_scope_check`` already gates on before any call is made — the response carries no separate
+    owner field to cross-check, so ``Expected.owner`` and ``Probe.owner`` are both left unset here
+    (the ``owner_not_compared`` convention ``SubnetFalsifier`` uses when the grid holds none).
+    """
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        arn = str(getattr(row, "provider_arn", "") or "")
+        if not arn:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no provider_arn for this provider")
+        expected_account = _dimensions_of(row).get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        expected = Expected(source_id=arn, name=str(getattr(row, "name", "") or "") or None)
+        try:
+            # The ARN's own partition decides the region, never a hardcoded us-east-1 (aws-core-tap#43):
+            # GovCloud has no us-east-1 at all, and this falsifier must reach whatever partition
+            # collected the row.
+            client = session.client("iam", region_name=iam_endpoint_region(arn))
+            result = client.get_open_id_connect_provider(OpenIDConnectProviderArn=arn)
+        except ClientError as exc:
+            status = probe_status_of(exc)
+            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
+            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
+        except BotoCoreError as exc:
+            return verdict_from_probe(candidate, expected, Probe(status="errored", detail=str(exc)))
+        probe = Probe(
+            status="found", source_id=arn, name=str(result.get("Url") or "") or None, detail="GetOpenIDConnectProvider 200"
+        )
+        return verdict_from_probe(candidate, expected, probe)
+
+
 __all__ = [
     "NOT_FOUND_DETAIL",
     "AccountFalsifier",
     "Ec2InstanceFalsifier",
+    "IamOidcProviderFalsifier",
     "IamPolicyFalsifier",
     "IamRoleFalsifier",
     "IamUserFalsifier",

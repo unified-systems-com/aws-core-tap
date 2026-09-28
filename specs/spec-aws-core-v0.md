@@ -45,7 +45,8 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-panel-counts | [AWS Pages](#aws-pages) | Implemented | The `aws-counts` panel type: count tiles over the estate |
 | req-aws-core-layout-hints | [AWS Pages](#aws-pages) | Implemented | Placement read from a node's own `layout:*` tags, never its name or id |
 | req-aws-core-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | Explicitly deferred concerns |
-| req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Implemented | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org excluded by design |
+| req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Amended | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org's original "excluded by design" is narrowed — `AwsAccount` now has both a falsifier and containment, see the rows below |
+| req-aws-core-reconcile-containment | [Account-Scoped Containment — IAM & S3 Reconcile](#account-scoped-containment--iam--s3-reconcile) | Implemented | Five NEW `AwsAccount` → owned-type containment edges (IAM role/user/policy, OIDC provider, S3 bucket); `IamOidcProviderFalsifier`; collector-emitted completeness per listing |
 | req-aws-core-regional-containment | [Region-Scoped Containment](#region-scoped-containment) | Implemented | `aws_account_region` (account × region footprint), `HOSTS_*` containment edges, per-region completeness surfaces; VPC, subnet, EC2 instance, security group |
 
 ### Plugin Scope
@@ -1029,9 +1030,108 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
 | req-aws-core-reconcile-falsifiers-1 | Manifest Table | Implemented | `tap-plugin.toml` declares `[falsifiers]` with `aws_core__aws_subnet`; `requires_tap` is `>=0.2.1`. | |
 | req-aws-core-reconcile-falsifiers-2 | Four Proof Cases | Implemented | `SubnetFalsifier` produces `PRESENT_AT_PROBE` / `DROPPED_FROM_OBSERVATION` / `UNDETERMINED(forbidden)` / `REIDENTIFIED` against a fake `ec2` client, run through `tap_grid.falsifier_testing.run_four_cases`. | |
 | req-aws-core-reconcile-falsifiers-3 | Single-Account Scope Check | Implemented | A candidate whose `aws_account` dimension does not match the falsifier's resolved credential account is `UNDETERMINED(scope_unknown)` without a probe. | |
-| req-aws-core-reconcile-falsifiers-4 | Account Declares No Containment Of Its Own | Implemented | `AwsAccount.CONTAINMENT_EDGES == ()`, explicitly declared with a citing comment; it IS a containment target of `AwsOrganization` (`ENROLLS_ACCOUNT`, amended by `req-aws-core-organizations-collect`), which does not change what it declares as a source. | `AwsOrganization.CONTAINMENT_EDGES` is no longer `()` — see `req-aws-core-organizations-collect-2`. |
-| req-aws-core-reconcile-falsifiers-5 | Account/Org Falsifier Registration | Amended | `AwsOrganization` still has no falsifier (nothing contains it). `AwsAccount` now does — `AccountFalsifier`, `req-aws-core-organizations-collect-3` — because which accounts an organization holds is an external, falsifiable fact distinct from the collector's OWN account identity, which is what the foundation-abort reasoning this row originally generalized from actually covers. | Superseded by tap-plugin-aws-core#50; the original all-or-nothing reading of this row was too broad. |
-| req-aws-core-reconcile-falsifiers-6 | Completeness Statements — First Surfaces (tap-plugin-aws-core#49, #50) | Implemented | `boto3_collector` now produces per-region completeness surfaces for its four `containment`-declared manifest entries (VPC, subnet, EC2 instance, security group — `req-aws-core-regional-containment`), and, independent of the manifest engine, its own Organizations-tree read records one completeness surface per OU/account listing it reads to the end (`req-aws-core-organizations-collect-4`). Every other manifest-driven listing still records none. | Narrowed by tap-plugin-aws-core#49 and #50: this row no longer describes every reconcilable type as backlog; see [Region-Scoped Containment](#region-scoped-containment). |
+| req-aws-core-reconcile-falsifiers-4 | Account/Org Declare No Containment Of Their Own | Superseded | Both originally declared `CONTAINMENT_EDGES == ()`. Neither does anymore, for two independent reasons: `AwsAccount`'s is superseded by `req-aws-core-reconcile-containment` below (containment for the five account-exclusive types it owns); `AwsOrganization`'s is superseded by `req-aws-core-organizations-collect-2` (its two OU/account containment edges). `BELONGS_TO_ACCOUNT` stays unreversed for every other type `AwsAccount` owns, and `AwsAccount` remains a containment TARGET of `AwsOrganization` (`ENROLLS_ACCOUNT`), never a reversal either. | Superseded by two separate PRs (tap-plugin-aws-core#43 and #50) for two separate reasons; neither reverses `BELONGS_TO_ACCOUNT`. |
+| req-aws-core-reconcile-falsifiers-5 | Account/Org Falsifier Registration | Amended | `AwsOrganization` still has no falsifier (nothing contains it; it also still has no collector emitting a candidate for it). `AwsAccount` now does — `AccountFalsifier`, `req-aws-core-organizations-collect-3` — because which accounts an organization holds is an external, falsifiable fact distinct from the collector's own account identity, which is what the foundation-abort reasoning this row originally generalized from actually covers. | Superseded by tap-plugin-aws-core#50; the original all-or-nothing reading of this row was too broad. |
+| req-aws-core-reconcile-falsifiers-6 | Completeness Statements — First Surfaces (tap-plugin-aws-core#43, #49, #50) | Implemented | `boto3_collector` now produces completeness surfaces from three independent sources: its five account-scoped `containment` manifest entries (IAM role/user/policy, OIDC provider, S3 bucket — `req-aws-core-reconcile-containment-2`), its four region-scoped `containment` manifest entries (VPC, subnet, EC2 instance, security group — `req-aws-core-regional-containment`), and, independent of the manifest engine entirely, its own Organizations-tree read (`req-aws-core-organizations-collect-4`). Every other manifest-driven listing still records none. | Narrowed by tap-plugin-aws-core#43, #49 and #50: this row no longer describes every reconcilable type as backlog; see [Account-Scoped Containment](#account-scoped-containment--iam--s3-reconcile) and [Region-Scoped Containment](#region-scoped-containment). |
+
+### Account-Scoped Containment — IAM & S3 Reconcile
+
+RID: `req-aws-core-reconcile-containment`
+
+Status: `Implemented`
+
+`tap-plugin-aws-core#43`. The falsifier foundation above (`req-aws-core-reconcile-falsifiers`)
+and the sibling storage/IAM falsifiers (`aws-core-tap#41`) built the JUDGING half of reconcile
+with nothing to judge: `AwsAccount.CONTAINMENT_EDGES` was empty, so no IAM role, IAM user,
+customer-managed IAM policy, IAM OIDC provider or S3 bucket could ever become a retirement
+candidate, however correct its falsifier. This requirement builds the missing FAN-OUT half for
+exactly those five types — the ones an AWS account owns exclusively, never shares, and whose
+account-scoped listing is a complete inventory of them.
+
+#### Implementation
+
+- **Five NEW parent → child edge types**, each `aws_core__aws_account` → one owned type:
+  `OWNS_IAM_ROLE__aws_core`, `OWNS_IAM_USER__aws_core`, `OWNS_IAM_POLICY__aws_core` (scoped to
+  customer-managed policies — an AWS-managed policy belongs to AWS, not the account),
+  `OWNS_OIDC_PROVIDER__aws_core`, `OWNS_BUCKET__aws_core`. Declared on `AwsAccount`'s
+  `OUTBOUND_EDGES` and `CONTAINMENT_EDGES` (superseding the empty declaration
+  `req-aws-core-reconcile-falsifiers-4` made, with the comment there rewritten to say why:
+  these five are account-EXCLUSIVE — never RAM-shared, never regional — which is exactly the
+  property `BELONGS_TO_ACCOUNT` lacks for the general resource population and why that edge
+  stays an unreversed reference). `ATTACHES_POLICY__aws_core` (role/user → customer-managed
+  policy) and `TRUSTS_ACCOUNT__aws_core` (role → the cross-account accounts its trust policy
+  names) are two further edges the same fan-out work makes possible, not containment
+  themselves.
+- **A `containment` manifest block** (`aws_resource_manifest.schema.json`), on the four entries
+  it now names (`aws_core__aws_iam_role`, `aws_core__aws_iam_user`, `aws_core__aws_iam_policy`,
+  `aws_core__aws_iam_oidc_provider`, `aws_core__aws_s3_bucket`): `{parent: "account", relation,
+  edge_type, why}`. The collector emits the account → item edge for every item a `containment`
+  entry's listing returns (`collectors/boto3_collector/edges.py::emit_containment`), from the
+  credential's own resolved account (STS `GetCallerIdentity`), never from anything the item
+  itself claims.
+- **The completeness seam** (`collectors/boto3_collector/listing.py`): a `ListingWalk` per
+  `containment` entry, filled in by the source driver while it consumes pages
+  (`source.py::iter_listing` for a plain `aws_op`; the four new `custom_fn`s —
+  `iam_roles_described`, `iam_users_described`, `iam_customer_policies_listed`, and
+  `iam_oidc_providers_described`'s existing one-call walk — for the rest) and turned into an
+  authored completeness surface (`surface_statement`) after the batch is submitted
+  (`collector.py::run`, mirroring `tap_plugin.github_core`'s `_note_listing` /
+  `record_surface` sequencing: the subject is resolved to the account's own grid id, which this
+  run's batch just wrote). `enumeration_complete` is derived from the walk itself — the final
+  page's own continuation marker (`page_says_more`), never asserted by the collector — and
+  `source_consistent` is always `"unknown"` with a reason: AWS documents no snapshot guarantee
+  across the pages of any of these listings.
+- **IAM role and user identity + posture fields.** `IamRole` gains `role_id`,
+  `permissions_boundary_arn`, `last_used_at`, `attached_policy_arns`, `trusted_account_ids`,
+  `trusted_services`, `trusts_wildcard_principal`; `IamUser` gains `user_id`,
+  `permissions_boundary_arn`, `password_last_used`, `attached_policy_arns`, `mfa_enabled`
+  (widened to nullable — `False` used to mean both "no MFA" and "not read"); `IamPolicy` gains
+  `policy_id`, `default_version_id`, `attachment_count`, `is_attachable`. `role_id` / `user_id`
+  / `policy_id` are AWS's own immutable ids, not reused across a delete-and-recreate under the
+  same ARN — the concrete answer to `aws-core-tap#41`'s flagged gap ("a genuinely open
+  follow-up... only AWS's own immutable RoleId/UserId would catch" a same-path recreation).
+  `ListRoles` / `ListUsers` omit `PermissionsBoundary`, `RoleLastUsed` and `Tags` by AWS's own
+  documented contract, so each role/user is read again with `GetRole` / `GetUser` (a `hydrate`
+  op, per item, alongside `ListAttached*Policies`). `IamUser` and `IamPolicy` also gain the
+  canonical `tags` field (`req-aws-core-fields-4`) — both were manifest-collected but had never
+  carried it, a v0.4.0-scar shape `test_aws_core_tags_field.py` derives from the manifest
+  specifically so this cannot recur silently.
+- **The trust-policy summary** (`collectors/boto3_collector/iam_trust.py`,
+  `summarize_trust_policy`): partition-aware ARN parsing (`aws`, `aws-us-gov`, `aws-cn`) reduces
+  a role's `AssumeRolePolicyDocument` to `trusted_account_ids` (every OTHER account an `Allow`
+  statement's `Principal.AWS` names — the cross-account assume-role targets an organization
+  rollout needs), `trusted_services` and `trusts_wildcard_principal`. Only `Effect: Allow`
+  grants; `Condition` is not evaluated, so the field says who is NAMED and the wildcard flag
+  says the name is unconditional, without claiming to evaluate IAM. Feeds `TRUSTS_ACCOUNT__aws_core`.
+- **`IamOidcProviderFalsifier`** (`falsifiers.py`, registered in `[falsifiers]`): the fifth
+  falsifier this containment makes reachable; `GetOpenIDConnectProvider` by ARN, the same
+  "looked up by the value under test" reasoning `aws-core-tap#41`'s `IamPolicyFalsifier` gives
+  for why `REIDENTIFIED` cannot occur. The other four falsifiers this containment activates
+  (`S3BucketFalsifier`, `IamRoleFalsifier`, `IamUserFalsifier`, `IamPolicyFalsifier`) are
+  `aws-core-tap#41`'s and are not duplicated here.
+- **GovCloud region handling.** IAM and STS are global per account AND PARTITION — there is no
+  `us-east-1` in `aws-us-gov`. `aws_account_singleton`, `iam_roles_described`,
+  `iam_users_described`, `iam_customer_policies_listed` and `iam_oidc_providers_described` all
+  take the engine's region-bound `client_for` in preference to a hardcoded `us-east-1` session
+  client, and `Boto3Collector.run`'s `us-east-1`-region-scope warning (CloudFront/ACM tags) is
+  now conditioned on the region set actually being commercial-partition, so a GovCloud-only run
+  is not warned about a commercial-only concern it cannot have.
+
+#### What this deliberately does not do
+
+- **The other ~47 `BELONGS_TO_ACCOUNT` source types stay references.** EC2 instances, VPCs and
+  the rest are regional, some are RAM-shareable, and an account's full resource fan-out can
+  exceed `TAP_CASCADE_MAX_CLOSURE`; each needs its own regional listing and its own
+  containment decision, not a blanket account-level one. That remains
+  `req-aws-collector-reconcile`, Backlog.
+- **No scope/region node.** The design this requirement's predecessor named as "the real
+  substrate" (a scope node per account and region) is still unbuilt; these five containment
+  edges are account-global (IAM) or account-wide-across-regions (S3 `ListBuckets`), so they did
+  not need it. A regional type still does.
+- **Attached AWS-managed policies are not graph edges.** `ATTACHES_POLICY__aws_core` is scoped
+  to customer-managed policies, whose nodes this collector holds; the full attachment list
+  (AWS-managed included) lives on `attached_policy_arns`, since an edge to an uncollected node
+  would only dangle.
 
 ### Region-Scoped Containment
 ----
@@ -1146,6 +1246,14 @@ rest can extend.
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
+| req-aws-core-reconcile-containment-1 | Five Account-Owned Edge Types | Implemented | `OWNS_IAM_ROLE__aws_core`, `OWNS_IAM_USER__aws_core`, `OWNS_IAM_POLICY__aws_core`, `OWNS_OIDC_PROVIDER__aws_core`, `OWNS_BUCKET__aws_core` declared, each `aws_core__aws_account` → the owned type, on `AwsAccount.OUTBOUND_EDGES`/`CONTAINMENT_EDGES`. | |
+| req-aws-core-reconcile-containment-2 | Collector Emits Containment + Records Completeness | Implemented | The five listings are driven through `ListingWalk`; the collector emits the account → item edge per item and records a completeness surface per listing after batch submission, `enumeration_complete` derived from the walk, never asserted. | |
+| req-aws-core-reconcile-containment-3 | BELONGS_TO_ACCOUNT Unreversed | Implemented | `BELONGS_TO_ACCOUNT` stays a resource → account reference for every type; only the five new edges are containment. | |
+| req-aws-core-reconcile-containment-4 | IAM Immutable Ids | Implemented | `IamRole.role_id`, `IamUser.user_id`, `IamPolicy.policy_id` are collected and stored, closing `aws-core-tap#41`'s flagged same-path-recreation gap. | |
+| req-aws-core-reconcile-containment-5 | Trust Policy Summary | Implemented | `summarize_trust_policy` derives `trusted_account_ids` / `trusted_services` / `trusts_wildcard_principal` from a role's `AssumeRolePolicyDocument`, partition-aware; feeds `TRUSTS_ACCOUNT__aws_core`. | |
+| req-aws-core-reconcile-containment-6 | Fifth Falsifier | Implemented | `IamOidcProviderFalsifier` registered in `[falsifiers]`; the other four this containment activates are `aws-core-tap#41`'s, not duplicated. | |
+| req-aws-core-reconcile-containment-7 | GovCloud-Reachable | Implemented | The account/IAM listings use the engine's region-bound client rather than a hardcoded `us-east-1`; the CloudFront/ACM region-scope warning is conditioned on a commercial-partition region being in scope. | |
+| req-aws-core-reconcile-containment-8 | Regional Types Remain Backlog | Proposed | The ~47 other `BELONGS_TO_ACCOUNT` source types (regional or RAM-shareable) are unaddressed except where `req-aws-core-regional-containment` (below) now covers four of them; `req-aws-collector-reconcile` still tracks the rest. | Narrowed by tap-plugin-aws-core#49. |
 | req-aws-core-regional-containment-1 | Account-Region Footprint | Implemented | `aws_core__aws_account_region`, keyed on `(account_id, region_code)`, emitted for every region in the run's scope. | |
 | req-aws-core-regional-containment-2 | One Containment Edge Per Child Type | Implemented | `REGIONAL_CHILDREN` declares `HOSTS_VPC` / `HOSTS_SUBNET` / `HOSTS_EC2_INSTANCE` / `HOSTS_SECURITY_GROUP`; `AwsAccountRegion.CONTAINMENT_EDGES` and every `.edge.json` file agree, checked by `test_regional_containment.py`. | |
 | req-aws-core-regional-containment-3 | Per-Region Completeness, Not Observed-Empty | Implemented | A disabled or unknown-status region's listing is never called / never counted complete when empty; `region_disabled` / `empty_unverified` reasons are recorded. | |

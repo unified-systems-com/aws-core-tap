@@ -1,0 +1,14 @@
+{
+  "slug": "OWNS_BUCKET__aws_core",
+  "name": "Owns Bucket",
+  "description": "An AWS account owns an S3 bucket (account -> bucket). ListBuckets is account-wide across regions within the partition and is the complete inventory of the account's general purpose buckets. Unlike BELONGS_TO_ACCOUNT (a reference: a resource shared through AWS RAM is used from other accounts), this type exists in exactly one account and is never shared, so the account's own listing of it is the complete inventory of it. The account declares this edge in CONTAINMENT_EDGES: it is what lets a completed listing make an absent bucket a retirement candidate for its falsifier to judge, and what a contained cascade from a retired account follows. The collector emits it only from a listing it read, and records the listing as reconcilable only when it was paginated to the end. Additive to BELONGS_TO_ACCOUNT, which stays a child -> account reference.",
+  "sources": [
+    "aws_core__aws_account"
+  ],
+  "targets": [
+    "aws_core__aws_s3_bucket"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

@@ -21,6 +21,7 @@ from functools import partial
 from typing import Any
 
 from .edges import TransformRegistry
+from .iam_trust import account_of_iam_arn
 from .partition import PARTITION_AWS, PARTITION_RE, build_arn
 
 # CloudFront S3 origin DomainName forms, all ending amazonaws.com (amazonaws.com.cn in the China
@@ -115,9 +116,22 @@ def log_group_name_from_arn(value: object) -> str | None:
     return name or None
 
 
+def customer_managed_policy_arn_or_none(value: object) -> str | None:
+    """An attached managed-policy ARN -> the target policy's natural key, only if it is customer-managed.
+
+    An AWS-managed policy is ``arn:<partition>:iam::aws:policy/...``: AWS's, identical in every account,
+    and not a node of any account's collection, so an edge to it would dangle for ever. A
+    customer-managed one carries the owning account id in that position and is collected by
+    ``iam_customer_policies_listed``. The ARN is already the natural key, so it passes through unchanged;
+    the partition is never assumed (a GovCloud ARN is ``arn:aws-us-gov:iam::...``).
+    """
+    return value.strip() if isinstance(value, str) and account_of_iam_arn(value) is not None else None
+
+
 # Manifest transform name -> callable. The single source of truth wired into
 # the engine's TransformRegistry by build_transform_registry().
 _TRANSFORMS: dict[str, Callable[..., Any]] = {
+    "customer_managed_policy_arn_or_none": customer_managed_policy_arn_or_none,
     "s3_bucket_name_from_origin_domain": s3_bucket_name_from_origin_domain,
     "kms_key_arn_or_none": kms_key_arn_or_none,
     "s3_bucket_arn_from_name": s3_bucket_arn_from_name,
