@@ -114,7 +114,15 @@ ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
 # collector run yet — completeness-statement production is req-aws-collector-reconcile,
 # Backlog (specs/spec-aws-core-collector-v0.md) — so this registration is exercised by tests
 # today, not yet by a production run; see tap_plugin/aws_core/falsifiers.py.
+#
+# aws-core#43 adds the compute + network types beside Subnet. VPC, EC2 instance and security
+# group are registered AHEAD of a containment path reaching them (no CONTAINMENT_EDGES target
+# names them yet), so today they are exercised by tests only, like Subnet above; they become live
+# the moment a containment edge does. See the falsifiers.py module docstring.
 aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"
+aws_core__aws_vpc = "tap_plugin.aws_core.falsifiers.VpcFalsifier"
+aws_core__aws_security_group = "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier"
+aws_core__aws_ec2_instance = "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"

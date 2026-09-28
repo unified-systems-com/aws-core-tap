@@ -848,8 +848,11 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
 
 #### Implementation
 
-- **`[falsifiers]` manifest table**, `tap-plugin.toml`: one entry today,
-  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`. `requires_tap`
+- **`[falsifiers]` manifest table**, `tap-plugin.toml`: the foundation registered one entry,
+  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`; `tap-plugin-aws-core#43`
+  adds `VpcFalsifier`, `Ec2InstanceFalsifier` and `SecurityGroupFalsifier` beside it, on a shared
+  `_Ec2Falsifier(_AwsFalsifier)` (region from the `aws_region` dimension, else a type hint, else a
+  fallback sweep that may find but never drop — `falsifiers.py`'s module docstring). `requires_tap`
   moved to `>=0.2.1` — 0.1.6, the release before it, refuses the `[falsifiers]` key at
   manifest parse (`tap_plugins/manifest.py::_parse_falsifiers`).
 - **`tap_plugin/aws_core/falsifiers.py`**: a base `_AwsFalsifier(Falsifier)` mirroring
