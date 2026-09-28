@@ -167,11 +167,11 @@ class TestIamRoleFalsifier:
     def test_the_wrong_account_refuses_before_any_probe_even_when_the_call_would_hit(
         self,
     ) -> None:
-        # This is the shape two independent AI review passes flagged: without the pre-probe
-        # gate, a credential for the WRONG account could still successfully call get_role and
-        # find ITS OWN unrelated same-named role, and that live (but irrelevant) ARN would be
-        # compared to the grid's stored one as though it answered the question. The gate must
-        # refuse before the call is ever made, so `get_role.return_value` here is never reached.
+        # Without the pre-probe gate, a credential for the WRONG account could still
+        # successfully call get_role and find ITS OWN unrelated same-named role, and that live
+        # (but irrelevant) ARN would be compared to the grid's stored one as though it answered
+        # the question. The gate must refuse before the call is ever made, so
+        # `get_role.return_value` here is never reached.
         candidate = self._role("dropped", f"arn:aws:iam::{ACCOUNT_ID}:role/dropped")
         client = MagicMock()
         client.get_role.return_value = {
