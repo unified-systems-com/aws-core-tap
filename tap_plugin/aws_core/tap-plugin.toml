@@ -14,6 +14,7 @@ description = "Resource-type models and edge types for AWS cloud infrastructure.
 aws_core__aws_region = "tap_plugin.aws_core.models.aws_region.AwsRegion"
 aws_core__aws_az = "tap_plugin.aws_core.models.availability_zone.AvailabilityZone"
 aws_core__aws_account = "tap_plugin.aws_core.models.aws_account.AwsAccount"
+aws_core__aws_account_region = "tap_plugin.aws_core.models.aws_account_region.AwsAccountRegion"
 aws_core__aws_ec2_instance = "tap_plugin.aws_core.models.ec2_instance.Ec2Instance"
 aws_core__aws_lambda = "tap_plugin.aws_core.models.lambda_function.LambdaFunction"
 aws_core__aws_ecs_cluster = "tap_plugin.aws_core.models.ecs_cluster.EcsCluster"
@@ -111,6 +112,10 @@ OWNS_OIDC_PROVIDER__aws_core = "edges/OWNS_OIDC_PROVIDER.edge.json"
 OWNS_BUCKET__aws_core = "edges/OWNS_BUCKET.edge.json"
 TRUSTS_ACCOUNT__aws_core = "edges/TRUSTS_ACCOUNT.edge.json"
 ATTACHES_POLICY__aws_core = "edges/ATTACHES_POLICY.edge.json"
+HOSTS_VPC__aws_core = "edges/HOSTS_VPC.edge.json"
+HOSTS_SUBNET__aws_core = "edges/HOSTS_SUBNET.edge.json"
+HOSTS_EC2_INSTANCE__aws_core = "edges/HOSTS_EC2_INSTANCE.edge.json"
+HOSTS_SECURITY_GROUP__aws_core = "edges/HOSTS_SECURITY_GROUP.edge.json"
 
 [falsifiers]
 # One per reconcilable type: every type some model's CONTAINMENT_EDGES makes a containment TARGET
@@ -119,9 +124,13 @@ ATTACHES_POLICY__aws_core = "edges/ATTACHES_POLICY.edge.json"
 # Subnet — Vpc -> PARTITIONED_INTO_SUBNET, the foundation (tap-plugin-aws-core#42; see
 # tap_plugin/aws_core/falsifiers.py for why Subnet, not VPC itself).
 #
-# VPC, security group, EC2 instance (tap-plugin-aws-core#43) are registered AHEAD of a
-# containment path reaching them (no CONTAINMENT_EDGES target names them yet), so they are
-# exercised by tests only until one does; see the falsifiers.py module docstring.
+# VPC, EC2 instance and security group (tap-plugin-aws-core#43) were registered AHEAD of a
+# containment path reaching them (no CONTAINMENT_EDGES target named them yet), exercised by
+# tests only, like Subnet above — "they become live the moment a containment edge does" (that
+# PR's own words). tap-plugin-aws-core#49 (region-scoped containment) is that containment edge:
+# AwsAccountRegion.CONTAINMENT_EDGES now reaches all three, so each can produce real candidates
+# from a real collector run, not only from tests. See tap_plugin/aws_core/regional.py and
+# collectors/boto3_collector/containment.py for the mechanism.
 #
 # OU and account — the Organizations tree (tap-plugin-aws-core#50): AwsOrganization and
 # AwsOrganizationalUnit -> PARTITIONED_INTO_OU, AwsOrganization -> ENROLLS_ACCOUNT. The collector

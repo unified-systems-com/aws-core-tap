@@ -3,7 +3,6 @@
 from typing import Any, ClassVar
 
 from django.db import models
-
 from tap_grid.models import BaseModel
 
 
@@ -33,6 +32,7 @@ class SecurityGroup(BaseModel):
         "group_id": {"type": "string"},
         "description": {"type": "string"},
         "configuration": {"type": "object"},
+        "tags": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -40,6 +40,7 @@ class SecurityGroup(BaseModel):
         "group_id": {"validation": "jsonschema", "schema": {"type": "string"}},
         "description": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["group_id"]
 
@@ -47,6 +48,8 @@ class SecurityGroup(BaseModel):
     group_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
     description = models.TextField(blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
+    # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
+    tags = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_security_group"

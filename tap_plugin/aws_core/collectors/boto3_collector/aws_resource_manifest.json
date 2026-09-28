@@ -1237,6 +1237,221 @@
           "transform": "kms_key_arn_or_none"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_vpc",
+      "service": "ec2",
+      "scope": "regional",
+      "source": { "aws_op": "DescribeVpcs" },
+      "why": "Enumerate VPCs — the network boundary every other regional resource in this plugin's model is placed relative to.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the CIDR/association/DHCP posture the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeVpcs output shape (Vpc), 2026-09-28; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Vpcs[]",
+      "natural_key": "VpcId",
+      "name_tag": "Name",
+      "fields": {
+        "vpc_id": "VpcId",
+        "cidr_block": "CidrBlock",
+        "state": "State",
+        "is_default": "IsDefault"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "containment": {
+        "edge_type": "HOSTS_VPC__aws_core",
+        "relation": "account_region.vpcs",
+        "owner_path": "OwnerId"
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_subnet",
+      "service": "ec2",
+      "scope": "regional",
+      "source": { "aws_op": "DescribeSubnets" },
+      "why": "Enumerate subnets — VPC -> subnet is already the plugin's one existing containment edge (PARTITIONED_INTO_SUBNET), so collecting subnets makes that edge real.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the AZ / public-IP / outpost posture the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeSubnets output shape (Subnet), 2026-09-28; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Subnets[]",
+      "natural_key": "SubnetId",
+      "name_tag": "Name",
+      "fields": {
+        "subnet_id": "SubnetId",
+        "cidr_block": "CidrBlock",
+        "availability_zone": "AvailabilityZone",
+        "public": "MapPublicIpOnLaunch"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "PARTITIONED_INTO_SUBNET__aws_core",
+          "direction": "inbound"
+        }
+      ],
+      "containment": {
+        "edge_type": "HOSTS_SUBNET__aws_core",
+        "relation": "account_region.subnets",
+        "owner_path": "OwnerId"
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ec2_instance",
+      "service": "ec2",
+      "scope": "regional",
+      "source": { "aws_op": "DescribeInstances" },
+      "why": "Enumerate EC2 instances — the account's compute footprint and the resource type most falsifiers (tap-plugin-aws-core#44) are built to reconcile.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries block-device / network-interface / IAM-instance-profile posture the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeInstances output shape (Reservations[].Instances[]), 2026-09-28; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "KeyName",
+            "category": "other",
+            "reason": "The EC2 key-pair NAME used to launch the instance — an identifier, not the key material itself (AWS never returns a private key here), but it can echo an operator or team name.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Reservations[].Instances[]",
+      "natural_key": "InstanceId",
+      "name_tag": "Name",
+      "fields": {
+        "instance_id": "InstanceId",
+        "ec2_type": "InstanceType",
+        "state": "State.Name",
+        "private_ip": "PrivateIpAddress",
+        "public_ip": "PublicIpAddress",
+        "ami_id": "ImageId"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "SubnetId",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ],
+      "containment": {
+        "edge_type": "HOSTS_EC2_INSTANCE__aws_core",
+        "relation": "account_region.instances"
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_security_group",
+      "service": "ec2",
+      "scope": "regional",
+      "source": { "aws_op": "DescribeSecurityGroups" },
+      "why": "Enumerate security groups — the account's stateful firewall posture, and one of the four types tap-plugin-aws-core#44's falsifiers are built to reconcile.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the full ingress/egress rule set the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeSecurityGroups output shape (SecurityGroup), 2026-09-28; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "IpPermissions",
+            "category": "other",
+            "reason": "Internal network topology: source CIDR ranges and peer security groups the rules allow. Not a credential, but reconnaissance value if the grid were broadly readable.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "IpPermissionsEgress",
+            "category": "other",
+            "reason": "Same as IpPermissions, for outbound rules.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "SecurityGroups[]",
+      "natural_key": "GroupId",
+      "fields": {
+        "name": "GroupName",
+        "group_id": "GroupId",
+        "description": "Description"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        }
+      ],
+      "containment": {
+        "edge_type": "HOSTS_SECURITY_GROUP__aws_core",
+        "relation": "account_region.security_groups",
+        "owner_path": "OwnerId"
+      }
     }
   ]
 }

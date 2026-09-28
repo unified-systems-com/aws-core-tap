@@ -13,6 +13,7 @@ from datetime import UTC, date, datetime
 
 import jsonschema
 import pytest
+
 from tap_plugin.aws_core.collectors.boto3_collector import manifest as manifest_mod
 from tap_plugin.aws_core.collectors.boto3_collector.envelope import (
     build_configuration,
@@ -88,7 +89,7 @@ class TestManifest:
         m = load_manifest()
         assert m["manifest_version"] == "0"
         entries = manifest_entries()
-        assert len(entries) == 19
+        assert len(entries) == 23
         for e in entries:
             assert {
                 "entity_type",
