@@ -43,6 +43,21 @@ class AwsOrganization(BaseModel):
     # AWS's organization id (o-…). Blank ids never converge: identity_lock_key treats "" as a hole.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("organization_id",)
 
+    # No containment declared (tap-plugin-aws-core#42, req-aws-core-reconcile-foundation) — this
+    # is already the documented ruling in req-aws-core-organizations above, restated here as a
+    # CLASS-LEVEL declaration rather than leaving it implicit via BaseModel's default: "No
+    # containment is declared. Both edges point child -> parent (and policy -> target), and
+    # CONTAINMENT_EDGES can only name outbound edges; an account also outlives its organization."
+    # NESTED_UNDER_PARENT (OU/account -> OU/organization) is the ONE tree edge and it points
+    # child -> parent, so this model is never its source; cascade
+    # (tap_grid/services/_impl.py::_contained_children) walks from_entity_id=<parent> and cannot
+    # follow an inbound edge. Splitting NESTED_UNDER_PARENT into a separate parent -> child
+    # containment edge (an org "owns" its OU tree the way a VPC owns its subnets, even though an
+    # account merely sits IN the tree and outlives it) is a real, larger design question — a new
+    # edge type shared with AwsOrganizationalUnit — deliberately left to a follow-up rather than
+    # decided unilaterally here.
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ()
+
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "organization_id": {"type": "string", "pattern": "^(o-[a-z0-9]{10,32})?$"},

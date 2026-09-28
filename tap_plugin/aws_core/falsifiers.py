@@ -1,404 +1,478 @@
-"""Per-type falsifiers for aws_core's compute + network resources.
+"""Per-type falsifiers for aws_core (tap-plugin-aws-core#42) — the foundation.
 
 A retirement candidate (``tap_grid.candidates``) is a child the grid holds under a parent
 whose listing this run read completely and did not name it. Nothing is retired on that
 alone: a **falsifier** — one per entity type, declared in ``[falsifiers]`` of
 ``tap-plugin.toml`` — probes AWS for each candidate and hands what it found to
-``tap_grid.falsifiers.verdict_from_probe``, which derives the verdict. HTTP/API success is not
-a verdict; the identity is compared, never the status line, mirroring the pattern
-``tap_plugin.github_core.falsifiers.RepositoryFalsifier`` established for this same core
-mechanism (one API call per object, 404 = ``not_found``, compare a stable id). Authority stays
-off here: the verdicts are recorded on the run's lifecycle batch and the reconcile verb
-(``tap_grid.reconcile``) is what would act on them.
+``tap_grid.falsifiers.verdict_from_probe``, which derives the verdict. HTTP/API success is
+not a verdict; the identity and the owning account are compared, never the response's mere
+presence (``req-grid-reconcile-falsifier``). Authority stays off: this module never
+tombstones, renames or ends an edge; the reconcile verb (core, ``req-grid-reconcile-verb``)
+is what would act on a recorded verdict.
 
-Covers the four most fundamental compute + network types, matching the models this plugin
-already carries (``tap_plugin.aws_core.models``):
+This mirrors ``tap_plugin.github_core.falsifiers`` (github-core#151) but is simpler for one
+concrete reason: ``Boto3Collector`` is **single-account** ("manifest-driven, single account,
+no deletes" — its own docstring). A GitHub App installation can see a *subset* of an
+account's repositories, which is why github_core needs a whole ``Reach`` abstraction
+(``tap_plugin.github_core.reach``) to judge whether a 404 is trustworthy. aws_core's
+collector credential resolves to exactly ONE AWS account via STS ``GetCallerIdentity``
+(``collectors/boto3_collector/collector.py``), and every node it writes is stamped with
+that account on ``dimensions["aws_account"]``
+(``collectors/boto3_collector/collector.py``, the ``dimensions = {"cloud": "aws",
+"aws_account": account_id, "aws_region": region_label}`` block). So the reach question
+collapses to one equality check: does the falsifier's OWN resolved credential account match
+the candidate's recorded account? A mismatch means this credential cannot speak to this
+candidate's absence at all (``scope_unknown``), the same refusal ``Reach.holds_repository``
+would produce for an out-of-reach repository, without needing the full apparatus.
 
-- ``aws_core__aws_vpc`` — ``VpcFalsifier``: ``describe_vpcs(VpcIds=[...])``;
-  ``InvalidVpcID.NotFound`` is the not-found code.
-- ``aws_core__aws_subnet`` — ``SubnetFalsifier``: ``describe_subnets(SubnetIds=[...])``;
-  ``InvalidSubnetID.NotFound``.
-- ``aws_core__aws_ec2_instance`` — ``Ec2InstanceFalsifier``: ``describe_instances(InstanceIds=
-  [...])``; ``InvalidInstanceID.NotFound``. AWS keeps a *terminated* instance visible for a
-  while rather than 404ing it immediately, so a successful response whose ``State.Name`` is
-  ``terminated`` is treated as gone too — ``stopped`` is not: the instance is still there, only
-  not running.
-- ``aws_core__aws_security_group`` — ``SecurityGroupFalsifier``:
-  ``describe_security_groups(GroupIds=[...])``; ``InvalidGroup.NotFound``.
+**Known limitation, not fixed here: a revoked AWS RAM share can misread as deletion.** The
+"single-account" framing above is only exactly true for a resource this account owns outright.
+AWS RAM lets a subnet (among other types) be *shared into* an account that does not own it; a
+shared subnet still appears in this credential's own ``DescribeSubnets`` listing, so the
+collector still writes it with ``dimensions["aws_account"]`` set to the *observing* account (the
+caller identity), not the true ``OwnerId`` — which ``_scope_check`` never sees, since it compares
+against the dimension, not the probe response. If the share is later revoked rather than the
+subnet deleted, this credential starts getting ``InvalidSubnetID.NotFound`` for a subnet that
+still exists in its owner's account, and nothing here tells that apart from a real deletion —
+the same "404 means gone OR means access narrowed" ambiguity ``tap_plugin.github_core.reach``
+exists to resolve, unresolved here. Closing it for real needs an AWS-side reach concept (cross-
+referencing RAM's own share state, or comparing the probe's ``OwnerId`` against the resolved
+credential account rather than against the collector's stamped dimension) — a bigger, separate
+piece of work, named so the gap is not mistaken for an oversight.
 
-**No stored region (the substitution this plugin's models force).** None of the four models
-carries a ``region`` field — unlike ``transit_gateway.py`` / ``dx_connection.py`` /
-``vpc_endpoint.py`` / ``route53_resolver_firewall_rule_group.py``, which do. Every describe
-call above is region-scoped, so without a region on the row a falsifier cannot address a
-single API call the way ``RepositoryFalsifier`` does. Rather than invent a schema change
-mid-PR (a natural key that already resolves cleanly to ``vpc_id`` / ``subnet_id`` / ``group_id``
-/ ``instance_id`` would need to move, or a new field would need a migration — either is a
-model-level decision this PR does not make unilaterally), ``_Ec2Falsifier`` sweeps regions and
-stops at the first region that answers authoritatively. AWS resource ids in this shape
-(``vpc-…`` / ``subnet-…`` / ``sg-…`` / ``i-…``) are minted per region and never reused across
-regions in the same partition, so one authoritative answer (found, or an instance confirmed
-terminated) settles it; ``not_found`` is only allowed to stand once *every* swept region has
-said so — a region that refused or errored could be hiding the object, so it is never let
-through as a retirement (fail closed). ``SubnetFalsifier`` shortcuts this: the model already
-carries ``availability_zone`` (e.g. ``us-east-1a``), so its region is tried first, before the
-sweep — extracted with ``_STANDARD_REGION_PREFIX`` rather than ``availability_zone[:-1]``,
-which mishandles a Local Zone or Wavelength Zone AZ (``us-west-2-lax-1a``'s parent region is
-``us-west-2``, not ``us-west-2-lax-1``). Client construction for a derived region lives inside
-``_describe_one``'s guarded try/except, not before it, so a region string boto3 cannot resolve
-degrades that one candidate to ``UNDETERMINED(errored)`` rather than raising out of the whole
-batch.
+**AwsAccount and AwsOrganization have no falsifier, on purpose.** ``Boto3Collector.run()``
+already treats credential/region-scope/account-identity failure as an *unrecoverable*
+condition — ``self._abort(..., "STS_UNREACHABLE", ...)`` /
+``self._abort(..., "ACCOUNT_MISMATCH", ...)`` — which is exactly
+``tap_plugin.github_core``'s "foundation" layer
+(``specs/spec-github-core-reliability.md``, ``req-github-core-reliability-absence``: a
+foundation failure aborts the run rather than degrading one surface). An account the
+collector's own credential cannot see is a collection-configuration problem to fix, not a
+retirement candidate to probe. ``AwsOrganization`` additionally has **no collector at all
+yet** (design vocabulary only — ``specs/spec-aws-core-v0.md``, ``req-aws-core-organizations``:
+"no collector emits them yet"), so it can never produce a completeness surface for a
+candidate to come from in the first place.
 
-**The sweep is the account's full enabled-region set, not the operator's current collection
-scope (PR #44).** The first version of this swept only ``resolve_regions()`` — the
-operator's ``regions_allowed`` — on the reasoning that nothing this falsifier probes could have
-been collected from anywhere outside it. That reasoning holds for a brand-new row, but not for
-one already sitting on the grid: ``Vpc.CONTAINMENT_EDGES`` already reaches
-``aws_core__aws_subnet`` before this PR, so a subnet collected under a wider historical region
-scope, now stale after an operator narrowed ``regions_allowed``, would sweep only the *new*
-narrower scope and could read as gone in every region it checked — "the collector no longer
-observes it" is not the same claim as "it is gone," and conflating them is exactly the mistake
-``req-grid-reconcile-falsifier`` exists to rule out. ``_enabled_regions`` fixes this: it calls
-``ec2:DescribeRegions`` (a cheap, universally-granted read-only call, ``AllRegions=False``) to
-get the account's actual full set of enabled regions, and sweeps THAT — decoupled from whatever
-subset the operator currently has ``regions_allowed`` configured to collect from, because a
-falsifier's job is to confirm a resource is really gone from AWS, not merely gone from what the
-collector currently watches. This is a real, disclosed change in AWS reach beyond
-``regions_allowed`` (one additional bootstrap call, one additional IAM action —
-``ec2:DescribeRegions`` — needed on top of the four describe permissions), not merely a larger
-number for the same claim the collector already makes.
+**Which types are registered, and why some are ahead of a containment path.** The foundation
+(tap-plugin-aws-core#42) registered Subnet alone, because
+``Vpc.CONTAINMENT_EDGES == ("PARTITIONED_INTO_SUBNET__aws_core",)`` and that edge's target is
+``aws_core__aws_subnet`` (``edges/PARTITIONED_INTO_SUBNET.edge.json``): a **candidate** is a child
+the grid holds under a parent whose listing did not name it, so ``CONTAINMENT_EDGES`` on a PARENT
+makes its declared edge TARGETS reconcilable, never the parent itself
+(``tap_plugins/validate/service.py::_check_falsifier_coverage``). tap-plugin-aws-core#43 adds the
+other compute + network types beside it — ``VpcFalsifier``, ``Ec2InstanceFalsifier``,
+``SecurityGroupFalsifier`` — **registered ahead of a containment path**: no edge names them as a
+target yet (``BELONGS_TO_ACCOUNT`` is a reference, not containment; ``RESIDES_IN_VPC`` /
+``RESIDES_IN_SUBNET`` run child -> parent, which ``tap_grid.candidates`` cannot fan out along), so
+today they are exercised by tests only, exactly as Subnet is until a collector run produces
+completeness statements. They are cheap to carry, become live the moment a containment edge
+reaches them, and an extra ``[falsifiers]`` row never trips the coverage check (it warns only on
+a *missing* row). Reversing ``RESIDES_IN_*`` into parent -> child edges purely so cascade can walk
+them would state one relationship twice in opposite directions; that is an architecture call this
+module does not make.
 
-If ``DescribeRegions`` itself cannot be reached, the sweep does not silently trust a narrower
-fallback the way an earlier version of this fix did — that silently reintroduced the
-exact false-retirement bug this mechanism exists to close, just gated behind an extra failure
-condition instead of always present. ``_enabled_regions`` instead returns
-``(regions, trustworthy)``, and ``judge()`` only derives ``DROPPED_FROM_OBSERVATION`` from a
-clean not_found sweep when ``trustworthy`` is ``True``; a sweep of the untrustworthy fallback
-scope that comes back clean answers ``UNDETERMINED(scope_unknown)`` instead — a clean sweep of a
-scope that was never confirmed complete is not evidence of absence, whatever it found.
+**Where the region comes from (``_AwsFalsifier._regions_of``).** Every describe call is
+region-scoped and no model stores a region, but the collector stamps
+``dimensions["aws_region"]`` on every node it writes, so the dimension is the region, trusted
+(``regions_trustworthy=True``): a not-found *there* is a real absence. Failing that, a subclass
+may supply ``_region_hint`` (``SubnetFalsifier`` parses its ``availability_zone`` — the leading
+``xx-name-N`` region shape, NOT ``az[:-1]``, which mishandles a Local/Wavelength Zone such as
+``us-west-2-lax-1a``). Failing that, the falsifier sweeps the account's enabled regions
+(``ec2:DescribeRegions``: one extra IAM action and bootstrap call; ``_enabled_regions``) — and a
+sweep is **untrustworthy by construction** (``regions_trustworthy=False``): it cannot show where
+the row was collected, and a row collected under a since-narrowed ``regions_allowed`` would read
+as gone in every region a narrower sweep covers. So a fallback sweep may FIND the resource (and
+answer PRESENT / REIDENTIFIED / RELOCATED) but may never answer ``DROPPED_FROM_OBSERVATION``:
+that verdict is downgraded to ``UNDETERMINED(scope_unknown)`` in ``_Ec2Falsifier.judge``.
 
-Multi-account support, if it arrives, is a separate ``_default_session`` change (an equivalent
-to GitHub's reach-narrowing re-confirmation, ``tap_plugin.github_core.falsifiers.
-_reach_after_probe``, would become the right shape then) — ``AWS_SECRET_REF`` is a single
-constant key today ("v0 has no per-instance config", ``credentials.py``'s own docstring), so no
-row these falsifiers judge can currently have come from an account this same credential cannot
-also reach.
-
-**Cascade (``CONTAINMENT_EDGES``) — what exists, what does not, and why nothing here adds it.**
-
-- ``aws_core__aws_subnet`` is already covered: ``Vpc.CONTAINMENT_EDGES`` (``vpc.py``) declares
-  ``PARTITIONED_INTO_SUBNET__aws_core``, so a VPC retiring already retires its subnets. No
-  change needed.
-- ``aws_core__aws_vpc`` and ``aws_core__aws_ec2_instance`` have ``BELONGS_TO_ACCOUNT__aws_core``
-  reaching them from ``aws_core__aws_account``, but that edge's own manifest description
-  states it is deliberately "a reference, not containment: a resource shared through AWS RAM is
-  used from other accounts, and an account's subtree can exceed the cascade cap." Wiring
-  account-root containment is the sibling foundation work this PR was told to coordinate with
-  ("first CONTAINMENT_EDGES on the account/org root") — at the time this was written no such
-  PR was visible on this repo (``gh pr list`` / ``gh api .../branches``), so nothing is added
-  here to avoid colliding with it. Once it lands (whatever edge it uses to reach
-  ``aws_vpc`` / ``aws_ec2_instance``), these two falsifiers are already registered and start
-  producing real candidates with no further change on this side.
-- ``aws_core__aws_security_group`` has no containment path at all today, and none is added
-  here: the only edge reaching it, ``RESIDES_IN_VPC__aws_core``, runs security_group -> vpc
-  (its own manifest description says so explicitly: "A reference, not containment (containment
-  edges must point parent -> child)"), and the containment mechanism
-  (``tap_grid.candidates.derive_candidates``) requires the edge to run parent -> child — it
-  fans out FROM the declared parent. ``Vpc.py`` already documents this as a deliberate stop:
-  "VPC-wide resources (security groups, route tables) point at the VPC with RESIDES_IN_VPC,
-  which a cascade from the VPC cannot follow." Reversing that — a new VPC -> security-group
-  edge duplicating ``RESIDES_IN_VPC`` in the other direction purely so cascade can walk it — is
-  a real option but a deliberate architecture call (two edges stating the same relationship
-  in opposite directions) that is out of scope for a falsifier PR to make unilaterally.
-  ``SecurityGroupFalsifier`` is still registered and correct on its own terms (a straight
-  listing-refresh of security groups would still produce candidates it can judge; the gap is
-  only the parent-delete cascade path), and this is called out as an open question, not solved
-  here.
-
-Every probe is a single-object read via this plugin's own collector credential
-(``tap_plugin.aws_core.collectors.boto3_collector.credentials``, resolved here, never taken
-from the run context); no response body beyond the compared fields is recorded — ``Probe.detail``
-carries an HTTP-style status/error-code summary only, mirroring the same discipline
-``github_core``'s falsifiers hold to.
+**REIDENTIFIED is structurally rare for an AWS-id-keyed type, and the tests still cover it.**
+``DescribeSubnets(SubnetIds=[subnet_id])`` looks up by AWS's own opaque, non-reused resource
+id — the same string the grid's ``NATURAL_KEY`` rests on — so a "found" response naming a
+*different* id is not a shape AWS's real API produces for this call. ``classify()`` (core)
+still handles it generically from whatever ``Expected``/``Probe`` a falsifier hands it, so the
+fake-source test exercises the classification wiring, not a claim about AWS's real behaviour.
 """
 
 from __future__ import annotations
 
 import logging
 import re
-import uuid
 from collections.abc import Callable, Sequence
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
-from tap_grid.falsifiers import (
-    UNDETERMINED,
-    Candidate,
-    Expected,
-    Falsifier,
-    FalsifyContext,
-    Probe,
-    Verdict,
-    verdict_from_probe,
-)
-from tap_grid.services import get_node
 
 from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
-    AWS_SECRET_REF,
     assume_role_session,
     build_session,
+    caller_account_id,
     is_assumed_role,
     resolve_aws_secret,
     resolve_regions,
 )
 
+from tap_grid.falsifiers import (
+    DROPPED_FROM_OBSERVATION,
+    Candidate,
+    Expected,
+    Falsifier,
+    FalsifyContext,
+    Probe,
+    UNDETERMINED,
+    Verdict,
+    verdict_from_probe,
+)
+from tap_grid.services import get_node
+
 logger = logging.getLogger(__name__)
 
-#: What a probe needs of the client: an authenticated boto3 EC2 client, region-bound.
-ProbeClient = Any
+#: What a probe needs of the session: a boto3 ``Session`` whose ``.client(service,
+#: region_name=...)`` returns an authenticated client. Injected by tests.
+ProbeSession = Any
 
-#: AWS authorization-failure codes — mirrors ``hydrate._DENIED_CODES`` / ``ledger._DENIED``
-#: (this plugin's own established vocabulary for "could not read", value unknown). Kept as its
-#: own copy rather than importing those private, underscore-prefixed module constants: each
-#: boto3-error-classifying module in this collector owns its table by the same convention
-#: ``hydrate.py`` documents ("a future cleanup may factor a single shared classifier; not now").
-_FORBIDDEN_CODES = frozenset(
-    {
-        "AccessDenied",
-        "AccessDeniedException",
-        "UnauthorizedOperation",
-        "AuthFailure",
-        "Forbidden",
-        "403",
-        "401",
-    }
-)
-#: Mirrors ``ledger._THROTTLED``.
-_THROTTLED_CODES = frozenset(
-    {
-        "RequestLimitExceeded",
-        "Throttling",
-        "ThrottlingException",
-        "ThrottledException",
-        "TooManyRequestsException",
-        "429",
-    }
-)
+#: The self-test / STS reachability timeout the collector itself uses
+#: (``Boto3Collector.SELF_TEST_LIVE_CHECK_TIMEOUT_SECONDS``); a falsifier is not the collector
+#: run, so this is a plain module constant rather than importing the collector class.
+_STS_TIMEOUT_SECONDS = 10
 
-#: The standard AWS region a plain availability zone name is prefixed with — ``us-east-1`` out
-#: of ``us-east-1a``. Deliberately NOT ``az[:-1]`` (PR #44): a Local Zone or
-#: Wavelength Zone AZ (``us-west-2-lax-1a``, ``us-east-1-wl1-bos-wlz-1``) carries the parent
-#: region as this same leading ``xx-name-N`` shape, with an extra zone-specific suffix that
-#: ``[:-1]`` would fold into the "region" instead of discarding — producing a string boto3 has
-#: no endpoint for. Matching the shape explicitly and taking only the matched prefix handles
-#: both a standard AZ and every zone-suffixed variant the same way, without special-casing them.
-_STANDARD_REGION_PREFIX = re.compile(r"^([a-z]{2}(?:-gov)?-[a-z]+-\d+)")
+#: Free text recorded when a probe found nothing at the id the grid holds.
+NOT_FOUND_DETAIL = "the AWS API reports no such resource at this id"
 
 
-def _enabled_regions(session: Any, configured_regions: list[str]) -> tuple[list[str], bool]:
-    """The account's full enabled-region set (``ec2:DescribeRegions``), not the operator's
-    current ``regions_allowed`` collection scope (PR #44): a row already on the grid may have
-    been collected under a wider scope that was since narrowed, and sweeping only the current
-    scope would read it as gone everywhere it checked without that ever having been checked
-    against every region it could actually be in. ``AllRegions=False`` (the default) is exactly
-    the account's enabled set — not the ~30+ regions of the whole partition, most of which a
-    typical account never opts into and this falsifier has no reason to ask about. Anchored on
-    the first configured region only to place the one bootstrap call; the answer does not depend
-    on which enabled region answers it.
+def _default_session() -> tuple[ProbeSession, str]:
+    """The collector's own credential, resolved from the secret store, and the AWS account it
+    resolves to (via STS ``GetCallerIdentity`` — the same call ``Boto3Collector.run()`` makes
+    before any resource read).
 
-    Returns ``(regions, trustworthy)``. When ``DescribeRegions`` itself fails or answers empty,
-    this falls back to ``configured_regions`` with ``trustworthy=False``:
-    an earlier version fell back silently, which quietly reintroduced the exact false-retirement
-    bug this whole mechanism exists to close — a resource still alive outside the narrower
-    fallback scope would again read as gone in every region that scope covers. Falling back to
-    *some* list rather than raising is still right (a probe run should not crash outright over
-    one bootstrap call), but ``judge()`` must know the difference: a sweep it cannot vouch for as
-    complete must never authorize ``DROPPED_FROM_OBSERVATION`` on its own, whatever every region
-    it did check said.
+    Both are needed together: the session probes, the account id is what every candidate's
+    ``aws_account`` dimension is checked against (this plugin's single-account "reach").
     """
-    try:
-        client = session.client("ec2", region_name=configured_regions[0])
-        response = client.describe_regions(AllRegions=False)
-    except Exception as exc:  # noqa: BLE001 — degrade to the configured scope, never crash the run
-        logger.warning("[b6a1] ec2:DescribeRegions failed; falling back to the configured region scope: %s", exc)
-        return configured_regions, False
-    names = sorted({str(r["RegionName"]) for r in (response.get("Regions") or []) if r.get("RegionName")})
-    if not names:
-        logger.warning("[b6a2] ec2:DescribeRegions named no regions; falling back to the configured region scope")
-        return configured_regions, False
-    return names, True
-
-
-def _default_session() -> tuple[Any, list[str], bool]:
-    """The collector's own credential (``credentials.py`` — the exact resolution the boto3
-    collector itself uses, so a falsifier authenticates as the same account), the account's full
-    enabled-region set, and whether that set could actually be confirmed (``_enabled_regions``)
-    — not merely the operator's current collection scope."""
-    secret = resolve_aws_secret(AWS_SECRET_REF)
+    secret = resolve_aws_secret()
     data = dict(secret.data)
-    configured_regions = resolve_regions(data)
+    regions = resolve_regions(data)
     if is_assumed_role(data):
         base = build_session(data["base"])
-        session = assume_role_session(base, data, configured_regions[0])
+        session = assume_role_session(
+            base, data, regions[0], timeout_seconds=_STS_TIMEOUT_SECONDS
+        )
     else:
         session = build_session(data)
-    regions, trustworthy = _enabled_regions(session, configured_regions)
-    return session, regions, trustworthy
+    account_id = caller_account_id(session, regions[0], timeout_seconds=_STS_TIMEOUT_SECONDS)
+    return session, account_id
 
 
-def _error_status(exc: ClientError, not_found_code: str) -> str:
-    """The closed probe status a ``ClientError`` maps to: this type's own not-found code is
-    ``not_found``; an authorization failure is ``forbidden``; a throttle is ``rate_limited``;
-    everything else is ``errored`` — the probe could not answer."""
-    code = str((exc.response or {}).get("Error", {}).get("Code", ""))
-    if code == not_found_code:
-        return "not_found"
-    if code in _FORBIDDEN_CODES:
-        return "forbidden"
-    if code in _THROTTLED_CODES:
-        return "rate_limited"
+#: AWS ``Error.Code`` values this falsifier layer recognises as "the object is gone", beyond the
+#: generic ``*.NotFound`` / ``*NotFoundException`` shapes every service follows. ``NoSuchBucket``
+#: is S3's own not-found code — named here, not only in a future S3 falsifier, so every
+#: ``_AwsFalsifier`` subclass gets it for free.
+_NOT_FOUND_CODES = frozenset({"ResourceNotFoundException", "NoSuchBucket"})
+#: AWS ``Error.Code`` values recognised as "this credential may not look", not "it is gone".
+_FORBIDDEN_CODES = frozenset({"UnauthorizedOperation", "AccessDenied", "AccessDeniedException"})
+#: AWS ``Error.Code`` values recognised as a rate limit rather than a real answer.
+_RATE_LIMIT_CODES = frozenset(
+    {"RequestLimitExceeded", "Throttling", "ThrottlingException", "TooManyRequestsException"}
+)
+
+
+def error_code_of(exc: ClientError) -> str:
+    """The AWS ``Error.Code`` off a ``ClientError``'s response, or ``""`` when absent."""
+    return str((exc.response or {}).get("Error", {}).get("Code", ""))
+
+
+def probe_status_of(exc: Exception) -> str:
+    """The closed probe status an AWS API failure maps to.
+
+    A ``*.NotFound`` / ``*NotFoundException`` code (every AWS service's own convention for "no
+    such resource at this id") is the only ``not_found``; a credential refusal is
+    ``forbidden``; a rate limit is named as such; everything else — including any
+    ``BotoCoreError`` (network, timeout, malformed response) — is ``errored``: the probe could
+    not answer, never guessed at.
+    """
+    if isinstance(exc, ClientError):
+        code = error_code_of(exc)
+        if code in _NOT_FOUND_CODES or code.endswith(".NotFound") or code.endswith("NotFoundException"):
+            return "not_found"
+        if code in _FORBIDDEN_CODES:
+            return "forbidden"
+        if code in _RATE_LIMIT_CODES:
+            return "rate_limited"
+        return "errored"
     return "errored"
 
 
-def _error_detail(exc: ClientError) -> str:
-    error = (exc.response or {}).get("Error", {})
-    meta = (exc.response or {}).get("ResponseMetadata", {})
-    code = error.get("Code", "Unknown")
-    status = meta.get("HTTPStatusCode", "")
-    return f"HTTP {status} ({code})" if status else f"({code})"
+def _undetermined(candidate: Candidate, reason: str, note: str) -> Verdict:
+    return Verdict(
+        entity_id=candidate.entity_id, verdict=UNDETERMINED, reason=reason, surface=candidate.surface, note=note
+    )
 
 
-def _row_of(entity_id: uuid.UUID | None) -> Any | None:
-    """The typed grid row behind an entity id through the service read, or None when it
-    cannot be read (unknown id, unknown type, an edge)."""
+def _row_of(entity_id: Any) -> Any | None:
+    """The typed grid row behind an entity id, or None when it cannot be read (unknown id,
+    unknown type, an edge) — answered, never raised, the same discipline
+    ``tap_plugin.github_core.falsifiers._row_of`` uses."""
     if entity_id is None:
         return None
     try:
         return get_node(entity_id)
     except Exception:  # noqa: BLE001 — a candidate the grid cannot show is answered, not raised
-        logger.warning("[a1f3] falsifier could not read grid row %s", entity_id)
+        logger.warning("[a1f2] falsifier could not read grid row %s", entity_id)
         return None
 
 
-def _undetermined(candidate: Candidate, reason: str, note: str) -> Verdict:
-    return Verdict(entity_id=candidate.entity_id, verdict=UNDETERMINED, reason=reason, surface=candidate.surface, note=note)
+def _dimensions_of(row: Any) -> dict[str, str]:
+    """The entity's own dimensions dict (``{"cloud": "aws", "aws_account": ..., "aws_region":
+    ...}`` as the collector stamps it), or ``{}`` when the row carries none."""
+    entity = getattr(row, "entity", None)
+    dimensions = getattr(entity, "dimensions", None)
+    return dict(dimensions) if isinstance(dimensions, dict) else {}
 
 
-class _Ec2Falsifier(Falsifier):
-    """The shared shape for the four EC2/VPC falsifiers: resolve one boto3 session per run,
-    sweep the credential's configured regions per candidate (see the module docstring for why),
-    fail closed.
+def _enabled_regions(session: ProbeSession, configured_regions: list[str]) -> list[str]:
+    """The account's enabled regions (``ec2:DescribeRegions``, ``AllRegions=False``), anchored on
+    the first configured region only to place the one bootstrap call. Falls back to
+    ``configured_regions`` if the call fails or names nothing — the caller treats any sweep as
+    untrustworthy either way, so the fallback list never authorizes a retirement."""
+    try:
+        client = session.client("ec2", region_name=configured_regions[0])
+        response = client.describe_regions(AllRegions=False)
+    except Exception as exc:  # noqa: BLE001 — degrade to the configured scope, never crash the run
+        logger.warning("[b6a1] ec2:DescribeRegions failed; falling back to the configured region scope: %s", exc)
+        return list(configured_regions)
+    names = sorted({str(r["RegionName"]) for r in (response.get("Regions") or []) if r.get("RegionName")})
+    return names or list(configured_regions)
 
-    Subclasses declare the describe operation's shape (``_method``, ``ids_param``,
-    ``not_found_code``, ``list_key``, ``item_id_key``) and the row's natural-key field
-    (``_expected_of``); ``Ec2InstanceFalsifier`` additionally overrides ``_probe_from_response``
-    to fold the terminated-state rule in.
 
-    ``client_for`` / ``regions`` are injected by tests (bypassing real credential resolution
-    entirely, the way ``RepositoryFalsifier`` accepts ``client=fake``); at runtime both are
-    resolved from the collector's own secret on first use, via ``session_factory``. Tests that
-    inject ``client_for`` default to a trustworthy region list (``regions_trustworthy=True``):
-    they hand this falsifier a deliberately complete set on purpose, the same way the four-case
-    harness always has. Pass ``regions_trustworthy=False`` explicitly to test the fallback path.
+def _default_region_sweep(session: ProbeSession) -> list[str]:
+    """Production fallback: the account's enabled regions, anchored on the collector's own
+    configured region scope (``credentials.resolve_regions``)."""
+    configured = resolve_regions(dict(resolve_aws_secret().data))
+    return _enabled_regions(session, configured)
+
+
+class _AwsFalsifier(Falsifier):
+    """The shared shape: one credential per batch, one verdict per candidate, fail closed.
+
+    ``session``/``account_id`` are injected by tests; at runtime both are resolved from the
+    collector's own secret on the first batch of a run. A credential that cannot be resolved
+    answers ``UNDETERMINED(errored)`` for every candidate rather than raising.
     """
-
-    #: The manifest ``service`` name (aws_resource_manifest.json convention): all four are EC2.
-    service: str = "ec2"
-    #: The AWS error code that means "gone" for this type's describe call.
-    not_found_code: str = ""
-    #: The describe call's id-list kwarg, e.g. ``"VpcIds"``.
-    ids_param: str = ""
-    #: The response key holding the list of found items, e.g. ``"Vpcs"``.
-    list_key: str = ""
-    #: The found item's own id field, e.g. ``"VpcId"``.
-    item_id_key: str = ""
 
     def __init__(
         self,
-        client_for: Callable[[str, str], ProbeClient] | None = None,
-        regions: Sequence[str] | None = None,
-        regions_trustworthy: bool = True,
-        session_factory: Callable[[], tuple[Any, list[str], bool]] | None = None,
+        session: ProbeSession | None = None,
+        account_id: str | None = None,
+        session_factory: Callable[[], tuple[ProbeSession, str]] | None = None,
+        region_sweep: Callable[[ProbeSession], list[str]] | None = None,
     ) -> None:
-        self._client_for = client_for
-        self._regions_override = list(regions) if regions is not None else None
-        self._regions_trustworthy_override = regions_trustworthy
+        self._session = session
+        self._account_id = account_id
         self._session_factory = session_factory or _default_session
+        #: The fallback for a candidate that records no region (see ``_regions_of``); injected by
+        #: tests, the account's enabled regions in production. Cached once per run.
+        self._region_sweep = region_sweep or _default_region_sweep
+        self._sweep_cache: list[str] | None = None
+        #: True when this falsifier owns (resolved) its own credential, which is the production
+        #: case and the only one where a new run may throw it away and re-resolve — an
+        #: injected credential's lifetime belongs to its caller (a test).
+        self._owns_session = session is None and account_id is None
+        self._batch_id = ""
 
-    def _method(self) -> str:
+    def _resolve(self) -> tuple[ProbeSession, str]:
+        if self._session is None or self._account_id is None:
+            session, account_id = self._session_factory()
+            self._session, self._account_id = session, account_id
+        return self._session, self._account_id
+
+    def _begin_run(self, batch_id: str) -> None:
+        """A session this falsifier owns is thrown away between runs, so a later run
+        re-resolves the credential rather than reusing a stale one (mirrors
+        ``_GithubFalsifier._begin_run``)."""
+        if batch_id == self._batch_id:
+            return
+        self._batch_id = batch_id
+        self._sweep_cache = None
+        if self._owns_session:
+            self._session = None
+            self._account_id = None
+
+    def batch_falsify(self, candidates: Sequence[Candidate], context: FalsifyContext) -> list[Verdict]:
+        self._begin_run(context.batch_id)
+        try:
+            session, account_id = self._resolve()
+        except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
+            note = f"credential unavailable: {type(exc).__name__}"
+            logger.warning("[7c3e] %s: %s", type(self).__name__, note)
+            return [_undetermined(c, "errored", note) for c in candidates]
+        return self.judge_all(session, account_id, list(candidates))
+
+    def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
+        return [self.judge(session, account_id, c) for c in candidates]
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
         raise NotImplementedError
 
-    def _expected_of(self, row: Any) -> Expected | None:
-        raise NotImplementedError
+    def _region_hint(self, row: Any) -> str | None:
+        """A region the ROW itself implies when its ``aws_region`` dimension is absent (a type
+        whose own fields name one), or None. Trusted like the dimension: it is the resource's
+        own attribute, not a guess."""
+        return None
 
-    def _regions_for(self, row: Any, regions: list[str]) -> list[str]:
-        """The region try-order for one row. The default is the configured sweep order;
-        ``SubnetFalsifier`` overrides this to try the row's own availability-zone-derived
-        region first."""
-        return list(regions)
+    def _sweep_regions(self, session: ProbeSession) -> list[str]:
+        """The fallback region list, resolved once per run. An unresolvable sweep is ``[]`` —
+        the candidate is then refused, never probed against a guessed region."""
+        if self._sweep_cache is None:
+            try:
+                self._sweep_cache = list(self._region_sweep(session))
+            except Exception:  # noqa: BLE001 — no region scope is an answer (UNDETERMINED), not a crash
+                logger.warning("[e2d4] %s: could not resolve a fallback region sweep", type(self).__name__)
+                self._sweep_cache = []
+        return list(self._sweep_cache)
 
-    def _probe_from_response(self, response: dict[str, Any], source_id: str) -> Probe:
-        """The default shape: a successful describe call for a single id always returns exactly
-        that item (AWS never returns a mismatched id for an id-filtered describe), so a probe
-        that reaches here is always ``found``. ``Ec2InstanceFalsifier`` overrides this to fold
-        in the terminated-state rule."""
+    def _regions_of(self, row: Any, dimensions: dict[str, str], session: ProbeSession) -> tuple[list[str], bool]:
+        """``(regions to probe, regions_trustworthy)`` for one candidate.
+
+        The row's own recorded region (the ``aws_region`` dimension the collector stamps, then
+        ``_region_hint``) is ONE region and trustworthy: a not-found there is a real absence.
+        With neither, the account's enabled regions are swept and the list is NOT trustworthy —
+        the sweep cannot show where the row was collected, so a clean sweep must never authorize
+        ``DROPPED_FROM_OBSERVATION`` (callers downgrade that verdict; see ``_Ec2Falsifier.judge``).
+        """
+        region = dimensions.get("aws_region") or ""
+        if region and region != "global":
+            return [region], True
+        hint = self._region_hint(row)
+        if hint:
+            return [hint], True
+        return self._sweep_regions(session), False
+
+    def _scope_check(self, candidate: Candidate, account_id: str, expected_account: str | None) -> Verdict | None:
+        """None when it is safe to probe; an ``UNDETERMINED(scope_unknown)`` verdict when this
+        credential's own account does not match the candidate's recorded account — the
+        single-account analogue of ``_GithubFalsifier._absence_verdict``'s reach check. A
+        candidate with no recorded account (an old write predating the dimension, or a design
+        row AWS never minted) cannot be scope-checked and is refused the same way.
+
+        Does NOT protect against a revoked AWS RAM share reading as a deletion — see the module
+        docstring's "Known limitation" paragraph. This compares the falsifier's resolved account
+        against the OBSERVING account the collector stamped, never the probe's own ``OwnerId``.
+        """
+        if not expected_account:
+            return _undetermined(
+                candidate, "scope_unknown", "the grid holds no aws_account dimension for this resource"
+            )
+        # Fail CLOSED on an empty account_id too, not just a mismatched one: `_resolve` only
+        # short-circuits re-resolution on `is None` (`credentials.py::caller_account_id` returns
+        # a 12-digit string or the caller already turned the exception into UNDETERMINED, so ""
+        # should not occur in production) — but a falsifier is instantiated with an explicit
+        # `account_id=""` by nothing today, and this guard must not silently trust that credential
+        # if one ever were.
+        if not account_id or account_id != expected_account:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this credential resolves to account {account_id or '<empty>'}, not {expected_account}: an "
+                "absence here says nothing about the resource's own account",
+            )
+        return None
+
+
+#: The standard AWS region a plain availability zone name is prefixed with — ``us-east-1`` out of
+#: ``us-east-1a``. Deliberately NOT ``az[:-1]``: a Local Zone or Wavelength Zone AZ
+#: (``us-west-2-lax-1a``, ``us-east-1-wl1-bos-wlz-1``) carries the parent region as this same
+#: leading ``xx-name-N`` shape plus a zone-specific suffix that ``[:-1]`` would fold into the
+#: "region", producing a string boto3 has no endpoint for.
+_STANDARD_REGION_PREFIX = re.compile(r"^([a-z]{2}(?:-gov)?-[a-z]+-\d+)")
+
+
+class _Ec2Falsifier(_AwsFalsifier):
+    """The shared shape for the EC2/VPC id-keyed types (tap-plugin-aws-core#43): a single
+    ``describe_*`` call by id, in the candidate's own region(s), comparing AWS's own id, owning
+    account and (where the type carries a ``Name`` tag) name.
+
+    Subclasses declare the call's shape (``method``, ``ids_param``, ``list_key``,
+    ``item_id_key``) and the row's natural-key field (``id_field``). ``Ec2InstanceFalsifier``
+    additionally overrides ``_interpret`` for the terminated-state rule; ``SubnetFalsifier``
+    overrides ``_region_hint``.
+
+    A not-found from a region is region-local: with several regions (a fallback sweep) it never
+    stops the sweep or proves absence on its own. A successful response that names the id is
+    authoritative, and stops the sweep.
+    """
+
+    #: The boto3 ec2 client method, e.g. ``"describe_vpcs"``.
+    method: str = ""
+    #: The id-list kwarg of that method, e.g. ``"VpcIds"``.
+    ids_param: str = ""
+    #: The response key holding the found items, e.g. ``"Vpcs"``.
+    list_key: str = ""
+    #: The found item's own id field, e.g. ``"VpcId"``.
+    item_id_key: str = ""
+    #: The grid row's natural-key attribute, e.g. ``"vpc_id"``.
+    id_field: str = ""
+    #: Whether the probe's ``Name`` tag is compared to the row's ``name``. Off for a type whose
+    #: row name is not known to be the ``Name`` tag (a mismatch would misread as a rename).
+    compare_name: bool = True
+
+    def _found_probe(self, item: dict[str, Any], owner: str | None, expected: Expected) -> Probe:
+        """A ``found`` probe from one response item. The owner is compared only when the grid
+        holds one (Option A, core's ``owner_not_compared`` reading); a response that then carries
+        no owner cannot be classified (``incomplete``) and is answered ``errored``, never
+        raised into ``verdict_from_probe``."""
+        if expected.owner is not None and not owner:
+            return Probe(status="errored", detail=f"{self.method} response carried no owner for the found resource")
+        name = None
+        if self.compare_name:
+            name = next(
+                (str(tag.get("Value") or "") for tag in item.get("Tags") or [] if tag.get("Key") == "Name"),
+                None,
+            )
+        return Probe(
+            status="found",
+            source_id=str(item.get(self.item_id_key) or "") or None,
+            owner=owner if expected.owner is not None else None,
+            name=name or None,
+            detail=f"{self.method} 200",
+        )
+
+    def _interpret(self, response: dict[str, Any], expected: Expected) -> tuple[Probe, bool]:
+        """One region's successful response as ``(probe, authoritative)``. An empty list for an
+        id filter is region-local not-found (some services answer that way instead of raising)."""
         items = response.get(self.list_key) or []
         if not items:
-            # Defensive only: a real AWS describe-by-id never succeeds with no items — either
-            # the id exists (one item) or the call raises the type's NotFound code.
-            return Probe(status="errored", detail="response carried no items and no error")
+            return Probe(status="not_found", detail=NOT_FOUND_DETAIL), False
         item = items[0]
-        return Probe(status="found", source_id=str(item.get(self.item_id_key) or ""), detail="HTTP 200")
+        return self._found_probe(item, str(item.get("OwnerId") or "") or None, expected), True
 
-    def _resolve(self) -> tuple[Callable[[str, str], ProbeClient], list[str], bool]:
-        if self._client_for is not None:
-            return self._client_for, list(self._regions_override or []), self._regions_trustworthy_override
-        session, regions, trustworthy = self._session_factory()
+    def _probe_region(self, session: ProbeSession, region: str, expected: Expected) -> tuple[Probe, bool]:
+        """One region's answer for one id, and whether it is authoritative (a successful response
+        naming the resource) rather than region-local (an error, or a not-found that says nothing
+        about any other region).
 
-        def client_for(service: str, region: str) -> ProbeClient:
-            return session.client(service, region_name=region)
-
-        return client_for, regions, trustworthy
-
-    def _describe_one(
-        self, client_for: Callable[[str, str], ProbeClient], region: str, source_id: str
-    ) -> tuple[Probe, bool]:
-        """One region's answer for one id, and whether it is authoritative (a successful HTTP
-        response — found, or an instance confirmed terminated) or region-local (a ``ClientError``,
-        which says nothing about any OTHER region and never stops the sweep on its own).
-
-        Client construction happens INSIDE this try/except, not before it (PR #44):
-        a malformed or unsupported region (a Local/Wavelength Zone id that slipped past
-        ``_regions_for``'s parsing, say) must degrade this one candidate, not raise out of
-        ``judge`` and cost every other candidate of this type its verdict too
-        (``tap_grid.falsifiers._judge`` answers a whole group ``UNDETERMINED(errored)`` when a
-        falsifier's ``batch_falsify`` raises — fail closed, but coarser than it needs to be).
+        Client construction is INSIDE the try: botocore can raise while building a client (bad
+        region name, broken config) with no network call made yet, and that must fail this one
+        candidate closed, never escape ``judge()`` and take the rest of the batch's verdicts
+        down with it (``judge_all`` is a plain list comprehension over ``judge()``).
         """
         try:
-            client = client_for(self.service, region)
-            response = getattr(client, self._method())(**{self.ids_param: [source_id]})
+            client = session.client("ec2", region_name=region)
+            response = getattr(client, self.method)(**{self.ids_param: [expected.source_id]})
         except ClientError as exc:
-            return Probe(status=_error_status(exc, self.not_found_code), detail=_error_detail(exc)), False  # type: ignore[arg-type]
+            status = probe_status_of(exc)
+            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
+            return Probe(status=status, detail=detail), False  # type: ignore[arg-type]
         except BotoCoreError as exc:
-            return Probe(status="errored", detail=f"{type(exc).__name__}: {exc}"), False
-        return self._probe_from_response(response, source_id), True
+            return Probe(status="errored", detail=str(exc)), False
+        return self._interpret(response, expected)
 
-    def judge(
-        self,
-        client_for: Callable[[str, str], ProbeClient],
-        regions: list[str],
-        regions_trustworthy: bool,
-        candidate: Candidate,
+    def _sweep(
+        self, session: ProbeSession, regions: list[str], candidate: Candidate, expected: Expected
     ) -> Verdict:
-        row = _row_of(candidate.entity_id)
-        if row is None:
-            return _undetermined(candidate, "errored", "the grid row could not be read")
-        expected = self._expected_of(row)
-        if expected is None:
-            return _undetermined(candidate, "scope_unknown", "the grid holds no stable id for this row")
-        try_regions = self._regions_for(row, regions)
+        """Probe ``regions`` in order. A successful answer for the id ends it; otherwise the
+        verdict is a not-found only if EVERY region said not-found — a region that refused,
+        throttled or errored could be hiding the resource, so it never lets absence through."""
         seen_forbidden = seen_rate_limited = seen_errored = False
-        for region in try_regions:
-            probe, authoritative = self._describe_one(client_for, region, expected.source_id)
+        for region in regions:
+            probe, authoritative = self._probe_region(session, region, expected)
             if authoritative:
                 return verdict_from_probe(candidate, expected, probe)
             if probe.status == "forbidden":
@@ -407,163 +481,141 @@ class _Ec2Falsifier(Falsifier):
                 seen_rate_limited = True
             elif probe.status == "errored":
                 seen_errored = True
-            # not_found (region-local): keep sweeping — the id may live in another region.
-        swept = ", ".join(try_regions) or "<none>"
-        if seen_forbidden:
-            return _undetermined(
-                candidate,
-                "forbidden",
-                f"could not confirm absence in every configured region ({swept}); at least one refused the probe",
-            )
-        if seen_rate_limited:
-            return _undetermined(candidate, "rate_limited", f"throttled probing one or more configured regions ({swept})")
-        if seen_errored:
-            return _undetermined(candidate, "errored", f"one or more configured regions could not be probed ({swept})")
-        # Every swept region answered this type's own NotFound code. That is only authoritative
-        # absence when the region LIST ITSELF was confirmed complete: a
-        # sweep that fell back to a narrower, unconfirmed scope must not let a clean sweep of
-        # THAT scope stand in for a clean sweep of everywhere the resource could actually be —
-        # which is exactly the false-retirement bug _enabled_regions exists to close, and would
-        # reopen silently if this branch trusted a fallback list the same as a confirmed one.
-        if not regions_trustworthy:
+        swept = ", ".join(regions)
+        for seen, reason, why in (
+            (seen_forbidden, "forbidden", "at least one refused the probe"),
+            (seen_rate_limited, "rate_limited", "at least one was throttled"),
+            (seen_errored, "errored", "at least one could not be probed"),
+        ):
+            if seen:
+                return _undetermined(candidate, reason, f"could not confirm absence in every region ({swept}); {why}")
+        return verdict_from_probe(candidate, expected, Probe(status="not_found", detail=NOT_FOUND_DETAIL))
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        source_id = str(getattr(row, self.id_field, "") or "")
+        if not source_id:
+            return _undetermined(candidate, "scope_unknown", f"the grid holds no {self.id_field} for this resource")
+        dimensions = _dimensions_of(row)
+        expected_account = dimensions.get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        regions, regions_trustworthy = self._regions_of(row, dimensions, session)
+        if not regions:
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"{self.not_found_code} in every region this run could sweep ({swept}), but the region scope "
-                "itself could not be confirmed complete (ec2:DescribeRegions could not be reached this run) — "
-                "a clean sweep of an unconfirmed, possibly-narrowed scope is not evidence of absence",
+                "the grid holds no region for this resource and no fallback region sweep could be resolved",
             )
-        return verdict_from_probe(
-            candidate,
-            expected,
-            Probe(status="not_found", detail=f"{self.not_found_code} in every enabled region ({swept})"),
+        expected = Expected(
+            source_id=source_id, owner=expected_account, name=str(getattr(row, "name", "") or "") or None
         )
-
-    def batch_falsify(self, candidates: Sequence[Candidate], context: FalsifyContext) -> list[Verdict]:
-        try:
-            client_for, regions, regions_trustworthy = self._resolve()
-        except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
-            note = f"credential unavailable: {type(exc).__name__}"
-            logger.warning("[c4b2] %s: %s", type(self).__name__, note)
-            return [_undetermined(c, "errored", note) for c in candidates]
-        if not regions:
-            return [_undetermined(c, "errored", "no region scope resolved for this credential") for c in candidates]
-        return [self.judge(client_for, regions, regions_trustworthy, c) for c in candidates]
+        verdict = self._sweep(session, regions, candidate, expected)
+        if verdict.verdict == DROPPED_FROM_OBSERVATION and not regions_trustworthy:
+            # A sweep of the account's enabled regions cannot show where this row was collected,
+            # so a clean sweep (or a terminated answer found in it) is not evidence of absence.
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                "the grid records no region for this resource, so a fallback sweep of "
+                f"{', '.join(regions)} cannot establish absence (a fallback sweep may only find, never drop)",
+            )
+        return verdict
 
 
 class VpcFalsifier(_Ec2Falsifier):
-    """``describe_vpcs(VpcIds=[...])``; ``InvalidVpcID.NotFound``; identity is ``vpc_id``."""
+    """``ec2:DescribeVpcs(VpcIds=[vpc_id])``; identity is ``vpc_id``."""
 
-    not_found_code = "InvalidVpcID.NotFound"
+    method = "describe_vpcs"
     ids_param = "VpcIds"
     list_key = "Vpcs"
     item_id_key = "VpcId"
-
-    def _method(self) -> str:
-        return "describe_vpcs"
-
-    def _expected_of(self, row: Any) -> Expected | None:
-        vpc_id = str(getattr(row, "vpc_id", "") or "")
-        return Expected(source_id=vpc_id) if vpc_id else None
+    id_field = "vpc_id"
 
 
 class SubnetFalsifier(_Ec2Falsifier):
-    """``describe_subnets(SubnetIds=[...])``; ``InvalidSubnetID.NotFound``; identity is
-    ``subnet_id``. The only one of the four with a region hint already on the model
-    (``availability_zone``), tried first."""
+    """``ec2:DescribeSubnets(SubnetIds=[subnet_id])`` in the candidate's own region; compare AWS's
+    ``SubnetId`` and ``OwnerId``.
 
-    not_found_code = "InvalidSubnetID.NotFound"
+    Identity is the subnet id itself (the grid's ``NATURAL_KEY``), so a ``not_found`` from this
+    call is unambiguous: AWS's ``InvalidSubnetID.NotFound`` names the exact id that stopped
+    existing (there is no cross-account visibility question once the account check has already
+    passed). This is the type ``Vpc.CONTAINMENT_EDGES`` already marks reconcilable — see the
+    module docstring. With no ``aws_region`` dimension it falls back to its own
+    ``availability_zone``.
+    """
+
+    method = "describe_subnets"
     ids_param = "SubnetIds"
     list_key = "Subnets"
     item_id_key = "SubnetId"
+    id_field = "subnet_id"
 
-    def _method(self) -> str:
-        return "describe_subnets"
-
-    def _expected_of(self, row: Any) -> Expected | None:
-        subnet_id = str(getattr(row, "subnet_id", "") or "")
-        return Expected(source_id=subnet_id) if subnet_id else None
-
-    def _regions_for(self, row: Any, regions: list[str]) -> list[str]:
-        az = str(getattr(row, "availability_zone", "") or "")
-        match = _STANDARD_REGION_PREFIX.match(az)
-        if match:
-            region = match.group(1)
-            return [region, *[r for r in regions if r != region]]
-        return list(regions)
+    def _region_hint(self, row: Any) -> str | None:
+        match = _STANDARD_REGION_PREFIX.match(str(getattr(row, "availability_zone", "") or ""))
+        return match.group(1) if match else None
 
 
 class SecurityGroupFalsifier(_Ec2Falsifier):
-    """``describe_security_groups(GroupIds=[...])``; ``InvalidGroup.NotFound``; identity is
-    ``group_id``."""
+    """``ec2:DescribeSecurityGroups(GroupIds=[group_id])``; identity is ``group_id``. The row's
+    name is not compared (a security group's ``GroupName`` is not a ``Name`` tag)."""
 
-    not_found_code = "InvalidGroup.NotFound"
+    method = "describe_security_groups"
     ids_param = "GroupIds"
     list_key = "SecurityGroups"
     item_id_key = "GroupId"
-
-    def _method(self) -> str:
-        return "describe_security_groups"
-
-    def _expected_of(self, row: Any) -> Expected | None:
-        group_id = str(getattr(row, "group_id", "") or "")
-        return Expected(source_id=group_id) if group_id else None
+    id_field = "group_id"
+    compare_name = False
 
 
 class Ec2InstanceFalsifier(_Ec2Falsifier):
-    """``describe_instances(InstanceIds=[...])``; ``InvalidInstanceID.NotFound``; identity is
-    ``instance_id``.
+    """``ec2:DescribeInstances(InstanceIds=[instance_id])``; identity is ``instance_id``.
 
-    AWS keeps a terminated instance describable for a while rather than 404ing it immediately —
-    a real absence signal (a commit-equivalent: the instance is gone), not a collector defect —
-    so a successful response whose ``State.Name`` is ``terminated`` is folded into ``not_found``
-    here, authoritatively (the response DID answer; sweeping further regions would be both
-    wasteful and wrong, since instance ids are not reused across regions). Every other state —
-    ``pending``, ``running``, ``shutting-down``, ``stopping``, ``stopped`` — is ``found``:
-    ``stopped`` is not gone, only not running.
+    AWS keeps a terminated instance describable for a while rather than 404ing it immediately, so
+    a successful response whose ``State.Name`` is ``terminated`` is folded into ``not_found`` —
+    authoritatively (the response DID answer; sweeping further regions would be wasteful, since
+    instance ids are not reused across regions). Every other state (``pending``, ``running``,
+    ``shutting-down``, ``stopping``, ``stopped``) is ``found``: stopped is not gone.
 
-    The terminated shortcut only fires once the returned ``InstanceId`` is checked against the
-    requested id (PR #44): synthesizing ``not_found`` bypasses ``classify()``'s own
-    identity comparison (a genuine ``not_found`` status is never re-checked against identity —
-    the ClientError it came from already was, for the one id it named), so this is the one place
-    that check has to be made explicitly rather than inherited. A mismatch falls through to the
-    ordinary found path instead, where ``verdict_from_probe`` derives REIDENTIFIED on its own.
+    The shortcut fires only once the returned ``InstanceId`` equals the requested id: a
+    synthesized ``not_found`` bypasses ``classify()``'s own identity comparison, so this is the one
+    place that check has to be made explicitly. A mismatch falls through to the ordinary found
+    path, where ``verdict_from_probe`` derives REIDENTIFIED on its own. The owner lives on the
+    enclosing reservation, not the instance.
     """
 
-    not_found_code = "InvalidInstanceID.NotFound"
+    method = "describe_instances"
     ids_param = "InstanceIds"
+    item_id_key = "InstanceId"
+    id_field = "instance_id"
 
-    #: read: AWS's own closed set (DescribeInstances State.Name); only this one means gone.
     _TERMINATED = "terminated"
 
-    def _method(self) -> str:
-        return "describe_instances"
-
-    def _expected_of(self, row: Any) -> Expected | None:
-        instance_id = str(getattr(row, "instance_id", "") or "")
-        return Expected(source_id=instance_id) if instance_id else None
-
-    def _probe_from_response(self, response: dict[str, Any], source_id: str) -> Probe:
-        instances = [i for reservation in (response.get("Reservations") or []) for i in (reservation.get("Instances") or [])]
-        if not instances:
-            return Probe(status="errored", detail="response carried no instances and no error")
-        instance = instances[0]
+    def _interpret(self, response: dict[str, Any], expected: Expected) -> tuple[Probe, bool]:
+        pairs = [
+            (instance, str(reservation.get("OwnerId") or "") or None)
+            for reservation in response.get("Reservations") or []
+            for instance in reservation.get("Instances") or []
+        ]
+        if not pairs:
+            return Probe(status="not_found", detail=NOT_FOUND_DETAIL), False
+        instance, owner = pairs[0]
+        found_id = str(instance.get(self.item_id_key) or "")
         state = str((instance.get("State") or {}).get("Name") or "")
-        found_id = str(instance.get("InstanceId") or "")
-        # Identity is checked BEFORE the terminated shortcut is trusted (PR #44): a
-        # response naming a different instance must go through the ordinary found path, whose
-        # source_id classify() compares against `expected` itself (yielding REIDENTIFIED, never
-        # a silent retirement of the candidate under a state field that describes some OTHER
-        # instance). A real DescribeInstances(InstanceIds=[id]) never returns a mismatched id,
-        # but the check costs nothing and does not rest that on trust.
-        if state == self._TERMINATED and found_id == source_id:
-            return Probe(status="not_found", detail=f"HTTP 200, State.Name=terminated ({found_id})")
-        return Probe(status="found", source_id=found_id, detail=f"HTTP 200, State.Name={state or 'unknown'}")
+        if state == self._TERMINATED and found_id == expected.source_id:
+            return Probe(status="not_found", detail=f"{NOT_FOUND_DETAIL} (State.Name=terminated)"), True
+        return self._found_probe(instance, owner, expected), True
 
 
 __all__ = [
+    "NOT_FOUND_DETAIL",
     "Ec2InstanceFalsifier",
     "SecurityGroupFalsifier",
     "SubnetFalsifier",
     "VpcFalsifier",
+    "error_code_of",
+    "probe_status_of",
 ]

@@ -1,10 +1,10 @@
 manifest_version = "0"
-plugin_version = "0.4.0"
-# 0.2.1: the first tap release carrying the reconciliation primitives this plugin's
-# [falsifiers] table depends on (tap#574 completeness, tap#596 candidates, tap#644 falsifiers +
-# the manifest [falsifiers] table, tap#652 the reconcile verb) — mirrors the floor
-# tap-plugin-github-core's own [falsifiers] table set (github-core#151) when it adopted the
-# same mechanism; a release before it refuses the [falsifiers] key at manifest parse.
+plugin_version = "0.5.0" # x-release-please-version
+# 0.2.1 (2026-09-22): the first core release the [falsifiers] table + tap_grid.falsifiers /
+# tap_grid.falsifier_testing (Candidate, Expected, Falsifier, Probe, Verdict, verdict_from_probe,
+# run_four_cases) resolve against — 0.1.6, the release before it, refuses the [falsifiers] key at
+# manifest parse (mirrors tap-plugin-github-core's own floor note for the identical reason,
+# tap-plugin-aws-core#42).
 requires_tap = ">=0.2.1"
 slug = "aws_core"
 name = "TAP AWS Core"
@@ -104,11 +104,23 @@ FILTERS_VPC_DNS__aws_core = "edges/FILTERS_VPC_DNS.edge.json"
 ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
 
 [falsifiers]
-# One per reconcilable type, compute + network (aws-core#43). See
-# tap_plugin/aws_core/falsifiers.py for the region-sweep design (none of these four models
-# stores a region) and for which types still have no containment path reaching them and why.
-aws_core__aws_vpc = "tap_plugin.aws_core.falsifiers.VpcFalsifier"
+# One per reconcilable type. The foundation (tap-plugin-aws-core#42): the manifest key, the
+# base _AwsFalsifier shape, and this one concrete registration — Subnet, the one type
+# Vpc.CONTAINMENT_EDGES (PARTITIONED_INTO_SUBNET__aws_core -> aws_core__aws_subnet) already
+# marks reconcilable per validate_plugin's falsifier-coverage check (see
+# tap_plugin/aws_core/falsifiers.py's module docstring for why Subnet, not VPC itself).
+# AwsAccount and AwsOrganization deliberately have none (see the CONTAINMENT_EDGES comments on
+# models/aws_account.py / models/aws_organization.py). Candidates cannot flow from a live
+# collector run yet — completeness-statement production is req-aws-collector-reconcile,
+# Backlog (specs/spec-aws-core-collector-v0.md) — so this registration is exercised by tests
+# today, not yet by a production run; see tap_plugin/aws_core/falsifiers.py.
+#
+# aws-core#43 adds the compute + network types beside Subnet. VPC, EC2 instance and security
+# group are registered AHEAD of a containment path reaching them (no CONTAINMENT_EDGES target
+# names them yet), so today they are exercised by tests only, like Subnet above; they become live
+# the moment a containment edge does. See the falsifiers.py module docstring.
 aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"
+aws_core__aws_vpc = "tap_plugin.aws_core.falsifiers.VpcFalsifier"
 aws_core__aws_security_group = "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier"
 aws_core__aws_ec2_instance = "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier"
 
@@ -121,4 +133,4 @@ pages = "grift/pages.grift.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "a349ccc9decd3e03d66dc624b07fdd5485f5340f4f3f14a13f124112bbcdcaab"
+sha256 = "38158f182cbf021b34512e8099365402ed513ba32a6a519b4b3f2a03422e4ea6"

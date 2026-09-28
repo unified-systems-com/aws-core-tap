@@ -18,6 +18,24 @@ class AwsAccount(BaseModel):
     # Identity (req-grid-entity-natural-key): The 12-digit account ID, the boto3 collector's identity
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id",)
+
+    # No containment declared (tap-plugin-aws-core#42, req-aws-core-reconcile-foundation).
+    # CONTAINMENT_EDGES can only name an edge type where THIS model is the source
+    # (req-grid-service-delete-cascade-12; tap_grid.models.BaseModel.__init_subclass__ checks
+    # CONTAINMENT_EDGES ⊆ OUTBOUND_EDGES, and cascade itself walks from_entity_id=<parent>,
+    # tap_grid/services/_impl.py::_contained_children). BELONGS_TO_ACCOUNT — the one edge that
+    # names every account-owned resource type — points resource -> account (this model is the
+    # TARGET, never a source), and its own manifest description says why that direction is
+    # deliberate, not an oversight: "A reference, not containment: a resource shared through AWS
+    # RAM is used from other accounts, and an account's subtree can exceed the cascade cap"
+    # (edges/BELONGS_TO_ACCOUNT.edge.json). Retiring an account therefore ends its resources'
+    # BELONGS_TO_ACCOUNT edges (the tombstone endpoint rule) and leaves the resources themselves
+    # live — each one's own truth is a question for that TYPE's falsifier, never a blanket
+    # account-level cascade. Do not "fix" this by reversing BELONGS_TO_ACCOUNT's direction for
+    # this model alone; that would contradict the edge's documented design and blow past
+    # TAP_CASCADE_MAX_CLOSURE for any account with real fan-out.
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ()
+
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "round-rectangle",

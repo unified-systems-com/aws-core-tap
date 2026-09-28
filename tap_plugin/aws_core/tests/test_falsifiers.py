@@ -1,21 +1,42 @@
-"""Falsifier coverage for aws_core's compute + network types (req-grid-reconcile-falsifier-6):
-the four proof cases every falsifier ships, plus the region-sweep behaviour this plugin's
-models force (no stored region — see ``tap_plugin.aws_core.falsifiers`` module docstring) and
-the EC2-instance terminated-state rule.
+"""The falsifier foundation (tap-plugin-aws-core#42): the four proof cases every falsifier ships
+(``req-grid-reconcile-falsifier-6``, core's ``tap_grid.falsifier_testing``) against a fake
+``ec2`` client, plus the single-account scope check and the manifest wiring.
 
-The fake EC2 client is table-driven and keyed by ``(region, method, id)``, matching the
-``_FakeClient`` convention already used for this collector's own tests
-(``test_boto3_collector_source.py``) rather than ``botocore.stub.Stubber`` or moto — neither is
-used elsewhere in this plugin's test suite.
+Mirrors ``tap_plugin.github_core.tests.test_falsifiers``'s shape: real grid rows through the
+service layer, a fake AWS client arranged so each candidate meets its situation, one
+``batch_falsify`` call judging all four at once.
+
+``SubnetFalsifier`` is the concrete falsifier under test here, not a VPC one — see
+``tap_plugin/aws_core/falsifiers.py``'s module docstring ("Why Subnet is the one concrete
+falsifier here — not VPC") for why: ``Vpc.CONTAINMENT_EDGES`` makes ``aws_core__aws_subnet``
+the one type ``validate_plugin``'s falsifier-coverage check already marks reconcilable.
 """
 
 from __future__ import annotations
 
+import tomllib
 import uuid
 from typing import Any
 
 import pytest
 from botocore.exceptions import BotoCoreError, ClientError
+from django.core.exceptions import ImproperlyConfigured
+from django.utils.module_loading import import_string
+
+from tap.plugin_testing import find_plugin_source_root
+from tap_plugin.aws_core.falsifiers import (
+    NOT_FOUND_DETAIL,
+    Ec2InstanceFalsifier,
+    SecurityGroupFalsifier,
+    SubnetFalsifier,
+    VpcFalsifier,
+    _enabled_regions,
+    error_code_of,
+    probe_status_of,
+)
+from tap_plugin.aws_core.models.aws_account import AwsAccount
+from tap_plugin.aws_core.models.aws_organization import AwsOrganization
+
 from tap_grid.falsifier_testing import (
     CASE_DROPPED,
     CASE_FORBIDDEN,
@@ -27,92 +48,101 @@ from tap_grid.falsifiers import (
     DROPPED_FROM_OBSERVATION,
     PRESENT_AT_PROBE,
     REIDENTIFIED,
+    Falsifier,
     UNDETERMINED,
     Candidate,
     FalsifyContext,
     Verdict,
+    get_falsifier,
+    register_falsifier,
+    unregister_falsifier,
     unsupported,
 )
-from tap_grid.services import create_node
+from tap_grid.services import create_node, get_node
 
-from tap_plugin.aws_core.falsifiers import (
-    Ec2InstanceFalsifier,
-    SecurityGroupFalsifier,
-    SubnetFalsifier,
-    VpcFalsifier,
-    _enabled_regions,
-)
-
-VPC = "aws_core__aws_vpc"
 SUBNET = "aws_core__aws_subnet"
+VPC = "aws_core__aws_vpc"
 SECURITY_GROUP = "aws_core__aws_security_group"
 EC2_INSTANCE = "aws_core__aws_ec2_instance"
+ACCOUNT_ID = "111122223333"
+OTHER_ACCOUNT_ID = "999988887777"
+REGION = "us-east-1"
+
+PLUGIN_ROOT = find_plugin_source_root(__file__)
 
 
-class _FakeEc2Client:
-    """One region's client: reads its answers from the shared fake, keyed by its own region."""
-
-    def __init__(self, fake: _FakeEc2, region: str) -> None:
-        self._fake, self._region = fake, region
-
-    def _call(self, method: str, ids: list[str]) -> Any:
-        source_id = ids[0]
-        self._fake.calls.append((self._region, method, source_id))
-        kind, payload = self._fake.answers.get((self._region, method, source_id), ("error", "InternalError"))
-        if kind == "error":
-            raise ClientError({"Error": {"Code": payload}}, method)
-        return payload
-
-    def describe_vpcs(self, VpcIds: list[str]) -> Any:
-        return self._call("describe_vpcs", VpcIds)
-
-    def describe_subnets(self, SubnetIds: list[str]) -> Any:
-        return self._call("describe_subnets", SubnetIds)
-
-    def describe_security_groups(self, GroupIds: list[str]) -> Any:
-        return self._call("describe_security_groups", GroupIds)
-
-    def describe_instances(self, InstanceIds: list[str]) -> Any:
-        return self._call("describe_instances", InstanceIds)
-
-
-class _FakeEc2:
-    """Table-driven fake for every (region, method, id) this test suite probes."""
+class FakeEc2:
+    """A fake ``ec2`` boto3 client: ``describe_subnets(SubnetIds=[...])`` answered from a table
+    keyed by the requested subnet id, arranged per test the way ``fake_github.FakeGithub`` is."""
 
     def __init__(self) -> None:
-        self.answers: dict[tuple[str, str, str], tuple[str, Any]] = {}
-        self.calls: list[tuple[str, str, str]] = []
+        self._responses: dict[str, dict[str, Any] | Exception] = {}
+        self.calls: list[str] = []
 
-    def answer(self, region: str, method: str, source_id: str, payload: dict[str, Any]) -> None:
-        self.answers[(region, method, source_id)] = ("ok", payload)
+    def answer(self, subnet_id: str, subnet: dict[str, Any]) -> None:
+        self._responses[subnet_id] = {"Subnets": [subnet]}
 
-    def refuse(self, region: str, method: str, source_id: str, code: str) -> None:
-        self.answers[(region, method, source_id)] = ("error", code)
+    def empty(self, subnet_id: str) -> None:
+        """A 200 with no matching subnet — the non-exception shape some services use instead of
+        a NotFound error."""
+        self._responses[subnet_id] = {"Subnets": []}
 
-    def client_for(self, service: str, region: str) -> _FakeEc2Client:
-        assert service == "ec2"
-        return _FakeEc2Client(self, region)
+    def refuse(self, subnet_id: str, code: str, message: str = "boom") -> None:
+        self._responses[subnet_id] = ClientError({"Error": {"Code": code, "Message": message}}, "DescribeSubnets")
+
+    def describe_subnets(self, SubnetIds: list[str]) -> dict[str, Any]:  # noqa: N803 — boto3's own casing
+        subnet_id = SubnetIds[0]
+        self.calls.append(subnet_id)
+        response = self._responses.get(subnet_id)
+        if response is None:
+            raise AssertionError(f"FakeEc2: no response configured for {subnet_id!r}")
+        if isinstance(response, Exception):
+            raise response
+        return response
 
 
-def _create(type_slug: str, payload: dict[str, Any]) -> uuid.UUID:
-    result = create_node(type_slug, payload)
+class FakeSession:
+    """A boto3-session-shaped double: ``.client('ec2', region_name=...)`` returns the one fake
+    ec2 client, whatever region is asked (region routing itself is the collector's job, not the
+    falsifier's; the falsifier only needs to reach the right client). ``breaks_with`` makes
+    ``.client()`` itself raise, the way a bad region name or broken botocore config can, before
+    any network call is made."""
+
+    def __init__(self, ec2: FakeEc2, *, breaks_with: Exception | None = None) -> None:
+        self._ec2 = ec2
+        self._breaks_with = breaks_with
+
+    def client(self, service: str, region_name: str | None = None) -> Any:
+        assert service == "ec2", f"SubnetFalsifier must ask for ec2, asked for {service!r}"
+        assert region_name, "SubnetFalsifier must pass a region"
+        if self._breaks_with is not None:
+            raise self._breaks_with
+        return self._ec2
+
+
+def _create_subnet(
+    subnet_id: str, *, name: str = "", account_id: str = ACCOUNT_ID, region: str = REGION
+) -> uuid.UUID:
+    result = create_node(SUBNET, {"subnet_id": subnet_id, "name": name})
     assert result.success, f"create_node failed: {result.errors}"
     assert result.entity_id is not None
-    return uuid.UUID(str(result.entity_id))
+    entity_id = uuid.UUID(str(result.entity_id))
+    row = get_node(entity_id)
+    row.entity.dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": region}
+    row.entity.save(update_fields=["dimensions"])
+    return entity_id
 
 
-def _candidate(
-    entity_id: uuid.UUID, entity_type: str = "", parent: uuid.UUID | None = None, *, surface: int = 0
-) -> Candidate:
+def _candidate(entity_id: uuid.UUID, *, surface: int = 0) -> Candidate:
     return Candidate(
         entity_id=entity_id,
-        entity_type=entity_type,
+        entity_type=SUBNET,
         reason="dropped_from_observation",
         surface=surface,
         relation="fixture",
-        subject=str(parent) if parent else None,
+        subject=None,
         edge_type=None,
-        parent=parent,
+        parent=None,
         interval_first=None,
     )
 
@@ -121,352 +151,662 @@ def _context() -> FalsifyContext:
     return FalsifyContext(batch_id=str(uuid.uuid4()), statement=None)
 
 
+def _falsifier(ec2: FakeEc2, *, account_id: str = ACCOUNT_ID) -> SubnetFalsifier:
+    return SubnetFalsifier(session=FakeSession(ec2), account_id=account_id)
+
+
 def _probe(verdict: Verdict) -> dict[str, Any]:
     assert verdict.probe is not None, "a judged verdict records its probe"
     return verdict.probe
 
 
 def _assert_evidence_supports(verdicts: dict[str, Any]) -> None:
+    """Core re-derives the classification from the recorded sides; every verdict must survive."""
     for case, verdict in verdicts.items():
         assert unsupported(verdict) is None, f"{case}: {unsupported(verdict)}"
 
 
 @pytest.mark.django_db
-class TestVpcFalsifier:
-    """Shape: GET-equivalent ``describe_vpcs``; ``VpcId`` compared."""
+class TestSubnetFalsifierFourCases:
+    """Shape: ``ec2:DescribeSubnets(SubnetIds=[subnet_id])``; source id + owning account
+    compared."""
 
     @pytest.mark.spec("req-grid-reconcile-falsifier-6")
     def test_four_cases(self) -> None:
-        fake = _FakeEc2()
+        ec2 = FakeEc2()
         cases: dict[str, Candidate] = {}
 
-        present = _create(VPC, {"vpc_id": "vpc-present"})
-        cases[CASE_PRESENT] = _candidate(present)
-        fake.answer("us-east-1", "describe_vpcs", "vpc-present", {"Vpcs": [{"VpcId": "vpc-present"}]})
+        present_id = _create_subnet("subnet-present", name="present-subnet")
+        cases[CASE_PRESENT] = _candidate(present_id)
+        ec2.answer(
+            "subnet-present",
+            {"SubnetId": "subnet-present", "OwnerId": ACCOUNT_ID, "Tags": [{"Key": "Name", "Value": "present-subnet"}]},
+        )
 
-        dropped = _create(VPC, {"vpc_id": "vpc-dropped"})
-        cases[CASE_DROPPED] = _candidate(dropped)
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-dropped", "InvalidVpcID.NotFound")
+        dropped_id = _create_subnet("subnet-dropped")
+        cases[CASE_DROPPED] = _candidate(dropped_id)
+        ec2.refuse("subnet-dropped", "InvalidSubnetID.NotFound")
 
-        forbidden = _create(VPC, {"vpc_id": "vpc-forbidden"})
-        cases[CASE_FORBIDDEN] = _candidate(forbidden)
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-forbidden", "UnauthorizedOperation")
+        forbidden_id = _create_subnet("subnet-forbidden")
+        cases[CASE_FORBIDDEN] = _candidate(forbidden_id)
+        ec2.refuse("subnet-forbidden", "UnauthorizedOperation")
 
-        # Not a shape real AWS would produce for an id-filtered describe (see the falsifiers
-        # module docstring) — exercised only to prove classify()'s wiring is sound, matching
-        # req-grid-reconcile-falsifier-6's required corpus.
-        reborn = _create(VPC, {"vpc_id": "vpc-reborn"})
-        cases[CASE_REIDENTIFIED] = _candidate(reborn)
-        fake.answer("us-east-1", "describe_vpcs", "vpc-reborn", {"Vpcs": [{"VpcId": "vpc-reborn-new"}]})
+        reborn_id = _create_subnet("subnet-reborn")
+        cases[CASE_REIDENTIFIED] = _candidate(reborn_id)
+        # Not a shape DescribeSubnets(SubnetIds=[...]) produces for real (see falsifiers.py's
+        # module docstring) — exercises core's generic classify() wiring against a
+        # found-but-different source id, the way the test contract requires every falsifier to
+        # demonstrate.
+        ec2.answer("subnet-reborn", {"SubnetId": "subnet-new-id", "OwnerId": ACCOUNT_ID})
 
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1"])
-        verdicts = run_four_cases(falsifier, cases, _context())
+        verdicts = run_four_cases(_falsifier(ec2), cases, _context())
         _assert_evidence_supports(verdicts)
-        assert verdicts[CASE_PRESENT].expected == {"source_id": "vpc-present", "owner": None, "name": None}
-        assert "InvalidVpcID.NotFound" in _probe(verdicts[CASE_DROPPED])["detail"]
+        assert verdicts[CASE_PRESENT].expected == {
+            "source_id": "subnet-present",
+            "owner": ACCOUNT_ID,
+            "name": "present-subnet",
+        }
+        assert _probe(verdicts[CASE_PRESENT])["owner"] == ACCOUNT_ID
+        assert _probe(verdicts[CASE_DROPPED])["detail"] == NOT_FOUND_DETAIL
+        assert sorted(ec2.calls) == ["subnet-dropped", "subnet-forbidden", "subnet-present", "subnet-reborn"]
 
-    def test_a_row_without_a_vpc_id_is_not_answered(self) -> None:
-        rid = _create(VPC, {"name": "design-only"})
-        fake = _FakeEc2()
-        [verdict] = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1"]).batch_falsify(
-            [_candidate(rid)], _context()
-        )
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
-        assert fake.calls == []
+    def test_empty_response_is_also_dropped(self) -> None:
+        """Some AWS calls answer a missing id with an empty list instead of raising — same
+        meaning as the exception path."""
+        ec2 = FakeEc2()
+        entity_id = _create_subnet("subnet-empty")
+        ec2.empty("subnet-empty")
+        [verdict] = _falsifier(ec2).batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == "DROPPED_FROM_OBSERVATION"
+        assert unsupported(verdict) is None
 
-    def test_an_unknown_grid_row_is_not_answered(self) -> None:
-        fake = _FakeEc2()
-        [verdict] = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1"]).batch_falsify(
-            [_candidate(uuid.uuid4())], _context()
-        )
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
-        assert "grid row could not be read" in verdict.note
+    def test_account_mismatch_is_scope_unknown(self) -> None:
+        """The single-account analogue of github_core's reach check: a credential resolved to a
+        DIFFERENT account than the candidate's own recorded account cannot speak to its absence
+        (no probe is even made)."""
+        ec2 = FakeEc2()
+        entity_id = _create_subnet("subnet-elsewhere", account_id=OTHER_ACCOUNT_ID)
+        falsifier = _falsifier(ec2, account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "scope_unknown"
+        assert ec2.calls == []
+
+    def test_no_account_dimension_is_scope_unknown(self) -> None:
+        ec2 = FakeEc2()
+        result = create_node(SUBNET, {"subnet_id": "subnet-no-dims"})
+        assert result.success
+        entity_id = uuid.UUID(str(result.entity_id))
+        [verdict] = _falsifier(ec2).batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "scope_unknown"
+        assert ec2.calls == []
+
+    def test_no_subnet_id_is_scope_unknown(self) -> None:
+        """A designed-but-not-yet-collected subnet (subnet_id blank, CREATE_REQUIRED = []) has
+        nothing to probe AWS for."""
+        ec2 = FakeEc2()
+        result = create_node(SUBNET, {"name": "not-yet-real"})
+        assert result.success
+        entity_id = uuid.UUID(str(result.entity_id))
+        row = get_node(entity_id)
+        row.entity.dimensions = {"cloud": "aws", "aws_account": ACCOUNT_ID, "aws_region": REGION}
+        row.entity.save(update_fields=["dimensions"])
+        [verdict] = _falsifier(ec2).batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "scope_unknown"
+
+    def test_unresolvable_credential_is_undetermined_errored(self) -> None:
+        entity_id = _create_subnet("subnet-no-cred")
+
+        def _broken_session_factory() -> tuple[Any, str]:
+            raise RuntimeError("no secret configured")
+
+        falsifier = SubnetFalsifier(session_factory=_broken_session_factory)
+        [verdict] = falsifier.batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "errored"
+
+    def test_empty_account_id_is_scope_unknown_not_fail_open(self) -> None:
+        """_scope_check must fail CLOSED on an empty credential account, not skip the
+        comparison — a falsifier resolved to "" must never be read as "any account matches"."""
+        ec2 = FakeEc2()
+        entity_id = _create_subnet("subnet-empty-cred-account")
+        falsifier = SubnetFalsifier(session=FakeSession(ec2), account_id="")
+        [verdict] = falsifier.batch_falsify([_candidate(entity_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "scope_unknown"
+        assert ec2.calls == []
+
+    def test_client_construction_failure_is_undetermined_not_a_crash(self) -> None:
+        """botocore can raise while BUILDING a client (bad region, broken config) before any
+        network call — that must fail this one candidate closed, never escape judge() and
+        blank out the rest of the batch (judge_all is a plain list comprehension)."""
+        ec2 = FakeEc2()
+        broken = FakeSession(ec2, breaks_with=BotoCoreError())
+        ok_entity_id = _create_subnet("subnet-ok")
+        broken_entity_id = _create_subnet("subnet-client-breaks")
+        falsifier = SubnetFalsifier(session=broken, account_id=ACCOUNT_ID)
+        verdicts = {
+            v.entity_id: v
+            for v in falsifier.batch_falsify([_candidate(ok_entity_id), _candidate(broken_entity_id)], _context())
+        }
+        for verdict in verdicts.values():
+            assert verdict.verdict == UNDETERMINED
+            assert verdict.reason == "errored"
+
+    def test_rate_limited_and_generic_error_codes(self) -> None:
+        ec2 = FakeEc2()
+        throttled_id = _create_subnet("subnet-throttled")
+        ec2.refuse("subnet-throttled", "RequestLimitExceeded")
+        errored_id = _create_subnet("subnet-weird")
+        ec2.refuse("subnet-weird", "InternalError")
+
+        falsifier = _falsifier(ec2)
+        verdicts = {
+            v.entity_id: v
+            for v in falsifier.batch_falsify([_candidate(throttled_id), _candidate(errored_id)], _context())
+        }
+        assert verdicts[throttled_id].verdict == UNDETERMINED
+        assert verdicts[throttled_id].reason == "rate_limited"
+        assert verdicts[errored_id].verdict == UNDETERMINED
+        assert verdicts[errored_id].reason == "errored"
 
 
-@pytest.mark.django_db
-class TestRegionSweep:
-    """No model in this set stores a region (the substitution the falsifiers module docstring
-    names), so every falsifier but Subnet's sweeps the credential's configured regions."""
+class TestProbeStatusOf:
+    """The AWS error-code -> probe-status mapping, independent of any grid row."""
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_found_in_a_later_region_stops_the_sweep(self) -> None:
-        vid = _create(VPC, {"vpc_id": "vpc-elsewhere"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-elsewhere", "InvalidVpcID.NotFound")
-        fake.answer("eu-west-1", "describe_vpcs", "vpc-elsewhere", {"Vpcs": [{"VpcId": "vpc-elsewhere"}]})
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1", "ap-south-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert verdict.verdict == PRESENT_AT_PROBE
-        assert fake.calls == [
-            ("us-east-1", "describe_vpcs", "vpc-elsewhere"),
-            ("eu-west-1", "describe_vpcs", "vpc-elsewhere"),
-        ], "the sweep stops at the first authoritative answer; ap-south-1 is never asked"
+    def test_not_found_suffix_forms(self) -> None:
+        for code in ("InvalidSubnetID.NotFound", "NoSuchBucket", "ResourceNotFoundException"):
+            exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
+            assert probe_status_of(exc) == "not_found", code
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_not_found_requires_every_configured_region_to_agree(self) -> None:
-        vid = _create(VPC, {"vpc_id": "vpc-truly-gone"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-truly-gone", "InvalidVpcID.NotFound")
-        fake.refuse("eu-west-1", "describe_vpcs", "vpc-truly-gone", "InvalidVpcID.NotFound")
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+    def test_forbidden_codes(self) -> None:
+        for code in ("UnauthorizedOperation", "AccessDenied", "AccessDeniedException"):
+            exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
+            assert probe_status_of(exc) == "forbidden", code
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_a_forbidden_region_refuses_the_retirement_even_when_others_say_not_found(self) -> None:
-        """Fail closed: a region that refused the probe could be hiding the object, so a
-        not_found everywhere else is not let through as a retirement."""
-        vid = _create(VPC, {"vpc_id": "vpc-maybe-hidden"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-maybe-hidden", "InvalidVpcID.NotFound")
-        fake.refuse("eu-west-1", "describe_vpcs", "vpc-maybe-hidden", "UnauthorizedOperation")
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+    def test_rate_limit_codes(self) -> None:
+        for code in ("Throttling", "ThrottlingException", "RequestLimitExceeded", "TooManyRequestsException"):
+            exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
+            assert probe_status_of(exc) == "rate_limited", code
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_an_errored_region_also_refuses_the_retirement(self) -> None:
-        vid = _create(VPC, {"vpc_id": "vpc-flaky"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-flaky", "InvalidVpcID.NotFound")
-        fake.refuse("eu-west-1", "describe_vpcs", "vpc-flaky", "InternalError")
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
+    def test_unknown_client_error_is_errored(self) -> None:
+        exc = ClientError({"Error": {"Code": "InternalError", "Message": "x"}}, "Op")
+        assert probe_status_of(exc) == "errored"
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_no_configured_regions_is_undetermined_not_a_crash(self) -> None:
-        vid = _create(VPC, {"vpc_id": "vpc-no-scope"})
-        fake = _FakeEc2()
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=[])
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
-        assert "no region scope" in verdict.note
+    def test_error_code_of_missing_error_block(self) -> None:
+        exc = ClientError({}, "Op")
+        assert error_code_of(exc) == ""
 
-    def test_a_missing_credential_answers_undetermined_for_every_candidate(self) -> None:
-        def boom() -> Any:
-            raise RuntimeError("no secret mounted")
 
-        candidates = [_candidate(uuid.uuid4(), surface=i) for i in range(2)]
-        verdicts = VpcFalsifier(session_factory=boom).batch_falsify(candidates, _context())
-        assert [(v.verdict, v.reason) for v in verdicts] == [(UNDETERMINED, "errored")] * 2
-        assert all("credential unavailable" in v.note for v in verdicts)
+class TestFalsifierManifestWiring:
+    """The [falsifiers] table resolves to a real tap_grid.falsifiers.Falsifier, exactly the way
+    tap_plugins.base's boot-time registration reads it (import_string + issubclass check)."""
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_a_client_construction_failure_degrades_the_candidate_not_the_whole_batch(self) -> None:
-        """PR #44: client construction (``client_for(service, region)``) used to run
-        OUTSIDE ``_describe_one``'s guarded try/except. A region boto3 cannot build a client for
-        must answer UNDETERMINED(errored) for this candidate, never raise out of batch_falsify —
-        raising would cost every OTHER candidate of this type its verdict too
-        (tap_grid.falsifiers._judge answers a whole group errored when batch_falsify raises)."""
+    def test_manifest_declares_the_compute_network_falsifiers(self) -> None:
+        assert PLUGIN_ROOT is not None, "plugin source tree not found"
+        manifest_path = next((PLUGIN_ROOT / "tap_plugin").glob("*/tap-plugin.toml"))
+        manifest = tomllib.loads(manifest_path.read_text())
+        falsifiers = manifest.get("falsifiers", {})
+        assert falsifiers == {
+            SUBNET: "tap_plugin.aws_core.falsifiers.SubnetFalsifier",
+            VPC: "tap_plugin.aws_core.falsifiers.VpcFalsifier",
+            SECURITY_GROUP: "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier",
+            EC2_INSTANCE: "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier",
+        }
+        # Every falsifier entry must name a type this same plugin declares in [models]
+        # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
+        # enforces at load, reasserted here directly against the TOML.
+        for entity_type in falsifiers:
+            assert entity_type in manifest.get("models", {})
 
-        def client_for(service: str, region: str) -> Any:
+    def test_subnet_is_the_type_containment_coverage_marks_reconcilable(self) -> None:
+        """The evidence behind picking Subnet over VPC: Vpc.CONTAINMENT_EDGES names
+        PARTITIONED_INTO_SUBNET__aws_core, and that edge's declared target is
+        aws_core__aws_subnet — exactly the shape
+        tap_plugins/validate/service.py::_check_falsifier_coverage reads to decide which types
+        are reconcilable."""
+        from tap_plugin.aws_core.models.vpc import Vpc
+
+        assert Vpc.CONTAINMENT_EDGES == ("PARTITIONED_INTO_SUBNET__aws_core",)
+        assert PLUGIN_ROOT is not None, "plugin source tree not found"
+        edge_path = next((PLUGIN_ROOT / "tap_plugin").glob("*/edges/PARTITIONED_INTO_SUBNET.edge.json"))
+        import json
+
+        edge = json.loads(edge_path.read_text())
+        assert edge["targets"] == [SUBNET]
+
+    def test_class_path_resolves_to_a_falsifier_subclass(self) -> None:
+        for name in ("SubnetFalsifier", "VpcFalsifier", "SecurityGroupFalsifier", "Ec2InstanceFalsifier"):
+            cls = import_string(f"tap_plugin.aws_core.falsifiers.{name}")
+            assert isinstance(cls, type) and issubclass(cls, Falsifier)
+
+    def test_registers_and_instantiates_with_no_arguments(self) -> None:
+        """Boot calls ``cls()`` with zero arguments (tap_plugins/base.py::
+        _register_falsifiers_from_manifest) — every constructor argument must default.
+
+        The app's own ``ready()`` (``AwsCoreConfig`` -> ``TapPluginConfig.ready`` ->
+        ``_register_falsifiers_from_manifest``) has typically already registered
+        ``aws_core__aws_subnet`` once for this whole test process by the time this test runs,
+        so this asserts against whatever is ALREADY there rather than re-registering (which
+        would collide with core's own "already registered" guard) — falling back to a genuine
+        register/unregister round-trip only when nothing beat it to it.
+        """
+        cls = import_string("tap_plugin.aws_core.falsifiers.SubnetFalsifier")
+        existing = get_falsifier(SUBNET)
+        if existing is not None:
+            assert isinstance(existing, cls)
+            return
+        register_falsifier(SUBNET, cls())
+        try:
+            assert isinstance(get_falsifier(SUBNET), cls)
+        finally:
+            unregister_falsifier(SUBNET)
+
+    def test_wrong_type_would_be_refused(self) -> None:
+        # A type never registered under any real entity type, so this exercises the isinstance
+        # gate (which core checks BEFORE the already-registered gate) without depending on
+        # whether the app has already registered Subnet's own falsifier in this process.
+        with pytest.raises(ImproperlyConfigured):
+            register_falsifier("aws_core__not_a_real_type_for_this_test", object())  # type: ignore[arg-type]
+
+
+class TestAccountAndOrganizationDeclareNoContainment:
+    """tap-plugin-aws-core#42: AwsAccount and AwsOrganization are the root of every other AWS
+    resource this plugin models, and both deliberately declare zero CONTAINMENT_EDGES — see the
+    reasoning on each model and in tap_plugin/aws_core/falsifiers.py's module docstring. This is
+    a regression guard against silently reversing that decision, not a live behavior test."""
+
+    def test_aws_account_declares_no_containment(self) -> None:
+        assert AwsAccount.CONTAINMENT_EDGES == ()
+
+    def test_aws_organization_declares_no_containment(self) -> None:
+        assert AwsOrganization.CONTAINMENT_EDGES == ()
+
+    def test_neither_type_has_a_registered_falsifier(self) -> None:
+        assert get_falsifier(AwsAccount.ENTITY_TYPE) is None
+        assert get_falsifier(AwsOrganization.ENTITY_TYPE) is None
+
+
+# ---------------------------------------------------------------------------
+# tap-plugin-aws-core#43 — VPC / security group / EC2 instance, the region fallback, and the
+# merged SubnetFalsifier's Local/Wavelength-Zone hint. The fake below is table-driven and keyed
+# by (region, method, id) so a test can arrange a different answer per region.
+# ---------------------------------------------------------------------------
+
+
+class TableEc2:
+    """A region-keyed ec2 stand-in: ``answers[(region, method, id)]`` is a response dict or an
+    exception. ``calls`` records ``(region, method, id)`` in order."""
+
+    def __init__(self) -> None:
+        self.answers: dict[tuple[str, str, str], dict[str, Any] | Exception] = {}
+        self.calls: list[tuple[str, str, str]] = []
+
+    def answer(self, region: str, method: str, source_id: str, payload: dict[str, Any]) -> None:
+        self.answers[(region, method, source_id)] = payload
+
+    def refuse(self, region: str, method: str, source_id: str, code: str) -> None:
+        self.answers[(region, method, source_id)] = ClientError({"Error": {"Code": code, "Message": "x"}}, method)
+
+    def call(self, region: str, method: str, source_id: str) -> dict[str, Any]:
+        self.calls.append((region, method, source_id))
+        response = self.answers.get((region, method, source_id))
+        if response is None:
+            raise AssertionError(f"TableEc2: nothing configured for {(region, method, source_id)!r}")
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+
+class _RegionClient:
+    def __init__(self, table: TableEc2, region: str) -> None:
+        self._table, self._region = table, region
+
+    def describe_vpcs(self, VpcIds: list[str]) -> dict[str, Any]:  # noqa: N803
+        return self._table.call(self._region, "describe_vpcs", VpcIds[0])
+
+    def describe_subnets(self, SubnetIds: list[str]) -> dict[str, Any]:  # noqa: N803
+        return self._table.call(self._region, "describe_subnets", SubnetIds[0])
+
+    def describe_security_groups(self, GroupIds: list[str]) -> dict[str, Any]:  # noqa: N803
+        return self._table.call(self._region, "describe_security_groups", GroupIds[0])
+
+    def describe_instances(self, InstanceIds: list[str]) -> dict[str, Any]:  # noqa: N803
+        return self._table.call(self._region, "describe_instances", InstanceIds[0])
+
+
+class RegionalSession:
+    """``.client('ec2', region_name=...)`` returns a client bound to that region; a region in
+    ``unbuildable`` raises ``BotoCoreError`` at construction, like a bad region name."""
+
+    def __init__(self, table: TableEc2, *, unbuildable: frozenset[str] = frozenset()) -> None:
+        self._table, self._unbuildable = table, unbuildable
+        self.regions_asked: list[str] = []
+
+    def client(self, service: str, region_name: str | None = None) -> Any:
+        assert service == "ec2" and region_name
+        self.regions_asked.append(region_name)
+        if region_name in self._unbuildable:
             raise BotoCoreError()
-
-        vid = _create(VPC, {"vpc_id": "vpc-unbuildable-region"})
-        falsifier = VpcFalsifier(client_for=client_for, regions=["not-a-real-region"])
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
+        return _RegionClient(self._table, region_name)
 
 
-@pytest.mark.django_db
-class TestSubnetFalsifier:
-    """Shape: ``describe_subnets``; ``SubnetId`` compared; the availability-zone shortcut."""
+def _create(
+    entity_type: str,
+    payload: dict[str, Any],
+    *,
+    region: str | None = REGION,
+    account_id: str | None = ACCOUNT_ID,
+) -> uuid.UUID:
+    """A real grid row stamped the way the collector stamps it. ``region=None`` omits the
+    ``aws_region`` dimension (a row the fallback has to place)."""
+    result = create_node(entity_type, payload)
+    assert result.success, f"create_node failed: {result.errors}"
+    assert result.entity_id is not None
+    entity_id = uuid.UUID(str(result.entity_id))
+    dimensions: dict[str, str] = {"cloud": "aws"}
+    if account_id is not None:
+        dimensions["aws_account"] = account_id
+    if region is not None:
+        dimensions["aws_region"] = region
+    row = get_node(entity_id)
+    row.entity.dimensions = dimensions
+    row.entity.save(update_fields=["dimensions"])
+    return entity_id
 
-    @pytest.mark.spec("req-grid-reconcile-falsifier-6")
-    def test_four_cases(self) -> None:
-        fake = _FakeEc2()
-        cases: dict[str, Candidate] = {}
 
-        present = _create(SUBNET, {"subnet_id": "subnet-present", "availability_zone": "us-east-1a"})
-        cases[CASE_PRESENT] = _candidate(present)
-        fake.answer("us-east-1", "describe_subnets", "subnet-present", {"Subnets": [{"SubnetId": "subnet-present"}]})
+def _candidate_of(entity_id: uuid.UUID, entity_type: str) -> Candidate:
+    return Candidate(
+        entity_id=entity_id,
+        entity_type=entity_type,
+        reason="dropped_from_observation",
+        surface=0,
+        relation="fixture",
+        subject=None,
+        edge_type=None,
+        parent=None,
+        interval_first=None,
+    )
 
-        dropped = _create(SUBNET, {"subnet_id": "subnet-dropped", "availability_zone": "us-east-1a"})
-        cases[CASE_DROPPED] = _candidate(dropped)
-        fake.refuse("us-east-1", "describe_subnets", "subnet-dropped", "InvalidSubnetID.NotFound")
 
-        forbidden = _create(SUBNET, {"subnet_id": "subnet-forbidden", "availability_zone": "us-east-1a"})
-        cases[CASE_FORBIDDEN] = _candidate(forbidden)
-        fake.refuse("us-east-1", "describe_subnets", "subnet-forbidden", "AccessDenied")
-
-        reborn = _create(SUBNET, {"subnet_id": "subnet-reborn", "availability_zone": "us-east-1a"})
-        cases[CASE_REIDENTIFIED] = _candidate(reborn)
-        fake.answer("us-east-1", "describe_subnets", "subnet-reborn", {"Subnets": [{"SubnetId": "subnet-reborn-new"}]})
-
-        falsifier = SubnetFalsifier(client_for=fake.client_for, regions=["us-east-1"])
-        verdicts = run_four_cases(falsifier, cases, _context())
-        _assert_evidence_supports(verdicts)
-
-    @pytest.mark.spec("req-aws-collector-regions")
-    def test_the_availability_zone_derived_region_is_tried_before_the_sweep(self) -> None:
-        sid = _create(SUBNET, {"subnet_id": "subnet-az-hint", "availability_zone": "us-west-2c"})
-        fake = _FakeEc2()
-        fake.answer("us-west-2", "describe_subnets", "subnet-az-hint", {"Subnets": [{"SubnetId": "subnet-az-hint"}]})
-        # The configured sweep order deliberately does NOT lead with us-west-2.
-        falsifier = SubnetFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1", "us-west-2"])
-        [verdict] = falsifier.batch_falsify([_candidate(sid)], _context())
-        assert verdict.verdict == PRESENT_AT_PROBE
-        assert fake.calls == [("us-west-2", "describe_subnets", "subnet-az-hint")], (
-            "the AZ hint is tried first and answers authoritatively; us-east-1/eu-west-1 are never asked"
-        )
-
-    def test_a_subnet_with_no_availability_zone_falls_back_to_the_configured_sweep(self) -> None:
-        sid = _create(SUBNET, {"subnet_id": "subnet-no-az"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_subnets", "subnet-no-az", "InvalidSubnetID.NotFound")
-        fake.answer("eu-west-1", "describe_subnets", "subnet-no-az", {"Subnets": [{"SubnetId": "subnet-no-az"}]})
-        falsifier = SubnetFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(sid)], _context())
-        assert verdict.verdict == PRESENT_AT_PROBE
+def _instance_response(instance_id: str, state: str, owner: str = ACCOUNT_ID) -> dict[str, Any]:
+    return {
+        "Reservations": [{"OwnerId": owner, "Instances": [{"InstanceId": instance_id, "State": {"Name": state}}]}]
+    }
 
 
 @pytest.mark.django_db
-class TestSecurityGroupFalsifier:
-    """Shape: ``describe_security_groups``; ``GroupId`` compared."""
+class TestComputeNetworkFourCases:
+    """``run_four_cases`` for each of the types #43 adds beside Subnet."""
 
     @pytest.mark.spec("req-grid-reconcile-falsifier-6")
-    def test_four_cases(self) -> None:
-        fake = _FakeEc2()
+    def test_vpc(self) -> None:
+        table = TableEc2()
         cases: dict[str, Candidate] = {}
+        for case, vpc_id in (
+            (CASE_PRESENT, "vpc-present"),
+            (CASE_DROPPED, "vpc-dropped"),
+            (CASE_FORBIDDEN, "vpc-forbidden"),
+            (CASE_REIDENTIFIED, "vpc-reborn"),
+        ):
+            cases[case] = _candidate_of(_create(VPC, {"vpc_id": vpc_id}), VPC)
+        table.answer(REGION, "describe_vpcs", "vpc-present", {"Vpcs": [{"VpcId": "vpc-present", "OwnerId": ACCOUNT_ID}]})
+        table.refuse(REGION, "describe_vpcs", "vpc-dropped", "InvalidVpcID.NotFound")
+        table.refuse(REGION, "describe_vpcs", "vpc-forbidden", "UnauthorizedOperation")
+        table.answer(REGION, "describe_vpcs", "vpc-reborn", {"Vpcs": [{"VpcId": "vpc-new", "OwnerId": ACCOUNT_ID}]})
+        falsifier = VpcFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        _assert_evidence_supports(run_four_cases(falsifier, cases, _context()))
 
-        present = _create(SECURITY_GROUP, {"group_id": "sg-present"})
-        cases[CASE_PRESENT] = _candidate(present)
-        fake.answer("us-east-1", "describe_security_groups", "sg-present", {"SecurityGroups": [{"GroupId": "sg-present"}]})
-
-        dropped = _create(SECURITY_GROUP, {"group_id": "sg-dropped"})
-        cases[CASE_DROPPED] = _candidate(dropped)
-        fake.refuse("us-east-1", "describe_security_groups", "sg-dropped", "InvalidGroup.NotFound")
-
-        forbidden = _create(SECURITY_GROUP, {"group_id": "sg-forbidden"})
-        cases[CASE_FORBIDDEN] = _candidate(forbidden)
-        fake.refuse("us-east-1", "describe_security_groups", "sg-forbidden", "UnauthorizedOperation")
-
-        reborn = _create(SECURITY_GROUP, {"group_id": "sg-reborn"})
-        cases[CASE_REIDENTIFIED] = _candidate(reborn)
-        fake.answer(
-            "us-east-1", "describe_security_groups", "sg-reborn", {"SecurityGroups": [{"GroupId": "sg-reborn-new"}]}
+    @pytest.mark.spec("req-grid-reconcile-falsifier-6")
+    def test_security_group(self) -> None:
+        table = TableEc2()
+        cases: dict[str, Candidate] = {}
+        for case, group_id in (
+            (CASE_PRESENT, "sg-present"),
+            (CASE_DROPPED, "sg-dropped"),
+            (CASE_FORBIDDEN, "sg-forbidden"),
+            (CASE_REIDENTIFIED, "sg-reborn"),
+        ):
+            cases[case] = _candidate_of(_create(SECURITY_GROUP, {"group_id": group_id}), SECURITY_GROUP)
+        table.answer(
+            REGION, "describe_security_groups", "sg-present", {"SecurityGroups": [{"GroupId": "sg-present", "OwnerId": ACCOUNT_ID}]}
         )
+        table.refuse(REGION, "describe_security_groups", "sg-dropped", "InvalidGroup.NotFound")
+        table.refuse(REGION, "describe_security_groups", "sg-forbidden", "UnauthorizedOperation")
+        table.answer(
+            REGION, "describe_security_groups", "sg-reborn", {"SecurityGroups": [{"GroupId": "sg-new", "OwnerId": ACCOUNT_ID}]}
+        )
+        falsifier = SecurityGroupFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        _assert_evidence_supports(run_four_cases(falsifier, cases, _context()))
 
-        falsifier = SecurityGroupFalsifier(client_for=fake.client_for, regions=["us-east-1"])
-        verdicts = run_four_cases(falsifier, cases, _context())
-        _assert_evidence_supports(verdicts)
+    @pytest.mark.spec("req-grid-reconcile-falsifier-6")
+    def test_ec2_instance(self) -> None:
+        table = TableEc2()
+        cases: dict[str, Candidate] = {}
+        for case, instance_id in (
+            (CASE_PRESENT, "i-present"),
+            (CASE_DROPPED, "i-purged"),
+            (CASE_FORBIDDEN, "i-forbidden"),
+            (CASE_REIDENTIFIED, "i-reborn"),
+        ):
+            cases[case] = _candidate_of(_create(EC2_INSTANCE, {"instance_id": instance_id}), EC2_INSTANCE)
+        table.answer(REGION, "describe_instances", "i-present", _instance_response("i-present", "running"))
+        table.refuse(REGION, "describe_instances", "i-purged", "InvalidInstanceID.NotFound")
+        table.refuse(REGION, "describe_instances", "i-forbidden", "UnauthorizedOperation")
+        table.answer(REGION, "describe_instances", "i-reborn", _instance_response("i-new", "running"))
+        falsifier = Ec2InstanceFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        _assert_evidence_supports(run_four_cases(falsifier, cases, _context()))
 
 
 @pytest.mark.django_db
-class TestEc2InstanceFalsifier:
-    """Shape: ``describe_instances``; ``InstanceId`` compared; the terminated-state rule."""
-
-    @pytest.mark.spec("req-grid-reconcile-falsifier-6")
-    def test_four_cases(self) -> None:
-        fake = _FakeEc2()
-        cases: dict[str, Candidate] = {}
-
-        present = _create(EC2_INSTANCE, {"instance_id": "i-present"})
-        cases[CASE_PRESENT] = _candidate(present)
-        fake.answer(
-            "us-east-1",
-            "describe_instances",
-            "i-present",
-            {"Reservations": [{"Instances": [{"InstanceId": "i-present", "State": {"Name": "running"}}]}]},
-        )
-
-        # A genuine 404: an instance id old enough that AWS has purged it entirely.
-        dropped = _create(EC2_INSTANCE, {"instance_id": "i-purged"})
-        cases[CASE_DROPPED] = _candidate(dropped)
-        fake.refuse("us-east-1", "describe_instances", "i-purged", "InvalidInstanceID.NotFound")
-
-        forbidden = _create(EC2_INSTANCE, {"instance_id": "i-forbidden"})
-        cases[CASE_FORBIDDEN] = _candidate(forbidden)
-        fake.refuse("us-east-1", "describe_instances", "i-forbidden", "UnauthorizedOperation")
-
-        reborn = _create(EC2_INSTANCE, {"instance_id": "i-reborn"})
-        cases[CASE_REIDENTIFIED] = _candidate(reborn)
-        fake.answer(
-            "us-east-1",
-            "describe_instances",
-            "i-reborn",
-            {"Reservations": [{"Instances": [{"InstanceId": "i-reborn-new", "State": {"Name": "running"}}]}]},
-        )
-
-        falsifier = Ec2InstanceFalsifier(client_for=fake.client_for, regions=["us-east-1"])
-        verdicts = run_four_cases(falsifier, cases, _context())
-        _assert_evidence_supports(verdicts)
-
+class TestEc2InstanceStates:
     @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_a_terminated_instance_is_dropped_from_observation(self) -> None:
-        iid = _create(EC2_INSTANCE, {"instance_id": "i-terminated"})
-        fake = _FakeEc2()
-        fake.answer(
-            "us-east-1",
-            "describe_instances",
-            "i-terminated",
-            {"Reservations": [{"Instances": [{"InstanceId": "i-terminated", "State": {"Name": "terminated"}}]}]},
-        )
-        falsifier = Ec2InstanceFalsifier(client_for=fake.client_for, regions=["us-east-1", "eu-west-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(iid)], _context())
+    def test_terminated_is_dropped(self) -> None:
+        table = TableEc2()
+        entity_id = _create(EC2_INSTANCE, {"instance_id": "i-terminated"})
+        table.answer(REGION, "describe_instances", "i-terminated", _instance_response("i-terminated", "terminated"))
+        falsifier = Ec2InstanceFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, EC2_INSTANCE)], _context())
         assert verdict.verdict == DROPPED_FROM_OBSERVATION
         assert "terminated" in _probe(verdict)["detail"]
-        assert fake.calls == [("us-east-1", "describe_instances", "i-terminated")], (
-            "a terminated instance is an authoritative answer from the region that has it; the "
-            "sweep must not continue into eu-west-1"
-        )
-
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_a_terminated_response_naming_a_different_instance_is_not_trusted(self) -> None:
-        """PR #44: the terminated-state shortcut folds a successful response into
-        ``not_found`` WITHOUT going through classify()'s identity comparison — so it must check
-        identity itself before taking that shortcut. A response naming some other instance
-        (which real DescribeInstances-by-id never does, but nothing here should rest on that
-        alone) must fall through to the ordinary found path and come out REIDENTIFIED, not
-        silently retire the candidate under a state field that describes a different object."""
-        iid = _create(EC2_INSTANCE, {"instance_id": "i-expected"})
-        fake = _FakeEc2()
-        fake.answer(
-            "us-east-1",
-            "describe_instances",
-            "i-expected",
-            {"Reservations": [{"Instances": [{"InstanceId": "i-other", "State": {"Name": "terminated"}}]}]},
-        )
-        falsifier = Ec2InstanceFalsifier(client_for=fake.client_for, regions=["us-east-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(iid)], _context())
-        assert verdict.verdict == REIDENTIFIED
         assert unsupported(verdict) is None
 
     @pytest.mark.parametrize("state", ["pending", "running", "shutting-down", "stopping", "stopped"])
     @pytest.mark.spec("req-grid-reconcile-absence-states")
     def test_every_non_terminated_state_is_present_not_gone(self, state: str) -> None:
         """Stopped is not gone — only not running."""
-        iid = _create(EC2_INSTANCE, {"instance_id": f"i-{state}"})
-        fake = _FakeEc2()
-        fake.answer(
-            "us-east-1",
-            "describe_instances",
-            f"i-{state}",
-            {"Reservations": [{"Instances": [{"InstanceId": f"i-{state}", "State": {"Name": state}}]}]},
-        )
-        falsifier = Ec2InstanceFalsifier(client_for=fake.client_for, regions=["us-east-1"])
-        [verdict] = falsifier.batch_falsify([_candidate(iid)], _context())
+        table = TableEc2()
+        entity_id = _create(EC2_INSTANCE, {"instance_id": f"i-{state}"})
+        table.answer(REGION, "describe_instances", f"i-{state}", _instance_response(f"i-{state}", state))
+        falsifier = Ec2InstanceFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, EC2_INSTANCE)], _context())
         assert verdict.verdict == PRESENT_AT_PROBE
 
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_terminated_response_naming_a_different_instance_is_not_trusted(self) -> None:
+        """The terminated shortcut synthesizes ``not_found``, which bypasses classify()'s own
+        identity comparison, so it must check the InstanceId itself: a mismatch falls through to
+        the ordinary found path and comes out REIDENTIFIED, never a silent retirement."""
+        table = TableEc2()
+        entity_id = _create(EC2_INSTANCE, {"instance_id": "i-expected"})
+        table.answer(REGION, "describe_instances", "i-expected", _instance_response("i-other", "terminated"))
+        falsifier = Ec2InstanceFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, EC2_INSTANCE)], _context())
+        assert verdict.verdict == REIDENTIFIED
+        assert unsupported(verdict) is None
 
-class _FakeEc2ClientForRegions:
-    """A minimal session/client stand-in for ``_enabled_regions``: ``.client(service,
-    region_name=...)`` returns an object whose ``describe_regions`` answers from a table, or
-    raises, keyed only by whether the call should succeed — the anchor region never matters to
-    the answer, only to which client construction call was made."""
+    def test_no_owner_on_a_found_resource_is_errored_not_a_crash(self) -> None:
+        """The grid holds an owner, so a found probe with none cannot be classified
+        (``incomplete``); answered UNDETERMINED(errored), never raised out of verdict_from_probe."""
+        table = TableEc2()
+        entity_id = _create(VPC, {"vpc_id": "vpc-no-owner"})
+        table.answer(REGION, "describe_vpcs", "vpc-no-owner", {"Vpcs": [{"VpcId": "vpc-no-owner"}]})
+        falsifier = VpcFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
 
+
+@pytest.mark.django_db
+class TestRegionResolution:
+    """Dimension first, then the type's own hint, then a fallback sweep that can only find."""
+
+    def test_the_dimension_is_used_and_the_sweep_is_never_consulted(self) -> None:
+        table = TableEc2()
+        entity_id = _create(VPC, {"vpc_id": "vpc-dim"}, region="eu-west-1")
+        table.refuse("eu-west-1", "describe_vpcs", "vpc-dim", "InvalidVpcID.NotFound")
+
+        def _never(_session: Any) -> list[str]:
+            raise AssertionError("the sweep must not run when the row records its region")
+
+        session = RegionalSession(table)
+        falsifier = VpcFalsifier(session=session, account_id=ACCOUNT_ID, region_sweep=_never)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+        assert session.regions_asked == ["eu-west-1"]
+
+    @pytest.mark.parametrize(
+        ("zone", "region"),
+        [
+            ("us-east-1a", "us-east-1"),
+            ("us-west-2-lax-1a", "us-west-2"),  # Local Zone: az[:-1] would be us-west-2-lax-1
+            ("us-east-1-wl1-bos-wlz-1", "us-east-1"),  # Wavelength Zone
+            ("us-gov-west-1a", "us-gov-west-1"),
+        ],
+    )
+    def test_a_subnet_with_no_region_dimension_uses_its_availability_zone(self, zone: str, region: str) -> None:
+        table = TableEc2()
+        entity_id = _create(SUBNET, {"subnet_id": "subnet-az", "availability_zone": zone}, region=None)
+        table.refuse(region, "describe_subnets", "subnet-az", "InvalidSubnetID.NotFound")
+        session = RegionalSession(table)
+        falsifier = SubnetFalsifier(session=session, account_id=ACCOUNT_ID, region_sweep=lambda _s: [])
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, SUBNET)], _context())
+        assert session.regions_asked == [region]
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION, "an AZ-derived region is the row's own, so it is trusted"
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_fallback_sweep_can_find_the_resource(self) -> None:
+        table = TableEc2()
+        entity_id = _create(VPC, {"vpc_id": "vpc-elsewhere"}, region=None)
+        table.refuse("us-east-1", "describe_vpcs", "vpc-elsewhere", "InvalidVpcID.NotFound")
+        table.answer("eu-west-1", "describe_vpcs", "vpc-elsewhere", {"Vpcs": [{"VpcId": "vpc-elsewhere", "OwnerId": ACCOUNT_ID}]})
+        session = RegionalSession(table)
+        falsifier = VpcFalsifier(
+            session=session, account_id=ACCOUNT_ID, region_sweep=lambda _s: ["us-east-1", "eu-west-1", "ap-south-1"]
+        )
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        assert session.regions_asked == ["us-east-1", "eu-west-1"], "the sweep stops at the first authoritative answer"
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_clean_fallback_sweep_is_undetermined_never_dropped(self) -> None:
+        """regions_trustworthy=False: every swept region says not-found and it still is not
+        evidence of absence, because the sweep cannot show where the row was collected."""
+        table = TableEc2()
+        entity_id = _create(VPC, {"vpc_id": "vpc-maybe-elsewhere"}, region=None)
+        for region in ("us-east-1", "eu-west-1"):
+            table.refuse(region, "describe_vpcs", "vpc-maybe-elsewhere", "InvalidVpcID.NotFound")
+        falsifier = VpcFalsifier(
+            session=RegionalSession(table), account_id=ACCOUNT_ID, region_sweep=lambda _s: ["us-east-1", "eu-west-1"]
+        )
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "may only find, never drop" in verdict.note
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_terminated_answer_found_by_a_fallback_sweep_is_also_not_dropped(self) -> None:
+        table = TableEc2()
+        entity_id = _create(EC2_INSTANCE, {"instance_id": "i-swept"}, region=None)
+        table.answer("us-east-1", "describe_instances", "i-swept", _instance_response("i-swept", "terminated"))
+        falsifier = Ec2InstanceFalsifier(
+            session=RegionalSession(table), account_id=ACCOUNT_ID, region_sweep=lambda _s: ["us-east-1"]
+        )
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, EC2_INSTANCE)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+
+    def test_a_forbidden_region_in_the_sweep_is_forbidden(self) -> None:
+        table = TableEc2()
+        entity_id = _create(VPC, {"vpc_id": "vpc-hidden"}, region=None)
+        table.refuse("us-east-1", "describe_vpcs", "vpc-hidden", "InvalidVpcID.NotFound")
+        table.refuse("eu-west-1", "describe_vpcs", "vpc-hidden", "UnauthorizedOperation")
+        falsifier = VpcFalsifier(
+            session=RegionalSession(table), account_id=ACCOUNT_ID, region_sweep=lambda _s: ["us-east-1", "eu-west-1"]
+        )
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+
+    def test_no_region_and_no_sweep_is_scope_unknown_without_a_call(self) -> None:
+        table = TableEc2()
+        entity_id = _create(VPC, {"vpc_id": "vpc-nowhere"}, region=None)
+        session = RegionalSession(table)
+        falsifier = VpcFalsifier(session=session, account_id=ACCOUNT_ID, region_sweep=lambda _s: [])
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert session.regions_asked == []
+
+    def test_a_sweep_that_cannot_be_resolved_is_scope_unknown_not_a_crash(self) -> None:
+        def _boom(_session: Any) -> list[str]:
+            raise RuntimeError("no secret configured")
+
+        entity_id = _create(VPC, {"vpc_id": "vpc-no-sweep"}, region=None)
+        falsifier = VpcFalsifier(session=RegionalSession(TableEc2()), account_id=ACCOUNT_ID, region_sweep=_boom)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+
+    def test_the_sweep_is_resolved_once_per_run(self) -> None:
+        calls: list[int] = []
+
+        def _sweep(_session: Any) -> list[str]:
+            calls.append(1)
+            return ["us-east-1"]
+
+        table = TableEc2()
+        candidates = []
+        for n in range(3):
+            entity_id = _create(VPC, {"vpc_id": f"vpc-{n}"}, region=None)
+            table.refuse("us-east-1", "describe_vpcs", f"vpc-{n}", "InvalidVpcID.NotFound")
+            candidates.append(_candidate_of(entity_id, VPC))
+        falsifier = VpcFalsifier(session=RegionalSession(table), account_id=ACCOUNT_ID, region_sweep=_sweep)
+        falsifier.batch_falsify(candidates, _context())
+        assert len(calls) == 1
+        falsifier.batch_falsify(candidates, _context())
+        assert len(calls) == 2, "a new run re-resolves the sweep"
+
+    def test_a_region_that_cannot_build_a_client_degrades_only_that_candidate(self) -> None:
+        table = TableEc2()
+        good = _create(SUBNET, {"subnet_id": "subnet-good"}, region="us-east-1")
+        bad = _create(SUBNET, {"subnet_id": "subnet-bad"}, region="not-a-region")
+        table.refuse("us-east-1", "describe_subnets", "subnet-good", "InvalidSubnetID.NotFound")
+        falsifier = SubnetFalsifier(
+            session=RegionalSession(table, unbuildable=frozenset({"not-a-region"})), account_id=ACCOUNT_ID
+        )
+        verdicts = {v.entity_id: v for v in falsifier.batch_falsify([_candidate(bad), _candidate(good)], _context())}
+        assert verdicts[good].verdict == DROPPED_FROM_OBSERVATION
+        assert (verdicts[bad].verdict, verdicts[bad].reason) == (UNDETERMINED, "errored")
+
+    def test_account_mismatch_refuses_before_any_region_work(self) -> None:
+        entity_id = _create(VPC, {"vpc_id": "vpc-other-acct"}, region=None, account_id=OTHER_ACCOUNT_ID)
+
+        def _never(_session: Any) -> list[str]:
+            raise AssertionError("a scope-refused candidate must not trigger the sweep")
+
+        falsifier = VpcFalsifier(session=RegionalSession(TableEc2()), account_id=ACCOUNT_ID, region_sweep=_never)
+        [verdict] = falsifier.batch_falsify([_candidate_of(entity_id, VPC)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+
+
+class _DescribeRegionsSession:
     def __init__(self, *, regions: list[dict[str, str]] | None = None, raises: Exception | None = None) -> None:
-        self._regions = regions
-        self._raises = raises
-        self.anchor_regions_used: list[str] = []
+        self._regions, self._raises = regions, raises
+        self.anchors: list[str] = []
 
     def client(self, service: str, region_name: str) -> Any:
         assert service == "ec2"
-        self.anchor_regions_used.append(region_name)
+        self.anchors.append(region_name)
         return self
 
-    def describe_regions(self, AllRegions: bool) -> Any:
+    def describe_regions(self, AllRegions: bool) -> dict[str, Any]:  # noqa: N803
         assert AllRegions is False
         if self._raises is not None:
             raise self._raises
@@ -474,74 +814,17 @@ class _FakeEc2ClientForRegions:
 
 
 class TestEnabledRegions:
-    """PR #44: the sweep is the account's full enabled-region set
-    (``ec2:DescribeRegions``), not merely the operator's current ``regions_allowed`` collection
-    scope — a row already on the grid (Subnet, via the pre-existing VPC containment edge) may
-    have been collected under a wider scope that was since narrowed. Round 4: the fallback used
-    on a ``DescribeRegions`` failure must come back marked untrustworthy, not silently equal to
-    a confirmed sweep — an earlier version of this fix fell back silently, which quietly
-    reopened the exact false-retirement bug this mechanism exists to close."""
-
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_returns_the_accounts_enabled_regions_sorted_and_deduplicated(self) -> None:
-        session = _FakeEc2ClientForRegions(
-            regions=[
-                {"RegionName": "us-west-2"},
-                {"RegionName": "us-east-1"},
-                {"RegionName": "us-east-1"},
-            ]
+    def test_returns_the_enabled_regions_sorted_and_deduplicated(self) -> None:
+        session = _DescribeRegionsSession(
+            regions=[{"RegionName": "us-west-2"}, {"RegionName": "us-east-1"}, {"RegionName": "us-east-1"}]
         )
-        assert _enabled_regions(session, ["us-east-1"]) == (["us-east-1", "us-west-2"], True)
-        assert session.anchor_regions_used == ["us-east-1"], "anchored on the first configured region"
+        assert _enabled_regions(session, ["us-east-1"]) == ["us-east-1", "us-west-2"]
+        assert session.anchors == ["us-east-1"]
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
     def test_a_wider_enabled_set_than_the_configured_scope_is_used(self) -> None:
-        """The whole point: DescribeRegions can name a region regions_allowed does not."""
-        session = _FakeEc2ClientForRegions(regions=[{"RegionName": "us-west-2"}, {"RegionName": "eu-west-1"}])
-        assert _enabled_regions(session, ["us-west-2"]) == (["eu-west-1", "us-west-2"], True)
+        session = _DescribeRegionsSession(regions=[{"RegionName": "us-west-2"}, {"RegionName": "eu-west-1"}])
+        assert _enabled_regions(session, ["us-west-2"]) == ["eu-west-1", "us-west-2"]
 
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_falls_back_to_the_configured_scope_when_describe_regions_fails(self) -> None:
-        session = _FakeEc2ClientForRegions(raises=BotoCoreError())
-        assert _enabled_regions(session, ["us-east-1", "eu-west-1"]) == (["us-east-1", "eu-west-1"], False)
-
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_an_empty_enabled_set_falls_back_to_the_configured_scope(self) -> None:
-        """Defensive: DescribeRegions succeeding with nothing named is not trusted as 'sweep
-        nothing' — that would be worse than the scope this falsifier used before this fix."""
-        session = _FakeEc2ClientForRegions(regions=[])
-        assert _enabled_regions(session, ["us-east-1"]) == (["us-east-1"], False)
-
-
-@pytest.mark.django_db
-class TestUntrustworthyRegionScopeNeverAuthorizesRetirement:
-    """PR #44: a clean not_found sweep of a region scope this run could not confirm complete
-    must never stand in for a clean sweep of everywhere the resource could actually be.
-    ``regions_trustworthy=False`` is driven directly (there is no real AWS session in a unit
-    test) — it is exactly what ``_default_session`` -> ``_enabled_regions`` hands ``judge()``
-    in production after an ``ec2:DescribeRegions`` failure."""
-
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_a_clean_sweep_of_an_unconfirmed_fallback_scope_is_undetermined_not_dropped(self) -> None:
-        """``regions_trustworthy=False`` is exactly what a ``DescribeRegions`` failure produces
-        via ``_default_session`` -> ``_enabled_regions`` in production; driven directly here
-        since there is no real AWS session in a unit test."""
-        vid = _create(VPC, {"vpc_id": "vpc-maybe-elsewhere"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-maybe-elsewhere", "InvalidVpcID.NotFound")
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1"], regions_trustworthy=False)
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
-        assert "not evidence of absence" in verdict.note
-
-    @pytest.mark.spec("req-grid-reconcile-absence-states")
-    def test_a_trustworthy_clean_sweep_still_drops(self) -> None:
-        """The gate is specifically about trustworthiness, not about adding friction generally —
-        the default (True) still yields DROPPED_FROM_OBSERVATION exactly as every other test in
-        this file already assumes."""
-        vid = _create(VPC, {"vpc_id": "vpc-really-gone"})
-        fake = _FakeEc2()
-        fake.refuse("us-east-1", "describe_vpcs", "vpc-really-gone", "InvalidVpcID.NotFound")
-        falsifier = VpcFalsifier(client_for=fake.client_for, regions=["us-east-1"], regions_trustworthy=True)
-        [verdict] = falsifier.batch_falsify([_candidate(vid)], _context())
-        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+    def test_falls_back_to_the_configured_scope_on_failure_or_empty(self) -> None:
+        assert _enabled_regions(_DescribeRegionsSession(raises=BotoCoreError()), ["a", "b"]) == ["a", "b"]
+        assert _enabled_regions(_DescribeRegionsSession(regions=[]), ["a"]) == ["a"]
