@@ -128,13 +128,50 @@ class ParsedArn:
 
 def partition_of_region(region: str | None) -> str:
     """The partition a region name belongs to. An empty or unrecognised name is commercial,
-    which is what botocore does with a region it has no partition for."""
+    which is what botocore does with a region it has no partition for.
+
+    Permissive by design — every internal caller here hands it a region already sourced from a
+    real, constructed botocore client (``client.meta.region_name``) or one already accepted by
+    :func:`known_region`, so a graceful commercial default for the unreachable "no region at
+    all" case is correct. It is NOT how an operator-supplied region (a secret's
+    ``regions_allowed``) should be classified — see :func:`known_region` for that gate, used by
+    ``credentials.resolve_partition``.
+    """
     if not region:
         return PARTITION_AWS
     for partition, pattern in _REGION_PARTITIONS:
         if pattern.match(region):
             return partition
     return PARTITION_AWS
+
+
+def known_region(region: str) -> bool:
+    """Whether ``region`` is recognised as belonging to some partition, by EITHER this
+    module's own pattern table or botocore's own bundled endpoint data — never silently
+    defaulted to commercial.
+
+    Used to validate an operator-supplied region (a secret's ``regions_allowed``) before it
+    drives which partition the whole run resolves to. Without this gate, a typo of a
+    GovCloud/China/iso region (``us-gvo-west-1``) matches none of this module's specific
+    patterns and ``partition_of_region`` would silently classify it as commercial — the
+    fail-*open* case a partition guard exists to prevent, found in review (unified-ai-review,
+    2026-09-28, "Unknown regions fail open to the commercial partition").
+
+    botocore's ``get_partition_for_region`` is authoritative (it is what a real client's own
+    endpoint resolution consults) and knows the full commercial region set this module does
+    not attempt to enumerate; this module's own table is the fallback for a region newer than
+    the vendored botocore. A region neither source places anywhere is unknown, full stop —
+    never assumed commercial.
+    """
+    if any(pattern.match(region) for _partition, pattern in _REGION_PARTITIONS):
+        return True
+    try:
+        import botocore.session
+
+        botocore.session.get_session().get_partition_for_region(region)
+    except Exception:  # noqa: BLE001 — an unrecognised/malformed region answers False, never raises
+        return False
+    return True
 
 
 def home_region(partition: str) -> str:

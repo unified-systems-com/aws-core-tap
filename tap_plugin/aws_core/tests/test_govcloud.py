@@ -17,9 +17,9 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
-from urllib.parse import urlsplit
 from types import SimpleNamespace
 from typing import Any
+from urllib.parse import urlsplit
 
 import boto3
 import jsonschema
@@ -46,6 +46,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.partition import (
     PARTITION_US_GOV,
     build_arn,
     home_region,
+    known_region,
     parse_arn,
     partition_of_arn,
     partition_of_region,
@@ -112,6 +113,17 @@ class TestPartitionHelpers:
     def test_home_regions(self) -> None:
         assert home_region(PARTITION_AWS) == "us-east-1"
         assert home_region(PARTITION_US_GOV) == "us-gov-west-1"
+
+    @pytest.mark.parametrize(
+        "region",
+        ["us-east-1", "us-gov-west-1", "us-gov-east-1", "cn-north-1", "us-iso-east-1", "us-east-97", "eu-west-9"],
+    )
+    def test_known_region_accepts_every_recognised_shape(self, region: str) -> None:
+        assert known_region(region) is True
+
+    @pytest.mark.parametrize("region", ["us-gvo-west-1", "not-a-region-at-all-1", "xx-fake-1", ""])
+    def test_known_region_refuses_a_typo_or_nonsense_string(self, region: str) -> None:
+        assert known_region(region) is False
 
     @pytest.mark.parametrize(
         ("arn", "partition", "service", "account", "resource"),
@@ -228,6 +240,23 @@ class TestResolvePartition:
             cred.resolve_partition({**_ASSUMED, "expected_account_id": "999988887777"}, [GOV_REGION])
         assert cred.resolve_partition({**_ASSUMED, "expected_account_id": ACCOUNT}, [GOV_REGION]) == "aws-us-gov"
 
+    def test_a_typo_of_a_real_region_is_refused_not_silently_commercial(self) -> None:
+        # found in review (unified-ai-review, 2026-09-28): "us-gvo-west-1" (letters swapped)
+        # matches no specific partition pattern; the old code silently classified it as
+        # commercial instead of failing closed on an unrecognised region.
+        with pytest.raises(cred.CredentialError, match="not recognised"):
+            cred.resolve_partition(_STATIC, ["us-gvo-west-1"])
+
+    def test_a_region_matching_no_partition_at_all_is_refused(self) -> None:
+        with pytest.raises(cred.CredentialError, match="not recognised"):
+            cred.resolve_partition(_STATIC, ["not-a-region-at-all-1"])
+
+    def test_a_genuine_but_botocore_unlisted_commercial_region_is_accepted(self) -> None:
+        # A region botocore doesn't specifically enumerate but that matches the commercial
+        # partition's own regionRegex shape is accepted, not rejected — the gate is "does not
+        # match ANY partition's shape", not "is in some fixed list of real region names".
+        assert cred.resolve_partition(_STATIC, ["us-east-97"]) == "aws"
+
 
 # --- endpoints & FIPS (real botocore, no network) ----------------------------------------------
 
@@ -266,7 +295,22 @@ class TestGovCloudEndpoints:
 
     def test_no_flag_no_env_is_not_fips(self, monkeypatch) -> None:
         monkeypatch.delenv("AWS_USE_FIPS_ENDPOINT", raising=False)
+        # Isolate from whatever ~/.aws/config happens to exist in this environment — this test
+        # asserts the "nothing at all requests FIPS" floor, not this machine's ambient config.
+        monkeypatch.setenv("AWS_CONFIG_FILE", "/dev/null")
         assert cred.fips_requested(_STATIC) is False
+
+    def test_shared_config_file_is_consulted_when_secret_and_env_are_silent(self, monkeypatch, tmp_path) -> None:
+        # found in review (unified-ai-review, 2026-09-28): fips_requested previously missed
+        # ~/.aws/config, so an operator relying on it would see a false "FIPS off" in self_test
+        # and the IDENTITY_RESOLVED log while every client was, in fact, using FIPS endpoints.
+        monkeypatch.delenv("AWS_USE_FIPS_ENDPOINT", raising=False)
+        config = tmp_path / "config"
+        config.write_text("[default]\nuse_fips_endpoint = true\n")
+        monkeypatch.setenv("AWS_CONFIG_FILE", str(config))
+        assert cred.fips_requested(_STATIC) is True
+        # The explicit secret field still wins over the shared config file either way.
+        assert cred.fips_requested({**_STATIC, "use_fips_endpoint": False}) is False
 
 
 class _Raw:

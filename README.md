@@ -289,7 +289,12 @@ adds only the partition check.
 
 Region names are shape-checked (`^[a-z]{2,3}(-[a-z]+)+-[0-9]+$`) so a typo
 fails secret validation instead of surfacing as a mid-run
-`EndpointConnectionError`.
+`EndpointConnectionError`. On top of that, `resolve_partition` checks every
+region against botocore's own bundled endpoint data (or this collector's own
+partition table, for a region newer than the vendored botocore) and refuses
+to run if any region matches *no* partition at all — a near-miss typo of a
+real region name (`us-gvo-west-1`, letters swapped) fails closed with a named
+error instead of silently being treated as commercial.
 
 ### What changes per run
 

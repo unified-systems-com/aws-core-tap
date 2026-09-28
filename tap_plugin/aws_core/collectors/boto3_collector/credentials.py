@@ -36,7 +36,6 @@ through the ``tap_cares`` secrets subsystem.
 
 from __future__ import annotations
 
-import os
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -51,6 +50,7 @@ from .partition import (
     PARTITION_RE,
     REGION_NAME_PATTERN,
     SUPPORTED_PARTITIONS,
+    known_region,
     parse_arn,
     partition_of_region,
 )
@@ -214,6 +214,11 @@ def resolve_partition(data: Mapping[str, Any], regions: list[str]) -> str:
     the regions are the operator's own declaration of where that is. Fails visibly — never
     quietly picks one — when:
 
+    - a region is not recognised as belonging to ANY partition, by botocore's own bundled
+      endpoint data or this collector's own table (:func:`partition.known_region`) — a typo of
+      a GovCloud/China/iso region name (``us-gvo-west-1``) matches none of the specific
+      patterns and must never be silently classified as commercial (found in review,
+      unified-ai-review, 2026-09-28: "Unknown regions fail open to the commercial partition");
     - the regions span partitions (one credential cannot reach both);
     - the optional ``data.partition`` disagrees with the regions;
     - the partition is not one this collector supports (``aws-cn`` and the isolated
@@ -223,6 +228,12 @@ def resolve_partition(data: Mapping[str, Any], regions: list[str]) -> str:
       its account disagrees with ``expected_account_id`` (a role always lands in the
       account its own ARN names, so that mismatch is knowable before any AWS call).
     """
+    unrecognised = [region for region in regions if not known_region(region)]
+    if unrecognised:
+        raise CredentialError(
+            f"AWS region(s) {unrecognised} are not recognised by botocore or this collector's "
+            "own partition table — check for a typo in data.regions_allowed/data.region"
+        )
     partitions = {partition_of_region(region) for region in regions}
     if len(partitions) > 1:
         raise CredentialError(
@@ -258,14 +269,24 @@ def resolve_partition(data: Mapping[str, Any], regions: list[str]) -> str:
 
 
 def fips_requested(data: Mapping[str, Any]) -> bool:
-    """Whether FIPS endpoints will be used for this secret: the secret's explicit
-    ``use_fips_endpoint`` if set, else ``AWS_USE_FIPS_ENDPOINT`` from the environment
-    (botocore reads the same variable). The shared-config-file setting is not consulted here,
-    so this can under-report; it never over-reports."""
+    """Whether FIPS endpoints will be used for this secret's run: the secret's explicit
+    ``use_fips_endpoint`` if set, else botocore's own effective resolution of
+    ``use_fips_endpoint`` — the ``AWS_USE_FIPS_ENDPOINT`` environment variable, then the shared
+    AWS config file (``~/.aws/config`` / ``AWS_CONFIG_FILE``), in botocore's own precedence
+    order.
+
+    This is what ``_botocore_session`` and every client it builds actually resolve to when the
+    secret sets nothing — it is used for the ``self_test`` ``AWS_PARTITION`` check and the
+    ``IDENTITY_RESOLVED`` log line precisely so those match a real client's own posture (found
+    in review, unified-ai-review, 2026-09-28: reading only the secret + env risked reporting
+    FIPS "off" while ``~/.aws/config`` had it on). A throwaway ``botocore.session.Session()``
+    read-only queries the same resolution chain botocore always consults; nothing here
+    constructs a client or makes a network call.
+    """
     explicit = data.get("use_fips_endpoint")
     if explicit is not None:
         return bool(explicit)
-    return os.environ.get("AWS_USE_FIPS_ENDPOINT", "").strip().lower() in ("true", "1")
+    return bool(botocore.session.Session().get_config_variable("use_fips_endpoint"))
 
 
 def _botocore_session(use_fips_endpoint: bool | None) -> botocore.session.Session:
