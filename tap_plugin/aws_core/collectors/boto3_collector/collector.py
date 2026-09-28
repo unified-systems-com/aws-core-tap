@@ -64,7 +64,7 @@ from .edges import EdgeError, emit_edges
 from .hydrate import hydrate_item
 from .ledger import CallLedger
 from .manifest import load_manifest, manifest_entries
-from .organizations import collect_organization, organizations_client
+from .organizations import OrganizationTree, collect_organization, organizations_client
 from .paths import eval_path
 from .projection import ProjectionError, project_item
 from .rgta import rgta_resource_type_filters, sweep_tags
@@ -92,6 +92,7 @@ _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
 _SITE_ORG_NOTICE = "c81a"
 _SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
+_SITE_ORG_READ_FAILED = "a4f0"
 
 _DOCS = (
     CollectorDocRef(
@@ -368,8 +369,24 @@ class Boto3Collector(CollectorBase):
         # manifest entry — see collectors/boto3_collector/organizations.py. Global scope, the run's
         # own first region: the endpoint (and with it the partition — GovCloud, commercial or China)
         # follows the credential exactly as every other global-scope entry's client does.
+        # collect_organization itself never lets an AWS call escape (every one is wrapped in
+        # ClientError/BotoCoreError handling and degrades to a reasoned, incomplete Listing). This
+        # try/except is defense against a defect INSIDE this collector's own shaping code — an
+        # unregistered entity type, a malformed schema lookup, an unexpected None — the same
+        # failure class every per-entry manifest read below is already isolated against
+        # (ENTRY_SKIPPED); the Organizations tree is one more optional surface, not a reason to
+        # fail the whole run and lose every already-gathered resource.
         org_dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
-        org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
+        try:
+            org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
+        except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
+            self.record_warn(
+                _SITE_ORG_READ_FAILED,
+                "ORG_READ_FAILED",
+                f"Organizations tree collection failed unexpectedly and was skipped: "
+                f"{type(exc).__name__}: {exc}",
+            )
+            org_tree = OrganizationTree()
         for org_notice in org_tree.notices:
             (self.record_warn if org_notice.level == "warn" else self.record_info)(
                 _SITE_ORG_NOTICE, org_notice.code, org_notice.message, message_data=org_notice.data
