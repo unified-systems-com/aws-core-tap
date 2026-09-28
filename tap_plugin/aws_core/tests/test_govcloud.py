@@ -30,6 +30,7 @@ from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     _COGNITO_ISSUER_RE,
+    _client_partition,
     _lambda_arn_from_integration_uri,
     apigateway_http_apis_detailed,
     aws_account_singleton,
@@ -480,6 +481,26 @@ def _client_for(clients: dict[str, Any], asked: list[str] | None = None):
     return client_for
 
 
+class TestClientPartitionFallback:
+    """``_client_partition`` calls ``_client_region``, defined later in the same module —
+    ordinary Python late binding (a function body resolves names when it RUNS, not when it is
+    defined), so this is not a NameError risk, but the fallback branch (a client with no
+    ``meta.partition`` at all) was otherwise never exercised by any test: every fake client
+    built for this test file sets ``meta.partition`` explicitly. This proves the fallback path
+    actually runs and returns the right answer, not merely that it fails to raise."""
+
+    def test_reads_meta_partition_when_present(self) -> None:
+        client = SimpleNamespace(meta=SimpleNamespace(partition="aws-us-gov", region_name=GOV_REGION))
+        assert _client_partition(client) == "aws-us-gov"
+
+    def test_falls_back_to_region_classification_when_meta_partition_is_absent(self) -> None:
+        client = SimpleNamespace(meta=SimpleNamespace(region_name=GOV_REGION))  # no .partition
+        assert _client_partition(client) == "aws-us-gov"
+
+    def test_falls_back_to_commercial_when_there_is_no_meta_at_all(self) -> None:
+        assert _client_partition(SimpleNamespace()) == "aws"
+
+
 class TestCustomFnsUseTheRunsPartition:
     def test_account_singleton_uses_client_for_for_sts_and_iam(self) -> None:
         asked: list[str] = []
@@ -581,6 +602,32 @@ def test_default_falsifier_session_inherits_govcloud_fips(monkeypatch) -> None:
     session, account_id = falsifiers._default_session()
     assert account_id == ACCOUNT
     assert _endpoint(session, "lambda", GOV_REGION) == "https://lambda-fips.us-gov-west-1.amazonaws.com"
+
+
+def test_default_falsifier_session_fails_closed_on_a_partition_mismatch(monkeypatch) -> None:
+    """A falsifier resolves its own credential independently of any collector run, so a secret
+    edited to something partition-inconsistent between runs must be refused here too — this is
+    the same resolve_partition gate Boto3Collector.run() applies, exercised through the
+    falsifier's own session factory rather than through the collector."""
+    from tap_plugin.aws_core import falsifiers
+
+    secret = Secret(
+        ref=SecretRef(scope="aws_core", key="boto_collector"),
+        kind="aws_static_access_key",
+        description="t",
+        # Mixed-partition regions: one commercial, one GovCloud — resolve_partition must
+        # refuse this before any client is built or any AWS call is attempted.
+        data={**_STATIC, "regions_allowed": ["us-east-1", GOV_REGION]},
+        metadata={},
+        source_path=Path("/dev/null"),
+    )
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: secret)
+    called: list[str] = []
+    monkeypatch.setattr(falsifiers, "build_session", lambda *a, **k: called.append("build_session"))
+    monkeypatch.setattr(falsifiers, "caller_account_id", lambda *a, **k: called.append("caller_account_id"))
+    with pytest.raises(cred.CredentialError, match="spans partitions"):
+        falsifiers._default_session()
+    assert called == []  # refused before any session was built or any AWS call attempted
 
 
 @pytest.mark.django_db
