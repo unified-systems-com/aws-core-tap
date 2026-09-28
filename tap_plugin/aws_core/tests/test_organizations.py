@@ -102,9 +102,11 @@ class FakeOrganizations:
 
     def list_accounts(self, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_accounts", kwargs))
-        if isinstance(self.accounts, Exception):
-            raise self.accounts
-        return {"Accounts": self.accounts}
+        configured = self.accounts
+        if isinstance(configured, Exception):
+            error = configured
+            raise error
+        return {"Accounts": configured}
 
     def list_accounts_for_parent(self, ParentId: str, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_accounts_for_parent", {"ParentId": ParentId, **kwargs}))
