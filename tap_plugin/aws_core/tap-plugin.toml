@@ -1,6 +1,11 @@
 manifest_version = "0"
 plugin_version = "0.4.0"
-requires_tap = ">=0.1.5"
+# 0.2.1: the first tap release carrying the reconciliation primitives this plugin's
+# [falsifiers] table depends on (tap#574 completeness, tap#596 candidates, tap#644 falsifiers +
+# the manifest [falsifiers] table, tap#652 the reconcile verb) — mirrors the floor
+# tap-plugin-github-core's own [falsifiers] table set (github-core#151) when it adopted the
+# same mechanism; a release before it refuses the [falsifiers] key at manifest parse.
+requires_tap = ">=0.2.1"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
@@ -97,6 +102,16 @@ TERMINATES_AT_CUSTOMER_DEVICE__aws_core = "edges/TERMINATES_AT_CUSTOMER_DEVICE.e
 CONSUMES_ENDPOINT_SERVICE__aws_core = "edges/CONSUMES_ENDPOINT_SERVICE.edge.json"
 FILTERS_VPC_DNS__aws_core = "edges/FILTERS_VPC_DNS.edge.json"
 ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
+
+[falsifiers]
+# Storage + IAM (aws-core-tap#41, a slice of the falsification epic aws-core-tap#15).
+# See tap_plugin/aws_core/falsifiers.py for why none of these four is dispatchable in
+# production yet (no containment edge reaches an account-scoped resource today) and for
+# the customer-managed-only scope of the IAM policy falsifier.
+aws_core__aws_s3_bucket = "tap_plugin.aws_core.falsifiers.S3BucketFalsifier"
+aws_core__aws_iam_role = "tap_plugin.aws_core.falsifiers.IamRoleFalsifier"
+aws_core__aws_iam_user = "tap_plugin.aws_core.falsifiers.IamUserFalsifier"
+aws_core__aws_iam_policy = "tap_plugin.aws_core.falsifiers.IamPolicyFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"
