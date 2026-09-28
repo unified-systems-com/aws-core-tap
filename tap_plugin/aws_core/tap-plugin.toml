@@ -1,5 +1,5 @@
 manifest_version = "0"
-plugin_version = "0.5.0"
+plugin_version = "0.5.0" # x-release-please-version
 # 0.2.1 (2026-09-22): the first core release the [falsifiers] table + tap_grid.falsifiers /
 # tap_grid.falsifier_testing (Candidate, Expected, Falsifier, Probe, Verdict, verdict_from_probe,
 # run_four_cases) resolve against — 0.1.6, the release before it, refuses the [falsifiers] key at
@@ -125,4 +125,4 @@ pages = "grift/pages.grift.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "a349ccc9decd3e03d66dc624b07fdd5485f5340f4f3f14a13f124112bbcdcaab"
+sha256 = "38158f182cbf021b34512e8099365402ed513ba32a6a519b4b3f2a03422e4ea6"
