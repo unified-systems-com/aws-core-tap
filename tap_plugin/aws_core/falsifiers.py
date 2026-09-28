@@ -34,33 +34,37 @@ Covers four types:
 
 **The account-match gate.** ``get_role`` / ``get_user`` / ``get_policy`` are looked up by
 name/ARN within whichever AWS account the collector's credential currently resolves to. A
-credential for account A asking about a role the grid recorded under account B gets
-``NoSuchEntity`` too — that credential was never going to find it either way, and nothing about
-the response distinguishes "account A has no such role" from "this is the wrong account to ask."
-So a ``not_found`` from any of the three IAM falsifiers is only trusted as
-``DROPPED_FROM_OBSERVATION`` when this run's own resolved caller account (STS
-``GetCallerIdentity``, ``credentials.caller_account_id`` — the same call the collector itself uses
-to assert-on-land) matches the account segment of the row's own ARN — a REQUIREMENT, not a check
-skipped when there is nothing to compare: a missing/malformed ARN account segment refuses exactly
-like a mismatch (``FIELD_VALIDATION_SCHEMA`` does not constrain ARN shape on any of the three ARN
-fields, so a malformed stored value is possible). Otherwise it is recorded
-``UNDETERMINED(scope_unknown)``, including when the caller account
-could not be resolved at all. This is deliberately narrower than a general cross-account "reach"
-gate (see below): it only answers "was this credential ever capable of finding this object",
-never "does this credential's grant still cover it" (github_core's harder question).
+credential for account A asking about a role the grid recorded under account B does not merely
+get ``NoSuchEntity`` — if account A happens to have its OWN, unrelated role of the same name, the
+call SUCCEEDS and hands back a live ARN that has nothing to do with the object the grid recorded.
+So the gate runs BEFORE any probe, not only on the error path: ``_account_gate`` resolves this
+run's own AWS account (STS ``GetCallerIdentity``, ``credentials.caller_account_id`` — the same
+call the collector itself uses to assert-on-land) once per batch and refuses the candidate outright
+— without spending the AWS call at all — unless it matches the account segment of the row's own
+ARN. A missing/malformed ARN account segment refuses exactly like a mismatch
+(``FIELD_VALIDATION_SCHEMA`` does not constrain ARN shape on any of the three ARN fields, so a
+malformed stored value is possible), and so does an unresolvable caller account. This is
+deliberately narrower than a general cross-account "reach" gate (see below): it only answers "was
+this credential ever capable of finding this exact object", never "does this credential's grant
+still cover it" (github_core's harder question).
 
-None of these four can answer ``REIDENTIFIED`` (checked, not assumed): each is identified by an
-ARN that is a deterministic function of account + name (+ path), and the corresponding GET call
-is looked up BY that same name — the response can never disagree with the request. S3 is
-structurally this way for good (bucket ARNs carry no separate id, ever). IAM is different: AWS
-does expose a genuinely immutable identifier separate from the ARN on each of these three objects
-(``RoleId`` / ``UserId`` / ``PolicyId``, e.g. ``AROA...`` — changes on a delete+recreate under the
-same name), but the model does not currently carry it (checked against
-``tap_plugin/aws_core/models/iam_role.py`` / ``iam_user.py`` / ``iam_policy.py`` before writing
-this: only ``name`` / the ARN field / ``path`` and a couple of type-specific fields). Adding a
-stable-id column is a model change, outside this falsifier slice's scope — flagged in the PR as a
-genuinely open follow-up (aws-core-tap#41), not guessed around by fabricating a scenario the AWS
-API cannot actually produce.
+**What can and cannot answer ``REIDENTIFIED`` (checked per type, not assumed uniformly).** S3
+never can: bucket ARNs (``arn:aws:s3:::name``) carry no separate id, ever — a structural S3 limit.
+Customer-managed IAM policies never can either: ``get_policy`` is looked up BY the full ARN
+(including path), so the response's ``Arn`` is definitionally the one requested — there is no
+other ARN it could disagree with. **IAM roles and users are different**: ``get_role`` /
+``get_user`` look up BY NAME ONLY — the request carries no path — and IAM role/user names are
+unique per account across every path, not per path. A role or user deleted and recreated under a
+DIFFERENT path but the SAME name is found by the same ``RoleName``/``UserName`` lookup, with a
+different full ARN (the path segment differs): a genuine, detectable ``REIDENTIFIED``. What
+neither falsifier can detect is a delete+recreate under the SAME path: that yields the identical
+ARN, so only AWS's own immutable ``RoleId`` / ``UserId`` (e.g. ``AROA...`` / ``AIDA...``) would
+catch it, and the model does not currently carry that field (checked against
+``tap_plugin/aws_core/models/iam_role.py`` / ``iam_user.py`` before writing this: only ``name`` /
+the ARN field / ``path`` and a couple of type-specific fields). Adding a stable-id column is a
+model change, outside this falsifier slice's scope — flagged in the PR as a genuinely open
+follow-up (aws-core-tap#41), not guessed around by fabricating a scenario the AWS API cannot
+actually produce.
 
 Two things this module deliberately does NOT do, both flagged in aws-core-tap#41 as open beyond
 this slice:
@@ -414,58 +418,49 @@ class _AwsFalsifier(Falsifier):
             candidate, expected, Probe(status=status, detail=detail)
         )
 
-    def _gated_from_error(
-        self,
-        candidate: Candidate,
-        expected: Expected,
-        exc: ClientError,
-        *,
-        row_account: str | None,
-    ) -> Verdict:
-        """Like ``_from_error``, except a ``not_found`` is only trusted when this run's own
-        caller account matches ``row_account`` (the account segment of the grid's own ARN for
-        this object). See the module docstring's account-match gate section for why: IAM's
-        lookups are by name, within whatever account the credential happens to be, so a
-        ``NoSuchEntity`` proves nothing when that account is not provably the one the grid
-        recorded the object under.
+    def _account_gate(
+        self, candidate: Candidate, *, row_account: str | None
+    ) -> Verdict | None:
+        """The account-match gate, run BEFORE any probe — not only before trusting an absence.
+
+        A credential whose account does not match the object's own ARN account cannot answer
+        ANY question about that object usefully: a ``found`` response under the wrong account
+        is a DIFFERENT object that merely shares a name (IAM role/user/policy names are only
+        unique per account, not globally), and comparing its live ARN to the grid's stored one
+        would be exactly the false-``REIDENTIFIED``/false-``PRESENT_AT_PROBE`` shape an earlier
+        version of this gate missed by only checking on the error path. Returns the refusal
+        ``Verdict`` when the gate fails, or ``None`` when the probe may proceed — and in the
+        refusal case, no AWS call is made at all.
         """
-        status, detail = probe_status_of(exc)
-        if status != "not_found":
-            return verdict_from_probe(
-                candidate, expected, Probe(status=status, detail=detail)
-            )
         caller_account = self._caller_account()
         if caller_account is None:
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"NoSuchEntity ({detail}), but this credential's own AWS account could not be verified against "
-                f"this object's ARN account ({row_account}); a NoSuchEntity under an unverified account proves "
-                "nothing, so this is not read as gone",
+                f"this credential's own AWS account could not be verified against this object's ARN account "
+                f"({row_account}); without that proof, nothing this credential's IAM API returns — found or "
+                "not — is comparable to the object the grid recorded",
             )
         if row_account is None:
             # A missing or malformed account segment: FIELD_VALIDATION_SCHEMA does not enforce
             # ARN shape on any of the three ARN fields, so a row with a garbled ARN is possible.
-            # Fall through to the mismatch branch's reasoning rather than trusting the absence:
-            # nothing here proves this credential's account is the one the ARN names.
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"NoSuchEntity ({detail}), but this object's own ARN carries no recognizable account segment to "
-                f"verify against this credential's account ({caller_account}); a NoSuchEntity cannot be read as "
-                "gone without that proof",
+                f"this object's own ARN carries no recognizable account segment to verify against this "
+                f"credential's account ({caller_account}); without that proof, nothing this credential's IAM "
+                "API returns is comparable to the object the grid recorded",
             )
         if caller_account != row_account:
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"NoSuchEntity ({detail}), but this credential's account ({caller_account}) does not match this "
-                f"object's ARN account ({row_account}); a NoSuchEntity from the wrong account proves nothing "
-                "about whether the object exists in the account it was recorded under",
+                f"this credential's account ({caller_account}) does not match this object's ARN account "
+                f"({row_account}); a role/user/policy of the same name in the WRONG account is a different "
+                "object, and nothing this credential's IAM API returns about it is comparable to the one the "
+                "grid recorded",
             )
-        return verdict_from_probe(
-            candidate, expected, Probe(status=status, detail=detail)
-        )
+        return None
 
     @staticmethod
     def _from_transport_error(candidate: Candidate, exc: BotoCoreError) -> Verdict:
@@ -480,10 +475,9 @@ class _AwsFalsifier(Falsifier):
 class IamRoleFalsifier(_AwsFalsifier):
     """``get_role``; ``NoSuchEntity`` -> gone, gated by the account-match check (module docstring).
 
-    Cannot answer ``REIDENTIFIED`` (module docstring): ``role_arn`` (the model's only identity
-    field, and its ``NATURAL_KEY``) is a deterministic function of account + path + name, and
-    ``get_role`` is looked up BY that same name — the response's ``Arn`` can never disagree with
-    the request.
+    Cannot answer ``REIDENTIFIED`` for a delete+recreate under the SAME path (module docstring):
+    that yields an identical ARN. CAN answer it for a delete+recreate under a DIFFERENT path,
+    same name: ``get_role`` looks up by ``RoleName`` alone.
     """
 
     SERVICE = "iam"
@@ -500,13 +494,14 @@ class IamRoleFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this IAM role",
             )
+        refusal = self._account_gate(candidate, row_account=_arn_account(arn))
+        if refusal is not None:
+            return refusal
         expected = Expected(source_id=arn, owner=_owner_of(candidate), name=name)
         try:
             result = client.get_role(RoleName=name)
         except ClientError as exc:
-            return self._gated_from_error(
-                candidate, expected, exc, row_account=_arn_account(arn)
-            )
+            return self._from_error(candidate, expected, exc)
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         role = result.get("Role") or {}
@@ -523,8 +518,11 @@ class IamRoleFalsifier(_AwsFalsifier):
 
 class IamUserFalsifier(_AwsFalsifier):
     """``get_user``; ``NoSuchEntity`` -> gone, gated by the account-match check (module docstring).
-    Cannot answer ``REIDENTIFIED`` (module docstring): ``user_arn`` is a deterministic function of
-    account + path + name, and ``get_user`` is looked up BY that same name."""
+
+    Cannot answer ``REIDENTIFIED`` for a delete+recreate under the SAME path (module docstring):
+    that yields an identical ARN. CAN answer it for a delete+recreate under a DIFFERENT path,
+    same name: ``get_user`` looks up by ``UserName`` alone.
+    """
 
     SERVICE = "iam"
 
@@ -540,13 +538,14 @@ class IamUserFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this IAM user",
             )
+        refusal = self._account_gate(candidate, row_account=_arn_account(arn))
+        if refusal is not None:
+            return refusal
         expected = Expected(source_id=arn, owner=_owner_of(candidate), name=name)
         try:
             result = client.get_user(UserName=name)
         except ClientError as exc:
-            return self._gated_from_error(
-                candidate, expected, exc, row_account=_arn_account(arn)
-            )
+            return self._from_error(candidate, expected, exc)
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         user = result.get("User") or {}
@@ -570,7 +569,8 @@ class IamPolicyFalsifier(_AwsFalsifier):
     refuses the candidate without spending an AWS call on it (never dispatches ``get_policy`` for
     one) — a falsifier for something that structurally cannot be absent is pointless work, not a
     fail-closed default. Also cannot answer ``REIDENTIFIED`` for a customer policy (module
-    docstring): ``policy_arn`` is a deterministic function of account + path + name.
+    docstring): ``get_policy`` is looked up BY the full ``policy_arn``, so the response's ``Arn``
+    is definitionally the one requested.
     """
 
     SERVICE = "iam"
@@ -592,15 +592,16 @@ class IamPolicyFalsifier(_AwsFalsifier):
             return _undetermined(
                 candidate, "scope_unknown", "the grid holds no ARN for this IAM policy"
             )
+        refusal = self._account_gate(candidate, row_account=_arn_account(arn))
+        if refusal is not None:
+            return refusal
         expected = Expected(
             source_id=arn, owner=_owner_of(candidate), name=name or None
         )
         try:
             result = client.get_policy(PolicyArn=arn)
         except ClientError as exc:
-            return self._gated_from_error(
-                candidate, expected, exc, row_account=_arn_account(arn)
-            )
+            return self._from_error(candidate, expected, exc)
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         policy = result.get("Policy") or {}
