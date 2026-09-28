@@ -1,10 +1,10 @@
 # TAP AWS Core plugin — package-mode distribution (namespaced 2026-07-01).
-# Identity (conformance gate): slug "aws_core" == dist "tap-plugin-aws-core" ==
+# Identity (conformance gate): slug "aws_core" == dist "aws-core-tap" ==
 # namespace "tap_plugin.aws_core" == entry-point key. Migrated OUT of
 # [tool.uv.workspace] members; its Tier-0 `boto3` dep travels with the plugin and
 # uv resolves it when the pre-boot stage installs it (req-plugin-arch-dependencies-1).
 [project]
-name = "tap-plugin-aws-core"
+name = "aws-core-tap"
 description = "TAP AWS Core plugin — AWS resource-type models and the boto3 collection engine."
 requires-python = ">=3.14"
 dynamic = ["version"]

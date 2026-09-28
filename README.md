@@ -12,7 +12,7 @@ collector that populates it from a running AWS account:
 - **Skills** for catalog refresh and icon sourcing (`skills/`)
 
 Identity (enforced by the conformance gate): slug `aws_core` == dist
-`tap-plugin-aws-core` == namespace `tap_plugin.aws_core` == entry-point key.
+`aws-core-tap` == namespace `tap_plugin.aws_core` == entry-point key.
 The version is derived from git tags via hatch-vcs; the plugin's Tier-0 `boto3`
 dependency travels with the package. `tap_cares` (in TAP core) owns the
 collector runtime, run records, secret mechanics, and the GRIFT import
