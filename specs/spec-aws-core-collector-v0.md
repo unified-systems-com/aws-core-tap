@@ -1381,6 +1381,18 @@ Deferred from v0:
   failed run must never trigger a sweep** (authority is only as wide as what
   the run actually, completely covered — the single sharpest Cartography
   footgun). Demand-signal-gated; not built.
+
+  **Update (tap-plugin-aws-core#42):** the demand signal arrived from core's newer, separately
+  designed reconcile primitive — `tap_grid.falsifiers` / `tap_grid.candidates` (probe the
+  source per candidate, never a batch-vs-grid diff) — which `tap-plugin-github-core` adopted
+  first (github-core#151). This plugin's `spec-aws-core-v0.md`
+  (`req-aws-core-reconcile-falsifiers`) now builds the JUDGING half of that newer mechanism
+  (the `[falsifiers]` manifest table, a base `_AwsFalsifier`, `SubnetFalsifier`) — a different,
+  now-superseding design from the "diff this run's batch against the grid" sketch above. What
+  remains Backlog, unchanged by that work: this collector still produces no per-surface
+  completeness statement, so `tap_grid.candidates.derive_candidates` has nothing to derive a
+  subnet (or any other) candidate from yet. The two pieces are independent: the falsifier layer
+  can be built and tested (and is) before the collector emits a single completeness surface.
 - **Multi-account.** v0 is one account. The secrets model already frames
   multi-account as "more secret files"; orchestration across accounts is later.
 - **Uniform-enumeration APIs** (Resource Groups Tagging API, Cloud Control API,

@@ -44,6 +44,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-panel-counts | [AWS Pages](#aws-pages) | Implemented | The `aws-counts` panel type: count tiles over the estate |
 | req-aws-core-layout-hints | [AWS Pages](#aws-pages) | Implemented | Placement read from a node's own `layout:*` tags, never its name or id |
 | req-aws-core-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | Explicitly deferred concerns |
+| req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Implemented | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org excluded by design |
 
 ### Plugin Scope
 ----
@@ -825,3 +826,105 @@ The following are explicitly deferred from v0:
 #### Future
 
 Live account discovery is the next major capability. It will require AWS credentials (assumed role or org-level access) and should populate all resource types, edges, and configuration metadata for a running AWS environment. The catalog refresh skill provides the foundation for this by maintaining the reference data that live discovery will build on.
+
+**Editor's note (tap-plugin-aws-core#42):** live account discovery shipped since this section
+was written — `collectors/boto3_collector` — but this list is otherwise accurate: the grid it
+writes is still add/update only. See [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) below and `req-aws-collector-reconcile`
+(`specs/spec-aws-core-collector-v0.md`, Backlog) for what "grid-state reconciliation" now
+means and how much of it exists.
+
+### Reconciliation Foundation — Falsifiers
+----
+RID: `req-aws-core-reconcile-falsifiers`
+
+Status: `Implemented`
+
+`tap-plugin-aws-core#42`. This plugin had zero falsifier/reconciliation infrastructure: no
+`[falsifiers]` manifest table, no base `Falsifier` subclass, nothing registered — the grid
+accumulates AWS resources that no longer exist (`README.md`'s Roadmap item 1). This
+requirement is the foundation two sibling PRs build specific-resource-type falsifiers on top
+of, mirroring `tap-plugin-github-core`'s already-shipped `falsifiers.py` (github-core#151) and
+core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
+
+#### Implementation
+
+- **`[falsifiers]` manifest table**, `tap-plugin.toml`: one entry today,
+  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`. `requires_tap`
+  moved to `>=0.2.1` — 0.1.6, the release before it, refuses the `[falsifiers]` key at
+  manifest parse (`tap_plugins/manifest.py::_parse_falsifiers`).
+- **`tap_plugin/aws_core/falsifiers.py`**: a base `_AwsFalsifier(Falsifier)` mirroring
+  `_GithubFalsifier`'s shape but simpler — `Boto3Collector` is single-account
+  ("manifest-driven, single account, no deletes", its own docstring), so there is no
+  GitHub-App-style `Reach`; the analogous check compares the resolved credential's STS
+  caller-identity account against the candidate's own `aws_account` dimension
+  (`collectors/boto3_collector/collector.py` stamps `dimensions = {"cloud": "aws",
+  "aws_account": account_id, "aws_region": region_label}` on every node it writes). A mismatch,
+  or a candidate with no `aws_account` dimension at all, is `UNDETERMINED(scope_unknown)`
+  without a probe.
+- **Subnet, not VPC, is the concrete proof — the task that opened this requirement suggested
+  VPC, and that turned out to be wrong.** `tap_plugins/validate/service.py`'s
+  `_check_falsifier_coverage` (a `loads`-level check every plugin repo's CI runs under
+  `--strict`, promoting its warning to a hard failure) reads a model's `CONTAINMENT_EDGES` to
+  find the edge's declared TARGETS, not the declaring model itself — a candidate is a child
+  held under a parent, never the parent. `Vpc.CONTAINMENT_EDGES ==
+  ("PARTITIONED_INTO_SUBNET__aws_core",)` (`req-aws-core-placement`) and that edge's target
+  is `aws_core__aws_subnet`, so **Subnet** is the one type this plugin's existing containment
+  declaration already marks reconcilable — not VPC, which nothing today makes a containment
+  target of anything. Registering a `VpcFalsifier` instead would have been unreachable
+  infrastructure that also left the coverage check's one real warning unaddressed, which
+  would red `validate_plugin --strict` the moment `requires_tap` moved to a core release
+  that carries the check (as this PR's own `requires_tap` bump does).
+- **`SubnetFalsifier(_AwsFalsifier)`**: probes `ec2:DescribeSubnets(SubnetIds=[subnet_id])`
+  in the candidate's own region; compares AWS's `SubnetId` (the grid's `NATURAL_KEY`) and
+  `OwnerId`. `InvalidSubnetID.NotFound` (and the generic `*.NotFound` / `*NotFoundException`
+  AWS error-code shapes every service follows) is `not_found`; `UnauthorizedOperation` /
+  `AccessDenied(Exception)` is `forbidden`; a rate-limit code is `rate_limited`; anything else,
+  including a `BotoCoreError`, is `errored` — never guessed at.
+- **`AwsAccount` / `AwsOrganization` declare `CONTAINMENT_EDGES = ()` explicitly**, each with a
+  comment citing why, rather than leaving it an unexplained inherited default:
+  - Cascade requires the retiring node to be the edge's SOURCE
+    (`tap_grid/models.py::BaseModel.__init_subclass__`: `CONTAINMENT_EDGES ⊆ OUTBOUND_EDGES`;
+    `tap_grid/services/_impl.py::_contained_children` walks `from_entity_id=<parent>`).
+    `BELONGS_TO_ACCOUNT` (resource → account) and `NESTED_UNDER_PARENT` (OU/account →
+    OU/organization) both point child → parent, so neither model is ever a source of an edge
+    reaching something it "owns" — this was already the `req-aws-core-organizations` ruling
+    above ("Both edges point child → parent... an account also outlives its organization"),
+    restated here as an explicit class-level declaration.
+  - `edges/BELONGS_TO_ACCOUNT.edge.json` and `edges/RESIDES_IN_VPC.edge.json` both carry the
+    same disclaimer in their own manifest description: "a reference, not containment" — RAM
+    sharing and `TAP_CASCADE_MAX_CLOSURE` fan-out for `BELONGS_TO_ACCOUNT` specifically. A
+    blanket account-level cascade over all 52 `BELONGS_TO_ACCOUNT` source types would
+    contradict that already-documented design, not fix a gap.
+  - Retiring an account therefore ends its resources' `BELONGS_TO_ACCOUNT` edges (the
+    tombstone endpoint rule) and leaves the resources themselves live; each resource type's
+    own truth is a question for that type's own falsifier (the sibling PRs' work), never a
+    blanket account-level cascade.
+- **Neither `AwsAccount` nor `AwsOrganization` has a falsifier.** `Boto3Collector.run()`
+  already treats credential/region-scope/account-identity failure as unrecoverable —
+  `self._abort(..., "STS_UNREACHABLE", ...)` / `self._abort(..., "ACCOUNT_MISMATCH", ...)` —
+  mirroring `tap-plugin-github-core`'s foundation-layer abort pattern
+  (`specs/spec-github-core-reliability.md`, `req-github-core-reliability-absence`: a
+  foundation failure aborts the run rather than degrading one surface and continuing).
+  `AwsOrganization` additionally has no collector at all yet (`req-aws-core-organizations`:
+  "design vocabulary... no collector emits them yet"), so it can never produce a completeness
+  surface for a candidate to come from.
+- **Candidates do not flow from a live run yet.** `boto3_collector` does not produce
+  per-surface completeness statements (`req-aws-collector-reconcile`,
+  `specs/spec-aws-core-collector-v0.md`, still Backlog) — that is the separate seam that would
+  let `tap_grid.candidates.derive_candidates` actually emit a subnet candidate for
+  `SubnetFalsifier` to judge. This requirement builds and proves the JUDGING layer
+  (`tap_grid.falsifier_testing.run_four_cases` against a fake `ec2` client,
+  `tap_plugin/aws_core/tests/test_falsifiers.py`); wiring the collector to produce
+  completeness statements is future work, named so the omission is not mistaken for an
+  oversight.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-reconcile-falsifiers-1 | Manifest Table | Implemented | `tap-plugin.toml` declares `[falsifiers]` with `aws_core__aws_subnet`; `requires_tap` is `>=0.2.1`. | |
+| req-aws-core-reconcile-falsifiers-2 | Four Proof Cases | Implemented | `SubnetFalsifier` produces `PRESENT_AT_PROBE` / `DROPPED_FROM_OBSERVATION` / `UNDETERMINED(forbidden)` / `REIDENTIFIED` against a fake `ec2` client, run through `tap_grid.falsifier_testing.run_four_cases`. | |
+| req-aws-core-reconcile-falsifiers-3 | Single-Account Scope Check | Implemented | A candidate whose `aws_account` dimension does not match the falsifier's resolved credential account is `UNDETERMINED(scope_unknown)` without a probe. | |
+| req-aws-core-reconcile-falsifiers-4 | Account/Org Declare No Containment | Implemented | `AwsAccount.CONTAINMENT_EDGES == ()` and `AwsOrganization.CONTAINMENT_EDGES == ()`, each explicitly declared with a citing comment. | |
+| req-aws-core-reconcile-falsifiers-5 | Account/Org Have No Falsifier | Implemented | Neither type is registered in `[falsifiers]`; the reasoning (foundation-layer abort, no collector for Organization) is documented in this section and in `falsifiers.py`'s module docstring. | |
+| req-aws-core-reconcile-falsifiers-6 | Completeness Statements Still Backlog | Proposed | `boto3_collector` does not yet produce per-surface completeness statements, so no candidate can flow from a live run; tracked as `req-aws-collector-reconcile`. | Blocks turning this foundation into an actually-running reconcile pass. |

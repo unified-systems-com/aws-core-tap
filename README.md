@@ -203,12 +203,16 @@ and edges are declarable as manifest data, so adding a service is usually a
 
 ## Roadmap
 
-1. **Support deletion.** Close the additive-only gap. Grid-state
-   reconciliation is specified but unbuilt (`req-aws-collector-reconcile`,
-   Backlog): compare a run's observed set against the grid and turn absence
-   into explicit, auditable removal — routed through GRIFT and the service
-   layer, never a collector side channel. Until this lands, the grid
-   accumulates resources that no longer exist in AWS.
+1. **Support deletion.** Close the additive-only gap. The JUDGING layer now exists
+   (`req-aws-core-reconcile-falsifiers`, Implemented — `tap-plugin.toml`'s `[falsifiers]`
+   table, `falsifiers.py`'s `_AwsFalsifier` base, `SubnetFalsifier`): given a retirement
+   candidate, a falsifier probes AWS directly and returns a verdict, the same mechanism
+   `tap-plugin-github-core` ships (github-core#151). What is still missing is the FEEDING
+   half: `boto3_collector` produces no per-surface completeness statement yet
+   (`req-aws-collector-reconcile`, still Backlog in `spec-aws-core-collector-v0.md`), so
+   `tap_grid.candidates.derive_candidates` has nothing to derive a candidate from — until
+   that lands, the grid still accumulates resources that no longer exist in AWS, just with
+   the judging half of the pipeline already proven end-to-end in tests.
 2. **Add more supported AWS types.** First, manifest entries for the 27
    modeled-but-not-collected types (usually pure manifest work — no new code);
    then models for unmodeled services per the ARN heuristic, following the
