@@ -41,12 +41,17 @@ So the gate runs BEFORE any probe, not only on the error path: ``_account_gate``
 run's own AWS account (STS ``GetCallerIdentity``, ``credentials.caller_account_id`` — the same
 call the collector itself uses to assert-on-land) once per batch and refuses the candidate outright
 — without spending the AWS call at all — unless it matches the account segment of the row's own
-ARN. A missing/malformed ARN account segment refuses exactly like a mismatch
-(``FIELD_VALIDATION_SCHEMA`` does not constrain ARN shape on any of the three ARN fields, so a
-malformed stored value is possible), and so does an unresolvable caller account. This is
-deliberately narrower than a general cross-account "reach" gate (see below): it only answers "was
-this credential ever capable of finding this exact object", never "does this credential's grant
-still cover it" (github_core's harder question).
+ARN, AND (independently) the candidate's grid-recorded parent account, when a future containment
+edge populates one — the object's own ARN and its containment parent are two different
+provenance signals, and an inconsistency between them refuses rather than resolving itself in
+whichever direction happens to let the probe proceed. A missing/malformed ARN account segment
+refuses exactly like a mismatch (``FIELD_VALIDATION_SCHEMA`` does not constrain ARN shape on any
+of the three ARN fields, so a malformed stored value is possible), and so does an unresolvable
+caller account — a failed resolution is cached per batch exactly like a successful one, so an STS
+outage costs one timeout for the whole batch, not one per candidate. This is deliberately
+narrower than a general cross-account "reach" gate (see below): it only answers "was this
+credential ever capable of finding this exact object", never "does this credential's grant still
+cover it" (github_core's harder question).
 
 **What can and cannot answer ``REIDENTIFIED`` (checked per type, not assumed uniformly).** S3
 never can: bucket ARNs (``arn:aws:s3:::name``) carry no separate id, ever — a structural S3 limit.
@@ -330,9 +335,12 @@ class _AwsFalsifier(Falsifier):
         #: A caller account handed in by a caller (tests) pins the answer and is never re-resolved.
         self._injected_caller_account = caller_account
         #: A caller account RESOLVED from the credential is scoped to the batch it was resolved
-        #: for, matching every other per-run cache in this module.
+        #: for, matching every other per-run cache in this module. ``_caller_account_attempted_for``
+        #: tracks whether resolution was ATTEMPTED this batch, independent of whether it
+        #: succeeded: a failure is cached too, so an STS outage costs one timeout per batch, not
+        #: one per candidate.
         self._resolved_caller_account: str | None = None
-        self._caller_account_for = ""
+        self._caller_account_attempted_for = ""
 
     def _resolve_client(self) -> ProbeClient:
         if self._client is None:
@@ -354,22 +362,25 @@ class _AwsFalsifier(Falsifier):
             self._session = None
 
     def _caller_account(self) -> str | None:
-        """This run's own AWS account id (STS ``GetCallerIdentity``), resolved once per batch and
-        cached — the account-match gate every IAM falsifier uses before trusting a
-        ``NoSuchEntity`` as gone. None when it could not be resolved: an injected ``client`` with
-        no session behind it (its credential's account is simply not observable this way), or STS
-        itself failing. A falsifier that cannot prove which account it speaks for must not use
-        this gate to promote an absence into a retirement — callers treat None the same as a
-        proven mismatch, never as a pass.
+        """This run's own AWS account id (STS ``GetCallerIdentity``), resolved ONCE per batch and
+        cached whether it succeeds or fails — the account-match gate every IAM falsifier uses
+        before trusting a ``NoSuchEntity`` as gone. None when it could not be resolved: an
+        injected ``client`` with no session behind it (its credential's account is simply not
+        observable this way), or STS itself failing. A falsifier that cannot prove which account
+        it speaks for must not use this gate to promote an absence into a retirement — callers
+        treat None the same as a proven mismatch, never as a pass.
+
+        The failure case is cached too, not just success: an earlier version only cached a
+        resolved account, so a batch hitting an STS outage repeated the call (and its timeout)
+        once per candidate instead of failing closed once for the whole batch.
         """
         if self._injected_caller_account is not None:
             return self._injected_caller_account
-        if (
-            self._resolved_caller_account is not None
-            and self._caller_account_for == self._batch_id
-        ):
+        if self._caller_account_attempted_for == self._batch_id:
             return self._resolved_caller_account
         if self._session is None:
+            self._resolved_caller_account = None
+            self._caller_account_attempted_for = self._batch_id
             return None
         try:
             account = caller_account_id(
@@ -383,11 +394,9 @@ class _AwsFalsifier(Falsifier):
                 type(self).__name__,
                 exc,
             )
-            return None
-        self._resolved_caller_account, self._caller_account_for = (
-            account,
-            self._batch_id,
-        )
+            account = None
+        self._resolved_caller_account = account
+        self._caller_account_attempted_for = self._batch_id
         return account
 
     def batch_falsify(
@@ -419,7 +428,7 @@ class _AwsFalsifier(Falsifier):
         )
 
     def _account_gate(
-        self, candidate: Candidate, *, row_account: str | None
+        self, candidate: Candidate, *, row_account: str | None, owner: str | None
     ) -> Verdict | None:
         """The account-match gate, run BEFORE any probe — not only before trusting an absence.
 
@@ -428,9 +437,19 @@ class _AwsFalsifier(Falsifier):
         is a DIFFERENT object that merely shares a name (IAM role/user/policy names are only
         unique per account, not globally), and comparing its live ARN to the grid's stored one
         would be exactly the false-``REIDENTIFIED``/false-``PRESENT_AT_PROBE`` shape an earlier
-        version of this gate missed by only checking on the error path. Returns the refusal
-        ``Verdict`` when the gate fails, or ``None`` when the probe may proceed — and in the
-        refusal case, no AWS call is made at all.
+        version of this gate missed by only checking on the error path.
+
+        ``owner`` (``_owner_of(candidate)``, the account a future containment edge would record
+        on ``candidate.parent``) is checked too, independently of ``row_account``: the object's
+        OWN ARN and the candidate's GRID-RECORDED parent are two different provenance signals,
+        and an earlier version of this gate only checked the first. A candidate whose parent
+        claims account B while its own stored ARN names account A is itself an inconsistency
+        that must refuse, not resolve itself in whichever direction happens to let the probe
+        proceed — a data-integrity problem is exactly the case a single-signal check would paper
+        over silently.
+
+        Returns the refusal ``Verdict`` when the gate fails, or ``None`` when the probe may
+        proceed — and in the refusal case, no AWS call is made at all.
         """
         caller_account = self._caller_account()
         if caller_account is None:
@@ -459,6 +478,15 @@ class _AwsFalsifier(Falsifier):
                 f"({row_account}); a role/user/policy of the same name in the WRONG account is a different "
                 "object, and nothing this credential's IAM API returns about it is comparable to the one the "
                 "grid recorded",
+            )
+        if owner is not None and owner != caller_account:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this object's own ARN account ({row_account}) matches this credential, but the candidate's "
+                f"grid-recorded parent account ({owner}) does not; the object's ARN and its containment parent "
+                "disagree about which account this is, and that inconsistency refuses rather than resolving "
+                "itself in whichever direction happens to let the probe proceed",
             )
         return None
 
@@ -494,10 +522,13 @@ class IamRoleFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this IAM role",
             )
-        refusal = self._account_gate(candidate, row_account=_arn_account(arn))
+        owner = _owner_of(candidate)
+        refusal = self._account_gate(
+            candidate, row_account=_arn_account(arn), owner=owner
+        )
         if refusal is not None:
             return refusal
-        expected = Expected(source_id=arn, owner=_owner_of(candidate), name=name)
+        expected = Expected(source_id=arn, owner=owner, name=name)
         try:
             result = client.get_role(RoleName=name)
         except ClientError as exc:
@@ -538,10 +569,13 @@ class IamUserFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this IAM user",
             )
-        refusal = self._account_gate(candidate, row_account=_arn_account(arn))
+        owner = _owner_of(candidate)
+        refusal = self._account_gate(
+            candidate, row_account=_arn_account(arn), owner=owner
+        )
         if refusal is not None:
             return refusal
-        expected = Expected(source_id=arn, owner=_owner_of(candidate), name=name)
+        expected = Expected(source_id=arn, owner=owner, name=name)
         try:
             result = client.get_user(UserName=name)
         except ClientError as exc:
@@ -592,12 +626,13 @@ class IamPolicyFalsifier(_AwsFalsifier):
             return _undetermined(
                 candidate, "scope_unknown", "the grid holds no ARN for this IAM policy"
             )
-        refusal = self._account_gate(candidate, row_account=_arn_account(arn))
+        owner = _owner_of(candidate)
+        refusal = self._account_gate(
+            candidate, row_account=_arn_account(arn), owner=owner
+        )
         if refusal is not None:
             return refusal
-        expected = Expected(
-            source_id=arn, owner=_owner_of(candidate), name=name or None
-        )
+        expected = Expected(source_id=arn, owner=owner, name=name or None)
         try:
             result = client.get_policy(PolicyArn=arn)
         except ClientError as exc:

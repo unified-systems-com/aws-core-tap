@@ -198,6 +198,60 @@ class TestIamRoleFalsifier:
         assert "no recognizable account segment" in verdict.note
         client.get_role.assert_not_called()
 
+    def test_a_containment_parent_disagreeing_with_the_arn_refuses_before_any_probe(
+        self,
+    ) -> None:
+        # The object's own ARN says ACCOUNT_ID (and the credential matches that), but the
+        # candidate's grid-recorded containment parent names a DIFFERENT account: two
+        # independent provenance signals disagree, and that must refuse rather than trust
+        # either one.
+        account = _create(ACCOUNT, {"name": "other", "account_id": OTHER_ACCOUNT_ID})
+        rid = _create(
+            IAM_ROLE,
+            {"name": "dropped", "role_arn": f"arn:aws:iam::{ACCOUNT_ID}:role/dropped"},
+        )
+        candidate = _candidate(rid, IAM_ROLE, account)
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "disagree" in verdict.note
+        client.get_role.assert_not_called()
+
+    def test_a_failed_caller_account_resolution_is_cached_for_the_whole_batch(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # An earlier version only cached a SUCCESSFUL resolution, so a batch hitting an STS
+        # outage repeated the call (and its timeout) once per candidate instead of failing
+        # closed once for the whole batch.
+        import tap_plugin.aws_core.falsifiers as falsifiers_module
+
+        attempts: list[int] = []
+
+        def boom(*args: Any, **kwargs: Any) -> str:
+            attempts.append(1)
+            raise RuntimeError("STS unavailable")
+
+        monkeypatch.setattr(falsifiers_module, "caller_account_id", boom)
+        candidates = [
+            self._role(f"r{i}", f"arn:aws:iam::{ACCOUNT_ID}:role/r{i}")
+            for i in range(3)
+        ]
+        fake_client = MagicMock()
+        fake_session = MagicMock()
+        fake_session.client.return_value = fake_client
+        falsifier = IamRoleFalsifier(
+            session_factory=lambda: (fake_session, "us-east-1")
+        )
+        verdicts = falsifier.batch_falsify(candidates, _context())
+        assert [(v.verdict, v.reason) for v in verdicts] == [
+            (UNDETERMINED, "scope_unknown")
+        ] * 3
+        assert len(attempts) == 1, (
+            "one STS attempt for the whole batch, not one per candidate"
+        )
+        fake_client.get_role.assert_not_called()
+
     def test_forbidden(self) -> None:
         candidate = self._role("forbidden", f"arn:aws:iam::{ACCOUNT_ID}:role/forbidden")
         client = MagicMock()
