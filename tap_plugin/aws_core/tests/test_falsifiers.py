@@ -134,9 +134,8 @@ class TestIamRoleFalsifier:
     def test_not_found_with_no_verifiable_caller_account_is_undetermined_not_dropped(
         self,
     ) -> None:
-        # The gate's core protection (both AI review seats flagged this independently): with no
-        # session behind the injected client, the caller account cannot be resolved at all, so a
-        # NoSuchEntity must not become a retirement.
+        # The gate's core protection: with no session behind the injected client, the caller
+        # account cannot be resolved at all, so a NoSuchEntity must not become a retirement.
         candidate = self._role("dropped", f"arn:aws:iam::{ACCOUNT_ID}:role/dropped")
         client = MagicMock()
         client.get_role.side_effect = _client_error("NoSuchEntity", "GetRole")
@@ -159,6 +158,18 @@ class TestIamRoleFalsifier:
         [verdict] = falsifier.batch_falsify([candidate], _context())
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
         assert "does not match" in verdict.note
+
+    def test_not_found_with_a_malformed_arn_is_undetermined_not_dropped(self) -> None:
+        # `FIELD_VALIDATION_SCHEMA` does not constrain role_arn's shape, so a garbled stored
+        # value is possible: `_arn_account` then returns None, and that must refuse exactly
+        # like a mismatch — not fall through and trust the NoSuchEntity.
+        candidate = self._role("dropped", "not-a-real-arn")
+        client = MagicMock()
+        client.get_role.side_effect = _client_error("NoSuchEntity", "GetRole")
+        falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "no recognizable account segment" in verdict.note
 
     def test_forbidden(self) -> None:
         candidate = self._role("forbidden", f"arn:aws:iam::{ACCOUNT_ID}:role/forbidden")
@@ -365,7 +376,16 @@ class TestS3BucketFalsifier:
     # -- both ambiguous statuses (AWS's own HeadBucket doc: 404 and 403 are equally ambiguous) --
 
     @pytest.mark.parametrize("code", ["404", "403"])
-    def test_absent_from_list_buckets_is_dropped(self, code: str) -> None:
+    def test_absent_from_list_buckets_without_a_verified_owner_is_undetermined_not_dropped(
+        self, code: str
+    ) -> None:
+        # The owner-match requirement is unconditional, not skipped when there is nothing to
+        # compare: today `expected.owner` is always None (no containment edge reaches this type
+        # yet), so an absence from this credential's own inventory is never, on its own, read as
+        # evidence — S3 bucket names are global, so "not in my ListBuckets" is equally what a
+        # bucket owned by a DIFFERENT account looks like. See
+        # test_an_absence_under_the_matching_recorded_owner_is_dropped for the only path that
+        # DOES retire.
         candidate = self._bucket("gone")
         client = MagicMock()
         client.head_bucket.side_effect = _client_error(code, "HeadBucket")
@@ -375,9 +395,24 @@ class TestS3BucketFalsifier:
         [verdict] = S3BucketFalsifier(client=client).batch_falsify(
             [candidate], _context()
         )
-        assert verdict.verdict == DROPPED_FROM_OBSERVATION
-        assert "absent from this account's own ListBuckets" in _probe(verdict)["detail"]
-        assert unsupported(verdict) is None
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "owning account could not be verified" in verdict.note
+
+    @pytest.mark.parametrize("code", ["404", "403"])
+    def test_absent_from_list_buckets_with_a_verified_owner_but_no_caller_account_is_undetermined(
+        self, code: str
+    ) -> None:
+        # Owner IS recorded, but this run's own caller account could not be resolved (no
+        # session behind the injected client): still refused, never assumed to pass.
+        account = _create(ACCOUNT, {"name": "acme", "account_id": ACCOUNT_ID})
+        candidate = self._bucket("gone", parent=account)
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error(code, "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": []}
+        [verdict] = S3BucketFalsifier(client=client).batch_falsify(
+            [candidate], _context()
+        )
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
 
     @pytest.mark.parametrize("code", ["404", "403"])
     def test_present_in_list_buckets_is_forbidden_not_dropped(self, code: str) -> None:
@@ -439,7 +474,7 @@ class TestS3BucketFalsifier:
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
         assert "could not be read either" in verdict.note
 
-    # -- owner-match gate (the future-facing half; today `_owner_of` is always None) --
+    # -- owner-match gate: the ONLY way this falsifier ever answers DROPPED_FROM_OBSERVATION --
 
     def test_an_absence_under_a_different_recorded_owner_is_undetermined_not_dropped(
         self,
@@ -452,7 +487,7 @@ class TestS3BucketFalsifier:
         falsifier = S3BucketFalsifier(client=client, caller_account=ACCOUNT_ID)
         [verdict] = falsifier.batch_falsify([candidate], _context())
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
-        assert "proves nothing" in verdict.note
+        assert "owning account could not be verified" in verdict.note
 
     def test_an_absence_under_the_matching_recorded_owner_is_dropped(self) -> None:
         account = _create(ACCOUNT, {"name": "acme", "account_id": ACCOUNT_ID})

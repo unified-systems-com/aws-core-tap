@@ -15,9 +15,8 @@ Covers four types:
   documentation: "If the bucket doesn't exist or you don't have permission to access it, the HEAD
   request returns a generic 400 Bad Request, 403 Forbidden, or 404 Not Found HTTP status code. A
   message body isn't included, so you can't determine the exception beyond these HTTP response
-  codes." **404 is therefore just as ambiguous as 403 here** — an earlier draft of this falsifier
-  treated 404 as conclusive, which an AI review of this PR caught and which this documentation
-  confirms was wrong. Both status codes get the same tie-break: this account's own bucket
+  codes." **404 is therefore just as ambiguous as 403 here** — 404 is NOT conclusive proof of
+  absence on its own. Both status codes get the same tie-break: this account's own bucket
   inventory (``list_buckets`` / ``ListAllMyBuckets``, which needs no per-bucket permission).
   Present in it, the answer is a permission/visibility gap and the bucket stands; absent from it,
   it is read as gone. (400 is left as ``errored`` — already conservative, since it never becomes a
@@ -33,16 +32,19 @@ Covers four types:
   is never evidence of deletion; ``IamPolicyFalsifier`` refuses to probe one at all rather than
   spending an AWS call on a question that cannot come back positive.
 
-**The account-match gate (added after AI review of this PR; both review seats flagged the same
-gap independently).** ``get_role`` / ``get_user`` / ``get_policy`` are looked up by name/ARN
-within whichever AWS account the collector's credential currently resolves to. A credential for
-account A asking about a role the grid recorded under account B gets ``NoSuchEntity`` too — that
-credential was never going to find it either way, and nothing about the response distinguishes
-"account A has no such role" from "this is the wrong account to ask." So a ``not_found`` from any
-of the three IAM falsifiers is only trusted as ``DROPPED_FROM_OBSERVATION`` when this run's own
-resolved caller account (STS ``GetCallerIdentity``, ``credentials.caller_account_id`` — the same
-call the collector itself uses to assert-on-land) matches the account segment of the row's own
-ARN; otherwise it is recorded ``UNDETERMINED(scope_unknown)``, including when the caller account
+**The account-match gate.** ``get_role`` / ``get_user`` / ``get_policy`` are looked up by
+name/ARN within whichever AWS account the collector's credential currently resolves to. A
+credential for account A asking about a role the grid recorded under account B gets
+``NoSuchEntity`` too — that credential was never going to find it either way, and nothing about
+the response distinguishes "account A has no such role" from "this is the wrong account to ask."
+So a ``not_found`` from any of the three IAM falsifiers is only trusted as
+``DROPPED_FROM_OBSERVATION`` when this run's own resolved caller account (STS
+``GetCallerIdentity``, ``credentials.caller_account_id`` — the same call the collector itself uses
+to assert-on-land) matches the account segment of the row's own ARN — a REQUIREMENT, not a check
+skipped when there is nothing to compare: a missing/malformed ARN account segment refuses exactly
+like a mismatch (``FIELD_VALIDATION_SCHEMA`` does not constrain ARN shape on any of the three ARN
+fields, so a malformed stored value is possible). Otherwise it is recorded
+``UNDETERMINED(scope_unknown)``, including when the caller account
 could not be resolved at all. This is deliberately narrower than a general cross-account "reach"
 gate (see below): it only answers "was this credential ever capable of finding this object",
 never "does this credential's grant still cover it" (github_core's harder question).
@@ -441,7 +443,19 @@ class _AwsFalsifier(Falsifier):
                 f"this object's ARN account ({row_account}); a NoSuchEntity under an unverified account proves "
                 "nothing, so this is not read as gone",
             )
-        if row_account is not None and caller_account != row_account:
+        if row_account is None:
+            # A missing or malformed account segment: FIELD_VALIDATION_SCHEMA does not enforce
+            # ARN shape on any of the three ARN fields, so a row with a garbled ARN is possible.
+            # Fall through to the mismatch branch's reasoning rather than trusting the absence:
+            # nothing here proves this credential's account is the one the ARN names.
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"NoSuchEntity ({detail}), but this object's own ARN carries no recognizable account segment to "
+                f"verify against this credential's account ({caller_account}); a NoSuchEntity cannot be read as "
+                "gone without that proof",
+            )
+        if caller_account != row_account:
             return _undetermined(
                 candidate,
                 "scope_unknown",
@@ -650,7 +664,7 @@ class S3BucketFalsifier(_AwsFalsifier):
         genuinely partial page should not normally occur here. It is still checked for, rather
         than assumed away: a response carrying a ``ContinuationToken`` is a partial page by
         AWS's own definition, and a partial page must never be read as this account's complete
-        inventory (an AI review of this PR flagged the missing check).
+        inventory.
         """
         if self._own_buckets is not None and self._own_buckets_for == self._batch_id:
             return self._own_buckets
@@ -725,21 +739,27 @@ class S3BucketFalsifier(_AwsFalsifier):
                 "tie-break) could not be read either, so nothing here separates the two",
             )
         if name not in names:
-            # The tie-break additionally requires the candidate's OWN recorded owner (when the
-            # grid holds one) to match this credential's account before an absence from THIS
-            # account's inventory is read as evidence: an absence from account A's own listing
-            # says nothing about a bucket the grid recorded under account B (module docstring's
-            # account-match gate; S3 ARNs carry no account segment to check directly, so this
-            # checks the candidate's grid-recorded owner instead).
+            # The tie-break REQUIRES a verified owner match before an absence from THIS
+            # credential's own inventory is read as evidence of anything: S3 bucket names are
+            # global but not account-scoped, so "not in my ListBuckets" is equally what a
+            # bucket genuinely owned by a DIFFERENT account looks like. Today `expected.owner`
+            # is always None (no containment edge reaches this type yet — module docstring), so
+            # this falsifier cannot currently prove ownership at all and this branch always
+            # refuses; it is written as a positive requirement, not a check that is skipped
+            # when there is nothing to check, so it stays correct the moment a future
+            # containment edge starts populating `candidate.parent` (an unowned or
+            # unverified-owner candidate must never be trusted, never only a mismatched one).
             owner = expected.owner
-            caller_account = self._caller_account() if owner is not None else None
-            if owner is not None and owner != caller_account:
+            caller_account = self._caller_account()
+            if owner is None or caller_account is None or owner != caller_account:
                 return _undetermined(
                     candidate,
                     "scope_unknown",
-                    f"head_bucket({name}) answered {status} and {name} is absent from THIS credential's own "
-                    f"ListBuckets, but the grid recorded this bucket's owner as {owner!r}, not this credential's "
-                    f"account ({caller_account!r}); absence from the wrong account's inventory proves nothing",
+                    f"head_bucket({name}) answered {status} and {name} is absent from this credential's own "
+                    f"ListBuckets, but this bucket's owning account could not be verified (grid-recorded owner: "
+                    f"{owner!r}, this credential's account: {caller_account!r}); S3 bucket names are globally "
+                    "unique, so absence from one account's inventory says nothing about a bucket that belongs to "
+                    "a different or unrecorded account",
                 )
             return verdict_from_probe(
                 candidate,
