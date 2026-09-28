@@ -14,19 +14,18 @@ the one type ``validate_plugin``'s falsifier-coverage check already marks reconc
 
 from __future__ import annotations
 
-import tomllib
 import uuid
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+import tomllib
 from botocore.exceptions import BotoCoreError, ClientError
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
-
-from tap.plugin_testing import find_plugin_source_root
 from tap_plugin.aws_core.falsifiers import (
     NOT_FOUND_DETAIL,
+    AccountFalsifier,
     Ec2InstanceFalsifier,
     IamPolicyFalsifier,
     IamRoleFalsifier,
@@ -44,6 +43,7 @@ from tap_plugin.aws_core.falsifiers import (
 from tap_plugin.aws_core.models.aws_account import AwsAccount
 from tap_plugin.aws_core.models.aws_organization import AwsOrganization
 
+from tap.plugin_testing import find_plugin_source_root
 from tap_grid.falsifier_testing import (
     CASE_DROPPED,
     CASE_FORBIDDEN,
@@ -55,9 +55,9 @@ from tap_grid.falsifiers import (
     DROPPED_FROM_OBSERVATION,
     PRESENT_AT_PROBE,
     REIDENTIFIED,
-    Falsifier,
     UNDETERMINED,
     Candidate,
+    Falsifier,
     FalsifyContext,
     Verdict,
     get_falsifier,
@@ -65,7 +65,7 @@ from tap_grid.falsifiers import (
     unregister_falsifier,
     unsupported,
 )
-from tap_grid.services import create_node, get_node
+from tap_grid.services import create_edge, create_node, delete_node, get_node
 
 SUBNET = "aws_core__aws_subnet"
 VPC = "aws_core__aws_vpc"
@@ -365,6 +365,8 @@ class TestFalsifierManifestWiring:
             VPC: "tap_plugin.aws_core.falsifiers.VpcFalsifier",
             SECURITY_GROUP: "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier",
             EC2_INSTANCE: "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier",
+            "aws_core__aws_organizational_unit": "tap_plugin.aws_core.falsifiers.OrganizationalUnitFalsifier",
+            "aws_core__aws_account": "tap_plugin.aws_core.falsifiers.AccountFalsifier",
             S3_BUCKET: "tap_plugin.aws_core.falsifiers.S3BucketFalsifier",
             IAM_ROLE: "tap_plugin.aws_core.falsifiers.IamRoleFalsifier",
             IAM_USER: "tap_plugin.aws_core.falsifiers.IamUserFalsifier",
@@ -437,20 +439,77 @@ class TestFalsifierManifestWiring:
 
 
 class TestAccountAndOrganizationDeclareNoContainment:
-    """tap-plugin-aws-core#42: AwsAccount and AwsOrganization are the root of every other AWS
-    resource this plugin models, and both deliberately declare zero CONTAINMENT_EDGES — see the
-    reasoning on each model and in tap_plugin/aws_core/falsifiers.py's module docstring. This is
-    a regression guard against silently reversing that decision, not a live behavior test."""
+    """tap-plugin-aws-core#42: AwsAccount is the root of every other AWS resource this plugin
+    models and deliberately declares zero CONTAINMENT_EDGES of its own — see the reasoning on the
+    model and in tap_plugin/aws_core/falsifiers.py's module docstring. This is a regression guard
+    against silently reversing that decision, not a live behavior test.
+
+    AwsOrganization is different as of tap-plugin-aws-core#50: it now declares the two
+    Organizations-tree containment edges (see TestOrganizationContainment below), so what it
+    guards here is only that AwsAccount still declares none — an account is a containment TARGET
+    (ENROLLS_ACCOUNT), never a source."""
 
     def test_aws_account_declares_no_containment(self) -> None:
         assert AwsAccount.CONTAINMENT_EDGES == ()
 
-    def test_aws_organization_declares_no_containment(self) -> None:
-        assert AwsOrganization.CONTAINMENT_EDGES == ()
+    def test_aws_account_has_a_registered_falsifier(self) -> None:
+        assert isinstance(get_falsifier(AwsAccount.ENTITY_TYPE), AccountFalsifier)
 
-    def test_neither_type_has_a_registered_falsifier(self) -> None:
-        assert get_falsifier(AwsAccount.ENTITY_TYPE) is None
+
+class TestOrganizationContainment:
+    """tap-plugin-aws-core#50: AwsOrganization contains its OUs and its member accounts through
+    two NEW parent -> child edges, not the existing child -> parent NESTED_UNDER_PARENT
+    reference — see the CONTAINMENT_EDGES comment on models/aws_organization.py."""
+
+    def test_aws_organization_declares_the_two_new_containment_edges(self) -> None:
+        assert AwsOrganization.CONTAINMENT_EDGES == (
+            "PARTITIONED_INTO_OU__aws_core",
+            "ENROLLS_ACCOUNT__aws_core",
+        )
+
+    def test_aws_organization_has_no_falsifier(self) -> None:
+        """Nothing contains the organization itself."""
         assert get_falsifier(AwsOrganization.ENTITY_TYPE) is None
+
+    @staticmethod
+    def _org_and_enrolled_account(org_id: str, account_id: str) -> tuple[Any, Any]:
+        org_result = create_node(AwsOrganization.ENTITY_TYPE, {"name": "org", "organization_id": org_id})
+        assert org_result.success, org_result.errors
+        account_result = create_node(AwsAccount.ENTITY_TYPE, {"name": "acct", "account_id": account_id})
+        assert account_result.success, account_result.errors
+        org_row = get_node(org_result.entity_id)
+        account_row = get_node(account_result.entity_id)
+        create_edge(org_row.entity, account_row.entity, "ENROLLS_ACCOUNT__aws_core")
+        return org_row.entity.id, account_row.entity.id
+
+    @pytest.mark.django_db
+    def test_plain_delete_does_not_cascade_to_accounts(self) -> None:
+        """cascade defaults to "none": deleting the org record alone leaves a live account
+        untouched — the ordinary, non-destructive shape of retiring an org record."""
+        org_id, account_id = self._org_and_enrolled_account("o-plaindel0001", "555500001111")
+
+        result = delete_node(org_id)
+        assert result.success, result.errors
+
+        assert get_node(account_id).entity.deleted_at is None, "a plain delete must never cascade"
+
+    @pytest.mark.django_db
+    def test_cascade_contained_delete_does_tombstone_enrolled_accounts(self) -> None:
+        """The examined, accepted consequence documented on the model: an EXPLICIT
+        cascade="contained" delete of the organization does retire every account it enrolls.
+        This is a deliberate opt-in on the caller's part, never a side effect of retiring the org
+        record alone (see the previous test) or of anything reconcile does on its own — nothing
+        ever falsifies AwsOrganization itself."""
+        org_id, account_id = self._org_and_enrolled_account("o-cascadel0001", "555500002222")
+
+        result = delete_node(org_id, cascade="contained")
+        assert result.success, result.errors
+
+        # get_node's manager is live-only (a tombstoned node 404s through it, by design), so the
+        # tombstone itself is read straight off the spine.
+        from tap_grid.models import Entity
+
+        assert Entity.objects.get(pk=account_id).deleted_at is not None
 
 
 # ---------------------------------------------------------------------------

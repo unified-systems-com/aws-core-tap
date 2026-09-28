@@ -1,0 +1,14 @@
+{
+  "slug": "ENROLLS_ACCOUNT__aws_core",
+  "name": "Enrolls Account",
+  "description": "An AWS Organizations organization enrolls a member account (organization -> account): the organization-wide membership listed by organizations:ListAccounts, whichever OU the account currently sits in. Organization-level on purpose: MoveAccount changes an account's OU (NESTED_UNDER_PARENT) and never its membership, so a moved account is not mistaken for a departed one. The organization declares it in CONTAINMENT_EDGES; an account that leaves the organization (or is finally removed after closure) drops out of the listing and becomes a retirement candidate, while a closed or suspended account is still listed and stays live with its status. Retiring an account ends its BELONGS_TO_ACCOUNT edges and cascades to nothing else: the account declares no containment.",
+  "sources": [
+    "aws_core__aws_organization"
+  ],
+  "targets": [
+    "aws_core__aws_account"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
