@@ -102,6 +102,7 @@ is recorded — ``Probe.detail`` carries an error code or a status line only.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 from typing import Any
@@ -236,30 +237,53 @@ def _row_of(entity_id: Any) -> Any | None:
         return None
 
 
-def _owner_of(candidate: Candidate) -> str | None:
-    """The account id this candidate's parent names, when the grid holds a parent at all.
+def _resolve_owner(candidate: Candidate) -> tuple[str | None, bool]:
+    """``(owner, unreadable)`` for a candidate's parent.
+
+    ``owner`` is the parent ``AwsAccount``'s ``account_id`` when the grid holds a parent and
+    could read it, or None when there is legitimately no parent to compare against (Option A,
+    matching github_core's ``Expected.owner`` convention: no parent on the grid means the owner
+    is not compared, never a mismatch). ``unreadable`` is True ONLY when a parent WAS recorded
+    but ``_row_of`` could not read it — a data problem the caller must treat as *worse* than "no
+    owner recorded", never the same: a candidate that names a parent it then cannot produce is
+    not evidence of anything, and a caller (the account-match gate) must refuse rather than
+    silently read that failure as "nothing to compare".
 
     No containment edge reaches any of these four types today (see the module docstring), so
     ``candidate.parent`` is always None in production; read anyway so a future containment
-    declaration over ``AwsAccount`` is honoured without a further change here (Option A,
-    matching github_core's ``Expected.owner`` convention: no parent on the grid means the owner
-    is not compared, never a mismatch).
+    declaration over ``AwsAccount`` is honoured without a further change here.
     """
     if candidate.parent is None:
-        return None
+        return None, False
     parent = _row_of(candidate.parent)
     if parent is None:
-        return None
-    return str(getattr(parent, "account_id", "") or "") or None
+        return None, True
+    return str(getattr(parent, "account_id", "") or "") or None, False
+
+
+#: AWS account ids are always exactly 12 digits — the one part of an ARN's shape this module
+#: can validate without a service-specific parser.
+_ACCOUNT_ID_RE = re.compile(r"^[0-9]{12}$")
 
 
 def _arn_account(arn: str | None) -> str | None:
-    """The account segment of an ARN (``arn:partition:service:region:account:resource``), or None
-    when the ARN carries none (S3 bucket ARNs have no account segment)."""
+    """The account segment of an IAM ARN (``arn:partition:iam::account-id:resource``), or None
+    when the string is not shaped like one — a full, validated parse, not a blind colon-split-
+    and-index. Splitting alone would let a malformed or wrong-service stored value with an
+    account-shaped SUBSTRING at the right position pass the account-match gate; this checks the
+    literal ``arn:`` prefix, the ``iam`` service segment, and that the account segment is AWS's
+    own 12-digit shape, closing that path.
+
+    Used only for IAM ARNs (role/user/policy): S3 bucket ARNs have no account segment at all and
+    are never passed here.
+    """
     if not arn:
         return None
-    parts = str(arn).split(":")
-    return parts[4] if len(parts) > 4 and parts[4] else None
+    parts = str(arn).split(":", 5)
+    if len(parts) < 6 or parts[0] != "arn" or parts[2] != "iam":
+        return None
+    account = parts[4]
+    return account if _ACCOUNT_ID_RE.match(account) else None
 
 
 def _created_at(payload: Mapping[str, Any]) -> datetime | None:
@@ -428,7 +452,12 @@ class _AwsFalsifier(Falsifier):
         )
 
     def _account_gate(
-        self, candidate: Candidate, *, row_account: str | None, owner: str | None
+        self,
+        candidate: Candidate,
+        *,
+        row_account: str | None,
+        owner: str | None,
+        owner_unreadable: bool,
     ) -> Verdict | None:
         """The account-match gate, run BEFORE any probe — not only before trusting an absence.
 
@@ -439,14 +468,16 @@ class _AwsFalsifier(Falsifier):
         would be exactly the false-``REIDENTIFIED``/false-``PRESENT_AT_PROBE`` shape an earlier
         version of this gate missed by only checking on the error path.
 
-        ``owner`` (``_owner_of(candidate)``, the account a future containment edge would record
-        on ``candidate.parent``) is checked too, independently of ``row_account``: the object's
-        OWN ARN and the candidate's GRID-RECORDED parent are two different provenance signals,
-        and an earlier version of this gate only checked the first. A candidate whose parent
-        claims account B while its own stored ARN names account A is itself an inconsistency
-        that must refuse, not resolve itself in whichever direction happens to let the probe
-        proceed — a data-integrity problem is exactly the case a single-signal check would paper
-        over silently.
+        ``owner`` (from ``_resolve_owner(candidate)``, the account a future containment edge
+        would record on ``candidate.parent``) is checked too, independently of ``row_account``:
+        the object's OWN ARN and the candidate's GRID-RECORDED parent are two different
+        provenance signals, and an earlier version of this gate only checked the first. A
+        candidate whose parent claims account B while its own stored ARN names account A is
+        itself an inconsistency that must refuse, not resolve itself in whichever direction
+        happens to let the probe proceed. ``owner_unreadable`` covers the case that check alone
+        would miss: a candidate that NAMES a parent the grid then fails to read is worse than one
+        naming no parent at all, and must refuse identically — treating an unreadable parent the
+        same as "nothing recorded" would silently drop the very check it exists to make.
 
         Returns the refusal ``Verdict`` when the gate fails, or ``None`` when the probe may
         proceed — and in the refusal case, no AWS call is made at all.
@@ -461,12 +492,13 @@ class _AwsFalsifier(Falsifier):
                 "not — is comparable to the object the grid recorded",
             )
         if row_account is None:
-            # A missing or malformed account segment: FIELD_VALIDATION_SCHEMA does not enforce
-            # ARN shape on any of the three ARN fields, so a row with a garbled ARN is possible.
+            # A missing, malformed, or non-IAM-shaped account segment: FIELD_VALIDATION_SCHEMA
+            # does not enforce ARN shape on any of the three ARN fields, so a row with a garbled
+            # ARN is possible; `_arn_account` validates the shape rather than blindly indexing.
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"this object's own ARN carries no recognizable account segment to verify against this "
+                f"this object's own ARN carries no recognizable IAM account segment to verify against this "
                 f"credential's account ({caller_account}); without that proof, nothing this credential's IAM "
                 "API returns is comparable to the object the grid recorded",
             )
@@ -478,6 +510,14 @@ class _AwsFalsifier(Falsifier):
                 f"({row_account}); a role/user/policy of the same name in the WRONG account is a different "
                 "object, and nothing this credential's IAM API returns about it is comparable to the one the "
                 "grid recorded",
+            )
+        if owner_unreadable:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                "this candidate names a containment parent the grid could not read; an unreadable recorded "
+                "parent is a data problem, not the same as no parent recorded, and this candidate's owner "
+                f"cannot be verified against this credential's account ({caller_account}) without it",
             )
         if owner is not None and owner != caller_account:
             return _undetermined(
@@ -522,9 +562,12 @@ class IamRoleFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this IAM role",
             )
-        owner = _owner_of(candidate)
+        owner, owner_unreadable = _resolve_owner(candidate)
         refusal = self._account_gate(
-            candidate, row_account=_arn_account(arn), owner=owner
+            candidate,
+            row_account=_arn_account(arn),
+            owner=owner,
+            owner_unreadable=owner_unreadable,
         )
         if refusal is not None:
             return refusal
@@ -569,9 +612,12 @@ class IamUserFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this IAM user",
             )
-        owner = _owner_of(candidate)
+        owner, owner_unreadable = _resolve_owner(candidate)
         refusal = self._account_gate(
-            candidate, row_account=_arn_account(arn), owner=owner
+            candidate,
+            row_account=_arn_account(arn),
+            owner=owner,
+            owner_unreadable=owner_unreadable,
         )
         if refusal is not None:
             return refusal
@@ -626,9 +672,12 @@ class IamPolicyFalsifier(_AwsFalsifier):
             return _undetermined(
                 candidate, "scope_unknown", "the grid holds no ARN for this IAM policy"
             )
-        owner = _owner_of(candidate)
+        owner, owner_unreadable = _resolve_owner(candidate)
         refusal = self._account_gate(
-            candidate, row_account=_arn_account(arn), owner=owner
+            candidate,
+            row_account=_arn_account(arn),
+            owner=owner,
+            owner_unreadable=owner_unreadable,
         )
         if refusal is not None:
             return refusal
@@ -737,11 +786,19 @@ class S3BucketFalsifier(_AwsFalsifier):
                 "scope_unknown",
                 "the grid holds no name or ARN for this bucket",
             )
-        expected = Expected(source_id=arn, owner=_owner_of(candidate), name=name)
+        owner, owner_unreadable = _resolve_owner(candidate)
+        expected = Expected(source_id=arn, owner=owner, name=name)
         try:
             client.head_bucket(Bucket=name)
         except ClientError as exc:
-            return self._judge_absence(client, candidate, expected, exc, name)
+            return self._judge_absence(
+                client,
+                candidate,
+                expected,
+                exc,
+                name,
+                owner_unreadable=owner_unreadable,
+            )
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         probe = Probe(status="found", source_id=arn, name=name, detail="200")
@@ -754,6 +811,8 @@ class S3BucketFalsifier(_AwsFalsifier):
         expected: Expected,
         exc: ClientError,
         name: str,
+        *,
+        owner_unreadable: bool,
     ) -> Verdict:
         status, detail = probe_status_of(exc)
         if status not in self._AMBIGUOUS_STATUSES:
@@ -785,17 +844,25 @@ class S3BucketFalsifier(_AwsFalsifier):
             # when there is nothing to check, so it stays correct the moment a future
             # containment edge starts populating `candidate.parent` (an unowned or
             # unverified-owner candidate must never be trusted, never only a mismatched one).
+            # `owner_unreadable` (a parent WAS recorded but could not be read) refuses
+            # identically to a missing owner, never more permissively: an unreadable parent is
+            # a data problem, not the same as "nothing recorded".
             owner = expected.owner
             caller_account = self._caller_account()
-            if owner is None or caller_account is None or owner != caller_account:
+            if (
+                owner_unreadable
+                or owner is None
+                or caller_account is None
+                or owner != caller_account
+            ):
                 return _undetermined(
                     candidate,
                     "scope_unknown",
                     f"head_bucket({name}) answered {status} and {name} is absent from this credential's own "
                     f"ListBuckets, but this bucket's owning account could not be verified (grid-recorded owner: "
-                    f"{owner!r}, this credential's account: {caller_account!r}); S3 bucket names are globally "
-                    "unique, so absence from one account's inventory says nothing about a bucket that belongs to "
-                    "a different or unrecorded account",
+                    f"{owner!r}, unreadable parent: {owner_unreadable}, this credential's account: "
+                    f"{caller_account!r}); S3 bucket names are globally unique, so absence from one account's "
+                    "inventory says nothing about a bucket that belongs to a different or unrecorded account",
                 )
             return verdict_from_probe(
                 candidate,

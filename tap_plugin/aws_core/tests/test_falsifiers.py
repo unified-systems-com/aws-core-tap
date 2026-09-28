@@ -195,7 +195,21 @@ class TestIamRoleFalsifier:
         falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
         [verdict] = falsifier.batch_falsify([candidate], _context())
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
-        assert "no recognizable account segment" in verdict.note
+        assert "no recognizable IAM account segment" in verdict.note
+        client.get_role.assert_not_called()
+
+    def test_a_non_arn_value_with_an_account_shaped_substring_still_refuses(
+        self,
+    ) -> None:
+        # `_arn_account` is a validated parse, not a blind colon-split-and-index: a stored
+        # value that merely PLACES a 12-digit substring at the right split position, without
+        # actually being shaped like `arn:partition:iam::account:resource`, must still refuse.
+        candidate = self._role("dropped", f"not:an:iam:arn:{ACCOUNT_ID}:anything")
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "no recognizable IAM account segment" in verdict.note
         client.get_role.assert_not_called()
 
     def test_a_containment_parent_disagreeing_with_the_arn_refuses_before_any_probe(
@@ -216,6 +230,21 @@ class TestIamRoleFalsifier:
         [verdict] = falsifier.batch_falsify([candidate], _context())
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
         assert "disagree" in verdict.note
+        client.get_role.assert_not_called()
+
+    def test_an_unreadable_containment_parent_refuses_before_any_probe(self) -> None:
+        # A parent WAS recorded (candidate.parent is not None) but the grid cannot read it — a
+        # data problem, and worse than no parent at all, not the same thing: it must refuse
+        # identically to a disagreeing parent, not pass through as "nothing to compare".
+        rid = self._role("dropped", f"arn:aws:iam::{ACCOUNT_ID}:role/dropped").entity_id
+        candidate = _candidate(
+            rid, IAM_ROLE, uuid.uuid4()
+        )  # a parent id nothing created
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "could not read" in verdict.note
         client.get_role.assert_not_called()
 
     def test_a_failed_caller_account_resolution_is_cached_for_the_whole_batch(
