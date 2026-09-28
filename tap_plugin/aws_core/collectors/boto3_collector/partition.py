@@ -43,9 +43,27 @@ PARTITION_CN = "aws-cn"
 #: run against them, and a partition we cannot test is one we do not claim.
 SUPPORTED_PARTITIONS: tuple[str, ...] = (PARTITION_AWS, PARTITION_US_GOV)
 
-#: The partition segment of an ARN, as a regex fragment (``aws``, ``aws-us-gov``,
-#: ``aws-cn``, ``aws-iso``, ``aws-iso-b`` ...). Use this instead of a literal ``aws``.
-PARTITION_RE = r"aws(?:-[a-z]+)*"
+#: Every AWS partition name ARNs are known to carry, longest first (a prefix partition earlier
+#: in the alternation would shadow a longer one sharing its start, e.g. ``aws`` before
+#: ``aws-us-gov``). The single source both ``PARTITION_RE`` and ``_REGION_PARTITIONS`` build
+#: from, so the two can never drift apart.
+_KNOWN_PARTITIONS: tuple[str, ...] = (
+    PARTITION_US_GOV,
+    PARTITION_CN,
+    "aws-iso-b",
+    "aws-iso-e",
+    "aws-iso-f",
+    "aws-iso",
+    PARTITION_AWS,
+)
+
+#: The partition segment of an ARN, as a regex fragment (``aws``, ``aws-us-gov``, ``aws-cn``,
+#: ``aws-iso``, ``aws-iso-b`` ...). Use this instead of a literal ``aws``. A flat alternation
+#: over the known names, not a repeated group (``(?:-[a-z]+)*``): the earlier, more general
+#: form is flagged by static analysis as a nested-quantifier ReDoS shape even though the
+#: leading literal ``-`` on each repetition makes it unambiguous in practice — enumerating the
+#: (small, fixed) partition set sidesteps the question entirely rather than arguing it.
+PARTITION_RE = "(?:" + "|".join(re.escape(p) for p in _KNOWN_PARTITIONS) + ")"
 
 # Region-name -> partition. These are botocore's own ``regionRegex`` per partition
 # (endpoints.json), so a region classifies the way ``client.meta.partition`` will
