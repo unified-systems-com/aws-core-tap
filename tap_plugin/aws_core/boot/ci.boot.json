@@ -9,7 +9,7 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/aws-core-tap",
-          "rev": "v0.5.0"
+          "rev": "v0.6.0"
         }
       }
     ]
