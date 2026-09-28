@@ -1,6 +1,11 @@
 manifest_version = "0"
 plugin_version = "0.5.0" # x-release-please-version
-requires_tap = ">=0.1.5"
+# 0.2.1 (2026-09-22): the first core release the [falsifiers] table + tap_grid.falsifiers /
+# tap_grid.falsifier_testing (Candidate, Expected, Falsifier, Probe, Verdict, verdict_from_probe,
+# run_four_cases) resolve against — 0.1.6, the release before it, refuses the [falsifiers] key at
+# manifest parse (mirrors tap-plugin-github-core's own floor note for the identical reason,
+# tap-plugin-aws-core#42).
+requires_tap = ">=0.2.1"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
@@ -97,6 +102,19 @@ TERMINATES_AT_CUSTOMER_DEVICE__aws_core = "edges/TERMINATES_AT_CUSTOMER_DEVICE.e
 CONSUMES_ENDPOINT_SERVICE__aws_core = "edges/CONSUMES_ENDPOINT_SERVICE.edge.json"
 FILTERS_VPC_DNS__aws_core = "edges/FILTERS_VPC_DNS.edge.json"
 ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
+
+[falsifiers]
+# One per reconcilable type. The foundation (tap-plugin-aws-core#42): the manifest key, the
+# base _AwsFalsifier shape, and this one concrete registration — Subnet, the one type
+# Vpc.CONTAINMENT_EDGES (PARTITIONED_INTO_SUBNET__aws_core -> aws_core__aws_subnet) already
+# marks reconcilable per validate_plugin's falsifier-coverage check (see
+# tap_plugin/aws_core/falsifiers.py's module docstring for why Subnet, not VPC itself).
+# AwsAccount and AwsOrganization deliberately have none (see the CONTAINMENT_EDGES comments on
+# models/aws_account.py / models/aws_organization.py). Candidates cannot flow from a live
+# collector run yet — completeness-statement production is req-aws-collector-reconcile,
+# Backlog (specs/spec-aws-core-collector-v0.md) — so this registration is exercised by tests
+# today, not yet by a production run; see tap_plugin/aws_core/falsifiers.py.
+aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"
