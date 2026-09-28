@@ -25,6 +25,21 @@ the candidate's recorded account? A mismatch means this credential cannot speak 
 candidate's absence at all (``scope_unknown``), the same refusal ``Reach.holds_repository``
 would produce for an out-of-reach repository, without needing the full apparatus.
 
+**Known limitation, not fixed here: a revoked AWS RAM share can misread as deletion.** The
+"single-account" framing above is only exactly true for a resource this account owns outright.
+AWS RAM lets a subnet (among other types) be *shared into* an account that does not own it; a
+shared subnet still appears in this credential's own ``DescribeSubnets`` listing, so the
+collector still writes it with ``dimensions["aws_account"]`` set to the *observing* account (the
+caller identity), not the true ``OwnerId`` — which ``_scope_check`` never sees, since it compares
+against the dimension, not the probe response. If the share is later revoked rather than the
+subnet deleted, this credential starts getting ``InvalidSubnetID.NotFound`` for a subnet that
+still exists in its owner's account, and nothing here tells that apart from a real deletion —
+the same "404 means gone OR means access narrowed" ambiguity ``tap_plugin.github_core.reach``
+exists to resolve, unresolved here. Closing it for real needs an AWS-side reach concept (cross-
+referencing RAM's own share state, or comparing the probe's ``OwnerId`` against the resolved
+credential account rather than against the collector's stamped dimension) — a bigger, separate
+piece of work, named so the gap is not mistaken for an oversight.
+
 **AwsAccount and AwsOrganization have no falsifier, on purpose.** ``Boto3Collector.run()``
 already treats credential/region-scope/account-identity failure as an *unrecoverable*
 condition — ``self._abort(..., "STS_UNREACHABLE", ...)`` /
@@ -134,8 +149,10 @@ def _default_session() -> tuple[ProbeSession, str]:
 
 
 #: AWS ``Error.Code`` values this falsifier layer recognises as "the object is gone", beyond the
-#: generic ``*.NotFound`` / ``*NotFoundException`` shapes every service follows.
-_NOT_FOUND_CODES = frozenset({"ResourceNotFoundException"})
+#: generic ``*.NotFound`` / ``*NotFoundException`` shapes every service follows. ``NoSuchBucket``
+#: is S3's own not-found code — named here, not only in a future S3 falsifier, so every
+#: ``_AwsFalsifier`` subclass gets it for free.
+_NOT_FOUND_CODES = frozenset({"ResourceNotFoundException", "NoSuchBucket"})
 #: AWS ``Error.Code`` values recognised as "this credential may not look", not "it is gone".
 _FORBIDDEN_CODES = frozenset({"UnauthorizedOperation", "AccessDenied", "AccessDeniedException"})
 #: AWS ``Error.Code`` values recognised as a rate limit rather than a real answer.
@@ -258,7 +275,12 @@ class _AwsFalsifier(Falsifier):
         credential's own account does not match the candidate's recorded account — the
         single-account analogue of ``_GithubFalsifier._absence_verdict``'s reach check. A
         candidate with no recorded account (an old write predating the dimension, or a design
-        row AWS never minted) cannot be scope-checked and is refused the same way."""
+        row AWS never minted) cannot be scope-checked and is refused the same way.
+
+        Does NOT protect against a revoked AWS RAM share reading as a deletion — see the module
+        docstring's "Known limitation" paragraph. This compares the falsifier's resolved account
+        against the OBSERVING account the collector stamped, never the probe's own ``OwnerId``.
+        """
         if not expected_account:
             return _undetermined(
                 candidate, "scope_unknown", "the grid holds no aws_account dimension for this resource"
