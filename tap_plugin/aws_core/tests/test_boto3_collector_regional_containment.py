@@ -135,15 +135,37 @@ class _EmptyRgtaPaginator:
         return []
 
 
+class _OnePagePaginator:
+    """A real boto3 EC2 client CAN paginate every one of the four DescribeX calls this PR
+    wires (confirmed: describe_vpcs/subnets/instances/security_groups each return True from
+    can_paginate) — so ``iter_aws_op`` takes the paginator branch in production, never the
+    single-call branch. Yielding the canned response as exactly one page proves that branch
+    (not the single-call fallback) produces the right nodes/edges/completeness."""
+
+    def __init__(self, page: dict) -> None:
+        self._page = page
+
+    def paginate(self, **_kw):
+        yield self._page
+
+
+#: The methods a real EC2 client CAN paginate, among the ones this canned client answers.
+_PAGINATED_METHODS = frozenset(
+    {"describe_vpcs", "describe_subnets", "describe_instances", "describe_security_groups"}
+)
+
+
 class _CannedClient:
     def __init__(self, region: str) -> None:
         self._region = region
         self._canned = _canned_for(region)
 
-    def can_paginate(self, _method: str) -> bool:
-        return False
+    def can_paginate(self, method: str) -> bool:
+        return method in _PAGINATED_METHODS
 
-    def get_paginator(self, _name: str) -> _EmptyRgtaPaginator:
+    def get_paginator(self, name: str):
+        if name in _PAGINATED_METHODS:
+            return _OnePagePaginator(self._canned.get(name, {}))
         return _EmptyRgtaPaginator()
 
     def __getattr__(self, name: str):
