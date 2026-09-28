@@ -17,6 +17,7 @@ from __future__ import annotations
 import tomllib
 import uuid
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from botocore.exceptions import BotoCoreError, ClientError
@@ -27,10 +28,16 @@ from tap.plugin_testing import find_plugin_source_root
 from tap_plugin.aws_core.falsifiers import (
     NOT_FOUND_DETAIL,
     Ec2InstanceFalsifier,
+    IamPolicyFalsifier,
+    IamRoleFalsifier,
+    IamUserFalsifier,
+    S3BucketFalsifier,
     SecurityGroupFalsifier,
     SubnetFalsifier,
     VpcFalsifier,
     _enabled_regions,
+    _iam_probe_status_of,
+    _s3_probe_status_of,
     error_code_of,
     probe_status_of,
 )
@@ -64,6 +71,10 @@ SUBNET = "aws_core__aws_subnet"
 VPC = "aws_core__aws_vpc"
 SECURITY_GROUP = "aws_core__aws_security_group"
 EC2_INSTANCE = "aws_core__aws_ec2_instance"
+S3_BUCKET = "aws_core__aws_s3_bucket"
+IAM_ROLE = "aws_core__aws_iam_role"
+IAM_USER = "aws_core__aws_iam_user"
+IAM_POLICY = "aws_core__aws_iam_policy"
 ACCOUNT_ID = "111122223333"
 OTHER_ACCOUNT_ID = "999988887777"
 REGION = "us-east-1"
@@ -354,6 +365,10 @@ class TestFalsifierManifestWiring:
             VPC: "tap_plugin.aws_core.falsifiers.VpcFalsifier",
             SECURITY_GROUP: "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier",
             EC2_INSTANCE: "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier",
+            S3_BUCKET: "tap_plugin.aws_core.falsifiers.S3BucketFalsifier",
+            IAM_ROLE: "tap_plugin.aws_core.falsifiers.IamRoleFalsifier",
+            IAM_USER: "tap_plugin.aws_core.falsifiers.IamUserFalsifier",
+            IAM_POLICY: "tap_plugin.aws_core.falsifiers.IamPolicyFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
@@ -378,7 +393,16 @@ class TestFalsifierManifestWiring:
         assert edge["targets"] == [SUBNET]
 
     def test_class_path_resolves_to_a_falsifier_subclass(self) -> None:
-        for name in ("SubnetFalsifier", "VpcFalsifier", "SecurityGroupFalsifier", "Ec2InstanceFalsifier"):
+        for name in (
+            "SubnetFalsifier",
+            "VpcFalsifier",
+            "SecurityGroupFalsifier",
+            "Ec2InstanceFalsifier",
+            "S3BucketFalsifier",
+            "IamRoleFalsifier",
+            "IamUserFalsifier",
+            "IamPolicyFalsifier",
+        ):
             cls = import_string(f"tap_plugin.aws_core.falsifiers.{name}")
             assert isinstance(cls, type) and issubclass(cls, Falsifier)
 
@@ -828,3 +852,500 @@ class TestEnabledRegions:
     def test_falls_back_to_the_configured_scope_on_failure_or_empty(self) -> None:
         assert _enabled_regions(_DescribeRegionsSession(raises=BotoCoreError()), ["a", "b"]) == ["a", "b"]
         assert _enabled_regions(_DescribeRegionsSession(regions=[]), ["a"]) == ["a"]
+
+
+# ---------------------------------------------------------------------------
+# Storage + IAM (aws-core-tap#41): present/dropped/forbidden proof cases against a mocked
+# boto3 session, the S3 403/404 tie-break (AWS's own HeadBucket documentation makes 404 exactly
+# as ambiguous as 403), the list_buckets partial-page/failure-caching guards, the IAM name/ARN
+# binding check, and the customer-managed-only scope of the IAM policy falsifier. Account
+# correctness for all four types is `_scope_check` (the shared foundation), exercised here the
+# same way TestSubnetFalsifierFourCases exercises it for Subnet.
+#
+# S3 and customer-managed IAM policies can never answer REIDENTIFIED (see falsifiers.py's
+# S3BucketFalsifier / IamPolicyFalsifier docstrings for exactly why each is structurally
+# incapable of it), so `run_four_cases` (which hard-requires a reidentified case) is not used for
+# them; present/dropped/forbidden are proven individually instead. IAM role/user CAN answer it —
+# for a delete+recreate under a different path, same name — and that case is tested directly.
+# ---------------------------------------------------------------------------
+
+
+def _dimensioned(type_slug: str, payload: dict[str, Any], *, account_id: str = ACCOUNT_ID, region: str = "global") -> uuid.UUID:
+    """A grid row created through the service layer, then stamped with the collector's own
+    dimensions shape (``_create_subnet``'s pattern, generalised) — the signal `_scope_check`
+    reads. ``region="global"`` for IAM/S3: neither is regional for the calls this module makes."""
+    result = create_node(type_slug, payload)
+    assert result.success, f"create_node failed: {result.errors}"
+    assert result.entity_id is not None
+    entity_id = uuid.UUID(str(result.entity_id))
+    row = get_node(entity_id)
+    row.entity.dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": region}
+    row.entity.save(update_fields=["dimensions"])
+    return entity_id
+
+
+def _iam_candidate(entity_id: uuid.UUID, entity_type: str, *, surface: int = 0) -> Candidate:
+    return Candidate(
+        entity_id=entity_id,
+        entity_type=entity_type,
+        reason="dropped_from_observation",
+        surface=surface,
+        relation="fixture",
+        subject=None,
+        edge_type=None,
+        parent=None,
+        interval_first=None,
+    )
+
+
+def _client_error(code: str, op: str) -> ClientError:
+    return ClientError({"Error": {"Code": code, "Message": code}}, op)
+
+
+def _mock_session(service: str, client: Any) -> Any:
+    """A boto3-session-shaped double for a single service, matching `FakeSession`'s own
+    region-required assertion."""
+    session = MagicMock()
+
+    def client_for(svc: str, region_name: str | None = None) -> Any:
+        assert svc == service, f"expected {service!r}, asked for {svc!r}"
+        assert region_name, "falsifier must pass a region"
+        return client
+
+    session.client.side_effect = client_for
+    return session
+
+
+@pytest.mark.django_db
+class TestIamRoleFalsifier:
+    @staticmethod
+    def _role(name: str, arn: str, *, account_id: str = ACCOUNT_ID) -> Candidate:
+        rid = _dimensioned(IAM_ROLE, {"name": name, "role_arn": arn}, account_id=account_id)
+        return _iam_candidate(rid, IAM_ROLE)
+
+    def test_present(self) -> None:
+        candidate = self._role("present", f"arn:aws:iam::{ACCOUNT_ID}:role/present")
+        client = MagicMock()
+        client.get_role.return_value = {
+            "Role": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:role/present", "RoleName": "present"}
+        }
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        assert unsupported(verdict) is None
+
+    def test_a_path_change_on_the_same_name_is_reidentified(self) -> None:
+        # get_role looks up by RoleName ALONE (no path in the request), and IAM role names are
+        # unique per account across every path — so a delete+recreate under a DIFFERENT path,
+        # same name, is genuinely detectable: the response's Arn disagrees with the grid's.
+        candidate = self._role("app-role", f"arn:aws:iam::{ACCOUNT_ID}:role/old-path/app-role")
+        client = MagicMock()
+        client.get_role.return_value = {
+            "Role": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:role/new-path/app-role", "RoleName": "app-role"}
+        }
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == REIDENTIFIED
+        assert unsupported(verdict) is None
+
+    def test_dropped(self) -> None:
+        candidate = self._role("dropped", f"arn:aws:iam::{ACCOUNT_ID}:role/dropped")
+        client = MagicMock()
+        client.get_role.side_effect = _client_error("NoSuchEntity", "GetRole")
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+        assert unsupported(verdict) is None
+
+    def test_no_dimension_refuses_before_any_probe(self) -> None:
+        rid = _dimensioned(IAM_ROLE, {"name": "dropped", "role_arn": f"arn:aws:iam::{ACCOUNT_ID}:role/dropped"})
+        row = get_node(rid)
+        row.entity.dimensions = {}
+        row.entity.save(update_fields=["dimensions"])
+        candidate = _iam_candidate(rid, IAM_ROLE)
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.get_role.assert_not_called()
+
+    def test_wrong_account_refuses_before_any_probe_even_when_the_call_would_hit(self) -> None:
+        # Without `_scope_check` running first, a credential for the WRONG account could still
+        # successfully call get_role and find ITS OWN unrelated same-named role. The gate must
+        # refuse before the call is ever made, so `get_role.return_value` here is never reached.
+        candidate = self._role("dropped", f"arn:aws:iam::{ACCOUNT_ID}:role/dropped", account_id=ACCOUNT_ID)
+        client = MagicMock()
+        client.get_role.return_value = {
+            "Role": {"Arn": f"arn:aws:iam::{OTHER_ACCOUNT_ID}:role/dropped", "RoleName": "dropped"}
+        }
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=OTHER_ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.get_role.assert_not_called()
+
+    def test_a_name_not_matching_its_own_arns_resource_name_refuses_before_any_probe(self) -> None:
+        # get_role takes RoleName, never the ARN: if the grid's two independently-stored fields
+        # have drifted apart, querying by `name` would ask about a DIFFERENT role than the one
+        # this ARN claims to be.
+        candidate = self._role("wrong-name", f"arn:aws:iam::{ACCOUNT_ID}:role/actual-name")
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "does not match the resource name" in verdict.note
+        client.get_role.assert_not_called()
+
+    def test_a_path_qualified_arn_still_binds_to_its_trailing_name(self) -> None:
+        candidate = self._role("app-role", f"arn:aws:iam::{ACCOUNT_ID}:role/service-role/app-role")
+        client = MagicMock()
+        client.get_role.return_value = {
+            "Role": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:role/service-role/app-role", "RoleName": "app-role"}
+        }
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        client.get_role.assert_called_once_with(RoleName="app-role")
+
+    def test_forbidden(self) -> None:
+        candidate = self._role("forbidden", f"arn:aws:iam::{ACCOUNT_ID}:role/forbidden")
+        client = MagicMock()
+        client.get_role.side_effect = _client_error("AccessDenied", "GetRole")
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+        assert unsupported(verdict) is None
+
+    def test_a_row_without_an_arn_is_not_answered(self) -> None:
+        rid = _dimensioned(IAM_ROLE, {"name": "legacy"})
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_iam_candidate(rid, IAM_ROLE)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.get_role.assert_not_called()
+
+    def test_a_missing_credential_answers_undetermined(self) -> None:
+        def boom() -> Any:
+            raise RuntimeError("no secret mounted")
+
+        candidates = [self._role(f"r{i}", f"arn:aws:iam::{ACCOUNT_ID}:role/r{i}") for i in range(2)]
+        verdicts = IamRoleFalsifier(session_factory=boom).batch_falsify(candidates, _context())
+        assert [(v.verdict, v.reason) for v in verdicts] == [(UNDETERMINED, "errored")] * 2
+        assert all("credential unavailable" in v.note for v in verdicts)
+
+
+@pytest.mark.django_db
+class TestIamUserFalsifier:
+    @staticmethod
+    def _user(name: str, arn: str, *, account_id: str = ACCOUNT_ID) -> Candidate:
+        uid = _dimensioned(IAM_USER, {"name": name, "user_arn": arn}, account_id=account_id)
+        return _iam_candidate(uid, IAM_USER)
+
+    def test_present(self) -> None:
+        candidate = self._user("present", f"arn:aws:iam::{ACCOUNT_ID}:user/present")
+        client = MagicMock()
+        client.get_user.return_value = {
+            "User": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:user/present", "UserName": "present"}
+        }
+        falsifier = IamUserFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        assert unsupported(verdict) is None
+
+    def test_a_path_change_on_the_same_name_is_reidentified(self) -> None:
+        candidate = self._user("app-user", f"arn:aws:iam::{ACCOUNT_ID}:user/old-path/app-user")
+        client = MagicMock()
+        client.get_user.return_value = {
+            "User": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:user/new-path/app-user", "UserName": "app-user"}
+        }
+        falsifier = IamUserFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == REIDENTIFIED
+        assert unsupported(verdict) is None
+
+    def test_dropped(self) -> None:
+        candidate = self._user("dropped", f"arn:aws:iam::{ACCOUNT_ID}:user/dropped")
+        client = MagicMock()
+        client.get_user.side_effect = _client_error("NoSuchEntity", "GetUser")
+        falsifier = IamUserFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+        assert unsupported(verdict) is None
+
+    def test_wrong_account_refuses_before_any_probe(self) -> None:
+        candidate = self._user("dropped", f"arn:aws:iam::{ACCOUNT_ID}:user/dropped")
+        client = MagicMock()
+        falsifier = IamUserFalsifier(session=_mock_session("iam", client), account_id=OTHER_ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.get_user.assert_not_called()
+
+    def test_forbidden(self) -> None:
+        candidate = self._user("forbidden", f"arn:aws:iam::{ACCOUNT_ID}:user/forbidden")
+        client = MagicMock()
+        client.get_user.side_effect = _client_error("AccessDenied", "GetUser")
+        falsifier = IamUserFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+        assert unsupported(verdict) is None
+
+
+@pytest.mark.django_db
+class TestIamPolicyFalsifier:
+    @staticmethod
+    def _policy(name: str, arn: str, *, is_aws_managed: bool = False, account_id: str = ACCOUNT_ID) -> Candidate:
+        pid = _dimensioned(
+            IAM_POLICY, {"name": name, "policy_arn": arn, "is_aws_managed": is_aws_managed}, account_id=account_id
+        )
+        return _iam_candidate(pid, IAM_POLICY)
+
+    def test_present(self) -> None:
+        candidate = self._policy("app-policy", f"arn:aws:iam::{ACCOUNT_ID}:policy/app-policy")
+        client = MagicMock()
+        client.get_policy.return_value = {
+            "Policy": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:policy/app-policy", "PolicyName": "app-policy"}
+        }
+        falsifier = IamPolicyFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        client.get_policy.assert_called_once_with(PolicyArn=f"arn:aws:iam::{ACCOUNT_ID}:policy/app-policy")
+        assert unsupported(verdict) is None
+
+    def test_dropped(self) -> None:
+        candidate = self._policy("dropped", f"arn:aws:iam::{ACCOUNT_ID}:policy/dropped")
+        client = MagicMock()
+        client.get_policy.side_effect = _client_error("NoSuchEntity", "GetPolicy")
+        falsifier = IamPolicyFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+        assert unsupported(verdict) is None
+
+    def test_wrong_account_refuses_before_any_probe(self) -> None:
+        candidate = self._policy("dropped", f"arn:aws:iam::{ACCOUNT_ID}:policy/dropped")
+        client = MagicMock()
+        falsifier = IamPolicyFalsifier(session=_mock_session("iam", client), account_id=OTHER_ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.get_policy.assert_not_called()
+
+    def test_forbidden(self) -> None:
+        candidate = self._policy("forbidden", f"arn:aws:iam::{ACCOUNT_ID}:policy/forbidden")
+        client = MagicMock()
+        client.get_policy.side_effect = _client_error("AccessDenied", "GetPolicy")
+        falsifier = IamPolicyFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+        assert unsupported(verdict) is None
+
+    def test_an_aws_managed_policy_is_never_probed(self) -> None:
+        # Refused before even the scope check: it is pointless work regardless of account.
+        candidate = self._policy(
+            "AdministratorAccess", "arn:aws:iam::aws:policy/AdministratorAccess", is_aws_managed=True
+        )
+        client = MagicMock()
+        falsifier = IamPolicyFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "AWS-managed" in verdict.note
+        client.get_policy.assert_not_called()
+
+    def test_a_customer_managed_policy_is_probed_normally(self) -> None:
+        candidate = self._policy("app-policy", f"arn:aws:iam::{ACCOUNT_ID}:policy/app-policy", is_aws_managed=False)
+        client = MagicMock()
+        client.get_policy.return_value = {
+            "Policy": {"Arn": f"arn:aws:iam::{ACCOUNT_ID}:policy/app-policy", "PolicyName": "app-policy"}
+        }
+        falsifier = IamPolicyFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        client.get_policy.assert_called_once()
+
+
+@pytest.mark.django_db
+class TestS3BucketFalsifier:
+    @staticmethod
+    def _bucket(name: str, *, account_id: str = ACCOUNT_ID) -> Candidate:
+        bid = _dimensioned(S3_BUCKET, {"name": name, "bucket_arn": f"arn:aws:s3:::{name}"}, account_id=account_id)
+        return _iam_candidate(bid, S3_BUCKET)
+
+    def test_present(self) -> None:
+        candidate = self._bucket("present")
+        client = MagicMock()
+        client.head_bucket.return_value = {}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        assert unsupported(verdict) is None
+
+    def test_wrong_account_refuses_before_any_probe(self) -> None:
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=OTHER_ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.head_bucket.assert_not_called()
+
+    def test_a_name_not_matching_its_own_bucket_arn_refuses_before_any_probe(self) -> None:
+        # head_bucket takes Bucket=name, never the ARN: if the grid's two independently-stored
+        # fields have drifted apart, probing by `name` would ask about a DIFFERENT bucket than
+        # the one this ARN claims to be.
+        bid = _dimensioned(S3_BUCKET, {"name": "other", "bucket_arn": "arn:aws:s3:::original"})
+        candidate = _iam_candidate(bid, S3_BUCKET)
+        client = MagicMock()
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "does not match its own bucket_arn" in verdict.note
+        client.head_bucket.assert_not_called()
+
+    @pytest.mark.parametrize("code", ["404", "403"])
+    def test_absent_from_list_buckets_is_dropped(self, code: str) -> None:
+        # `_scope_check` already confirmed the account before this ever ran, so the tie-break's
+        # own absence conclusion is trustworthy without a further owner re-check.
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error(code, "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": [{"Name": "present"}, {"Name": "other"}]}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+        assert "absent from this account's own ListBuckets" in _probe_of(verdict)["detail"]
+        assert unsupported(verdict) is None
+
+    @pytest.mark.parametrize("code", ["404", "403"])
+    def test_present_in_list_buckets_is_forbidden_not_dropped(self, code: str) -> None:
+        candidate = self._bucket("locked")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error(code, "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": [{"Name": "locked"}]}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+        assert "present in this account's own ListBuckets" in verdict.note
+
+    @pytest.mark.parametrize("code", ["404", "403"])
+    def test_when_list_buckets_itself_fails_is_undetermined_not_dropped(self, code: str) -> None:
+        candidate = self._bucket("mystery")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error(code, "HeadBucket")
+        client.list_buckets.side_effect = _client_error("AccessDenied", "ListBuckets")
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "could not be read either" in verdict.note
+
+    def test_a_400_is_not_routed_through_the_tie_break(self) -> None:
+        candidate = self._bucket("weird")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("400", "HeadBucket")
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "errored")
+        client.list_buckets.assert_not_called()
+
+    def test_a_continuation_token_is_never_treated_as_a_complete_inventory(self) -> None:
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": [{"Name": "other"}], "ContinuationToken": "eyJ..."}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "could not be read either" in verdict.note
+
+    def test_a_missing_buckets_key_is_never_treated_as_an_empty_inventory(self) -> None:
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "could not be read either" in verdict.note
+
+    def test_a_present_but_empty_buckets_list_is_a_trusted_observation(self) -> None:
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": []}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+
+    def test_list_buckets_is_called_once_per_batch_for_several_ambiguous_statuses(self) -> None:
+        candidates = [self._bucket(f"b{i}") for i in range(3)]
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": []}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        falsifier.batch_falsify(candidates, _context())
+        assert client.list_buckets.call_count == 1
+
+    def test_a_list_buckets_failure_is_cached_for_the_whole_batch(self) -> None:
+        candidates = [self._bucket(f"b{i}") for i in range(3)]
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.side_effect = _client_error("AccessDenied", "ListBuckets")
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        verdicts = falsifier.batch_falsify(candidates, _context())
+        assert [(v.verdict, v.reason) for v in verdicts] == [(UNDETERMINED, "scope_unknown")] * 3
+        assert client.list_buckets.call_count == 1
+
+    def test_a_new_run_re_reads_list_buckets(self) -> None:
+        candidate = self._bucket("flaky")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": []}
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        falsifier.batch_falsify([candidate], FalsifyContext(batch_id="run-1", statement=None))
+        falsifier.batch_falsify([candidate], FalsifyContext(batch_id="run-2", statement=None))
+        assert client.list_buckets.call_count == 2
+
+    def test_a_row_without_an_arn_is_not_answered(self) -> None:
+        bid = _dimensioned(S3_BUCKET, {"name": "legacy"})
+        client = MagicMock()
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_iam_candidate(bid, S3_BUCKET)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        client.head_bucket.assert_not_called()
+
+    def test_a_missing_credential_answers_undetermined(self) -> None:
+        def boom() -> Any:
+            raise RuntimeError("no secret mounted")
+
+        candidates = [self._bucket(f"b{i}") for i in range(2)]
+        verdicts = S3BucketFalsifier(session_factory=boom).batch_falsify(candidates, _context())
+        assert [(v.verdict, v.reason) for v in verdicts] == [(UNDETERMINED, "errored")] * 2
+
+
+class TestIamAndS3ProbeStatusOf:
+    """The two local extensions to the shared `probe_status_of`, additive over it (module
+    docstring): IAM's bare `NoSuch*` convention and S3 HeadBucket's bare numeric codes."""
+
+    @pytest.mark.parametrize(
+        ("code", "op", "want"),
+        [
+            ("NoSuchEntity", "GetRole", "not_found"),
+            ("AccessDenied", "GetRole", "forbidden"),
+            ("Throttling", "GetRole", "rate_limited"),
+            ("InternalError", "GetRole", "errored"),
+        ],
+    )
+    def test_iam_mapping(self, code: str, op: str, want: str) -> None:
+        assert _iam_probe_status_of(_client_error(code, op)) == want
+
+    @pytest.mark.parametrize(
+        ("code", "op", "want"),
+        [
+            ("404", "HeadBucket", "not_found"),
+            ("403", "HeadBucket", "forbidden"),
+            ("400", "HeadBucket", "errored"),
+            ("SlowDown", "HeadBucket", "rate_limited"),
+        ],
+    )
+    def test_s3_mapping(self, code: str, op: str, want: str) -> None:
+        assert _s3_probe_status_of(_client_error(code, op)) == want
+
+
+def _probe_of(verdict: Verdict) -> dict[str, Any]:
+    assert verdict.probe is not None, "a judged verdict records its probe"
+    return verdict.probe

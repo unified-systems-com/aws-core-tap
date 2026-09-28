@@ -123,6 +123,14 @@ aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"
 aws_core__aws_vpc = "tap_plugin.aws_core.falsifiers.VpcFalsifier"
 aws_core__aws_security_group = "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier"
 aws_core__aws_ec2_instance = "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier"
+# Storage + IAM (aws-core-tap#41, a slice of the falsification epic aws-core-tap#15). Also
+# registered ahead of a containment path reaching them, exactly like the row above — see the
+# module docstring on why none of these four is dispatchable in production yet, and on the
+# customer-managed-only scope of the IAM policy falsifier.
+aws_core__aws_s3_bucket = "tap_plugin.aws_core.falsifiers.S3BucketFalsifier"
+aws_core__aws_iam_role = "tap_plugin.aws_core.falsifiers.IamRoleFalsifier"
+aws_core__aws_iam_user = "tap_plugin.aws_core.falsifiers.IamUserFalsifier"
+aws_core__aws_iam_policy = "tap_plugin.aws_core.falsifiers.IamPolicyFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"
