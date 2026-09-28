@@ -657,20 +657,28 @@ def _iam_probe_status_of(exc: ClientError) -> str:
 
 
 def _s3_probe_status_of(exc: ClientError) -> str:
-    """Like the shared ``probe_status_of``, extended for ``HeadBucket``'s own quirk: a bodyless
-    response reports only a bare numeric string in ``Error.Code`` ("404"/"403"), never one of
-    the shared classifier's named codes (its ``NoSuchBucket`` entry is for OTHER S3 operations
-    that DO return a body — ``GetBucketPolicy``, ``DeleteBucket`` — not ``HeadBucket``). Verified
-    against AWS's own ``HeadBucket`` documentation: *"If the bucket doesn't exist or you don't
-    have permission to access it, the HEAD request returns a generic 400 Bad Request, 403
-    Forbidden, or 404 Not Found HTTP status code."* Checked first, falling back to the shared
-    classifier for everything else.
+    """Like the shared ``probe_status_of``, extended for two S3-specific shapes it does not
+    cover:
+
+    - ``HeadBucket``'s own quirk: a bodyless response reports only a bare numeric string in
+      ``Error.Code`` ("404"/"403"), never one of the shared classifier's named codes (its
+      ``NoSuchBucket`` entry is for OTHER S3 operations that DO return a body —
+      ``GetBucketPolicy``, ``DeleteBucket`` — not ``HeadBucket``). Verified against AWS's own
+      ``HeadBucket`` documentation: *"If the bucket doesn't exist or you don't have permission
+      to access it, the HEAD request returns a generic 400 Bad Request, 403 Forbidden, or 404
+      Not Found HTTP status code."*
+    - S3's own throttle code, ``SlowDown``, which is not in the shared classifier's
+      ``_RATE_LIMIT_CODES`` (built against EC2's ``Throttling``/``RequestLimitExceeded`` shapes).
+
+    Checked first, falling back to the shared classifier for everything else.
     """
     code = error_code_of(exc)
     if code == "404":
         return "not_found"
     if code == "403":
         return "forbidden"
+    if code == "SlowDown":
+        return "rate_limited"
     return probe_status_of(exc)
 
 
