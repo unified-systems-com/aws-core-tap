@@ -45,6 +45,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-layout-hints | [AWS Pages](#aws-pages) | Implemented | Placement read from a node's own `layout:*` tags, never its name or id |
 | req-aws-core-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | Explicitly deferred concerns |
 | req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Implemented | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org excluded by design |
+| req-aws-core-regional-containment | [Region-Scoped Containment](#region-scoped-containment) | Implemented | `aws_account_region` (account × region footprint), `HOSTS_*` containment edges, per-region completeness surfaces; VPC, subnet, EC2 instance, security group |
 
 ### Plugin Scope
 ----
@@ -927,4 +928,126 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
 | req-aws-core-reconcile-falsifiers-3 | Single-Account Scope Check | Implemented | A candidate whose `aws_account` dimension does not match the falsifier's resolved credential account is `UNDETERMINED(scope_unknown)` without a probe. | |
 | req-aws-core-reconcile-falsifiers-4 | Account/Org Declare No Containment | Implemented | `AwsAccount.CONTAINMENT_EDGES == ()` and `AwsOrganization.CONTAINMENT_EDGES == ()`, each explicitly declared with a citing comment. | |
 | req-aws-core-reconcile-falsifiers-5 | Account/Org Have No Falsifier | Implemented | Neither type is registered in `[falsifiers]`; the reasoning (foundation-layer abort, no collector for Organization) is documented in this section and in `falsifiers.py`'s module docstring. | |
-| req-aws-core-reconcile-falsifiers-6 | Completeness Statements Still Backlog | Proposed | `boto3_collector` does not yet produce per-surface completeness statements, so no candidate can flow from a live run; tracked as `req-aws-collector-reconcile`. | Blocks turning this foundation into an actually-running reconcile pass. |
+| req-aws-core-reconcile-falsifiers-6 | Completeness Statements — First Surfaces (tap-plugin-aws-core#49) | Implemented | `boto3_collector` now produces per-region completeness surfaces for its four `containment`-declared entries (`req-aws-core-regional-containment`); every other listing still records none. | Full listing coverage remains open; see [Region-Scoped Containment](#region-scoped-containment). |
+
+### Region-Scoped Containment
+----
+RID: `req-aws-core-regional-containment`
+
+Status: `Implemented`
+
+`tap-plugin-aws-core#49`. Before this, no regional compute/network type had a containment
+parent: `Vpc.CONTAINMENT_EDGES` reached only `aws_subnet` (`req-aws-core-placement`), and every
+other type — VPC itself, EC2 instances, security groups, and the rest of the regional surface —
+had none, so `req-aws-core-reconcile-falsifiers`' falsifiers (and the sibling PR,
+tap-plugin-aws-core#44, that builds four of them) had no candidates to judge: the collector
+recorded no completeness statement for any listing, so `tap_grid.candidates.derive_candidates`
+had nothing to derive from. This closes that gap for four types and builds the substrate the
+rest can extend.
+
+#### Implementation
+
+- **`aws_core__aws_account_region`** (`models/aws_account_region.py`): one node per (account,
+  region) the collector's credential is scoped to — the parent every regional containment edge
+  fans out from. Deliberately not `AwsRegion` (shared by every account; a listing read by one
+  account says nothing about another's resources — see the model's own docstring) and
+  deliberately not `AwsAccount` (`req-aws-core-reconcile-falsifiers-4`'s ruling stands: one
+  account-wide fan-out would exceed the cascade cap and conflate independently-succeeding or
+  -failing regional listings). Identity is `(account_id, region_code)`
+  (`req-grid-entity-natural-key`). `BELONGS_TO_ACCOUNT` (footprint -> account) is a reference,
+  not containment, matching every other source of that edge.
+- **One `HOSTS_*` containment edge per contained child type**
+  (`tap_plugin/aws_core/regional.py`'s `REGIONAL_CHILDREN` table is the single place the shape is
+  written down; `tests/test_regional_containment.py` checks every other source of truth — the
+  `.edge.json` files, the manifest's `containment` blocks, `AwsAccountRegion`'s
+  `OUTBOUND_EDGES`/`CONTAINMENT_EDGES` (written as literals — `validate_plugin`'s structure-level
+  edge check reads them with an AST parser and refuses a computed expression), and the
+  `[falsifiers]` table — against it). One edge type per child type, not one shared `HOSTS` edge:
+  a completeness surface names the grid edge type its relation maps to, and candidate derivation
+  fans out over every live edge of that type from the parent (`tap_grid.candidates._children`) —
+  sharing one edge type across child types would let a complete VPC listing nominate an
+  EC2 instance as a candidate whether or not the instance listing ever ran.
+- **Four child types today: VPC, subnet, EC2 instance, security group** — the task's own
+  priority order, and, together with existing `PARTITIONED_INTO_SUBNET` (VPC -> subnet), the
+  ones tap-plugin-aws-core#44's falsifiers are built for. Route table, internet gateway, NAT
+  gateway, network ACL, Elastic IP, VPC endpoint, EBS volume and RDS instance are all
+  region-scoped and belong in this table, but are deliberately NOT added yet: each needs its own
+  falsifier first, or `validate_plugin --level loads --strict`'s falsifier-coverage check reds
+  the moment a `CONTAINMENT_EDGES` target has no `[falsifiers]` row — the exact trap
+  `req-aws-core-reconcile-falsifiers` named for `VpcFalsifier`. `regional.py`'s `NOT_YET_WIRED`
+  worklist names all eight, so the gap is tracked, not merely absent.
+- **A real, DOCUMENTED cross-PR dependency, not an oversight.** Three of the four child types'
+  falsifiers — `VpcFalsifier`, `Ec2InstanceFalsifier`, `SecurityGroupFalsifier` — are built on
+  the sibling PR tap-plugin-aws-core#44, not on this one. `validate_plugin --level loads
+  --strict` is therefore RED on those three targets on this branch alone TODAY; it goes green
+  the moment #44 merges into this PR's ancestry, with no further change needed here.
+  `regional.py`'s `PENDING_FALSIFIER_PR` names exactly which PR and which falsifier for each,
+  and `tests/test_regional_containment.py::TestEveryRegionalChild::
+  test_falsifier_registered_or_pending_a_named_sibling_pr` asserts every containment target is
+  EITHER registered OR named there — never neither. Only `SubnetFalsifier` (also on this PR's
+  base, #46) is live on this branch.
+- **Per-region completeness, never "observed empty" for a region the credential could not
+  read** (`tap_grid/specs/spec-grid-reconcile.md`, `req-grid-reconcile-evidence`).
+  `collectors/boto3_collector/regions.py::read_region_facts` calls `ec2:DescribeRegions
+  (AllRegions=True)` once per run and classifies every region the run's scope names as
+  `enabled` (`OptInStatus` `opt-in-not-required` / `opted-in`), `disabled`
+  (`not-opted-in` — the account has not opted in to a commercial opt-in region, or, in
+  practice, the shape a GovCloud credential sees for `us-gov-east-1` before it is enabled) or
+  `unknown` (the call failed, or the region is absent from its answer). A `disabled` region's
+  containment listings are never called at all — `collector.py`'s region gate skips them before
+  any request — and every surface for that region is authored `scope_authorized: false` /
+  `enumeration_complete: false` with a `region_disabled` reason
+  (`tests/test_boto3_collector_regional_containment.py::TestDisabledRegion`, proving the call
+  itself never happens, not merely that its result is discarded). An `unknown` region's *empty*
+  listing is likewise never read as complete (`containment.py::surface_of`'s
+  `empty_unverified` branch) — only a NON-empty listing, or a positively `enabled` region,
+  licenses `enumeration_complete: true`. GovCloud is exactly the case this exists for: a fresh
+  `aws-us-gov` credential commonly has one of `us-gov-west-1` / `us-gov-east-1` enabled and the
+  other not, and the wrong read (silently treating the unauthorized region as "checked, found
+  nothing") is precisely the false-retirement failure mode `req-grid-reconcile-falsifier`
+  exists to rule out.
+- **Partition-aware.** `regions.py::partition_of` derives `aws` / `aws-us-gov` (`us-gov-`) /
+  `aws-cn` (`cn-`) from the region code prefix — GovCloud is `aws-us-gov`, matching AWS's own
+  naming, never inferred from the operator's own region string some other way. Stamped on
+  `AwsAccountRegion.partition`. A region scope spanning two partitions is warned about once
+  (`MIXED_PARTITION_SCOPE`): a credential resolves in exactly one partition, so the regions of
+  the other(s) can never be read by it.
+- **Ownership, not mere presence — the AWS RAM case.** A `containment` manifest entry may name
+  an `owner_path` (the item's own `OwnerId` field). `containment.py::owner_of` reads it; a
+  resource whose owner differs from the observing account gets `BELONGS_TO_ACCOUNT` toward its
+  REAL owner but NO `HOSTS_*` edge from the footprint — observed, not hosted, so an AWS RAM
+  share later revoked can never read as this account's own resource having been deleted
+  (`tests/test_boto3_collector_regional_containment.py::TestEnabledRegion::
+  test_shared_vpc_is_not_hosted_by_this_account_footprint`).
+- **A resource's persisted `name`** (`projection.py::_name_from_tag`): VPC/subnet/security-group
+  entries declare `name_tag: "Name"`; a resource carrying that tag is named by it, matching every
+  AWS console's own convention, with the natural key as the fallback (an entry declaring no
+  `fields.name` at all — VPC, subnet, EC2 instance — gets it from the same fallback, so the
+  persisted `name` column and the projection's own display name never disagree).
+- **`iter_aws_op` now reports a continuation marker on a call it could not paginate itself**
+  (`source.py::continuation_of` / the `truncated` parameter): a `containment` listing's
+  completeness cannot say `enumeration_complete: true` if the response it read was only a
+  partial page (`containment.py::surface_of`'s `truncated` branch). Only wired for
+  `containment` entries; every existing entry is unaffected (`truncated=None`).
+- **What this PR does NOT cover** (see `NOT_YET_WIRED`, above, and the priority order the task
+  set): route table, internet gateway, NAT gateway, network ACL, Elastic IP, VPC endpoint, EBS
+  volume, RDS instance (each needs its own falsifier, paired with its containment row, together);
+  ELB/ALB and target group (VPC-scoped but reached only via `RESIDES_IN_VPC`, a reference, not a
+  `HOSTS_*` target, so they are collected — where a manifest entry exists — but not yet
+  region-footprint-contained); Lambda, DynamoDB, and every other already-collected type this PR
+  does not touch, none of which had containment before and none of which loses anything by this
+  PR's absence. `HOSTS_EC2_INSTANCE` does not reach a security-group MEMBERSHIP edge from the
+  instance (dropped from the manifest entry rather than misusing `RESIDES_IN_VPC` for it — a
+  correct instance -> security-group edge type is a small, separate follow-up).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-regional-containment-1 | Account-Region Footprint | Implemented | `aws_core__aws_account_region`, keyed on `(account_id, region_code)`, emitted for every region in the run's scope. | |
+| req-aws-core-regional-containment-2 | One Containment Edge Per Child Type | Implemented | `REGIONAL_CHILDREN` declares `HOSTS_VPC` / `HOSTS_SUBNET` / `HOSTS_EC2_INSTANCE` / `HOSTS_SECURITY_GROUP`; `AwsAccountRegion.CONTAINMENT_EDGES` and every `.edge.json` file agree, checked by `test_regional_containment.py`. | |
+| req-aws-core-regional-containment-3 | Per-Region Completeness, Not Observed-Empty | Implemented | A disabled or unknown-status region's listing is never called / never counted complete when empty; `region_disabled` / `empty_unverified` reasons are recorded. | |
+| req-aws-core-regional-containment-4 | GovCloud Partition-Aware | Implemented | `partition_of` derives `aws-us-gov` from `us-gov-*`; a mixed-partition scope is warned once. | |
+| req-aws-core-regional-containment-5 | RAM Share Observed, Not Hosted | Implemented | `owner_path` on a containment entry routes `BELONGS_TO_ACCOUNT` to the real owner and withholds the `HOSTS_*` edge when it differs from the observing account. | |
+| req-aws-core-regional-containment-6 | Cross-PR Falsifier Dependency Named | Implemented | `PENDING_FALSIFIER_PR` names tap-plugin-aws-core#44 for VPC/EC2-instance/security-group; `validate_plugin --strict` is red on those three on this branch alone until #44 merges, by design. | Retarget/merge-order note mirrors this PR's own relationship to #46. |
+| req-aws-core-regional-containment-7 | Remaining Regional Types Named, Not Silently Skipped | Proposed | `NOT_YET_WIRED` names 8 region-scoped types with no containment yet, each blocked on pairing a new row with a new falsifier. | Backlog. |

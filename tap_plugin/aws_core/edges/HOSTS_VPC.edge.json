@@ -1,0 +1,14 @@
+{
+  "slug": "HOSTS_VPC__aws_core",
+  "name": "Hosts Vpc",
+  "description": "An account's footprint in one region hosts a VPC (footprint -> VPC): the resource ec2:DescribeVpcs returned for that account in that region. Containment, parent -> child: the footprint declares this edge in CONTAINMENT_EDGES, so a VPC the grid holds under a footprint whose account_region.vpcs listing a run read to the end and did not name becomes a retirement candidate, which this type's falsifier then probes in that same region. One edge type per listed type: the completeness surface names one edge type and candidate derivation fans out over every edge of that type, so a shared edge type would let one complete listing nominate the resources of another. Emitted only for a resource the account owns; a resource shared into the account through AWS RAM is observed but not hosted, so a revoked share never reads as a deletion. See tap_plugin.aws_core.regional.",
+  "sources": [
+    "aws_core__aws_account_region"
+  ],
+  "targets": [
+    "aws_core__aws_vpc"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

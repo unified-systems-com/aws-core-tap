@@ -33,6 +33,7 @@ from uuid import UUID
 from .envelope import build_configuration, without_response_metadata
 from .identity import node_entity_id
 from .paths import eval_path
+from .tags import normalize_tags
 
 
 class ProjectionError(Exception):
@@ -68,6 +69,21 @@ def source_op_label(entry: dict[str, Any]) -> str:
     return str(source.get("aws_op") or source["custom_fn"])
 
 
+def _name_from_tag(entry: dict[str, Any], item: Any) -> str | None:
+    """The value of the entry's ``name_tag`` on ``item``, or ``None``.
+
+    Only a ``field``-source tags block can supply it — the tag list is already in the item, so
+    naming a node costs no call. An entry that declares ``name_tag`` without such a block, an item
+    with no such tag, and an empty tag value all leave the projected ``name`` field in place.
+    """
+    wanted = entry.get("name_tag")
+    block = entry.get("tags") or {}
+    if not wanted or block.get("source") != "field":
+        return None
+    tags = normalize_tags(eval_path(item, block["from"]), block["shape"])
+    return tags.get(wanted) or None
+
+
 def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
     """Project one raw item into a :class:`ProjectedNode`.
 
@@ -92,7 +108,19 @@ def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
         model_field: eval_path(item, path)
         for model_field, path in entry["fields"].items()
     }
+    tag_name = _name_from_tag(entry, item)
+    if tag_name:
+        fields["name"] = tag_name
     name = fields.get("name") or natural_key
+    # A type with no AWS-assigned name field of its own (a VPC, a subnet — nothing but the
+    # optional Name tag) declares NO "name" entry in its manifest fields at all: without this,
+    # its persisted "name" column would silently stay blank while the projection's own display
+    # name (node.name, used in the GRIFT envelope and logs) reads correctly. An entry that DOES
+    # declare "name" keeps whatever that path resolved to, None included — an existing,
+    # separately-tested contract (test_name_falls_back_to_natural_key): node.name still falls
+    # back for display, but the stored field says the source carried no value.
+    if "name" not in entry["fields"] and "name" not in fields:
+        fields["name"] = name
 
     return ProjectedNode(
         entity_type=entry["entity_type"],

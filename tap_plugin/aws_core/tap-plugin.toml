@@ -14,6 +14,7 @@ description = "Resource-type models and edge types for AWS cloud infrastructure.
 aws_core__aws_region = "tap_plugin.aws_core.models.aws_region.AwsRegion"
 aws_core__aws_az = "tap_plugin.aws_core.models.availability_zone.AvailabilityZone"
 aws_core__aws_account = "tap_plugin.aws_core.models.aws_account.AwsAccount"
+aws_core__aws_account_region = "tap_plugin.aws_core.models.aws_account_region.AwsAccountRegion"
 aws_core__aws_ec2_instance = "tap_plugin.aws_core.models.ec2_instance.Ec2Instance"
 aws_core__aws_lambda = "tap_plugin.aws_core.models.lambda_function.LambdaFunction"
 aws_core__aws_ecs_cluster = "tap_plugin.aws_core.models.ecs_cluster.EcsCluster"
@@ -102,6 +103,10 @@ TERMINATES_AT_CUSTOMER_DEVICE__aws_core = "edges/TERMINATES_AT_CUSTOMER_DEVICE.e
 CONSUMES_ENDPOINT_SERVICE__aws_core = "edges/CONSUMES_ENDPOINT_SERVICE.edge.json"
 FILTERS_VPC_DNS__aws_core = "edges/FILTERS_VPC_DNS.edge.json"
 ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
+HOSTS_VPC__aws_core = "edges/HOSTS_VPC.edge.json"
+HOSTS_SUBNET__aws_core = "edges/HOSTS_SUBNET.edge.json"
+HOSTS_EC2_INSTANCE__aws_core = "edges/HOSTS_EC2_INSTANCE.edge.json"
+HOSTS_SECURITY_GROUP__aws_core = "edges/HOSTS_SECURITY_GROUP.edge.json"
 
 [falsifiers]
 # One per reconcilable type. The foundation (tap-plugin-aws-core#42): the manifest key, the
@@ -114,6 +119,14 @@ ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
 # collector run yet — completeness-statement production is req-aws-collector-reconcile,
 # Backlog (specs/spec-aws-core-collector-v0.md) — so this registration is exercised by tests
 # today, not yet by a production run; see tap_plugin/aws_core/falsifiers.py.
+#
+# tap-plugin-aws-core#49 (region-scoped containment) makes Subnet's candidates flow from a real
+# collector run for the first time (AwsAccountRegion, the manifest's new "containment" entries)
+# and reaches three more containment targets — aws_vpc, aws_ec2_instance, aws_security_group —
+# whose falsifiers ship on the sibling PR tap-plugin-aws-core#44, not here. Until #44 merges into
+# this PR's ancestry, `validate_plugin --level loads --strict` is RED on those three targets on
+# this branch alone — a deliberate, documented cross-PR dependency (see
+# tap_plugin/aws_core/regional.py's PENDING_FALSIFIER_PR), not an oversight.
 aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"
 
 [grift]

@@ -65,6 +65,33 @@ class TransformRegistry:
             raise EdgeError(f"edge transform {name!r} is not registered (known: {known})") from None
 
 
+def edge_envelope(
+    edge_type: str,
+    *,
+    from_key: str,
+    from_id: Any,
+    to_key: str,
+    to_id: Any,
+    dimensions: dict[str, str],
+) -> dict[str, Any]:
+    """One GRIFT edge envelope. The single place its shape is written, so the manifest-driven
+    edges and the collector's own structural edges (footprint containment) cannot drift apart."""
+    return {
+        "entity": {
+            "entity_id": str(edge_entity_id(edge_type, from_key, to_key)),
+            "entity_type": "edge",
+            "name": f"{from_key} {edge_type} {to_key}",
+            "dimensions": dimensions,
+        },
+        "edge": {
+            "from_entity_id": str(from_id),
+            "to_entity_id": str(to_id),
+            "edge_type": edge_type,
+            "properties": {},
+        },
+    }
+
+
 @dataclass(frozen=True)
 class EdgeEmission:
     """Result of the edge pass for one node: envelopes + drop warnings.
@@ -139,22 +166,15 @@ def emit_edges(
                 from_key, to_key = node.natural_key, target_key
                 from_id, to_id = node.entity_id, target_id
 
-            edge_id = edge_entity_id(rule["edge_type"], from_key, to_key)
             envelopes.append(
-                {
-                    "entity": {
-                        "entity_id": str(edge_id),
-                        "entity_type": "edge",
-                        "name": f"{from_key} {rule['edge_type']} {to_key}",
-                        "dimensions": dimensions,
-                    },
-                    "edge": {
-                        "from_entity_id": str(from_id),
-                        "to_entity_id": str(to_id),
-                        "edge_type": rule["edge_type"],
-                        "properties": {},
-                    },
-                }
+                edge_envelope(
+                    rule["edge_type"],
+                    from_key=from_key,
+                    from_id=from_id,
+                    to_key=to_key,
+                    to_id=to_id,
+                    dimensions=dimensions,
+                )
             )
 
     return EdgeEmission(envelopes=envelopes, warnings=warnings)
