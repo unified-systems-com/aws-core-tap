@@ -40,10 +40,20 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 import boto3
+import botocore.session
 from botocore.config import Config
 
 from tap_cares.secrets import SecretRef, require_secret_kind, resolve_secret
 from tap_cares.secrets.models import Secret
+
+from .partition import (
+    PARTITION_RE,
+    REGION_NAME_PATTERN,
+    SUPPORTED_PARTITIONS,
+    known_region,
+    parse_arn,
+    partition_of_region,
+)
 
 # The well-known SecretRef for the AWS collector. v0 has no per-instance
 # config (CollectorConfig carries only entity ids), so the key is a constant;
@@ -57,13 +67,21 @@ AWS_ASSUMED_ROLE_KIND = "aws_assumed_role"
 
 # Region scope is shared by both kinds; kept as one fragment so the two schemas
 # cannot drift.
+#
+# GovCloud (req-aws-collector-partition): region names are shape-checked (a typo fails at
+# validation, not as a mid-run EndpointConnectionError); ``partition`` is OPTIONAL and, when
+# given, must agree with the regions (it is derived from them otherwise — see
+# ``resolve_partition``); ``use_fips_endpoint`` is a tri-state (true / false / absent =
+# defer to ``AWS_USE_FIPS_ENDPOINT`` and the shared AWS config, botocore's own resolution).
 _REGION_SCOPE_PROPS: dict[str, Any] = {
-    "region": {"type": "string", "minLength": 1},
+    "region": {"type": "string", "pattern": REGION_NAME_PATTERN},
     "regions_allowed": {
         "type": "array",
         "minItems": 1,
-        "items": {"type": "string", "minLength": 1},
+        "items": {"type": "string", "pattern": REGION_NAME_PATTERN},
     },
+    "partition": {"type": "string", "enum": list(SUPPORTED_PARTITIONS)},
+    "use_fips_endpoint": {"type": "boolean"},
 }
 
 # Assert-on-land is shared by both kinds, for the same reason region scope is:
@@ -105,7 +123,9 @@ AWS_ASSUMED_ROLE_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
     "required": ["role_arn", "external_id", "base"],
     "properties": {
-        "role_arn": {"type": "string", "minLength": 1},
+        # An IAM role ARN of any partition; ``resolve_partition`` then checks it against the
+        # region scope (a commercial role ARN with GovCloud regions cannot work).
+        "role_arn": {"type": "string", "pattern": rf"^arn:{PARTITION_RE}:iam::[0-9]{{12}}:role/.+$"},
         "external_id": {"type": "string", "minLength": 1},
         "base": {
             "type": "object",
@@ -172,6 +192,21 @@ def is_assumed_role(data: Mapping[str, Any]) -> bool:
     return "role_arn" in data
 
 
+def base_creds(data: Mapping[str, Any]) -> dict[str, Any]:
+    """``data['base']`` (the ``aws_assumed_role`` kind's calling identity), with the secret's
+    top-level ``use_fips_endpoint`` merged in.
+
+    ``data['base']``'s own schema (``_STATIC_CREDS_PROPS``) carries no ``use_fips_endpoint`` of
+    its own — FIPS is a property of the *secret*, declared once, not duplicated per credential
+    set. Every ``build_session(data["base"])`` call site should go through this instead of
+    reading ``data["base"]`` directly, so the base session — used only to call AssumeRole, but
+    still a real client-bearing ``boto3.session.Session`` — is pinned the same way the working
+    session ``assume_role_session`` returns already is, rather than defaulting to whatever
+    ambient environment/shared-config FIPS setting happens to be in effect.
+    """
+    return {**data["base"], "use_fips_endpoint": data.get("use_fips_endpoint")}
+
+
 def resolve_regions(data: Mapping[str, Any]) -> list[str]:
     """Regions to sweep: ``data.regions_allowed`` if non-empty, else ``[region]``.
 
@@ -186,18 +221,118 @@ def resolve_regions(data: Mapping[str, Any]) -> list[str]:
     raise CredentialError("AWS secret defines no region: set data.regions_allowed (list) " "or data.region")
 
 
+def resolve_partition(data: Mapping[str, Any], regions: list[str]) -> str:
+    """The single AWS partition this run is scoped to (req-aws-collector-partition).
+
+    Derived from the region scope (``us-gov-*`` -> ``aws-us-gov``; otherwise commercial),
+    because a credential, an Organization and every ARN live in exactly one partition and
+    the regions are the operator's own declaration of where that is. Fails visibly — never
+    quietly picks one — when:
+
+    - a region is not recognised as belonging to ANY partition, by botocore's own bundled
+      endpoint data or this collector's own table (:func:`partition.known_region`) — a typo of
+      a GovCloud/China/iso region name (``us-gvo-west-1``) matches none of the specific
+      patterns and must never be silently classified as commercial (see
+      ``known_region``'s docstring for exactly what this does and does not catch);
+    - the regions span partitions (one credential cannot reach both);
+    - the optional ``data.partition`` disagrees with the regions;
+    - the partition is not one this collector supports (``aws-cn`` and the isolated
+      partitions are recognised but untested; see ``SUPPORTED_PARTITIONS``);
+    - on the assumed-role kind, ``role_arn`` names a different partition than the regions
+      (a commercial role ARN cannot be assumed against GovCloud STS, and vice versa), or
+      its account disagrees with ``expected_account_id`` (a role always lands in the
+      account its own ARN names, so that mismatch is knowable before any AWS call).
+    """
+    unrecognised = [region for region in regions if not known_region(region)]
+    if unrecognised:
+        raise CredentialError(
+            f"AWS region(s) {unrecognised} are not recognised by botocore or this collector's "
+            "own partition table — check for a typo in data.regions_allowed/data.region"
+        )
+    partitions = {partition_of_region(region) for region in regions}
+    if len(partitions) > 1:
+        raise CredentialError(
+            f"AWS region scope spans partitions {sorted(partitions)}: one credential cannot reach "
+            "more than one partition. Use one secret per partition."
+        )
+    partition = partitions.pop()
+    declared = data.get("partition")
+    if declared and declared != partition:
+        raise CredentialError(
+            f"data.partition is {declared!r} but the regions {regions} belong to partition {partition!r}"
+        )
+    if partition not in SUPPORTED_PARTITIONS:
+        raise CredentialError(
+            f"AWS partition {partition!r} is not supported (supported: {', '.join(SUPPORTED_PARTITIONS)})"
+        )
+    role_arn = data.get("role_arn")
+    if role_arn:
+        parsed = parse_arn(role_arn)
+        if parsed is None or parsed.service != "iam" or not parsed.resource.startswith("role/"):
+            raise CredentialError(f"data.role_arn is not an IAM role ARN: {role_arn!r}")
+        if parsed.partition != partition:
+            raise CredentialError(
+                f"data.role_arn is in partition {parsed.partition!r} but the regions are in {partition!r}: "
+                "AssumeRole cannot cross partitions"
+            )
+        expected = data.get("expected_account_id")
+        if expected and parsed.account != expected:
+            raise CredentialError(
+                f"data.role_arn is in account {parsed.account} but expected_account_id is {expected}"
+            )
+    return partition
+
+
+def fips_requested(data: Mapping[str, Any]) -> bool:
+    """Whether FIPS endpoints will be used for this secret's run: the secret's explicit
+    ``use_fips_endpoint`` if set, else botocore's own effective resolution of
+    ``use_fips_endpoint`` — the ``AWS_USE_FIPS_ENDPOINT`` environment variable, then the shared
+    AWS config file (``~/.aws/config`` / ``AWS_CONFIG_FILE``), in botocore's own precedence
+    order.
+
+    This is what ``_botocore_session`` and every client it builds actually resolve to when the
+    secret sets nothing — it is used for the ``self_test`` ``AWS_PARTITION`` check and the
+    ``IDENTITY_RESOLVED`` log line precisely so those match a real client's own posture: reading
+    only the secret and the environment variable would report FIPS "off" for a deployment that
+    enables it only through ``~/.aws/config``, even though every client built here would still
+    use FIPS endpoints. A throwaway ``botocore.session.Session()`` read-only queries the same
+    resolution chain botocore always consults; nothing here constructs a client or makes a
+    network call.
+    """
+    explicit = data.get("use_fips_endpoint")
+    if explicit is not None:
+        return bool(explicit)
+    return bool(botocore.session.Session().get_config_variable("use_fips_endpoint"))
+
+
+def _botocore_session(use_fips_endpoint: bool | None) -> botocore.session.Session:
+    """A botocore session with FIPS pinned when the secret says so.
+
+    Pinning it on the SESSION (not per-client ``Config``) is what makes it reach every client
+    made from it — the manifest engine's, the custom fns', the RGTA sweep's and the
+    falsifiers' — without each call site threading a Config. ``None`` leaves botocore's own
+    resolution (``AWS_USE_FIPS_ENDPOINT`` / shared config) untouched.
+    """
+    session = botocore.session.Session()
+    if use_fips_endpoint is not None:
+        session.set_config_variable("use_fips_endpoint", use_fips_endpoint)
+    return session
+
+
 def build_session(creds: Mapping[str, Any]) -> boto3.session.Session:
     """A boto3 Session bound to a static credential set.
 
-    ``creds`` is the ``aws_static_access_key`` kind's ``data`` (our own account)
-    or the ``aws_assumed_role`` kind's ``data['base']`` (the identity that calls
-    AssumeRole). Both carry ``access_key_id`` / ``secret_access_key`` / optional
-    ``session_token``.
+    ``creds`` is the ``aws_static_access_key`` kind's ``data`` (our own account) or, for the
+    ``aws_assumed_role`` kind's calling identity, the result of :func:`base_creds` — never
+    ``data['base']`` directly, which carries no ``use_fips_endpoint`` of its own. Both carry
+    ``access_key_id`` / ``secret_access_key`` / optional ``session_token`` /
+    ``use_fips_endpoint``.
     """
     return boto3.session.Session(
         aws_access_key_id=creds["access_key_id"],
         aws_secret_access_key=creds["secret_access_key"],
         aws_session_token=creds.get("session_token"),
+        botocore_session=_botocore_session(creds.get("use_fips_endpoint")),
     )
 
 
@@ -219,14 +354,17 @@ def assume_role_session(
     ``role_session_name`` → ``DEFAULT_ROLE_SESSION_NAME``.
     """
     retries = {"max_attempts": 1}
+    fips = data.get("use_fips_endpoint")
+    fips_kwargs: dict[str, Any] = {} if fips is None else {"use_fips_endpoint": bool(fips)}
     config = (
         Config(
             connect_timeout=timeout_seconds,
             read_timeout=timeout_seconds,
             retries=retries,
+            **fips_kwargs,
         )
         if timeout_seconds is not None
-        else Config(retries=retries)
+        else Config(retries=retries, **fips_kwargs)
     )
     sts = base.client("sts", region_name=region, config=config)
     kwargs: dict[str, Any] = {
@@ -242,6 +380,7 @@ def assume_role_session(
         aws_access_key_id=creds["AccessKeyId"],
         aws_secret_access_key=creds["SecretAccessKey"],
         aws_session_token=creds["SessionToken"],
+        botocore_session=_botocore_session(fips),
     )
 
 

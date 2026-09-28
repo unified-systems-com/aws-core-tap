@@ -30,6 +30,14 @@ from .hydrate import hydrate_item
 from .iam_trust import account_of_iam_arn, summarize_trust_policy
 from .listing import ListingWalk, page_says_more
 from .manifest import manifest_entries
+from .partition import (
+    PARTITION_AWS,
+    PARTITION_RE,
+    build_arn,
+    home_region,
+    partition_of_region,
+    service_unavailable_reason,
+)
 from .source import CustomFnRegistry, iter_listing
 
 
@@ -41,6 +49,35 @@ def _hydrate_ops(entity_type: str) -> list[dict[str, str]]:
             return ops
     return []
 
+# The region used to reach a partition-global service ONLY when a caller supplies neither a
+# ``client_for`` nor a session with a region (unit tests, an ad-hoc call). At run time the
+# collector always passes ``client_for``, bound to the run's own region — in the run's own
+# partition — so no literal region decides the partition (req-aws-collector-partition).
+_FALLBACK_REGION = home_region(PARTITION_AWS)
+
+
+def _run_client(session: Any, client_for: Any, service: str) -> Any:
+    """A client for ``service`` in the RUN's partition.
+
+    A "global" service (IAM, STS, Route 53, CloudFront, S3 ListBuckets) is still addressed
+    through a region of the credential's own partition: botocore then resolves the partition's
+    global endpoint (``iam.us-gov.amazonaws.com`` in GovCloud). ``client_for`` is the run's
+    region-bound factory; without one, fall back to the session's own region, then to the
+    commercial anchor (never reached by ``Boto3Collector.run``).
+    """
+    if client_for is not None:
+        return client_for(service)
+    return session.client(service, region_name=getattr(session, "region_name", None) or _FALLBACK_REGION)
+
+
+def _client_partition(client: Any) -> str:
+    """The partition a client is bound to (``client.meta.partition``), tolerating test doubles
+    that carry none — those are commercial, as an empty region is."""
+    partition = getattr(getattr(client, "meta", None), "partition", None)
+    if isinstance(partition, str) and partition:
+        return partition
+    return partition_of_region(_client_region(client))
+
 
 def _s3_hydrate_ops() -> list[dict[str, str]]:
     """The manifest-declared S3 hydrate list (manifest is the source)."""
@@ -51,14 +88,18 @@ def _resolve_bucket_region(base_client: Any, bucket_name: str) -> str:
     """Resolve a bucket's home region.
 
     ``GetBucket*`` calls are region-bound (S3 redirects otherwise);
-    ``GetBucketLocation`` against the global endpoint gives the region.
-    A failed lookup falls back to ``us-east-1``.
+    ``GetBucketLocation`` gives the region. A failed lookup falls back to the
+    partition's anchor region (``home_region``) — never a literal
+    ``us-east-1``, which does not exist in GovCloud. An empty
+    ``LocationConstraint`` is S3's encoding of the partition's classic region
+    (``us-east-1`` in the commercial partition; GovCloud always names its region).
     """
+    home = home_region(_client_partition(base_client))
     try:
         location = base_client.get_bucket_location(Bucket=bucket_name)
-        return location.get("LocationConstraint") or "us-east-1"
+        return location.get("LocationConstraint") or home
     except ClientError, BotoCoreError:
-        return "us-east-1"
+        return home
 
 
 # BucketSizeBytes has no all-tiers rollup dimension — it must be queried per
@@ -180,9 +221,14 @@ def s3_buckets_hydrated(
     base = client_for("s3") if client_for is not None else session.client("s3")
     buckets = list(iter_listing(base, "list_buckets", "Buckets[]", walk))
     hydrate_ops = _s3_hydrate_ops()
+    partition = _client_partition(base)
 
     for bucket in buckets:
         name = bucket.get("Name")
+        if name and not bucket.get("BucketArn"):
+            # ListBuckets echoes BucketArn on current API versions; if a partition's endpoint does
+            # not, the ARN is a pure function of the name and the partition (it is the natural key).
+            bucket = {**bucket, "BucketArn": build_arn(partition, "s3", "", "", name)}
         region = _resolve_bucket_region(base, name)
         regional = session.client("s3", region_name=region)
         envelope = hydrate_item(regional, bucket, hydrate_ops, call_kwargs={"Bucket": name})
@@ -222,19 +268,23 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
     natural-key discipline; req-aws-collector-edges-7). The raw
     ``alias_cloudfront_domains`` stay lossless in ``configuration``.
 
-    CloudFront and Route 53 are global; clients are bound to ``us-east-1``
-    per the global-resource region invariant.
+    CloudFront and Route 53 are global; their clients are bound to the RUN's
+    region (a region of the credential's own partition — ``us-east-1`` in the
+    commercial partition, ``us-gov-*`` in GovCloud). CloudFront does not exist
+    in GovCloud: the join is skipped there (zones still collect, with their raw
+    ``alias_cloudfront_domains`` and no resolved ARNs).
     """
-    cf = session.client("cloudfront", region_name="us-east-1")
+    r53 = _run_client(session, client_for, "route53")
     arn_by_domain: dict[str, str] = {}
-    for page in _pages(cf, "list_distributions"):
-        for dist in (page.get("DistributionList", {}) or {}).get("Items", []) or []:
-            domain = (dist.get("DomainName") or "").rstrip(".").lower()
-            arn = dist.get("ARN")
-            if domain and arn:
-                arn_by_domain[domain] = arn
+    if service_unavailable_reason(_client_partition(r53), "cloudfront") is None:
+        cf = _run_client(session, client_for, "cloudfront")
+        for page in _pages(cf, "list_distributions"):
+            for dist in (page.get("DistributionList", {}) or {}).get("Items", []) or []:
+                domain = (dist.get("DomainName") or "").rstrip(".").lower()
+                arn = dist.get("ARN")
+                if domain and arn:
+                    arn_by_domain[domain] = arn
 
-    r53 = session.client("route53", region_name="us-east-1")
     for zpage in _pages(r53, "list_hosted_zones"):
         for zone in zpage.get("HostedZones", []):
             zone_id = zone.get("Id")
@@ -282,19 +332,21 @@ def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[d
     "<id>")`` is deterministic. Any node minted elsewhere with the same id
     (e.g. a hand-written GRIFT batch) upserts cleanly onto the collector's.
 
-    STS and IAM are global; with the engine's ``client_for`` the clients are bound to the run's first
-    region, which is what makes the same code reach the right partition endpoint for a GovCloud account
-    (``us-east-1`` is a commercial-partition region and does not exist there). Without one (a unit test
-    driving the function directly) they fall back to ``us-east-1``, the commercial global-resource
-    region invariant.
+    STS is reached in the run's region and IAM through its partition-global
+    endpoint (``iam.us-gov.amazonaws.com`` in GovCloud) — both via the run's
+    ``client_for``, never a literal ``us-east-1``, which is the wrong partition
+    for a GovCloud credential. Without one (a unit test driving the function
+    directly), ``_run_client`` falls back to the session's own region, then the
+    partition's home region — never a bare literal (never reached by
+    ``Boto3Collector.run``).
     """
-    sts = client_for("sts") if client_for is not None else session.client("sts", region_name="us-east-1")
+    sts = _run_client(session, client_for, "sts")
     identity = without_response_metadata(sts.get_caller_identity())
     account_id = identity.get("Account") or ""
 
     aliases: list[str] = []
     try:
-        iam = client_for("iam") if client_for is not None else session.client("iam", region_name="us-east-1")
+        iam = _run_client(session, client_for, "iam")
         alias_resp = without_response_metadata(iam.list_account_aliases())
         aliases = list(alias_resp.get("AccountAliases", []) or [])
     except BotoCoreError, ClientError:
@@ -374,10 +426,14 @@ def cloudfront_distributions_with_oac(session: Any, *, client_for: Any = None) -
     ``tags``, and ``edges`` (``Origins.Items[].DomainName``,
     ``ViewerCertificate.ACMCertificateArn``) all still resolve.
 
-    CloudFront is global; the client is bound to ``us-east-1`` per the
-    global-resource region invariant.
+    CloudFront is global; the client is bound to the run's region (the commercial
+    partition's global endpoint). CloudFront does not exist in GovCloud — the
+    collector records "not available in this partition" for the entry before
+    calling this; if called directly there it yields nothing.
     """
-    cf = session.client("cloudfront", region_name="us-east-1")
+    cf = _run_client(session, client_for, "cloudfront")
+    if service_unavailable_reason(_client_partition(cf), "cloudfront") is not None:
+        return
     # Cache across distributions: two distributions sharing an OAC -> one call.
     oac_cache: dict[str, Any] = {}
     for page in _pages(cf, "list_distributions"):
@@ -479,13 +535,15 @@ def eventbridge_rules_with_targets(session: Any, *, client_for: Any) -> Iterator
                 # still collects, just without resolved target edges.
                 target_arns = []
             target_arns = list(dict.fromkeys(target_arns))
-            lambda_arns = [a for a in target_arns if a.startswith("arn:aws:lambda:") and ":function:" in a]
+            lambda_arns = [a for a in target_arns if _LAMBDA_ARN_PREFIX_RE.match(a) and ":function:" in a]
             yield {**rule, "_target_arns": target_arns, "_lambda_target_arns": lambda_arns}
 
 
 def _iam_client(session: Any, client_for: Any) -> Any:
-    """The IAM client for a global listing: the engine's region-bound one, else the commercial fallback."""
-    return client_for("iam") if client_for is not None else session.client("iam", region_name="us-east-1")
+    """The IAM client for a global listing: the engine's region-bound one, else ``_run_client``'s
+    session-region-then-partition-home-region fallback (never a bare ``us-east-1`` literal, which
+    is the wrong partition for a GovCloud credential)."""
+    return _run_client(session, client_for, "iam")
 
 
 def _account_summary_count(client: Any, key: str) -> int | None:
@@ -623,7 +681,9 @@ def iam_oidc_providers_described(
     entry can use it as ``natural_key`` (the GetOpenIDConnectProvider response
     doesn't echo the ARN back).
 
-    The list call is not paginated (AWS returns every provider of the account in one response), so
+    IAM is global; the client is the run's, bound through the partition's global
+    IAM endpoint (``iam.us-gov.amazonaws.com`` in GovCloud). The list call is not
+    paginated (AWS returns every provider of the account in one response), so
     ``walk`` ends with that one call unless the response itself reports a continuation. A provider that
     is listed but cannot be described is dropped from the batch, and that clears ``walk.admitted``:
     the listing was complete, but the run did not process all of it, so an absence from the batch is not
@@ -652,12 +712,13 @@ def iam_oidc_providers_described(
 
 # An API Gateway v2 Lambda-proxy IntegrationUri embeds the function's invoke
 # path: .../functions/<function-arn>/invocations. Capture the embedded ARN.
-_LAMBDA_INTEGRATION_URI_RE = re.compile(r"/functions/(arn:aws:lambda:[^/]+)/invocations$")
+_LAMBDA_INTEGRATION_URI_RE = re.compile(rf"/functions/(arn:{PARTITION_RE}:lambda:[^/]+)/invocations$")
+_LAMBDA_ARN_PREFIX_RE = re.compile(rf"^arn:{PARTITION_RE}:lambda:")
 
 # A Cognito JWT authorizer's Issuer names the pool:
-# https://cognito-idp.<region>.amazonaws.com/<pool-id>
+# https://cognito-idp.<region>.amazonaws.com/<pool-id>  (.amazonaws.com.cn in the China partition)
 _COGNITO_ISSUER_RE = re.compile(
-    r"^https://cognito-idp\.[a-z0-9-]+\.amazonaws\.com/(?P<pool>[a-z0-9-]+_[A-Za-z0-9]+)$",
+    r"^https://cognito-idp\.[a-z0-9-]+\.amazonaws\.com(?:\.cn)?/(?P<pool>[a-z0-9-]+_[A-Za-z0-9]+)$",
     re.IGNORECASE,
 )
 
@@ -757,7 +818,7 @@ def apigateway_http_apis_detailed(session: Any, *, client_for: Any) -> Iterator[
             yield {
                 **api,
                 **sub,
-                "_api_arn": f"arn:aws:apigateway:{region}::/apis/{api_id}",
+                "_api_arn": build_arn(partition_of_region(region), "apigateway", region, "", f"/apis/{api_id}"),
                 "_integration_lambda_arns": list(dict.fromkeys(lambda_arns)),
                 "_authorizer_user_pool_ids": list(dict.fromkeys(pool_ids)),
                 "_route_authorization_types": None

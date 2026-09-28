@@ -415,7 +415,10 @@ def test_unregistered_edge_transform_is_classified_not_fatal(_stub_aws, monkeypa
 
     from tap_grid.services import get_node
 
-    monkeypatch.setattr(collector_mod, "build_transform_registry", TransformRegistry)
+    # build_transform_registry now takes the run's partition (GovCloud readiness,
+    # tap-plugin-aws-core#GovCloud); the empty-registry substitution just needs to accept and
+    # discard it.
+    monkeypatch.setattr(collector_mod, "build_transform_registry", lambda _partition=None: TransformRegistry())
 
     collector = Boto3Collector(
         CollectorConfig(

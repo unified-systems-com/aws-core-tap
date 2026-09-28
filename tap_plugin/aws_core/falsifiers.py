@@ -144,10 +144,12 @@ from typing import Any
 from botocore.exceptions import BotoCoreError, ClientError
 from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     assume_role_session,
+    base_creds,
     build_session,
     caller_account_id,
     is_assumed_role,
     resolve_aws_secret,
+    resolve_partition,
     resolve_regions,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import iam_endpoint_region
@@ -194,12 +196,22 @@ def _default_session() -> tuple[ProbeSession, str]:
 
     Both are needed together: the session probes, the account id is what every candidate's
     ``aws_account`` dimension is checked against (this plugin's single-account "reach").
+
+    Runs the same ``resolve_partition`` gate ``Boto3Collector.run()`` does (mixed-partition
+    regions, a declared-partition mismatch, an unsupported partition, or — on the assumed-role
+    kind — a ``role_arn`` in a different partition than the regions or a wrong
+    ``expected_account_id``) before this identity ever reaches AWS. A falsifier resolves its
+    own credential independently of any collector run, so a secret edited to something
+    partition-inconsistent between runs must be refused here too, not only at collection time —
+    a raised ``CredentialError`` is caught by ``_AwsFalsifier.batch_falsify`` and answered as
+    ``UNDETERMINED(errored)`` for every candidate, the same as any other credential failure.
     """
     secret = resolve_aws_secret()
     data = dict(secret.data)
     regions = resolve_regions(data)
+    resolve_partition(data, regions)
     if is_assumed_role(data):
-        base = build_session(data["base"])
+        base = build_session(base_creds(data))
         session = assume_role_session(
             base, data, regions[0], timeout_seconds=_STS_TIMEOUT_SECONDS
         )

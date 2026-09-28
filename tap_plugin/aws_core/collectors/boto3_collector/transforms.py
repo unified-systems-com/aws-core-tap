@@ -16,11 +16,16 @@ edge (e.g. a CloudFront origin that is not an S3 bucket); the edge pass drops
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from functools import partial
+from typing import Any
 
 from .edges import TransformRegistry
 from .iam_trust import account_of_iam_arn
+from .partition import PARTITION_AWS, PARTITION_RE, build_arn
 
-# CloudFront S3 origin DomainName forms, all ending amazonaws.com:
+# CloudFront S3 origin DomainName forms, all ending amazonaws.com (amazonaws.com.cn in the China
+# partition; CloudFront itself does not exist in GovCloud, so a GovCloud run never reaches this):
 #   bucket.s3.amazonaws.com
 #   bucket.s3.us-east-1.amazonaws.com
 #   bucket.s3-us-east-1.amazonaws.com
@@ -34,29 +39,31 @@ from .iam_trust import account_of_iam_arn
 # linear — the old `(?:[.-][a-z0-9-]+)*` backtracked polynomially on crafted non-matching
 # input (CodeQL py/redos).
 _S3_ORIGIN_RE = re.compile(
-    r"^(?P<bucket>[^/]+?)\.s3(?:[.-][a-z0-9]+)*\.amazonaws\.com$",
+    r"^(?P<bucket>[^/]+?)\.s3(?:[.-][a-z0-9]+)*\.amazonaws\.com(?:\.cn)?$",
     re.IGNORECASE,
 )
 
 
-def s3_bucket_name_from_origin_domain(value: object) -> str | None:
+def s3_bucket_name_from_origin_domain(value: object, *, partition: str = PARTITION_AWS) -> str | None:
     """A CloudFront origin DomainName -> the target S3 bucket's natural key.
 
-    The S3 bucket natural key is its ARN, which is globally derivable from
-    the name alone (``arn:aws:s3:::<bucket>`` — no account/region), so this
-    stays a pure transform and the edge resolves by identity.
+    The S3 bucket natural key is its ARN, which is derivable from the name
+    and the run's partition alone (``arn:<partition>:s3:::<bucket>`` — no
+    account/region), so this stays a pure transform and the edge resolves by
+    identity. ``partition`` is bound by ``build_transform_registry``.
     """
     if not isinstance(value, str):
         return None
     match = _S3_ORIGIN_RE.match(value.strip())
     if not match:
         return None
-    return f"arn:aws:s3:::{match.group('bucket')}"
+    return build_arn(partition, "s3", "", "", match.group("bucket"))
 
 
-# A full KMS key ARN: arn:aws:kms:<region>:<acct>:key/<key-id>. Aliases
-# (alias/...) and bare key ids don't match — see kms_key_arn_or_none.
-_KMS_KEY_ARN_RE = re.compile(r"^arn:aws:kms:[a-z0-9-]+:\d{12}:key/[0-9a-fA-F-]+$")
+# A full KMS key ARN: arn:<partition>:kms:<region>:<acct>:key/<key-id>, any partition (a GovCloud
+# key is arn:aws-us-gov:kms:...). Aliases (alias/...) and bare key ids don't match — see
+# kms_key_arn_or_none.
+_KMS_KEY_ARN_RE = re.compile(rf"^arn:{PARTITION_RE}:kms:[a-z0-9-]+:\d{{12}}:key/[0-9a-fA-F-]+$")
 
 
 def kms_key_arn_or_none(value: object) -> str | None:
@@ -72,19 +79,23 @@ def kms_key_arn_or_none(value: object) -> str | None:
     return candidate if _KMS_KEY_ARN_RE.match(candidate) else None
 
 
-def s3_bucket_arn_from_name(value: object) -> str | None:
+_S3_ARN_PREFIX_RE = re.compile(rf"^arn:{PARTITION_RE}:s3:::")
+
+
+def s3_bucket_arn_from_name(value: object, *, partition: str = PARTITION_AWS) -> str | None:
     """A bare S3 bucket name -> the bucket's natural key (its ARN).
 
-    Like ``s3_bucket_name_from_origin_domain``, the S3 ARN is globally
-    derivable from the name alone (``arn:aws:s3:::<bucket>``). A value that
-    already is an S3 ARN passes through unchanged.
+    Like ``s3_bucket_name_from_origin_domain``, the S3 ARN is derivable from
+    the name and the run's partition alone (``arn:<partition>:s3:::<bucket>``).
+    A value that already is an S3 ARN — of ANY partition — passes through
+    unchanged.
     """
     if not isinstance(value, str) or not value.strip():
         return None
     candidate = value.strip()
-    if candidate.startswith("arn:aws:s3:::"):
+    if _S3_ARN_PREFIX_RE.match(candidate):
         return candidate
-    return f"arn:aws:s3:::{candidate}"
+    return build_arn(partition, "s3", "", "", candidate)
 
 
 def log_group_name_from_arn(value: object) -> str | None:
@@ -119,7 +130,7 @@ def customer_managed_policy_arn_or_none(value: object) -> str | None:
 
 # Manifest transform name -> callable. The single source of truth wired into
 # the engine's TransformRegistry by build_transform_registry().
-_TRANSFORMS = {
+_TRANSFORMS: dict[str, Callable[..., Any]] = {
     "customer_managed_policy_arn_or_none": customer_managed_policy_arn_or_none,
     "s3_bucket_name_from_origin_domain": s3_bucket_name_from_origin_domain,
     "kms_key_arn_or_none": kms_key_arn_or_none,
@@ -128,9 +139,14 @@ _TRANSFORMS = {
 }
 
 
-def build_transform_registry() -> TransformRegistry:
-    """The populated edge-transform registry for the collector."""
+# Transforms that MINT an ARN from a partition-less value (a bucket name) and so need the run's
+# partition. The rest only read an ARN they were handed, which already carries its partition.
+_PARTITION_AWARE = frozenset({"s3_bucket_name_from_origin_domain", "s3_bucket_arn_from_name"})
+
+
+def build_transform_registry(partition: str = PARTITION_AWS) -> TransformRegistry:
+    """The populated edge-transform registry for the collector, bound to the run's ``partition``."""
     registry = TransformRegistry()
     for name, fn in _TRANSFORMS.items():
-        registry.register(name, fn)
+        registry.register(name, partial(fn, partition=partition) if name in _PARTITION_AWARE else fn)
     return registry
