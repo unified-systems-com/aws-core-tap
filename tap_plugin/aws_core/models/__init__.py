@@ -6,6 +6,7 @@ from tap_plugin.aws_core.models.alb import Alb
 from tap_plugin.aws_core.models.apigateway_http_api import ApiGatewayHttpApi
 from tap_plugin.aws_core.models.availability_zone import AvailabilityZone
 from tap_plugin.aws_core.models.aws_account import AwsAccount
+from tap_plugin.aws_core.models.aws_account_region import AwsAccountRegion
 from tap_plugin.aws_core.models.aws_identity_center_instance import AwsIdentityCenterInstance
 from tap_plugin.aws_core.models.aws_organization import AwsOrganization
 from tap_plugin.aws_core.models.aws_organizational_unit import AwsOrganizationalUnit
@@ -67,6 +68,7 @@ __all__ = [
     "ApiGatewayHttpApi",
     "AvailabilityZone",
     "AwsAccount",
+    "AwsAccountRegion",
     "AwsIdentityCenterInstance",
     "AwsOrganization",
     "AwsOrganizationalUnit",

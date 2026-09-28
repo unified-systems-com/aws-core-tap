@@ -62,9 +62,25 @@
           "type": "string",
           "minLength": 1
         },
-        "sensitivity": { "$ref": "#/$defs/sensitivity" }
+        "sensitivity": { "$ref": "#/$defs/sensitivity" },
+        "name_tag": {
+          "description": "The tag whose value names the node (usually 'Name'), when the resource carries one. EC2-family resources have no name of their own; the human-set Name tag is the name every AWS console shows. Read from the entry's tags block (source 'field'), so it needs no extra call; when the resource has no such tag the projected 'name' field stands.",
+          "type": "string",
+          "minLength": 1
+        },
+        "containment": { "$ref": "#/$defs/containment" }
       },
       "allOf": [
+        {
+          "description": "A contained type is read by one region-scoped aws_op listing (req-aws-core-regional-containment). regional: the parent is one per (account, region). aws_op: the engine paginates it, or sees that it could not, so it can say whether the listing reached its end; a custom_fn is opaque to the engine and cannot back a completeness claim.",
+          "if": { "required": ["containment"] },
+          "then": {
+            "properties": {
+              "scope": { "const": "regional" },
+              "source": { "required": ["aws_op"] }
+            }
+          }
+        },
         {
           "description": "Unreviewed means not stored (req-aws-collector-manifest-7). An entry whose sensitivity.status is unreviewed must set persist_configuration to false: nobody has looked at the response shape, so nothing supports storing it.",
           "if": {
@@ -98,6 +114,29 @@
           "properties": { "custom_fn": { "type": "string", "minLength": 1 } }
         }
       ]
+    },
+    "containment": {
+      "description": "Declares that this type is contained under the account's footprint in a region (req-aws-core-regional-containment). The collector emits the parent (one aws_account_region per account x region), one parent -> child edge of edge_type per owned resource, and records a completeness surface named relation for the region's listing — complete only when the listing ran to its end in a region positively known to be readable.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edge_type", "relation"],
+      "properties": {
+        "edge_type": {
+          "description": "The parent -> child containment edge slug; must equal the edge in tap_plugin.aws_core.regional and be declared in AwsAccountRegion.CONTAINMENT_EDGES.",
+          "type": "string",
+          "minLength": 1
+        },
+        "relation": {
+          "description": "The completeness surface's relation: the listing, in AWS's terms (for example 'account_region.vpcs').",
+          "type": "string",
+          "minLength": 1
+        },
+        "owner_path": {
+          "description": "Path to the item's owning account id, when the API reports one (OwnerId). A resource whose owner is another account was shared into this one (AWS RAM): it is observed, and points BELONGS_TO_ACCOUNT at its real owner, but is NOT hosted by this account's footprint, so the share being revoked can never read as the resource having been deleted. Absent: every listed item is this account's own.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "hydrate_op": {
       "type": "object",

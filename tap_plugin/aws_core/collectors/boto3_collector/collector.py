@@ -31,7 +31,6 @@ from typing import Any
 
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
-
 from tap_cares.collectors import (
     CollectorBase,
     CollectorDocRef,
@@ -47,6 +46,14 @@ from tap_cares.exceptions import (
 )
 
 from .batch import assemble_batch, node_envelope
+from .containment import (
+    Listing,
+    containment_envelopes,
+    footprint_envelopes,
+    footprint_id,
+    owner_of,
+    surface_of,
+)
 from .credentials import (
     AWS_SECRET_REF,
     CredentialError,
@@ -68,9 +75,16 @@ from .hydrate import hydrate_item
 from .ledger import CallLedger
 from .manifest import load_manifest, manifest_entries
 from .organizations import OrganizationTree, collect_organization, organizations_client
-from .partition import PARTITION_AWS, home_region, service_unavailable_reason
+from .partition import PARTITION_AWS, service_unavailable_reason
 from .paths import eval_path
 from .projection import ProjectionError, project_item
+from .regions import (
+    STATUS_DISABLED,
+    RegionFacts,
+    global_service_region,
+    partition_of,
+    read_region_facts,
+)
 from .rgta import rgta_resource_type_filters, sweep_tags
 from .source import SourceError, iter_source
 from .tags import normalize_tags, rgta_join_arn
@@ -96,6 +110,11 @@ _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
 _SITE_ABORT_PARTITION = "7a1d"
 _SITE_SERVICE_UNAVAILABLE = "c58e"
+_SITE_REGION_STATUS_UNREADABLE = "3a71"
+_SITE_REGION_DISABLED = "c5e2"
+_SITE_MIXED_PARTITIONS = "91b8"
+_SITE_DUPLICATE_IDENTITY = "e40d"
+_SITE_REGION_SKIPPED = "7f2a"
 _SITE_ORG_NOTICE = "c81a"
 _SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
 _SITE_ORG_READ_FAILED = "a4f0"
@@ -167,6 +186,17 @@ def resolve_node_tags(
     return tags, slot, mapping
 
 
+class _Unreadable:
+    """A stand-in EC2 client whose only call raises: what `read_region_facts` sees when the client
+    itself could not be built, so that path yields the same all-unknown answer as a refused call."""
+
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    def describe_regions(self, **_kw: Any) -> Any:
+        raise ClientError({"Error": {"Code": "ClientUnavailable", "Message": str(self._exc)}}, "DescribeRegions")
+
+
 class Boto3CollectorError(Exception):
     """An unrecoverable collector condition; the run aborts (FAILED)."""
 
@@ -185,6 +215,34 @@ class Boto3Collector(CollectorBase):
         """Record a structured error and raise to halt the run."""
         self.record_error(site, code, message, message_data=context)
         raise Boto3CollectorError(message)
+
+    def _read_region_facts(self, session: Any, regions: list[str]) -> dict[str, RegionFacts]:
+        """Region facts for the run's scope, warning once for what could not be established.
+
+        The client is built inside the guard: botocore can refuse a region name before any call.
+        """
+        try:
+            client = session.client("ec2", region_name=regions[0], config=Config(retries={"mode": "standard"}))
+            facts, error = read_region_facts(client, regions)
+        except (BotoCoreError, ValueError) as exc:
+            facts = read_region_facts(_Unreadable(exc), regions)[0]
+            error = f"ec2 client unavailable: {type(exc).__name__}"
+        if error:
+            self.record_warn(
+                _SITE_REGION_STATUS_UNREADABLE,
+                "REGION_STATUS_UNREADABLE",
+                f"{error}: regional listings that return nothing will not be counted as observed-empty.",
+                message_data={"regions": regions},
+            )
+        for region, fact in facts.items():
+            if fact.status == STATUS_DISABLED:
+                self.record_warn(
+                    _SITE_REGION_DISABLED,
+                    "REGION_DISABLED",
+                    f"Region {region} is not enabled for this account ({fact.opt_in_status}); nothing is read from it.",
+                    message_data={"region": region, "opt_in_status": fact.opt_in_status},
+                )
+        return facts
 
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
@@ -269,18 +327,36 @@ class Boto3Collector(CollectorBase):
         custom_fns = build_custom_fn_registry()
         transforms = build_transform_registry(partition)
 
+        # --- partition + region facts (req-aws-core-regional-containment) ---
+        # A credential resolves in exactly one partition, so a scope that spans two cannot be read
+        # whole: name it once rather than let every entry in the far partition fail on its own.
+        partitions = {partition_of(r) for r in regions}
+        if len(partitions) > 1:
+            self.record_warn(
+                _SITE_MIXED_PARTITIONS,
+                "MIXED_PARTITION_SCOPE",
+                f"Region scope spans partitions {sorted(partitions)}: a credential resolves in one, so the "
+                "regions of the others cannot be read and will be recorded as unreadable.",
+                message_data={"regions": regions, "partitions": sorted(partitions)},
+            )
         # --- per-run RGTA tag sweep (req-aws-collector-tags -2/-6/-7) ---
-        # The partition's anchor region: us-east-1 commercial, us-gov-west-1 GovCloud.
-        anchor = home_region(partition)
-        if anchor not in regions:
+        # The partition's global-service home region: us-east-1 commercial, us-gov-west-1
+        # GovCloud, None for a partition with no settled answer (req-aws-core-regional-containment).
+        # Deliberately NOT partition.home_region: that function always returns a concrete
+        # region (falling back to the commercial anchor) because customfns.py needs one to bind
+        # an actual client to; here a guess would misname the invariant for an unsettled
+        # partition, so the None case is "nothing to warn about", not "assume commercial".
+        home_region = global_service_region(partition)
+        if home_region is not None and home_region not in regions:
             self.record_warn(
                 _SITE_REGION_INVARIANT,
                 "REGION_INVARIANT",
-                f"Region scope omits {anchor}: global-resource tags"
+                f"Region scope omits {home_region}: global-resource tags"
                 + (" and CloudFront-bound ACM certs" if partition == PARTITION_AWS else "")
                 + " are silently missed.",
-                message_data={"regions": regions, "partition": partition, "anchor_region": anchor},
+                message_data={"regions": regions, "partition": partition, "home_region": home_region},
             )
+        facts = self._read_region_facts(session, regions)
         rgta_filters = rgta_resource_type_filters(entries)
         rgta_map: dict[str, dict[str, str]] = {}
         for region in regions:
@@ -307,6 +383,25 @@ class Boto3Collector(CollectorBase):
         edge_envelopes: list[dict[str, Any]] = []
         skipped = 0
         unavailable = 0
+        # Identities already in this batch. A repeated id is a batch-fatal duplicate_entity_id at
+        # import (the whole run's data lost); skip the repeat and say so instead.
+        seen_nodes: set[str] = set()
+        seen_edges: set[str] = set()
+        # One completeness surface per contained (entry, region) listing (req-grid-reconcile-evidence).
+        surfaces: list[dict[str, Any]] = []
+
+        # The parent of every regional containment: one footprint per (account, region) in scope,
+        # emitted whether or not the region turned out readable.
+        for region in regions:
+            for envelope in footprint_envelopes(
+                account_id,
+                region,
+                facts[region],
+                {"cloud": "aws", "aws_account": account_id, "aws_region": region},
+            ):
+                bucket = node_envelopes if envelope["entity"]["entity_type"] != "edge" else edge_envelopes
+                (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope["entity"]["entity_id"])
+                bucket.append(envelope)
 
         for entry in entries:
             # A service the partition does not offer is a clear result, not a failed call.
@@ -325,6 +420,7 @@ class Boto3Collector(CollectorBase):
                 )
                 continue
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
+            contained = entry.get("containment")
             for region in entry_regions:
                 region_label = region if entry["scope"] == "regional" else "global"
                 dimensions = {
@@ -332,6 +428,23 @@ class Boto3Collector(CollectorBase):
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
+                region_facts = facts[region]
+                if entry["scope"] == "regional" and region_facts.status == STATUS_DISABLED:
+                    # Positively known not opted in: no call would be honoured, and an "empty" answer
+                    # would be a lie. Say so on the surface instead of reading an empty region.
+                    if contained:
+                        surfaces.append(
+                            surface_of(
+                                relation=contained["relation"],
+                                edge_type=contained["edge_type"],
+                                subject=str(footprint_id(account_id, region)),
+                                facts=region_facts,
+                                listing=None,
+                            )
+                        )
+                    continue
+                listing = Listing() if contained else None
+                listed = False
                 try:
                     items = list(
                         iter_source(
@@ -339,10 +452,27 @@ class Boto3Collector(CollectorBase):
                             client_for=client_factory(session, region),
                             custom_fns=custom_fns,
                             fn_context=session,
+                            truncated=listing.truncated if listing else None,
                         )
                     )
+                    listed = True
+                    if listing:
+                        listing.count = len(items)
+                        listing.done()
                     for item in items:
                         node = project_item(entry, item)
+                        if str(node.entity_id) in seen_nodes:
+                            self.record_warn(
+                                _SITE_DUPLICATE_IDENTITY,
+                                "DUPLICATE_IDENTITY",
+                                f"{node.entity_type} {node.natural_key} appeared twice in one run "
+                                f"(second sighting in {region_label}); the repeat is skipped.",
+                                message_data={"entity_type": node.entity_type, "region": region_label},
+                            )
+                            if listing:
+                                listing.processing.append(f"duplicate identity {node.natural_key}")
+                            continue
+                        seen_nodes.add(str(node.entity_id))
                         tags, tag_slot, tag_mapping = resolve_node_tags(
                             entry,
                             item,
@@ -381,7 +511,23 @@ class Boto3Collector(CollectorBase):
                             transforms=transforms,
                             dimensions=dimensions,
                         )
-                        edge_envelopes.extend(emission.envelopes)
+                        new_edges = list(emission.envelopes)
+                        if contained:
+                            new_edges.extend(
+                                containment_envelopes(
+                                    node,
+                                    entry,
+                                    account_id=account_id,
+                                    region=region,
+                                    dimensions=dimensions,
+                                )
+                            )
+                            if listing and owner_of(entry, node.raw_item, account_id) != account_id:
+                                listing.not_hosted += 1
+                        for envelope in new_edges:
+                            if envelope["entity"]["entity_id"] not in seen_edges:
+                                seen_edges.add(envelope["entity"]["entity_id"])
+                                edge_envelopes.append(envelope)
                         for warning in emission.warnings:
                             self.record_warn(_SITE_EDGE_DROPPED, "EDGE_DROPPED", warning)
                 except (
@@ -406,6 +552,28 @@ class Boto3Collector(CollectorBase):
                             "entity_type": entry["entity_type"],
                             "region": region_label,
                         },
+                    )
+                    if listing:
+                        listing.done()
+                        if not listed:
+                            # The source could not be read to its end: a fact about the source.
+                            listing.error = exc
+                        else:
+                            # The listing was read; what was done with it was not finished.
+                            listing.processing.append(f"{type(exc).__name__}: {exc}")
+                if contained:
+                    # `listing` is always set here (`Listing() if contained else None`, above) —
+                    # `surface_of`'s own `listing: Listing | None` parameter tolerates None
+                    # regardless, so no assert is needed to narrow the type for a check that
+                    # would vanish under `-O` anyway (Bandit B101).
+                    surfaces.append(
+                        surface_of(
+                            relation=contained["relation"],
+                            edge_type=contained["edge_type"],
+                            subject=str(footprint_id(account_id, region)),
+                            facts=region_facts,
+                            listing=listing,
+                        )
                     )
 
         # --- AWS Organizations tree (req-aws-core-organizations-collect, tap-plugin-aws-core#50) ---
@@ -472,6 +640,15 @@ class Boto3Collector(CollectorBase):
         # which the task body turns into the FAILED terminal patch. No
         # per-collector guard — see req-tap-cares-collector-grift-import-9.
         result = self.submit_grift(document, dangling_edge_mode="permissive")
+        # Every listing this run read is recorded against the batch that carries its observations;
+        # `applied` is derived by the recorder from that batch's commit. The subject is the
+        # footprint's deterministic grid id, already real once the batch imported. A run that read
+        # no contained listing says so (a statement with zero surfaces, not no statement).
+        collection_batch_id = str(document["batches"][0]["batch_entity"]["entity_id"])
+        for surface in surfaces:
+            self.record_surface(**surface, applied_batches=[collection_batch_id])
+        if not surfaces:
+            self.declare_no_surfaces()
         self.record_info(
             _SITE_GRIFT_SUBMITTED,
             "GRIFT_SUBMITTED",

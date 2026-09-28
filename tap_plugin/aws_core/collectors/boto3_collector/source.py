@@ -68,7 +68,31 @@ class CustomFnRegistry:
             ) from None
 
 
-def iter_aws_op(client: Any, op_name: str, items_path: str) -> Iterator[Any]:
+#: Response keys that say "there is more than this page" on an operation botocore has no paginator
+#: for. A call that returns one of these truthy was truncated, and a truncated listing cannot be
+#: called complete.
+_CONTINUATION_KEYS: tuple[str, ...] = ("NextToken", "nextToken", "NextMarker", "Marker", "NextContinuationToken")
+
+
+def continuation_of(response: Any) -> str | None:
+    """The key of a truthy continuation marker in ``response``, or ``None`` when it is not truncated.
+
+    ``IsTruncated: true`` counts too. Used only where the call could not be paginated for us: a
+    paginated call is walked to its end by botocore.
+    """
+    if not isinstance(response, dict):
+        return None
+    for key in _CONTINUATION_KEYS:
+        if response.get(key):
+            return key
+    if response.get("IsTruncated") is True:
+        return "IsTruncated"
+    return None
+
+
+def iter_aws_op(
+    client: Any, op_name: str, items_path: str, *, truncated: list[str] | None = None
+) -> Iterator[Any]:
     """Yield raw items from a boto3 operation, generically.
 
     Uses the botocore paginator when the operation has one, else a single
@@ -80,6 +104,10 @@ def iter_aws_op(client: Any, op_name: str, items_path: str) -> Iterator[Any]:
         client: A boto3 service client.
         op_name: The API-cased operation name from the manifest.
         items_path: The manifest path that flattens the response to items.
+        truncated: When given, a continuation marker seen on a call that could not be paginated is
+            appended to it. The items are still yielded — an existing consumer is unchanged — but a
+            caller that must know the listing ran to its end (a completeness surface) can tell it
+            did not.
     """
     method = xform_name(op_name)
     if client.can_paginate(method):
@@ -87,6 +115,8 @@ def iter_aws_op(client: Any, op_name: str, items_path: str) -> Iterator[Any]:
             yield from eval_path(without_response_metadata(page), items_path)
         return
     response = getattr(client, method)()
+    if truncated is not None and (marker := continuation_of(response)) is not None:
+        truncated.append(marker)
     yield from eval_path(without_response_metadata(response), items_path)
 
 
@@ -96,6 +126,7 @@ def iter_source(
     client_for: Callable[[str], Any],
     custom_fns: CustomFnRegistry,
     fn_context: Any = None,
+    truncated: list[str] | None = None,
 ) -> Iterator[Any]:
     """Drive a manifest entry's ``source``, yielding raw items.
 
@@ -108,11 +139,13 @@ def iter_source(
             region binding lives in the runtime integration, later).
         custom_fns: The plugin-local ``custom_fn`` registry.
         fn_context: Bound session/region context passed to a ``custom_fn``.
+        truncated: See :func:`iter_aws_op`. A ``custom_fn`` reports nothing here: the engine cannot see
+            inside one, so an entry that needs a completeness claim is an ``aws_op`` entry.
     """
     source = entry["source"]
     if "aws_op" in source:
         client = client_for(entry["service"])
-        yield from iter_aws_op(client, source["aws_op"], entry["items_path"])
+        yield from iter_aws_op(client, source["aws_op"], entry["items_path"], truncated=truncated)
         return
     fn = custom_fns.get(source["custom_fn"])
     # Pass client_for through so regional custom_fns can build region-bound
