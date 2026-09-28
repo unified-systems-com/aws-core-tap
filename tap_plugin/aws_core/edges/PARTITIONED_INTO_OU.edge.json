@@ -1,0 +1,15 @@
+{
+  "slug": "PARTITIONED_INTO_OU__aws_core",
+  "name": "Partitioned Into OU",
+  "description": "An AWS Organizations parent is partitioned into an organizational unit (parent -> OU): the organization, which stands for its single root, for a top-level OU, or an OU for a nested one (organizations:ListOrganizationalUnitsForParent). AWS has no operation that re-parents an OU and refuses to delete a non-empty one, so an OU's parent is fixed for its life and this is the one tree relation that is containment: the organization and each OU declare it in CONTAINMENT_EDGES, and a listing of a parent that no longer names an OU makes it a retirement candidate. The mirror of NESTED_UNDER_PARENT (OU -> parent), which stays a reference.",
+  "sources": [
+    "aws_core__aws_organization",
+    "aws_core__aws_organizational_unit"
+  ],
+  "targets": [
+    "aws_core__aws_organizational_unit"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
