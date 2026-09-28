@@ -65,6 +65,7 @@ from .hydrate import hydrate_item
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
+from .organizations import OrganizationTree, collect_organization, organizations_client
 from .paths import eval_path
 from .projection import ProjectionError, project_item
 from .rgta import rgta_resource_type_filters, sweep_tags
@@ -93,6 +94,9 @@ _SITE_HYDRATE_GAP = "bfd4"
 _SITE_CALL_LEDGER = "bdf3"
 _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
+_SITE_ORG_NOTICE = "c81a"
+_SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
+_SITE_ORG_READ_FAILED = "a4f0"
 
 _DOCS = (
     CollectorDocRef(
@@ -390,6 +394,54 @@ class Boto3Collector(CollectorBase):
                         },
                     )
 
+        # --- AWS Organizations tree (req-aws-core-organizations-collect, tap-plugin-aws-core#50) ---
+        # One structure, not a per-account resource list, so it is its own read rather than a
+        # manifest entry — see collectors/boto3_collector/organizations.py. Global scope, the run's
+        # own first region: the endpoint (and with it the partition — GovCloud, commercial or China)
+        # follows the credential exactly as every other global-scope entry's client does.
+        # collect_organization itself never lets an AWS call escape (every one is wrapped in
+        # ClientError/BotoCoreError handling and degrades to a reasoned, incomplete Listing). This
+        # try/except is defense against a defect INSIDE this collector's own shaping code — an
+        # unregistered entity type, a malformed schema lookup, an unexpected None — the same
+        # failure class every per-entry manifest read below is already isolated against
+        # (ENTRY_SKIPPED); the Organizations tree is one more optional surface, not a reason to
+        # fail the whole run and lose every already-gathered resource.
+        org_dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
+        try:
+            org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
+        except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
+            self.record_warn(
+                _SITE_ORG_READ_FAILED,
+                "ORG_READ_FAILED",
+                f"Organizations tree collection failed unexpectedly and was skipped: "
+                f"{type(exc).__name__}: {exc}",
+            )
+            org_tree = OrganizationTree()
+        for org_notice in org_tree.notices:
+            (self.record_warn if org_notice.level == "warn" else self.record_info)(
+                _SITE_ORG_NOTICE, org_notice.code, org_notice.message, message_data=org_notice.data
+            )
+        # The account this run is scoped to may itself be a member the tree walk names: the
+        # manifest's `aws_account_singleton` entry above already wrote a node at that same
+        # deterministic id (same entity_type + account_id). A batch cannot carry the same
+        # entity_id twice (req-grid-import-grift), so the richer org-tree node (email, status,
+        # tags, its OU) wins and the plainer singleton envelope is dropped, never the reverse —
+        # the singleton exists so a non-organization account still gets one.
+        existing_ids = {n["entity"]["entity_id"] for n in node_envelopes}
+        org_node_ids = {n["entity"]["entity_id"] for n in org_tree.nodes}
+        overridden = existing_ids & org_node_ids
+        if overridden:
+            self.record_info(
+                _SITE_ORG_DUPLICATE_ACCOUNT,
+                "ORG_ACCOUNT_NODE_MERGED",
+                "The collector's own account is also a member the Organizations tree named; "
+                "its richer node from the tree replaces the manifest singleton.",
+                message_data={"count": len(overridden)},
+            )
+            node_envelopes = [n for n in node_envelopes if n["entity"]["entity_id"] not in overridden]
+        node_envelopes.extend(org_tree.nodes)
+        edge_envelopes.extend(org_tree.edges)
+
         # --- one GRIFT batch per run (permissive: dangling edges resolve on a
         # later run by deterministic identity, never fail) ---
         document = assemble_batch(
@@ -430,6 +482,18 @@ class Boto3Collector(CollectorBase):
             "AWS Core GRIFT batch submitted.",
             message_data={"imported": [str(b.batch_entity_id) for b in result.imported_batches]},
         )
+
+        # Completeness surfaces for the Organizations tree (req-grid-reconcile-evidence): every
+        # `subject` organizations.py recorded is already the deterministic id the batch wrote
+        # (unlike an assigned-identity plugin, aws_core mints its own ids — no batch-local ref to
+        # resolve here), so the surfaces can be authored as soon as the batch that carries their
+        # observations has an id, which `submit_grift` above just produced (a rejected batch
+        # aborts the run before this line is reached — `submit_grift`'s default `on_rejection`).
+        applied_batches = [str(b.batch_entity_id) for b in result.imported_batches]
+        for org_listing in org_tree.listings:
+            self.record_surface(**org_listing.surface(applied_batches))
+        if not org_tree.listings:
+            self.declare_no_surfaces()
 
         imported = result.counts.batches_imported
         self.summary = (

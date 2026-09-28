@@ -40,18 +40,36 @@ referencing RAM's own share state, or comparing the probe's ``OwnerId`` against 
 credential account rather than against the collector's stamped dimension) — a bigger, separate
 piece of work, named so the gap is not mistaken for an oversight.
 
-**AwsAccount and AwsOrganization have no falsifier, on purpose.** ``Boto3Collector.run()``
-already treats credential/region-scope/account-identity failure as an *unrecoverable*
-condition — ``self._abort(..., "STS_UNREACHABLE", ...)`` /
-``self._abort(..., "ACCOUNT_MISMATCH", ...)`` — which is exactly
-``tap_plugin.github_core``'s "foundation" layer
-(``specs/spec-github-core-reliability.md``, ``req-github-core-reliability-absence``: a
-foundation failure aborts the run rather than degrading one surface). An account the
-collector's own credential cannot see is a collection-configuration problem to fix, not a
-retirement candidate to probe. ``AwsOrganization`` additionally has **no collector at all
-yet** (design vocabulary only — ``specs/spec-aws-core-v0.md``, ``req-aws-core-organizations``:
-"no collector emits them yet"), so it can never produce a completeness surface for a
-candidate to come from in the first place.
+**Known limitation, not fixed here: the ``aws_account`` dimension can flap across credentials for
+one entity (flagged on tap-plugin-aws-core#50's review).** Every node this run writes — including
+an ``AwsAccount`` the Organizations walk discovers under a *management or delegated-administrator*
+credential — is stamped ``dimensions["aws_account"] = <this run's own resolved account>``
+(``collector.py``'s ``org_dimensions``), the observing credential, not necessarily the account the
+row represents. If that same deterministic account id is *also* collected directly, on a separate
+run, by a credential scoped to that member account itself (the ordinary manifest-driven sweep run
+against it), GRIFT's upsert (``replace_node``) overwrites the row's dimensions with THAT run's
+credential instead. ``_scope_check`` then compares whichever credential is falsifying against
+whichever run's dimension happened to write last, and a genuinely-in-scope
+``AccountFalsifier``/``OrganizationalUnitFalsifier`` candidate can read as ``UNDETERMINED
+(scope_unknown)`` until the next org-level run rewrites the dimension back. Closing it for real
+needs either a per-type stamping rule (an ``AwsAccount``/``AwsOrganizationalUnit`` node's own
+dimension should arguably be its OWN account, not the observing credential's, since the row IS
+that account) or a reach concept that does not rely on the dimension at all — a design question
+for whoever owns the dimension convention across collectors, not a fix made unilaterally here.
+
+**AwsOrganization has no falsifier — nothing contains it — but AwsAccount and
+AwsOrganizationalUnit now do (tap-plugin-aws-core#50).** The distinction this section originally
+drew (the collector's *own* account/region scope is unrecoverable-abort territory, per
+``self._abort(..., "STS_UNREACHABLE"/"ACCOUNT_MISMATCH", ...)``, mirroring
+``tap_plugin.github_core``'s foundation-abort pattern, ``specs/spec-github-core-reliability.md``
+``req-github-core-reliability-absence``) still holds for the boto3 manifest engine's own
+single-account scope. It does not apply to the Organizations tree: the credential's *own* account
+identity is unconditional and proven once per collector run, but which OUs and accounts an
+**organization** currently holds is exactly the kind of external, falsifiable fact
+``req-grid-reconcile-falsifier`` exists for — an OU or account can be removed by someone else
+entirely, observed only on the next run. ``OrganizationalUnitFalsifier`` and ``AccountFalsifier``
+below are that falsifier, and ``collectors/boto3_collector/organizations.py`` is the collector
+that gives them completeness surfaces to act on.
 
 **Which types are registered, and why some are ahead of a containment path.** The foundation
 (tap-plugin-aws-core#42) registered Subnet alone, because
@@ -71,6 +89,23 @@ a *missing* row). Reversing ``RESIDES_IN_*`` into parent -> child edges purely s
 them would state one relationship twice in opposite directions; that is an architecture call this
 module does not make.
 
+**Storage + IAM (aws-core-tap#41) join the same "ahead of a containment path" shape.**
+``S3BucketFalsifier``, ``IamRoleFalsifier``, ``IamUserFalsifier`` and ``IamPolicyFalsifier``
+(customer-managed policies only — an AWS-managed policy is provisioned and retired by AWS, not
+this account, so that falsifier refuses one before spending any AWS call) reuse ``_AwsFalsifier``
+and ``_scope_check`` exactly as the compute/network types do; they need no region-sweep machinery
+(``_region_hint`` / ``_sweep_regions``) at all, because S3 (for the calls made here) and IAM are
+genuinely global services, not regional ones — there is no "which region was this collected in"
+question for them to answer. ``IamRoleFalsifier`` and ``IamUserFalsifier`` additionally bind the
+grid's stored ``name`` field to the resource-name segment of its own ARN before probing:
+``get_role``/``get_user`` take only a bare name, never the ARN, so nothing else guarantees the
+two independently-stored fields still agree. ``S3BucketFalsifier`` carries its own, narrower
+addition on top of the shared shape: AWS's ``HeadBucket`` documents 403 and 404 as EQUALLY
+ambiguous ("gone" vs. "this credential may not look"), so both route through a tie-break against
+this account's own ``list_buckets`` — a check ``_scope_check`` does not need to make for the
+EC2/VPC types, whose ``Invalid*ID.NotFound`` codes are unambiguous once the account itself is
+confirmed. See each class's own docstring for the specifics.
+
 **Where the region comes from (``_AwsFalsifier._regions_of``).** Every describe call is
 region-scoped and no model stores a region, but the collector stamps
 ``dimensions["aws_region"]`` on every node it writes, so the dimension is the region, trusted
@@ -83,7 +118,8 @@ sweep is **untrustworthy by construction** (``regions_trustworthy=False``): it c
 the row was collected, and a row collected under a since-narrowed ``regions_allowed`` would read
 as gone in every region a narrower sweep covers. So a fallback sweep may FIND the resource (and
 answer PRESENT / REIDENTIFIED / RELOCATED) but may never answer ``DROPPED_FROM_OBSERVATION``:
-that verdict is downgraded to ``UNDETERMINED(scope_unknown)`` in ``_Ec2Falsifier.judge``.
+that verdict is downgraded to ``UNDETERMINED(scope_unknown)`` in ``_Ec2Falsifier.judge``. Storage
++ IAM's falsifiers do not use this machinery at all — see the paragraph above.
 
 **REIDENTIFIED is structurally rare for an AWS-id-keyed type, and the tests still cover it.**
 ``DescribeSubnets(SubnetIds=[subnet_id])`` looks up by AWS's own opaque, non-reused resource
@@ -91,17 +127,21 @@ id — the same string the grid's ``NATURAL_KEY`` rests on — so a "found" resp
 *different* id is not a shape AWS's real API produces for this call. ``classify()`` (core)
 still handles it generically from whatever ``Expected``/``Probe`` a falsifier hands it, so the
 fake-source test exercises the classification wiring, not a claim about AWS's real behaviour.
+Storage + IAM differ per type — see each class's own docstring: S3 and customer-managed IAM
+policies can never answer it (structurally, not just rarely); IAM role/user CAN, for a
+delete+recreate under a different path (same name).
 """
 
 from __future__ import annotations
 
 import logging
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
-
 from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     assume_role_session,
     build_session,
@@ -111,16 +151,23 @@ from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     resolve_regions,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import iam_endpoint_region
+from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
+    INACTIVE_ACCOUNT_STATES,
+    NESTED_UNDER_PARENT,
+    account_state,
+    organization_id_of_account_arn,
+)
 
 from tap_grid.falsifiers import (
     DROPPED_FROM_OBSERVATION,
+    UNDETERMINED,
     Candidate,
     Expected,
     Falsifier,
     FalsifyContext,
     Probe,
-    UNDETERMINED,
     Verdict,
+    incomplete,
     verdict_from_probe,
 )
 from tap_grid.services import get_node
@@ -226,6 +273,47 @@ def _dimensions_of(row: Any) -> dict[str, str]:
     entity = getattr(row, "entity", None)
     dimensions = getattr(entity, "dimensions", None)
     return dict(dimensions) if isinstance(dimensions, dict) else {}
+
+
+#: The most NESTED_UNDER_PARENT hops _organization_id_of will follow before giving up — real
+#: Organizations trees nest a handful of levels deep; this only guards a graph anomaly.
+_MAX_PARENT_HOPS = 50
+
+
+def _organization_id_of(entity_id: Any) -> str:
+    """Walk ``NESTED_UNDER_PARENT`` from ``entity_id`` up to its ``AwsOrganization`` ancestor and
+    return its ``organization_id``, or ``""`` when the chain does not reach one.
+
+    ``AwsOrganizationalUnit`` carries no ``organization_id`` field of its own (only ``AwsOrganization``
+    does), so a nested OU's organization is not read off its row or off ``Candidate.parent`` alone —
+    ``Candidate.parent`` names only the OU's IMMEDIATE parent, which for a nested OU is another OU,
+    not the organization. This is the OU-side analogue of ``AccountFalsifier``'s organization
+    comparison (Codex on unified-ai-review#55: a bare root-id-suffix comparison could authorize
+    probing the wrong organization if two organizations' root suffixes happened to collide — AWS
+    documents no global uniqueness for the short alphanumeric suffix). Read straight off the edge
+    table, the same way ``tap_grid.candidates._children`` does, rather than through the service
+    layer's read path: this is graph topology, not a typed field.
+    """
+    from tap_grid.models import Edge
+
+    current = entity_id
+    for _ in range(_MAX_PARENT_HOPS):
+        parent_id = (
+            Edge.objects.filter(
+                from_entity_id=current, edge_type=NESTED_UNDER_PARENT, to_entity__deleted_at__isnull=True
+            )
+            .values_list("to_entity_id", "to_entity__entity_type")
+            .first()
+        )
+        if parent_id is None:
+            return ""
+        to_id, to_type = parent_id
+        if to_type == _ORGANIZATION_TYPE:
+            organization = _row_of(to_id)
+            return str(getattr(organization, "organization_id", "") or "")
+        current = to_id
+    logger.warning("[d9a3] _organization_id_of(%s): exceeded %d parent hops without reaching an organization", entity_id, _MAX_PARENT_HOPS)
+    return ""
 
 
 def _enabled_regions(session: ProbeSession, configured_regions: list[str]) -> list[str]:
@@ -611,6 +699,721 @@ class Ec2InstanceFalsifier(_Ec2Falsifier):
         return self._found_probe(instance, owner, expected), True
 
 
+# ---------------------------------------------------------------------------
+# The Organizations tree (tap-plugin-aws-core#50)
+# ---------------------------------------------------------------------------
+
+_ORGANIZATION_TYPE = "aws_core__aws_organization"
+_OU_TYPE = "aws_core__aws_organizational_unit"
+
+#: Organizations ``Error.Code`` values that mean "this credential is not in an organization",
+#: which is not the same fact as "the thing is gone".
+_NOT_IN_ORGANIZATION_CODES = frozenset({"AWSOrganizationsNotInUseException"})
+
+
+@dataclass(frozen=True)
+class _OrgReach:
+    """What one batch's credential was proven able to speak about, read once per batch.
+
+    ``AccountNotFoundException`` is documented as raised both when the account id does not exist in
+    the organization AND when the account whose credentials made the call "isn't a member of an
+    organization" — so a bare not-found says nothing until the credential is shown to be inside the
+    very organization the candidate was recorded under. The same proof is why ``reach`` exists at
+    all: it is the Organizations analogue of ``tap_plugin.github_core.reach``, reduced to one
+    organization id and one root.
+    """
+
+    status: str  # "ok" | "forbidden" | "rate_limited" | "errored" | "scope_unknown"
+    organization_id: str = ""
+    note: str = ""
+
+
+def _finish(candidate: Candidate, expected: Expected, probe: Probe, *, note: str = "") -> Verdict:
+    """``verdict_from_probe``, except that evidence core would REFUSE is answered instead.
+
+    ``classify`` raises ``FalsifierError`` for a found probe with no source identity, or none owner
+    while the grid holds one; an exception out of ``judge`` would take the rest of the batch's
+    verdicts with it. Incomplete evidence is an ``UNDETERMINED``, never a destructive default.
+    """
+    why = incomplete(expected, probe)
+    if why is not None:
+        return _undetermined(candidate, "errored", why)
+    return verdict_from_probe(candidate, expected, probe, note=note)
+
+
+class _OrganizationsFalsifier(_AwsFalsifier):
+    """Shared shape of the Organizations falsifiers: one ``organizations`` client and one proof of
+    organization membership per batch, then one probe per candidate.
+
+    The Organizations API is global: one endpoint per partition, no per-resource region. The client
+    is built in the collector's own first region so that the endpoint (and with it the partition,
+    e.g. ``organizations.us-gov-west-1`` for GovCloud) follows the credential exactly as the
+    collector's does; ``region`` is injected by tests.
+    """
+
+    def __init__(
+        self,
+        session: ProbeSession | None = None,
+        account_id: str | None = None,
+        session_factory: Callable[[], tuple[ProbeSession, str]] | None = None,
+        region: str | None = None,
+    ) -> None:
+        super().__init__(session, account_id, session_factory)
+        self._region_name = region
+
+    def _region(self) -> str:
+        if self._region_name is None:
+            self._region_name = resolve_regions(dict(resolve_aws_secret().data))[0]
+        return self._region_name
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        return self.judge_all(session, account_id, [candidate])[0]
+
+    def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
+        # The account-dimension scope check needs no organization read at all (it is this
+        # plugin's single-account "reach", same as every other falsifier here) — apply it FIRST,
+        # per candidate, so a batch of nothing but out-of-scope candidates never touches
+        # Organizations, and only candidates that pass it pay for the one shared reach read.
+        verdicts: dict[int, Verdict] = {}
+        to_probe: list[tuple[int, Any, Candidate]] = []
+        for index, candidate in enumerate(candidates):
+            row = _row_of(candidate.entity_id)
+            if row is None:
+                verdicts[index] = _undetermined(candidate, "errored", "the grid row could not be read")
+                continue
+            scoped = self._scope_check(candidate, account_id, _dimensions_of(row).get("aws_account") or None)
+            if scoped is not None:
+                verdicts[index] = scoped
+                continue
+            to_probe.append((index, row, candidate))
+        if to_probe:
+            try:
+                client = session.client("organizations", region_name=self._region())
+                reach = self._read_reach(client)
+            except Exception as exc:  # noqa: BLE001 — an unbuildable client is an answer, not a crash
+                note = f"organizations client unavailable: {type(exc).__name__}"
+                logger.warning("[b47d] %s: %s", type(self).__name__, note)
+                reach = None
+            for index, row, candidate in to_probe:
+                if reach is None:
+                    verdicts[index] = _undetermined(candidate, "errored", "organizations client unavailable")
+                elif reach.status != "ok":
+                    verdicts[index] = _undetermined(candidate, reach.status, reach.note)
+                else:
+                    verdicts[index] = self._judge_one(client, reach, row, candidate)
+        return [verdicts[i] for i in range(len(candidates))]
+
+    def _read_reach(self, client: Any) -> _OrgReach:
+        """Prove the credential is inside an organization and can read its tree."""
+        try:
+            organization = (client.describe_organization().get("Organization")) or {}
+            roots = client.list_roots().get("Roots") or []
+        except ClientError as exc:
+            code = error_code_of(exc)
+            if code in _NOT_IN_ORGANIZATION_CODES:
+                return _OrgReach("scope_unknown", note="this credential's account is not in an organization")
+            status = probe_status_of(exc)
+            reason = {"forbidden": "forbidden", "rate_limited": "rate_limited"}.get(status, "errored")
+            return _OrgReach(reason, note=f"organization reach unproven: {code or type(exc).__name__}")
+        except BotoCoreError as exc:
+            return _OrgReach("errored", note=f"organization reach unproven: {type(exc).__name__}")
+        has_root = any(str(r.get("Id") or "").startswith("r-") for r in roots)
+        if not organization.get("Id") or not has_root:
+            return _OrgReach("errored", note="the organization read returned no organization id or no root")
+        return _OrgReach("ok", organization_id=str(organization["Id"]))
+
+    def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
+        raise NotImplementedError
+
+    @staticmethod
+    def _error_verdict(candidate: Candidate, expected: Expected, exc: Exception) -> Verdict:
+        """The verdict for a failed probe call. Not-found is evidence only because ``reach`` proved
+        the credential is in the same organization; every other failure is an ``UNDETERMINED``."""
+        if isinstance(exc, ClientError):
+            if error_code_of(exc) in _NOT_IN_ORGANIZATION_CODES:
+                return _undetermined(candidate, "scope_unknown", "this credential's account is not in an organization")
+            status = probe_status_of(exc)
+            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
+            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
+        return verdict_from_probe(candidate, expected, Probe(status="errored", detail=str(exc)))
+
+
+class OrganizationalUnitFalsifier(_OrganizationsFalsifier):
+    """``organizations:DescribeOrganizationalUnit`` then ``ListParents``; compare the OU id, its
+    current parent and its name.
+
+    An OU is contained by its parent (``PARTITIONED_INTO_OU``), so a candidate is an OU that a
+    complete listing of its parent no longer names. Its source identity is the ``ou-…`` id. Its
+    **owner** is its parent in AWS's terms — the root id for a top-level OU (the ``root_id`` the
+    organization node carries), the parent OU's id otherwise. AWS has no operation that moves an OU,
+    so a different owner is not something the API is expected to produce; it is compared anyway,
+    because the comparison is what the verdict is defined as, and it costs one ``ListParents``.
+
+    What "gone" means: ``OrganizationalUnitNotFoundException`` (an OU is deleted only when empty, so
+    nothing it contained can be alive) is ``DROPPED_FROM_OBSERVATION``. A renamed OU
+    (``RELOCATED(renamed)``) has its name updated and is not retired.
+
+    The credential must first be proven to be inside the candidate's own organization: its
+    ``organization_id``, walked from the OU up through ``NESTED_UNDER_PARENT`` to its
+    ``AwsOrganization`` ancestor (``_organization_id_of``), must equal ``reach.organization_id`` —
+    the same comparison ``AccountFalsifier`` makes, not a root-id-suffix heuristic (AWS documents
+    no global uniqueness for that short alphanumeric string).
+    """
+
+    def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
+        ou_id = str(getattr(row, "ou_id", "") or "")
+        if not ou_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no ou_id for this OU")
+        recorded_org = _organization_id_of(candidate.entity_id)
+        if not recorded_org:
+            return _undetermined(
+                candidate, "scope_unknown", "the grid holds no organization for this OU (its NESTED_UNDER_PARENT "
+                "chain does not reach an AwsOrganization row)"
+            )
+        if recorded_org != reach.organization_id:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this credential is in organization {reach.organization_id}, not {recorded_org}: an absence "
+                "here says nothing about that organization's OUs",
+            )
+        expected = Expected(
+            source_id=ou_id,
+            owner=self._expected_parent(candidate),
+            name=str(getattr(row, "name", "") or "") or None,
+        )
+        try:
+            unit = client.describe_organizational_unit(OrganizationalUnitId=ou_id).get("OrganizationalUnit") or {}
+            parents = client.list_parents(ChildId=ou_id).get("Parents") or []
+        except (ClientError, BotoCoreError) as exc:
+            return self._error_verdict(candidate, expected, exc)
+        probe = Probe(
+            status="found",
+            source_id=str(unit.get("Id") or "") or None,
+            owner=(str(parents[0].get("Id") or "") or None) if parents else None,
+            name=str(unit.get("Name") or "") or None,
+            detail="DescribeOrganizationalUnit 200",
+        )
+        return _finish(candidate, expected, probe)
+
+    @staticmethod
+    def _expected_parent(candidate: Candidate) -> str | None:
+        """The parent's AWS id as the grid holds it, or None when it holds none (owner not compared)."""
+        parent = _row_of(candidate.parent)
+        kind = getattr(getattr(parent, "entity", None), "entity_type", "")
+        if kind == _ORGANIZATION_TYPE:
+            return str(getattr(parent, "root_id", "") or "") or None
+        if kind == _OU_TYPE:
+            return str(getattr(parent, "ou_id", "") or "") or None
+        return None
+
+
+class AccountFalsifier(_OrganizationsFalsifier):
+    """``organizations:DescribeAccount``; compare the account id, its organization and its name.
+
+    A candidate is an account the organization-wide ``ListAccounts`` (``ENROLLS_ACCOUNT``) no longer
+    names. Its source identity is the 12-digit id and its **owner** is the organization: the
+    ``o-…`` id embedded in the account's own ARN
+    (``arn:<partition>:organizations::<mgmt>:account/<o-id>/<account id>``), compared with the
+    ``organization_id`` of the organization node the candidate was recorded under.
+
+    What "gone" means, and does not:
+
+    - ``AccountNotFoundException`` is ``DROPPED_FROM_OBSERVATION``: the account left the organization
+      (``RemoveAccountFromOrganization``) or AWS finally removed it after closure. It is the AWS
+      account that still exists in the first case; what ends is this organization's observation.
+    - A **closed or suspended** account is still listed and still describable (``State`` SUSPENDED,
+      PENDING_CLOSURE or CLOSED) — it is present, its ``status`` is what changed. It is reported in
+      the verdict's note and never retired here.
+    - A **moved** account never reaches this falsifier: the membership listing is organization-wide,
+      and ``MoveAccount`` does not change it. A move is a change of ``NESTED_UNDER_PARENT`` only.
+
+    ``AccountNotFoundException`` is also documented as raised when the *calling* account is not in an
+    organization, so nothing is concluded before ``_read_reach`` proves the credential is inside the
+    organization the candidate was recorded under.
+    """
+
+    def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
+        member_id = str(getattr(row, "account_id", "") or "")
+        if not member_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no account_id for this account")
+        parent = _row_of(candidate.parent)
+        recorded_org = str(getattr(parent, "organization_id", "") or "")
+        if not recorded_org:
+            return _undetermined(
+                candidate, "scope_unknown", "the grid holds no organization id for the organization this account was enrolled under"
+            )
+        if recorded_org != reach.organization_id:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this credential is in organization {reach.organization_id}, not {recorded_org}: an absence "
+                "here says nothing about that organization's accounts",
+            )
+        expected = Expected(source_id=member_id, owner=recorded_org, name=str(getattr(row, "name", "") or "") or None)
+        try:
+            account = client.describe_account(AccountId=member_id).get("Account") or {}
+        except (ClientError, BotoCoreError) as exc:
+            return self._error_verdict(candidate, expected, exc)
+        state = account_state(account)
+        joined = account.get("JoinedTimestamp")
+        probe = Probe(
+            status="found",
+            source_id=str(account.get("Id") or "") or None,
+            owner=organization_id_of_account_arn(str(account.get("Arn") or "")) or None,
+            name=str(account.get("Name") or "") or None,
+            created_at=joined if isinstance(joined, datetime) else None,
+            detail=f"DescribeAccount 200 state={state or 'unreported'}",
+        )
+        note = (
+            f"account is {state} but still listed by Organizations: present, not gone"
+            if state in INACTIVE_ACCOUNT_STATES
+            else ""
+        )
+        return _finish(candidate, expected, probe, note=note)
+
+
+# ---------------------------------------------------------------------------
+# Storage + IAM (aws-core-tap#41)
+# ---------------------------------------------------------------------------
+
+#: A region string for constructing an IAM/S3 client. Both are effectively global for the calls
+#: this module makes (IAM has a single global endpoint regardless of the region_name passed; S3's
+#: HeadBucket/ListBuckets calls reach the right place too), but boto3 always requires SOME region
+#: string to build a client — this exists only for that, not to scope the request.
+_GLOBAL_CLIENT_REGION = "us-east-1"
+
+
+def _iam_probe_status_of(exc: ClientError) -> str:
+    """Like the shared ``probe_status_of``, extended for IAM's own not-found convention:
+    ``NoSuchEntity`` (``get_role``/``get_user``/``get_policy`` alike) starts with ``NoSuch`` but
+    does not end with ``.NotFound``/``NotFoundException``, so the shared classifier — built
+    against EC2's ``Invalid*ID.NotFound`` shape — does not recognize it on its own. Checked
+    first, falling back to the shared classifier for everything else (``AccessDenied``,
+    throttling, ...), so this is additive, not a divergent copy of it."""
+    code = error_code_of(exc)
+    if code.startswith("NoSuch"):
+        return "not_found"
+    return probe_status_of(exc)
+
+
+def _s3_probe_status_of(exc: ClientError) -> str:
+    """Like the shared ``probe_status_of``, extended for two S3-specific shapes it does not
+    cover:
+
+    - ``HeadBucket``'s own quirk: a bodyless response reports only a bare numeric string in
+      ``Error.Code`` ("404"/"403"), never one of the shared classifier's named codes (its
+      ``NoSuchBucket`` entry is for OTHER S3 operations that DO return a body —
+      ``GetBucketPolicy``, ``DeleteBucket`` — not ``HeadBucket``). Verified against AWS's own
+      ``HeadBucket`` documentation: *"If the bucket doesn't exist or you don't have permission
+      to access it, the HEAD request returns a generic 400 Bad Request, 403 Forbidden, or 404
+      Not Found HTTP status code."*
+    - S3's own throttle code, ``SlowDown``, which is not in the shared classifier's
+      ``_RATE_LIMIT_CODES`` (built against EC2's ``Throttling``/``RequestLimitExceeded`` shapes).
+
+    Checked first, falling back to the shared classifier for everything else.
+    """
+    code = error_code_of(exc)
+    if code == "404":
+        return "not_found"
+    if code == "403":
+        return "forbidden"
+    if code == "SlowDown":
+        return "rate_limited"
+    return probe_status_of(exc)
+
+
+def _arn_resource_name(arn: str | None) -> str | None:
+    """The trailing name segment of an IAM role/user ARN's resource part
+    (``role/optional/path/NAME`` or ``user/optional/path/NAME`` -> ``NAME``), or None when the
+    ARN is not IAM-shaped (``arn:partition:iam::account:resource``) or its resource part carries
+    no ``/`` at all.
+
+    IAM's ``RoleName``/``UserName`` is always the LAST path segment; everything before it,
+    including the leading ``role/``/``user/`` type marker, is ``Path``. Used to bind the grid's
+    stored ``name`` field to what its own ``role_arn``/``user_arn`` field actually names before
+    ``get_role``/``get_user`` (which take only ``name``, never the ARN) are asked anything: the
+    two are independently stored fields, and nothing else guarantees they still agree.
+    """
+    if not arn:
+        return None
+    parts = str(arn).split(":", 5)
+    if len(parts) < 6 or parts[0] != "arn" or parts[2] != "iam":
+        return None
+    resource = parts[5]
+    return resource.rsplit("/", 1)[-1] if "/" in resource else None
+
+
+def _arn_names_s3_bucket(arn: str | None, name: str) -> bool:
+    """True when ``arn`` is shaped like ``arn:partition:s3:::name`` AND its resource segment is
+    exactly ``name``. ``head_bucket`` takes only ``Bucket=name``, never the ARN: without this
+    check, a row whose two independently-stored fields (``name`` / ``bucket_arn``) have drifted
+    apart would probe a DIFFERENT bucket than the one its own ARN names — the same risk
+    ``_arn_resource_name`` closes for IAM role/user, adapted for S3's simpler ARN shape (no
+    path, the resource part IS the name).
+    """
+    if not arn:
+        return False
+    parts = str(arn).split(":", 5)
+    return len(parts) == 6 and parts[0] == "arn" and parts[2] == "s3" and parts[5] == name
+
+
+def _created_at(payload: Mapping[str, Any]) -> datetime | None:
+    """boto3 hands back ``CreateDate`` as a real ``datetime`` already (unlike a JSON API's ISO
+    string), so this is a type check, not a parse."""
+    value = payload.get("CreateDate")
+    return value if isinstance(value, datetime) else None
+
+
+class _IamFalsifier(_AwsFalsifier):
+    """Shared shape for the three name/ARN-keyed IAM falsifiers: resolve the ``iam`` client, run
+    one call, and turn a ``ClientError``/``BotoCoreError`` into the matching absence/refusal
+    verdict — the one piece identical across ``GetRole``/``GetUser``/``GetPolicy``, factored out
+    once rather than repeated per type. Each subclass supplies the call itself and, via
+    ``_probe_of``, how its own response shape becomes a found ``Probe``.
+    """
+
+    def _iam_client(self, session: ProbeSession) -> Any:
+        return session.client("iam", region_name=_GLOBAL_CLIENT_REGION)
+
+    def _probe_call(
+        self, candidate: Candidate, expected: Expected, call: Callable[[], dict[str, Any]]
+    ) -> Verdict:
+        try:
+            result = call()
+        except ClientError as exc:
+            status = _iam_probe_status_of(exc)
+            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
+            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
+        except BotoCoreError as exc:
+            return _undetermined(candidate, "errored", str(exc))
+        return verdict_from_probe(candidate, expected, self._probe_of(result))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        raise NotImplementedError
+
+
+class IamRoleFalsifier(_IamFalsifier):
+    """``iam:GetRole(RoleName=name)``; ``NoSuchEntity`` -> gone.
+
+    Cannot answer ``REIDENTIFIED`` for a delete+recreate under the SAME path: that yields an
+    identical ARN (account + path + name are all unchanged). CAN answer it for a delete+recreate
+    under a DIFFERENT path, same name: ``get_role`` looks up by ``RoleName`` alone, and IAM role
+    names are unique per account across every path, not per path.
+    """
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        name = str(getattr(row, "name", "") or "")
+        arn = str(getattr(row, "role_arn", "") or "")
+        if not name or not arn:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this IAM role")
+        expected_account = _dimensions_of(row).get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        if _arn_resource_name(arn) != name:
+            # get_role takes RoleName, never the ARN: without this check, a row whose two
+            # independently-stored fields have drifted apart would query a DIFFERENT role than
+            # the one its own ARN names, and a NoSuchEntity for that wrong name could retire the
+            # grid row for an ARN that still exists.
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match the resource name in its own ARN ({arn!r}); "
+                "querying by name would ask about a different object than the one this ARN claims to be",
+            )
+        expected = Expected(source_id=arn, owner=None, name=name)
+        client = self._iam_client(session)
+        return self._probe_call(candidate, expected, lambda: client.get_role(RoleName=name))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        role = result.get("Role") or {}
+        return Probe(
+            status="found",
+            source_id=str(role.get("Arn") or "") or None,
+            name=str(role.get("RoleName") or "") or None,
+            created_at=_created_at(role),
+            detail="get_role 200",
+        )
+
+
+class IamUserFalsifier(_IamFalsifier):
+    """``iam:GetUser(UserName=name)``; ``NoSuchEntity`` -> gone.
+
+    Cannot answer ``REIDENTIFIED`` for a delete+recreate under the SAME path: that yields an
+    identical ARN. CAN answer it for a delete+recreate under a DIFFERENT path, same name:
+    ``get_user`` looks up by ``UserName`` alone (see ``IamRoleFalsifier``'s identical reasoning).
+    """
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        name = str(getattr(row, "name", "") or "")
+        arn = str(getattr(row, "user_arn", "") or "")
+        if not name or not arn:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this IAM user")
+        expected_account = _dimensions_of(row).get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        if _arn_resource_name(arn) != name:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match the resource name in its own ARN ({arn!r}); "
+                "querying by name would ask about a different object than the one this ARN claims to be",
+            )
+        expected = Expected(source_id=arn, owner=None, name=name)
+        client = self._iam_client(session)
+        return self._probe_call(candidate, expected, lambda: client.get_user(UserName=name))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        user = result.get("User") or {}
+        return Probe(
+            status="found",
+            source_id=str(user.get("Arn") or "") or None,
+            name=str(user.get("UserName") or "") or None,
+            created_at=_created_at(user),
+            detail="get_user 200",
+        )
+
+
+class IamPolicyFalsifier(_IamFalsifier):
+    """``iam:GetPolicy(PolicyArn=arn)``; ``NoSuchEntity`` -> gone. Customer-managed policies only.
+
+    AWS-managed policies (``is_aws_managed=True``) are provisioned and retired by AWS, not this
+    account: their absence from a listing is never evidence of deletion, so this falsifier
+    refuses the candidate without spending an AWS call on it — a falsifier for something that
+    structurally cannot be absent is pointless work, not a fail-closed default. Cannot answer
+    ``REIDENTIFIED`` for a customer policy: ``get_policy`` is looked up BY the full ARN, so the
+    response's ``Arn`` is definitionally the one requested — no name-binding check is needed
+    either, unlike role/user, for the same reason.
+    """
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        if getattr(row, "is_aws_managed", False):
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                "AWS-managed policies are provisioned and retired by AWS, not this account; absence from a "
+                "listing of them is never evidence of deletion, so this falsifier does not probe one",
+            )
+        arn = str(getattr(row, "policy_arn", "") or "")
+        name = str(getattr(row, "name", "") or "")
+        if not arn:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no ARN for this IAM policy")
+        expected_account = _dimensions_of(row).get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        expected = Expected(source_id=arn, owner=None, name=name or None)
+        client = self._iam_client(session)
+        return self._probe_call(candidate, expected, lambda: client.get_policy(PolicyArn=arn))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        policy = result.get("Policy") or {}
+        return Probe(
+            status="found",
+            source_id=str(policy.get("Arn") or "") or None,
+            name=str(policy.get("PolicyName") or "") or None,
+            created_at=_created_at(policy),
+            detail="get_policy 200",
+        )
+
+
+class S3BucketFalsifier(_AwsFalsifier):
+    """``s3:HeadBucket(Bucket=name)``; both the 404 AND the 403 case are resolved by this
+    account's own ``list_buckets`` — AWS's own ``HeadBucket`` documentation says neither status
+    code is conclusive on its own: *"If the bucket doesn't exist or you don't have permission to
+    access it, the HEAD request returns a generic 400 Bad Request, 403 Forbidden, or 404 Not
+    Found HTTP status code."*
+
+    ``_scope_check`` runs first, exactly as it does for every other type here — but S3's own
+    ambiguity means a THIRD signal is needed on top of it: even once the credential's account is
+    confirmed to be the one the grid recorded this bucket under, an ambiguous ``HeadBucket``
+    status still does not distinguish "gone" from "merely not visible to this credential's
+    ``s3:ListBucket`` permission on THIS bucket specifically" (a permission that can be scoped
+    per-bucket, unlike the account-wide IAM actions the other falsifiers here check). The
+    tie-break is this account's own bucket inventory (``list_buckets`` / ``ListAllMyBuckets``,
+    which needs no per-bucket permission): present in it, the answer is a permission/visibility
+    gap and the bucket stands; absent from it, it is read as gone. (400 is left as ``errored`` —
+    already conservative, since it never becomes a retirement.)
+
+    S3 bucket ARNs (``arn:aws:s3:::name``) are a pure function of the name and carry no account
+    segment: a bucket deleted and recreated under the same name — by this account or, since S3
+    bucket names are globally unique, by a stranger — is byte-identical to this falsifier. It can
+    therefore never answer ``REIDENTIFIED`` for a bucket; that is a structural S3 limit, not a
+    gap in this code.
+
+    **Known limitation, not fixed here: ``ListAllMyBuckets`` covers general-purpose buckets
+    only.** S3 directory buckets (S3 Express One Zone) and Outposts buckets do not appear in the
+    ``list_buckets`` response used for the tie-break above; a directory/Outposts bucket that
+    answers an ambiguous ``HeadBucket`` status would read as absent from an inventory that was
+    never going to contain it, and could misread as gone. The model does not currently carry a
+    bucket-type field to gate on, so this falsifier cannot distinguish the two kinds of bucket at
+    all — named here rather than guessed around, matching this module's own "AWS RAM share"
+    limitation note on ``_scope_check``.
+    """
+
+    #: Both status codes ``head_bucket`` uses for "gone or forbidden, indistinguishably" (class
+    #: docstring). 400 is deliberately excluded: it already lands as ``errored``, already
+    #: conservative (never becomes a retirement).
+    _AMBIGUOUS_STATUSES = frozenset({"not_found", "forbidden"})
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        #: This account's own bucket names (``ListAllMyBuckets``), resolved ONCE per batch and
+        #: cached whether it succeeds or fails (``_own_buckets_attempted_for`` tracks the attempt
+        #: independent of outcome: a failure cached only as "no value yet" would otherwise be
+        #: retried once per ambiguous-status candidate instead of once for the whole batch).
+        self._own_buckets: frozenset[str] | None = None
+        self._own_buckets_attempted_for = ""
+
+    def _begin_run(self, batch_id: str) -> None:
+        if batch_id != self._batch_id:
+            self._own_buckets = None
+            self._own_buckets_attempted_for = ""
+        super()._begin_run(batch_id)
+
+    def _own_bucket_names(self, client: Any) -> frozenset[str] | None:
+        """This run's ``ListAllMyBuckets`` answer, or None when it could not be read (including a
+        partial page) — which must never be read as an empty or complete account (the same
+        "unobserved is not empty" rule github_core's reach walk applies to its own listing
+        failures).
+
+        An unparameterised ``list_buckets()`` call returns AWS's complete bucket inventory for an
+        account at or under the default 10,000-bucket quota, or is rejected outright for an
+        account with an approved quota above it (AWS's own ``ListBuckets`` documentation,
+        verified directly: *"Unpaginated ListBuckets requests are only supported for AWS
+        accounts set to the default general purpose bucket quota of 10,000 ... All unpaginated
+        ListBuckets requests will be rejected for AWS accounts with a general purpose bucket
+        quota greater than 10,000"*) — so a genuinely partial page should not normally occur
+        here. It is still checked for, rather than assumed away: AWS's own doc for the response
+        element is explicit — *"ContinuationToken is included in the response when there are
+        more buckets that can be listed with pagination"* — a documented signal on THIS specific
+        API, not an echoed request token; ``ListObjectsV2``'s distinct
+        ``IsTruncated``/``NextContinuationToken`` fields belong to a different API and do not
+        apply here.
+        """
+        if self._own_buckets_attempted_for == self._batch_id:
+            return self._own_buckets
+        try:
+            response = client.list_buckets()
+        except (ClientError, BotoCoreError) as exc:
+            logger.warning(
+                "[8ad1] S3BucketFalsifier: list_buckets tie-break failed: %s: %s", type(exc).__name__, exc
+            )
+            self._own_buckets = None
+            self._own_buckets_attempted_for = self._batch_id
+            return None
+        if response.get("ContinuationToken"):
+            logger.warning(
+                "[3f0a] S3BucketFalsifier: list_buckets returned a ContinuationToken (a partial page); refusing "
+                "to treat it as this account's complete bucket inventory"
+            )
+            self._own_buckets = None
+            self._own_buckets_attempted_for = self._batch_id
+            return None
+        if "Buckets" not in response or response.get("Buckets") is None:
+            # A `Buckets` key present but empty (`[]`) is a genuine, positive "this account owns
+            # zero buckets" observation and is trusted below. The key being ABSENT or None
+            # entirely is a different thing — a malformed or incomplete response — and must not
+            # collapse to the same empty inventory via `or []`'s silent default (the same
+            # null-is-unobserved-vs-empty-is-observed distinction this module applies elsewhere).
+            logger.warning(
+                "[6b12] S3BucketFalsifier: list_buckets returned no Buckets key/value; refusing to treat this "
+                "as a (possibly empty) complete inventory"
+            )
+            self._own_buckets = None
+            self._own_buckets_attempted_for = self._batch_id
+            return None
+        names = frozenset(str(b.get("Name") or "") for b in response["Buckets"])
+        self._own_buckets = names
+        self._own_buckets_attempted_for = self._batch_id
+        return names
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        name = str(getattr(row, "name", "") or "")
+        arn = str(getattr(row, "bucket_arn", "") or "")
+        if not name or not arn:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this bucket")
+        expected_account = _dimensions_of(row).get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        if not _arn_names_s3_bucket(arn, name):
+            # head_bucket takes Bucket=name, never the ARN: without this check, a row whose two
+            # independently-stored fields have drifted apart would probe a DIFFERENT bucket than
+            # the one its own ARN names, and that bucket's presence/absence could be misapplied
+            # to the ARN the grid actually recorded.
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match its own bucket_arn ({arn!r}); probing by "
+                "name would ask about a different bucket than the one this ARN claims to be",
+            )
+        expected = Expected(source_id=arn, owner=None, name=name)
+        client = session.client("s3", region_name=_GLOBAL_CLIENT_REGION)
+        try:
+            client.head_bucket(Bucket=name)
+        except ClientError as exc:
+            return self._judge_absence(client, candidate, expected, exc, name)
+        except BotoCoreError as exc:
+            return _undetermined(candidate, "errored", str(exc))
+        probe = Probe(status="found", source_id=arn, name=name, detail="head_bucket 200")
+        return verdict_from_probe(candidate, expected, probe)
+
+    def _judge_absence(
+        self, client: Any, candidate: Candidate, expected: Expected, exc: ClientError, name: str
+    ) -> Verdict:
+        status = _s3_probe_status_of(exc)
+        if status not in self._AMBIGUOUS_STATUSES:
+            # A throttle, or an unclassified error (including the bare-400 case): no ambiguity
+            # this falsifier resolves, no tie-break.
+            detail = f"{error_code_of(exc)}: {exc}"
+            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
+        # `_scope_check` already confirmed the credential's account matches this bucket's own
+        # recorded account before any probe was made — the ambiguity left is S3's own (class
+        # docstring), not a cross-account one, so the tie-break below needs no further owner
+        # re-check of its own.
+        names = self._own_bucket_names(client)
+        if names is None:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"head_bucket({name}) answered {status} — S3 documents this status as meaning either gone or "
+                "merely not visible to this credential — and this account's own ListBuckets (the tie-break) "
+                "could not be read either, so nothing here separates the two",
+            )
+        if name not in names:
+            return verdict_from_probe(
+                candidate,
+                expected,
+                Probe(status="not_found", detail=f"{NOT_FOUND_DETAIL}; absent from this account's own ListBuckets"),
+            )
+        return _undetermined(
+            candidate,
+            "forbidden",
+            f"head_bucket({name}) answered {status} but {name} is present in this account's own ListBuckets: the "
+            "bucket is not gone, only this credential's head_bucket permission on it",
+        )
+
+
+# ---------------------------------------------------------------------------
+# IAM OIDC provider (tap-plugin-aws-core#43)
+# ---------------------------------------------------------------------------
+
+
 class IamOidcProviderFalsifier(_AwsFalsifier):
     """``iam:GetOpenIDConnectProvider`` (global) in the candidate's own account; the response
     carries no separate id to compare, since the request itself is by ARN.
@@ -661,8 +1464,14 @@ class IamOidcProviderFalsifier(_AwsFalsifier):
 
 __all__ = [
     "NOT_FOUND_DETAIL",
+    "AccountFalsifier",
     "Ec2InstanceFalsifier",
     "IamOidcProviderFalsifier",
+    "IamPolicyFalsifier",
+    "IamRoleFalsifier",
+    "IamUserFalsifier",
+    "OrganizationalUnitFalsifier",
+    "S3BucketFalsifier",
     "SecurityGroupFalsifier",
     "SubnetFalsifier",
     "VpcFalsifier",
