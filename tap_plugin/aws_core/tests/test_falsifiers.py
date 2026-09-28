@@ -1184,6 +1184,19 @@ class TestS3BucketFalsifier:
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
         client.head_bucket.assert_not_called()
 
+    def test_a_name_not_matching_its_own_bucket_arn_refuses_before_any_probe(self) -> None:
+        # head_bucket takes Bucket=name, never the ARN: if the grid's two independently-stored
+        # fields have drifted apart, probing by `name` would ask about a DIFFERENT bucket than
+        # the one this ARN claims to be.
+        bid = _dimensioned(S3_BUCKET, {"name": "other", "bucket_arn": "arn:aws:s3:::original"})
+        candidate = _iam_candidate(bid, S3_BUCKET)
+        client = MagicMock()
+        falsifier = S3BucketFalsifier(session=_mock_session("s3", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "does not match its own bucket_arn" in verdict.note
+        client.head_bucket.assert_not_called()
+
     @pytest.mark.parametrize("code", ["404", "403"])
     def test_absent_from_list_buckets_is_dropped(self, code: str) -> None:
         # `_scope_check` already confirmed the account before this ever ran, so the tie-break's

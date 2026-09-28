@@ -703,6 +703,20 @@ def _arn_resource_name(arn: str | None) -> str | None:
     return resource.rsplit("/", 1)[-1] if "/" in resource else None
 
 
+def _arn_names_s3_bucket(arn: str | None, name: str) -> bool:
+    """True when ``arn`` is shaped like ``arn:partition:s3:::name`` AND its resource segment is
+    exactly ``name``. ``head_bucket`` takes only ``Bucket=name``, never the ARN: without this
+    check, a row whose two independently-stored fields (``name`` / ``bucket_arn``) have drifted
+    apart would probe a DIFFERENT bucket than the one its own ARN names — the same risk
+    ``_arn_resource_name`` closes for IAM role/user, adapted for S3's simpler ARN shape (no
+    path, the resource part IS the name).
+    """
+    if not arn:
+        return False
+    parts = str(arn).split(":", 5)
+    return len(parts) == 6 and parts[0] == "arn" and parts[2] == "s3" and parts[5] == name
+
+
 def _created_at(payload: Mapping[str, Any]) -> datetime | None:
     """boto3 hands back ``CreateDate`` as a real ``datetime`` already (unlike a JSON API's ISO
     string), so this is a type check, not a parse."""
@@ -896,6 +910,15 @@ class S3BucketFalsifier(_AwsFalsifier):
     bucket names are globally unique, by a stranger — is byte-identical to this falsifier. It can
     therefore never answer ``REIDENTIFIED`` for a bucket; that is a structural S3 limit, not a
     gap in this code.
+
+    **Known limitation, not fixed here: ``ListAllMyBuckets`` covers general-purpose buckets
+    only.** S3 directory buckets (S3 Express One Zone) and Outposts buckets do not appear in the
+    ``list_buckets`` response used for the tie-break above; a directory/Outposts bucket that
+    answers an ambiguous ``HeadBucket`` status would read as absent from an inventory that was
+    never going to contain it, and could misread as gone. The model does not currently carry a
+    bucket-type field to gate on, so this falsifier cannot distinguish the two kinds of bucket at
+    all — named here rather than guessed around, matching this module's own "AWS RAM share"
+    limitation note on ``_scope_check``.
     """
 
     #: Both status codes ``head_bucket`` uses for "gone or forbidden, indistinguishably" (class
@@ -983,11 +1006,21 @@ class S3BucketFalsifier(_AwsFalsifier):
         arn = str(getattr(row, "bucket_arn", "") or "")
         if not name or not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this bucket")
-        dimensions = _dimensions_of(row)
-        expected_account = dimensions.get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws_account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
+        if not _arn_names_s3_bucket(arn, name):
+            # head_bucket takes Bucket=name, never the ARN: without this check, a row whose two
+            # independently-stored fields have drifted apart would probe a DIFFERENT bucket than
+            # the one its own ARN names, and that bucket's presence/absence could be misapplied
+            # to the ARN the grid actually recorded.
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match its own bucket_arn ({arn!r}); probing by "
+                "name would ask about a different bucket than the one this ARN claims to be",
+            )
         expected = Expected(source_id=arn, owner=None, name=name)
         client = session.client("s3", region_name=_GLOBAL_CLIENT_REGION)
         try:
