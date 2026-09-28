@@ -474,7 +474,7 @@ class _FakeEc2ClientForRegions:
 
 
 class TestEnabledRegions:
-    """PR #44, round 3: the sweep is the account's full enabled-region set
+    """PR #44: the sweep is the account's full enabled-region set
     (``ec2:DescribeRegions``), not merely the operator's current ``regions_allowed`` collection
     scope — a row already on the grid (Subnet, via the pre-existing VPC containment edge) may
     have been collected under a wider scope that was since narrowed. Round 4: the fallback used
@@ -515,11 +515,11 @@ class TestEnabledRegions:
 
 @pytest.mark.django_db
 class TestUntrustworthyRegionScopeNeverAuthorizesRetirement:
-    """Round 4, AI review (High): a clean not_found sweep of a region scope this run could not
-    confirm complete must never stand in for a clean sweep of everywhere the resource could
-    actually be. Exercised through ``session_factory`` (not ``client_for`` injection directly)
-    so the real ``_default_session`` -> ``_enabled_regions`` -> ``judge`` wiring is what is
-    under test, matching the settling evidence the review itself proposed."""
+    """PR #44: a clean not_found sweep of a region scope this run could not confirm complete
+    must never stand in for a clean sweep of everywhere the resource could actually be.
+    ``regions_trustworthy=False`` is driven directly (there is no real AWS session in a unit
+    test) — it is exactly what ``_default_session`` -> ``_enabled_regions`` hands ``judge()``
+    in production after an ``ec2:DescribeRegions`` failure."""
 
     @pytest.mark.spec("req-grid-reconcile-absence-states")
     def test_a_clean_sweep_of_an_unconfirmed_fallback_scope_is_undetermined_not_dropped(self) -> None:

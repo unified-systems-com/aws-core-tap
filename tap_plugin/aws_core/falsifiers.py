@@ -68,7 +68,7 @@ collector currently watches. This is a real, disclosed change in AWS reach beyon
 number for the same claim the collector already makes.
 
 If ``DescribeRegions`` itself cannot be reached, the sweep does not silently trust a narrower
-fallback the way an earlier version of this fix did (round 4, AI review) — that reintroduced the
+fallback the way an earlier version of this fix did — that silently reintroduced the
 exact false-retirement bug this mechanism exists to close, just gated behind an extra failure
 condition instead of always present. ``_enabled_regions`` instead returns
 ``(regions, trustworthy)``, and ``judge()`` only derives ``DROPPED_FROM_OBSERVATION`` from a
@@ -206,7 +206,7 @@ def _enabled_regions(session: Any, configured_regions: list[str]) -> tuple[list[
     on which enabled region answers it.
 
     Returns ``(regions, trustworthy)``. When ``DescribeRegions`` itself fails or answers empty,
-    this falls back to ``configured_regions`` with ``trustworthy=False`` (round 4, AI review):
+    this falls back to ``configured_regions`` with ``trustworthy=False``:
     an earlier version fell back silently, which quietly reintroduced the exact false-retirement
     bug this whole mechanism exists to close — a resource still alive outside the narrower
     fallback scope would again read as gone in every region that scope covers. Falling back to
@@ -420,7 +420,7 @@ class _Ec2Falsifier(Falsifier):
         if seen_errored:
             return _undetermined(candidate, "errored", f"one or more configured regions could not be probed ({swept})")
         # Every swept region answered this type's own NotFound code. That is only authoritative
-        # absence when the region LIST ITSELF was confirmed complete (round 4, AI review): a
+        # absence when the region LIST ITSELF was confirmed complete: a
         # sweep that fell back to a narrower, unconfirmed scope must not let a clean sweep of
         # THAT scope stand in for a clean sweep of everywhere the resource could actually be —
         # which is exactly the false-retirement bug _enabled_regions exists to close, and would
