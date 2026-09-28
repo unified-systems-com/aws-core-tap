@@ -241,6 +241,21 @@ def surface_of(
         admitted = False
         reasons["admitted"] = f"processing_failed: {listing.processing[0]}"
 
+    # count_observed is the walk's own row count — every item this account's credential could
+    # SEE, RAM-shared ones included (the schema's own words: "how many rows the walk returned").
+    # A shared-in item is one of those rows without being one of THIS edge_type's HOSTS_* targets
+    # (containment_envelopes withholds that edge for it) — reviewer-flagged as a discrepancy
+    # (unified-ai-review, Codex seat, PR#56) worth making explicit rather than silent: this is not
+    # a completeness defect (count_observed is never compared against the edge set, only against
+    # count_reported, which these AWS APIs never supply), but a reader comparing count_observed to
+    # the HOSTS_* fan-out without this note would see a mismatch that looks like a bug.
+    if listing is not None and listing.not_hosted:
+        reasons["count_observed"] = (
+            f"includes_shared: {listing.not_hosted} of {listing.count} row(s) are shared into this "
+            "account (RAM) and are not this footprint's HOSTS_* children — see BELONGS_TO_ACCOUNT "
+            "on each for its real owner"
+        )
+
     return {
         "relation": relation,
         "edge_type": edge_type,

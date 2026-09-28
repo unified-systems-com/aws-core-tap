@@ -280,11 +280,16 @@ class TestEnabledRegion:
         from tap_grid.exceptions import ServiceNotFoundError
         from tap_grid.services import get_edge, get_node
 
-        _run()
+        collector = _run()
         shared = get_node(node_entity_id("aws_core__aws_vpc", _SHARED_VPC_ID))
         assert shared.vpc_id == _SHARED_VPC_ID
         with pytest.raises(ServiceNotFoundError):
             get_edge(edge_entity_id("HOSTS_VPC__aws_core", f"{_ACCOUNT}:{_REGION_ENABLED}", _SHARED_VPC_ID))
+        # The VPC surface's count_observed (both VPCs — this account's own and the shared one)
+        # carries a reason explaining why it exceeds the HOSTS_VPC edge count (one).
+        surface = _surface(collector, "account_region.vpcs", _REGION_ENABLED)
+        assert surface["count_observed"] == 2
+        assert "includes_shared: 1 of 2" in surface["reasons"]["count_observed"]
 
     def test_shared_vpc_belongs_to_account_envelope_names_its_real_owner(self, _stub_aws):
         """Unit-level proof of the same fact ``test_shared_vpc_is_not_hosted...`` demonstrates

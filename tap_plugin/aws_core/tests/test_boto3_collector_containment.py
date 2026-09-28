@@ -143,6 +143,32 @@ class TestRegionDisabled:
         assert "region_disabled" in surface["reasons"]["scope_authorized"]
 
 
+class TestSharedRowsDiscrepancyNoted:
+    """count_observed is every row the walk saw, RAM-shared ones included (the schema's own
+    words); a shared row is not one of THIS edge_type's HOSTS_* children. Reviewer-flagged
+    (unified-ai-review, Codex seat, PR#56): make the gap between the two explicit rather than
+    silent, so a reader comparing count_observed to the HOSTS_* fan-out isn't left thinking it
+    found a bug."""
+
+    def test_shared_rows_get_an_explanatory_reason(self):
+        listing = Listing(not_hosted=1)
+        listing.count = 2
+        surface = surface_of(**_KW, facts=_facts(STATUS_ENABLED), listing=listing)
+        assert surface["count_observed"] == 2
+        assert "includes_shared: 1 of 2" in surface["reasons"]["count_observed"]
+        # scope/complete/admitted are untouched — a shared row is still a valid, fully-read
+        # observation, just not a HOSTS_* one.
+        assert surface["scope_authorized"] is True
+        assert surface["enumeration_complete"] is True
+        assert surface["admitted"] is True
+
+    def test_no_shared_rows_gets_no_such_reason(self):
+        listing = Listing()
+        listing.count = 2
+        surface = surface_of(**_KW, facts=_facts(STATUS_ENABLED), listing=listing)
+        assert "count_observed" not in surface["reasons"]
+
+
 class TestProcessingFailure:
     """A listing that was READ (no error) but whose items were not all turned into nodes: complete,
     but not admitted — the observations it licenses never all reached the batch."""
