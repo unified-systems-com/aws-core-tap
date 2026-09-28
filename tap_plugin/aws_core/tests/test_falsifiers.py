@@ -212,6 +212,41 @@ class TestIamRoleFalsifier:
         assert "no recognizable IAM account segment" in verdict.note
         client.get_role.assert_not_called()
 
+    def test_a_name_not_matching_its_own_arns_resource_name_refuses_before_any_probe(
+        self,
+    ) -> None:
+        # get_role takes RoleName, never the ARN: if the grid's two independently-stored fields
+        # have drifted apart, querying by `name` would ask about a DIFFERENT role than the one
+        # this ARN claims to be. The account itself matches (so the account gate alone would let
+        # this through), which is exactly why this needs its own check.
+        candidate = self._role(
+            "wrong-name", f"arn:aws:iam::{ACCOUNT_ID}:role/actual-name"
+        )
+        client = MagicMock()
+        falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "does not match the resource name" in verdict.note
+        client.get_role.assert_not_called()
+
+    def test_a_path_qualified_arn_still_binds_to_its_trailing_name(self) -> None:
+        # The resource-name extraction takes the LAST path segment, not the whole resource
+        # string: a role under a path must not spuriously fail the binding check.
+        candidate = self._role(
+            "app-role", f"arn:aws:iam::{ACCOUNT_ID}:role/service-role/app-role"
+        )
+        client = MagicMock()
+        client.get_role.return_value = {
+            "Role": {
+                "Arn": f"arn:aws:iam::{ACCOUNT_ID}:role/service-role/app-role",
+                "RoleName": "app-role",
+            }
+        }
+        falsifier = IamRoleFalsifier(client=client, caller_account=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        client.get_role.assert_called_once_with(RoleName="app-role")
+
     def test_a_containment_parent_disagreeing_with_the_arn_refuses_before_any_probe(
         self,
     ) -> None:
@@ -657,6 +692,22 @@ class TestS3BucketFalsifier:
         client.head_bucket.side_effect = _client_error("403", "HeadBucket")
         client.list_buckets.return_value = {"Buckets": []}
         S3BucketFalsifier(client=client).batch_falsify(candidates, _context())
+        assert client.list_buckets.call_count == 1
+
+    def test_a_list_buckets_failure_is_cached_for_the_whole_batch(self) -> None:
+        # The same fix round 5 made to `_caller_account`: caching only a SUCCESSFUL
+        # `list_buckets` answer means a failure gets retried once per ambiguous-status
+        # candidate instead of failing closed once for the batch.
+        candidates = [self._bucket(f"b{i}") for i in range(3)]
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.side_effect = _client_error("AccessDenied", "ListBuckets")
+        verdicts = S3BucketFalsifier(client=client).batch_falsify(
+            candidates, _context()
+        )
+        assert [(v.verdict, v.reason) for v in verdicts] == [
+            (UNDETERMINED, "scope_unknown")
+        ] * 3
         assert client.list_buckets.call_count == 1
 
     def test_a_new_run_re_reads_list_buckets(self) -> None:

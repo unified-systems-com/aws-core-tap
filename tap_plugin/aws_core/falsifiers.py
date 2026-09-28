@@ -286,6 +286,28 @@ def _arn_account(arn: str | None) -> str | None:
     return account if _ACCOUNT_ID_RE.match(account) else None
 
 
+def _arn_resource_name(arn: str | None) -> str | None:
+    """The trailing name segment of an IAM role/user ARN's resource part
+    (``role/optional/path/NAME`` or ``user/optional/path/NAME`` -> ``NAME``), or None when the
+    ARN is not shaped like one (reuses ``_arn_account``'s validation) or its resource part
+    carries no ``/`` at all.
+
+    IAM's ``RoleName``/``UserName`` is always the LAST path segment; everything before it,
+    including the leading ``role/``/``user/`` type marker, is ``Path``. Used to bind the grid's
+    stored ``name`` field to what its own ``role_arn``/``user_arn`` field actually names before
+    ``get_role``/``get_user`` (which take only ``name``, never the ARN) are asked anything: the
+    two are independently stored fields, and nothing else in this module — or, so far as this
+    falsifier can see, upstream of it — guarantees they still agree.
+    """
+    if not arn:
+        return None
+    parts = str(arn).split(":", 5)
+    if len(parts) < 6 or parts[0] != "arn" or parts[2] != "iam":
+        return None
+    resource = parts[5]
+    return resource.rsplit("/", 1)[-1] if "/" in resource else None
+
+
 def _created_at(payload: Mapping[str, Any]) -> datetime | None:
     """boto3 hands back ``CreateDate`` as a real ``datetime`` already (unlike a JSON API's ISO
     string), so this is a type check, not a parse."""
@@ -571,6 +593,19 @@ class IamRoleFalsifier(_AwsFalsifier):
         )
         if refusal is not None:
             return refusal
+        if _arn_resource_name(arn) != name:
+            # get_role takes RoleName, never the ARN: without this check, a row whose two
+            # independently-stored fields have drifted apart would query a DIFFERENT role than
+            # the one its own ARN names, and a NoSuchEntity for that wrong name could retire the
+            # grid row for an ARN that still exists. Checked AFTER the account gate: a malformed
+            # ARN already refuses there (`_arn_account` returns None for it too), with that
+            # gate's own, more specific message.
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match the resource name in its own ARN ({arn!r}); "
+                "querying by name would ask about a different object than the one this ARN claims to be",
+            )
         expected = Expected(source_id=arn, owner=owner, name=name)
         try:
             result = client.get_role(RoleName=name)
@@ -621,6 +656,15 @@ class IamUserFalsifier(_AwsFalsifier):
         )
         if refusal is not None:
             return refusal
+        if _arn_resource_name(arn) != name:
+            # get_user takes UserName, never the ARN: see IamRoleFalsifier's identical check
+            # (checked after the account gate; a malformed ARN already refuses there).
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match the resource name in its own ARN ({arn!r}); "
+                "querying by name would ask about a different object than the one this ARN claims to be",
+            )
         expected = Expected(source_id=arn, owner=owner, name=name)
         try:
             result = client.get_user(UserName=name)
@@ -726,15 +770,18 @@ class S3BucketFalsifier(_AwsFalsifier):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        #: This account's own bucket names (``ListAllMyBuckets``), cached per run — the tie-break
-        #: needs at most one extra call for however many bucket candidates a run judges.
+        #: This account's own bucket names (``ListAllMyBuckets``), resolved ONCE per batch and
+        #: cached whether it succeeds or fails (``_own_buckets_attempted_for`` tracks the attempt
+        #: independent of outcome — the same fix round 5 made to ``_caller_account``: a failure
+        #: cached only as "no value yet" would otherwise be retried, and its call, once per
+        #: ambiguous-status candidate in the batch instead of once for the whole batch).
         self._own_buckets: frozenset[str] | None = None
-        self._own_buckets_for = ""
+        self._own_buckets_attempted_for = ""
 
     def _begin_run(self, batch_id: str) -> None:
         if batch_id != self._batch_id:
             self._own_buckets = None
-            self._own_buckets_for = ""
+            self._own_buckets_attempted_for = ""
         super()._begin_run(batch_id)
 
     def _own_bucket_names(self, client: ProbeClient) -> frozenset[str] | None:
@@ -745,13 +792,19 @@ class S3BucketFalsifier(_AwsFalsifier):
 
         An unparameterised ``list_buckets()`` call returns AWS's complete bucket inventory for an
         account at or under the default 10,000-bucket quota, or is rejected outright for an
-        account with an approved quota above it (AWS's own ``ListBuckets`` documentation) — so a
-        genuinely partial page should not normally occur here. It is still checked for, rather
-        than assumed away: a response carrying a ``ContinuationToken`` is a partial page by
-        AWS's own definition, and a partial page must never be read as this account's complete
-        inventory.
+        account with an approved quota above it (AWS's own ``ListBuckets`` documentation,
+        verified directly: *"Unpaginated ListBuckets requests are only supported for AWS
+        accounts set to the default general purpose bucket quota of 10,000 ... All unpaginated
+        ListBuckets requests will be rejected for AWS accounts with a general purpose bucket
+        quota greater than 10,000"*) — so a genuinely partial page should not normally occur
+        here. It is still checked for, rather than assumed away: AWS's own doc for the response
+        element is explicit — *"ContinuationToken is included in the response when there are
+        more buckets that can be listed with pagination"* — a documented signal on THIS specific
+        API, not (as raised and re-raised in review, without a citation) an echoed request token;
+        ``ListObjectsV2``'s distinct ``IsTruncated``/``NextContinuationToken`` fields belong to a
+        different API and do not apply here.
         """
-        if self._own_buckets is not None and self._own_buckets_for == self._batch_id:
+        if self._own_buckets_attempted_for == self._batch_id:
             return self._own_buckets
         try:
             response = client.list_buckets()
@@ -761,12 +814,16 @@ class S3BucketFalsifier(_AwsFalsifier):
                 type(exc).__name__,
                 exc,
             )
+            self._own_buckets = None
+            self._own_buckets_attempted_for = self._batch_id
             return None
         if response.get("ContinuationToken"):
             logger.warning(
                 "[3f0a] S3BucketFalsifier: list_buckets returned a ContinuationToken (a partial page); refusing "
                 "to treat it as this account's complete bucket inventory"
             )
+            self._own_buckets = None
+            self._own_buckets_attempted_for = self._batch_id
             return None
         if "Buckets" not in response or response.get("Buckets") is None:
             # A ``Buckets`` key present but empty (``[]``) is a genuine, positive "this account
@@ -778,9 +835,12 @@ class S3BucketFalsifier(_AwsFalsifier):
                 "[6b12] S3BucketFalsifier: list_buckets returned no Buckets key/value; refusing to treat this "
                 "as a (possibly empty) complete inventory"
             )
+            self._own_buckets = None
+            self._own_buckets_attempted_for = self._batch_id
             return None
         names = frozenset(str(b.get("Name") or "") for b in response["Buckets"])
-        self._own_buckets, self._own_buckets_for = names, self._batch_id
+        self._own_buckets = names
+        self._own_buckets_attempted_for = self._batch_id
         return names
 
     def judge(self, client: ProbeClient, candidate: Candidate) -> Verdict:
