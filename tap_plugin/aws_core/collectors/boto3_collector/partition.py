@@ -154,14 +154,21 @@ def known_region(region: str) -> bool:
     drives which partition the whole run resolves to. Without this gate, a typo of a
     GovCloud/China/iso region (``us-gvo-west-1``) matches none of this module's specific
     patterns and ``partition_of_region`` would silently classify it as commercial — the
-    fail-*open* case a partition guard exists to prevent, found in review (unified-ai-review,
-    2026-09-28, "Unknown regions fail open to the commercial partition").
+    fail-*open* case a partition guard exists to prevent.
 
     botocore's ``get_partition_for_region`` is authoritative (it is what a real client's own
     endpoint resolution consults) and knows the full commercial region set this module does
     not attempt to enumerate; this module's own table is the fallback for a region newer than
     the vendored botocore. A region neither source places anywhere is unknown, full stop —
     never assumed commercial.
+
+    This is a partition-*shape* check, not a real-region existence check: botocore places a
+    region by matching each partition's own regex (``regionRegex`` in its bundled endpoint
+    data), so a fabricated-but-plausible commercial-shaped name (``us-east-97``) still passes —
+    the same way an equally fabricated real region would, before AWS itself was asked. Closing
+    that would mean hardcoding or fetching the literal list of regions that currently exist,
+    which goes stale the moment AWS adds one; the goal here is narrower and durable: a region
+    that cannot even be placed in a partition never silently becomes "commercial".
     """
     if any(pattern.match(region) for _partition, pattern in _REGION_PARTITIONS):
         return True

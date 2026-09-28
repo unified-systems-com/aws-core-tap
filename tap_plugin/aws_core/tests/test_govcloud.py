@@ -241,9 +241,9 @@ class TestResolvePartition:
         assert cred.resolve_partition({**_ASSUMED, "expected_account_id": ACCOUNT}, [GOV_REGION]) == "aws-us-gov"
 
     def test_a_typo_of_a_real_region_is_refused_not_silently_commercial(self) -> None:
-        # found in review (unified-ai-review, 2026-09-28): "us-gvo-west-1" (letters swapped)
-        # matches no specific partition pattern; the old code silently classified it as
-        # commercial instead of failing closed on an unrecognised region.
+        # "us-gvo-west-1" (letters swapped) matches no specific partition pattern; a partition
+        # classifier that defaults every unmatched name to commercial would silently accept it
+        # rather than failing closed on an unrecognised region.
         with pytest.raises(cred.CredentialError, match="not recognised"):
             cred.resolve_partition(_STATIC, ["us-gvo-west-1"])
 
@@ -301,9 +301,10 @@ class TestGovCloudEndpoints:
         assert cred.fips_requested(_STATIC) is False
 
     def test_shared_config_file_is_consulted_when_secret_and_env_are_silent(self, monkeypatch, tmp_path) -> None:
-        # found in review (unified-ai-review, 2026-09-28): fips_requested previously missed
-        # ~/.aws/config, so an operator relying on it would see a false "FIPS off" in self_test
-        # and the IDENTITY_RESOLVED log while every client was, in fact, using FIPS endpoints.
+        # A version of fips_requested that reads only the secret and the environment variable
+        # would miss ~/.aws/config, so an operator relying on it would see a false "FIPS off" in
+        # self_test and the IDENTITY_RESOLVED log while every client was, in fact, using FIPS
+        # endpoints (the same resolution chain _botocore_session leaves to botocore itself).
         monkeypatch.delenv("AWS_USE_FIPS_ENDPOINT", raising=False)
         config = tmp_path / "config"
         config.write_text("[default]\nuse_fips_endpoint = true\n")

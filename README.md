@@ -292,9 +292,14 @@ fails secret validation instead of surfacing as a mid-run
 `EndpointConnectionError`. On top of that, `resolve_partition` checks every
 region against botocore's own bundled endpoint data (or this collector's own
 partition table, for a region newer than the vendored botocore) and refuses
-to run if any region matches *no* partition at all — a near-miss typo of a
-real region name (`us-gvo-west-1`, letters swapped) fails closed with a named
-error instead of silently being treated as commercial.
+to run if any region matches **no partition's shape at all** — a typo that
+crosses into gibberish for every partition (`us-gvo-west-1`, letters swapped)
+fails closed with a named error instead of silently being treated as
+commercial. This is a partition-shape check, not a real-region existence
+check: a fabricated-but-plausible commercial-shaped name (`us-east-97`) still
+passes, the same as it would against AWS itself before the call is actually
+made — closing that would mean maintaining the literal list of regions that
+currently exist, which goes stale the moment AWS adds one.
 
 ### What changes per run
 

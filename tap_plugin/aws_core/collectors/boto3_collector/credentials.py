@@ -217,8 +217,8 @@ def resolve_partition(data: Mapping[str, Any], regions: list[str]) -> str:
     - a region is not recognised as belonging to ANY partition, by botocore's own bundled
       endpoint data or this collector's own table (:func:`partition.known_region`) — a typo of
       a GovCloud/China/iso region name (``us-gvo-west-1``) matches none of the specific
-      patterns and must never be silently classified as commercial (found in review,
-      unified-ai-review, 2026-09-28: "Unknown regions fail open to the commercial partition");
+      patterns and must never be silently classified as commercial (see
+      ``known_region``'s docstring for exactly what this does and does not catch);
     - the regions span partitions (one credential cannot reach both);
     - the optional ``data.partition`` disagrees with the regions;
     - the partition is not one this collector supports (``aws-cn`` and the isolated
@@ -277,11 +277,12 @@ def fips_requested(data: Mapping[str, Any]) -> bool:
 
     This is what ``_botocore_session`` and every client it builds actually resolve to when the
     secret sets nothing — it is used for the ``self_test`` ``AWS_PARTITION`` check and the
-    ``IDENTITY_RESOLVED`` log line precisely so those match a real client's own posture (found
-    in review, unified-ai-review, 2026-09-28: reading only the secret + env risked reporting
-    FIPS "off" while ``~/.aws/config`` had it on). A throwaway ``botocore.session.Session()``
-    read-only queries the same resolution chain botocore always consults; nothing here
-    constructs a client or makes a network call.
+    ``IDENTITY_RESOLVED`` log line precisely so those match a real client's own posture: reading
+    only the secret and the environment variable would report FIPS "off" for a deployment that
+    enables it only through ``~/.aws/config``, even though every client built here would still
+    use FIPS endpoints. A throwaway ``botocore.session.Session()`` read-only queries the same
+    resolution chain botocore always consults; nothing here constructs a client or makes a
+    network call.
     """
     explicit = data.get("use_fips_endpoint")
     if explicit is not None:
