@@ -62,8 +62,20 @@ observes it" is not the same claim as "it is gone," and conflating them is exact
 get the account's actual full set of enabled regions, and sweeps THAT — decoupled from whatever
 subset the operator currently has ``regions_allowed`` configured to collect from, because a
 falsifier's job is to confirm a resource is really gone from AWS, not merely gone from what the
-collector currently watches. If ``DescribeRegions`` itself cannot be reached, the sweep falls
-back to ``resolve_regions()`` — degraded, never crashing, and no worse than before this fix.
+collector currently watches. This is a real, disclosed change in AWS reach beyond
+``regions_allowed`` (one additional bootstrap call, one additional IAM action —
+``ec2:DescribeRegions`` — needed on top of the four describe permissions), not merely a larger
+number for the same claim the collector already makes.
+
+If ``DescribeRegions`` itself cannot be reached, the sweep does not silently trust a narrower
+fallback the way an earlier version of this fix did (round 4, AI review) — that reintroduced the
+exact false-retirement bug this mechanism exists to close, just gated behind an extra failure
+condition instead of always present. ``_enabled_regions`` instead returns
+``(regions, trustworthy)``, and ``judge()`` only derives ``DROPPED_FROM_OBSERVATION`` from a
+clean not_found sweep when ``trustworthy`` is ``True``; a sweep of the untrustworthy fallback
+scope that comes back clean answers ``UNDETERMINED(scope_unknown)`` instead — a clean sweep of a
+scope that was never confirmed complete is not evidence of absence, whatever it found.
+
 Multi-account support, if it arrives, is a separate ``_default_session`` change (an equivalent
 to GitHub's reach-narrowing re-confirmation, ``tap_plugin.github_core.falsifiers.
 _reach_after_probe``, would become the right shape then) — ``AWS_SECRET_REF`` is a single
@@ -182,36 +194,45 @@ _THROTTLED_CODES = frozenset(
 _STANDARD_REGION_PREFIX = re.compile(r"^([a-z]{2}(?:-gov)?-[a-z]+-\d+)")
 
 
-def _enabled_regions(session: Any, configured_regions: list[str]) -> list[str]:
+def _enabled_regions(session: Any, configured_regions: list[str]) -> tuple[list[str], bool]:
     """The account's full enabled-region set (``ec2:DescribeRegions``), not the operator's
-    current ``regions_allowed`` collection scope (PR #44): a row already on
-    the grid may have been collected under a wider scope that was since narrowed, and sweeping
-    only the current scope would read it as gone everywhere it checked without that ever having
-    been checked against every region it could actually be in. ``AllRegions=False`` (the
-    default) is exactly the account's enabled set — not the ~30+ regions of the whole
-    partition, most of which a typical account never opts into and this falsifier has no reason
-    to ask about. Anchored on the first configured region only to place the one bootstrap call;
-    the answer does not depend on which enabled region answers it.
+    current ``regions_allowed`` collection scope (PR #44): a row already on the grid may have
+    been collected under a wider scope that was since narrowed, and sweeping only the current
+    scope would read it as gone everywhere it checked without that ever having been checked
+    against every region it could actually be in. ``AllRegions=False`` (the default) is exactly
+    the account's enabled set — not the ~30+ regions of the whole partition, most of which a
+    typical account never opts into and this falsifier has no reason to ask about. Anchored on
+    the first configured region only to place the one bootstrap call; the answer does not depend
+    on which enabled region answers it.
 
-    Falls back to ``configured_regions`` if the call itself fails (forbidden, throttled,
-    unreachable) rather than raising: degraded to the scope this falsifier used before this fix,
-    never worse, and never a crash.
+    Returns ``(regions, trustworthy)``. When ``DescribeRegions`` itself fails or answers empty,
+    this falls back to ``configured_regions`` with ``trustworthy=False`` (round 4, AI review):
+    an earlier version fell back silently, which quietly reintroduced the exact false-retirement
+    bug this whole mechanism exists to close — a resource still alive outside the narrower
+    fallback scope would again read as gone in every region that scope covers. Falling back to
+    *some* list rather than raising is still right (a probe run should not crash outright over
+    one bootstrap call), but ``judge()`` must know the difference: a sweep it cannot vouch for as
+    complete must never authorize ``DROPPED_FROM_OBSERVATION`` on its own, whatever every region
+    it did check said.
     """
     try:
         client = session.client("ec2", region_name=configured_regions[0])
         response = client.describe_regions(AllRegions=False)
     except Exception as exc:  # noqa: BLE001 — degrade to the configured scope, never crash the run
         logger.warning("[b6a1] ec2:DescribeRegions failed; falling back to the configured region scope: %s", exc)
-        return configured_regions
+        return configured_regions, False
     names = sorted({str(r["RegionName"]) for r in (response.get("Regions") or []) if r.get("RegionName")})
-    return names or configured_regions
+    if not names:
+        logger.warning("[b6a2] ec2:DescribeRegions named no regions; falling back to the configured region scope")
+        return configured_regions, False
+    return names, True
 
 
-def _default_session() -> tuple[Any, list[str]]:
+def _default_session() -> tuple[Any, list[str], bool]:
     """The collector's own credential (``credentials.py`` — the exact resolution the boto3
-    collector itself uses, so a falsifier authenticates as the same account) and the account's
-    full enabled-region set (``_enabled_regions``), not merely the operator's current collection
-    scope."""
+    collector itself uses, so a falsifier authenticates as the same account), the account's full
+    enabled-region set, and whether that set could actually be confirmed (``_enabled_regions``)
+    — not merely the operator's current collection scope."""
     secret = resolve_aws_secret(AWS_SECRET_REF)
     data = dict(secret.data)
     configured_regions = resolve_regions(data)
@@ -220,7 +241,8 @@ def _default_session() -> tuple[Any, list[str]]:
         session = assume_role_session(base, data, configured_regions[0])
     else:
         session = build_session(data)
-    return session, _enabled_regions(session, configured_regions)
+    regions, trustworthy = _enabled_regions(session, configured_regions)
+    return session, regions, trustworthy
 
 
 def _error_status(exc: ClientError, not_found_code: str) -> str:
@@ -273,7 +295,10 @@ class _Ec2Falsifier(Falsifier):
 
     ``client_for`` / ``regions`` are injected by tests (bypassing real credential resolution
     entirely, the way ``RepositoryFalsifier`` accepts ``client=fake``); at runtime both are
-    resolved from the collector's own secret on first use, via ``session_factory``.
+    resolved from the collector's own secret on first use, via ``session_factory``. Tests that
+    inject ``client_for`` default to a trustworthy region list (``regions_trustworthy=True``):
+    they hand this falsifier a deliberately complete set on purpose, the same way the four-case
+    harness always has. Pass ``regions_trustworthy=False`` explicitly to test the fallback path.
     """
 
     #: The manifest ``service`` name (aws_resource_manifest.json convention): all four are EC2.
@@ -291,10 +316,12 @@ class _Ec2Falsifier(Falsifier):
         self,
         client_for: Callable[[str, str], ProbeClient] | None = None,
         regions: Sequence[str] | None = None,
-        session_factory: Callable[[], tuple[Any, list[str]]] | None = None,
+        regions_trustworthy: bool = True,
+        session_factory: Callable[[], tuple[Any, list[str], bool]] | None = None,
     ) -> None:
         self._client_for = client_for
         self._regions_override = list(regions) if regions is not None else None
+        self._regions_trustworthy_override = regions_trustworthy
         self._session_factory = session_factory or _default_session
 
     def _method(self) -> str:
@@ -322,15 +349,15 @@ class _Ec2Falsifier(Falsifier):
         item = items[0]
         return Probe(status="found", source_id=str(item.get(self.item_id_key) or ""), detail="HTTP 200")
 
-    def _resolve(self) -> tuple[Callable[[str, str], ProbeClient], list[str]]:
+    def _resolve(self) -> tuple[Callable[[str, str], ProbeClient], list[str], bool]:
         if self._client_for is not None:
-            return self._client_for, list(self._regions_override or [])
-        session, regions = self._session_factory()
+            return self._client_for, list(self._regions_override or []), self._regions_trustworthy_override
+        session, regions, trustworthy = self._session_factory()
 
         def client_for(service: str, region: str) -> ProbeClient:
             return session.client(service, region_name=region)
 
-        return client_for, regions
+        return client_for, regions, trustworthy
 
     def _describe_one(
         self, client_for: Callable[[str, str], ProbeClient], region: str, source_id: str
@@ -355,7 +382,13 @@ class _Ec2Falsifier(Falsifier):
             return Probe(status="errored", detail=f"{type(exc).__name__}: {exc}"), False
         return self._probe_from_response(response, source_id), True
 
-    def judge(self, client_for: Callable[[str, str], ProbeClient], regions: list[str], candidate: Candidate) -> Verdict:
+    def judge(
+        self,
+        client_for: Callable[[str, str], ProbeClient],
+        regions: list[str],
+        regions_trustworthy: bool,
+        candidate: Candidate,
+    ) -> Verdict:
         row = _row_of(candidate.entity_id)
         if row is None:
             return _undetermined(candidate, "errored", "the grid row could not be read")
@@ -386,23 +419,36 @@ class _Ec2Falsifier(Falsifier):
             return _undetermined(candidate, "rate_limited", f"throttled probing one or more configured regions ({swept})")
         if seen_errored:
             return _undetermined(candidate, "errored", f"one or more configured regions could not be probed ({swept})")
-        # Every configured region answered this type's own NotFound code: authoritative absence.
+        # Every swept region answered this type's own NotFound code. That is only authoritative
+        # absence when the region LIST ITSELF was confirmed complete (round 4, AI review): a
+        # sweep that fell back to a narrower, unconfirmed scope must not let a clean sweep of
+        # THAT scope stand in for a clean sweep of everywhere the resource could actually be —
+        # which is exactly the false-retirement bug _enabled_regions exists to close, and would
+        # reopen silently if this branch trusted a fallback list the same as a confirmed one.
+        if not regions_trustworthy:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"{self.not_found_code} in every region this run could sweep ({swept}), but the region scope "
+                "itself could not be confirmed complete (ec2:DescribeRegions could not be reached this run) — "
+                "a clean sweep of an unconfirmed, possibly-narrowed scope is not evidence of absence",
+            )
         return verdict_from_probe(
             candidate,
             expected,
-            Probe(status="not_found", detail=f"{self.not_found_code} in every configured region ({swept})"),
+            Probe(status="not_found", detail=f"{self.not_found_code} in every enabled region ({swept})"),
         )
 
     def batch_falsify(self, candidates: Sequence[Candidate], context: FalsifyContext) -> list[Verdict]:
         try:
-            client_for, regions = self._resolve()
+            client_for, regions, regions_trustworthy = self._resolve()
         except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
             note = f"credential unavailable: {type(exc).__name__}"
             logger.warning("[c4b2] %s: %s", type(self).__name__, note)
             return [_undetermined(c, "errored", note) for c in candidates]
         if not regions:
             return [_undetermined(c, "errored", "no region scope resolved for this credential") for c in candidates]
-        return [self.judge(client_for, regions, c) for c in candidates]
+        return [self.judge(client_for, regions, regions_trustworthy, c) for c in candidates]
 
 
 class VpcFalsifier(_Ec2Falsifier):
