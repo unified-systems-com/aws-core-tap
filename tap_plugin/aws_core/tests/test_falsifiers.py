@@ -64,6 +64,7 @@ SUBNET = "aws_core__aws_subnet"
 VPC = "aws_core__aws_vpc"
 SECURITY_GROUP = "aws_core__aws_security_group"
 EC2_INSTANCE = "aws_core__aws_ec2_instance"
+OIDC_PROVIDER = "aws_core__aws_iam_oidc_provider"
 ACCOUNT_ID = "111122223333"
 OTHER_ACCOUNT_ID = "999988887777"
 REGION = "us-east-1"
@@ -354,6 +355,11 @@ class TestFalsifierManifestWiring:
             VPC: "tap_plugin.aws_core.falsifiers.VpcFalsifier",
             SECURITY_GROUP: "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier",
             EC2_INSTANCE: "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier",
+            # aws-core-tap#43: the fifth falsifier the account-scoped containment makes
+            # reachable. S3 bucket / IAM role / IAM user / customer-managed IAM policy become
+            # reconcilable by the same containment, but their falsifiers are aws-core-tap#41's,
+            # registered there rather than duplicated here.
+            OIDC_PROVIDER: "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
@@ -413,18 +419,31 @@ class TestFalsifierManifestWiring:
 
 
 class TestAccountAndOrganizationDeclareNoContainment:
-    """tap-plugin-aws-core#42: AwsAccount and AwsOrganization are the root of every other AWS
-    resource this plugin models, and both deliberately declare zero CONTAINMENT_EDGES — see the
-    reasoning on each model and in tap_plugin/aws_core/falsifiers.py's module docstring. This is
-    a regression guard against silently reversing that decision, not a live behavior test."""
+    """tap-plugin-aws-core#42 declared both AwsAccount and AwsOrganization CONTAINMENT_EDGES ==
+    () — AwsOrganization still does, unchanged. AwsAccount's changed under aws-core-tap#43: it
+    now declares containment for the five resource types it owns exclusively (never RAM-shared,
+    never regional) — see the reasoning on the model and in this module's docstring. This class
+    is a regression guard against silently reversing either decision, not a live behavior test."""
 
-    def test_aws_account_declares_no_containment(self) -> None:
-        assert AwsAccount.CONTAINMENT_EDGES == ()
+    def test_aws_account_declares_containment_for_its_five_exclusive_types(self) -> None:
+        # aws-core-tap#43 supersedes tap-plugin-aws-core#42's empty declaration for exactly
+        # these five account-EXCLUSIVE types; BELONGS_TO_ACCOUNT stays an unreversed reference
+        # for every other of AwsAccount's ~52 owned types.
+        assert AwsAccount.CONTAINMENT_EDGES == (
+            "OWNS_IAM_ROLE__aws_core",
+            "OWNS_IAM_USER__aws_core",
+            "OWNS_IAM_POLICY__aws_core",
+            "OWNS_OIDC_PROVIDER__aws_core",
+            "OWNS_BUCKET__aws_core",
+        )
 
     def test_aws_organization_declares_no_containment(self) -> None:
         assert AwsOrganization.CONTAINMENT_EDGES == ()
 
-    def test_neither_type_has_a_registered_falsifier(self) -> None:
+    def test_neither_account_nor_organization_itself_has_a_registered_falsifier(self) -> None:
+        # No falsifier judges "is the ACCOUNT node itself gone" — Boto3Collector.run() already
+        # treats that as an unrecoverable abort (module docstring). This is distinct from the
+        # five owned TYPES now having falsifiers reachable through the account's containment.
         assert get_falsifier(AwsAccount.ENTITY_TYPE) is None
         assert get_falsifier(AwsOrganization.ENTITY_TYPE) is None
 
