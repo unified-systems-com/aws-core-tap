@@ -241,6 +241,167 @@ and edges are declarable as manifest data, so adding a service is usually a
    is scaffolding only: a trail needs an S3 bucket + bucket policy first, with
    its own teardown ordering. Neither blocks the other four legs.
 
+## Deploying to GovCloud
+
+The collector is **partition-aware**: a secret scoped to `us-gov-*` regions
+resolves the whole run to the `aws-us-gov` partition — the credential, every
+client endpoint (including the "global" services, which route through the
+partition's own global endpoint rather than a hardcoded `us-east-1`), every
+ARN it mints, and cross-account `AssumeRole` all stay inside that one
+partition. `tap_plugin/aws_core/collectors/boto3_collector/partition.py` is
+the single module that knows about partitions; nothing else in the collector
+package names one (`tests/test_govcloud.py` enforces this with an AST guard).
+
+### Secret shape
+
+Same two kinds as commercial (`spec-aws-core-secrets.md`), with three new
+optional `data` fields, identical on both:
+
+```jsonc
+{
+  // aws_static_access_key, or aws_assumed_role with role_arn/external_id/base
+  "access_key_id": "...",
+  "secret_access_key": "...",
+  "regions_allowed": ["us-gov-west-1", "us-gov-east-1"],
+
+  // NEW, all optional:
+  "partition": "aws-us-gov",       // cross-checked against regions_allowed; the
+                                     // partition is normally DERIVED from the regions,
+                                     // so this is a belt-and-suspenders assertion, not
+                                     // something you must set.
+  "use_fips_endpoint": true,        // pins every client this run makes to its FIPS
+                                     // endpoint. Absent: falls back to the
+                                     // AWS_USE_FIPS_ENDPOINT env var / botocore's own
+                                     // config resolution — set one or the other
+                                     // explicitly for a compliance-relevant run rather
+                                     // than relying on the ambient default.
+  "expected_account_id": "123456789012"
+}
+```
+
+For the assumed-role kind, `role_arn` must be an ARN in the **same**
+partition as `regions_allowed` (`arn:aws-us-gov:iam::<account>:role/...`) —
+a commercial role ARN with GovCloud regions (or vice versa) is refused at
+credential resolution, before any AWS call, naming the mismatch. This is the
+existing cross-account `AssumeRole` + mandatory `ExternalId` feature
+(`spec-aws-core-secrets.md` `req-aws-core-secret-aws-assumed-role`); GovCloud
+adds only the partition check.
+
+Region names are shape-checked (`^[a-z]{2,3}(-[a-z]+)+-[0-9]+$`) so a typo
+fails secret validation instead of surfacing as a mid-run
+`EndpointConnectionError`.
+
+### What changes per run
+
+- **Partition derivation and validation.** The run's partition is derived
+  from `regions_allowed` (mixed-partition scopes, an unsupported partition —
+  currently anything other than `aws` / `aws-us-gov` — or a role ARN /
+  `expected_account_id` mismatch all abort the run by name at startup, before
+  any AWS call).
+- **Global services route through the partition's own endpoint.** IAM
+  resolves to `iam.us-gov.amazonaws.com`, Route 53 to `route53.us-gov.amazonaws.com`,
+  Organizations to `organizations.us-gov-west-1.amazonaws.com` — verified
+  against botocore's own bundled endpoint rules in `test_govcloud.py`
+  (`TestGovCloudEndpoints`), not asserted from memory.
+- **The region-scope invariant now names the right anchor.** The old
+  "region scope should include `us-east-1`" warning now checks the
+  partition's own anchor region (`us-gov-west-1` in GovCloud) and says so.
+- **CloudFront degrades to a named result, not an error.** CloudFront is
+  **not offered in AWS GovCloud (US)** (AWS GovCloud (US) User Guide,
+  "Setting Up Amazon CloudFront with Your AWS GovCloud (US) Resources").
+  botocore will still happily construct a plausible-looking
+  `cloudfront.us-gov-west-1.amazonaws.com` hostname (there is no DNS behind
+  it) — the collector checks the partition explicitly and records one
+  `SERVICE_NOT_AVAILABLE_IN_PARTITION` info line for the `cloudfront` manifest
+  entry instead of calling it. The Route 53 zone listing still runs; its
+  CloudFront cross-join is skipped (the raw `alias_cloudfront_domains` are
+  still kept, just not resolved to an ARN — nothing to resolve to). Every
+  other manifest-collected service (IAM, STS, S3, Lambda, EventBridge, Logs,
+  ACM, DynamoDB, API Gateway v2, Cognito, KMS, SQS, CloudTrail, Secrets
+  Manager, Resource Groups Tagging API) has a live GovCloud endpoint
+  (confirmed against botocore's bundled endpoint data on 2026-09-28 — see
+  `test_govcloud.py`).
+- **ARNs are minted in the run's own partition.** The two transforms that
+  build an ARN from a bare name (`s3_bucket_arn_from_name`,
+  `s3_bucket_name_from_origin_domain`) are bound to the run's partition; every
+  other transform reads a partition off an ARN it was handed, which already
+  carries the right one. `identity.py`'s `node_entity_id`/`edge_entity_id`
+  hash the *natural key string* (already partition-correct) — nothing there
+  needed to change.
+- **FIPS.** `use_fips_endpoint` (or `AWS_USE_FIPS_ENDPOINT`) is threaded onto
+  the `botocore.session.Session` behind every `boto3.session.Session` the
+  collector builds (static, assumed-role base, and the assumed-role working
+  session alike), so it reaches every client the manifest engine, the RGTA
+  sweep, and the falsifiers make — not just one call site. Verified against
+  botocore's FIPS endpoint variants (`kms-fips`, `s3-fips`,
+  `secretsmanager-fips`, …); IAM/Organizations/Route53 have no separate FIPS
+  hostname distinct from their normal GovCloud one (both already terminate
+  inside AWS's FIPS boundary per AWS's GovCloud FIPS documentation).
+
+### Known gaps — read before tomorrow's rollout
+
+- **Not run against a live GovCloud account.** Everything above is verified
+  three ways: real botocore endpoint resolution (no network — asserting
+  against botocore's own bundled endpoint rule data), the exact bytes an
+  `AssumeRole`/`GetCallerIdentity` call would put on the wire (captured at
+  botocore's `before-send` hook), and the collector's `run()` against canned
+  GovCloud-shaped responses. None of it is a live call. Run `self_test()`
+  against the real secret before the first collection and read the
+  `AWS_PARTITION` check's message.
+- **AWS Organizations in GovCloud is its own, separate organization** from
+  any commercial one — `CreateGovCloudAccount` links a GovCloud account to a
+  commercial billing account, but GovCloud accounts can only join a GovCloud
+  organization, and most `organizations` API calls (`ListRoots`,
+  `DeletePolicy`, tag-policy compliance reporting, RGTA's
+  `GetResources`/`DescribeReportCreation`) work **only in `us-gov-west-1`**,
+  not `us-gov-east-1` — not yet encoded here; a run scoped to
+  `us-gov-east-1` alone will see this the first time an Organizations call is
+  attempted (source: AWS GovCloud (US) User Guide, "AWS Organizations in AWS
+  GovCloud (US)"). `aws_core` has **no Organizations collector yet** in
+  either partition (`specs/spec-aws-core-v0.md` `req-aws-core-organizations`)
+  — the org/OU/account/SCP/Identity-Center models exist
+  (`models/aws_organization.py` etc., landed in #46) but nothing populates
+  them from a live account. Org-level rollout needs that collector built
+  first; this PR does not build it.
+- **China (`aws-cn`) and the isolated partitions are refused, not silently
+  mishandled.** `resolve_partition` recognises their regions (so an ARN or
+  region from one classifies correctly rather than reading as commercial)
+  but raises `CredentialError` naming the partition if a secret is scoped to
+  one — nothing here has been exercised against them.
+- **Per-service GovCloud availability beyond the 16 manifest-collected
+  services is unverified.** `service_unavailable_reason` only names
+  CloudFront. If a future manifest entry adds a service GovCloud does not
+  offer, botocore may still construct an endpoint for it (as it does for
+  CloudFront) and the run will see connection failures rather than a clean
+  skip, until that service is added to `partition.py`'s
+  `_UNAVAILABLE_SERVICES` table.
+- **RGTA (Resource Groups Tagging API) region restriction not encoded.**
+  `GetResources` (the RGTA tag sweep) is documented as GovCloud-`us-gov-west-1`-only;
+  a run scoped only to `us-gov-east-1` will have its tag sweep fail per
+  region and fall back to untagged, not abort — check the
+  `RGTA_SWEEP_SKIPPED` warn on a `us-gov-east-1`-only run.
+- **`aws_organization.partition` field already existed** (landed in #46,
+  enum `["", "aws", "aws-us-gov", "aws-cn"]`) but nothing here populates it —
+  see the Organizations collector gap above.
+- **FIPS-validated crypto module, not just a FIPS *endpoint*.** This PR
+  routes calls to AWS's FIPS-140 *endpoints*; it says nothing about whether
+  the TLS termination on this side is itself FIPS-validated (that is a
+  platform-level concern — this repo's `tap` runs with `TAP_FIPS_MODE=1` /
+  OpenSSL FIPS provider; see the core repo's `bump-openssl-fips` material).
+  Confirm the deploying platform's own FIPS posture separately.
+
+### Verifying before you deploy
+
+```
+python manage.py validate_plugin <checkout> --level loads --strict
+python -m pytest tap_plugin/aws_core/tests/test_govcloud.py -v
+```
+
+`self_test()` (also reachable via the collector self-test UI/API) now reports
+an `AWS_PARTITION` check naming the resolved partition and FIPS posture
+before attempting STS reachability — read its message, not just its pass/fail,
+before the first live run.
+
 ## Specs (authoritative — this README is orientation only)
 
 | Spec | Owns |

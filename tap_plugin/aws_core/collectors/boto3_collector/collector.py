@@ -30,7 +30,7 @@ from __future__ import annotations
 from typing import Any
 
 from botocore.config import Config
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 
 from tap_cares.collectors import (
     CollectorBase,
@@ -55,8 +55,10 @@ from .credentials import (
     build_session,
     caller_account_id,
     client_factory,
+    fips_requested,
     is_assumed_role,
     resolve_aws_secret,
+    resolve_partition,
     resolve_regions,
 )
 from .customfns import build_custom_fn_registry
@@ -64,6 +66,7 @@ from .edges import EdgeError, emit_edges
 from .hydrate import hydrate_item
 from .ledger import CallLedger
 from .manifest import load_manifest, manifest_entries
+from .partition import PARTITION_AWS, home_region, service_unavailable_reason
 from .paths import eval_path
 from .projection import ProjectionError, project_item
 from .rgta import rgta_resource_type_filters, sweep_tags
@@ -89,6 +92,8 @@ _SITE_HYDRATE_GAP = "bfd4"
 _SITE_CALL_LEDGER = "bdf3"
 _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
+_SITE_ABORT_PARTITION = "7a1d"
+_SITE_SERVICE_UNAVAILABLE = "c58e"
 
 _DOCS = (
     CollectorDocRef(
@@ -193,6 +198,14 @@ class Boto3Collector(CollectorBase):
             regions = resolve_regions(data)
         except CredentialError as exc:
             self._abort(_SITE_ABORT_REGIONS, "NO_REGION_SCOPE", str(exc))
+        # The partition (commercial / GovCloud) is derived from the regions and checked against the
+        # optional declared partition and the role ARN, so a wrong-partition secret fails here,
+        # by name, rather than as an opaque InvalidClientTokenId from the wrong STS
+        # (req-aws-collector-partition).
+        try:
+            partition = resolve_partition(data, regions)
+        except CredentialError as exc:
+            self._abort(_SITE_ABORT_PARTITION, "PARTITION_UNUSABLE", str(exc))
         # Attach the audit ledger before any client/STS call so every AWS call
         # this run makes is recorded — including a cross-account AssumeRole,
         # which is captured on the base session
@@ -221,7 +234,7 @@ class Boto3Collector(CollectorBase):
             self._abort(
                 _SITE_ABORT_IDENTITY,
                 "STS_UNREACHABLE",
-                f"STS AssumeRole/GetCallerIdentity failed: {exc}",
+                f"STS AssumeRole/GetCallerIdentity failed (partition {partition}, region {regions[0]}): {exc}",
             )
         # Assert-on-land: the resolved account must match the operator's declared
         # `expected_account_id` when one is set. Applies to BOTH kinds — a
@@ -235,8 +248,13 @@ class Boto3Collector(CollectorBase):
         self.record_info(
             _SITE_IDENTITY,
             "IDENTITY_RESOLVED",
-            f"Collecting AWS account {account_id} across {len(regions)} region(s).",
-            message_data={"account_id": account_id, "regions": regions},
+            f"Collecting AWS account {account_id} ({partition}) across {len(regions)} region(s).",
+            message_data={
+                "account_id": account_id,
+                "regions": regions,
+                "partition": partition,
+                "use_fips_endpoint": fips_requested(data),
+            },
         )
 
         # --- manifest + engine collaborators ---
@@ -244,16 +262,19 @@ class Boto3Collector(CollectorBase):
         entries = manifest_entries()
         modeled_types = {e["entity_type"] for e in entries}
         custom_fns = build_custom_fn_registry()
-        transforms = build_transform_registry()
+        transforms = build_transform_registry(partition)
 
         # --- per-run RGTA tag sweep (req-aws-collector-tags -2/-6/-7) ---
-        if "us-east-1" not in regions:
+        # The partition's anchor region: us-east-1 commercial, us-gov-west-1 GovCloud.
+        anchor = home_region(partition)
+        if anchor not in regions:
             self.record_warn(
                 _SITE_REGION_INVARIANT,
                 "REGION_INVARIANT",
-                "Region scope omits us-east-1: CloudFront-bound ACM certs and "
-                "global-resource tags are silently missed.",
-                message_data={"regions": regions},
+                f"Region scope omits {anchor}: global-resource tags"
+                + (" and CloudFront-bound ACM certs" if partition == PARTITION_AWS else "")
+                + " are silently missed.",
+                message_data={"regions": regions, "partition": partition, "anchor_region": anchor},
             )
         rgta_filters = rgta_resource_type_filters(entries)
         rgta_map: dict[str, dict[str, str]] = {}
@@ -280,8 +301,24 @@ class Boto3Collector(CollectorBase):
         node_envelopes: list[dict[str, Any]] = []
         edge_envelopes: list[dict[str, Any]] = []
         skipped = 0
+        unavailable = 0
 
         for entry in entries:
+            # A service the partition does not offer is a clear result, not a failed call.
+            not_offered = service_unavailable_reason(partition, entry["service"])
+            if not_offered:
+                unavailable += 1
+                self.record_info(
+                    _SITE_SERVICE_UNAVAILABLE,
+                    "SERVICE_NOT_AVAILABLE_IN_PARTITION",
+                    f"{entry['entity_type']}: not available in partition {partition} — {not_offered}",
+                    message_data={
+                        "entity_type": entry["entity_type"],
+                        "service": entry["service"],
+                        "partition": partition,
+                    },
+                )
+                continue
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
             for region in entry_regions:
                 region_label = region if entry["scope"] == "regional" else "global"
@@ -350,10 +387,16 @@ class Boto3Collector(CollectorBase):
                     ClientError,
                 ) as exc:
                     skipped += 1
+                    hint = ""
+                    if isinstance(exc, EndpointConnectionError) and partition != PARTITION_AWS:
+                        hint = (
+                            f" (no reachable {entry['service']} endpoint in partition {partition}: "
+                            "the service may not be offered there)"
+                        )
                     self.record_warn(
                         _SITE_ENTRY_SKIPPED,
                         "ENTRY_SKIPPED",
-                        f"Skipped {entry['entity_type']} in {region_label}: {exc}",
+                        f"Skipped {entry['entity_type']} in {region_label}: {exc}{hint}",
                         message_data={
                             "entity_type": entry["entity_type"],
                             "region": region_label,
@@ -386,8 +429,8 @@ class Boto3Collector(CollectorBase):
         imported = result.counts.batches_imported
         self.summary = (
             f"Collected {len(node_envelopes)} nodes, {len(edge_envelopes)} "
-            f"edges for account {account_id} across {len(regions)} region(s) "
-            f"({skipped} skipped, {imported} batch imported)."
+            f"edges for account {account_id} ({partition}) across {len(regions)} region(s) "
+            f"({skipped} skipped, {unavailable} not offered in this partition, {imported} batch imported)."
         )
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for
@@ -467,6 +510,33 @@ class Boto3Collector(CollectorBase):
                 "AWS_REGION_SCOPE",
                 f"AWS collector will sweep {len(regions)} region(s).",
                 context={"regions": regions},
+                docs=_DOCS,
+            )
+        )
+
+        # 2b. Partition is coherent (regions, declared partition, role ARN) and supported.
+        try:
+            partition = resolve_partition(data, regions)
+        except CredentialError as exc:
+            checks.append(
+                check_fail(
+                    "AWS_PARTITION",
+                    str(exc),
+                    readiness_status=CollectorReadinessStatus.MISCONFIGURED,
+                    docs=_DOCS,
+                )
+            )
+            return CollectorSelfTestResult.from_checks(
+                checks,
+                summary="AWS collector partition is not usable.",
+                docs=_DOCS,
+            )
+        checks.append(
+            check_pass(
+                "AWS_PARTITION",
+                f"AWS collector is scoped to partition {partition} "
+                f"(FIPS endpoints {'on' if fips_requested(data) else 'off'}).",
+                context={"partition": partition, "use_fips_endpoint": fips_requested(data)},
                 docs=_DOCS,
             )
         )
