@@ -53,6 +53,7 @@
           "type": "array",
           "items": { "$ref": "#/$defs/edge_rule" }
         },
+        "containment": { "$ref": "#/$defs/containment" },
         "persist_configuration": {
           "description": "Whether the collector persists this entry's configuration envelope (the enumerate item, custom_fn and hydrate additions, and the engine-reserved _source/_hydrate keys) into the node's configuration field. False emits configuration {} for every node of this type; typed fields, tags and edges are derived from the in-memory envelope either way. Decided per entry, never globally, because whether a response holds secrets depends on the API that returned it; an entry with a credential sensitivity location defaults to false, and an unreviewed entry must be false (req-aws-collector-manifest-7, enforced by this entry's allOf). See req-aws-collector-field-projection-7.",
           "type": "boolean"
@@ -79,8 +80,39 @@
           "then": {
             "properties": { "persist_configuration": { "const": false } }
           }
+        },
+        {
+          "description": "A containment listing is walked once per account, so the entry is global. A regional listing would be one walk per region and needs a scope node per account and region, which does not exist (aws-core-tap#15).",
+          "if": { "required": ["containment"] },
+          "then": { "properties": { "scope": { "const": "global" } } }
         }
       ]
+    },
+    "containment": {
+      "description": "This entry's listing is the account's COMPLETE inventory of the type: the collector emits an account -> item edge (edge_type) for each item and, after submitting the batch, records the listing as a completeness surface (req-grid-reconcile-evidence) so that a later run that no longer lists an item can make it a retirement candidate for the type's falsifier (req-grid-reconcile-candidates). Declare it only for a type that exists in exactly one account and is never shared: a shared or regional type would let one credential's listing speak for another's objects. The source (an aws_op, or a custom_fn that accepts `walk=`) is what decides whether the listing was read to the end; nothing here asserts it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent", "relation", "edge_type", "why"],
+      "properties": {
+        "parent": {
+          "description": "What holds the listing. Only the account, today.",
+          "const": "account"
+        },
+        "relation": {
+          "description": "The surface's relation name in the source's own terms, recorded on the completeness statement (e.g. 'account.iam_roles').",
+          "type": "string",
+          "minLength": 1
+        },
+        "edge_type": {
+          "description": "The parent -> child containment edge slug. It must be declared in tap-plugin.toml and in the parent model's CONTAINMENT_EDGES (a test holds both).",
+          "type": "string",
+          "minLength": 1
+        },
+        "why": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     },
     "source": {
       "type": "object",

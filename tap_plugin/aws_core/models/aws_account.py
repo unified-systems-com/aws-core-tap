@@ -19,22 +19,44 @@ class AwsAccount(BaseModel):
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id",)
 
-    # No containment declared (tap-plugin-aws-core#42, req-aws-core-reconcile-foundation).
-    # CONTAINMENT_EDGES can only name an edge type where THIS model is the source
-    # (req-grid-service-delete-cascade-12; tap_grid.models.BaseModel.__init_subclass__ checks
-    # CONTAINMENT_EDGES ⊆ OUTBOUND_EDGES, and cascade itself walks from_entity_id=<parent>,
-    # tap_grid/services/_impl.py::_contained_children). BELONGS_TO_ACCOUNT — the one edge that
-    # names every account-owned resource type — points resource -> account (this model is the
-    # TARGET, never a source), and its own manifest description says why that direction is
-    # deliberate, not an oversight: "A reference, not containment: a resource shared through AWS
-    # RAM is used from other accounts, and an account's subtree can exceed the cascade cap"
-    # (edges/BELONGS_TO_ACCOUNT.edge.json). Retiring an account therefore ends its resources'
-    # BELONGS_TO_ACCOUNT edges (the tombstone endpoint rule) and leaves the resources themselves
-    # live — each one's own truth is a question for that TYPE's falsifier, never a blanket
-    # account-level cascade. Do not "fix" this by reversing BELONGS_TO_ACCOUNT's direction for
-    # this model alone; that would contradict the edge's documented design and blow past
-    # TAP_CASCADE_MAX_CLOSURE for any account with real fan-out.
-    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ()
+    # Containment: the account-EXCLUSIVE resources, and only those (aws-core-tap#43, which deliberately
+    # supersedes the empty declaration tap-plugin-aws-core#42 made here).
+    #
+    # #42 left this empty for a sound reason that still stands for the general case: BELONGS_TO_ACCOUNT is
+    # the one edge naming every account-owned type, it points resource -> account (this model is its TARGET,
+    # and cascade / candidate fan-out both walk from_entity_id=<parent>), and its own description says it is
+    # "a reference, not containment: a resource shared through AWS RAM is used from other accounts, and an
+    # account's subtree can exceed the cascade cap". So BELONGS_TO_ACCOUNT stays a reference, unreversed.
+    #
+    # The five types below are different in kind: an IAM role, IAM user, customer-managed IAM policy, IAM
+    # OIDC provider and S3 bucket each exist in exactly ONE account. None can be shared through RAM, none
+    # is visible from another account's listing, and the account's own listing of each is the complete
+    # inventory of them (IAM is global per account and partition; S3 ListBuckets is account-wide). Each gets
+    # its own NEW parent -> child edge type, one per listing, because candidate derivation fans out through
+    # an edge type and a run must be able to say "roles were read to the end" without saying anything about
+    # users. The edge types are not BELONGS_TO_ACCOUNT under another name: they are emitted by the collector
+    # only from a listing it read, and a completeness surface is recorded only when that listing was
+    # paginated to the end (collectors/boto3_collector/listing.py).
+    #
+    # Everything else an account owns stays a reference (EC2, VPCs, ...): those are regional, shareable, or
+    # fan out past TAP_CASCADE_MAX_CLOSURE, and each has its own regional listing to earn containment
+    # from. An account with more than the cascade cap of these five combined will refuse a contained
+    # cascade and a >5000-child surface is recorded fan_out_exceeds_cap rather than derived: the failure is
+    # loud and safe, never a silent partial retirement.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_iam_role"}], "edges": [{"type": "OWNS_IAM_ROLE__aws_core"}]},
+        {"nodes": [{"type": "aws_core__aws_iam_user"}], "edges": [{"type": "OWNS_IAM_USER__aws_core"}]},
+        {"nodes": [{"type": "aws_core__aws_iam_policy"}], "edges": [{"type": "OWNS_IAM_POLICY__aws_core"}]},
+        {"nodes": [{"type": "aws_core__aws_iam_oidc_provider"}], "edges": [{"type": "OWNS_OIDC_PROVIDER__aws_core"}]},
+        {"nodes": [{"type": "aws_core__aws_s3_bucket"}], "edges": [{"type": "OWNS_BUCKET__aws_core"}]},
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
+        "OWNS_IAM_ROLE__aws_core",
+        "OWNS_IAM_USER__aws_core",
+        "OWNS_IAM_POLICY__aws_core",
+        "OWNS_OIDC_PROVIDER__aws_core",
+        "OWNS_BUCKET__aws_core",
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -60,9 +60,10 @@ from .credentials import (
     resolve_regions,
 )
 from .customfns import build_custom_fn_registry
-from .edges import EdgeError, emit_edges
+from .edges import EdgeError, account_entity_id, emit_containment, emit_edges
 from .hydrate import hydrate_item
 from .ledger import CallLedger
+from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
 from .paths import eval_path
 from .projection import ProjectionError, project_item
@@ -72,6 +73,9 @@ from .tags import normalize_tags, rgta_join_arn
 from .transforms import build_transform_registry
 
 _SOURCE = "tap_plugin.aws_core.collectors.boto3_collector.collector"
+
+#: Region-name prefixes outside the commercial partition (GovCloud, China, the isolated partitions).
+_NON_COMMERCIAL_REGION_PREFIXES = ("us-gov-", "cn-", "us-iso", "eu-iso")
 
 # record_* call-site tokens (minted by scripts/log-site-id; held unique by
 # the repo-wide site-uniqueness test).
@@ -247,7 +251,11 @@ class Boto3Collector(CollectorBase):
         transforms = build_transform_registry()
 
         # --- per-run RGTA tag sweep (req-aws-collector-tags -2/-6/-7) ---
-        if "us-east-1" not in regions:
+        # The us-east-1 invariant is a commercial-partition fact (CloudFront-bound ACM certificates and the
+        # global-resource tag index live there). A GovCloud or China run has no such region and no
+        # CloudFront-bound certs, so it is not warned about a region it cannot have.
+        commercial_regions = [r for r in regions if not r.startswith(_NON_COMMERCIAL_REGION_PREFIXES)]
+        if commercial_regions and "us-east-1" not in regions:
             self.record_warn(
                 _SITE_REGION_INVARIANT,
                 "REGION_INVARIANT",
@@ -280,9 +288,13 @@ class Boto3Collector(CollectorBase):
         node_envelopes: list[dict[str, Any]] = []
         edge_envelopes: list[dict[str, Any]] = []
         skipped = 0
+        #: One (containment declaration, walk) per account-scoped listing this run attempted; turned into
+        #: completeness surfaces after the batch is submitted (req-aws-collector-reconcile).
+        listings: list[tuple[dict[str, Any], ListingWalk]] = []
 
         for entry in entries:
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
+            containment = entry.get("containment")
             for region in entry_regions:
                 region_label = region if entry["scope"] == "regional" else "global"
                 dimensions = {
@@ -290,6 +302,9 @@ class Boto3Collector(CollectorBase):
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
+                walk = ListingWalk() if containment else None
+                if containment:
+                    listings.append((containment, walk))
                 try:
                     items = list(
                         iter_source(
@@ -297,6 +312,7 @@ class Boto3Collector(CollectorBase):
                             client_for=client_factory(session, region),
                             custom_fns=custom_fns,
                             fn_context=session,
+                            walk=walk,
                         )
                     )
                     for item in items:
@@ -342,6 +358,12 @@ class Boto3Collector(CollectorBase):
                         edge_envelopes.extend(emission.envelopes)
                         for warning in emission.warnings:
                             self.record_warn(_SITE_EDGE_DROPPED, "EDGE_DROPPED", warning)
+                        if containment:
+                            edge_envelopes.append(
+                                emit_containment(
+                                    node, containment, account_id=account_id, dimensions=dimensions
+                                )
+                            )
                 except (
                     SourceError,
                     EdgeError,
@@ -349,6 +371,14 @@ class Boto3Collector(CollectorBase):
                     BotoCoreError,
                     ClientError,
                 ) as exc:
+                    if walk is not None:
+                        # A listing that ended before the failure was read to the end but not carried
+                        # to the batch (admitted=false); one that had not ended is simply not known
+                        # to be complete (fail).
+                        if walk.complete is True:
+                            walk.drop(f"{type(exc).__name__} while processing the listed items")
+                        else:
+                            walk.fail(exc)
                     skipped += 1
                     self.record_warn(
                         _SITE_ENTRY_SKIPPED,
@@ -376,6 +406,24 @@ class Boto3Collector(CollectorBase):
         # which the task body turns into the FAILED terminal patch. No
         # per-collector guard — see req-tap-cares-collector-grift-import-9.
         result = self.submit_grift(document, dangling_edge_mode="permissive")
+        # Every account-scoped listing this run walked is recorded against the batch that carried its
+        # observations; `applied` is derived by the recorder from that batch's commit. The subject is the
+        # account node's grid id, which this collector mints itself (identity.py) and which the batch
+        # above wrote: candidate derivation resolves it as a grid entity id and needs the account itself
+        # observed this run before it fans out from it (tap_grid/candidates.py::_derive_surface).
+        collection_batch_id = str(document["batches"][0]["batch_entity"]["entity_id"])
+        for containment, walk in listings:
+            self.record_surface(
+                **surface_statement(
+                    walk,
+                    relation=containment["relation"],
+                    edge_type=containment["edge_type"],
+                    subject=str(account_entity_id(account_id)),
+                    applied_batches=[collection_batch_id],
+                )
+            )
+        if not listings:
+            self.declare_no_surfaces()
         self.record_info(
             _SITE_GRIFT_SUBMITTED,
             "GRIFT_SUBMITTED",

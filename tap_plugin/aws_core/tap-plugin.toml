@@ -102,6 +102,13 @@ TERMINATES_AT_CUSTOMER_DEVICE__aws_core = "edges/TERMINATES_AT_CUSTOMER_DEVICE.e
 CONSUMES_ENDPOINT_SERVICE__aws_core = "edges/CONSUMES_ENDPOINT_SERVICE.edge.json"
 FILTERS_VPC_DNS__aws_core = "edges/FILTERS_VPC_DNS.edge.json"
 ISSUED_BY_CA__aws_core = "edges/ISSUED_BY_CA.edge.json"
+OWNS_IAM_ROLE__aws_core = "edges/OWNS_IAM_ROLE.edge.json"
+OWNS_IAM_USER__aws_core = "edges/OWNS_IAM_USER.edge.json"
+OWNS_IAM_POLICY__aws_core = "edges/OWNS_IAM_POLICY.edge.json"
+OWNS_OIDC_PROVIDER__aws_core = "edges/OWNS_OIDC_PROVIDER.edge.json"
+OWNS_BUCKET__aws_core = "edges/OWNS_BUCKET.edge.json"
+TRUSTS_ACCOUNT__aws_core = "edges/TRUSTS_ACCOUNT.edge.json"
+ATTACHES_POLICY__aws_core = "edges/ATTACHES_POLICY.edge.json"
 
 [falsifiers]
 # One per reconcilable type. The foundation (tap-plugin-aws-core#42): the manifest key, the
@@ -123,6 +130,12 @@ aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"
 aws_core__aws_vpc = "tap_plugin.aws_core.falsifiers.VpcFalsifier"
 aws_core__aws_security_group = "tap_plugin.aws_core.falsifiers.SecurityGroupFalsifier"
 aws_core__aws_ec2_instance = "tap_plugin.aws_core.falsifiers.Ec2InstanceFalsifier"
+# Account-scoped containment (aws-core-tap#43): OWNS_OIDC_PROVIDER__aws_core makes an IAM OIDC
+# provider reconcilable. S3 bucket, IAM role, IAM user and customer-managed IAM policy become
+# reconcilable by the same containment, but their falsifiers are aws-core-tap#41's
+# (S3BucketFalsifier, IamRoleFalsifier, IamUserFalsifier, IamPolicyFalsifier) and are registered
+# there, not duplicated here; this PR does not merge #41's classes.
+aws_core__aws_iam_oidc_provider = "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"

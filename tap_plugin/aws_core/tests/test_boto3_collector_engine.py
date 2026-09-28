@@ -88,7 +88,7 @@ class TestManifest:
         m = load_manifest()
         assert m["manifest_version"] == "0"
         entries = manifest_entries()
-        assert len(entries) == 17
+        assert len(entries) == 19
         for e in entries:
             assert {
                 "entity_type",

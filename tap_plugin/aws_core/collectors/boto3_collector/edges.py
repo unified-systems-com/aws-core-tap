@@ -84,6 +84,47 @@ def _as_value_list(raw: Any) -> list[Any]:
     return [v for v in values if v is not None and v != ""]
 
 
+#: The entity type of the parent every ``containment`` listing hangs from.
+ACCOUNT_ENTITY_TYPE = "aws_core__aws_account"
+
+
+def account_entity_id(account_id: str) -> Any:
+    """The grid id of the account node the run collected (``aws_account_singleton`` keys it on the id)."""
+    return node_entity_id(ACCOUNT_ENTITY_TYPE, account_id)
+
+
+def emit_containment(
+    node: ProjectedNode,
+    containment: dict[str, Any],
+    *,
+    account_id: str,
+    dimensions: dict[str, str],
+) -> dict[str, Any]:
+    """The account -> item edge for one item of a ``containment`` listing.
+
+    Emitted for every item the listing returned, from the account the credential resolved to (STS
+    ``GetCallerIdentity``), never from anything on the item: an item's own account field could name a
+    different account (a shared or cross-account reference), and this edge says only that THIS
+    account's listing named THIS item. The edge id is deterministic from (edge type, account, item), so
+    a re-run upserts the same edge rather than adding a second.
+    """
+    edge_type = containment["edge_type"]
+    return {
+        "entity": {
+            "entity_id": str(edge_entity_id(edge_type, account_id, node.natural_key)),
+            "entity_type": "edge",
+            "name": f"{account_id} {edge_type} {node.natural_key}",
+            "dimensions": dimensions,
+        },
+        "edge": {
+            "from_entity_id": str(account_entity_id(account_id)),
+            "to_entity_id": str(node.entity_id),
+            "edge_type": edge_type,
+            "properties": {},
+        },
+    }
+
+
 def emit_edges(
     node: ProjectedNode,
     entry: dict[str, Any],

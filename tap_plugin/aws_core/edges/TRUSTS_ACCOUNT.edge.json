@@ -1,0 +1,14 @@
+{
+  "slug": "TRUSTS_ACCOUNT__aws_core",
+  "name": "Trusts Account",
+  "description": "An IAM role's trust policy allows principals of another AWS account to assume it (role -> trusted account): the cross-account assume-role edge. Derived from the Allow statements of the role's AssumeRolePolicyDocument (a Principal.AWS naming an account id, an account root ARN, or a role/user ARN in that account). The role's own account is never a target, so every edge of this type crosses an account boundary; a Principal '*' names no account and produces no edge (it is recorded as IamRole.trusts_wildcard_principal). The target account node may not be in the grid yet: it resolves by identity when that account is collected, which is why an organization-wide rollout sees the full trust graph. It records that the trust is granted, not that any principal in the target account can actually use it: the Condition block and the other account's own IAM policies decide that.",
+  "sources": [
+    "aws_core__aws_iam_role"
+  ],
+  "targets": [
+    "aws_core__aws_account"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

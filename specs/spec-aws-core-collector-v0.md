@@ -1393,7 +1393,15 @@ Deferred from v0:
   completeness statement, so `tap_grid.candidates.derive_candidates` has nothing to derive a
   subnet (or any other) candidate from yet. The two pieces are independent: the falsifier layer
   can be built and tested (and is) before the collector emits a single completeness surface.
-- **Multi-account.** v0 is one account. The secrets model already frames
+
+  **Update (tap-plugin-aws-core#43):** the collector now DOES emit per-surface completeness
+  statements, for five of its manifest entries — `spec-aws-core-v0.md`'s
+  `req-aws-core-reconcile-containment`: `aws_core__aws_iam_role`, `aws_core__aws_iam_user`,
+  `aws_core__aws_iam_policy`, `aws_core__aws_iam_oidc_provider`, `aws_core__aws_s3_bucket`, the
+  five types an AWS account owns exclusively. `tap_grid.candidates.derive_candidates` can now
+  actually derive a candidate for those five falsifiers to judge on a live run. The other ~47
+  `BELONGS_TO_ACCOUNT`-sourced entries are regional, RAM-shareable, or both, and remain exactly
+  as Backlog as before — this is a slice of `req-aws-collector-reconcile`, not its close-out. v0 is one account. The secrets model already frames
   multi-account as "more secret files"; orchestration across accounts is later.
 - **Uniform-enumeration APIs** (Resource Groups Tagging API, Cloud Control API,
   AWS Config). Evaluated and rejected for v0: Tagging API returns spine only,

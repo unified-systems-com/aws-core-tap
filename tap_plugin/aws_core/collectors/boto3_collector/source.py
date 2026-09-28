@@ -30,6 +30,7 @@ from typing import Any
 from botocore import xform_name
 
 from .envelope import without_response_metadata
+from .listing import ListingWalk, page_says_more
 from .paths import eval_path
 
 
@@ -68,7 +69,44 @@ class CustomFnRegistry:
             ) from None
 
 
-def iter_aws_op(client: Any, op_name: str, items_path: str) -> Iterator[Any]:
+def iter_pages(client: Any, method: str, **kwargs: Any) -> Iterator[Any]:
+    """Yield the ``ResponseMetadata``-free pages of a list operation.
+
+    The botocore paginator when the operation has one, else a single call. The one place a listing's
+    pages are consumed, so :func:`iter_listing` and every ``custom_fn`` that walks a listing agree on
+    what "a page" is.
+    """
+    if client.can_paginate(method):
+        for page in client.get_paginator(method).paginate(**kwargs):
+            yield without_response_metadata(page)
+        return
+    yield without_response_metadata(getattr(client, method)(**kwargs))
+
+
+def iter_listing(client: Any, method: str, items_path: str, walk: ListingWalk, **kwargs: Any) -> Iterator[Any]:
+    """Yield the items of a list operation and record on ``walk`` whether the listing ended.
+
+    ``walk.complete`` becomes ``True`` only when the generator is consumed to its end AND the final page
+    does not itself report a continuation (:func:`.listing.page_says_more`); it becomes ``False`` when
+    the final page says there is more. A consumer that stops early, or an exception mid-walk, leaves it
+    ``None`` (the walk cannot say): the tail below never runs, which is exactly the right answer.
+    """
+    count = 0
+    last: Any = None
+    for page in iter_pages(client, method, **kwargs):
+        last = page
+        for item in eval_path(page, items_path):
+            count += 1
+            yield item
+    if last is None:
+        return
+    if page_says_more(last):
+        walk.stopped_short(count, "the final page still reports a continuation marker")
+    else:
+        walk.reached_end(count)
+
+
+def iter_aws_op(client: Any, op_name: str, items_path: str, *, walk: ListingWalk | None = None) -> Iterator[Any]:
     """Yield raw items from a boto3 operation, generically.
 
     Uses the botocore paginator when the operation has one, else a single
@@ -80,14 +118,15 @@ def iter_aws_op(client: Any, op_name: str, items_path: str) -> Iterator[Any]:
         client: A boto3 service client.
         op_name: The API-cased operation name from the manifest.
         items_path: The manifest path that flattens the response to items.
+        walk: When the entry declares ``containment``, the :class:`.listing.ListingWalk` this listing
+            fills in; ``None`` for every other entry, whose behaviour is unchanged.
     """
     method = xform_name(op_name)
-    if client.can_paginate(method):
-        for page in client.get_paginator(method).paginate():
-            yield from eval_path(without_response_metadata(page), items_path)
+    if walk is not None:
+        yield from iter_listing(client, method, items_path, walk)
         return
-    response = getattr(client, method)()
-    yield from eval_path(without_response_metadata(response), items_path)
+    for page in iter_pages(client, method):
+        yield from eval_path(page, items_path)
 
 
 def iter_source(
@@ -96,6 +135,7 @@ def iter_source(
     client_for: Callable[[str], Any],
     custom_fns: CustomFnRegistry,
     fn_context: Any = None,
+    walk: ListingWalk | None = None,
 ) -> Iterator[Any]:
     """Drive a manifest entry's ``source``, yielding raw items.
 
@@ -108,14 +148,20 @@ def iter_source(
             region binding lives in the runtime integration, later).
         custom_fns: The plugin-local ``custom_fn`` registry.
         fn_context: Bound session/region context passed to a ``custom_fn``.
+        walk: The listing walk to fill in, passed only for an entry that declares ``containment``. A
+            ``custom_fn`` behind such an entry MUST accept it (``walk=``) and report on it; the
+            manifest test holds that line.
     """
     source = entry["source"]
     if "aws_op" in source:
         client = client_for(entry["service"])
-        yield from iter_aws_op(client, source["aws_op"], entry["items_path"])
+        yield from iter_aws_op(client, source["aws_op"], entry["items_path"], walk=walk)
         return
     fn = custom_fns.get(source["custom_fn"])
     # Pass client_for through so regional custom_fns can build region-bound
     # clients without inventing their own region resolution. Global custom_fns
     # (route53, the s3 list-buckets head) accept it as a kwarg and ignore it.
+    if walk is not None:
+        yield from fn(fn_context, client_for=client_for, walk=walk)
+        return
     yield from fn(fn_context, client_for=client_for)

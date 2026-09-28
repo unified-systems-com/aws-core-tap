@@ -1,0 +1,15 @@
+{
+  "slug": "ATTACHES_POLICY__aws_core",
+  "name": "Attaches Policy",
+  "description": "An IAM role or user has a customer-managed IAM policy attached (principal -> policy): iam:AttachRolePolicy / iam:AttachUserPolicy, as ListAttachedRolePolicies / ListAttachedUserPolicies report it. Emitted only for customer-managed policies, whose nodes the collector holds; the full list, AWS-managed policies included, is the principal's attached_policy_arns field, which is what an AWS-managed policy (identical in every account, never a node of this account) needs. Inline policies are not attachments and are not modelled here.",
+  "sources": [
+    "aws_core__aws_iam_role",
+    "aws_core__aws_iam_user"
+  ],
+  "targets": [
+    "aws_core__aws_iam_policy"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

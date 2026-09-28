@@ -35,9 +35,11 @@ class TestAwsCoreDomainDefaults:
         node = _create("aws_core__aws_ebs_volume", {"volume_id": "vol-123"})
         assert node.encrypted is False
 
-    def test_iam_user_mfa_defaults_false(self):
+    def test_iam_user_mfa_defaults_null_not_observed(self):
+        # NULL = not observed (ListMFADevices was not read at create time), never "no MFA"
+        # (aws-core-tap#43): a design-time or pre-collection row must not read as compliant.
         node = _create("aws_core__aws_iam_user", {"name": "admin"})
-        assert node.mfa_enabled is False
+        assert node.mfa_enabled is None
 
     def test_iam_policy_aws_managed_defaults_false(self):
         node = _create("aws_core__aws_iam_policy", {"name": "MyPolicy"})
