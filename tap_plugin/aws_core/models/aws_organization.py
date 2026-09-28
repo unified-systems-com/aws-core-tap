@@ -16,10 +16,11 @@ class AwsOrganization(BaseModel):
     separate root type: the root's id is carried as ``root_id``, and edges that land on "the root"
     land on this node.
 
-    Design vocabulary: no collector emits it yet. Every field is one AWS reports
-    (``organizations:DescribeOrganization`` and ``ListRoots``), and every id may be blank because a
-    designed organization exists before AWS mints one. Blank means not observed, for the ids and
-    for the two enums alike (the aws_elb.lb_type convention).
+    Collected by ``Boto3Collector`` (``collectors/boto3_collector/organizations.py``) from
+    ``organizations:DescribeOrganization`` and ``ListRoots``; also design vocabulary, so every id may
+    be blank because a designed organization exists before AWS mints one. Blank means not observed,
+    for the ids and for the two enums alike (the aws_elb.lb_type convention). The organization is the
+    containment parent of its OUs and its member accounts (see CONTAINMENT_EDGES below).
 
     Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations)
     """
@@ -43,20 +44,27 @@ class AwsOrganization(BaseModel):
     # AWS's organization id (o-…). Blank ids never converge: identity_lock_key treats "" as a hole.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("organization_id",)
 
-    # No containment declared (tap-plugin-aws-core#42, req-aws-core-reconcile-foundation) — this
-    # is already the documented ruling in req-aws-core-organizations above, restated here as a
-    # CLASS-LEVEL declaration rather than leaving it implicit via BaseModel's default: "No
-    # containment is declared. Both edges point child -> parent (and policy -> target), and
-    # CONTAINMENT_EDGES can only name outbound edges; an account also outlives its organization."
-    # NESTED_UNDER_PARENT (OU/account -> OU/organization) is the ONE tree edge and it points
-    # child -> parent, so this model is never its source; cascade
-    # (tap_grid/services/_impl.py::_contained_children) walks from_entity_id=<parent> and cannot
-    # follow an inbound edge. Splitting NESTED_UNDER_PARENT into a separate parent -> child
-    # containment edge (an org "owns" its OU tree the way a VPC owns its subnets, even though an
-    # account merely sits IN the tree and outlives it) is a real, larger design question — a new
-    # edge type shared with AwsOrganizationalUnit — deliberately left to a follow-up rather than
-    # decided unilaterally here.
-    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ()
+    # Containment (tap-plugin-aws-core#50, req-aws-core-organizations-reconcile). The two existing
+    # tree edges point child -> parent (NESTED_UNDER_PARENT) and stay references: an account moves
+    # between OUs and nothing ends the old edge, so a cascade through them would tombstone a live
+    # account. Cascade and candidate derivation both walk from_entity_id=<parent>
+    # (tap_grid/services/_impl.py::_contained_children, tap_grid/candidates.py::_children), so the
+    # containment lives on two NEW parent -> child edges, each of a relation that never moves:
+    #   PARTITIONED_INTO_OU  organization -> top-level OU. AWS has no operation that re-parents an
+    #                        OU and refuses to delete a non-empty one.
+    #   ENROLLS_ACCOUNT      organization -> member account, from the organization-wide ListAccounts.
+    #                        Organization-level and not OU-level so that MoveAccount does not touch it.
+    # An account outliving its removal from the organization is the ordinary observation-lifetime
+    # case (the grid stops observing it under this organization; the AWS account is not deleted), and
+    # AwsAccount declares no containment, so retiring one ends its edges and cascades to nothing.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {
+            "nodes": [{"type": "aws_core__aws_organizational_unit"}],
+            "edges": [{"type": "PARTITIONED_INTO_OU__aws_core"}],
+        },
+        {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "ENROLLS_ACCOUNT__aws_core"}]},
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("PARTITIONED_INTO_OU__aws_core", "ENROLLS_ACCOUNT__aws_core")
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

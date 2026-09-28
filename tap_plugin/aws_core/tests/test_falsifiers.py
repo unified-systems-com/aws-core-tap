@@ -14,20 +14,24 @@ the one type ``validate_plugin``'s falsifier-coverage check already marks reconc
 
 from __future__ import annotations
 
-import tomllib
 import uuid
 from typing import Any
 
 import pytest
+import tomllib
 from botocore.exceptions import BotoCoreError, ClientError
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.module_loading import import_string
-
-from tap.plugin_testing import find_plugin_source_root
-from tap_plugin.aws_core.falsifiers import NOT_FOUND_DETAIL, SubnetFalsifier, error_code_of, probe_status_of
+from tap_plugin.aws_core.falsifiers import (
+    NOT_FOUND_DETAIL,
+    SubnetFalsifier,
+    error_code_of,
+    probe_status_of,
+)
 from tap_plugin.aws_core.models.aws_account import AwsAccount
 from tap_plugin.aws_core.models.aws_organization import AwsOrganization
 
+from tap.plugin_testing import find_plugin_source_root
 from tap_grid.falsifier_testing import (
     CASE_DROPPED,
     CASE_FORBIDDEN,
@@ -36,9 +40,9 @@ from tap_grid.falsifier_testing import (
     run_four_cases,
 )
 from tap_grid.falsifiers import (
-    Falsifier,
     UNDETERMINED,
     Candidate,
+    Falsifier,
     FalsifyContext,
     Verdict,
     get_falsifier,
@@ -334,11 +338,16 @@ class TestFalsifierManifestWiring:
         manifest_path = next((PLUGIN_ROOT / "tap_plugin").glob("*/tap-plugin.toml"))
         manifest = tomllib.loads(manifest_path.read_text())
         falsifiers = manifest.get("falsifiers", {})
-        assert falsifiers == {SUBNET: "tap_plugin.aws_core.falsifiers.SubnetFalsifier"}
+        assert falsifiers == {
+            SUBNET: "tap_plugin.aws_core.falsifiers.SubnetFalsifier",
+            "aws_core__aws_organizational_unit": "tap_plugin.aws_core.falsifiers.OrganizationalUnitFalsifier",
+            "aws_core__aws_account": "tap_plugin.aws_core.falsifiers.AccountFalsifier",
+        }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
         # enforces at load, reasserted here directly against the TOML.
-        assert SUBNET in manifest.get("models", {})
+        for entity_type in falsifiers:
+            assert entity_type in manifest.get("models", {})
 
     def test_subnet_is_the_type_containment_coverage_marks_reconcilable(self) -> None:
         """The evidence behind picking Subnet over VPC: Vpc.CONTAINMENT_EDGES names
@@ -391,17 +400,36 @@ class TestFalsifierManifestWiring:
 
 
 class TestAccountAndOrganizationDeclareNoContainment:
-    """tap-plugin-aws-core#42: AwsAccount and AwsOrganization are the root of every other AWS
-    resource this plugin models, and both deliberately declare zero CONTAINMENT_EDGES — see the
-    reasoning on each model and in tap_plugin/aws_core/falsifiers.py's module docstring. This is
-    a regression guard against silently reversing that decision, not a live behavior test."""
+    """tap-plugin-aws-core#42: AwsAccount is the root of every other AWS resource this plugin
+    models and deliberately declares zero CONTAINMENT_EDGES of its own — see the reasoning on the
+    model and in tap_plugin/aws_core/falsifiers.py's module docstring. This is a regression guard
+    against silently reversing that decision, not a live behavior test.
+
+    AwsOrganization is different as of tap-plugin-aws-core#50: it now declares the two
+    Organizations-tree containment edges (see TestOrganizationContainment below), so what it
+    guards here is only that AwsAccount still declares none — an account is a containment TARGET
+    (ENROLLS_ACCOUNT), never a source."""
 
     def test_aws_account_declares_no_containment(self) -> None:
         assert AwsAccount.CONTAINMENT_EDGES == ()
 
-    def test_aws_organization_declares_no_containment(self) -> None:
-        assert AwsOrganization.CONTAINMENT_EDGES == ()
+    def test_aws_account_has_a_registered_falsifier(self) -> None:
+        from tap_plugin.aws_core.falsifiers import AccountFalsifier
 
-    def test_neither_type_has_a_registered_falsifier(self) -> None:
-        assert get_falsifier(AwsAccount.ENTITY_TYPE) is None
+        assert isinstance(get_falsifier(AwsAccount.ENTITY_TYPE), AccountFalsifier)
+
+
+class TestOrganizationContainment:
+    """tap-plugin-aws-core#50: AwsOrganization contains its OUs and its member accounts through
+    two NEW parent -> child edges, not the existing child -> parent NESTED_UNDER_PARENT
+    reference — see the CONTAINMENT_EDGES comment on models/aws_organization.py."""
+
+    def test_aws_organization_declares_the_two_new_containment_edges(self) -> None:
+        assert AwsOrganization.CONTAINMENT_EDGES == (
+            "PARTITIONED_INTO_OU__aws_core",
+            "ENROLLS_ACCOUNT__aws_core",
+        )
+
+    def test_aws_organization_has_no_falsifier(self) -> None:
+        """Nothing contains the organization itself."""
         assert get_falsifier(AwsOrganization.ENTITY_TYPE) is None
