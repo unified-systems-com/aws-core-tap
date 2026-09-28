@@ -92,6 +92,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     assume_role_session,
+    base_creds,
     build_session,
     caller_account_id,
     is_assumed_role,
@@ -138,7 +139,7 @@ def _default_session() -> tuple[ProbeSession, str]:
     data = dict(secret.data)
     regions = resolve_regions(data)
     if is_assumed_role(data):
-        base = build_session(data["base"])
+        base = build_session(base_creds(data))
         session = assume_role_session(
             base, data, regions[0], timeout_seconds=_STS_TIMEOUT_SECONDS
         )

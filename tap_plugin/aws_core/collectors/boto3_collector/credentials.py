@@ -192,6 +192,21 @@ def is_assumed_role(data: Mapping[str, Any]) -> bool:
     return "role_arn" in data
 
 
+def base_creds(data: Mapping[str, Any]) -> dict[str, Any]:
+    """``data['base']`` (the ``aws_assumed_role`` kind's calling identity), with the secret's
+    top-level ``use_fips_endpoint`` merged in.
+
+    ``data['base']``'s own schema (``_STATIC_CREDS_PROPS``) carries no ``use_fips_endpoint`` of
+    its own — FIPS is a property of the *secret*, declared once, not duplicated per credential
+    set. Every ``build_session(data["base"])`` call site should go through this instead of
+    reading ``data["base"]`` directly, so the base session — used only to call AssumeRole, but
+    still a real client-bearing ``boto3.session.Session`` — is pinned the same way the working
+    session ``assume_role_session`` returns already is, rather than defaulting to whatever
+    ambient environment/shared-config FIPS setting happens to be in effect.
+    """
+    return {**data["base"], "use_fips_endpoint": data.get("use_fips_endpoint")}
+
+
 def resolve_regions(data: Mapping[str, Any]) -> list[str]:
     """Regions to sweep: ``data.regions_allowed`` if non-empty, else ``[region]``.
 
@@ -307,12 +322,11 @@ def _botocore_session(use_fips_endpoint: bool | None) -> botocore.session.Sessio
 def build_session(creds: Mapping[str, Any]) -> boto3.session.Session:
     """A boto3 Session bound to a static credential set.
 
-    ``creds`` is the ``aws_static_access_key`` kind's ``data`` (our own account)
-    or the ``aws_assumed_role`` kind's ``data['base']`` (the identity that calls
-    AssumeRole). Both carry ``access_key_id`` / ``secret_access_key`` / optional
-    ``session_token``. On the static kind ``creds`` is the whole secret ``data``, so its
-    optional ``use_fips_endpoint`` applies here; on the assumed-role kind the flag sits
-    beside ``base`` and is applied by :func:`assume_role_session` instead.
+    ``creds`` is the ``aws_static_access_key`` kind's ``data`` (our own account) or, for the
+    ``aws_assumed_role`` kind's calling identity, the result of :func:`base_creds` — never
+    ``data['base']`` directly, which carries no ``use_fips_endpoint`` of its own. Both carry
+    ``access_key_id`` / ``secret_access_key`` / optional ``session_token`` /
+    ``use_fips_endpoint``.
     """
     return boto3.session.Session(
         aws_access_key_id=creds["access_key_id"],

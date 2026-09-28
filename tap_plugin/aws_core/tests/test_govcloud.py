@@ -368,13 +368,26 @@ class TestAssumeRoleOnTheWire:
 
     def test_fips_applies_to_the_assume_role_call_and_the_working_session(self) -> None:
         data = {**_ASSUMED, "use_fips_endpoint": True}
-        base = cred.build_session(data["base"])  # `base` carries no flag: the secret's top level does
+        # base_creds merges the secret's top-level flag into `base` — the base session itself
+        # (not only the AssumeRole client built from it) is pinned, since it is a real,
+        # client-bearing boto3.session.Session and not merely a throwaway credential holder.
+        base = cred.build_session(cred.base_creds(data))
+        assert "lambda-fips" in _endpoint(base, "lambda", GOV_REGION)
         sent = _capture_wire(base, _ASSUME_ROLE_XML)
 
         session = cred.assume_role_session(base, data, GOV_REGION, timeout_seconds=5)
 
         assert len(sent) == 1  # the AssumeRole call was made
         assert "lambda-fips" in _endpoint(session, "lambda", GOV_REGION)
+
+    def test_base_creds_merges_the_top_level_flag_and_leaves_absence_absent(self) -> None:
+        merged = cred.base_creds({**_ASSUMED, "use_fips_endpoint": True})
+        assert merged["use_fips_endpoint"] is True
+        assert merged["access_key_id"] == _ASSUMED["base"]["access_key_id"]
+        # No top-level flag at all -> base_creds carries None, which build_session/
+        # _botocore_session treat as "defer to ambient resolution", identically to before.
+        silent = cred.base_creds(_ASSUMED)
+        assert silent["use_fips_endpoint"] is None
 
     def test_caller_identity_goes_to_the_govcloud_sts_endpoint(self) -> None:
         session = cred.build_session(_STATIC)

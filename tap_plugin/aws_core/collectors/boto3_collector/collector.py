@@ -52,6 +52,7 @@ from .credentials import (
     CredentialError,
     account_mismatch_error,
     assume_role_session,
+    base_creds,
     build_session,
     caller_account_id,
     client_factory,
@@ -213,7 +214,7 @@ class Boto3Collector(CollectorBase):
         ledger = CallLedger()
         try:
             if is_assumed_role(data):
-                base = build_session(data["base"])
+                base = build_session(base_creds(data))
                 ledger.attach(base)
                 session = assume_role_session(
                     base,
@@ -547,7 +548,7 @@ class Boto3Collector(CollectorBase):
         try:
             if is_assumed_role(data):
                 session = assume_role_session(
-                    build_session(data["base"]),
+                    build_session(base_creds(data)),
                     data,
                     regions[0],
                     timeout_seconds=cls.SELF_TEST_LIVE_CHECK_TIMEOUT_SECONDS,
