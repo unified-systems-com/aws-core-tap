@@ -54,9 +54,27 @@ class AwsOrganization(BaseModel):
     #                        OU and refuses to delete a non-empty one.
     #   ENROLLS_ACCOUNT      organization -> member account, from the organization-wide ListAccounts.
     #                        Organization-level and not OU-level so that MoveAccount does not touch it.
-    # An account outliving its removal from the organization is the ordinary observation-lifetime
+    # An account outliving its REMOVAL FROM THE ORGANIZATION is the ordinary observation-lifetime
     # case (the grid stops observing it under this organization; the AWS account is not deleted), and
     # AwsAccount declares no containment, so retiring one ends its edges and cascades to nothing.
+    #
+    # Examined consequence, not an oversight (unified-ai-review on #55, medium): retiring or
+    # deleting the ORGANIZATION node itself DOES cascade through ENROLLS_ACCOUNT and
+    # PARTITIONED_INTO_OU, tombstoning every member account and OU this run holds it enrolled -
+    # and, per AwsAccount's own doc, ending every one of those accounts' resources'
+    # BELONGS_TO_ACCOUNT edges (req-aws-core-reconcile-falsifiers-4's "reference, not containment"
+    # ruling stays: only the EDGE ends, the resources stay live). Accepted, for three reasons:
+    # (1) nothing here ever retires the organization automatically - it has no falsifier
+    # (req-aws-core-organizations-collect) - and tap_grid.services.delete_node's own `cascade`
+    # argument defaults to "none", so this path needs BOTH a deliberate delete of the org node AND
+    # an explicit cascade="contained" opt-in, the same footing as a VPC delete cascading its
+    # subnets; (2) TAP_CASCADE_MAX_CLOSURE (tap_grid/services/_impl.py) still bounds the blast
+    # radius - an organization whose account count would exceed it refuses the cascade rather than
+    # half-applying it; (3) the alternative - leaving ENROLLS_ACCOUNT out of CONTAINMENT_EDGES -
+    # would silence AccountFalsifier entirely, since candidate derivation is containment-gated with
+    # no separate mechanism (tap_grid/candidates.py::_resolve_parent), which is the actual
+    # capability this plugin was asked to deliver. An operator retiring an organization record with
+    # cascade="contained" should read this comment before doing it.
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {
             "nodes": [{"type": "aws_core__aws_organizational_unit"}],

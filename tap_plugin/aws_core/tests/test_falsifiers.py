@@ -58,7 +58,7 @@ from tap_grid.falsifiers import (
     unregister_falsifier,
     unsupported,
 )
-from tap_grid.services import create_node, get_node
+from tap_grid.services import create_edge, create_node, delete_node, get_node
 
 SUBNET = "aws_core__aws_subnet"
 VPC = "aws_core__aws_vpc"
@@ -446,6 +446,46 @@ class TestOrganizationContainment:
     def test_aws_organization_has_no_falsifier(self) -> None:
         """Nothing contains the organization itself."""
         assert get_falsifier(AwsOrganization.ENTITY_TYPE) is None
+
+    @staticmethod
+    def _org_and_enrolled_account(org_id: str, account_id: str) -> tuple[Any, Any]:
+        org_result = create_node(AwsOrganization.ENTITY_TYPE, {"name": "org", "organization_id": org_id})
+        assert org_result.success, org_result.errors
+        account_result = create_node(AwsAccount.ENTITY_TYPE, {"name": "acct", "account_id": account_id})
+        assert account_result.success, account_result.errors
+        org_row = get_node(org_result.entity_id)
+        account_row = get_node(account_result.entity_id)
+        create_edge(org_row.entity, account_row.entity, "ENROLLS_ACCOUNT__aws_core")
+        return org_row.entity.id, account_row.entity.id
+
+    @pytest.mark.django_db
+    def test_plain_delete_does_not_cascade_to_accounts(self) -> None:
+        """cascade defaults to "none": deleting the org record alone leaves a live account
+        untouched — the ordinary, non-destructive shape of retiring an org record."""
+        org_id, account_id = self._org_and_enrolled_account("o-plaindel0001", "555500001111")
+
+        result = delete_node(org_id)
+        assert result.success, result.errors
+
+        assert get_node(account_id).entity.deleted_at is None, "a plain delete must never cascade"
+
+    @pytest.mark.django_db
+    def test_cascade_contained_delete_does_tombstone_enrolled_accounts(self) -> None:
+        """The examined, accepted consequence documented on the model: an EXPLICIT
+        cascade="contained" delete of the organization does retire every account it enrolls.
+        This is a deliberate opt-in on the caller's part, never a side effect of retiring the org
+        record alone (see the previous test) or of anything reconcile does on its own — nothing
+        ever falsifies AwsOrganization itself."""
+        org_id, account_id = self._org_and_enrolled_account("o-cascadel0001", "555500002222")
+
+        result = delete_node(org_id, cascade="contained")
+        assert result.success, result.errors
+
+        # get_node's manager is live-only (a tombstoned node 404s through it, by design), so the
+        # tombstone itself is read straight off the spine.
+        from tap_grid.models import Entity
+
+        assert Entity.objects.get(pk=account_id).deleted_at is not None
 
 
 # ---------------------------------------------------------------------------

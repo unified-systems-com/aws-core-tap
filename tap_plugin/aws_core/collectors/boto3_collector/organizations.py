@@ -264,14 +264,19 @@ def _schema_problem(entity_type: str, fields: dict[str, Any]) -> str | None:
 
     One malformed value (an id AWS formats differently in some partition, say) must cost one node,
     not the whole batch: the service layer rejects a batch on a single invalid node, and a
-    rejected batch aborts the run.
+    rejected batch aborts the run — so this check must be at least as strict as the service
+    layer's own, never a lighter approximation of it. ``SERVICE_CRUD_SCHEMA["create"]``
+    (``tap_grid.models._build_service_schemas``) is exactly what ``create_node`` validates
+    against: ``FIELD_CRUD_SCHEMA``'s per-field schemas under ``additionalProperties: False`` with
+    ``CREATE_REQUIRED`` enforced — read directly rather than re-derived, so the two can never
+    silently drift apart.
     """
     import jsonschema
 
     from tap_grid.registry import get_model_class
 
-    schema = get_model_class(entity_type).FIELD_CRUD_SCHEMA
-    validator = jsonschema.Draft202012Validator({"type": "object", "properties": schema})
+    schema = get_model_class(entity_type).SERVICE_CRUD_SCHEMA["create"]
+    validator = jsonschema.Draft202012Validator(schema)
     problems = sorted(validator.iter_errors(fields), key=lambda e: list(e.path))
     if not problems:
         return None
