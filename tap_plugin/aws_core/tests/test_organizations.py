@@ -84,32 +84,32 @@ class FakeOrganizations:
         self.calls.append(("describe_organization", {}))
         configured = self.describe_organization_response
         if isinstance(configured, Exception):
-            error = configured
-            raise error
+            # pylint's raising-bad-type (E0702) traces `configured`'s inferred type back through
+            # the isinstance narrowing to the attribute's declared union — it does not treat the
+            # guard as narrowing the raised type. Safe: this branch only runs when isinstance has
+            # already confirmed `configured` IS an Exception.
+            raise configured  # pylint: disable=raising-bad-type
         return configured
 
     def list_roots(self, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_roots", kwargs))
         configured = self.roots
         if isinstance(configured, Exception):
-            error = configured
-            raise error
+            raise configured  # pylint: disable=raising-bad-type
         return {"Roots": configured}
 
     def list_organizational_units_for_parent(self, ParentId: str, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_organizational_units_for_parent", {"ParentId": ParentId, **kwargs}))
         configured = self.ous_of.get(ParentId, [])
         if isinstance(configured, Exception):
-            error = configured
-            raise error
+            raise configured  # pylint: disable=raising-bad-type
         return {"OrganizationalUnits": configured}
 
     def list_accounts(self, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_accounts", kwargs))
         configured = self.accounts
         if isinstance(configured, Exception):
-            error = configured
-            raise error
+            raise configured  # pylint: disable=raising-bad-type
         return {"Accounts": configured}
 
     def list_accounts_for_parent(self, ParentId: str, **kwargs: Any) -> dict[str, Any]:
@@ -127,8 +127,7 @@ class FakeOrganizations:
     def list_tags_for_resource(self, ResourceId: str, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_tags_for_resource", {"ResourceId": ResourceId, **kwargs}))
         if ResourceId in self.tag_errors:
-            error = self.tag_errors[ResourceId]
-            raise error
+            raise self.tag_errors[ResourceId]  # pylint: disable=raising-bad-type
         return {"Tags": self.tags_of.get(ResourceId, [])}
 
 
