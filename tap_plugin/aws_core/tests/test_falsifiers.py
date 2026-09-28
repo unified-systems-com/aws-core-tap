@@ -40,6 +40,7 @@ from tap_plugin.aws_core.falsifiers import (
     SecurityGroupFalsifier,
     SubnetFalsifier,
     VpcFalsifier,
+    _enabled_regions,
 )
 
 VPC = "aws_core__aws_vpc"
@@ -253,7 +254,7 @@ class TestRegionSweep:
 
     @pytest.mark.spec("req-grid-reconcile-absence-states")
     def test_a_client_construction_failure_degrades_the_candidate_not_the_whole_batch(self) -> None:
-        """AI review (PR #44): client construction (``client_for(service, region)``) used to run
+        """PR #44: client construction (``client_for(service, region)``) used to run
         OUTSIDE ``_describe_one``'s guarded try/except. A region boto3 cannot build a client for
         must answer UNDETERMINED(errored) for this candidate, never raise out of batch_falsify —
         raising would cost every OTHER candidate of this type its verdict too
@@ -413,7 +414,7 @@ class TestEc2InstanceFalsifier:
 
     @pytest.mark.spec("req-grid-reconcile-absence-states")
     def test_a_terminated_response_naming_a_different_instance_is_not_trusted(self) -> None:
-        """AI review (PR #44): the terminated-state shortcut folds a successful response into
+        """PR #44: the terminated-state shortcut folds a successful response into
         ``not_found`` WITHOUT going through classify()'s identity comparison — so it must check
         identity itself before taking that shortcut. A response naming some other instance
         (which real DescribeInstances-by-id never does, but nothing here should rest on that
@@ -447,3 +448,63 @@ class TestEc2InstanceFalsifier:
         falsifier = Ec2InstanceFalsifier(client_for=fake.client_for, regions=["us-east-1"])
         [verdict] = falsifier.batch_falsify([_candidate(iid)], _context())
         assert verdict.verdict == PRESENT_AT_PROBE
+
+
+class _FakeEc2ClientForRegions:
+    """A minimal session/client stand-in for ``_enabled_regions``: ``.client(service,
+    region_name=...)`` returns an object whose ``describe_regions`` answers from a table, or
+    raises, keyed only by whether the call should succeed — the anchor region never matters to
+    the answer, only to which client construction call was made."""
+
+    def __init__(self, *, regions: list[dict[str, str]] | None = None, raises: Exception | None = None) -> None:
+        self._regions = regions
+        self._raises = raises
+        self.anchor_regions_used: list[str] = []
+
+    def client(self, service: str, region_name: str) -> Any:
+        assert service == "ec2"
+        self.anchor_regions_used.append(region_name)
+        return self
+
+    def describe_regions(self, AllRegions: bool) -> Any:
+        assert AllRegions is False
+        if self._raises is not None:
+            raise self._raises
+        return {"Regions": self._regions or []}
+
+
+class TestEnabledRegions:
+    """PR #44, round 3: the sweep is the account's full enabled-region set
+    (``ec2:DescribeRegions``), not merely the operator's current ``regions_allowed`` collection
+    scope — a row already on the grid (Subnet, via the pre-existing VPC containment edge) may
+    have been collected under a wider scope that was since narrowed."""
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_returns_the_accounts_enabled_regions_sorted_and_deduplicated(self) -> None:
+        session = _FakeEc2ClientForRegions(
+            regions=[
+                {"RegionName": "us-west-2"},
+                {"RegionName": "us-east-1"},
+                {"RegionName": "us-east-1"},
+            ]
+        )
+        assert _enabled_regions(session, ["us-east-1"]) == ["us-east-1", "us-west-2"]
+        assert session.anchor_regions_used == ["us-east-1"], "anchored on the first configured region"
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_a_wider_enabled_set_than_the_configured_scope_is_used(self) -> None:
+        """The whole point: DescribeRegions can name a region regions_allowed does not."""
+        session = _FakeEc2ClientForRegions(regions=[{"RegionName": "us-west-2"}, {"RegionName": "eu-west-1"}])
+        assert _enabled_regions(session, ["us-west-2"]) == ["eu-west-1", "us-west-2"]
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_falls_back_to_the_configured_scope_when_describe_regions_fails(self) -> None:
+        session = _FakeEc2ClientForRegions(raises=BotoCoreError())
+        assert _enabled_regions(session, ["us-east-1", "eu-west-1"]) == ["us-east-1", "eu-west-1"]
+
+    @pytest.mark.spec("req-grid-reconcile-absence-states")
+    def test_an_empty_enabled_set_falls_back_to_the_configured_scope(self) -> None:
+        """Defensive: DescribeRegions succeeding with nothing named is not trusted as 'sweep
+        nothing' — that would be worse than the scope this falsifier used before this fix."""
+        session = _FakeEc2ClientForRegions(regions=[])
+        assert _enabled_regions(session, ["us-east-1"]) == ["us-east-1"]

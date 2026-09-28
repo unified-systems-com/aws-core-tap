@@ -33,40 +33,43 @@ call above is region-scoped, so without a region on the row a falsifier cannot a
 single API call the way ``RepositoryFalsifier`` does. Rather than invent a schema change
 mid-PR (a natural key that already resolves cleanly to ``vpc_id`` / ``subnet_id`` / ``group_id``
 / ``instance_id`` would need to move, or a new field would need a migration — either is a
-model-level decision this PR does not make unilaterally), ``_Ec2Falsifier`` sweeps the
-credential's own configured region scope (``resolve_regions``, the exact list the collector
-itself sweeps) and stops at the first region that answers authoritatively. AWS resource ids in
-this shape (``vpc-…`` / ``subnet-…`` / ``sg-…`` / ``i-…``) are minted per region and never
-reused across regions in the same partition, so one authoritative answer (found, or an
-instance confirmed terminated) settles it; ``not_found`` is only allowed to stand once *every*
-configured region has said so — a region that refused or errored could be hiding the object,
-so it is never let through as a retirement (fail closed). ``SubnetFalsifier`` shortcuts this:
-the model already carries ``availability_zone`` (e.g. ``us-east-1a``), so its region is tried
-first, before the sweep — extracted with ``_STANDARD_REGION_PREFIX`` rather than
-``availability_zone[:-1]``, which mishandles a Local Zone or Wavelength Zone AZ
-(``us-west-2-lax-1a``'s parent region is ``us-west-2``, not ``us-west-2-lax-1``). Client
-construction for a derived region lives inside ``_describe_one``'s guarded try/except, not
-before it, so a region string boto3 cannot resolve degrades that one candidate to
-``UNDETERMINED(errored)`` rather than raising out of the whole batch.
+model-level decision this PR does not make unilaterally), ``_Ec2Falsifier`` sweeps regions and
+stops at the first region that answers authoritatively. AWS resource ids in this shape
+(``vpc-…`` / ``subnet-…`` / ``sg-…`` / ``i-…``) are minted per region and never reused across
+regions in the same partition, so one authoritative answer (found, or an instance confirmed
+terminated) settles it; ``not_found`` is only allowed to stand once *every* swept region has
+said so — a region that refused or errored could be hiding the object, so it is never let
+through as a retirement (fail closed). ``SubnetFalsifier`` shortcuts this: the model already
+carries ``availability_zone`` (e.g. ``us-east-1a``), so its region is tried first, before the
+sweep — extracted with ``_STANDARD_REGION_PREFIX`` rather than ``availability_zone[:-1]``,
+which mishandles a Local Zone or Wavelength Zone AZ (``us-west-2-lax-1a``'s parent region is
+``us-west-2``, not ``us-west-2-lax-1``). Client construction for a derived region lives inside
+``_describe_one``'s guarded try/except, not before it, so a region string boto3 cannot resolve
+degrades that one candidate to ``UNDETERMINED(errored)`` rather than raising out of the whole
+batch.
 
-**One credential, this plugin's own current region scope — not a new limitation (AI review,
-PR #44).** Two related findings asked whether sweeping only *currently configured* regions
-under *one* credential could retire a row this run simply cannot see (a resource collected
-under a wider region scope that was later narrowed; a resource in another AWS account). Both
-describe a real class of risk, but neither is new here, and neither is this falsifier's to
-solve: ``AWS_SECRET_REF`` (``collectors/boto3_collector/credentials.py``) is a single constant
-key — "v0 has no per-instance config" is the module's own docstring — so the boto3 collector
-itself can observe exactly one account and exactly its own ``resolve_regions()`` scope; no
-``aws_core__aws_vpc`` / ``aws_ec2_instance`` / ``aws_security_group`` row on the grid can
-currently have been collected from anywhere this same falsifier cannot also reach, because
-nothing else populates those types. A region narrowed out of ``regions_allowed`` already stops
-the collector from observing that region's resources at all, on every run, not only a
-falsifier's; a falsifier that swept a wider scope than the collector currently uses would be
-the inconsistent choice, not this one. Multi-account / multi-credential support, if it
-arrives, is a `_default_session` change (and an equivalent to GitHub's reach-narrowing
-re-confirmation, ``tap_plugin.github_core.falsifiers._reach_after_probe``, would become the
-right shape here too) — flagged for whoever builds it, not solved by inventing scope this
-plugin does not have yet.
+**The sweep is the account's full enabled-region set, not the operator's current collection
+scope (PR #44).** The first version of this swept only ``resolve_regions()`` — the
+operator's ``regions_allowed`` — on the reasoning that nothing this falsifier probes could have
+been collected from anywhere outside it. That reasoning holds for a brand-new row, but not for
+one already sitting on the grid: ``Vpc.CONTAINMENT_EDGES`` already reaches
+``aws_core__aws_subnet`` before this PR, so a subnet collected under a wider historical region
+scope, now stale after an operator narrowed ``regions_allowed``, would sweep only the *new*
+narrower scope and could read as gone in every region it checked — "the collector no longer
+observes it" is not the same claim as "it is gone," and conflating them is exactly the mistake
+``req-grid-reconcile-falsifier`` exists to rule out. ``_enabled_regions`` fixes this: it calls
+``ec2:DescribeRegions`` (a cheap, universally-granted read-only call, ``AllRegions=False``) to
+get the account's actual full set of enabled regions, and sweeps THAT — decoupled from whatever
+subset the operator currently has ``regions_allowed`` configured to collect from, because a
+falsifier's job is to confirm a resource is really gone from AWS, not merely gone from what the
+collector currently watches. If ``DescribeRegions`` itself cannot be reached, the sweep falls
+back to ``resolve_regions()`` — degraded, never crashing, and no worse than before this fix.
+Multi-account support, if it arrives, is a separate ``_default_session`` change (an equivalent
+to GitHub's reach-narrowing re-confirmation, ``tap_plugin.github_core.falsifiers.
+_reach_after_probe``, would become the right shape then) — ``AWS_SECRET_REF`` is a single
+constant key today ("v0 has no per-instance config", ``credentials.py``'s own docstring), so no
+row these falsifiers judge can currently have come from an account this same credential cannot
+also reach.
 
 **Cascade (``CONTAINMENT_EDGES``) — what exists, what does not, and why nothing here adds it.**
 
@@ -170,7 +173,7 @@ _THROTTLED_CODES = frozenset(
 )
 
 #: The standard AWS region a plain availability zone name is prefixed with — ``us-east-1`` out
-#: of ``us-east-1a``. Deliberately NOT ``az[:-1]`` (AI review, PR #44): a Local Zone or
+#: of ``us-east-1a``. Deliberately NOT ``az[:-1]`` (PR #44): a Local Zone or
 #: Wavelength Zone AZ (``us-west-2-lax-1a``, ``us-east-1-wl1-bos-wlz-1``) carries the parent
 #: region as this same leading ``xx-name-N`` shape, with an extra zone-specific suffix that
 #: ``[:-1]`` would fold into the "region" instead of discarding — producing a string boto3 has
@@ -179,19 +182,45 @@ _THROTTLED_CODES = frozenset(
 _STANDARD_REGION_PREFIX = re.compile(r"^([a-z]{2}(?:-gov)?-[a-z]+-\d+)")
 
 
+def _enabled_regions(session: Any, configured_regions: list[str]) -> list[str]:
+    """The account's full enabled-region set (``ec2:DescribeRegions``), not the operator's
+    current ``regions_allowed`` collection scope (PR #44): a row already on
+    the grid may have been collected under a wider scope that was since narrowed, and sweeping
+    only the current scope would read it as gone everywhere it checked without that ever having
+    been checked against every region it could actually be in. ``AllRegions=False`` (the
+    default) is exactly the account's enabled set — not the ~30+ regions of the whole
+    partition, most of which a typical account never opts into and this falsifier has no reason
+    to ask about. Anchored on the first configured region only to place the one bootstrap call;
+    the answer does not depend on which enabled region answers it.
+
+    Falls back to ``configured_regions`` if the call itself fails (forbidden, throttled,
+    unreachable) rather than raising: degraded to the scope this falsifier used before this fix,
+    never worse, and never a crash.
+    """
+    try:
+        client = session.client("ec2", region_name=configured_regions[0])
+        response = client.describe_regions(AllRegions=False)
+    except Exception as exc:  # noqa: BLE001 — degrade to the configured scope, never crash the run
+        logger.warning("[b6a1] ec2:DescribeRegions failed; falling back to the configured region scope: %s", exc)
+        return configured_regions
+    names = sorted({str(r["RegionName"]) for r in (response.get("Regions") or []) if r.get("RegionName")})
+    return names or configured_regions
+
+
 def _default_session() -> tuple[Any, list[str]]:
-    """The collector's own credential and region scope — the exact resolution the boto3
-    collector itself uses (``credentials.py``), so a falsifier probes the same account and the
-    same regions this plugin was configured to collect from."""
+    """The collector's own credential (``credentials.py`` — the exact resolution the boto3
+    collector itself uses, so a falsifier authenticates as the same account) and the account's
+    full enabled-region set (``_enabled_regions``), not merely the operator's current collection
+    scope."""
     secret = resolve_aws_secret(AWS_SECRET_REF)
     data = dict(secret.data)
-    regions = resolve_regions(data)
+    configured_regions = resolve_regions(data)
     if is_assumed_role(data):
         base = build_session(data["base"])
-        session = assume_role_session(base, data, regions[0])
+        session = assume_role_session(base, data, configured_regions[0])
     else:
         session = build_session(data)
-    return session, regions
+    return session, _enabled_regions(session, configured_regions)
 
 
 def _error_status(exc: ClientError, not_found_code: str) -> str:
@@ -310,7 +339,7 @@ class _Ec2Falsifier(Falsifier):
         response — found, or an instance confirmed terminated) or region-local (a ``ClientError``,
         which says nothing about any OTHER region and never stops the sweep on its own).
 
-        Client construction happens INSIDE this try/except, not before it (AI review, PR #44):
+        Client construction happens INSIDE this try/except, not before it (PR #44):
         a malformed or unsupported region (a Local/Wavelength Zone id that slipped past
         ``_regions_for``'s parsing, say) must degrade this one candidate, not raise out of
         ``judge`` and cost every other candidate of this type its verdict too
@@ -448,7 +477,7 @@ class Ec2InstanceFalsifier(_Ec2Falsifier):
     ``stopped`` is not gone, only not running.
 
     The terminated shortcut only fires once the returned ``InstanceId`` is checked against the
-    requested id (AI review, PR #44): synthesizing ``not_found`` bypasses ``classify()``'s own
+    requested id (PR #44): synthesizing ``not_found`` bypasses ``classify()``'s own
     identity comparison (a genuine ``not_found`` status is never re-checked against identity —
     the ClientError it came from already was, for the one id it named), so this is the one place
     that check has to be made explicitly rather than inherited. A mismatch falls through to the
@@ -475,7 +504,7 @@ class Ec2InstanceFalsifier(_Ec2Falsifier):
         instance = instances[0]
         state = str((instance.get("State") or {}).get("Name") or "")
         found_id = str(instance.get("InstanceId") or "")
-        # Identity is checked BEFORE the terminated shortcut is trusted (AI review, PR #44): a
+        # Identity is checked BEFORE the terminated shortcut is trusted (PR #44): a
         # response naming a different instance must go through the ordinary found path, whose
         # source_id classify() compares against `expected` itself (yielding REIDENTIFIED, never
         # a silent retirement of the candidate under a state field that describes some OTHER
