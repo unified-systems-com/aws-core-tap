@@ -40,6 +40,23 @@ referencing RAM's own share state, or comparing the probe's ``OwnerId`` against 
 credential account rather than against the collector's stamped dimension) — a bigger, separate
 piece of work, named so the gap is not mistaken for an oversight.
 
+**Known limitation, not fixed here: the ``aws_account`` dimension can flap across credentials for
+one entity (flagged on tap-plugin-aws-core#50's review).** Every node this run writes — including
+an ``AwsAccount`` the Organizations walk discovers under a *management or delegated-administrator*
+credential — is stamped ``dimensions["aws_account"] = <this run's own resolved account>``
+(``collector.py``'s ``org_dimensions``), the observing credential, not necessarily the account the
+row represents. If that same deterministic account id is *also* collected directly, on a separate
+run, by a credential scoped to that member account itself (the ordinary manifest-driven sweep run
+against it), GRIFT's upsert (``replace_node``) overwrites the row's dimensions with THAT run's
+credential instead. ``_scope_check`` then compares whichever credential is falsifying against
+whichever run's dimension happened to write last, and a genuinely-in-scope
+``AccountFalsifier``/``OrganizationalUnitFalsifier`` candidate can read as ``UNDETERMINED
+(scope_unknown)`` until the next org-level run rewrites the dimension back. Closing it for real
+needs either a per-type stamping rule (an ``AwsAccount``/``AwsOrganizationalUnit`` node's own
+dimension should arguably be its OWN account, not the observing credential's, since the row IS
+that account) or a reach concept that does not rely on the dimension at all — a design question
+for whoever owns the dimension convention across collectors, not a fix made unilaterally here.
+
 **AwsOrganization has no falsifier — nothing contains it — but AwsAccount and
 AwsOrganizationalUnit now do (tap-plugin-aws-core#50).** The distinction this section originally
 drew (the collector's *own* account/region scope is unrecoverable-abort territory, per

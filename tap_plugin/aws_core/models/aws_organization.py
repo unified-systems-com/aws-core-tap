@@ -58,13 +58,15 @@ class AwsOrganization(BaseModel):
     # case (the grid stops observing it under this organization; the AWS account is not deleted), and
     # AwsAccount declares no containment, so retiring one ends its edges and cascades to nothing.
     #
-    # Examined consequence, not an oversight (unified-ai-review on #55, medium): retiring or
-    # deleting the ORGANIZATION node itself DOES cascade through ENROLLS_ACCOUNT and
-    # PARTITIONED_INTO_OU, tombstoning every member account and OU this run holds it enrolled -
-    # and, per AwsAccount's own doc, ending every one of those accounts' resources'
-    # BELONGS_TO_ACCOUNT edges (req-aws-core-reconcile-falsifiers-4's "reference, not containment"
-    # ruling stays: only the EDGE ends, the resources stay live). Accepted, for three reasons:
-    # (1) nothing here ever retires the organization automatically - it has no falsifier
+    # FLAGGED FOR HUMAN SIGN-OFF, not something any review has approved (a code comment cannot
+    # authorize itself — see tap-plugin-aws-core#50's PR body for the same statement in the one
+    # place a verdict actually belongs): retiring or deleting the ORGANIZATION node itself DOES
+    # cascade through ENROLLS_ACCOUNT and PARTITIONED_INTO_OU, tombstoning every member account
+    # and OU this run holds it enrolled - and, per AwsAccount's own doc, ending every one of those
+    # accounts' resources' BELONGS_TO_ACCOUNT edges (req-aws-core-reconcile-falsifiers-4's
+    # "reference, not containment" ruling stays: only the EDGE ends, the resources stay live). The
+    # author's reasoning for building it this way anyway, for a maintainer to weigh: (1) nothing
+    # here ever retires the organization automatically - it has no falsifier
     # (req-aws-core-organizations-collect) - and tap_grid.services.delete_node's own `cascade`
     # argument defaults to "none", so this path needs BOTH a deliberate delete of the org node AND
     # an explicit cascade="contained" opt-in, the same footing as a VPC delete cascading its
