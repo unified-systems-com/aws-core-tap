@@ -82,15 +82,19 @@ class FakeOrganizations:
 
     def describe_organization(self) -> dict[str, Any]:
         self.calls.append(("describe_organization", {}))
-        if isinstance(self.describe_organization_response, Exception):
-            raise self.describe_organization_response
-        return self.describe_organization_response
+        configured = self.describe_organization_response
+        if isinstance(configured, Exception):
+            error = configured
+            raise error
+        return configured
 
     def list_roots(self, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_roots", kwargs))
-        if isinstance(self.roots, Exception):
-            raise self.roots
-        return {"Roots": self.roots}
+        configured = self.roots
+        if isinstance(configured, Exception):
+            error = configured
+            raise error
+        return {"Roots": configured}
 
     def list_organizational_units_for_parent(self, ParentId: str, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_organizational_units_for_parent", {"ParentId": ParentId, **kwargs}))
@@ -123,7 +127,8 @@ class FakeOrganizations:
     def list_tags_for_resource(self, ResourceId: str, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_tags_for_resource", {"ResourceId": ResourceId, **kwargs}))
         if ResourceId in self.tag_errors:
-            raise self.tag_errors[ResourceId]
+            error = self.tag_errors[ResourceId]
+            raise error
         return {"Tags": self.tags_of.get(ResourceId, [])}
 
 
@@ -384,14 +389,18 @@ class FakeOrgClient:
 
     def describe_organization(self) -> dict[str, Any]:
         self.calls.append("describe_organization")
-        if self.reach_error is not None:
-            raise self.reach_error
+        reach_error = self.reach_error
+        if reach_error is not None:
+            error = reach_error
+            raise error
         return {"Organization": {"Id": self.organization_id}}
 
     def list_roots(self) -> dict[str, Any]:
         self.calls.append("list_roots")
-        if self.reach_error is not None:
-            raise self.reach_error
+        reach_error = self.reach_error
+        if reach_error is not None:
+            error = reach_error
+            raise error
         return {"Roots": [{"Id": rid} for rid in self.root_ids]}
 
     def answer_ou(self, ou_id: str, unit: dict[str, Any], *, parents: list[dict[str, Any]] | None = None) -> None:
