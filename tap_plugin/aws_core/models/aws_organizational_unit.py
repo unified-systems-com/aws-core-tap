@@ -11,8 +11,10 @@ class AwsOrganizationalUnit(BaseModel):
     """An organizational unit (OU) in an AWS Organizations tree.
 
     Its place in the tree is the ``NESTED_UNDER_PARENT`` edge to its parent OU or to the organization
-    (which stands for the root). Design vocabulary: no collector emits it yet. Fields are those
-    ``organizations:DescribeOrganizationalUnit`` and ``ListTagsForResource`` report.
+    (which stands for the root); the parent's ``PARTITIONED_INTO_OU`` edge to it is the containment.
+    Collected by ``Boto3Collector`` (``collectors/boto3_collector/organizations.py``); also design
+    vocabulary. Fields are those ``organizations:ListOrganizationalUnitsForParent`` and
+    ``ListTagsForResource`` report.
 
     Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations)
     """
@@ -36,6 +38,19 @@ class AwsOrganizationalUnit(BaseModel):
     # AWS's OU id (ou-…). Unique within its organization; AWS mints it with the org's root id
     # embedded, so it does not collide across organizations.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ou_id",)
+
+    # A nested OU is contained by its parent OU (tap-plugin-aws-core#50): AWS never re-parents an OU
+    # and refuses to delete a non-empty one, so PARTITIONED_INTO_OU is safe as containment where the
+    # child -> parent NESTED_UNDER_PARENT reference is not. An OU declares NO edge to its accounts as
+    # containment: an account is enrolled by the organization (ENROLLS_ACCOUNT), and its OU changes
+    # under MoveAccount, which would leave a stale OU -> account edge for a cascade to follow.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {
+            "nodes": [{"type": "aws_core__aws_organizational_unit"}],
+            "edges": [{"type": "PARTITIONED_INTO_OU__aws_core"}],
+        },
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("PARTITIONED_INTO_OU__aws_core",)
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

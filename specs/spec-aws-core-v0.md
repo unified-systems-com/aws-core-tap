@@ -31,6 +31,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-computing-core | [Computing Core Alignment](#computing-core-alignment) | Proposed | Future AWS-to-generic mapping belongs here rather than in `computing_core` |
 | req-aws-core-validation | [Plugin Validation](#plugin-validation) | Implemented | Passes TAP plugin validation at all three levels |
 | req-aws-core-organizations | [Organizations Tree](#organizations-tree) | Implemented | Organization (as its own root), OU and SCP design vocabulary; the tree and SCP attachment edges |
+| req-aws-core-organizations-collect | [Organizations Tree Collection And Reconciliation](#organizations-tree-collection-and-reconciliation) | Implemented | A collector for the Organizations tree; two new parent -> child containment edges with completeness surfaces; `OrganizationalUnitFalsifier` / `AccountFalsifier` |
 | req-aws-core-identity-center | [IAM Identity Center](#iam-identity-center) | Implemented | Identity Center instance design vocabulary and its open edge to an external identity provider |
 | req-aws-core-transit-gateway | [Transit Gateway](#transit-gateway) | Implemented | Transit gateway and attachment design vocabulary; attachment, VPC and peering edges |
 | req-aws-core-placement | [Resource Placement](#resource-placement) | Implemented | Account, VPC and subnet placement edges; a VPC contains its subnets |
@@ -399,9 +400,11 @@ RID: `req-aws-core-organizations`
 Status: `Implemented`
 
 The plugin can draw an AWS Organizations tree: the organization, its organizational units, the
-member accounts in them, and the service control policies attached anywhere in it. These are
-**design vocabulary**: no collector emits them yet, so they have no collection-manifest entry, and
-every field is one AWS reports so a later collector fills the same fields.
+member accounts in them, and the service control policies attached anywhere in it. This started as
+**design vocabulary** with no collector, and every field is still one AWS reports; a collector now
+fills it (`req-aws-core-organizations-collect`, below) as its own read rather than a
+collection-manifest entry, since the tree is one connected structure and not a per-account
+resource list.
 
 #### Implementation
 
@@ -456,6 +459,99 @@ every field is one AWS reports so a later collector fills the same fields.
 | req-aws-core-organizations-5 | Tree Edge | Implemented | `NESTED_UNDER_PARENT` declares OU or account → OU or organization and no other pair. | |
 | req-aws-core-organizations-6 | SCP Attachment Edge | Implemented | `ATTACHED_TO_TARGET` declares SCP → OU, account or organization and no other pair. | |
 | req-aws-core-organizations-7 | No Policy Document Blob | Implemented | The SCP model carries no policy document or `configuration` field. | A typed summary field can be added when a source fills it. |
+
+### Organizations Tree Collection And Reconciliation
+----
+RID: `req-aws-core-organizations-collect`
+
+Status: `Implemented`
+
+The design vocabulary above (`req-aws-core-organizations`) is now collected, and its removal
+detectable, by `collectors/boto3_collector/organizations.py` (tap-plugin-aws-core#50). Org-level
+rollout is the first thing a management or delegated-administrator credential does, so this is a
+first-class read alongside the manifest-driven resource sweep, not a manifest entry: the
+Organizations tree is one connected structure, not a per-account resource list.
+
+#### Implementation
+
+- **What it reads**, every call read-only: `DescribeOrganization`, `ListRoots`,
+  `ListOrganizationalUnitsForParent` (recursive — nested OUs, so "sub-orgs" are walked to
+  whatever depth AWS holds them), `ListAccounts` (organization-wide membership) and
+  `ListAccountsForParent` (per-parent placement), `ListPolicies(Filter=SERVICE_CONTROL_POLICY)`
+  and `ListTargetsForPolicy`, `ListTagsForResource`.
+- **Two NEW parent → child containment edges**, because the existing tree edges are references
+  that must stay references (`req-aws-core-organizations`'s own ruling: `NESTED_UNDER_PARENT`
+  points child → parent, and an account moves between OUs under `MoveAccount` with nothing ending
+  the old edge, so a cascade through it would tombstone a live account):
+  - `PARTITIONED_INTO_OU` (organization/OU → OU): safe as containment because AWS has no
+    operation that re-parents an OU and refuses to delete a non-empty one, so an OU's parent is
+    fixed for its life. Declared on `AwsOrganization` and `AwsOrganizationalUnit`.
+  - `ENROLLS_ACCOUNT` (organization → account): the organization-wide membership, deliberately
+    NOT the OU-level listing, so `MoveAccount` never touches it and a moved account is never
+    mistaken for a departed one. Declared on `AwsOrganization` only.
+  - An account's current OU is also carried on the node (`configuration.ParentId`), because the
+    reference edge alone cannot say which of two `NESTED_UNDER_PARENT` edges is stale after a
+    move.
+- **Completeness surfaces** (`req-grid-reconcile-evidence`) are recorded for every parent's OU
+  listing and for the organization-wide account listing — the two relations the new containment
+  edges cover — never for the per-parent `ListAccountsForParent` placement reads or the SCP calls,
+  which back a reference, not a containment edge. A failed or denied listing is recorded as
+  incomplete with a reason, never as an empty "no children" result; a listing whose model refused
+  one of its items withdraws `admitted` rather than silently dropping that item's evidence
+  (`req-aws-core-organizations-collect-4`).
+- **`OrganizationalUnitFalsifier`** (`DescribeOrganizationalUnit` + `ListParents`) and
+  **`AccountFalsifier`** (`DescribeAccount`), both subclassing `_AwsFalsifier`
+  (`tap_plugin/aws_core/falsifiers.py`) and both registered in `[falsifiers]`. Neither probes
+  without first proving **reach**: the credential's own `DescribeOrganization` + `ListRoots`
+  must show it is inside an organization, and — because `AccountNotFoundException` is documented
+  as raised both for "no such account" and for "the calling credential is not in an
+  organization" — that organization must be the one the candidate was recorded under (its `o-…`
+  id for an account, embedded in its ARN; the OU id's own root suffix for an OU). A candidate
+  outside that reach is `UNDETERMINED(scope_unknown)` without a probe, mirroring
+  `req-aws-core-reconcile-falsifiers-3`'s single-account check, which still runs first and needs
+  no organization read at all.
+- **What "gone" means, decided explicitly:**
+  - An OU is deleted only when AWS has already emptied it, so `OrganizationalUnitNotFoundException`
+    is unambiguous — `DROPPED_FROM_OBSERVATION`.
+  - An account **moved** to another OU never reaches either falsifier: `ENROLLS_ACCOUNT` is
+    organization-wide and `MoveAccount` does not change it; only its `NESTED_UNDER_PARENT` edge
+    goes stale until the next run re-collects it.
+  - A **closed or suspended** account is still named by `ListAccounts` and still describable
+    (`Account.State` `SUSPENDED` / `PENDING_CLOSURE` / `CLOSED`, with the deprecated `Status`
+    field as a fallback) — it is `PRESENT_AT_PROBE` with a note, never retired here; only its
+    `status` field changes. A **removed** account (left the organization, or finally purged by
+    AWS after closure) is `DROPPED_FROM_OBSERVATION`.
+  - An account whose ARN reports a **different organization** than the one it was recorded under
+    is `RELOCATED(transferred)` — the standing verdict semantics
+    (`req-grid-reconcile-observation-lifetime`), not a new case invented here.
+- **GovCloud.** Region and partition are never hardcoded: the `organizations` client is built in
+  the collector's own first region, exactly like every other global-scope manifest entry, so
+  botocore resolves the GovCloud endpoint (`organizations.us-gov-west-1.amazonaws.com`) and
+  partition (`aws-us-gov`) from the credential's own region scope — verified offline against
+  botocore 1.43.103's endpoint data, not against a live GovCloud organization. The organization's
+  `partition` field is read from the ARN `DescribeOrganization` returns, never constructed.
+  **Assumed, not verified**, because no GovCloud organization was reachable to confirm it: that
+  GovCloud Organizations exposes the same operations and response shapes read above (in
+  particular `Account.State`), and that service control policies are enabled on a GovCloud root.
+  Flagged here rather than silently relied on.
+- **Credential postures.** A member-account credential can `DescribeOrganization` but not
+  `ListRoots`; a delegated administrator may hold some Organizations actions and not others. Both
+  degrade to a recorded, reasoned incompleteness — never an exception that aborts the run (the
+  manifest-driven sweep's own foundation-abort posture does not apply here: the Organizations
+  tree is an optional structure this credential may simply not have visibility into, not a
+  failure of the credential's own identity).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-organizations-collect-1 | Nested OUs Walked | Implemented | `ListOrganizationalUnitsForParent` recurses from the root through every depth AWS returns. | `test_organizations.py::TestCollectOrganizationTree::test_full_tree_nodes_edges_and_surfaces` |
+| req-aws-core-organizations-collect-2 | New Containment Edges | Implemented | `PARTITIONED_INTO_OU` and `ENROLLS_ACCOUNT` are declared in `CONTAINMENT_EDGES` on their parent model(s); `NESTED_UNDER_PARENT` is unchanged and stays a reference. | `test_falsifiers.py::TestOrganizationContainment` |
+| req-aws-core-organizations-collect-3 | Falsifiers Registered | Implemented | `OrganizationalUnitFalsifier` and `AccountFalsifier` subclass `_AwsFalsifier`, are registered in `[falsifiers]`, and pass the four-case proof harness. | `test_organizations.py::TestOrganizationalUnitFalsifierFourCases`, `TestAccountFalsifierFourCases` |
+| req-aws-core-organizations-collect-4 | Failed Listing Is Incomplete, Never Empty | Implemented | A denied or failing parent listing records `enumeration_complete: false` with a reason; no node is fabricated and no candidate is derivable from it. | `test_organizations.py::test_ou_listing_failure_is_incomplete_not_empty`, `test_list_roots_denied_refuses_both_child_surfaces_but_keeps_the_org_node` |
+| req-aws-core-organizations-collect-5 | Reach Gates Every Probe | Implemented | Neither falsifier probes without first proving the credential is inside the candidate's own organization (account id / OU root suffix); a mismatch is `UNDETERMINED(scope_unknown)`. | `test_ou_from_another_organizations_root_is_scope_unknown`, `test_wrong_organization_reach_is_scope_unknown` |
+| req-aws-core-organizations-collect-6 | Closed/Suspended Present, Moved Invisible, Removed Dropped | Implemented | A suspended/closed account is `PRESENT_AT_PROBE` with its status noted; a moved account never reaches the falsifier (organization-wide membership); a removed one is `DROPPED_FROM_OBSERVATION`. | `test_closed_account_is_reported_present_not_dropped`, `test_account_moved_mid_walk_still_placed_and_enrolled`, `TestAccountFalsifierFourCases::test_four_cases` |
+| req-aws-core-organizations-collect-7 | Partition Never Hardcoded | Implemented | The `organizations` client is built from the credential's own resolved region; the organization's `partition` field is read from the returned ARN. | `test_govcloud_partition_read_from_arn` (offline, against botocore's own endpoint resolution — not a live GovCloud organization) |
 
 ### IAM Identity Center
 ----
@@ -848,8 +944,11 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
 
 #### Implementation
 
-- **`[falsifiers]` manifest table**, `tap-plugin.toml`: one entry today,
-  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`. `requires_tap`
+- **`[falsifiers]` manifest table**, `tap-plugin.toml`: the foundation registered one entry,
+  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`; `tap-plugin-aws-core#43`
+  adds `VpcFalsifier`, `Ec2InstanceFalsifier` and `SecurityGroupFalsifier` beside it, on a shared
+  `_Ec2Falsifier(_AwsFalsifier)` (region from the `aws_region` dimension, else a type hint, else a
+  fallback sweep that may find but never drop — `falsifiers.py`'s module docstring). `requires_tap`
   moved to `>=0.2.1` — 0.1.6, the release before it, refuses the `[falsifiers]` key at
   manifest parse (`tap_plugins/manifest.py::_parse_falsifiers`).
 - **`tap_plugin/aws_core/falsifiers.py`**: a base `_AwsFalsifier(Falsifier)` mirroring
@@ -899,24 +998,28 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
     tombstone endpoint rule) and leaves the resources themselves live; each resource type's
     own truth is a question for that type's own falsifier (the sibling PRs' work), never a
     blanket account-level cascade.
-- **Neither `AwsAccount` nor `AwsOrganization` has a falsifier.** `Boto3Collector.run()`
-  already treats credential/region-scope/account-identity failure as unrecoverable —
-  `self._abort(..., "STS_UNREACHABLE", ...)` / `self._abort(..., "ACCOUNT_MISMATCH", ...)` —
-  mirroring `tap-plugin-github-core`'s foundation-layer abort pattern
-  (`specs/spec-github-core-reliability.md`, `req-github-core-reliability-absence`: a
-  foundation failure aborts the run rather than degrading one surface and continuing).
-  `AwsOrganization` additionally has no collector at all yet (`req-aws-core-organizations`:
-  "design vocabulary... no collector emits them yet"), so it can never produce a completeness
-  surface for a candidate to come from.
-- **Candidates do not flow from a live run yet.** `boto3_collector` does not produce
-  per-surface completeness statements (`req-aws-collector-reconcile`,
-  `specs/spec-aws-core-collector-v0.md`, still Backlog) — that is the separate seam that would
-  let `tap_grid.candidates.derive_candidates` actually emit a subnet candidate for
-  `SubnetFalsifier` to judge. This requirement builds and proves the JUDGING layer
-  (`tap_grid.falsifier_testing.run_four_cases` against a fake `ec2` client,
-  `tap_plugin/aws_core/tests/test_falsifiers.py`); wiring the collector to produce
-  completeness statements is future work, named so the omission is not mistaken for an
-  oversight.
+- **`AwsOrganization` has no falsifier; `AwsAccount` now does (amended by tap-plugin-aws-core#50,
+  `req-aws-core-organizations-collect` below).** The account-identity reasoning above
+  (`Boto3Collector.run()` treats the run's OWN credential/region-scope/account-identity failure
+  as unrecoverable, mirroring `tap-plugin-github-core`'s foundation-layer abort,
+  `specs/spec-github-core-reliability.md` `req-github-core-reliability-absence`) still holds for
+  the boto3 manifest engine's single-account scope, and is why `AwsOrganization` — the credential
+  cannot lose sight of its OWN account, and nothing contains the organization — has none. It does
+  not apply to which OUs and accounts an **organization** holds: that is an external,
+  independently-falsifiable fact (`req-grid-reconcile-falsifier`), which is what
+  `OrganizationalUnitFalsifier` and `AccountFalsifier` (`req-aws-core-organizations-collect`)
+  judge. `AwsOrganization` additionally still has no collector emitting a candidate FOR it (it is
+  never itself a containment target), so this paragraph's original "no collector at all"
+  observation is retired without contradicting the row below it.
+- **Candidates now flow from a live run for the Organizations tree only.** `boto3_collector`
+  still does not produce completeness statements for its manifest-driven resource types
+  (`req-aws-collector-reconcile`, `specs/spec-aws-core-collector-v0.md`, still Backlog) — Subnet
+  stays judging-layer-only, proved by `tap_grid.falsifier_testing.run_four_cases` against a fake
+  `ec2` client (`tap_plugin/aws_core/tests/test_falsifiers.py`) with no live surface behind it.
+  The Organizations tree is the exception: `collectors/boto3_collector/organizations.py` records
+  one completeness surface per parent listing it reads to the end
+  (`req-aws-core-organizations-collect-4`), so `OrganizationalUnitFalsifier` and
+  `AccountFalsifier` are reachable from a real run today.
 
 #### Acceptance Criteria
 
@@ -925,6 +1028,6 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
 | req-aws-core-reconcile-falsifiers-1 | Manifest Table | Implemented | `tap-plugin.toml` declares `[falsifiers]` with `aws_core__aws_subnet`; `requires_tap` is `>=0.2.1`. | |
 | req-aws-core-reconcile-falsifiers-2 | Four Proof Cases | Implemented | `SubnetFalsifier` produces `PRESENT_AT_PROBE` / `DROPPED_FROM_OBSERVATION` / `UNDETERMINED(forbidden)` / `REIDENTIFIED` against a fake `ec2` client, run through `tap_grid.falsifier_testing.run_four_cases`. | |
 | req-aws-core-reconcile-falsifiers-3 | Single-Account Scope Check | Implemented | A candidate whose `aws_account` dimension does not match the falsifier's resolved credential account is `UNDETERMINED(scope_unknown)` without a probe. | |
-| req-aws-core-reconcile-falsifiers-4 | Account/Org Declare No Containment | Implemented | `AwsAccount.CONTAINMENT_EDGES == ()` and `AwsOrganization.CONTAINMENT_EDGES == ()`, each explicitly declared with a citing comment. | |
-| req-aws-core-reconcile-falsifiers-5 | Account/Org Have No Falsifier | Implemented | Neither type is registered in `[falsifiers]`; the reasoning (foundation-layer abort, no collector for Organization) is documented in this section and in `falsifiers.py`'s module docstring. | |
-| req-aws-core-reconcile-falsifiers-6 | Completeness Statements Still Backlog | Proposed | `boto3_collector` does not yet produce per-surface completeness statements, so no candidate can flow from a live run; tracked as `req-aws-collector-reconcile`. | Blocks turning this foundation into an actually-running reconcile pass. |
+| req-aws-core-reconcile-falsifiers-4 | Account Declares No Containment Of Its Own | Implemented | `AwsAccount.CONTAINMENT_EDGES == ()`, explicitly declared with a citing comment; it IS a containment target of `AwsOrganization` (`ENROLLS_ACCOUNT`, amended by `req-aws-core-organizations-collect`), which does not change what it declares as a source. | `AwsOrganization.CONTAINMENT_EDGES` is no longer `()` — see `req-aws-core-organizations-collect-2`. |
+| req-aws-core-reconcile-falsifiers-5 | Account/Org Falsifier Registration | Amended | `AwsOrganization` still has no falsifier (nothing contains it). `AwsAccount` now does — `AccountFalsifier`, `req-aws-core-organizations-collect-3` — because which accounts an organization holds is an external, falsifiable fact distinct from the collector's OWN account identity, which is what the foundation-abort reasoning this row originally generalized from actually covers. | Superseded by tap-plugin-aws-core#50; the original all-or-nothing reading of this row was too broad. |
+| req-aws-core-reconcile-falsifiers-6 | Completeness Statements Still Backlog For Manifest-Driven Types | Proposed | `boto3_collector`'s manifest-driven resource sweep does not produce per-surface completeness statements, so no Subnet candidate can flow from a live run; tracked as `req-aws-collector-reconcile`. The Organizations tree is the exception (`req-aws-core-organizations-collect-4`): its own read records completeness surfaces directly, independent of the manifest engine. | Narrowed by tap-plugin-aws-core#50: this row no longer describes every reconcilable type. |

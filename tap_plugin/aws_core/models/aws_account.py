@@ -19,7 +19,9 @@ class AwsAccount(BaseModel):
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id",)
 
-    # No containment declared (tap-plugin-aws-core#42, req-aws-core-reconcile-foundation).
+    # No containment declared (tap-plugin-aws-core#42, req-aws-core-reconcile-foundation). The
+    # account is itself a containment TARGET of AwsOrganization (ENROLLS_ACCOUNT, #50); that does not
+    # change anything below: it declares no containment of its own.
     # CONTAINMENT_EDGES can only name an edge type where THIS model is the source
     # (req-grid-service-delete-cascade-12; tap_grid.models.BaseModel.__init_subclass__ checks
     # CONTAINMENT_EDGES ⊆ OUTBOUND_EDGES, and cascade itself walks from_entity_id=<parent>,
