@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit
 from types import SimpleNamespace
 from typing import Any
 
@@ -74,6 +75,13 @@ _ASSUMED = {
 
 def _endpoint(session: boto3.session.Session, service: str, region: str) -> str:
     return str(session.client(service, region_name=region).meta.endpoint_url)
+
+
+def _hostname(url: str) -> str | None:
+    """The exact host a URL targets — never a substring/prefix check on the URL string, which
+    a URL like ``https://sts.us-gov-west-1.amazonaws.com.evil.example/`` would pass (CodeQL
+    py/incomplete-url-substring-sanitization)."""
+    return urlsplit(url).hostname
 
 
 # --- partition helpers ------------------------------------------------------------------------
@@ -306,7 +314,7 @@ class TestAssumeRoleOnTheWire:
 
         assert len(sent) == 1
         request = sent[0]
-        assert request.url.startswith("https://sts.us-gov-west-1.amazonaws.com")
+        assert _hostname(request.url) == "sts.us-gov-west-1.amazonaws.com"
         body = request.body if isinstance(request.body, str) else request.body.decode()
         assert "Action=AssumeRole" in body
         assert "RoleArn=arn%3Aaws-us-gov%3Aiam%3A%3A123456789012%3Arole%2Fx" in body
@@ -327,7 +335,7 @@ class TestAssumeRoleOnTheWire:
         session = cred.build_session(_STATIC)
         sent = _capture_wire(session, _CALLER_XML)
         assert cred.caller_account_id(session, GOV_REGION, timeout_seconds=5) == ACCOUNT
-        assert sent[0].url.startswith("https://sts.us-gov-west-1.amazonaws.com")
+        assert _hostname(sent[0].url) == "sts.us-gov-west-1.amazonaws.com"
 
 
 # --- transforms & ARN handling -----------------------------------------------------------------
