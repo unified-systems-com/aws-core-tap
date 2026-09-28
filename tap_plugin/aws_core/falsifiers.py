@@ -11,15 +11,20 @@ act on them.
 
 Covers four types:
 
-- **S3 Bucket** (``aws_core__aws_s3_bucket``) — ``head_bucket``. 404 is unambiguous; 403 is not —
-  S3 answers 403 identically for a bucket that is gone and one this credential may not look at,
-  by design (it will not confirm a private bucket's existence to a stranger). github_core's
-  ``RepositoryFalsifier`` faced the same "a refusal and an absence look alike" problem for private
-  GitHub repositories and resolved it with a probe of the containing repository
-  (``tap_plugin.github_core.falsifiers._absence_verdict``). AWS gives an S3 bucket no single
-  parent to probe that way, so the tie-break here is this account's own bucket inventory instead
-  (``list_buckets`` / ``ListAllMyBuckets``, which needs no per-bucket permission): present in it,
-  the 403 is a permission gap and the bucket stands; absent from it, the 403 is read as gone.
+- **S3 Bucket** (``aws_core__aws_s3_bucket``) — ``head_bucket``. Per AWS's own ``HeadBucket``
+  documentation: "If the bucket doesn't exist or you don't have permission to access it, the HEAD
+  request returns a generic 400 Bad Request, 403 Forbidden, or 404 Not Found HTTP status code. A
+  message body isn't included, so you can't determine the exception beyond these HTTP response
+  codes." **404 is therefore just as ambiguous as 403 here** — an earlier draft of this falsifier
+  treated 404 as conclusive, which an AI review of this PR caught and which this documentation
+  confirms was wrong. Both status codes get the same tie-break: this account's own bucket
+  inventory (``list_buckets`` / ``ListAllMyBuckets``, which needs no per-bucket permission).
+  Present in it, the answer is a permission/visibility gap and the bucket stands; absent from it,
+  it is read as gone. (400 is left as ``errored`` — already conservative, since it never becomes a
+  retirement.) github_core's ``RepositoryFalsifier`` faced the analogous "a refusal and an absence
+  look alike" problem for private GitHub repositories and resolved it with a probe of the
+  containing repository (``tap_plugin.github_core.falsifiers._absence_verdict``); AWS gives an S3
+  bucket no single parent to probe that way, hence the account-inventory tie-break instead.
 - **IAM Role** (``aws_core__aws_iam_role``) — ``get_role``; ``NoSuchEntity``.
 - **IAM User** (``aws_core__aws_iam_user``) — ``get_user``; ``NoSuchEntity``.
 - **IAM Policy, customer-managed only** (``aws_core__aws_iam_policy``) — ``get_policy``;
@@ -27,6 +32,20 @@ Covers four types:
   policies are provisioned and retired by AWS, not this account, so their absence from a listing
   is never evidence of deletion; ``IamPolicyFalsifier`` refuses to probe one at all rather than
   spending an AWS call on a question that cannot come back positive.
+
+**The account-match gate (added after AI review of this PR; both review seats flagged the same
+gap independently).** ``get_role`` / ``get_user`` / ``get_policy`` are looked up by name/ARN
+within whichever AWS account the collector's credential currently resolves to. A credential for
+account A asking about a role the grid recorded under account B gets ``NoSuchEntity`` too — that
+credential was never going to find it either way, and nothing about the response distinguishes
+"account A has no such role" from "this is the wrong account to ask." So a ``not_found`` from any
+of the three IAM falsifiers is only trusted as ``DROPPED_FROM_OBSERVATION`` when this run's own
+resolved caller account (STS ``GetCallerIdentity``, ``credentials.caller_account_id`` — the same
+call the collector itself uses to assert-on-land) matches the account segment of the row's own
+ARN; otherwise it is recorded ``UNDETERMINED(scope_unknown)``, including when the caller account
+could not be resolved at all. This is deliberately narrower than a general cross-account "reach"
+gate (see below): it only answers "was this credential ever capable of finding this object",
+never "does this credential's grant still cover it" (github_core's harder question).
 
 None of these four can answer ``REIDENTIFIED`` (checked, not assumed): each is identified by an
 ARN that is a deterministic function of account + name (+ path), and the corresponding GET call
@@ -60,8 +79,8 @@ this slice:
   (``tap_plugin.github_core.reach``): aws-core-tap#15 names that question — whether an assumed
   role's own reach is observable at all — as open and explicitly scopes it as "resolve whether the
   reach is observable and record it, not build the judge." Inventing an answer here would be
-  exactly that. ``_AwsFalsifier`` fails closed the simple way instead: ``forbidden`` stays
-  ``UNDETERMINED(forbidden)``, never promoted to a retirement. S3's OWN ambiguity gets one narrow,
+  exactly that. The account-match gate above is narrower and answers a different, cheaper question
+  (same account, not still-in-grant); S3's OWN 403/404 ambiguity gets its own narrow,
   self-contained tie-break (this account's own listing), not a general reach system.
 
 Every probe is a single-object read of the source under this plugin's own collector credential
@@ -93,6 +112,7 @@ from tap_grid.services import get_node
 from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     assume_role_session,
     build_session,
+    caller_account_id,
     is_assumed_role,
     resolve_aws_secret,
     resolve_regions,
@@ -103,6 +123,10 @@ logger = logging.getLogger(__name__)
 #: What a probe needs of the client: a boto3 service client that raises ``ClientError`` /
 #: ``BotoCoreError``.
 ProbeClient = Any
+
+#: Timeout for the account-match gate's STS call — cheap and read-only, but must not hang a
+#: falsifier run indefinitely.
+_CALLER_ACCOUNT_TIMEOUT_SECONDS = 10
 
 # ---------------------------------------------------------------------------
 # Error classification
@@ -144,7 +168,9 @@ def _is_absent_code(code: str) -> bool:
     """AWS's "not configured"/"not found" signal — shares the ledger/hydrate dialect
     (``NoSuch*`` / ``*NotFound*``), plus the bare ``"404"`` a bodyless operation reports (HTTP 404
     always means Not Found in REST semantics, whatever vocabulary the particular API uses for its
-    named codes)."""
+    named codes). This is a PROBE-status classification only: whether a ``"404"``/``not_found``
+    status is then trusted as evidence of absence is a per-falsifier question — see
+    ``S3BucketFalsifier``, which does not trust it alone."""
     return (
         code == "404"
         or code.startswith("NoSuch")
@@ -263,10 +289,13 @@ class _AwsFalsifier(Falsifier):
     """One boto3 client per batch, resolved once and thrown away at the next run; fail closed on
     a credential that cannot be resolved.
 
-    Deliberately carries no cross-account "reach" gate (see the module docstring): that is an
-    open design question this slice does not answer. ``client`` / ``client_factory`` are for
-    tests; at runtime the client is built from ``session_factory`` (default: the collector's own
-    credential).
+    Deliberately carries no general cross-account "reach" gate (see the module docstring): that
+    is an open design question this slice does not answer. It does carry the narrower
+    account-match gate the IAM falsifiers use (``_caller_account``) — a different, cheaper
+    question ("is this the right account to even ask") than reach's ("does the grant still
+    cover it"). ``client`` / ``client_factory`` / ``caller_account`` are for tests; at runtime the
+    client and the caller account are both resolved from ``session_factory`` (default: the
+    collector's own credential).
     """
 
     #: The boto3 service name this falsifier's client speaks (``"s3"`` / ``"iam"``).
@@ -277,6 +306,7 @@ class _AwsFalsifier(Falsifier):
         client: ProbeClient | None = None,
         client_factory: Callable[[], ProbeClient] | None = None,
         session_factory: Callable[[], tuple[Any, str]] | None = None,
+        caller_account: str | None = None,
     ) -> None:
         self._client = client
         self._client_factory = client_factory
@@ -285,14 +315,28 @@ class _AwsFalsifier(Falsifier):
         #: only one where it may throw a session away between runs.
         self._owns_session = client is None and client_factory is None
         self._batch_id = ""
+        #: The session/region behind ``self._client``, when it was built via
+        #: ``session_factory`` — needed to mint the separate STS client the account-match gate
+        #: uses. None for an injected ``client``/``client_factory`` (its credential's account is
+        #: not observable from here, which is why the gate fails closed rather than assumes).
+        self._session: Any = None
+        self._region = ""
+        #: A caller account handed in by a caller (tests) pins the answer and is never re-resolved.
+        self._injected_caller_account = caller_account
+        #: A caller account RESOLVED from the credential is scoped to the batch it was resolved
+        #: for, matching every other per-run cache in this module.
+        self._resolved_caller_account: str | None = None
+        self._caller_account_for = ""
 
     def _resolve_client(self) -> ProbeClient:
         if self._client is None:
             if self._client_factory is not None:
                 self._client = self._client_factory()
             else:
-                session, region = self._session_factory()
-                self._client = session.client(self.SERVICE, region_name=region)
+                self._session, self._region = self._session_factory()
+                self._client = self._session.client(
+                    self.SERVICE, region_name=self._region
+                )
         return self._client
 
     def _begin_run(self, batch_id: str) -> None:
@@ -301,6 +345,44 @@ class _AwsFalsifier(Falsifier):
         self._batch_id = batch_id
         if self._owns_session:
             self._client = None
+            self._session = None
+
+    def _caller_account(self) -> str | None:
+        """This run's own AWS account id (STS ``GetCallerIdentity``), resolved once per batch and
+        cached — the account-match gate every IAM falsifier uses before trusting a
+        ``NoSuchEntity`` as gone. None when it could not be resolved: an injected ``client`` with
+        no session behind it (its credential's account is simply not observable this way), or STS
+        itself failing. A falsifier that cannot prove which account it speaks for must not use
+        this gate to promote an absence into a retirement — callers treat None the same as a
+        proven mismatch, never as a pass.
+        """
+        if self._injected_caller_account is not None:
+            return self._injected_caller_account
+        if (
+            self._resolved_caller_account is not None
+            and self._caller_account_for == self._batch_id
+        ):
+            return self._resolved_caller_account
+        if self._session is None:
+            return None
+        try:
+            account = caller_account_id(
+                self._session,
+                self._region,
+                timeout_seconds=_CALLER_ACCOUNT_TIMEOUT_SECONDS,
+            )
+        except Exception as exc:  # noqa: BLE001 — an unreadable caller identity is an answer, not a crash
+            logger.warning(
+                "[9c2e] %s: could not resolve the caller account: %s",
+                type(self).__name__,
+                exc,
+            )
+            return None
+        self._resolved_caller_account, self._caller_account_for = (
+            account,
+            self._batch_id,
+        )
+        return account
 
     def batch_falsify(
         self, candidates: Sequence[Candidate], context: FalsifyContext
@@ -330,6 +412,47 @@ class _AwsFalsifier(Falsifier):
             candidate, expected, Probe(status=status, detail=detail)
         )
 
+    def _gated_from_error(
+        self,
+        candidate: Candidate,
+        expected: Expected,
+        exc: ClientError,
+        *,
+        row_account: str | None,
+    ) -> Verdict:
+        """Like ``_from_error``, except a ``not_found`` is only trusted when this run's own
+        caller account matches ``row_account`` (the account segment of the grid's own ARN for
+        this object). See the module docstring's account-match gate section for why: IAM's
+        lookups are by name, within whatever account the credential happens to be, so a
+        ``NoSuchEntity`` proves nothing when that account is not provably the one the grid
+        recorded the object under.
+        """
+        status, detail = probe_status_of(exc)
+        if status != "not_found":
+            return verdict_from_probe(
+                candidate, expected, Probe(status=status, detail=detail)
+            )
+        caller_account = self._caller_account()
+        if caller_account is None:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"NoSuchEntity ({detail}), but this credential's own AWS account could not be verified against "
+                f"this object's ARN account ({row_account}); a NoSuchEntity under an unverified account proves "
+                "nothing, so this is not read as gone",
+            )
+        if row_account is not None and caller_account != row_account:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"NoSuchEntity ({detail}), but this credential's account ({caller_account}) does not match this "
+                f"object's ARN account ({row_account}); a NoSuchEntity from the wrong account proves nothing "
+                "about whether the object exists in the account it was recorded under",
+            )
+        return verdict_from_probe(
+            candidate, expected, Probe(status=status, detail=detail)
+        )
+
     @staticmethod
     def _from_transport_error(candidate: Candidate, exc: BotoCoreError) -> Verdict:
         return _undetermined(candidate, "errored", f"{type(exc).__name__}: {exc}")
@@ -341,7 +464,7 @@ class _AwsFalsifier(Falsifier):
 
 
 class IamRoleFalsifier(_AwsFalsifier):
-    """``get_role``; ``NoSuchEntity`` -> gone.
+    """``get_role``; ``NoSuchEntity`` -> gone, gated by the account-match check (module docstring).
 
     Cannot answer ``REIDENTIFIED`` (module docstring): ``role_arn`` (the model's only identity
     field, and its ``NATURAL_KEY``) is a deterministic function of account + path + name, and
@@ -367,7 +490,9 @@ class IamRoleFalsifier(_AwsFalsifier):
         try:
             result = client.get_role(RoleName=name)
         except ClientError as exc:
-            return self._from_error(candidate, expected, exc)
+            return self._gated_from_error(
+                candidate, expected, exc, row_account=_arn_account(arn)
+            )
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         role = result.get("Role") or {}
@@ -383,9 +508,9 @@ class IamRoleFalsifier(_AwsFalsifier):
 
 
 class IamUserFalsifier(_AwsFalsifier):
-    """``get_user``; ``NoSuchEntity`` -> gone. Cannot answer ``REIDENTIFIED`` (module docstring):
-    ``user_arn`` is a deterministic function of account + path + name, and ``get_user`` is looked
-    up BY that same name."""
+    """``get_user``; ``NoSuchEntity`` -> gone, gated by the account-match check (module docstring).
+    Cannot answer ``REIDENTIFIED`` (module docstring): ``user_arn`` is a deterministic function of
+    account + path + name, and ``get_user`` is looked up BY that same name."""
 
     SERVICE = "iam"
 
@@ -405,7 +530,9 @@ class IamUserFalsifier(_AwsFalsifier):
         try:
             result = client.get_user(UserName=name)
         except ClientError as exc:
-            return self._from_error(candidate, expected, exc)
+            return self._gated_from_error(
+                candidate, expected, exc, row_account=_arn_account(arn)
+            )
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         user = result.get("User") or {}
@@ -421,7 +548,8 @@ class IamUserFalsifier(_AwsFalsifier):
 
 
 class IamPolicyFalsifier(_AwsFalsifier):
-    """``get_policy``; ``NoSuchEntity`` -> gone. Customer-managed policies only.
+    """``get_policy``; ``NoSuchEntity`` -> gone (gated by the account-match check, module
+    docstring). Customer-managed policies only.
 
     AWS-managed policies (``is_aws_managed=True``) are provisioned and retired by AWS, not this
     account: their absence from a listing is never evidence of deletion, so this falsifier
@@ -456,7 +584,9 @@ class IamPolicyFalsifier(_AwsFalsifier):
         try:
             result = client.get_policy(PolicyArn=arn)
         except ClientError as exc:
-            return self._from_error(candidate, expected, exc)
+            return self._gated_from_error(
+                candidate, expected, exc, row_account=_arn_account(arn)
+            )
         except BotoCoreError as exc:
             return self._from_transport_error(candidate, exc)
         policy = result.get("Policy") or {}
@@ -477,7 +607,9 @@ class IamPolicyFalsifier(_AwsFalsifier):
 
 
 class S3BucketFalsifier(_AwsFalsifier):
-    """``head_bucket``; the 403/404 ambiguity resolved by this account's own ``list_buckets``.
+    """``head_bucket``; both the 404 AND the 403 case are resolved by this account's own
+    ``list_buckets`` (module docstring: AWS's own ``HeadBucket`` documentation says neither
+    status code is conclusive on its own).
 
     S3 bucket ARNs (``arn:aws:s3:::name``) are a pure function of the name and carry no account
     segment: a bucket deleted and recreated under the same name — by this account or, since S3
@@ -488,10 +620,15 @@ class S3BucketFalsifier(_AwsFalsifier):
 
     SERVICE = "s3"
 
+    #: Both status codes ``head_bucket`` uses for "gone or forbidden, indistinguishably"
+    #: (module docstring). 400 is deliberately excluded: it already lands as ``errored`` via
+    #: ``probe_status_of``, which is already conservative (never becomes a retirement).
+    _AMBIGUOUS_STATUSES = frozenset({"not_found", "forbidden"})
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        #: This account's own bucket names (``ListAllMyBuckets``), cached per run — the 403
-        #: tie-break needs at most one extra call for however many bucket candidates a run judges.
+        #: This account's own bucket names (``ListAllMyBuckets``), cached per run — the tie-break
+        #: needs at most one extra call for however many bucket candidates a run judges.
         self._own_buckets: frozenset[str] | None = None
         self._own_buckets_for = ""
 
@@ -502,16 +639,23 @@ class S3BucketFalsifier(_AwsFalsifier):
         super()._begin_run(batch_id)
 
     def _own_bucket_names(self, client: ProbeClient) -> frozenset[str] | None:
-        """This run's ``ListAllMyBuckets`` answer, or None when it could not be read — which must
-        never be read as an empty account (the same "unobserved is not empty" rule
-        github_core's reach walk applies to its own listing failures)."""
+        """This run's ``ListAllMyBuckets`` answer, or None when it could not be read (including a
+        partial page) — which must never be read as an empty or complete account (the same
+        "unobserved is not empty" rule github_core's reach walk applies to its own listing
+        failures).
+
+        An unparameterised ``list_buckets()`` call returns AWS's complete bucket inventory for an
+        account at or under the default 10,000-bucket quota, or is rejected outright for an
+        account with an approved quota above it (AWS's own ``ListBuckets`` documentation) — so a
+        genuinely partial page should not normally occur here. It is still checked for, rather
+        than assumed away: a response carrying a ``ContinuationToken`` is a partial page by
+        AWS's own definition, and a partial page must never be read as this account's complete
+        inventory (an AI review of this PR flagged the missing check).
+        """
         if self._own_buckets is not None and self._own_buckets_for == self._batch_id:
             return self._own_buckets
         try:
-            names = frozenset(
-                str(b.get("Name") or "")
-                for b in (client.list_buckets().get("Buckets") or [])
-            )
+            response = client.list_buckets()
         except (ClientError, BotoCoreError) as exc:
             logger.warning(
                 "[8ad1] S3BucketFalsifier: list_buckets tie-break failed: %s: %s",
@@ -519,6 +663,15 @@ class S3BucketFalsifier(_AwsFalsifier):
                 exc,
             )
             return None
+        if response.get("ContinuationToken"):
+            logger.warning(
+                "[3f0a] S3BucketFalsifier: list_buckets returned a ContinuationToken (a partial page); refusing "
+                "to treat it as this account's complete bucket inventory"
+            )
+            return None
+        names = frozenset(
+            str(b.get("Name") or "") for b in (response.get("Buckets") or [])
+        )
         self._own_buckets, self._own_buckets_for = names, self._batch_id
         return names
 
@@ -553,24 +706,41 @@ class S3BucketFalsifier(_AwsFalsifier):
         name: str,
     ) -> Verdict:
         status, detail = probe_status_of(exc)
-        if status != "forbidden":
-            # A plain 404, a throttle, or an unclassified error: no ambiguity, no tie-break.
+        if status not in self._AMBIGUOUS_STATUSES:
+            # A throttle, or an unclassified error (including the bare-400 case): no ambiguity
+            # this falsifier resolves, no tie-break.
             return verdict_from_probe(
                 candidate, expected, Probe(status=status, detail=detail)
             )
-        # S3's specific ambiguity (module docstring): HeadBucket answers 403 identically whether
-        # the bucket is gone or merely not ours to look at. The tie-break is this account's own
-        # bucket inventory, which needs no per-bucket permission.
+        # AWS's own HeadBucket documentation (module docstring): 404 and 403 are equally
+        # ambiguous. The tie-break is this account's own bucket inventory, which needs no
+        # per-bucket permission.
         names = self._own_bucket_names(client)
         if names is None:
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"head_bucket({name}) answered 403 — S3 returns 403 both for a bucket that is gone and for one "
-                "this credential may not look at — and this account's own ListBuckets (the tie-break) could not "
-                "be read either, so nothing here separates the two",
+                f"head_bucket({name}) answered {status} ({detail}) — S3 documents this status as meaning either "
+                "gone or merely not visible to this credential — and this account's own ListBuckets (the "
+                "tie-break) could not be read either, so nothing here separates the two",
             )
         if name not in names:
+            # The tie-break additionally requires the candidate's OWN recorded owner (when the
+            # grid holds one) to match this credential's account before an absence from THIS
+            # account's inventory is read as evidence: an absence from account A's own listing
+            # says nothing about a bucket the grid recorded under account B (module docstring's
+            # account-match gate; S3 ARNs carry no account segment to check directly, so this
+            # checks the candidate's grid-recorded owner instead).
+            owner = expected.owner
+            caller_account = self._caller_account() if owner is not None else None
+            if owner is not None and owner != caller_account:
+                return _undetermined(
+                    candidate,
+                    "scope_unknown",
+                    f"head_bucket({name}) answered {status} and {name} is absent from THIS credential's own "
+                    f"ListBuckets, but the grid recorded this bucket's owner as {owner!r}, not this credential's "
+                    f"account ({caller_account!r}); absence from the wrong account's inventory proves nothing",
+                )
             return verdict_from_probe(
                 candidate,
                 expected,
@@ -582,7 +752,7 @@ class S3BucketFalsifier(_AwsFalsifier):
         return _undetermined(
             candidate,
             "forbidden",
-            f"head_bucket({name}) answered 403 but {name} is present in this account's own ListBuckets: the "
+            f"head_bucket({name}) answered {status} but {name} is present in this account's own ListBuckets: the "
             "bucket is not gone, only this credential's head_bucket permission on it",
         )
 
