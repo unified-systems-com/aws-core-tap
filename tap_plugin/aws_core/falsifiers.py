@@ -114,6 +114,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
 )
 from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
     INACTIVE_ACCOUNT_STATES,
+    NESTED_UNDER_PARENT,
     account_state,
     organization_id_of_account_arn,
 )
@@ -233,6 +234,47 @@ def _dimensions_of(row: Any) -> dict[str, str]:
     entity = getattr(row, "entity", None)
     dimensions = getattr(entity, "dimensions", None)
     return dict(dimensions) if isinstance(dimensions, dict) else {}
+
+
+#: The most NESTED_UNDER_PARENT hops _organization_id_of will follow before giving up — real
+#: Organizations trees nest a handful of levels deep; this only guards a graph anomaly.
+_MAX_PARENT_HOPS = 50
+
+
+def _organization_id_of(entity_id: Any) -> str:
+    """Walk ``NESTED_UNDER_PARENT`` from ``entity_id`` up to its ``AwsOrganization`` ancestor and
+    return its ``organization_id``, or ``""`` when the chain does not reach one.
+
+    ``AwsOrganizationalUnit`` carries no ``organization_id`` field of its own (only ``AwsOrganization``
+    does), so a nested OU's organization is not read off its row or off ``Candidate.parent`` alone —
+    ``Candidate.parent`` names only the OU's IMMEDIATE parent, which for a nested OU is another OU,
+    not the organization. This is the OU-side analogue of ``AccountFalsifier``'s organization
+    comparison (Codex on unified-ai-review#55: a bare root-id-suffix comparison could authorize
+    probing the wrong organization if two organizations' root suffixes happened to collide — AWS
+    documents no global uniqueness for the short alphanumeric suffix). Read straight off the edge
+    table, the same way ``tap_grid.candidates._children`` does, rather than through the service
+    layer's read path: this is graph topology, not a typed field.
+    """
+    from tap_grid.models import Edge
+
+    current = entity_id
+    for _ in range(_MAX_PARENT_HOPS):
+        parent_id = (
+            Edge.objects.filter(
+                from_entity_id=current, edge_type=NESTED_UNDER_PARENT, to_entity__deleted_at__isnull=True
+            )
+            .values_list("to_entity_id", "to_entity__entity_type")
+            .first()
+        )
+        if parent_id is None:
+            return ""
+        to_id, to_type = parent_id
+        if to_type == _ORGANIZATION_TYPE:
+            organization = _row_of(to_id)
+            return str(getattr(organization, "organization_id", "") or "")
+        current = to_id
+    logger.warning("[d9a3] _organization_id_of(%s): exceeded %d parent hops without reaching an organization", entity_id, _MAX_PARENT_HOPS)
+    return ""
 
 
 def _enabled_regions(session: ProbeSession, configured_regions: list[str]) -> list[str]:
@@ -644,10 +686,6 @@ class _OrgReach:
 
     status: str  # "ok" | "forbidden" | "rate_limited" | "errored" | "scope_unknown"
     organization_id: str = ""
-    #: The alphanumeric part of each root id (``r-ab12`` -> ``ab12``): AWS embeds it in every OU id
-    #: of that root (``ou-ab12-xxxxxxxx``), which is how an OU is tied to an organization without
-    #: the grid having to walk to its organization node.
-    root_suffixes: frozenset[str] = frozenset()
     note: str = ""
 
 
@@ -740,12 +778,10 @@ class _OrganizationsFalsifier(_AwsFalsifier):
             return _OrgReach(reason, note=f"organization reach unproven: {code or type(exc).__name__}")
         except BotoCoreError as exc:
             return _OrgReach("errored", note=f"organization reach unproven: {type(exc).__name__}")
-        suffixes = frozenset(
-            str(r["Id"]).split("-", 1)[1] for r in roots if str(r.get("Id") or "").startswith("r-")
-        )
-        if not organization.get("Id") or not suffixes:
+        has_root = any(str(r.get("Id") or "").startswith("r-") for r in roots)
+        if not organization.get("Id") or not has_root:
             return _OrgReach("errored", note="the organization read returned no organization id or no root")
-        return _OrgReach("ok", organization_id=str(organization["Id"]), root_suffixes=suffixes)
+        return _OrgReach("ok", organization_id=str(organization["Id"]))
 
     def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
         raise NotImplementedError
@@ -778,21 +814,29 @@ class OrganizationalUnitFalsifier(_OrganizationsFalsifier):
     nothing it contained can be alive) is ``DROPPED_FROM_OBSERVATION``. A renamed OU
     (``RELOCATED(renamed)``) has its name updated and is not retired.
 
-    The credential must first be proven to be inside the candidate's organization: the OU id
-    embeds the root id it belongs to, and ``ListRoots`` must name that root.
+    The credential must first be proven to be inside the candidate's own organization: its
+    ``organization_id``, walked from the OU up through ``NESTED_UNDER_PARENT`` to its
+    ``AwsOrganization`` ancestor (``_organization_id_of``), must equal ``reach.organization_id`` —
+    the same comparison ``AccountFalsifier`` makes, not a root-id-suffix heuristic (AWS documents
+    no global uniqueness for that short alphanumeric string).
     """
 
     def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
         ou_id = str(getattr(row, "ou_id", "") or "")
         if not ou_id:
             return _undetermined(candidate, "scope_unknown", "the grid holds no ou_id for this OU")
-        parts = ou_id.split("-")
-        if len(parts) != 3 or parts[1] not in reach.root_suffixes:
+        recorded_org = _organization_id_of(candidate.entity_id)
+        if not recorded_org:
+            return _undetermined(
+                candidate, "scope_unknown", "the grid holds no organization for this OU (its NESTED_UNDER_PARENT "
+                "chain does not reach an AwsOrganization row)"
+            )
+        if recorded_org != reach.organization_id:
             return _undetermined(
                 candidate,
                 "scope_unknown",
-                f"this credential's organization has no root that OU {ou_id} belongs to: an absence here says "
-                "nothing about another organization's OU",
+                f"this credential is in organization {reach.organization_id}, not {recorded_org}: an absence "
+                "here says nothing about that organization's OUs",
             )
         expected = Expected(
             source_id=ou_id,

@@ -384,14 +384,23 @@ class _Reader:
         self.tree.listings.append(listing)
         return listing
 
-    def tags_of(self, resource_id: str) -> dict[str, str]:
-        """``ListTagsForResource`` normalized to ``{str: str}``; ``{}`` when unreadable.
+    def tags_of(self, resource_id: str) -> dict[str, str] | None:
+        """``ListTagsForResource`` normalized to ``{str: str}``, or ``None`` when unreadable.
+
+        ``None`` is deliberate, never ``{}``: GRIFT upsert applies every node through
+        ``replace_node`` (``tap_grid/grift/importer.py``), whose ``_apply_replace`` resets an
+        OPTIONAL field the envelope omits to the model default — the same ``{}`` an empty JSONField
+        defaults to. So neither sending ``{}`` nor omitting the key can honestly stand for "not
+        read this run": both read back as an authoritative "no tags", silently erasing real tags a
+        previous run observed the moment a permission narrows or one call times out. The only
+        honest response is not to write the node at all this run — ``add_node`` (below) refuses a
+        node whose ``tags`` is this ``None`` sentinel, the same way it refuses a schema violation.
 
         An unreadable tag set is counted and reported once rather than per resource, and a denial
         latches: the permission is per action, not per resource.
         """
         if self._tags_denied:
-            return {}
+            return None
         raw: list[dict[str, Any]] = []
         token: str | None = None
         try:
@@ -410,20 +419,36 @@ class _Reader:
                 self.notice(
                     "info",
                     "ORG_TAGS_DENIED",
-                    "organizations:ListTagsForResource is denied: OU, account and SCP tags are not collected this run.",
+                    "organizations:ListTagsForResource is denied: OU, account and SCP nodes are not written this "
+                    "run rather than overwriting their tags with a false empty observation.",
                 )
             else:
                 self._tags_missing += 1
-            return {}
+            return None
         except BotoCoreError:
             self._tags_missing += 1
-            return {}
+            return None
         return normalize_tags(raw, "list_kv")
 
     # -- shaping ----------------------------------------------------------
 
     def add_node(self, entity_type: str, natural_key: str, name: str, fields: dict[str, Any]) -> bool:
-        """Append one node envelope unless the model would refuse it; True when kept."""
+        """Append one node envelope unless the model would refuse it, or its tags were unreadable
+        this run; True when kept.
+
+        A ``tags`` of ``None`` (the ``tags_of`` sentinel) is caught here rather than left for
+        ``_schema_problem`` to reject on type (``{"type": "object", ...}`` would refuse ``None``
+        anyway) so the recorded reason names the real cause — an unreadable read, not a malformed
+        one — and every caller gets the same refusal for free rather than repeating the check.
+        """
+        if "tags" in fields and fields["tags"] is None:
+            self.notice(
+                "warn",
+                "ORG_NODE_SKIPPED",
+                f"{entity_type} {natural_key}: skipped, tags could not be read this run",
+                entity_type=entity_type,
+            )
+            return False
         problem = _schema_problem(entity_type, fields)
         if problem is not None:
             self.notice(

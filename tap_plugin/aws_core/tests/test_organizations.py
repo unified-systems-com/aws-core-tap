@@ -44,7 +44,7 @@ from tap_grid.falsifiers import (
     Verdict,
     unsupported,
 )
-from tap_grid.services import create_node, get_node
+from tap_grid.services import create_edge, create_node, get_node
 
 ORG_ID = "o-abc1234567"
 ROOT_ID = "r-ab12"
@@ -77,6 +77,7 @@ class FakeOrganizations:
         self.policies: list[dict[str, Any]] = []
         self.targets_of: dict[str, list[dict[str, Any]]] = {}
         self.tags_of: dict[str, list[dict[str, Any]]] = {}
+        self.tag_errors: dict[str, Exception] = {}
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     def describe_organization(self) -> dict[str, Any]:
@@ -119,6 +120,8 @@ class FakeOrganizations:
 
     def list_tags_for_resource(self, ResourceId: str, **kwargs: Any) -> dict[str, Any]:
         self.calls.append(("list_tags_for_resource", {"ResourceId": ResourceId, **kwargs}))
+        if ResourceId in self.tag_errors:
+            raise self.tag_errors[ResourceId]
         return {"Tags": self.tags_of.get(ResourceId, [])}
 
 
@@ -296,6 +299,47 @@ class TestCollectOrganizationTree:
         assert _edges(tree, NESTED_UNDER_PARENT) == []
         assert any(n.code == "ORG_ACCOUNTS_UNPLACED" for n in tree.notices)
 
+    def test_denied_tags_skip_the_node_rather_than_overwrite_it_with_an_empty_map(self) -> None:
+        """GRIFT upsert applies every node through replace_node, whose _apply_replace resets an
+        OPTIONAL field the envelope omits to the model default (tap_grid/services/_impl.py) - the
+        same {} an unset tags JSONField defaults to. So an unreadable tag read must never be sent
+        as tags: {} (that reads back as "no tags", silently erasing real ones a previous run
+        observed) and must never be simply omitted either (replace_node resets it exactly the
+        same way): the only honest response is to not write the node at all this run."""
+        client = FakeOrganizations()
+        _basic_org(client)
+        client.ous_of[ROOT_ID] = [{"Id": "ou-ab12-tagdenied1", "Name": "Denied"}]
+        client.ous_of["ou-ab12-tagdenied1"] = []
+        client.tag_errors["ou-ab12-tagdenied1"] = ClientError(
+            {"Error": {"Code": "AccessDeniedException", "Message": "x"}}, "ListTagsForResource"
+        )
+        tree = collect_organization(client, DIMENSIONS)
+
+        assert [n for n in tree.nodes if n["entity"]["entity_type"] == ORGANIZATIONAL_UNIT] == []
+        assert any(n.code == "ORG_NODE_SKIPPED" for n in tree.notices)
+        assert any(n.code == "ORG_TAGS_DENIED" for n in tree.notices)
+        [root_surface] = [s for s in tree.listings if s.relation == "organization.organizational_units"]
+        assert root_surface.admitted is False, "a listing that skipped a child it saw did not land whole"
+
+    def test_aws_managed_policy_tags_are_not_read_and_not_a_failure(self) -> None:
+        """An AWS-managed policy truly cannot be tagged - {} here is an observed fact, not a
+        stand-in for an unreadable read, so it is never asked for and never skips the node."""
+        client = FakeOrganizations()
+        _basic_org(client)
+        client.ous_of[ROOT_ID] = []
+        client.policies = [
+            {
+                "Id": "p-fullawsaccess1",
+                "Arn": "arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess",
+                "Name": "FullAWSAccess",
+                "AwsManaged": True,
+            }
+        ]
+        tree = collect_organization(client, DIMENSIONS)
+        node = _node(tree, SERVICE_CONTROL_POLICY, "policy_id", "p-fullawsaccess1")
+        assert node["node"]["tags"] == {}
+        assert ("list_tags_for_resource", {"ResourceId": "p-fullawsaccess1"}) not in client.calls
+
 
 class TestOrganizationHelpers:
     def test_partition_of_arn(self) -> None:
@@ -399,13 +443,20 @@ def _org_row(*, organization_id: str = ORG_ID, root_id: str = ROOT_ID) -> uuid.U
     return uuid.UUID(str(result.entity_id))
 
 
-def _ou_row(ou_id: str, *, name: str = "", account_id: str = MGMT_ACCOUNT) -> uuid.UUID:
+def _ou_row(
+    ou_id: str, *, name: str = "", account_id: str = MGMT_ACCOUNT, org_id: uuid.UUID | None = None
+) -> uuid.UUID:
+    """A live ``AwsOrganizationalUnit`` row. ``org_id`` also records the ``NESTED_UNDER_PARENT``
+    edge to it — the chain ``_organization_id_of`` walks — omitted only by the tests that mean to
+    exercise no-organization-on-record or a different one."""
     result = create_node(ORGANIZATIONAL_UNIT, {"name": name or ou_id, "ou_id": ou_id})
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
     row.entity.dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
     row.entity.save(update_fields=["dimensions"])
+    if org_id is not None:
+        create_edge(row.entity, get_node(org_id).entity, "NESTED_UNDER_PARENT__aws_core")
     return entity_id
 
 
@@ -446,19 +497,19 @@ class TestOrganizationalUnitFalsifierFourCases:
         client = FakeOrgClient()
         cases: dict[str, Candidate] = {}
 
-        present_id = _ou_row("ou-ab12-present01", name="present-ou")
+        present_id = _ou_row("ou-ab12-present01", name="present-ou", org_id=org_id)
         cases[CASE_PRESENT] = _candidate(present_id, ORGANIZATIONAL_UNIT, parent=org_id)
         client.answer_ou("ou-ab12-present01", {"Id": "ou-ab12-present01", "Name": "present-ou"}, parents=[{"Id": ROOT_ID}])
 
-        dropped_id = _ou_row("ou-ab12-dropped01")
+        dropped_id = _ou_row("ou-ab12-dropped01", org_id=org_id)
         cases[CASE_DROPPED] = _candidate(dropped_id, ORGANIZATIONAL_UNIT, parent=org_id)
         client.refuse_ou("ou-ab12-dropped01", "OrganizationalUnitNotFoundException")
 
-        forbidden_id = _ou_row("ou-ab12-forbid001")
+        forbidden_id = _ou_row("ou-ab12-forbid001", org_id=org_id)
         cases[CASE_FORBIDDEN] = _candidate(forbidden_id, ORGANIZATIONAL_UNIT, parent=org_id)
         client.refuse_ou("ou-ab12-forbid001", "AccessDeniedException")
 
-        reborn_id = _ou_row("ou-ab12-reborn001")
+        reborn_id = _ou_row("ou-ab12-reborn001", org_id=org_id)
         cases[CASE_REIDENTIFIED] = _candidate(reborn_id, ORGANIZATIONAL_UNIT, parent=org_id)
         client.answer_ou("ou-ab12-reborn001", {"Id": "ou-ab12-newid001", "Name": "x"}, parents=[{"Id": ROOT_ID}])
 
@@ -471,24 +522,39 @@ class TestOrganizationalUnitFalsifierFourCases:
     def test_renamed_ou_is_relocated_renamed(self) -> None:
         org_id = _org_row()
         client = FakeOrgClient()
-        ou_id = _ou_row("ou-ab12-renamed01", name="old-name")
+        ou_id = _ou_row("ou-ab12-renamed01", name="old-name", org_id=org_id)
         client.answer_ou("ou-ab12-renamed01", {"Id": "ou-ab12-renamed01", "Name": "new-name"}, parents=[{"Id": ROOT_ID}])
         falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == "RELOCATED"
         assert verdict.kind == "renamed"
 
-    def test_ou_from_another_organizations_root_is_scope_unknown(self) -> None:
-        """The credential's ListRoots does not name the root this OU's id embeds: nothing this
-        credential says about presence or absence can speak to a foreign organization's OU."""
-        org_id = _org_row(root_id="r-zz99")
-        client = FakeOrgClient(root_ids=["r-zz99"])
-        ou_id = _ou_row("ou-ab12-foreign01")  # embeds root "ab12", not "zz99"
+    def test_ou_recorded_under_a_different_organization_is_scope_unknown(self) -> None:
+        """The OU's own NESTED_UNDER_PARENT chain reaches a DIFFERENT organization than the
+        credential's reach: an absence here says nothing about that other organization's OU.
+        This is the organization-id comparison, not a root-id-suffix heuristic — AWS documents no
+        global uniqueness for that short alphanumeric string (unified-ai-review#55)."""
+        home_org_id = _org_row(organization_id=ORG_ID)
+        foreign_org_id = _org_row(organization_id="o-foreignorg1")
+        client = FakeOrgClient(organization_id=ORG_ID)
+        ou_id = _ou_row("ou-ab12-foreign01", org_id=foreign_org_id)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
+        [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=home_org_id)], _context())
+        assert verdict.verdict == UNDETERMINED
+        assert verdict.reason == "scope_unknown"
+        assert "describe_organizational_unit:ou-ab12-foreign01" not in client.calls
+
+    def test_ou_with_no_recorded_organization_is_scope_unknown(self) -> None:
+        """A NESTED_UNDER_PARENT chain that reaches no AwsOrganization at all (a malformed or
+        design-only row) cannot be compared against — refused before any probe."""
+        org_id = _org_row()
+        client = FakeOrgClient()
+        ou_id = _ou_row("ou-ab12-noorg0001")  # no org_id: no NESTED_UNDER_PARENT edge recorded
         falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
-        assert "describe_organizational_unit:ou-ab12-foreign01" not in client.calls
+        assert "describe_organizational_unit:ou-ab12-noorg0001" not in client.calls
 
     def test_reach_failure_is_undetermined_for_every_candidate(self) -> None:
         org_id = _org_row()
