@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+# Fetch every AI-reviewer signal on a PR so the opener can triage it before
+# (or as) auto-merge lands: review summaries — INCLUDING the suppressed/
+# collapsed findings Copilot hides in a <details> block inside the review
+# body — plus all inline review comments, plus the bot ISSUE comments where
+# the unified AI review lands.
+#
+# Three surfaces, because reviewers do not agree on one (tap#204). Copilot and
+# Codacy post REVIEW objects; findings attached to them arrive as inline review
+# comments; the unified reviewer posts an ISSUE comment carrying the marker
+# `<!-- unified-ai-review -->` and EDITS THAT COMMENT IN PLACE on every rerun.
+# Reading two of the three is worse than reading none: on a PR where any other
+# seat has reviewed, the output looks complete while silently omitting both
+# unified seats — an absence rendered as a finished answer.
+#
+# The wiring gap this closes (req-dev-multisession-push-workflow, AI-review
+# triage step): the copilot-review-floor org ruleset auto-reviews every PR
+# ~1-3 min after open, but fast-lane PRs merge on gate-green ~10 min later
+# with nobody having read the feedback. Run this in that window. Fix-worthy
+# findings get pushed onto the PR branch (which re-arms auto-merge against
+# the new commit); noise gets dismissed consciously, not silently.
+#
+# Usage:
+#   scripts/pr-review-triage <pr-number>            # print what's there now
+#   scripts/pr-review-triage <pr-number> --wait     # poll up to 180s until a
+#                                                   # REVIEW or a unified AI
+#                                                   # review comment exists
+#                                                   # (inline comments alone
+#                                                   # don't stop the wait)
+#   scripts/pr-review-triage <pr-number> --wait 300 # custom poll ceiling (s)
+#   scripts/pr-review-triage <pr-number> --watch [interval]
+#       The STANDARD PR watcher (one line per event, made for a Monitor):
+#       emits a line for each detected new review or bot/actions comment
+#       (unified-ai-review, Codacy, Sonar, Copilot land here), every
+#       mergeStateStatus transition, and — the early-warning half — every
+#       INDIVIDUAL check that reaches a failing conclusion, the moment it
+#       does (CHECKFAIL lines), so a Sonar/Codacy/lane red is workable
+#       immediately instead of after the full gate resolves; exits when the
+#       PR reaches MERGED or CLOSED. Default poll interval 60s. Watching a PR means watching its
+#       reviewer commentary, not only its checks — every emitted REVIEW/
+#       COMMENT line is a triage obligation for whoever armed the watch.
+#
+# Exit codes: 0 = printed at least one review, inline comment or bot issue
+# comment (--watch: terminal
+# state reached); 1 = nothing arrived (within the wait window, if any);
+# 2 = usage error.
+
+set -euo pipefail
+
+# Fail fast with clear messages, like the other workflow scripts.
+for tool in gh jq; do
+  command -v "$tool" >/dev/null 2>&1 || { echo "$(basename "$0"): required tool '$tool' not found" >&2; exit 2; }
+done
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "$(basename "$0"): run from inside the repo worktree (gh resolves {owner}/{repo} from it)" >&2; exit 2; }
+
+PR="${1:-}"
+[[ -n "$PR" && "$PR" =~ ^[0-9]+$ ]] || { echo "usage: $(basename "$0") <pr-number> [--wait [seconds] | --watch [seconds]]" >&2; exit 2; }
+shift
+
+WAIT=0
+if [[ "${1:-}" == "--wait" ]]; then
+  WAIT="${2:-180}"
+  [[ "$WAIT" =~ ^[0-9]+$ ]] || { echo "--wait takes a number of seconds" >&2; exit 2; }
+fi
+
+if [[ "${1:-}" == "--watch" ]]; then
+  INTERVAL="${2:-60}"
+  [[ "$INTERVAL" =~ ^[1-9][0-9]*$ ]] || { echo "--watch takes a positive number of seconds" >&2; exit 2; }
+  # Fail fast on a bad PR/auth/repo before entering the loop (Copilot, PR #122):
+  gh pr view "$PR" --json number >/dev/null || { echo "$(basename "$0"): cannot fetch PR #${PR} — check number/auth/repo" >&2; exit 2; }
+  # Reviews are keyed (id, submittedAt, body-length) — reviews carry no updatedAt,
+  # so body length + codepoint sum is the edit detector; comments key on (id, updatedAt).
+  # Signatures, never counts: the unified review EDITS its comment in place on reruns.
+  # Known bound: gh pr view returns one page of issue comments and no inline review
+  # comments — inline findings arrive attached to a REVIEW submission, which the
+  # review signature catches; at very high comment volumes run the bare one-shot
+  # (which paginates fully) rather than trusting the watcher alone.
+  seen_rev_sig=""; seen_bot_sig=""; seen_mstate=""; seen_fails=""
+  fetch_fail=0
+  first=1
+  while true; do
+    snap="$(gh pr view "$PR" --json state,mergeStateStatus,reviews,comments,statusCheckRollup \
+      --jq '{state: .state, mstate: .mergeStateStatus,
+             rev_sig: ([.reviews[] | "\(.id):\(.submittedAt):\(.body | length):\((.body | explode | add) // 0)"] | sort | join("|")),
+             nrev: (.reviews | length),
+             bot_sig: ([.comments[] | select((.author.login // "") | test("github-actions|codacy|sonar|copilot"; "i")) | "\(.id):\(.updatedAt // .createdAt)"] | sort | join("|")),
+             fails: ([.statusCheckRollup[]? | (.conclusion // .state // "") as $c
+                      | select($c | test("FAILURE|ERROR|TIMED_OUT|ACTION_REQUIRED|STARTUP_FAILURE|CANCELLED|STALE"))
+                      | ((.name // .context // "?") + "=" + $c)] | sort | join("\u001f"))}' 2>/dev/null)" || snap=""
+    if [[ -z "$snap" ]]; then
+      fetch_fail=$((fetch_fail + 1))
+      if (( fetch_fail % 10 == 0 )); then
+        echo "FETCHFAIL PR #${PR}: ${fetch_fail} consecutive gh failures — check auth/rate limit; still retrying"
+      fi
+      sleep "$INTERVAL"; continue
+    fi
+    fetch_fail=0
+    state="$(jq -r .state <<<"$snap")"
+    mstate="$(jq -r .mstate <<<"$snap")"
+    rev_sig="$(jq -r .rev_sig <<<"$snap")"
+    nrev="$(jq -r .nrev <<<"$snap")"
+    bot_sig="$(jq -r .bot_sig <<<"$snap")"
+    fails="$(jq -r .fails <<<"$snap")"
+    if [[ "$first" -eq 1 ]]; then
+      # Baseline silently: pre-existing artifacts were triaged when they landed.
+      seen_rev_sig="$rev_sig"; seen_bot_sig="$bot_sig"; seen_mstate="$mstate"; seen_fails="$fails"; first=0
+      echo "WATCHING PR #${PR}: state=${state} mergeState=${mstate} reviews=${nrev}${fails:+ preexistingFails=${fails}}"
+    else
+      if [[ "$rev_sig" != "$seen_rev_sig" ]]; then
+        echo "REVIEW PR #${PR}: review set changed — run scripts/pr-review-triage ${PR} and triage"
+      fi
+      if [[ "$bot_sig" != "$seen_bot_sig" ]]; then
+        echo "COMMENT PR #${PR}: bot commentary changed (new or edited in place) — run scripts/pr-review-triage ${PR} and triage"
+      fi
+      if [[ "$mstate" != "$seen_mstate" ]]; then
+        echo "MERGESTATE PR #${PR}: ${seen_mstate} -> ${mstate}"
+      fi
+      if [[ "$fails" != "$seen_fails" ]]; then
+        # if-blocks, not `[[ ]] &&` — under pipefail a false && is a failed pipeline
+        # and would kill the watcher on its FIRST CHECKFAIL (Copilot, PR #122).
+        while IFS= read -r f; do
+          if [[ -n "$f" ]]; then echo "CHECKFAIL PR #${PR}: ${f} — work it now, the full gate has not resolved yet"; fi
+        done < <(comm -13 <(tr '\037' '\n' <<<"$seen_fails" | sort) <(tr '\037' '\n' <<<"$fails" | sort))
+        while IFS= read -r f; do
+          if [[ -n "$f" ]]; then echo "CHECKRECOVERED PR #${PR}: ${f}"; fi
+        done < <(comm -23 <(tr '\037' '\n' <<<"$seen_fails" | sort) <(tr '\037' '\n' <<<"$fails" | sort))
+      fi
+      seen_rev_sig="$rev_sig"; seen_bot_sig="$bot_sig"; seen_mstate="$mstate"; seen_fails="$fails"
+    fi
+    if [[ "$state" == "MERGED" || "$state" == "CLOSED" ]]; then
+      echo "TERMINAL PR #${PR}: ${state}"
+      exit 0
+    fi
+    sleep "$INTERVAL"
+  done
+fi
+
+fetch_counts() {
+  # --paginate + jq -s 'add': a PR with >30 reviews/comments spans pages, and
+  # missing page 2 would silently contradict "every AI-reviewer signal".
+  REVIEWS_JSON="$(gh api --paginate "repos/{owner}/{repo}/pulls/${PR}/reviews" | jq -s 'add')"
+  COMMENTS_JSON="$(gh api --paginate "repos/{owner}/{repo}/pulls/${PR}/comments" | jq -s 'add')"
+  # Bot ISSUE comments — the unified reviewer's surface (tap#204). Filtered to bot
+  # authors so human discussion stays out of a triage listing; the unified marker is
+  # recognised explicitly so it can never be filtered away by an author rename.
+  BOTCOMMENTS_JSON="$(gh api --paginate "repos/{owner}/{repo}/issues/${PR}/comments" \
+    | jq -s 'add | map(select(((.user.login // "") | test("\\[bot\\]$")) or ((.body // "") | test("<!-- unified-ai-review -->"))))')"
+  N_REVIEWS="$(jq 'length' <<<"$REVIEWS_JSON")"
+  N_COMMENTS="$(jq 'length' <<<"$COMMENTS_JSON")"
+  N_BOTCOMMENTS="$(jq 'length' <<<"$BOTCOMMENTS_JSON")"
+  # A unified review is an arrival for --wait: on a plugin repo it is often the ONLY
+  # seat, and waiting on a REVIEW object there polls the full window and then reports
+  # nothing while the review sits in plain sight.
+  N_ARRIVALS=$(( N_REVIEWS + $(jq '[.[] | select((.body // "") | test("<!-- unified-ai-review -->"))] | length' <<<"$BOTCOMMENTS_JSON") ))
+}
+
+fetch_counts
+if [[ "$N_ARRIVALS" -eq 0 && "$WAIT" -gt 0 ]]; then
+  echo "No reviews yet on #${PR} — polling up to ${WAIT}s ..."
+  deadline=$(( $(date +%s) + WAIT ))
+  while [[ $(date +%s) -lt $deadline ]]; do
+    sleep 15
+    fetch_counts
+    [[ "$N_ARRIVALS" -gt 0 ]] && break
+  done
+fi
+
+if [[ "$N_REVIEWS" -eq 0 && "$N_COMMENTS" -eq 0 && "$N_BOTCOMMENTS" -eq 0 ]]; then
+  echo "PR #${PR}: no reviews, inline comments or bot comments found." >&2
+  exit 1
+fi
+
+echo "════ PR #${PR}: ${N_REVIEWS} review(s), ${N_COMMENTS} inline comment(s), ${N_BOTCOMMENTS} bot comment(s) ════"
+echo
+echo "──── Review summaries (suppressed findings are inside <details> blocks — READ THEM) ────"
+jq -r '.[] | "═══ " + .user.login + " [" + .state + "] " + .submitted_at + "\n" + (.body // "(no body)") + "\n"' <<<"$REVIEWS_JSON"
+echo "──── Inline comments ────"
+if [[ "$N_COMMENTS" -gt 0 ]]; then
+  jq -r '.[] | "── " + .user.login + " @ " + .path + ":" + ((.line // .original_line // 0)|tostring) + "\n" + .body + "\n"' <<<"$COMMENTS_JSON"
+else
+  echo "(none)"
+fi
+
+echo
+# --- Does the AI verdict actually cover the code on the PR right now? (tap#721) ---
+#
+# The unified reviewer EDITS its comment in place, so `created_at` never moves and a
+# stale verdict is indistinguishable from a fresh one. Worse, the REVIEWING run is
+# triggered by `workflow_run`, so its own head_sha is the base branch — not the PR
+# head. The commit a verdict actually covers is the head_sha of the CAPTURE run that
+# triggered it. So: find the newest capture run for this PR's head, and compare the
+# verdict comment's updated_at against when that run started.
+#
+# Three states, never two: COVERS / STALE / UNKNOWN. Silence would read as "fresh".
+# Callable two ways: with no arguments it resolves everything from the API; with
+# three (verdict_updated, capture_started, capture_sha) it skips the API entirely,
+# which is how tap/tests/test_pr_review_triage.py exercises BOTH branches. A check
+# that can only ever print one of its outcomes has not been tested.
+verdict_coverage() {
+  local head_sha cap_json cap_started cap_sha verdict_updated
+  if [[ $# -eq 3 ]]; then
+    verdict_updated="$1"; cap_started="$2"; cap_sha="$3"
+    if [[ "$verdict_updated" > "$cap_started" ]]; then
+      printf '    VERDICT COVERAGE: covers %s (verdict %s, review of this head started %s)\n' \
+        "${cap_sha:0:8}" "$verdict_updated" "$cap_started"
+    else
+      printf '    *** VERDICT IS STALE *** it predates the review of head %s (verdict %s, that review started %s).\n' \
+        "${cap_sha:0:8}" "$verdict_updated" "$cap_started"
+      printf '    The findings below describe an EARLIER commit. Do not report them as current; wait and re-run.\n'
+    fi
+    return 0
+  fi
+  head_sha="$(gh pr view "$PR" --json headRefOid --jq .headRefOid 2>/dev/null)" || return 0
+  [[ -n "$head_sha" ]] || return 0
+
+  verdict_updated="$(jq -r '[.[] | select((.body // "") | test("<!-- unified-ai-review -->"))]
+                             | last | (.updated_at // .created_at) // empty' <<<"$BOTCOMMENTS_JSON")"
+  if [[ -z "$verdict_updated" ]]; then
+    printf '    VERDICT COVERAGE: no unified-ai-review comment yet for %s\n' "${head_sha:0:8}"
+    return 0
+  fi
+
+  # jq --arg, never string interpolation: $head_sha comes from an API response, and
+  # building a filter by substitution is the shape that makes an injection possible
+  # even when today's value is a hex sha (see AGENTS.md on untrusted text in commands).
+  local branch
+  branch="$(gh pr view "$PR" --json headRefName --jq .headRefName 2>/dev/null)" || return 0
+  cap_json="$(gh run list --branch "$branch" --workflow "AI review capture" --limit 10 \
+                --json headSha,createdAt 2>/dev/null \
+              | jq -c --arg sha "$head_sha" '[.[] | select(.headSha == $sha)] | first')" || cap_json=""
+  if [[ -z "$cap_json" || "$cap_json" == "null" ]]; then
+    printf '    VERDICT COVERAGE: UNKNOWN — no capture run found for head %s; cannot tell what the verdict covers\n' "${head_sha:0:8}"
+    return 0
+  fi
+  cap_started="$(jq -r .createdAt <<<"$cap_json")"
+  cap_sha="$(jq -r .headSha <<<"$cap_json")"
+
+  if [[ "$verdict_updated" > "$cap_started" ]]; then
+    printf '    VERDICT COVERAGE: covers %s (verdict %s, review of this head started %s)\n' \
+      "${cap_sha:0:8}" "$verdict_updated" "$cap_started"
+  else
+    printf '    *** VERDICT IS STALE *** it predates the review of head %s (verdict %s, that review started %s).\n' \
+      "${cap_sha:0:8}" "$verdict_updated" "$cap_started"
+    printf '    The findings below describe an EARLIER commit. Do not report them as current; wait and re-run.\n'
+  fi
+}
+
+echo "──── Bot issue comments (the unified AI review lands here — READ THE VERDICTS) ────"
+verdict_coverage
+if [[ "$N_BOTCOMMENTS" -gt 0 ]]; then
+  jq -r '.[] | "── " + .user.login + " @ " + (.updated_at // .created_at)
+    + (if ((.body // "") | test("<!-- unified-ai-review -->")) then "  [unified-ai-review]" else "" end)
+    + (if (.updated_at != .created_at) then "  (edited in place)" else "" end)
+    + "\n" + (.body // "(no body)") + "\n"' <<<"$BOTCOMMENTS_JSON"
+else
+  echo "(none)"
+fi

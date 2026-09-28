@@ -653,7 +653,9 @@ class IamOidcProviderFalsifier(_AwsFalsifier):
             return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
         except BotoCoreError as exc:
             return verdict_from_probe(candidate, expected, Probe(status="errored", detail=str(exc)))
-        probe = Probe(status="found", source_id=arn, name=None, detail="GetOpenIDConnectProvider 200")
+        probe = Probe(
+            status="found", source_id=arn, name=str(result.get("Url") or "") or None, detail="GetOpenIDConnectProvider 200"
+        )
         return verdict_from_probe(candidate, expected, probe)
 
 
