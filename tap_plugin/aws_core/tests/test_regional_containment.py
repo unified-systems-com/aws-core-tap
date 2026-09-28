@@ -15,13 +15,7 @@ import pytest
 
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.models.aws_account_region import AwsAccountRegion
-from tap_plugin.aws_core.regional import (
-    CHILD_BY_TYPE,
-    NOT_YET_WIRED,
-    PARENT_ENTITY_TYPE,
-    PENDING_FALSIFIER_PR,
-    REGIONAL_CHILDREN,
-)
+from tap_plugin.aws_core.regional import CHILD_BY_TYPE, NOT_YET_WIRED, PARENT_ENTITY_TYPE, REGIONAL_CHILDREN
 
 _PLUGIN_DIR = Path(__file__).resolve().parents[1]
 _TOML = tomllib.loads((_PLUGIN_DIR / "tap-plugin.toml").read_text())
@@ -44,22 +38,12 @@ class TestEveryRegionalChild:
         outbound_edge_types = {e["type"] for rule in AwsAccountRegion.OUTBOUND_EDGES for e in rule["edges"]}
         assert child.edge_type in outbound_edge_types
 
-    def test_falsifier_registered_or_pending_a_named_sibling_pr(self, child):
-        """A CONTAINMENT_EDGES target with no [falsifiers] row reds validate_plugin --strict
-        (regional.py's docstring names the trap). Three of the four types here are that state
-        TODAY, deliberately: their falsifier lives on the sibling PR named in
-        PENDING_FALSIFIER_PR, not on this branch. This test still catches the real mistake — a
-        type with NEITHER a live falsifier NOR a named pending PR — without failing on a known,
-        documented, cross-PR dependency."""
-        registered = child.entity_type in _TOML["falsifiers"]
-        pending = child.entity_type in PENDING_FALSIFIER_PR
-        assert registered or pending, (
-            f"{child.entity_type} is a containment target with no [falsifiers] row and no entry "
-            "in PENDING_FALSIFIER_PR explaining why not; validate_plugin --strict will fail on "
-            "this the moment it runs, with no PR named that would fix it"
-        )
-        assert not (registered and pending), (
-            f"{child.entity_type} now has its own [falsifiers] row; drop it from PENDING_FALSIFIER_PR"
+    def test_falsifier_registered(self, child):
+        """The whole reason REGIONAL_CHILDREN is trimmed to what it is (regional.py's docstring):
+        a CONTAINMENT_EDGES target with no [falsifiers] row reds validate_plugin --strict."""
+        assert child.entity_type in _TOML["falsifiers"], (
+            f"{child.entity_type} is a containment target with no [falsifiers] row; "
+            "validate_plugin --strict will fail on this"
         )
 
     def test_manifest_entry_declares_matching_containment(self, child):

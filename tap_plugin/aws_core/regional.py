@@ -21,15 +21,16 @@ plugin repo's CI runs under ``--strict``) reads every model's ``CONTAINMENT_EDGE
 promoted to a hard failure by ``--strict`` — on any declared target with no ``[falsifiers]`` row.
 A row here becomes a target of ``AwsAccountRegion.CONTAINMENT_EDGES``
 (see ``models/aws_account_region.py``), so a row for a type with no registered falsifier would red
-that gate the moment this ships. VPC, subnet, EC2 instance and security group are the four types
-``VpcFalsifier`` / ``SubnetFalsifier`` / ``Ec2InstanceFalsifier`` / ``SecurityGroupFalsifier``
-(tap-plugin-aws-core#44) already cover — this PR supplies the containment substrate those
-falsifiers have been sitting without; nothing else needs to change on that side for them to start
-producing real candidates once both PRs are on main. Route table, internet gateway, NAT gateway,
-network ACL, Elastic IP, VPC endpoint, EBS volume and RDS instance are all region-scoped and
-belong in this table — they are not here because pairing each with its own falsifier is real,
-separate work this PR does not do blind; adding a row without one is exactly the trap this
-docstring names. Extend ``REGIONAL_CHILDREN`` and ``[falsifiers]`` together, never one alone.
+that gate. VPC, subnet, EC2 instance and security group are the four types ``VpcFalsifier`` /
+``SubnetFalsifier`` / ``Ec2InstanceFalsifier`` / ``SecurityGroupFalsifier``
+(tap-plugin-aws-core#44) cover — this PR supplies the containment substrate those falsifiers were
+registered ahead of (their own ``[falsifiers]`` comment: "exercised by tests only... they become
+live the moment a containment edge does"), so all four now produce real candidates from a real
+collector run. Route table, internet gateway, NAT gateway, network ACL, Elastic IP, VPC endpoint,
+EBS volume and RDS instance are all region-scoped and belong in this table — they are not here
+because pairing each with its own falsifier is real, separate work this PR does not do blind;
+adding a row without one is exactly the trap this docstring names. Extend ``REGIONAL_CHILDREN``
+and ``[falsifiers]`` together, never one alone.
 """
 
 from __future__ import annotations
@@ -78,22 +79,6 @@ REGIONAL_CHILDREN: Final[tuple[RegionalChild, ...]] = (
 )
 
 CHILD_BY_TYPE: Final = {c.entity_type: c for c in REGIONAL_CHILDREN}
-
-#: Three of the four ``REGIONAL_CHILDREN`` above have NO ``[falsifiers]`` row on THIS branch, which
-#: means ``validate_plugin --level loads --strict`` is red on this branch alone today —
-#: ``VpcFalsifier`` / ``Ec2InstanceFalsifier`` / ``SecurityGroupFalsifier`` are built and registered
-#: on the sibling PR tap-plugin-aws-core#44 ("compute + network falsifier coverage"), not on this
-#: PR's base (#46). Only ``SubnetFalsifier`` (also from #46) is live here. This is a deliberate,
-#: DOCUMENTED cross-PR dependency, the same shape as this branch's own relationship to #46 (base,
-#: retarget after merge): the gate goes green the moment #44 merges into this PR's ancestry, with no
-#: further change needed on this side — see the module docstring's "Why only four rows" note and
-#: ``tap_plugin.aws_core.falsifiers`` module docstring for how the two pieces fit together. Do not
-#: register a competing falsifier for any of these three here; #44 already owns that.
-PENDING_FALSIFIER_PR: Final[dict[str, str]] = {
-    "aws_core__aws_vpc": "tap-plugin-aws-core#44 (VpcFalsifier)",
-    "aws_core__aws_ec2_instance": "tap-plugin-aws-core#44 (Ec2InstanceFalsifier)",
-    "aws_core__aws_security_group": "tap-plugin-aws-core#44 (SecurityGroupFalsifier)",
-}
 
 #: Region-scoped types that belong in REGIONAL_CHILDREN and are deliberately NOT here yet — see
 #: the module docstring. Each needs its own falsifier before it can be added; this tuple is the

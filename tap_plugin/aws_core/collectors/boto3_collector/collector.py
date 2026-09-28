@@ -511,7 +511,10 @@ class Boto3Collector(CollectorBase):
                             # The listing was read; what was done with it was not finished.
                             listing.processing.append(f"{type(exc).__name__}: {exc}")
                 if contained:
-                    assert listing is not None
+                    # `listing` is always set here (`Listing() if contained else None`, above) —
+                    # `surface_of`'s own `listing: Listing | None` parameter tolerates None
+                    # regardless, so no assert is needed to narrow the type for a check that
+                    # would vanish under `-O` anyway (Bandit B101).
                     surfaces.append(
                         surface_of(
                             relation=contained["relation"],

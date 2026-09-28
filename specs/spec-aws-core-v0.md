@@ -849,8 +849,11 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
 
 #### Implementation
 
-- **`[falsifiers]` manifest table**, `tap-plugin.toml`: one entry today,
-  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`. `requires_tap`
+- **`[falsifiers]` manifest table**, `tap-plugin.toml`: the foundation registered one entry,
+  `aws_core__aws_subnet = "tap_plugin.aws_core.falsifiers.SubnetFalsifier"`; `tap-plugin-aws-core#43`
+  adds `VpcFalsifier`, `Ec2InstanceFalsifier` and `SecurityGroupFalsifier` beside it, on a shared
+  `_Ec2Falsifier(_AwsFalsifier)` (region from the `aws_region` dimension, else a type hint, else a
+  fallback sweep that may find but never drop — `falsifiers.py`'s module docstring). `requires_tap`
   moved to `>=0.2.1` — 0.1.6, the release before it, refuses the `[falsifiers]` key at
   manifest parse (`tap_plugins/manifest.py::_parse_falsifiers`).
 - **`tap_plugin/aws_core/falsifiers.py`**: a base `_AwsFalsifier(Falsifier)` mirroring
@@ -976,16 +979,15 @@ rest can extend.
   the moment a `CONTAINMENT_EDGES` target has no `[falsifiers]` row — the exact trap
   `req-aws-core-reconcile-falsifiers` named for `VpcFalsifier`. `regional.py`'s `NOT_YET_WIRED`
   worklist names all eight, so the gap is tracked, not merely absent.
-- **A real, DOCUMENTED cross-PR dependency, not an oversight.** Three of the four child types'
-  falsifiers — `VpcFalsifier`, `Ec2InstanceFalsifier`, `SecurityGroupFalsifier` — are built on
-  the sibling PR tap-plugin-aws-core#44, not on this one. `validate_plugin --level loads
-  --strict` is therefore RED on those three targets on this branch alone TODAY; it goes green
-  the moment #44 merges into this PR's ancestry, with no further change needed here.
-  `regional.py`'s `PENDING_FALSIFIER_PR` names exactly which PR and which falsifier for each,
-  and `tests/test_regional_containment.py::TestEveryRegionalChild::
-  test_falsifier_registered_or_pending_a_named_sibling_pr` asserts every containment target is
-  EITHER registered OR named there — never neither. Only `SubnetFalsifier` (also on this PR's
-  base, #46) is live on this branch.
+- **All four falsifiers were already on `main` before this PR merged (tap-plugin-aws-core#44),
+  registered ahead of a containment path reaching them** (`falsifiers.py`'s own module docstring:
+  "become live the moment a containment edge reaches them"). This PR is that containment edge:
+  `VpcFalsifier` / `SubnetFalsifier` / `Ec2InstanceFalsifier` / `SecurityGroupFalsifier` all
+  start producing real candidates from a real collector run the moment it lands, with no further
+  change needed on the falsifier side. (During review this PR's base was #46 and #44 was a still-
+  open sibling; #44 merged first, so by the time this PR itself merged the two were already
+  reconciled — `tests/test_regional_containment.py::TestEveryRegionalChild::
+  test_falsifier_registered` asserts every containment target has a live `[falsifiers]` row.)
 - **Per-region completeness, never "observed empty" for a region the credential could not
   read** (`tap_grid/specs/spec-grid-reconcile.md`, `req-grid-reconcile-evidence`).
   `collectors/boto3_collector/regions.py::read_region_facts` calls `ec2:DescribeRegions
@@ -1049,5 +1051,5 @@ rest can extend.
 | req-aws-core-regional-containment-3 | Per-Region Completeness, Not Observed-Empty | Implemented | A disabled or unknown-status region's listing is never called / never counted complete when empty; `region_disabled` / `empty_unverified` reasons are recorded. | |
 | req-aws-core-regional-containment-4 | GovCloud Partition-Aware | Implemented | `partition_of` derives `aws-us-gov` from `us-gov-*`; a mixed-partition scope is warned once. | |
 | req-aws-core-regional-containment-5 | RAM Share Observed, Not Hosted | Implemented | `owner_path` on a containment entry routes `BELONGS_TO_ACCOUNT` to the real owner and withholds the `HOSTS_*` edge when it differs from the observing account. | |
-| req-aws-core-regional-containment-6 | Cross-PR Falsifier Dependency Named | Implemented | `PENDING_FALSIFIER_PR` names tap-plugin-aws-core#44 for VPC/EC2-instance/security-group; `validate_plugin --strict` is red on those three on this branch alone until #44 merges, by design. | Retarget/merge-order note mirrors this PR's own relationship to #46. |
+| req-aws-core-regional-containment-6 | All Four Falsifiers Live | Implemented | `VpcFalsifier` / `SubnetFalsifier` / `Ec2InstanceFalsifier` / `SecurityGroupFalsifier` (tap-plugin-aws-core#44, #46) are all registered in `[falsifiers]`; `validate_plugin --level loads --strict`'s falsifier-coverage check is green for every `REGIONAL_CHILDREN` target. | |
 | req-aws-core-regional-containment-7 | Remaining Regional Types Named, Not Silently Skipped | Proposed | `NOT_YET_WIRED` names 8 region-scoped types with no containment yet, each blocked on pairing a new row with a new falsifier. | Backlog. |

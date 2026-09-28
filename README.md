@@ -205,17 +205,18 @@ and edges are declarable as manifest data, so adding a service is usually a
 
 1. **Support deletion.** Close the additive-only gap. The JUDGING layer exists
    (`req-aws-core-reconcile-falsifiers`, Implemented — `tap-plugin.toml`'s `[falsifiers]`
-   table, `falsifiers.py`'s `_AwsFalsifier` base, `SubnetFalsifier`): given a retirement
+   table, `falsifiers.py`'s `_AwsFalsifier` base, four falsifiers: `SubnetFalsifier`,
+   `VpcFalsifier`, `Ec2InstanceFalsifier`, `SecurityGroupFalsifier`): given a retirement
    candidate, a falsifier probes AWS directly and returns a verdict, the same mechanism
-   `tap-plugin-github-core` ships (github-core#151). The FEEDING half now exists too, for a
-   first four types (`req-aws-core-regional-containment`, Implemented —
+   `tap-plugin-github-core` ships (github-core#151). The FEEDING half now exists too, for
+   those same four types (`req-aws-core-regional-containment`, Implemented —
    `aws_core__aws_account_region`, one `HOSTS_*` containment edge per type, per-region
    completeness surfaces): `boto3_collector` produces real completeness statements for VPC,
    subnet, EC2 instance and security group, so `tap_grid.candidates.derive_candidates` can
-   derive real candidates for them once tap-plugin-aws-core#44's falsifiers for the latter
-   three are also on main. Every other collected type still records no completeness
-   statement — the remaining regional types are named in `regional.py`'s `NOT_YET_WIRED`,
-   each blocked on pairing a new containment row with a new falsifier together.
+   derive real candidates for all four from a live collector run. Every other collected type
+   still records no completeness statement — the remaining regional types are named in
+   `regional.py`'s `NOT_YET_WIRED`, each blocked on pairing a new containment row with a new
+   falsifier together.
 2. **Add more supported AWS types.** First, manifest entries for the 27
    modeled-but-not-collected types (usually pure manifest work — no new code);
    then models for unmodeled services per the ARN heuristic, following the
