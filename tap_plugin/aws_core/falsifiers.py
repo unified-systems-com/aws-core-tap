@@ -768,9 +768,18 @@ class S3BucketFalsifier(_AwsFalsifier):
                 "to treat it as this account's complete bucket inventory"
             )
             return None
-        names = frozenset(
-            str(b.get("Name") or "") for b in (response.get("Buckets") or [])
-        )
+        if "Buckets" not in response or response.get("Buckets") is None:
+            # A ``Buckets`` key present but empty (``[]``) is a genuine, positive "this account
+            # owns zero buckets" observation and is trusted below. The key being ABSENT or None
+            # entirely is a different thing — a malformed or incomplete response — and must not
+            # collapse to the same empty inventory by way of `or []`'s silent default (the same
+            # null-is-unobserved-vs-empty-is-observed distinction this module applies elsewhere).
+            logger.warning(
+                "[6b12] S3BucketFalsifier: list_buckets returned no Buckets key/value; refusing to treat this "
+                "as a (possibly empty) complete inventory"
+            )
+            return None
+        names = frozenset(str(b.get("Name") or "") for b in response["Buckets"])
         self._own_buckets, self._own_buckets_for = names, self._batch_id
         return names
 

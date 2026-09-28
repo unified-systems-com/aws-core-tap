@@ -592,6 +592,36 @@ class TestS3BucketFalsifier:
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
         assert "could not be read either" in verdict.note
 
+    def test_a_missing_buckets_key_is_never_treated_as_an_empty_inventory(self) -> None:
+        # A `Buckets` key present but empty (`[]`) is a genuine, positive "zero buckets"
+        # observation and would be trusted; a response carrying NO `Buckets` key at all is a
+        # different thing — malformed or incomplete — and `response.get("Buckets") or []`
+        # would previously collapse the two into the same empty frozenset silently.
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {}  # no "Buckets" key at all
+        [verdict] = S3BucketFalsifier(client=client).batch_falsify(
+            [candidate], _context()
+        )
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "could not be read either" in verdict.note
+
+    def test_a_present_but_empty_buckets_list_is_a_trusted_observation(self) -> None:
+        # The other half of the same distinction: `Buckets: []` (present, genuinely empty) is
+        # trusted as a complete inventory, unlike a missing key.
+        candidate = self._bucket("gone")
+        client = MagicMock()
+        client.head_bucket.side_effect = _client_error("403", "HeadBucket")
+        client.list_buckets.return_value = {"Buckets": []}
+        [verdict] = S3BucketFalsifier(client=client).batch_falsify(
+            [candidate], _context()
+        )
+        # No verified owner (module default), so this still refuses -- but for the OWNER
+        # reason, not because the inventory itself was rejected.
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "owning account could not be verified" in verdict.note
+
     # -- owner-match gate: the ONLY way this falsifier ever answers DROPPED_FROM_OBSERVATION --
 
     def test_an_absence_under_a_different_recorded_owner_is_undetermined_not_dropped(
