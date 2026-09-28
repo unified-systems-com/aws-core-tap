@@ -710,7 +710,35 @@ def _created_at(payload: Mapping[str, Any]) -> datetime | None:
     return value if isinstance(value, datetime) else None
 
 
-class IamRoleFalsifier(_AwsFalsifier):
+class _IamFalsifier(_AwsFalsifier):
+    """Shared shape for the three name/ARN-keyed IAM falsifiers: resolve the ``iam`` client, run
+    one call, and turn a ``ClientError``/``BotoCoreError`` into the matching absence/refusal
+    verdict — the one piece identical across ``GetRole``/``GetUser``/``GetPolicy``, factored out
+    once rather than repeated per type. Each subclass supplies the call itself and, via
+    ``_probe_of``, how its own response shape becomes a found ``Probe``.
+    """
+
+    def _iam_client(self, session: ProbeSession) -> Any:
+        return session.client("iam", region_name=_GLOBAL_CLIENT_REGION)
+
+    def _probe_call(
+        self, candidate: Candidate, expected: Expected, call: Callable[[], dict[str, Any]]
+    ) -> Verdict:
+        try:
+            result = call()
+        except ClientError as exc:
+            status = _iam_probe_status_of(exc)
+            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
+            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
+        except BotoCoreError as exc:
+            return _undetermined(candidate, "errored", str(exc))
+        return verdict_from_probe(candidate, expected, self._probe_of(result))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        raise NotImplementedError
+
+
+class IamRoleFalsifier(_IamFalsifier):
     """``iam:GetRole(RoleName=name)``; ``NoSuchEntity`` -> gone.
 
     Cannot answer ``REIDENTIFIED`` for a delete+recreate under the SAME path: that yields an
@@ -727,8 +755,7 @@ class IamRoleFalsifier(_AwsFalsifier):
         arn = str(getattr(row, "role_arn", "") or "")
         if not name or not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this IAM role")
-        dimensions = _dimensions_of(row)
-        expected_account = dimensions.get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws_account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -744,27 +771,21 @@ class IamRoleFalsifier(_AwsFalsifier):
                 "querying by name would ask about a different object than the one this ARN claims to be",
             )
         expected = Expected(source_id=arn, owner=None, name=name)
-        try:
-            client = session.client("iam", region_name=_GLOBAL_CLIENT_REGION)
-            result = client.get_role(RoleName=name)
-        except ClientError as exc:
-            status = _iam_probe_status_of(exc)
-            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
-            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
-        except BotoCoreError as exc:
-            return _undetermined(candidate, "errored", str(exc))
+        client = self._iam_client(session)
+        return self._probe_call(candidate, expected, lambda: client.get_role(RoleName=name))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
         role = result.get("Role") or {}
-        probe = Probe(
+        return Probe(
             status="found",
             source_id=str(role.get("Arn") or "") or None,
             name=str(role.get("RoleName") or "") or None,
             created_at=_created_at(role),
             detail="get_role 200",
         )
-        return verdict_from_probe(candidate, expected, probe)
 
 
-class IamUserFalsifier(_AwsFalsifier):
+class IamUserFalsifier(_IamFalsifier):
     """``iam:GetUser(UserName=name)``; ``NoSuchEntity`` -> gone.
 
     Cannot answer ``REIDENTIFIED`` for a delete+recreate under the SAME path: that yields an
@@ -780,8 +801,7 @@ class IamUserFalsifier(_AwsFalsifier):
         arn = str(getattr(row, "user_arn", "") or "")
         if not name or not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this IAM user")
-        dimensions = _dimensions_of(row)
-        expected_account = dimensions.get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws_account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -793,27 +813,21 @@ class IamUserFalsifier(_AwsFalsifier):
                 "querying by name would ask about a different object than the one this ARN claims to be",
             )
         expected = Expected(source_id=arn, owner=None, name=name)
-        try:
-            client = session.client("iam", region_name=_GLOBAL_CLIENT_REGION)
-            result = client.get_user(UserName=name)
-        except ClientError as exc:
-            status = _iam_probe_status_of(exc)
-            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
-            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
-        except BotoCoreError as exc:
-            return _undetermined(candidate, "errored", str(exc))
+        client = self._iam_client(session)
+        return self._probe_call(candidate, expected, lambda: client.get_user(UserName=name))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
         user = result.get("User") or {}
-        probe = Probe(
+        return Probe(
             status="found",
             source_id=str(user.get("Arn") or "") or None,
             name=str(user.get("UserName") or "") or None,
             created_at=_created_at(user),
             detail="get_user 200",
         )
-        return verdict_from_probe(candidate, expected, probe)
 
 
-class IamPolicyFalsifier(_AwsFalsifier):
+class IamPolicyFalsifier(_IamFalsifier):
     """``iam:GetPolicy(PolicyArn=arn)``; ``NoSuchEntity`` -> gone. Customer-managed policies only.
 
     AWS-managed policies (``is_aws_managed=True``) are provisioned and retired by AWS, not this
@@ -840,30 +854,23 @@ class IamPolicyFalsifier(_AwsFalsifier):
         name = str(getattr(row, "name", "") or "")
         if not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no ARN for this IAM policy")
-        dimensions = _dimensions_of(row)
-        expected_account = dimensions.get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws_account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
         expected = Expected(source_id=arn, owner=None, name=name or None)
-        try:
-            client = session.client("iam", region_name=_GLOBAL_CLIENT_REGION)
-            result = client.get_policy(PolicyArn=arn)
-        except ClientError as exc:
-            status = _iam_probe_status_of(exc)
-            detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
-            return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
-        except BotoCoreError as exc:
-            return _undetermined(candidate, "errored", str(exc))
+        client = self._iam_client(session)
+        return self._probe_call(candidate, expected, lambda: client.get_policy(PolicyArn=arn))
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
         policy = result.get("Policy") or {}
-        probe = Probe(
+        return Probe(
             status="found",
             source_id=str(policy.get("Arn") or "") or None,
             name=str(policy.get("PolicyName") or "") or None,
             created_at=_created_at(policy),
             detail="get_policy 200",
         )
-        return verdict_from_probe(candidate, expected, probe)
 
 
 class S3BucketFalsifier(_AwsFalsifier):
