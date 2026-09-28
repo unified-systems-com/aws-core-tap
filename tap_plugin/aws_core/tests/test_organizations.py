@@ -50,6 +50,12 @@ ORG_ID = "o-abc1234567"
 ROOT_ID = "r-ab12"
 MGMT_ACCOUNT = "111111111111"
 DIMENSIONS = {"cloud": "aws", "aws_account": MGMT_ACCOUNT, "aws_region": "global"}
+#: Injected explicitly into every falsifier below (the module docstring's own contract: "region
+#: is injected by tests"). Without it, `_region()` falls back to `resolve_aws_secret()` — a real
+#: credential read that happens to succeed in a dev stack carrying a secret and fails in CI's
+#: credential-free `ci` boot record, masking every assertion behind
+#: `UNDETERMINED(organizations client unavailable)` (caught on aws-core-tap#55's own CI run).
+REGION = "us-east-1"
 
 
 # ---------------------------------------------------------------------------
@@ -455,7 +461,7 @@ class TestOrganizationalUnitFalsifierFourCases:
         cases[CASE_REIDENTIFIED] = _candidate(reborn_id, ORGANIZATIONAL_UNIT, parent=org_id)
         client.answer_ou("ou-ab12-reborn001", {"Id": "ou-ab12-newid001", "Name": "x"}, parents=[{"Id": ROOT_ID}])
 
-        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         verdicts = run_four_cases(falsifier, cases, _context())
         _assert_evidence_supports(verdicts)
         assert verdicts[CASE_PRESENT].expected["owner"] == ROOT_ID
@@ -466,7 +472,7 @@ class TestOrganizationalUnitFalsifierFourCases:
         client = FakeOrgClient()
         ou_id = _ou_row("ou-ab12-renamed01", name="old-name")
         client.answer_ou("ou-ab12-renamed01", {"Id": "ou-ab12-renamed01", "Name": "new-name"}, parents=[{"Id": ROOT_ID}])
-        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == "RELOCATED"
         assert verdict.kind == "renamed"
@@ -477,7 +483,7 @@ class TestOrganizationalUnitFalsifierFourCases:
         org_id = _org_row(root_id="r-zz99")
         client = FakeOrgClient(root_ids=["r-zz99"])
         ou_id = _ou_row("ou-ab12-foreign01")  # embeds root "ab12", not "zz99"
-        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
@@ -488,7 +494,7 @@ class TestOrganizationalUnitFalsifierFourCases:
         client = FakeOrgClient()
         client.reach_error = ClientError({"Error": {"Code": "AccessDeniedException", "Message": "x"}}, "DescribeOrganization")
         ou_id = _ou_row("ou-ab12-anycase01")
-        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "forbidden"
@@ -498,7 +504,7 @@ class TestOrganizationalUnitFalsifierFourCases:
         client = FakeOrgClient()
         client.reach_error = ClientError({"Error": {"Code": "AWSOrganizationsNotInUseException", "Message": "x"}}, "DescribeOrganization")
         ou_id = _ou_row("ou-ab12-anycase02")
-        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
@@ -507,7 +513,7 @@ class TestOrganizationalUnitFalsifierFourCases:
         org_id = _org_row()
         client = FakeOrgClient()
         ou_id = _ou_row("ou-ab12-elsewhere1", account_id="999988887777")
-        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
@@ -542,7 +548,7 @@ class TestAccountFalsifierFourCases:
         cases[CASE_REIDENTIFIED] = _candidate(reborn_id, ACCOUNT, parent=org_id)
         client.answer_account("555555555555", {"Id": "666666666666", "Arn": account_arn("666666666666"), "Name": "x"})
 
-        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         verdicts = run_four_cases(falsifier, cases, _context())
         _assert_evidence_supports(verdicts)
         assert verdicts[CASE_PRESENT].expected["owner"] == ORG_ID
@@ -561,7 +567,7 @@ class TestAccountFalsifierFourCases:
                 "State": "SUSPENDED",
             },
         )
-        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(account_id, ACCOUNT, parent=org_id)], _context())
         assert verdict.verdict == "PRESENT_AT_PROBE"
         assert "SUSPENDED" in (verdict.note or "")
@@ -578,7 +584,7 @@ class TestAccountFalsifierFourCases:
                 "Name": "moved",
             },
         )
-        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(account_id, ACCOUNT, parent=org_id)], _context())
         assert verdict.verdict == "RELOCATED"
         assert verdict.kind == "transferred"
@@ -590,7 +596,7 @@ class TestAccountFalsifierFourCases:
         org_id = _org_row(organization_id="")
         client = FakeOrgClient()
         account_id = _account_row("999999999991")
-        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(account_id, ACCOUNT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
@@ -600,7 +606,7 @@ class TestAccountFalsifierFourCases:
         org_id = _org_row(organization_id="o-thisorg0001")
         client = FakeOrgClient(organization_id="o-otherorg001")
         account_id = _account_row("999999999992")
-        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT)
+        falsifier = AccountFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
         [verdict] = falsifier.batch_falsify([_candidate(account_id, ACCOUNT, parent=org_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
