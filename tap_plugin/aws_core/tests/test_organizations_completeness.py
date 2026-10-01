@@ -156,7 +156,7 @@ class PagedOrganizations:
     and a page may be an exception, so a test can fail page two of any listing."""
 
     def __init__(self) -> None:
-        self.organization: dict[str, Any] | Exception = {
+        self.organization: dict[str, Any] = {
             "Id": ORG_ID,
             "Arn": f"arn:{PARTITION}:organizations::{MGMT}:organization/{ORG_ID}",
             "MasterAccountId": MGMT,
@@ -190,8 +190,6 @@ class PagedOrganizations:
 
     def describe_organization(self) -> dict[str, Any]:
         self.calls.append(("describe_organization", {}))
-        if isinstance(self.organization, Exception):
-            raise self.organization
         return {"Organization": self.organization}
 
     def list_roots(self, **kw: Any) -> dict[str, Any]:
