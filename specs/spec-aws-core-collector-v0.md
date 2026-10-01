@@ -1189,7 +1189,7 @@ The rulings of 2026-10-01 are encoded below as decided.
   `{"source": "field", "from": <path>, "shape": "list_kv"|"map"}`, normalizing tags the enumerate
   item already carries (`aws_resource_manifest.schema.json` `$defs/tags_block`, `oneOf[0]`;
   `collector.py:167-168`). Ten of the 23 entries use it, including VPC, subnet, EC2 instance and security
-  group. `-1` names only `rgta|service`; `-9` states all three, plus the `none` declaration below.
+  group. `-1` names only `rgta|service`; `-9` states all three, plus the `none` and `owned_by` declarations below.
 - **The Organizations lane.** `organizations.py` is not a manifest entry, and it calls
   `normalize_tags(raw, "list_kv")` from its own code (`organizations.py:431`) for OU, account and
   customer-managed SCP tags. Under `-1` ("no hidden per-service code") that path is undeclared.
@@ -1273,7 +1273,7 @@ The rulings of 2026-10-01 are encoded below as decided.
 | req-aws-collector-tags-6 | us-east-1 Invariant | Approved for Development | Region scope must include `us-east-1`; `self_test` warns if absent, or global / CloudFront-cert tags are silently missed. | |
 | req-aws-collector-tags-7 | RGTA Op-Contract | Approved for Development | 15-min pagination-token TTL (restart, not resume), throttle backoff, `ResourceTypeFilters` only; RGTA decorates, never authoritative for existence. | Eventually consistent. |
 | req-aws-collector-tags-8 | Shape Enum Fenced | Approved for Development | v0 `shape` ∈ `list_kv\|map` (all of Sam's 8); ECS / CloudTrail / WAFv2 outliers named as a future extension, not built. | |
-| req-aws-collector-tags-9 | Declared Lanes | Proposed | `tags.source` ∈ `field\|rgta\|service\|none`, matching `aws_resource_manifest.schema.json`. `field` normalizes a path into the enumerate item with a declared `shape`; `none` carries a non-empty `why` and means the type carries no AWS tags. | Supersedes `-1`'s two-lane wording on approval. `none` is new schema (`-12`). |
+| req-aws-collector-tags-9 | Declared Lanes | Proposed | A manifest entry's `tags.source` ∈ `field\|rgta\|service\|none\|owned_by`, matching `aws_resource_manifest.schema.json`. `field` normalizes a path into the enumerate item with a declared `shape`; `none` carries a non-empty `why` and means the type carries no AWS tags; `owned_by` names another path's lane that owns this type's tags (`-14`). The reading lane `organizations` is not a manifest value: it appears only in `tag_lanes.json` rows, for the Organizations reader (`-10`). | Supersedes `-1`'s two-lane wording on approval. `none` is new schema (`-12`). |
 | req-aws-collector-tags-10 | Organizations Lane Declared | Proposed | The Organizations reader is the one tag path outside the manifest: `organizations:ListTagsForResource`, shape `list_kv`, for the root, OUs, accounts and customer-managed policies of every type it reads, through `normalize_tags` and the `tags_of` unread sentinel (an unreadable tag set withholds the node, as today). Account tags read here are written to `aws_account.tags`. No type the epic adds folds tags by hand. | `organizations.py:80,431`. Ruling 2026-10-01: Organizations account tags stay on the account. Existing debt, named and not fixed here: two custom functions fold tags by hand before the `field` lane sees them, KMS from `[{TagKey, TagValue}]` (`customfns.py:890-895`, a wire shape outside the `-8` enum) and CloudTrail from nested `ResourceTagList[].TagsList[]` (`customfns.py:966-971`). Both bypass `-4`'s single normalizer. |
 | req-aws-collector-tags-11 | AWS-Reserved Keys Kept Verbatim | Proposed | Tag keys under the AWS-reserved `aws:` prefix are kept verbatim in the same `tags` map as operator tags, never filtered, renamed or moved. | States today's behaviour (`tags.py:39-50`). Ruling 2026-10-01. |
 | req-aws-collector-tags-12 | Untaggable Is Declared | Proposed | The manifest schema's `tags_block` accepts `{"source": "none", "why": <non-empty string>}`, and every manifest entry declares a `tags` block; a test fails on an entry with none. Existing entries without a block gain a lane or `none` in the same change. | Ruling 2026-10-01. A schema change to the tag mechanism; no tag key or dimension changes. |
@@ -1385,7 +1385,8 @@ role deploys in `aws-us-gov` on first use (`req-aws-core-secret-member-fanout-5`
 **Per-account results.** Every account the organization listed gets exactly one `ACCOUNT_RESULT`
 run-log entry: account id, outcome (`collected` / `partial` / `skipped`), reason, regions read,
 node and edge counts, and its batch id (`null` when no batch was submitted). The run summary counts each outcome. A member's failure
-(denied `AssumeRole`, account mismatch, rejected batch) is that account's outcome, never the run's.
+(denied `AssumeRole`, account mismatch, rejected batch) is that account's outcome and does not abort
+the run. It still marks the run's top-level result degraded (`-14`).
 The base account's own credential, partition or identity failure still aborts the run
 (`req-aws-collector-runtime-3`).
 

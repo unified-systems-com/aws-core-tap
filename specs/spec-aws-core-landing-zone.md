@@ -124,7 +124,7 @@ region.
 | `aws_identity_center_instance` (exists, has `tags`) | `sso-admin:ListInstances` | instance ARN | service, `ListTagsForResource(InstanceArn, ResourceArn)`, `Tags`, list_kv | home-region footprint, `HOSTS_IDENTITY_CENTER_INSTANCE` | absent from `ListInstances` | `TRUSTS_IDENTITY_SOURCE` (exists; target open) |
 | `aws_identity_center_permission_set` **(new)** | `ListPermissionSets`, `DescribePermissionSet`, `ListManagedPoliciesInPermissionSet` | permission-set ARN | service, as above | instance, `HOLDS_PERMISSION_SET` | `DescribePermissionSet` → `ResourceNotFoundException` | — (managed policy ARNs and session duration are typed fields; the inline policy is not read by this requirement; see below) |
 | `aws_identity_center_group` **(new)** | `identitystore:ListGroups(IdentityStoreId)` | (identity store id, group id) | **AWS cannot tag a group** (read: `identitystore` has no tag operation) | instance, `HOLDS_IDENTITY_GROUP` | `DescribeGroup` → `ResourceNotFoundException` | — (`ExternalIds` from SCIM, for example Okta, are a typed field) |
-| `aws_identity_center_account_assignment` **(new)** | `ListPermissionSetsProvisionedToAccount` then `ListAccountAssignments(AccountId, PermissionSetArn)` per account | (instance ARN, account id, permission-set ARN, principal type, principal id) | **AWS cannot tag an assignment** | instance, `HOLDS_ACCOUNT_ASSIGNMENT` | the (account, permission set) listing no longer names the principal | `GRANTS_PERMISSION_SET` (→ permission set), `GRANTS_ACCESS_TO_ACCOUNT` (→ account), `GRANTED_TO_GROUP` (→ group, when the principal is a group) |
+| `aws_identity_center_account_assignment` **(new)** | `ListPermissionSetsProvisionedToAccount` then `ListAccountAssignments(AccountId, PermissionSetArn)` per account | (instance ARN, account id, permission-set ARN, principal type, principal id) | **AWS cannot tag an assignment** | instance, `HOLDS_ACCOUNT_ASSIGNMENT` | the (account, permission set) listing no longer names the principal; or `ListAccountAssignments` raises `ResourceNotFoundException` **and** `DescribePermissionSet` confirms the permission set is gone. `ResourceNotFoundException` alone is `UNDETERMINED`, because sso-admin uses it for the instance, the account and the permission set alike (read: botocore error list) | `GRANTS_PERMISSION_SET` (→ permission set), `GRANTS_ACCESS_TO_ACCOUNT` (→ account), `GRANTED_TO_GROUP` (→ group, when the principal is a group) |
 
 - **Users are not nodes** (ruling 2026-10-01). A `USER` assignment records `principal_type` and
   `principal_id` only, and no identity-store user is read or written. Groups are nodes because the
@@ -185,9 +185,14 @@ Gruntwork's baselines turn these on per opt-in region (`control-tower-app-accoun
 | EBS default encryption | `ec2:GetEbsEncryptionByDefault`, `GetEbsDefaultKmsKeyId` | — (a per-region account setting, not a resource) | not a resource, so nothing to tag | — (typed fields on the existing footprint: `ebs_encryption_by_default`, `ebs_default_kms_key_id`) | — (replaced every run) | — |
 | S3 account public-access block | `s3control:GetPublicAccessBlock(AccountId)` | — (an account setting) | not a resource, so nothing to tag | — (typed fields on `aws_account`: the four block flags) | — (replaced every run) | — |
 
-- **Absent vs denied.** For the two settings, AWS's "not configured" (`NoSuchPublicAccessBlockConfiguration`)
-  is an observed `false`, and a denied call is `null`. The two are never merged
-  (`req-aws-collector-hydrate-6`'s rule).
+- **Absent vs denied.** Each setting has its own "off" answer, and a denied call is `null` for
+  both. The two are never merged (`req-aws-collector-hydrate-6`'s rule).
+  - S3 account public-access block: AWS answers an account with no configuration with
+    `NoSuchPublicAccessBlockConfiguration`, which is stored as an observed `false` on all four flags.
+  - EBS default encryption: `GetEbsEncryptionByDefault` succeeds and returns
+    `EbsEncryptionByDefault: false` (read: botocore output shape), which is stored as returned. No
+    exception is expected or interpreted. `GetEbsDefaultKmsKeyId` likewise returns the key id as
+    a value.
 - **The account-node writer.** The S3 public-access-block fields are account-sourced. They are among
   the fields `req-aws-collector-fanout-8` merges with the organization-sourced ones, so the org-tree
   node does not drop them.

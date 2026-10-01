@@ -651,7 +651,10 @@ membership becomes the observed thing, and the thing that retires.
   `req-aws-collector-tags` and waits on core's GRIFT replacement semantics
   (unified-systems-com/tap#886).
 - **Organization cascade.** A deliberate `delete_node(cascade="contained")` of the organization
-  tombstones its OUs and memberships, **not** its accounts. That narrows the blast radius
+  tombstones everything it contains: its OUs, memberships, delegations, customer-managed SCPs and
+  other customer-managed policies, and through those policies their statements and tag-policy
+  rules (`req-aws-core-organizations-completeness`). It does **not** reach its accounts, or
+  AWS-managed policies and their statements, which no organization contains. That narrows the blast radius
   `models/aws_organization.py:61-79` flags for human sign-off.
 - **Migration.** Existing grids hold organization → account `ENROLLS_ACCOUNT` edges. They are
   retired once, by an operator-run GRIFT bundle with a `deletes` section
@@ -710,8 +713,14 @@ rule on what becomes a node (*Policy Statements*, below).
   `(organization_id, account_id, service_principal)`. AWS addresses a delegation by exactly that pair:
   `DeregisterDelegatedAdministrator(AccountId, ServicePrincipal)`. Edges: `HOLDS_DELEGATION`
   (organization → delegation, containment) and `DELEGATES_TO_ACCOUNT` (delegation → account,
-  reference). Falsifier: `ListDelegatedServicesForAccount(AccountId)` no longer naming the service
-  principal is `DROPPED_FROM_OBSERVATION`, after the same reach gate. AWS cannot tag a delegation, so
+  reference). Falsifier: `ListDelegatedServicesForAccount(AccountId)`, after the same reach gate.
+  A successful answer that no longer names the service principal is `DROPPED_FROM_OBSERVATION`.
+  So is `AccountNotRegisteredException`, which botocore documents as "the specified account is not
+  a delegated administrator" (read: botocore 1.43.103 `organizations` model). That is the answer
+  AWS gives when the account's last delegation is removed. `AccessDeniedException` and every other
+  error are `UNDETERMINED`. During collection, `AccountNotRegisteredException` for an account the
+  outer listing named means the two reads disagree: the aggregate surface is recorded incomplete
+  with that reason (`req-aws-core-organizations-completeness-13`). AWS cannot tag a delegation, so
   its tags are declared `none` (`req-aws-collector-tags-12`).
   **One surface for the nested listings.** Every delegation hangs directly off the organization, but
   the inventory comes from one outer listing plus one inner listing per delegated account. Core
@@ -1774,7 +1783,11 @@ is never retired.
   `falsifier-coverage` check passes honestly, which is the same "may find, never drop" posture as
   `_Ec2Falsifier`'s fallback sweep (`falsifiers.py` module docstring).
 - **Consequence, stated:** a deliberate `delete_node(cascade="contained")` of an account now reaches
-  its footprints and, through `HOSTS_*`, its regional network plane, bounded by
+  its footprints and, through `HOSTS_*`, everything each footprint contains and everything below
+  that (`req-aws-core-contained-type-triple`): the regional network plane with its routes,
+  associations, rules, TGW children and resolver children, plus the landing-zone types hosted
+  there (landing zone and its controls and baselines, the Identity Center instance and its
+  children, the security services). The closure is bounded by
   `TAP_CASCADE_MAX_CLOSURE`. A closure over the cap refuses rather than half-applying.
   `req-aws-core-organization-membership` ensures no automatic path retires an account.
 - **The cascade-cap reasoning still holds.**
