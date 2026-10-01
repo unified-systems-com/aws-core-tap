@@ -932,7 +932,9 @@ workforce users from (for example Okta). Design vocabulary, as above.
 - `aws_core__aws_identity_center_instance`: `name`, `instance_arn`, `identity_store_id`,
   `owner_account_id`, `home_region`, `tags`. Source: `sso-admin:ListInstances` /
   `DescribeInstance`; `home_region` is the region that call is made in, because the instance ARN
-  carries no region.
+  carries no region. When collected (aws-core-tap#66), `home_region` is `ListInstances`'
+  `PrimaryRegion`, falling back to the region of the call when the response names none, and
+  `regions` and `status` are added (`req-aws-landing-zone-identity-center-1`).
 - `TRUSTS_IDENTITY_SOURCE` (instance → external identity provider). AWS calls the provider the
   instance's *identity source*; the instance accepts SAML 2.0 assertions from it. The target is
   **open** (omitted): the provider is another plugin's node, most often an Okta application, and
@@ -1940,7 +1942,7 @@ per-region rules.
 | instance | `HOLDS_ACCOUNT_ASSIGNMENT` | assignment | `ListAccounts` + every `ListPermissionSetsProvisionedToAccount` + every `ListAccountAssignments` | all read to their end | assignment falsifier |
 | footprint | `HOSTS_CONFIG_RECORDER`, `HOSTS_CONFIG_AGGREGATOR`, `HOSTS_GUARDDUTY_DETECTOR`, `HOSTS_ACCESS_ANALYZER` | the security-service type | `ListConfigurationRecorders` (paginated, unfiltered), `DescribeConfigurationAggregators`, `ListDetectors`, `ListAnalyzers` once per `Type` value (aggregated) | regional rules; the analyzer surface is complete only when all six per-type listings finish | per `req-aws-landing-zone-security-services`' table |
 | footprint | `HOSTS_CONFIG_DELIVERY_CHANNEL` | delivery channel | `DescribeDeliveryChannels` (unpaginated) | regional rules | absent from `DescribeDeliveryChannels` |
-| footprint | `HOSTS_SECURITYHUB_HUB` | hub | `DescribeHub` | a hub returned, or complete-empty only on the verified "not subscribed" error code; any other error is incomplete | per that table |
+| footprint | `HOSTS_SECURITYHUB_HUB` | hub | `DescribeHub` | a hub returned, or complete-empty only on the verified "not subscribed" error code; any other error is incomplete. botocore 1.43.107 documents `InvalidAccessException` as a permission refusal, so no such code is verified and that answer is incomplete (aws-core-tap#66) | per that table |
 
 #### Acceptance Criteria
 

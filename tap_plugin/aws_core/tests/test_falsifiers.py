@@ -384,6 +384,21 @@ class TestFalsifierManifestWiring:
             "aws_core__aws_organizations_policy": "tap_plugin.aws_core.falsifiers.OrganizationsPolicyFalsifier",
             "aws_core__aws_policy_statement": "tap_plugin.aws_core.falsifiers.PolicyStatementFalsifier",
             "aws_core__aws_tag_policy_rule": "tap_plugin.aws_core.falsifiers.TagPolicyRuleFalsifier",
+            # aws-core-tap#66 (landing zone): Control Tower, Identity Center and the per-region
+            # security services.
+            "aws_core__aws_controltower_landing_zone": "tap_plugin.aws_core.falsifiers.LandingZoneFalsifier",
+            "aws_core__aws_controltower_enabled_control": "tap_plugin.aws_core.falsifiers.EnabledControlFalsifier",
+            "aws_core__aws_controltower_enabled_baseline": "tap_plugin.aws_core.falsifiers.EnabledBaselineFalsifier",
+            "aws_core__aws_identity_center_instance": "tap_plugin.aws_core.falsifiers.IdentityCenterInstanceFalsifier",
+            "aws_core__aws_identity_center_permission_set": "tap_plugin.aws_core.falsifiers.PermissionSetFalsifier",
+            "aws_core__aws_identity_center_group": "tap_plugin.aws_core.falsifiers.IdentityGroupFalsifier",
+            "aws_core__aws_identity_center_account_assignment": "tap_plugin.aws_core.falsifiers.AccountAssignmentFalsifier",
+            "aws_core__aws_config_recorder": "tap_plugin.aws_core.falsifiers.ConfigRecorderFalsifier",
+            "aws_core__aws_config_delivery_channel": "tap_plugin.aws_core.falsifiers.ConfigDeliveryChannelFalsifier",
+            "aws_core__aws_config_aggregator": "tap_plugin.aws_core.falsifiers.ConfigAggregatorFalsifier",
+            "aws_core__aws_guardduty_detector": "tap_plugin.aws_core.falsifiers.GuardDutyDetectorFalsifier",
+            "aws_core__aws_securityhub_hub": "tap_plugin.aws_core.falsifiers.SecurityHubHubFalsifier",
+            "aws_core__aws_access_analyzer": "tap_plugin.aws_core.falsifiers.AccessAnalyzerFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself

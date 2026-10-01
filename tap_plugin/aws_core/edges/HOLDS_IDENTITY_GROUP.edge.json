@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_IDENTITY_GROUP__aws_core",
+  "name": "Holds Identity Group",
+  "description": "An IAM Identity Center instance holds a group of its identity store (instance -> group): one group identitystore:ListGroups(IdentityStoreId) returned, with no filter. Containment: the instance declares it in CONTAINMENT_EDGES, and its one surface is complete only when that listing read to its end.",
+  "sources": [
+    "aws_core__aws_identity_center_instance"
+  ],
+  "targets": [
+    "aws_core__aws_identity_center_group"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

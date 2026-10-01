@@ -1,0 +1,14 @@
+{
+  "slug": "HOSTS_ACCESS_ANALYZER__aws_core",
+  "name": "Hosts Access Analyzer",
+  "description": "An account's footprint in one region hosts an IAM Access Analyzer analyzer (footprint -> analyzer): an analyzer accessanalyzer:ListAnalyzers returned for one value of the pinned Type enum; the surface is complete only when the listing for every Type value finished. Containment, parent -> child: the footprint declares this edge in CONTAINMENT_EDGES, so an analyzer the grid holds under a footprint whose account_region.access_analyzers listing a run read to the end and did not name becomes a retirement candidate, which this type's falsifier then probes. Collected by the landing-zone reader (collectors/boto3_collector/landing_zone.py), which records that footprint's completeness surface under the same per-region rules as a manifest entry. One edge type per listed type: see tap_plugin.aws_core.regional.",
+  "sources": [
+    "aws_core__aws_account_region"
+  ],
+  "targets": [
+    "aws_core__aws_access_analyzer"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

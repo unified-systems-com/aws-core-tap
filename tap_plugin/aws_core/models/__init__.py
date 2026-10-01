@@ -5,15 +5,27 @@ from tap_plugin.aws_core.models.acm_private_ca import AcmPrivateCa
 from tap_plugin.aws_core.models.alb import Alb
 from tap_plugin.aws_core.models.apigateway_http_api import ApiGatewayHttpApi
 from tap_plugin.aws_core.models.availability_zone import AvailabilityZone
+from tap_plugin.aws_core.models.aws_access_analyzer import AwsAccessAnalyzer
 from tap_plugin.aws_core.models.aws_account import AwsAccount
 from tap_plugin.aws_core.models.aws_account_region import AwsAccountRegion
+from tap_plugin.aws_core.models.aws_config_aggregator import AwsConfigAggregator
+from tap_plugin.aws_core.models.aws_config_delivery_channel import AwsConfigDeliveryChannel
+from tap_plugin.aws_core.models.aws_config_recorder import AwsConfigRecorder
+from tap_plugin.aws_core.models.aws_controltower_enabled_baseline import AwsControlTowerEnabledBaseline
+from tap_plugin.aws_core.models.aws_controltower_enabled_control import AwsControlTowerEnabledControl
+from tap_plugin.aws_core.models.aws_controltower_landing_zone import AwsControlTowerLandingZone
 from tap_plugin.aws_core.models.aws_delegated_administration import AwsDelegatedAdministration
+from tap_plugin.aws_core.models.aws_guardduty_detector import AwsGuardDutyDetector
+from tap_plugin.aws_core.models.aws_identity_center_account_assignment import AwsIdentityCenterAccountAssignment
+from tap_plugin.aws_core.models.aws_identity_center_group import AwsIdentityCenterGroup
 from tap_plugin.aws_core.models.aws_identity_center_instance import AwsIdentityCenterInstance
+from tap_plugin.aws_core.models.aws_identity_center_permission_set import AwsIdentityCenterPermissionSet
 from tap_plugin.aws_core.models.aws_organization import AwsOrganization
 from tap_plugin.aws_core.models.aws_organizational_unit import AwsOrganizationalUnit
 from tap_plugin.aws_core.models.aws_organizations_policy import AwsOrganizationsPolicy
 from tap_plugin.aws_core.models.aws_policy_statement import AwsPolicyStatement
 from tap_plugin.aws_core.models.aws_region import AwsRegion
+from tap_plugin.aws_core.models.aws_securityhub_hub import AwsSecurityHubHub
 from tap_plugin.aws_core.models.aws_service_control_policy import AwsServiceControlPolicy
 from tap_plugin.aws_core.models.aws_tag_policy_rule import AwsTagPolicyRule
 from tap_plugin.aws_core.models.bedrock_model import BedrockModel
@@ -71,15 +83,27 @@ __all__ = [
     "Alb",
     "ApiGatewayHttpApi",
     "AvailabilityZone",
+    "AwsAccessAnalyzer",
     "AwsAccount",
     "AwsAccountRegion",
+    "AwsConfigAggregator",
+    "AwsConfigDeliveryChannel",
+    "AwsConfigRecorder",
+    "AwsControlTowerEnabledBaseline",
+    "AwsControlTowerEnabledControl",
+    "AwsControlTowerLandingZone",
     "AwsDelegatedAdministration",
+    "AwsGuardDutyDetector",
+    "AwsIdentityCenterAccountAssignment",
+    "AwsIdentityCenterGroup",
     "AwsIdentityCenterInstance",
+    "AwsIdentityCenterPermissionSet",
     "AwsOrganization",
     "AwsOrganizationalUnit",
     "AwsOrganizationsPolicy",
     "AwsPolicyStatement",
     "AwsRegion",
+    "AwsSecurityHubHub",
     "AwsServiceControlPolicy",
     "AwsTagPolicyRule",
     "BedrockModel",

@@ -136,6 +136,19 @@ region.
   the footprint of its `PrimaryRegion`. The same rule applies to the landing zone: it is emitted
   once by ARN under its home-region footprint, the region in its ARN (inferred: Control Tower
   creates the landing zone in its home region).
+- **A primary region outside the run's region scope** (the finding carried from aws-core-tap#71,
+  settled in aws-core-tap#66). Footprints exist only for regions in scope
+  (`req-aws-collector-regions-5`), so an instance that an in-scope secondary region returns, but
+  whose `PrimaryRegion` is out of scope, has no footprint to be contained by. It is written anyway,
+  keyed by ARN with `home_region` = its `PrimaryRegion`, with **no** `HOSTS_IDENTITY_CENTER_INSTANCE`
+  edge, and the run records the warning `IDENTITY_CENTER_PRIMARY_REGION_OUT_OF_SCOPE` naming the
+  primary region and the region it was read through. Its children are read through that in-scope
+  region and recorded under the instance as usual. The in-scope footprint that returned it records a
+  complete surface in which the instance counts as observed but not hosted, so it never nominates the
+  instance. A landing zone whose home region is out of scope is handled the same way
+  (`LANDING_ZONE_HOME_REGION_OUT_OF_SCOPE`). Requiring the primary region in scope was considered and
+  declined: it would drop a real instance from the run to protect a containment edge that, with
+  reconcile off, nominates nothing.
 - **Users are not nodes** (ruling 2026-10-01). A `USER` assignment records `principal_type` and
   `principal_id` only, and no identity-store user is read or written. Groups are nodes because the
   question asked is which group reaches which account.
@@ -170,6 +183,7 @@ region.
 | req-aws-landing-zone-identity-center-3 | No User Nodes | Proposed | No identity-store user is written as a node; a user assignment carries its principal id only. | Ruling 2026-10-01. |
 | req-aws-landing-zone-identity-center-4 | Retirement Path | Proposed | Permission set, group and assignment are containment targets with registered falsifiers passing the four-case harness. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` (`spec-aws-core-v0.md`) lists for it, including a complete-empty surface for a parent with no children. | |
 | req-aws-landing-zone-identity-center-5 | Assignment Surface Spans Nested Listings | Proposed | The collector records exactly one `HOLDS_ACCOUNT_ASSIGNMENT` surface per instance, complete only when the organization's account listing, every `ListPermissionSetsProvisionedToAccount` and every `ListAccountAssignments` read to their end; otherwise it is recorded incomplete with the reason. No surface is recorded per (account, permission set). A test fails one nested listing and asserts the surface is incomplete and no assignment is a candidate. | Core fans candidates out from parent and edge type (`req-grid-reconcile-candidates`), so a per-pair surface would nominate other pairs' assignments. Same rule as `req-aws-core-organizations-completeness-13`. |
+| req-aws-landing-zone-identity-center-7 | Primary Region Outside The Scope | Proposed | An instance whose `PrimaryRegion` is outside the run's region scope, returned by an in-scope region, is written once with `home_region` = its `PrimaryRegion`, has no `HOSTS_IDENTITY_CENTER_INSTANCE` edge, and raises the warning `IDENTITY_CENTER_PRIMARY_REGION_OUT_OF_SCOPE`; its children are read through the region that returned it. The returning footprint's surface is complete and counts the instance as observed but not hosted. | Settles the finding carried from aws-core-tap#71 (aws-core-tap#66). |
 | req-aws-landing-zone-identity-center-6 | Assignment Of A Departed Account Retires | Proposed | An assignment whose account has left the organization is `DROPPED_FROM_OBSERVATION`: when `ListAccountAssignments` raises `ResourceNotFoundException`, the falsifier asks the membership falsifier's reach-gated probe, and `AccountNotFoundException` after reach is proven drops the assignment. If neither the permission set nor the account is confirmed gone, the verdict is `UNDETERMINED`. Tests: account removed → dropped; permission set deleted → dropped; neither confirmed → undetermined. | Without it, an assignment to a departed account would stay `UNDETERMINED` forever, leaving a stale access edge. |
 
 ### Security Services
@@ -207,6 +221,20 @@ Gruntwork's baselines turn these on per opt-in region (`control-tower-app-accoun
 - **The account-node writer.** The S3 public-access-block fields are account-sourced. They are among
   the fields `req-aws-collector-fanout-8` merges with the organization-sourced ones, so the org-tree
   node does not drop them.
+- **Error codes, as checked against botocore 1.43.107 (aws-core-tap#66).** `controltower`
+  `ResourceNotFoundException`, `accessanalyzer` `ResourceNotFoundException`, `identitystore`
+  `ResourceNotFoundException` and `config` `NoSuchConfigurationAggregatorException` are each
+  documented as the resource not existing, distinct from the operation's access-denied code, and are
+  the falsifiers' "gone". Two rows differ from the table above:
+  - `securityhub:DescribeHub`'s `InvalidAccessException` is documented as "the account doesn't have
+    permission to perform this action", which is also the answer for an account without Security
+    Hub. The code is shared with "you may not look", so it is never "not enabled": the hub surface is
+    recorded incomplete (`scope_authorized` unknown) and the falsifier answers `UNDETERMINED`. No
+    verified "not subscribed" code exists in the pinned botocore, so the complete-empty case of
+    `req-aws-core-contained-type-triple`'s hub row does not occur yet. The first GovCloud run's
+    ledger is the evidence to revisit it.
+  - GuardDuty's only modelled error is the generic `BadRequestException`, so the detector falsifier
+    uses the table's second rule, absence from a complete `ListDetectors`.
 - **Detectors and hubs as nodes, not fields.** GuardDuty and Security Hub each have an ARN or id,
   tags, and an administrator relationship to another account. That makes them nodes, per AGENTS.md's
   "create the dedicated node type".

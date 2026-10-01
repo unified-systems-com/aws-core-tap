@@ -1,5 +1,5 @@
 {
-  "description": "Tag-lane declarations for the types a custom reader emits, which have no manifest entry to declare a `tags` block in (req-aws-collector-tags-14). One row per (entity type, reader). `tags` is either a manifest `tags_block` (validated against aws_resource_manifest.schema.json $defs/tags_block) or {\"source\": \"organizations\"}, the Organizations lane (req-aws-collector-tags-10): organizations:ListTagsForResource, shape list_kv, through normalize_tags and the tags_of unread sentinel in organizations.py. This file covers the Organizations reader (aws-core-tap#65); the registry-wide test over every emitting path is req-aws-collector-tags-14's (aws-core-tap#69).",
+  "description": "Tag-lane declarations for the types a custom reader emits, which have no manifest entry to declare a `tags` block in (req-aws-collector-tags-14). One row per (entity type, reader). `tags` is either a manifest `tags_block` (validated against aws_resource_manifest.schema.json $defs/tags_block) or {\"source\": \"organizations\"}, the Organizations lane (req-aws-collector-tags-10): organizations:ListTagsForResource, shape list_kv, through normalize_tags and the tags_of unread sentinel in organizations.py. This file covers the Organizations reader (aws-core-tap#65) and the landing-zone reader (aws-core-tap#66); the registry-wide test over every emitting path is req-aws-collector-tags-14's (aws-core-tap#69).",
   "lanes": [
     {
       "entity_type": "aws_core__aws_organization",
@@ -45,6 +45,81 @@
       "entity_type": "aws_core__aws_tag_policy_rule",
       "reader": "organizations",
       "tags": { "source": "none", "why": "A tag-policy rule is one key's entry in a tag policy document, not an AWS resource; only the policy itself can be tagged." }
+    },
+    {
+      "entity_type": "aws_core__aws_controltower_landing_zone",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "resourceArn": { "from": "arn" } }, "path": "tags", "shape": "map", "why": "controltower:ListTagsForResource, lowercase tags map (not paginated)." },
+      "why": "Control Tower tags (req-aws-landing-zone-control-tower-4)."
+    },
+    {
+      "entity_type": "aws_core__aws_controltower_enabled_control",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "resourceArn": { "from": "arn" } }, "path": "tags", "shape": "map", "why": "controltower:ListTagsForResource on the enabled-control ARN." },
+      "why": "Control Tower tags (req-aws-landing-zone-control-tower-4)."
+    },
+    {
+      "entity_type": "aws_core__aws_controltower_enabled_baseline",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "resourceArn": { "from": "arn" } }, "path": "tags", "shape": "map", "why": "controltower:ListTagsForResource on the enabled-baseline ARN." },
+      "why": "Control Tower tags (req-aws-landing-zone-control-tower-4)."
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_instance",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "InstanceArn": { "from": "InstanceArn" }, "ResourceArn": { "from": "InstanceArn" } }, "path": "Tags", "shape": "list_kv", "why": "sso-admin:ListTagsForResource, read to its last page." },
+      "why": "Identity Center tags."
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_permission_set",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "InstanceArn": { "from": "InstanceArn" }, "ResourceArn": { "from": "PermissionSetArn" } }, "path": "Tags", "shape": "list_kv", "why": "sso-admin:ListTagsForResource on the permission-set ARN, read to its last page." },
+      "why": "Identity Center tags."
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_group",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "identitystore has no tagging operation: AWS cannot tag a group." }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_account_assignment",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "An account assignment is a (account, permission set, principal) grant, not a taggable AWS resource." }
+    },
+    {
+      "entity_type": "aws_core__aws_config_recorder",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "ResourceArn": { "from": "arn" } }, "path": "Tags", "shape": "list_kv", "why": "config:ListTagsForResource, read to its last page." },
+      "why": "Config tags (req-aws-landing-zone-security-services-4)."
+    },
+    {
+      "entity_type": "aws_core__aws_config_delivery_channel",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "A delivery channel is not among AWS Config's taggable resource types (inferred)." }
+    },
+    {
+      "entity_type": "aws_core__aws_config_aggregator",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "ResourceArn": { "from": "ConfigurationAggregatorArn" } }, "path": "Tags", "shape": "list_kv", "why": "config:ListTagsForResource, read to its last page." },
+      "why": "Config tags (req-aws-landing-zone-security-services-4)."
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_detector",
+      "reader": "landing_zone",
+      "tags": { "source": "field", "from": "Tags", "shape": "map", "why": "GetDetector returns the detector's own Tags map." },
+      "why": "GuardDuty tags."
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_hub",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": { "ResourceArn": { "from": "HubArn" } }, "path": "Tags", "shape": "map", "why": "securityhub:ListTagsForResource (not paginated)." },
+      "why": "Security Hub tags."
+    },
+    {
+      "entity_type": "aws_core__aws_access_analyzer",
+      "reader": "landing_zone",
+      "tags": { "source": "field", "from": "tags", "shape": "map", "why": "ListAnalyzers returns each analyzer's own lowercase tags map." },
+      "why": "Access Analyzer tags."
     }
   ]
 }

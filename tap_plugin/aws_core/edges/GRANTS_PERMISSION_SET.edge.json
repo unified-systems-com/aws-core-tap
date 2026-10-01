@@ -1,0 +1,14 @@
+{
+  "slug": "GRANTS_PERMISSION_SET__aws_core",
+  "name": "Grants Permission Set",
+  "description": "An Identity Center account assignment grants a permission set (assignment -> permission set): AccountAssignments[].PermissionSetArn from sso-admin:ListAccountAssignments. A reference, not containment; it ends with its source, since the permission set ARN is part of the assignment's key.",
+  "sources": [
+    "aws_core__aws_identity_center_account_assignment"
+  ],
+  "targets": [
+    "aws_core__aws_identity_center_permission_set"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

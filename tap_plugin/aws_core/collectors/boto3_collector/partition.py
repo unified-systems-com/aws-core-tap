@@ -104,8 +104,105 @@ _UNAVAILABLE_SERVICES: dict[str, dict[str, str]] = {
             "Amazon CloudFront is not offered in AWS GovCloud (US); a GovCloud account cannot list "
             "distributions. Distributions that front GovCloud resources live in a commercial account."
         ),
+        # Not collected anywhere (req-aws-landing-zone-nongoals); named so the gap is data.
+        "macie2": (
+            "Amazon Macie is not offered in AWS GovCloud (US): no GovCloud endpoint "
+            "(https://docs.aws.amazon.com/general/latest/gr/macie.html)."
+        ),
     },
 }
+
+
+@dataclass(frozen=True)
+class Availability:
+    """One service's availability in one partition, with how it was established.
+
+    ``method`` is the spec's method vocabulary: ``web`` (an AWS page, cited in ``evidence``),
+    ``read`` (offline data such as botocore's endpoint rules) or ``inferred``. ``verified`` is False
+    where the evidence does not settle the question; a failing call to such a service is reported
+    with a partition hint and never read as an empty listing (``req-aws-landing-zone-availability-2``).
+    """
+
+    available: bool
+    method: str
+    evidence: str
+    verified: bool = True
+
+
+#: Availability of every service the landing-zone reader calls, in each supported partition
+#: (``req-aws-landing-zone-availability-1``; spec-aws-core-landing-zone.md, *GovCloud Availability*).
+#: A service marked unavailable is skipped with ``SERVICE_NOT_AVAILABLE_IN_PARTITION`` and no call.
+LANDING_ZONE_AVAILABILITY: dict[str, dict[str, Availability]] = {
+    "controltower": {
+        PARTITION_AWS: Availability(True, "web", "https://docs.aws.amazon.com/controltower/latest/userguide/region-how.html"),
+        PARTITION_US_GOV: Availability(
+            True,
+            "web",
+            "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-controltower.html: both GovCloud "
+            "regions; Account Factory cannot create accounts. The baseline APIs were excluded from GovCloud in "
+            "February 2024 (https://docs.aws.amazon.com/controltower/latest/userguide/2024-all.html) and are not "
+            "re-verified.",
+            verified=False,
+        ),
+    },
+    "sso-admin": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(
+            True, "web", "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-sso.html: both regions, no multi-region"
+        ),
+    },
+    "identitystore": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(
+            True, "web", "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-sso.html (Identity Center's identity store)"
+        ),
+    },
+    "config": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(
+            True,
+            "inferred",
+            "Control Tower's baseline Config recorder is part of GovCloud Control Tower; not verified against a GovCloud page",
+            verified=False,
+        ),
+    },
+    "guardduty": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(True, "web", "AWS GovCloud (US) User Guide, GuardDuty page: available with feature gaps"),
+    },
+    "securityhub": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(
+            True,
+            "web",
+            "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-controltower.html: available; some "
+            "Control Tower Security Hub controls unavailable",
+        ),
+    },
+    "accessanalyzer": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(True, "web", "AWS GovCloud (US) User Guide, IAM Access Analyzer: available except policy generation"),
+    },
+    "ec2": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(True, "read", "botocore 1.43.104 endpoint data (EBS default encryption)"),
+    },
+    "s3control": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(True, "read", "botocore 1.43.104 endpoint data (S3 account public-access block)"),
+    },
+    "macie2": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules; not collected (req-aws-landing-zone-nongoals)"),
+        PARTITION_US_GOV: Availability(
+            False, "inferred", "https://docs.aws.amazon.com/general/latest/gr/macie.html lists no GovCloud endpoint"
+        ),
+    },
+}
+
+
+def availability_of(partition: str, service: str) -> Availability | None:
+    """The recorded availability of ``service`` in ``partition``, or None when none is recorded."""
+    return LANDING_ZONE_AVAILABILITY.get(service, {}).get(partition)
 
 _ARN_RE = re.compile(
     rf"^arn:(?P<partition>{PARTITION_RE}):(?P<service>[a-z0-9-]+):(?P<region>[a-z0-9-]*):"

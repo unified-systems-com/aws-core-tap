@@ -67,12 +67,45 @@ class AwsAccountRegion(BaseModel):
             "nodes": [{"type": "aws_core__aws_security_group"}],
             "edges": [{"type": "HOSTS_SECURITY_GROUP__aws_core"}],
         },
+        # The landing-zone reader's footprint children (collectors/boto3_collector/landing_zone.py,
+        # tap_plugin.aws_core.regional.LANDING_ZONE_CHILDREN; aws-core-tap#66).
+        {
+            "nodes": [{"type": "aws_core__aws_controltower_landing_zone"}],
+            "edges": [{"type": "HOSTS_LANDING_ZONE__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_identity_center_instance"}],
+            "edges": [{"type": "HOSTS_IDENTITY_CENTER_INSTANCE__aws_core"}],
+        },
+        {"nodes": [{"type": "aws_core__aws_config_recorder"}], "edges": [{"type": "HOSTS_CONFIG_RECORDER__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_config_delivery_channel"}],
+            "edges": [{"type": "HOSTS_CONFIG_DELIVERY_CHANNEL__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_config_aggregator"}],
+            "edges": [{"type": "HOSTS_CONFIG_AGGREGATOR__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_guardduty_detector"}],
+            "edges": [{"type": "HOSTS_GUARDDUTY_DETECTOR__aws_core"}],
+        },
+        {"nodes": [{"type": "aws_core__aws_securityhub_hub"}], "edges": [{"type": "HOSTS_SECURITYHUB_HUB__aws_core"}]},
+        {"nodes": [{"type": "aws_core__aws_access_analyzer"}], "edges": [{"type": "HOSTS_ACCESS_ANALYZER__aws_core"}]},
     ]
     CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
         "HOSTS_VPC__aws_core",
         "HOSTS_SUBNET__aws_core",
         "HOSTS_EC2_INSTANCE__aws_core",
         "HOSTS_SECURITY_GROUP__aws_core",
+        "HOSTS_LANDING_ZONE__aws_core",
+        "HOSTS_IDENTITY_CENTER_INSTANCE__aws_core",
+        "HOSTS_CONFIG_RECORDER__aws_core",
+        "HOSTS_CONFIG_DELIVERY_CHANNEL__aws_core",
+        "HOSTS_CONFIG_AGGREGATOR__aws_core",
+        "HOSTS_GUARDDUTY_DETECTOR__aws_core",
+        "HOSTS_SECURITYHUB_HUB__aws_core",
+        "HOSTS_ACCESS_ANALYZER__aws_core",
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -84,6 +117,11 @@ class AwsAccountRegion(BaseModel):
         "status": {"type": "string"},
         "configuration": {"type": "object"},
         "tags": {"type": "object"},
+        # This account's EBS encryption-by-default setting in this region (ec2:GetEbsEncryptionByDefault,
+        # GetEbsDefaultKmsKeyId; req-aws-landing-zone-security-services). Null when the read was denied
+        # or failed, or the region was not read; false is AWS's own answer, stored as returned.
+        "ebs_encryption_by_default": {"type": ["boolean", "null"]},
+        "ebs_default_kms_key_id": {"type": ["string", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -95,6 +133,8 @@ class AwsAccountRegion(BaseModel):
         "status": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "ebs_encryption_by_default": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "ebs_default_kms_key_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -114,6 +154,8 @@ class AwsAccountRegion(BaseModel):
     status = models.CharField(max_length=16, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(default=dict, blank=True)
+    ebs_encryption_by_default = models.BooleanField(null=True, blank=True, default=None)
+    ebs_default_kms_key_id = models.CharField(max_length=2048, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", distinct from ""
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_account_region"

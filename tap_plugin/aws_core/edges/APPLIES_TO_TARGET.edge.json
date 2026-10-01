@@ -1,0 +1,16 @@
+{
+  "slug": "APPLIES_TO_TARGET__aws_core",
+  "name": "Applies To Target",
+  "description": "A Control Tower enabled control or enabled baseline applies to the organizational unit or account it is enabled on (control / baseline -> OU / account). Derived from targetIdentifier, an OU ARN (...:ou/o-.../ou-...) or an account ARN (...:account/o-.../<id>), normalized to the ARN's last segment, the OU's ou_id or the account's account_id, with the ARN's resource type naming the target type. A reference, not containment; it ends with its source, because UpdateEnabledControl and UpdateEnabledBaseline take no target.",
+  "sources": [
+    "aws_core__aws_controltower_enabled_control",
+    "aws_core__aws_controltower_enabled_baseline"
+  ],
+  "targets": [
+    "aws_core__aws_organizational_unit",
+    "aws_core__aws_account"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

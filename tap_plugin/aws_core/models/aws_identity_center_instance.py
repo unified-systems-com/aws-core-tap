@@ -12,11 +12,19 @@ class AwsIdentityCenterInstance(BaseModel):
 
     Its external identity provider is the ``TRUSTS_IDENTITY_SOURCE`` edge, whose target is open
     because the provider lives in another plugin (an Okta application, for example) and aws_core
-    declares no dependency on one. Design vocabulary: no collector emits it yet. Fields are those
-    ``sso-admin:ListInstances`` / ``DescribeInstance`` report, plus ``home_region``, which is the
-    region that call is made in: the instance ARN carries no region.
+    declares no dependency on one. Fields are those ``sso-admin:ListInstances`` reports.
 
-    Spec: specs/spec-aws-core-v0.md (req-aws-core-identity-center)
+    Collected by ``Boto3Collector`` (``collectors/boto3_collector/landing_zone.py``). ``home_region``
+    is the instance's ``PrimaryRegion`` (the instance ARN carries no region), or the region the call
+    was made in when the response names none. A multi-region instance is returned by several
+    regional endpoints and is one node, contained by its primary region's footprint
+    (``HOSTS_IDENTITY_CENTER_INSTANCE``); ``regions`` holds every region it is replicated to. An
+    instance whose primary region is outside the run's region scope is written with no footprint
+    containment (``req-aws-landing-zone-identity-center-7``). It contains its permission sets,
+    groups and account assignments.
+
+    Spec: specs/spec-aws-core-v0.md (req-aws-core-identity-center),
+    specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-identity-center)
     """
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_identity_center_instance"
@@ -37,6 +45,26 @@ class AwsIdentityCenterInstance(BaseModel):
     # AWS's instance ARN (arn:<partition>:sso:::instance/ssoins-…); partition-qualified, so unique.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_arn",)
 
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {
+            "nodes": [{"type": "aws_core__aws_identity_center_permission_set"}],
+            "edges": [{"type": "HOLDS_PERMISSION_SET__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_identity_center_group"}],
+            "edges": [{"type": "HOLDS_IDENTITY_GROUP__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_identity_center_account_assignment"}],
+            "edges": [{"type": "HOLDS_ACCOUNT_ASSIGNMENT__aws_core"}],
+        },
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
+        "HOLDS_PERMISSION_SET__aws_core",
+        "HOLDS_IDENTITY_GROUP__aws_core",
+        "HOLDS_ACCOUNT_ASSIGNMENT__aws_core",
+    )
+
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "instance_arn": {
@@ -46,6 +74,9 @@ class AwsIdentityCenterInstance(BaseModel):
         "identity_store_id": {"type": "string"},
         "owner_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
         "home_region": {"type": "string"},
+        # Every region the instance is replicated to (InstanceMetadata.Regions); null when not reported.
+        "regions": {"type": ["array", "null"], "items": {"type": "string"}},
+        "status": {"type": "string"},
         "tags": {"type": "object", "additionalProperties": {"type": "string"}},
     }
 
@@ -62,6 +93,8 @@ class AwsIdentityCenterInstance(BaseModel):
     # administrator for an organization instance).
     owner_account_id = models.CharField(max_length=12, blank=True, default="")
     home_region = models.CharField(max_length=32, blank=True, default="")
+    regions = models.JSONField(null=True, blank=True, default=None)
+    status = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: sso-admin:ListTagsForResource.
     tags = models.JSONField(default=dict, blank=True)
 
