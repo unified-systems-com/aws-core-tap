@@ -163,20 +163,27 @@ class PagedOrganizations:
             "FeatureSet": "ALL",
         }
         self.pages: dict[tuple[str, str], list[Any]] = {}
+        #: Failing pages, kept apart from the item pages so the raised value is always an exception.
+        self.failures: dict[tuple[str, str, int], Exception] = {}
         self.documents: dict[str, tuple[dict[str, Any], str] | Exception] = {}
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     def set(self, op: str, key: str, *pages: Any) -> None:
-        self.pages[(op, key)] = list(pages)
+        self.pages[(op, key)] = [[] if isinstance(page, Exception) else page for page in pages]
+        for index, page in enumerate(pages):
+            if isinstance(page, Exception):
+                self.failures[(op, key, index)] = page
+            else:
+                self.failures.pop((op, key, index), None)
 
     def _page(self, op: str, key: str, result_key: str, kwargs: dict[str, Any]) -> dict[str, Any]:
         self.calls.append((op, dict(kwargs)))
         pages = self.pages.get((op, key), [[]])
         index = int(kwargs.get("NextToken") or 0)
-        page = pages[index]
-        if isinstance(page, Exception):
-            raise page  # pylint: disable=raising-bad-type
-        response: dict[str, Any] = {result_key: page}
+        failure = self.failures.get((op, key, index))
+        if failure is not None:
+            raise failure
+        response: dict[str, Any] = {result_key: pages[index]}
         if index + 1 < len(pages):
             response["NextToken"] = str(index + 1)
         return response
