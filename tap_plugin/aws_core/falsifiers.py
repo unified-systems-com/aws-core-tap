@@ -1830,12 +1830,40 @@ class _LandingZoneFalsifier(_AwsFalsifier):
     """Shared shape: read the row, check the account, find the region, probe once.
 
     Every landing-zone type is regional (Control Tower and Identity Center in their home region),
-    and the collector stamps that region on ``dimensions["aws_region"]``, so it is trusted. A row
-    with no region is refused (``scope_unknown``), never swept: these listings are cheap to read
-    whole, but a sweep could only show where a resource is, never where it was collected.
+    and the collector stamps the region it read the resource through on ``dimensions["aws_region"]``,
+    so it is trusted. A row with no region is refused (``scope_unknown``), never swept: these
+    listings are cheap to read whole, but a sweep could only show where a resource is, never where
+    it was collected.
+
+    The probe never leaves the collector's configured region scope (``regions_allowed``). A
+    resource's own region (its ARN's, or an instance's ``home_region``) is preferred; when that is
+    outside the scope, the region the collector read it through is used; when neither is in scope,
+    the candidate is refused (``scope_unknown``) with no call. An instance whose primary region is
+    out of scope (``req-aws-landing-zone-identity-center-7``) is therefore probed where it was read.
     """
 
     service = ""
+
+    def __init__(self, *args: Any, allowed_regions: list[str] | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._allowed_injected = allowed_regions is not None
+        self._allowed: list[str] | None = list(allowed_regions) if allowed_regions is not None else None
+
+    def _begin_run(self, batch_id: str) -> None:
+        if batch_id != self._batch_id and not self._allowed_injected:
+            self._allowed = None
+        super()._begin_run(batch_id)
+
+    def _allowed_regions(self) -> list[str]:
+        """The collector's configured region scope, read once per run; ``[]`` when unreadable, which
+        refuses every candidate rather than probe an unchecked region."""
+        if self._allowed is None:
+            try:
+                self._allowed = list(resolve_regions(dict(resolve_aws_secret().data)))
+            except Exception:  # noqa: BLE001 — no region scope is an answer (UNDETERMINED), not a crash
+                logger.warning("[c4e8] %s: could not resolve the configured region scope", type(self).__name__)
+                self._allowed = []
+        return self._allowed
 
     def _region_hint(self, row: Any) -> str | None:
         return None
@@ -1849,9 +1877,17 @@ class _LandingZoneFalsifier(_AwsFalsifier):
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
-        region = self._region_hint(row) or dimensions.get("aws_region") or ""
-        if not region or region == "global":
+        recorded = [r for r in (self._region_hint(row), dimensions.get("aws_region")) if r and r != "global"]
+        if not recorded:
             return _undetermined(candidate, "scope_unknown", "the grid holds no region for this resource")
+        allowed = set(self._allowed_regions())
+        region = next((r for r in recorded if r in allowed), None)
+        if region is None:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"{' and '.join(dict.fromkeys(recorded))} outside the configured region scope: not probed",
+            )
         try:
             client = session.client(self.service, region_name=region)
         except Exception as exc:  # noqa: BLE001 — an unbuildable client is an answer, not a crash

@@ -791,7 +791,7 @@ class _Reader:
             "governed_regions": sorted(str(r) for r in governed) if isinstance(governed, list) else None,
             "tags": self.tags("controltower", region, "list_tags_for_resource", "map", "tags", resourceArn=arn),
         }
-        if not self.add_node(LANDING_ZONE, arn, name, fields, home):
+        if not self.add_node(LANDING_ZONE, arn, name, fields, region):
             return False
         if in_scope:
             self.hosts(HOSTS_LANDING_ZONE, home, LANDING_ZONE, arn)
@@ -912,7 +912,8 @@ class _Reader:
         """One instance, emitted once from its primary region's footprint
         (``req-aws-landing-zone-identity-center-1``). Its primary region outside the run's scope is
         the case aws-core-tap#66 settles (``-7``): the instance is written, with no footprint
-        containment and a warning, and its children are read through the region that returned it."""
+        containment and a warning, and its children are read through the region that returned it.
+        Its ``aws_region`` dimension is that read region, so a falsifier never has to leave the scope."""
         in_scope = home in self.regions
         region = home if in_scope else returned_in
         reported = item.get("Regions")
@@ -934,7 +935,7 @@ class _Reader:
                 "sso-admin", region, "list_tags_for_resource", "list_kv", "Tags", InstanceArn=arn, ResourceArn=arn
             ),
         }
-        if not self.add_node(IDENTITY_CENTER_INSTANCE, arn, name, fields, home):
+        if not self.add_node(IDENTITY_CENTER_INSTANCE, arn, name, fields, region):
             return False
         if in_scope:
             self.hosts(HOSTS_IDENTITY_CENTER_INSTANCE, home, IDENTITY_CENTER_INSTANCE, arn)

@@ -148,16 +148,15 @@ class FakeAws:
         self.handlers: dict[tuple[str, str, str | None], Callable[[str, dict[str, Any]], Any]] = {}
         self.calls: list[tuple[str, str, str, dict[str, Any]]] = []
 
-    def on(self, service: str, operation: str, handler: Any, *, region: str | None = None) -> None:
-        if not callable(handler):
-            value = handler
+    def on(self, service: str, operation: str, answer: Any, *, region: str | None = None) -> None:
+        """``answer`` is a handler, an exception to raise, or a response to return."""
 
-            def handler(_region: str, _kw: dict[str, Any]) -> Any:
-                if isinstance(value, Exception):
-                    raise value
-                return value
+        def constant(_region: str, _kw: dict[str, Any]) -> Any:
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
 
-        self.handlers[(service, operation, region)] = handler
+        self.handlers[(service, operation, region)] = answer if callable(answer) else constant
 
     def client_for(self, service: str, region: str) -> Any:
         return _FakeClient(self, service, region)
@@ -819,6 +818,8 @@ class TestIdentityCenter:
         )
         read = collect(aws)
         assert _one(read, IDENTITY_CENTER_INSTANCE)["home_region"] == "us-east-1"
+        [node] = _nodes(read, IDENTITY_CENTER_INSTANCE)
+        assert node["entity"]["dimensions"]["aws_region"] == WEST, "stamped with the region it was read through"
         assert _edges(read, HOSTS_IDENTITY_CENTER_INSTANCE) == []
         warning = next(n for n in read.notices if n.code == "IDENTITY_CENTER_PRIMARY_REGION_OUT_OF_SCOPE")
         assert warning.level == "warn" and warning.data == {"primary_region": "us-east-1", "read_region": WEST}
@@ -1543,22 +1544,22 @@ class TestGetByArnFalsifiers:
         }
         aws = FakeAws()
         aws.on(service, op, by(_request_key, table))
-        falsifier = falsifier_cls(session=ProbeSession(aws), account_id=MGMT)
+        falsifier = falsifier_cls(session=ProbeSession(aws), allowed_regions=REGIONS, account_id=MGMT)
         _supported(run_four_cases(falsifier, cases, _ctx()))
         assert {r for _s, r, _o, _k in aws.calls} == {WEST}, "probed in the ARN's own region"
 
     def test_other_account_is_scope_unknown_without_a_probe(self) -> None:
         aws = FakeAws()
         entity_id = _row(LANDING_ZONE, {"name": "n", "landing_zone_arn": LZ_ARN})
-        [v] = LandingZoneFalsifier(session=ProbeSession(aws), account_id=SECURITY).batch_falsify(
-            [_cand(entity_id, LANDING_ZONE)], _ctx()
-        )
+        [v] = LandingZoneFalsifier(
+            session=ProbeSession(aws), allowed_regions=REGIONS, account_id=SECURITY
+        ).batch_falsify([_cand(entity_id, LANDING_ZONE)], _ctx())
         assert (v.verdict, v.reason) == (UNDETERMINED, "scope_unknown")
         assert aws.calls == []
 
 
 def _listing_case(falsifier: Any, entity_type: str, payload: dict[str, Any], aws: FakeAws, **kw: Any) -> Any:
-    [verdict] = falsifier(session=ProbeSession(aws), account_id=MGMT, **kw).batch_falsify(
+    [verdict] = falsifier(session=ProbeSession(aws), allowed_regions=REGIONS, account_id=MGMT, **kw).batch_falsify(
         [_cand(_row(entity_type, payload), entity_type)], _ctx()
     )
     return verdict
@@ -1667,7 +1668,13 @@ class TestIdentityFalsifiers:
                 },
             ),
         )
-        _supported(run_four_cases(PermissionSetFalsifier(session=ProbeSession(aws), account_id=MGMT), cases, _ctx()))
+        _supported(
+            run_four_cases(
+                PermissionSetFalsifier(session=ProbeSession(aws), allowed_regions=REGIONS, account_id=MGMT),
+                cases,
+                _ctx(),
+            )
+        )
 
     @pytest.mark.spec("req-aws-landing-zone-identity-center-4", "req-grid-reconcile-falsifier-6")
     def test_group_four_cases(self) -> None:
@@ -1699,7 +1706,13 @@ class TestIdentityFalsifiers:
                 },
             ),
         )
-        _supported(run_four_cases(IdentityGroupFalsifier(session=ProbeSession(aws), account_id=MGMT), cases, _ctx()))
+        _supported(
+            run_four_cases(
+                IdentityGroupFalsifier(session=ProbeSession(aws), allowed_regions=REGIONS, account_id=MGMT),
+                cases,
+                _ctx(),
+            )
+        )
 
 
 def _assignment_rows() -> tuple[uuid.UUID, uuid.UUID]:
@@ -1731,7 +1744,9 @@ def _org(aws: FakeAws, *, account: Any) -> None:
 class TestAccountAssignmentFalsifier:
     def _verdict(self, aws: FakeAws, *, account_id: str = MGMT) -> Any:
         instance, assignment = _assignment_rows()
-        falsifier = AccountAssignmentFalsifier(session=ProbeSession(aws), account_id=account_id, org_region=WEST)
+        falsifier = AccountAssignmentFalsifier(
+            session=ProbeSession(aws), allowed_regions=REGIONS, account_id=account_id, org_region=WEST
+        )
         [verdict] = falsifier.batch_falsify([_cand(assignment, ACCOUNT_ASSIGNMENT, parent=instance)], _ctx())
         return verdict
 
@@ -1800,7 +1815,9 @@ class TestAccountAssignmentFalsifier:
             {"name": "i", "instance_arn": INSTANCE_ARN, "owner_account_id": SECURITY, "home_region": WEST},
         )
         _i, assignment = _assignment_rows()
-        falsifier = AccountAssignmentFalsifier(session=ProbeSession(aws), account_id=MGMT, org_region=WEST)
+        falsifier = AccountAssignmentFalsifier(
+            session=ProbeSession(aws), allowed_regions=REGIONS, account_id=MGMT, org_region=WEST
+        )
         [verdict] = falsifier.batch_falsify([_cand(assignment, ACCOUNT_ASSIGNMENT, parent=instance)], _ctx())
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
         assert "describe_account" not in aws.ops("organizations")
@@ -1812,13 +1829,57 @@ class TestAccountAssignmentFalsifier:
 
 
 @pytest.mark.django_db
+class TestProbesStayInScope:
+    """A falsifier never probes outside the collector's configured region scope (regions_allowed)."""
+
+    def test_out_of_scope_primary_region_is_probed_where_it_was_read(self) -> None:
+        aws = FakeAws()
+        aws.on(
+            "sso-admin", "list_instances", paged("Instances", [{"InstanceArn": INSTANCE_ARN, "OwnerAccountId": MGMT}])
+        )
+        entity_id = _row(
+            IDENTITY_CENTER_INSTANCE,
+            {"name": "i", "instance_arn": INSTANCE_ARN, "owner_account_id": MGMT, "home_region": "us-east-1"},
+            region=WEST,
+        )
+        falsifier = IdentityCenterInstanceFalsifier(session=ProbeSession(aws), allowed_regions=[WEST], account_id=MGMT)
+        [verdict] = falsifier.batch_falsify([_cand(entity_id, IDENTITY_CENTER_INSTANCE)], _ctx())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        assert {r for _s, r, _o, _k in aws.calls} == {WEST}
+
+    def test_no_region_in_scope_is_refused_without_a_call(self) -> None:
+        aws = FakeAws()
+        arn = f"arn:{PARTITION}:controltower:{EAST}:{MGMT}:landingzone/EASTLZ"
+        entity_id = _row(LANDING_ZONE, {"name": "n", "landing_zone_arn": arn}, region=EAST)
+        falsifier = LandingZoneFalsifier(session=ProbeSession(aws), allowed_regions=[WEST], account_id=MGMT)
+        [verdict] = falsifier.batch_falsify([_cand(entity_id, LANDING_ZONE)], _ctx())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert aws.calls == []
+
+    def test_an_unreadable_scope_refuses(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from tap_plugin.aws_core import falsifiers as falsifiers_mod
+
+        def unreadable() -> Any:
+            raise RuntimeError("no secret")
+
+        monkeypatch.setattr(falsifiers_mod, "resolve_aws_secret", unreadable)
+        aws = FakeAws()
+        entity_id = _row(LANDING_ZONE, {"name": "n", "landing_zone_arn": LZ_ARN})
+        [verdict] = LandingZoneFalsifier(session=ProbeSession(aws), account_id=MGMT).batch_falsify(
+            [_cand(entity_id, LANDING_ZONE)], _ctx()
+        )
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert aws.calls == []
+
+
+@pytest.mark.django_db
 def test_hub_invalid_access_is_never_a_drop() -> None:
     aws = FakeAws()
     aws.on("securityhub", "describe_hub", _err("InvalidAccessException"))
     entity_id = _row(SECURITYHUB_HUB, {"name": "h", "hub_arn": HUB_ARN})
-    [verdict] = SecurityHubHubFalsifier(session=ProbeSession(aws), account_id=MGMT).batch_falsify(
-        [_cand(entity_id, SECURITYHUB_HUB)], _ctx()
-    )
+    [verdict] = SecurityHubHubFalsifier(
+        session=ProbeSession(aws), allowed_regions=REGIONS, account_id=MGMT
+    ).batch_falsify([_cand(entity_id, SECURITYHUB_HUB)], _ctx())
     assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
 
 
