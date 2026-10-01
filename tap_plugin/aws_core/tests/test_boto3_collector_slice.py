@@ -33,6 +33,8 @@ _FN_ARN = f"arn:aws:lambda:us-east-1:{_ACCOUNT}:function:sam-handler"
 _ROLE_ARN = f"arn:aws:iam::{_ACCOUNT}:role/sam-exec"
 _DIST_ARN = f"arn:aws:cloudfront::{_ACCOUNT}:distribution/E1ABCDEF"
 _LOG_GROUP = "/aws/lambda/sam-handler"  # == the Lambda's LoggingConfig.LogGroup
+# The log group's natural key: its ARN without the ``:*`` suffix (req-aws-collector-identity-2).
+_LOG_GROUP_ARN = f"arn:aws:logs:us-east-1:{_ACCOUNT}:log-group:{_LOG_GROUP}"
 _ZONE_ID = "/hostedzone/ZSLICE000001"
 _CF_DOMAIN = "d111abcdef.cloudfront.net"  # == _CANNED list_distributions DomainName
 _ENV_CANARY = "canary-db-password-5f1e"  # a Lambda env value that must never persist
@@ -128,9 +130,10 @@ _CANNED = {
             ]
         }
     },
-    # CloudWatch log group — proves the WRITES_LOGS edge resolves under the
-    # v0 make-it-work (req-aws-collector-edges-7): the log group is keyed by
-    # logGroupName, which equals the Lambda's LoggingConfig.LogGroup, so both
+    # CloudWatch log group — proves the WRITES_LOGS edge resolves
+    # (req-aws-collector-edges-7): the log group is keyed by its ARN, and the
+    # Lambda's bare LoggingConfig.LogGroup name is placed in the Lambda's own
+    # region and account by the source-aware log_group_arn transform, so both
     # ends derive the identical natural_key and the edge is non-dangling.
     "describe_log_groups": {
         "logGroups": [
@@ -347,18 +350,16 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert str(edge.from_entity_id) == str(node_entity_id("aws_core__aws_lambda", _FN_ARN))
     assert str(edge.to_entity_id) == str(node_entity_id("aws_core__aws_iam_role", _ROLE_ARN))
 
-    # WRITES_LOGS resolves non-dangling under the v0 make-it-work
-    # (req-aws-collector-edges-7): aws_cloudwatch_log_group is keyed by
-    # logGroupName, so the Lambda's LoggingConfig.LogGroup and the log-group
-    # node's natural_key are the byte-identical string — both ends derive the
-    # same uuid5 with no resolver. (Pre-tweak this was a silent dangling edge:
-    # name on the Lambda side vs an ARN-keyed log-group node.)
-    lg = get_node(node_entity_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP))
+    # WRITES_LOGS resolves non-dangling (req-aws-collector-edges-7): the log group is keyed by
+    # its ARN, and the Lambda's bare LoggingConfig.LogGroup name becomes that same ARN through the
+    # source-aware log_group_arn transform (region and account from the Lambda's own ARN).
+    lg = get_node(node_entity_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
     assert lg.name == _LOG_GROUP
-    log_edge = get_edge(edge_entity_id("WRITES_LOGS__aws_core", _FN_ARN, _LOG_GROUP))
+    assert lg.log_group_arn == _LOG_GROUP_ARN
+    log_edge = get_edge(edge_entity_id("WRITES_LOGS__aws_core", _FN_ARN, _LOG_GROUP_ARN))
     assert log_edge.edge_type == "WRITES_LOGS__aws_core"
     assert str(log_edge.from_entity_id) == str(node_entity_id("aws_core__aws_lambda", _FN_ARN))
-    assert str(log_edge.to_entity_id) == str(node_entity_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP))
+    assert str(log_edge.to_entity_id) == str(node_entity_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
 
     # ROUTES_TRAFFIC resolves non-dangling through the route53 custom_fn's
     # CloudFront cross-join: the zone's A-alias domain -> the already-
@@ -509,6 +510,8 @@ def test_s3_bucket_persists_its_configuration_with_posture(_stub_aws):
     assert rule["ApplyServerSideEncryptionByDefault"]["SSEAlgorithm"] == "AES256"
     pab = config["_hydrate"]["public_access_block"]["data"]["PublicAccessBlockConfiguration"]
     assert pab["BlockPublicPolicy"] is True
+    # The typed field is projected from that slot (req-aws-core-fields-9): all four flags on.
+    assert bucket.public_access_blocked is True
     assert config["_hydrate_mapping"]["policy"]["op"] == "GetBucketPolicy"
 
 

@@ -97,6 +97,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
+| req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
 | req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field |
@@ -123,14 +124,15 @@ In scope for v0:
 - the resource types: S3 bucket, CloudFront distribution, ACM certificate,
   Route 53 hosted zone, Lambda function, IAM role, CloudWatch log group,
   EventBridge rule
-- one or more commercial regions, plus global services (S3, CloudFront,
-  Route 53, IAM) collected once
+- one or more regions of ONE partition — commercial (`aws`) or AWS GovCloud
+  (US) (`aws-us-gov`), see [AWS Partitions](#aws-partitions) — plus global
+  services (S3, CloudFront, Route 53, IAM) collected once
 - create/upsert of nodes and edges through GRIFT only
 
 Explicitly out of scope for v0 (see [v0 Non-Goals](#v0-non-goals)): deletion /
 reaping / implied-absence semantics, multi-account, uniform-enumeration APIs,
 the policy-document edge resolver, the deep IAM/Org/SCP permission graph,
-GovCloud/China partitions.
+the China and isolated partitions.
 
 #### Acceptance Criteria
 
@@ -139,7 +141,7 @@ GovCloud/China partitions.
 | req-aws-collector-scope-1 | Single Account | Approved for Development | v0 targets exactly one AWS account per collection run. | |
 | req-aws-collector-scope-2 | Sam Resource Set | Approved for Development | The v0 manifest covers exactly the eight named resource types. | Driven by the demo, not by completeness. |
 | req-aws-collector-scope-3 | No Deletion Semantics | Approved for Development | v0 only creates/upserts; absence from a run never deletes a node. | Reaping deferred (`req-aws-collector-nongoals`). |
-| req-aws-collector-scope-4 | Commercial Only | Approved for Development | Only commercial AWS partitions are collected. | Mirrors `req-aws-core-scope-2`. |
+| req-aws-collector-scope-4 | Commercial and GovCloud | Approved for Development | A run collects one partition: commercial (`aws`) or AWS GovCloud (US) (`aws-us-gov`). The China and isolated partitions are refused by name. | Mirrors `req-aws-core-scope-2`; the mechanism is `req-aws-collector-partition`. |
 
 ### Resource Manifest
 ----
@@ -479,14 +481,12 @@ collection runs upsert in place rather than duplicating — the property that ma
 - Node identity is `uuid5(NAMESPACE_AWS_COLLECTOR, f"{entity_type}:{natural_key}")`.
 - The natural key is the value at the manifest's `natural_key` jsonpath.
   Preference order, declared per entry: the resource **ARN** where one exists
-  (the dominant case — Lambda, IAM role, ACM, EventBridge, CloudFront, S3);
+  (the dominant case — Lambda, IAM role, ACM, EventBridge, CloudFront, S3,
+  CloudWatch log group);
   otherwise the stable AWS **resource id** (e.g. a hosted-zone id, a subnet id).
-  **Documented v0 exception:** `aws_cloudwatch_log_group` is keyed by
-  `logGroupName`, not its ARN — a deliberate make-it-work choice so the
-  `WRITES_LOGS` edge resolves under the no-resolver v0 engine (see
-  [v0 Make-It-Work: Mutually-Available Natural Keys](#v0-make-it-work-mutually-available-natural-keys)
-  under `req-aws-collector-edges`). The name is unique per account+region,
-  which holds under `req-aws-collector-scope`.
+  The log group's key is its ARN without the `:*` suffix; how the `WRITES_LOGS`
+  referrers reach it is in
+  [v0 Make-It-Work: Mutually-Available Natural Keys](#v0-make-it-work-mutually-available-natural-keys).
 - Edge identity is `uuid5(NAMESPACE_AWS_COLLECTOR, f"edge:{edge_type}:{from_key}->{to_key}")`.
 - `NAMESPACE_AWS_COLLECTOR` is a frozen module-level UUID constant in the plugin;
   changing it would re-identify every collected node and is not permitted.
@@ -501,7 +501,7 @@ GRIFT's dangling-edge handling governs the not-yet-present case.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-identity-1 | Deterministic Nodes | Approved for Development | The same AWS resource always yields the same `entity_id` across runs and grids. | |
-| req-aws-collector-identity-2 | ARN-Preferred Key | Approved for Development | Natural key is the ARN where available, else the stable resource id. **Documented exception:** `aws_cloudwatch_log_group` is keyed by `logGroupName` per `req-aws-collector-edges-7` (v0 make-it-work; unique per account+region under `req-aws-collector-scope`). | The lone deviation; recorded here so spec↔manifest cannot drift. |
+| req-aws-collector-identity-2 | ARN-Preferred Key | Approved for Development | Natural key is the ARN where available, else the stable resource id. `aws_cloudwatch_log_group` is keyed by its ARN without the `:*` suffix (`logGroupArn`), so same-named groups in two regions or accounts are two nodes. | Was keyed by `logGroupName` until tap-plugin-aws-core#60; the re-key changes its `entity_id`. |
 | req-aws-collector-identity-3 | Deterministic Edges | Approved for Development | Edge identity derives from edge type plus endpoint natural keys. | |
 | req-aws-collector-identity-4 | Idempotent Re-Run | Approved for Development | Re-running collection upserts; it never duplicates nodes or edges. | |
 
@@ -551,25 +551,23 @@ every edge that must connect for the demo is made to satisfy the
 engine change**: pick a `natural_key` for the target that the edge-emitting
 source side already carries verbatim.
 
-The one entry this forces off the ARN-preferred default
-(`req-aws-collector-identity-2`): **`aws_cloudwatch_log_group` is keyed by
-`logGroupName`, not its ARN.** Rationale — the Lambda's `WRITES_LOGS`
-`value_path` (`LoggingConfig.LogGroup`) yields the log-group *name*, and a
-CloudWatch Logs ARN (`arn:aws:logs:<region>:<acct>:log-group:<name>:*`) is not
-derivable from the Lambda item (needs account/region/`:*`), so no pure
-transform can bridge it. Keying the log group by `logGroupName` makes both ends
-emit the identical string. The name is unique per account+region, which holds
-under v0's single-account, region-scoped collection (`req-aws-collector-scope`);
-it is **not** a general-purpose identity and does not generalize past v0 — that
-is precisely what the resolver seam is for. Re-keying changes the
-`aws_cloudwatch_log_group` `entity_id`; under v0's single-developer,
-no-prod-data posture a re-collect simply lands the correctly-keyed nodes
-(old ARN-keyed rows orphan harmlessly).
-
-This is a deliberate, documented deviation, not drift: `key_kind` stays
-truthful (it now reads `arn` on `RETRIEVES_CONTENT_FROM`, matching the
-transform's `arn:aws:s3:::<bucket>` output), and `req-aws-collector-identity-2`
-records the log-group exception inline so spec and manifest cannot diverge.
+The log group was once the exception: it was keyed by `logGroupName` so that a
+Lambda's `WRITES_LOGS` `value_path` (`LoggingConfig.LogGroup`, a bare *name*)
+and the log-group node derived the same string. A name is unique only within
+one account and region, and a region scope of more than one region breaks that
+(the same name in `us-gov-west-1` and `us-gov-east-1` was one identity, and the
+second was dropped as `DUPLICATE_IDENTITY`). So **`aws_cloudwatch_log_group` is
+keyed by its ARN without the `:*` suffix** (`logGroupArn`,
+`arn:<partition>:logs:<region>:<account>:log-group:<name>`), like every other
+ARN-bearing type. Both referrers reach that key through one declared transform,
+`log_group_arn`: a trail's `CloudWatchLogsLogGroupArn` drops its `:*`; a
+Lambda's bare name takes partition, region and account from the Lambda's own
+ARN (its natural key — a Lambda can only log to a group in its own account and
+region). That is a *source-aware* transform: the engine hands it the referring
+node's natural key as well as the value. Re-keying changes every log group's
+`entity_id`; nodes keyed by name on an existing grid are not rewritten or
+retired by the collector (`req-aws-collector-scope-3`) and remain until
+reconciled or purged.
 
 This spec defines the edge *mechanism* only. It introduces no new edge *types*;
 edge-type and target-model selection for specific relationships is `aws_core`
@@ -602,7 +600,7 @@ identity.
 | req-aws-collector-edges-4 | Existing Edge Types Only | Approved for Development | Edge rules reference edge types already declared by `aws_core`; no new edge types are defined here. | |
 | req-aws-collector-edges-5 | Policy Edges Excluded | Approved for Development | Edges requiring policy-document parsing are not emitted in v0. | Deferred resolver, named seam. |
 | req-aws-collector-edges-6 | Two-Phase, Unmodeled-Safe | Approved for Development | Nodes are emitted before edges; an edge to an unmodeled `target_type` is dropped with a `warn`, never a failure; uncollected modeled targets follow GRIFT dangling-edge mode. | Single chokepoint for the v0-fence gap. |
-| req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no edge resolver: an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by `logGroupName` (the documented deviation from `req-aws-collector-identity-2`), unique per account+region under `req-aws-collector-scope`, so `WRITES_LOGS` resolves with no engine change. `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
+| req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no edge resolver: an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by its ARN, and both `WRITES_LOGS` referrers reach it through the `log_group_arn` transform (a Lambda's bare log-group name takes region and account from the Lambda's own ARN, handed to a source-aware transform). `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
 
 ### Edge Identifier Resolution (Future Seam)
 ----
@@ -972,6 +970,68 @@ resilience shape, implemented as TAP code against `record_warn`.
 | req-aws-collector-regions-3 | Bounded Throttle Backoff | Approved for Development | Throttling retries with bounded backoff; unbroken throttle fails per protocol. | |
 | req-aws-collector-regions-4 | No Data Corruption On Skip | Approved for Development | A skipped region/resource never alters previously collected data. | v0 has no deletes; reaping must honor this. |
 
+### AWS Partitions
+----
+RID: `req-aws-collector-partition`
+
+Status: `Implemented`
+
+An AWS *partition* is a hard isolation boundary: commercial (`aws`), AWS GovCloud
+(US) (`aws-us-gov`), China (`aws-cn`) and the isolated `aws-iso*` partitions.
+Credentials, IAM principals, Organizations and ARNs never cross one, and the
+partition is the second segment of every ARN. The collector runs in the
+commercial and GovCloud partitions. It never assumes which one: the partition
+is derived from the secret's own region scope and every partition-specific
+choice follows from it.
+
+#### Implementation
+
+- **Derived, then checked, before any AWS call.** `credentials.resolve_partition`
+  derives the partition from the region scope (`us-gov-*` → `aws-us-gov`,
+  otherwise by botocore's own region table) and refuses, by name
+  (`PARTITION_UNUSABLE`, the run aborts), a region no table recognises, a scope
+  spanning two partitions, a declared `data.partition` that disagrees with the
+  regions, a partition this collector does not support (`aws-cn`, `aws-iso*`),
+  and on the assumed-role kind a `role_arn` in another partition or account.
+  The secret's optional `partition` is a cross-check, never the source.
+- **Partition-aware ARNs.** ARNs are parsed with a partition-agnostic pattern
+  (`partition.PARTITION_RE`, `parse_arn`) and every ARN the collector builds
+  (an S3 bucket ARN synthesised from its name, the edge transforms that mint
+  one, the API Gateway API ARN) takes the run's partition (`build_arn`). No
+  `arn:aws:` literal decides a partition.
+- **Global-service routing.** A global service (IAM, Route 53, Organizations,
+  STS) is addressed through a region of the run's own partition — the scope's
+  first region — and botocore resolves that partition's global endpoint
+  (`iam.us-gov.amazonaws.com` in GovCloud). Where a literal is unavoidable the
+  partition's home region is used (`us-east-1` commercial, `us-gov-west-1`
+  GovCloud). The collector package carries no literal `us-east-1` client
+  region; `tests/test_govcloud.py` guards it. The falsifiers
+  (`falsifiers.py`) are outside that guard: the IAM role, user and policy
+  falsifiers and the S3 bucket falsifier still bind `us-east-1`.
+- **Services a partition does not offer.** CloudFront does not exist in
+  GovCloud: its entry records `SERVICE_NOT_AVAILABLE_IN_PARTITION` and makes no
+  call, rather than calling a host no DNS server knows. Any other entry whose
+  endpoint cannot be reached outside the commercial partition is skipped
+  (`ENTRY_SKIPPED`) with a hint naming the partition.
+- **FIPS endpoints are opt-in.** The secret's `use_fips_endpoint` is a
+  tri-state: `true` / `false` is pinned on the botocore session, so every
+  client made from it (engine, custom fns, RGTA sweep, falsifiers) inherits it;
+  absent defers to `AWS_USE_FIPS_ENDPOINT` and the shared AWS config, botocore's
+  own precedence. The effective setting is reported in `IDENTITY_RESOLVED` and
+  the `self_test` `AWS_PARTITION` check. Per-service FIPS exceptions are not
+  modelled.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-partition-1 | Derived From Regions | Implemented | The run's partition is derived from the secret's region scope; a declared `partition` is only a cross-check. | `tests/test_govcloud.py::TestResolvePartition` |
+| req-aws-collector-partition-2 | Mixed Or Unknown Refused | Implemented | A scope spanning partitions, an unrecognised region, a disagreeing `partition`, an unsupported partition, or a `role_arn` in another partition is refused by name before any AWS call (`PARTITION_UNUSABLE`). | `TestResolvePartition`, `TestCollectorRunInGovCloud::test_partition_mismatch_aborts_by_name_before_any_aws_call` |
+| req-aws-collector-partition-3 | Partition-Aware ARNs | Implemented | ARNs are parsed in any partition and built in the run's partition; no `arn:aws:` literal decides it. | `TestPartitionAwareTransforms`, `TestCustomFnsUseTheRunsPartition` |
+| req-aws-collector-partition-4 | Global Services In Partition | Implemented | Global-service clients bind to a region of the run's partition; the partition's home region is the only fallback literal. | `TestGovCloudEndpoints`, `test_no_hardcoded_commercial_partition_or_region_in_collector_code`. Offline against botocore's endpoint data; no live GovCloud run observed. The falsifiers are outside the guard. |
+| req-aws-collector-partition-5 | CloudFront Degrades In GovCloud | Implemented | A service the partition does not offer is recorded as not available and never called. | `test_run_lands_govcloud_shaped_nodes_and_says_cloudfront_is_not_offered` |
+| req-aws-collector-partition-6 | FIPS Opt-In | Implemented | `use_fips_endpoint` true/false is pinned on the session and reaches every client; absent defers to botocore's environment/shared-config resolution; the effective value is reported. | `TestGovCloudEndpoints`, `TestSelfTestReportsPartition` |
+
 ### GRIFT Batch Assembly
 ----
 RID: `req-aws-collector-grift-batch`
@@ -1159,11 +1219,13 @@ not).
   is already the spine's key/value system, and AWS tags are mutable
   source-owned descriptive metadata that must never silently re-partition
   the grid (`req-grid-*` scoping is dimension-owned).
-- **`us-east-1` invariant.** Global resources (IAM, CloudFront, Route 53)
-  and CloudFront-bound ACM certificates appear in RGTA only in the
-  `us-east-1` per-region results. The region scope **must** include
-  `us-east-1` or those tags are silently missed; `self_test` warns when it
-  is absent.
+- **Home-region invariant.** Global resources (IAM, CloudFront, Route 53)
+  and CloudFront-bound ACM certificates appear in RGTA only in the per-region
+  results of the partition's home region for global services — `us-east-1`
+  commercial, `us-gov-west-1` GovCloud ([AWS Partitions](#aws-partitions)).
+  The region scope **must** include it or those tags are silently missed; the
+  run warns (`REGION_INVARIANT`) when it is absent. A partition with no settled
+  home region has no invariant to warn about.
 - **RGTA operational contract.** `PaginationToken` is valid ≤ 15 minutes
   (`PaginationTokenExpiredException` → restart the sweep, never resume
   mid-iteration); `ThrottledException` → bounded backoff; per-region,
@@ -1185,7 +1247,7 @@ not).
 | req-aws-collector-tags-3 | Side-Quest Path | Approved for Development | `service` sources resolve via the hydrate seam with a `params` dict (each entry `{literal:…}` or `{from:<path>}`) so multi-param tag APIs are first-class; v0 = `aws_iam_role` (`ListRoleTags`), `aws_cloudfront_distribution` (`ListTagsForResource`), `aws_route53_zone` (`ListTagsForResource`, multi-param), `aws_iam_oidc_provider` (`ListOpenIDConnectProviderTags`). | RGTA excludes IAM roles, Route 53 zones, and IAM OIDC providers; CloudFront unsupported. |
 | req-aws-collector-tags-4 | One Canonical Normalizer | Approved for Development | A single engine seam folds any declared shape → `{str:str}`; no per-service loops; raw retained losslessly. | CloudQuery pattern; not Steampipe boilerplate. |
 | req-aws-collector-tags-5 | Per-Model Field, No Spine | Approved for Development | `tags` `JSONField` on each `aws_core` model, uniform name+shape; never an Entity-spine facet. | Cross-resource query by convention. |
-| req-aws-collector-tags-6 | us-east-1 Invariant | Approved for Development | Region scope must include `us-east-1`; `self_test` warns if absent, or global / CloudFront-cert tags are silently missed. | |
+| req-aws-collector-tags-6 | Home-Region Invariant | Approved for Development | Region scope must include the partition's home region for global services (`us-east-1` commercial, `us-gov-west-1` GovCloud); the run warns (`REGION_INVARIANT`) if absent, or global / CloudFront-cert tags are silently missed. | Was a literal `us-east-1` before GovCloud entered scope (`req-aws-collector-partition`). |
 | req-aws-collector-tags-7 | RGTA Op-Contract | Approved for Development | 15-min pagination-token TTL (restart, not resume), throttle backoff, `ResourceTypeFilters` only; RGTA decorates, never authoritative for existence. | Eventually consistent. |
 | req-aws-collector-tags-8 | Shape Enum Fenced | Approved for Development | v0 `shape` ∈ `list_kv\|map` (all of Sam's 8); ECS / CloudTrail / WAFv2 outliers named as a future extension, not built. | |
 
@@ -1434,7 +1496,7 @@ Deferred from v0:
   to town" tool. The aggregate and the per-object collector compose — cheap
   universal stats now, targeted deep introspection when a specific bucket
   warrants it. Backlog.
-- **GovCloud / China partitions.**
+- **China and isolated partitions.** Recognised (an ARN or region from one is classified, never mistaken for commercial) but refused at credential resolution: nothing here has run against them. GovCloud is in scope ([AWS Partitions](#aws-partitions)).
 
 #### Acceptance Criteria
 

@@ -200,6 +200,33 @@ def _bucket_size_metrics(cw_client: Any, bucket_name: str) -> dict[str, Any]:
     }
 
 
+#: The four S3 Block Public Access settings. A bucket is blocked only when every one is on.
+_PAB_FLAGS = ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets")
+
+
+def public_access_blocked(slot: dict[str, Any] | None) -> bool | None:
+    """The bucket's ``public_access_blocked`` from its ``GetPublicAccessBlock`` hydrate slot
+    (req-aws-core-fields-9).
+
+    - ``ok`` with all four flags true -> ``True``; any flag false or missing -> ``False``.
+    - ``absent`` (``NoSuchPublicAccessBlockConfiguration``) -> ``False``: the bucket has no
+      bucket-level block. Account-level Block Public Access is not read or modelled, so this
+      says nothing about it.
+    - ``denied`` / ``error`` / no slot -> ``None``: not observed, never a guess either way.
+    """
+    if not slot:
+        return None
+    status = slot.get("status")
+    if status == "absent":
+        return False
+    if status != "ok":
+        return None
+    config = (slot.get("data") or {}).get("PublicAccessBlockConfiguration")
+    if not isinstance(config, dict):
+        return None
+    return all(config.get(flag) is True for flag in _PAB_FLAGS)
+
+
 def s3_buckets_hydrated(
     session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
 ) -> Iterator[dict[str, Any]]:
@@ -232,6 +259,7 @@ def s3_buckets_hydrated(
         region = _resolve_bucket_region(base, name)
         regional = session.client("s3", region_name=region)
         envelope = hydrate_item(regional, bucket, hydrate_ops, call_kwargs={"Bucket": name})
+        envelope["_public_access_blocked"] = public_access_blocked(envelope["_hydrate"].get("public_access_block"))
         # CloudWatch S3 storage metrics are region-bound, like GetBucket*.
         cw = session.client("cloudwatch", region_name=region)
         envelope.update(_bucket_size_metrics(cw, name))

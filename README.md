@@ -342,6 +342,16 @@ currently exist, which goes stale the moment AWS adds one.
   carries the right one. `identity.py`'s `node_entity_id`/`edge_entity_id`
   hash the *natural key string* (already partition-correct) — nothing there
   needed to change.
+- **Log groups are keyed by ARN.** A log-group name is unique only within
+  one account and region, so `aws_cloudwatch_log_group` is keyed by its ARN
+  (without the `:*` suffix); the same name in `us-gov-west-1` and
+  `us-gov-east-1` is two nodes. A grid that already holds name-keyed log
+  groups from an earlier version keeps those nodes; the collector writes the
+  ARN-keyed ones beside them and does not retire the old ones.
+- **S3 public access is observed.** `aws_s3_bucket.public_access_blocked` is
+  filled from the bucket's own `GetPublicAccessBlock`: true when all four
+  settings are on, false when any is off or none is configured, null when the
+  read was denied or failed. Account-level Block Public Access is not read.
 - **FIPS.** `use_fips_endpoint` (or `AWS_USE_FIPS_ENDPOINT`) is threaded onto
   the `botocore.session.Session` behind every `boto3.session.Session` the
   collector builds (static, assumed-role base, and the assumed-role working
@@ -365,18 +375,16 @@ currently exist, which goes stale the moment AWS adds one.
 - **AWS Organizations in GovCloud is its own, separate organization** from
   any commercial one — `CreateGovCloudAccount` links a GovCloud account to a
   commercial billing account, but GovCloud accounts can only join a GovCloud
-  organization, and most `organizations` API calls (`ListRoots`,
-  `DeletePolicy`, tag-policy compliance reporting, RGTA's
-  `GetResources`/`DescribeReportCreation`) work **only in `us-gov-west-1`**,
-  not `us-gov-east-1` — not yet encoded here; a run scoped to
-  `us-gov-east-1` alone will see this the first time an Organizations call is
-  attempted (source: AWS GovCloud (US) User Guide, "AWS Organizations in AWS
-  GovCloud (US)"). `aws_core` has **no Organizations collector yet** in
-  either partition (`specs/spec-aws-core-v0.md` `req-aws-core-organizations`)
-  — the org/OU/account/SCP/Identity-Center models exist
-  (`models/aws_organization.py` etc., landed in #46) but nothing populates
-  them from a live account. Org-level rollout needs that collector built
-  first; this PR does not build it.
+  organization (source: AWS GovCloud (US) User Guide, "AWS Organizations in
+  AWS GovCloud (US)"). The Organizations tree collector
+  (`collectors/boto3_collector/organizations.py`, `specs/spec-aws-core-v0.md`
+  `req-aws-core-organizations-collect`) reads the organization, OUs, accounts
+  and SCPs through a client bound to the run's first region, so a GovCloud
+  run reads the GovCloud organization. It needs the management account or a
+  delegated administrator; from any other account it records why it read
+  nothing and the run continues. AWS documents some Organizations calls as
+  available only in `us-gov-west-1`; how that interacts with a scope that
+  starts with `us-gov-east-1` has not been run. Put `us-gov-west-1` first.
 - **China (`aws-cn`) and the isolated partitions are refused, not silently
   mishandled.** `resolve_partition` recognises their regions (so an ARN or
   region from one classifies correctly rather than reading as commercial)
@@ -389,14 +397,22 @@ currently exist, which goes stale the moment AWS adds one.
   CloudFront) and the run will see connection failures rather than a clean
   skip, until that service is added to `partition.py`'s
   `_UNAVAILABLE_SERVICES` table.
-- **RGTA (Resource Groups Tagging API) region restriction not encoded.**
-  `GetResources` (the RGTA tag sweep) is documented as GovCloud-`us-gov-west-1`-only;
-  a run scoped only to `us-gov-east-1` will have its tag sweep fail per
-  region and fall back to untagged, not abort — check the
-  `RGTA_SWEEP_SKIPPED` warn on a `us-gov-east-1`-only run.
-- **`aws_organization.partition` field already existed** (landed in #46,
-  enum `["", "aws", "aws-us-gov", "aws-cn"]`) but nothing here populates it —
-  see the Organizations collector gap above.
+- **A failed tag sweep still overwrites stored tags.** When the RGTA
+  (`GetResources`) sweep fails in a region, the run warns
+  `RGTA_SWEEP_SKIPPED` and every tag-swept node there (Lambda, EventBridge,
+  log groups, ACM, DynamoDB, S3) is written with
+  `tags = {}`, replacing whatever an earlier run stored. A KMS key, SQS queue
+  or CloudTrail trail whose own tag call fails is written the same way. GRIFT
+  import replaces every field of an existing node and has no way to say "leave
+  this field as it is", so the fix waits on a core decision
+  (tap-plugin-aws-core#60). Until then, read `RGTA_SWEEP_SKIPPED` as "tags in
+  that region are wrong this run". Whether `GetResources` works in
+  `us-gov-east-1` has not been run here. With `use_fips_endpoint: true` the
+  sweep is sent to a `tagging-fips.<region>` host, which AWS does not list
+  for GovCloud, so expect the sweep to fail.
+- **`aws_organization.partition` is read, never assumed.** The
+  Organizations collector fills it from the partition segment of the
+  organization ARN `DescribeOrganization` returns.
 - **FIPS-validated crypto module, not just a FIPS *endpoint*.** This PR
   routes calls to AWS's FIPS-140 *endpoints*; it says nothing about whether
   the TLS termination on this side is itself FIPS-validated (that is a

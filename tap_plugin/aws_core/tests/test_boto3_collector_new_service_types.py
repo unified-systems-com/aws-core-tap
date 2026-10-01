@@ -23,7 +23,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
 )
 from tap_plugin.aws_core.collectors.boto3_collector.transforms import (
     kms_key_arn_or_none,
-    log_group_name_from_arn,
+    log_group_arn,
     s3_bucket_arn_from_name,
 )
 
@@ -54,14 +54,30 @@ class TestTransforms:
         assert s3_bucket_arn_from_name("  ") is None
         assert s3_bucket_arn_from_name(None) is None
 
-    def test_log_group_name_from_arn(self):
-        arn = "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/x:*"
-        assert log_group_name_from_arn(arn) == "/aws/lambda/x"
-        assert log_group_name_from_arn(arn.removesuffix(":*")) == "/aws/lambda/x"
+    def test_log_group_arn_from_arn_drops_the_suffix(self):
+        arn = "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/x"
+        assert log_group_arn(arn + ":*") == arn
+        assert log_group_arn(arn) == arn
+
+    def test_log_group_arn_from_name_takes_region_and_account_from_the_source(self):
+        """A Lambda names its log group by bare name; the key's region, account and partition come
+        from the Lambda's own ARN (the referring node's natural key)."""
+        gov_fn = "arn:aws-us-gov:lambda:us-gov-east-1:111122223333:function:x"
+        assert log_group_arn("/aws/lambda/x", source_key=_LAMBDA_ARN) == (
+            "arn:aws:logs:us-east-1:111122223333:log-group:/aws/lambda/x"
+        )
+        assert log_group_arn("/aws/lambda/x", source_key=gov_fn) == (
+            "arn:aws-us-gov:logs:us-gov-east-1:111122223333:log-group:/aws/lambda/x"
+        )
 
     def test_log_group_non_matching_drops(self):
-        assert log_group_name_from_arn("arn:aws:s3:::not-logs") is None
-        assert log_group_name_from_arn(None) is None
+        assert log_group_arn("arn:aws:s3:::not-logs") is None
+        assert log_group_arn("arn:aws:logs:us-east-1:111122223333:log-group::*") is None
+        assert log_group_arn(None) is None
+        assert log_group_arn("  ") is None
+        # A bare name with no regional ARN to place it in is not guessed.
+        assert log_group_arn("/aws/lambda/x") is None
+        assert log_group_arn("/aws/lambda/x", source_key="arn:aws:s3:::bucket") is None
 
 
 class TestLambdaArnFromIntegrationUri:

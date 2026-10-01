@@ -106,9 +106,10 @@
         {
           "value_path": "LoggingConfig.LogGroup",
           "target_type": "aws_core__aws_cloudwatch_log_group",
-          "key_kind": "name",
+          "key_kind": "arn",
           "edge_type": "WRITES_LOGS__aws_core",
-          "direction": "outbound"
+          "direction": "outbound",
+          "transform": "log_group_arn"
         }
       ]
     },
@@ -300,10 +301,10 @@
         "basis": "Read botocore logs DescribeLogGroups output shape (LogGroup: names, ARNs, retention, KMS key id, class); no sensitive trait and no free text, 2026-09-23. Log contents are never fetched."
       },
       "items_path": "logGroups[]",
-      "natural_key": "logGroupName",
+      "natural_key": "logGroupArn",
       "fields": {
         "name": "logGroupName",
-        "log_group_arn": "arn",
+        "log_group_arn": "logGroupArn",
         "retention_in_days": "retentionInDays"
       },
       "tags": {
@@ -466,7 +467,8 @@
         "bucket_arn": "BucketArn",
         "size_bytes": "size_bytes",
         "object_count": "object_count",
-        "size_observed_at": "size_observed_at"
+        "size_observed_at": "size_observed_at",
+        "public_access_blocked": "_public_access_blocked"
       },
       "tags": {
         "source": "rgta",
@@ -1173,10 +1175,10 @@
         {
           "value_path": "CloudWatchLogsLogGroupArn",
           "target_type": "aws_core__aws_cloudwatch_log_group",
-          "key_kind": "name",
+          "key_kind": "arn",
           "edge_type": "WRITES_LOGS__aws_core",
           "direction": "outbound",
-          "transform": "log_group_name_from_arn"
+          "transform": "log_group_arn"
         },
         {
           "value_path": "KmsKeyId",

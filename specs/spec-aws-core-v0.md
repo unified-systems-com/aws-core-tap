@@ -72,14 +72,14 @@ The plugin covers:
 - AI services (Bedrock, SageMaker)
 - infrastructure reference (Region, Availability Zone, Account)
 
-The plugin excludes GovCloud and China partition regions from its reference data.
+The plugin's reference data covers the commercial (`aws`) and AWS GovCloud (US) (`aws-us-gov`) partitions; the China and isolated partitions are excluded. The collector reads either supported partition (`spec-aws-core-collector-v0.md` `req-aws-collector-partition`).
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-scope-1 | Resource Type Granularity | Implemented | Each AWS resource type is modeled as its own TAP model, not a generic cloud resource. | |
-| req-aws-core-scope-2 | Commercial Regions Only | Implemented | Reference data covers standard commercial AWS regions; GovCloud and China partitions are excluded. | |
+| req-aws-core-scope-2 | Commercial and GovCloud Regions | Implemented | Reference data covers the standard commercial AWS regions and the two AWS GovCloud (US) regions (`us-gov-west-1`, `us-gov-east-1`); the China and isolated partitions are excluded. | GovCloud regions added in regions seed v0.2.0. Collection in GovCloud is `req-aws-collector-partition`. |
 | req-aws-core-scope-3 | Common Infrastructure Focus | Implemented | v0 covers resource types common to most major AWS deployments. | |
 
 #### Future
@@ -156,8 +156,9 @@ Every AWS resource model has:
 - **Security facts kept where configuration is off** — for the types whose configuration is not stored, three security facts are typed fields instead (`spec-aws-core-collector-v0.md` `req-aws-collector-field-projection-8`): Lambda `vpc_subnet_ids` and `vpc_security_group_ids` (both empty means not in a VPC), CloudFront distribution `origin_access` (each origin's `oac`, `oai` or `none`, where `none` means no OAC or OAI, not necessarily public) and `origin_custom_headers_present` (whether each origin is sent any custom header: presence only, the header value and name are never stored), and API Gateway HTTP API `route_authorization_types` (each route's `NONE`, `AWS_IAM`, `JWT` or `CUSTOM`, the last being a Lambda authorizer).
 - **`tags` JSONField** — the resource's AWS tags as a canonical flat `{str: str}` map, with the **same field name and shape on every `aws_core` model** so a cross-resource tag query ("everything `Owner=X` across `aws_*`") works by convention. Default `dict`, blank; populated by the collector (`spec-aws-core-collector-v0.md` `req-aws-collector-tags`), which normalizes AWS's varied tag wire shapes. It is deliberately **not** an Entity-spine facet — `dimensions` is the spine's key/value system and owns scoping; AWS tags are mutable source-owned descriptive metadata and must never re-partition the grid. v0 implements the field on the 8 manifest-collected models; rolling it onto the remaining uncollected models is a tracked mechanical follow-up (the contract is family-wide; the v0 *implementation* is scoped to what the collector populates).
 - **`name` field** — human-readable name, typically from the AWS Name tag or resource display name.
-- **Identity** — every model declares `NATURAL_KEY` (`req-grid-entity-natural-key`): the AWS identifier that stays stable across renames — the ARN where the model carries one, otherwise the AWS-assigned resource ID (`vpc-…`, `subnet-…`, `sg-…`, `i-…`, `vol-…`, `igw-…`, `nat-…`, `acl-…`, `rtb-…`, `eipalloc-…`). AWS does not document those IDs as unique across accounts and regions; if two ever clashed, the generated search raises `AmbiguousIdentity` rather than merging, and a blank key is "not found", never a match (`req-grid-entity-natural-key-12`). Where the boto3 collector already collects a type, the key is the field its manifest `natural_key` projects to, so the model and the collector name the same fact. Owner-chosen names are never the key where AWS offers better: RDS instances and ElastiCache clusters carry `db_instance_arn` / `cluster_arn` columns for that reason. Two exceptions are stated where they are declared: a Classic Load Balancer has no ARN and keys on its assigned DNS name; a CloudWatch log group keys on its name because that is the collector's identity today (unique only within an account and region; moving the collector to the ARN changes entity ids and is its own change).
+- **Identity** — every model declares `NATURAL_KEY` (`req-grid-entity-natural-key`): the AWS identifier that stays stable across renames — the ARN where the model carries one, otherwise the AWS-assigned resource ID (`vpc-…`, `subnet-…`, `sg-…`, `i-…`, `vol-…`, `igw-…`, `nat-…`, `acl-…`, `rtb-…`, `eipalloc-…`). AWS does not document those IDs as unique across accounts and regions; if two ever clashed, the generated search raises `AmbiguousIdentity` rather than merging, and a blank key is "not found", never a match (`req-grid-entity-natural-key-12`). Where the boto3 collector already collects a type, the key is the field its manifest `natural_key` projects to, so the model and the collector name the same fact. Owner-chosen names are never the key where AWS offers better: RDS instances and ElastiCache clusters carry `db_instance_arn` / `cluster_arn` columns for that reason. One exception is stated where it is declared: a Classic Load Balancer has no ARN and keys on its assigned DNS name. A CloudWatch log group keys on its ARN (`log_group_arn`, without the `:*` suffix): a name is unique only within one account and region, so keying on it made same-named groups in two regions one identity (`spec-aws-core-collector-v0.md` `req-aws-collector-identity-2`).
 - **Null is not observed** — a structured field a collector fills (Lambda `vpc_subnet_ids` / `vpc_security_group_ids`, CloudFront `origin_access`) defaults to null, never `[]` or `{}`: null means not observed, and an empty value is an observation (the collector writes `[]` for a function outside a VPC). Rows written before migration `0011` keep their stored value.
+- **S3 public access is observed, not assumed** — S3 bucket `public_access_blocked` is nullable with no default. The collector fills it from the bucket's own `GetPublicAccessBlock`: `true` when all four Block Public Access settings are on, `false` when any is off or the bucket has no Block Public Access configuration (`NoSuchPublicAccessBlockConfiguration`), null when the read was denied or failed. It describes the bucket-level configuration only; account-level Block Public Access is not read or modelled, so `false` does not mean the bucket is reachable from the internet. Migration `0014` clears the old default (`true`, never observed) on stored rows to null.
 
 The `FIELD_CRUD_SCHEMA` (service layer) and `FIELD_VALIDATION_SCHEMA` (validation layer with `validation`/`schema` wrappers) both declare every field. Nullable fields use `{"type": ["integer", "null"]}` or `{"type": ["string", "null"]}`.
 
@@ -175,6 +176,7 @@ The `FIELD_CRUD_SCHEMA` (service layer) and `FIELD_VALIDATION_SCHEMA` (validatio
 | req-aws-core-fields-6 | CloudFront Origin Header Presence | Implemented | CloudFront distribution `origin_custom_headers_present` is `{origin Id: bool}` with an item-level boolean schema, nullable only for rows not yet re-collected; it records whether each origin is sent a custom header and never the header's value or name. | Migration 0008 (additive `AddField` only). See `req-aws-collector-field-projection-9`. |
 | req-aws-core-fields-7 | Every Type Declares Its Identity | Implemented | Every `aws_core` model declares a `NATURAL_KEY` whose fields are model fields; where the boto3 manifest collects the type, the key is the field its `natural_key` path projects to. | `tests/test_natural_keys.py` |
 | req-aws-core-fields-8 | Unobserved Is Null | Implemented | Lambda `vpc_subnet_ids` / `vpc_security_group_ids` and CloudFront `origin_access` default to null and their schemas accept null. Migration 0011. | `tests/test_natural_keys.py` |
+| req-aws-core-fields-9 | S3 Public Access Observed | Implemented | S3 bucket `public_access_blocked` is nullable with no default and is projected from the `GetPublicAccessBlock` hydrate slot: all four flags on → `true`; any off, or no bucket-level configuration → `false`; denied or errored → null. Bucket-level only; account-level Block Public Access is not modelled. Migration 0014. | `tests/test_s3_public_access.py`, `tests/test_aws_core_models.py` |
 
 #### Future
 
@@ -917,7 +919,7 @@ The following are explicitly deferred from v0:
 - cost and billing data
 - CloudWatch metrics and alarm integration
 - Local Zones and Wavelength Zones
-- GovCloud and China partition support
+- China and isolated-partition support (GovCloud is in scope: `req-aws-core-scope-2`, `req-aws-collector-partition`)
 - plugin dependency declarations
 - API endpoints for AWS-specific queries
 

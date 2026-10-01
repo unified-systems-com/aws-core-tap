@@ -26,11 +26,12 @@ class CloudwatchLogGroup(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon CloudWatch Logs log group."
     ENTITY_ICON: ClassVar[str] = "aws-cloudwatch"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The log group name, which is the boto3 collector's
-    # identity for it (logGroupName). A name is unique only within an account and region, so two
-    # accounts' log groups of the same name share a key; moving the collector to logGroupArn changes
-    # entity ids and is its own change.
-    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("name",)
+    # Identity (req-grid-entity-natural-key): the log group's ARN without the :* suffix
+    # (DescribeLogGroups logGroupArn), the boto3 collector's identity for it. A name is unique
+    # only within one account and region, so keying on the name made the same name in two regions
+    # (or two accounts) one identity; the ARN carries partition, region and account
+    # (req-aws-collector-identity-2, req-aws-collector-edges-7).
+    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("log_group_arn",)
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",
