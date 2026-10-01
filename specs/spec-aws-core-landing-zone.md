@@ -78,7 +78,10 @@ Status: `Proposed`
 
 Read from the management account, in the landing zone's home region. `ListEnabledControls` and
 `ListEnabledBaselines` are called with no target or filter: `targetIdentifier` is optional, since
-neither input shape has required members (read: botocore 1.43.103 `controltower` model). Gruntwork builds the landing
+neither input shape has required members (read: botocore 1.43.103 `controltower` model). Both are
+called with `includeChildren: true`. `ListEnabledBaselines` documents a default of false, which
+omits child enabled baselines, and `ListEnabledControls` documents no default, so neither is left
+to it (`req-aws-core-contained-type-triple-6`). Gruntwork builds the landing
 zone either by hand in the console (the 2.0 guide) or with `control-tower-landing-zone` (default
 version 4.0). The two paths produce the same API objects (inferred: both create an `aws_controltower_landing_zone`).
 
@@ -87,8 +90,8 @@ version 4.0). The two paths produce the same API objects (inferred: both create 
 | Type | Source (read: botocore) | Key | Tags (lane, path, shape) | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
 | `aws_controltower_landing_zone` | `controltower:ListLandingZones`, `GetLandingZone` | landing zone ARN | service, `ListTagsForResource(resourceArn)`, `tags`, **map** | home-region footprint of the management account, `HOSTS_LANDING_ZONE` | `ResourceNotFoundException` | — (version, status, drift status, governed regions are typed fields) |
-| `aws_controltower_enabled_control` | `controltower:ListEnabledControls` | enabled-control ARN | service, as above | landing zone, `HOLDS_ENABLED_CONTROL` | `GetEnabledControl` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU or account, from `targetIdentifier`, which names either) |
-| `aws_controltower_enabled_baseline` | `controltower:ListEnabledBaselines` | enabled-baseline ARN | service, as above | landing zone, `HOLDS_ENABLED_BASELINE` | `GetEnabledBaseline` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU or account) |
+| `aws_controltower_enabled_control` | `controltower:ListEnabledControls(includeChildren=true)` | enabled-control ARN | service, as above | landing zone, `HOLDS_ENABLED_CONTROL` | `GetEnabledControl` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU or account, from `targetIdentifier`, which names either; normalized from the ARN to the OU or account id) |
+| `aws_controltower_enabled_baseline` | `controltower:ListEnabledBaselines(includeChildren=true)` | enabled-baseline ARN | service, as above | landing zone, `HOLDS_ENABLED_BASELINE` | `GetEnabledBaseline` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU or account, normalized as above); a child baseline's `parentIdentifier` is a typed field |
 
 - The Control Tower tag `aws-control-tower` = `managed-by-control-tower`, which AWS evidences only
   on Config resources ([C-MAND](https://docs.aws.amazon.com/controltower/latest/controlreference/mandatory-controls.html)), is an ordinary tag. Its key is not under the reserved `aws:`
@@ -178,12 +181,12 @@ Gruntwork's baselines turn these on per opt-in region (`control-tower-app-accoun
 
 | Type | Source (read: botocore) | Key | Tags (lane, path, shape) | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
-| `aws_config_recorder` **(new)** | `config:DescribeConfigurationRecorders`, `DescribeConfigurationRecorderStatus` | (account, region, recorder name) | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv (ConfigurationRecorder is a supported resource; read) | footprint, `HOSTS_CONFIG_RECORDER` | absent from the describe call | — (the recording flag is a typed field) |
+| `aws_config_recorder` **(new)** | `config:ListConfigurationRecorders` (paginated, unfiltered: customer-managed and service-linked), then `DescribeConfigurationRecorders(Arn=…)` and `DescribeConfigurationRecorderStatus` per recorder | recorder ARN | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv (ConfigurationRecorder is a supported resource; read) | footprint, `HOSTS_CONFIG_RECORDER` | absent from `ListConfigurationRecorders` | — (the recording flag, `servicePrincipal` and `recordingScope` are typed fields) |
 | `aws_config_delivery_channel` **(new)** | `config:DescribeDeliveryChannels` (unpaginated) | (account, region, channel name) | AWS cannot tag a delivery channel (inferred: it is not among Config's taggable resource types) | footprint, `HOSTS_CONFIG_DELIVERY_CHANNEL` | absent from `DescribeDeliveryChannels` | `WRITES_LOGS` (exists; → S3 bucket, from `s3BucketName`) |
 | `aws_config_aggregator` **(new)** | `config:DescribeConfigurationAggregators` | aggregator ARN | service, as above | footprint, `HOSTS_CONFIG_AGGREGATOR` | `NoSuchConfigurationAggregatorException` | — (organization-wide vs account sources are typed fields) |
 | `aws_guardduty_detector` **(new)** | `guardduty:ListDetectors`, `GetDetector`, `GetAdministratorAccount` | (account, region, detector id) | field, `Tags`, **map** (`GetDetector` returns it) | footprint, `HOSTS_GUARDDUTY_DETECTOR` | `BadRequestException` naming the detector / absent from `ListDetectors` | `REPORTS_TO_ADMINISTRATOR` (→ administrator account) |
 | `aws_securityhub_hub` **(new)** | `securityhub:DescribeHub`, `GetEnabledStandards`, `GetAdministratorAccount` | hub ARN | service, `ListTagsForResource(ResourceArn)`, `Tags`, **map** | footprint, `HOSTS_SECURITYHUB_HUB` | `InvalidAccessException` "not subscribed" / `ResourceNotFoundException` | `REPORTS_TO_ADMINISTRATOR`. The enabled standards are a typed list |
-| `aws_access_analyzer` **(new)** | `accessanalyzer:ListAnalyzers` | analyzer ARN | field, **`tags`**, map (lowercase; read) | footprint, `HOSTS_ACCESS_ANALYZER` | `ResourceNotFoundException` | — (`type` is a typed field holding the API's `Type` enum: `ACCOUNT`, `ORGANIZATION`, `ACCOUNT_UNUSED_ACCESS`, `ORGANIZATION_UNUSED_ACCESS`, `ACCOUNT_INTERNAL_ACCESS`, `ORGANIZATION_INTERNAL_ACCESS`; read: botocore 1.43.103 `accessanalyzer` model. A value outside the pinned enum is kept verbatim with an `UNKNOWN_ENUM_VALUE` warning, never rejected) |
+| `aws_access_analyzer` **(new)** | `accessanalyzer:ListAnalyzers(type=…)`, once per value of the pinned `Type` enum | analyzer ARN | field, **`tags`**, map (lowercase; read) | footprint, `HOSTS_ACCESS_ANALYZER` | `ResourceNotFoundException` | — (`type` is a typed field holding the API's `Type` enum: `ACCOUNT`, `ORGANIZATION`, `ACCOUNT_UNUSED_ACCESS`, `ORGANIZATION_UNUSED_ACCESS`, `ACCOUNT_INTERNAL_ACCESS`, `ORGANIZATION_INTERNAL_ACCESS`; read: botocore 1.43.103 `accessanalyzer` model. A value outside the pinned enum is kept verbatim with an `UNKNOWN_ENUM_VALUE` warning, never rejected) |
 | EBS default encryption | `ec2:GetEbsEncryptionByDefault`, `GetEbsDefaultKmsKeyId` | — (a per-region account setting, not a resource) | not a resource, so nothing to tag | — (typed fields on the existing footprint: `ebs_encryption_by_default`, `ebs_default_kms_key_id`) | — (replaced every run) | — |
 | S3 account public-access block | `s3control:GetPublicAccessBlock(AccountId)` | — (an account setting) | not a resource, so nothing to tag | — (typed fields on `aws_account`: the four block flags) | — (replaced every run) | — |
 

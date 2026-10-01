@@ -1701,8 +1701,8 @@ type's probe and what counts as gone. Edge names are working names, finalized th
 | `aws_network_acl_entry` **(new)** | — | inside `NetworkAcls[].Entries[]` | AWS cannot tag an entry | NACL, `DECLARES_ACL_ENTRY` | the NACL no longer lists (egress, rule number) | — (CIDR, ports, action are typed fields) |
 | `aws_security_group_rule` **(new)** | — | `ec2:DescribeSecurityGroupRules` | field, `Tags[]`, list_kv | security group, `DECLARES_SG_RULE` | `InvalidSecurityGroupRuleId.NotFound` | `REFERENCES_SECURITY_GROUP` (→ SG); prefix list id is a typed field |
 | `aws_vpc_endpoint` | exists, has `tags` | `ec2:DescribeVpcEndpoints` | field, `Tags[]`, list_kv | footprint, `HOSTS_VPC_ENDPOINT` | not found, **or `State` = `Deleted`** | `RESIDES_IN_VPC`, `RESIDES_IN_SUBNET`, `CONSUMES_ENDPOINT_SERVICE` (exist); `USES_SECURITY_GROUP` |
-| `aws_vpc_flow_log` **(new)** | — | `ec2:DescribeFlowLogs` | field, `Tags[]`, list_kv | footprint, `HOSTS_FLOW_LOG` | `InvalidFlowLogId.NotFound` | `MONITORS_TRAFFIC` (→ VPC / subnet / ENI / TGW attachment); `WRITES_LOGS` (exists; → log group / S3 bucket) |
-| `aws_network_interface` **(new)** | — | `ec2:DescribeNetworkInterfaces` | field, **`TagSet[]`**, list_kv | footprint, `HOSTS_NETWORK_INTERFACE` (owner only) | `InvalidNetworkInterfaceID.NotFound` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
+| `aws_vpc_flow_log` **(new)** | — | `ec2:DescribeFlowLogs` | field, `Tags[]`, list_kv | footprint, `HOSTS_FLOW_LOG` | `InvalidFlowLogId.NotFound` | `MONITORS_TRAFFIC` (→ VPC / subnet / ENI / TGW attachment); `WRITES_LOGS` (exists; → log group / S3 bucket, normalized by `LogDestinationType` per *Target keys*; the S3 prefix is the typed field `log_destination_prefix`) |
+| `aws_network_interface` **(new)** | — | `ec2:DescribeNetworkInterfaces(IncludeManagedResources=true)` | field, **`TagSet[]`**, list_kv | footprint, `HOSTS_NETWORK_INTERFACE` (owner only) | `InvalidNetworkInterfaceID.NotFound` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
 | `aws_transit_gateway` | exists, has `tags` | `ec2:DescribeTransitGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_TRANSIT_GATEWAY` (**owner only**, RAM) | not found, or `State` = `deleted` | — |
 | `aws_transit_gateway_attachment` | exists, has `tags` | `ec2:DescribeTransitGatewayAttachments` | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ATTACHMENT` (observed from the gateway owner) | not found, or `State` = `deleted` | `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` (exist); `ASSOCIATED_WITH_TGW_ROUTE_TABLE`, `PROPAGATES_TO_TGW_ROUTE_TABLE` |
 | `aws_transit_gateway_route_table` **(new)** | — | `ec2:DescribeTransitGatewayRouteTables`, then `GetTransitGatewayRouteTablePropagations` per table (for `PROPAGATES_TO_TGW_ROUTE_TABLE`) | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ROUTE_TABLE` | not found, or `deleted` | — |
@@ -1877,6 +1877,23 @@ row gives the listing that backs its surface and when that surface is complete.
 - **Owner only.** For a RAM-shareable parent (transit gateway), only the owner's run records the
   surface, matching where `HOSTS_*` is emitted (`req-aws-core-network-plane-7`).
 
+**Listings read their full set.** Some listings return less than everything by default, and a
+default-narrowed answer read as complete would nominate whatever it left out. Each listing below
+is called with the flag that widens it. Each flag has a test, so that a child or hidden item
+appears in the fake-source run (`-6`). The flags were read from botocore 1.43.103's input shapes:
+every listing the PR names was scanned for `include*`, `*Children`, `All*`, `type` and status
+filters.
+
+| Listing | Default (read: botocore) | Called with |
+| --- | --- | --- |
+| `controltower:ListEnabledBaselines` | `includeChildren` defaults to false (documented) | `includeChildren: true`; child baselines carry `parentIdentifier`, kept as a typed field |
+| `controltower:ListEnabledControls` | `includeChildren` default not documented | `includeChildren: true`, never left to the default |
+| `ec2:DescribeNetworkInterfaces` | omits interfaces AWS services manage when managed-resource visibility is hidden | `IncludeManagedResources: true` |
+| `config:DescribeConfigurationRecorders` | with no name, returns only the customer-managed recorder | not used to enumerate: `config:ListConfigurationRecorders` (paginated, unfiltered) lists customer-managed and service-linked recorders, then `DescribeConfigurationRecorders(Arn=…)` per recorder |
+| `accessanalyzer:ListAnalyzers` | `type` optional; behavior when absent not documented | one call per value of the pinned `Type` enum (six), one aggregate surface complete only when all six finish |
+| `sso-admin:ListPermissionSetsProvisionedToAccount` | `ProvisioningStatus` is a filter | never set |
+| `ec2:DescribeRegions` | omits opt-in regions not enabled | `AllRegions: true` (already, `regions.py`) |
+
 **The pairs.** "Regional" means the existing footprint mechanism (`containment.py::surface_of`,
 per region, `req-aws-core-regional-containment`). A custom reader's footprint type follows the same
 per-region rules.
@@ -1903,13 +1920,13 @@ per-region rules.
 | transit gateway | `HOLDS_TGW_ROUTE_TABLE` | TGW route table | regional `DescribeTransitGatewayRouteTables`, grouped by `TransitGatewayId` (owner's run) | the regional listing read to its end | TGW route-table falsifier |
 | TGW route table | `DECLARES_TGW_ROUTE` | TGW route | `SearchTransitGatewayRoutes(TransitGatewayRouteTableId, Filters=[type ∈ static, propagated])` | read to its end, `AdditionalRoutesAvailable` false, and the filter's positive control passed (the call requires `Filters`; read: botocore) | TGW-route falsifier |
 | footprint (management account) | `HOSTS_LANDING_ZONE` | landing zone | `ListLandingZones` in that region | regional rules | `ResourceNotFoundException` |
-| landing zone | `HOLDS_ENABLED_CONTROL` | enabled control | `ListEnabledControls` with no `targetIdentifier` or filter (the input has no required members: read, botocore 1.43.103 `controltower` model) | read to its end | `GetEnabledControl` |
-| landing zone | `HOLDS_ENABLED_BASELINE` | enabled baseline | `ListEnabledBaselines` with no filter | read to its end | `GetEnabledBaseline` |
+| landing zone | `HOLDS_ENABLED_CONTROL` | enabled control | `ListEnabledControls` with no `targetIdentifier` or filter and `includeChildren: true` (the input has no required members: read, botocore 1.43.103 `controltower` model) | read to its end | `GetEnabledControl` |
+| landing zone | `HOLDS_ENABLED_BASELINE` | enabled baseline | `ListEnabledBaselines` with no filter and `includeChildren: true` (it defaults to false) | read to its end | `GetEnabledBaseline` |
 | footprint | `HOSTS_IDENTITY_CENTER_INSTANCE` | instance | `sso-admin:ListInstances` in that region | regional rules | absent from `ListInstances` |
 | instance | `HOLDS_PERMISSION_SET` | permission set | `ListPermissionSets(InstanceArn)` | read to its end | `DescribePermissionSet` |
 | instance | `HOLDS_IDENTITY_GROUP` | group | `identitystore:ListGroups(IdentityStoreId)` with no `Filters` | read to its end | `DescribeGroup` |
 | instance | `HOLDS_ACCOUNT_ASSIGNMENT` | assignment | `ListAccounts` + every `ListPermissionSetsProvisionedToAccount` + every `ListAccountAssignments` | all read to their end | assignment falsifier |
-| footprint | `HOSTS_CONFIG_RECORDER`, `HOSTS_CONFIG_AGGREGATOR`, `HOSTS_GUARDDUTY_DETECTOR`, `HOSTS_ACCESS_ANALYZER` | the security-service type | `DescribeConfigurationRecorders` (unpaginated), `DescribeConfigurationAggregators`, `ListDetectors`, `ListAnalyzers` | regional rules | per `req-aws-landing-zone-security-services`' table |
+| footprint | `HOSTS_CONFIG_RECORDER`, `HOSTS_CONFIG_AGGREGATOR`, `HOSTS_GUARDDUTY_DETECTOR`, `HOSTS_ACCESS_ANALYZER` | the security-service type | `ListConfigurationRecorders` (paginated, unfiltered), `DescribeConfigurationAggregators`, `ListDetectors`, `ListAnalyzers` once per `Type` value (aggregated) | regional rules; the analyzer surface is complete only when all six per-type listings finish | per `req-aws-landing-zone-security-services`' table |
 | footprint | `HOSTS_CONFIG_DELIVERY_CHANNEL` | delivery channel | `DescribeDeliveryChannels` (unpaginated) | regional rules | absent from `DescribeDeliveryChannels` |
 | footprint | `HOSTS_SECURITYHUB_HUB` | hub | `DescribeHub` | a hub returned, or complete-empty only on the verified "not subscribed" error code; any other error is incomplete | per that table |
 
@@ -1922,6 +1939,7 @@ per-region rules.
 | req-aws-core-contained-type-triple-3 | Unfinished Listing Is Incomplete | Proposed | A failed, partial, unverified-empty or uncontrolled-filter listing records the surface `enumeration_complete: false` with the reason, for every parent it would have covered, and never omits it. | `req-grid-reconcile-evidence`. |
 | req-aws-core-contained-type-triple-4 | Regional Child Listings Cover Each Parent | Proposed | For children read by one regional listing grouped by parent (SG rules, TGW attachments, TGW route tables), each observed parent's surface is complete only when that regional listing read to its end. | |
 | req-aws-core-contained-type-triple-5 | TGW Route Search Is Controlled | Proposed | The `DECLARES_TGW_ROUTE` surface is complete only when `SearchTransitGatewayRoutes` read to its end, `AdditionalRoutesAvailable` is false, and its required filter's positive control passed. | `SearchTransitGatewayRoutes` requires `Filters` (read: botocore 1.43.103). |
+| req-aws-core-contained-type-triple-6 | Listings Read Their Full Set | Proposed | Every listing in *Listings read their full set* is called with the stated widening flag (or replacement call), never its narrowed default. Tests: a child enabled baseline and a control enabled on a nested OU and on an account appear; an AWS-managed network interface appears; a service-linked Config recorder appears; an analyzer of each `Type` appears; a provisioned permission set of either provisioning status is listed. | Read: botocore 1.43.103 input shapes. A default-narrowed listing read as complete would nominate what it omitted. |
 
 ### Reference Edges Declare What They Derive From
 ----
@@ -1976,7 +1994,7 @@ so they are not listed.
 | `USES_SECURITY_GROUP` | ENI → SG | `NetworkInterfaces[].Groups[].GroupId` | **last seen** | `ModifyNetworkInterfaceAttribute` |
 | `USES_SECURITY_GROUP` | resolver endpoint → SG | `ListResolverEndpoints` → `ResolverEndpoints[].SecurityGroupIds[]` | ends with its source (set only by `CreateResolverEndpoint`) | — |
 | `MONITORS_TRAFFIC` | flow log → VPC / subnet / ENI / TGW attachment | `DescribeFlowLogs` → `FlowLogs[].ResourceId` | ends with its source (no modify operation for flow logs) | — |
-| `WRITES_LOGS` | flow log → log group / bucket | `FlowLogs[].LogGroupName`, `FlowLogs[].LogDestination` | ends with its source | — |
+| `WRITES_LOGS` | flow log → log group / bucket | `FlowLogs[].LogDestinationType` + `FlowLogs[].LogDestination`, normalized per *Target keys* below | ends with its source | — |
 | `WRITES_LOGS` | Config delivery channel → bucket | `DescribeDeliveryChannels` → `DeliveryChannels[].s3BucketName` | **last seen** (the channel keeps its name when its bucket changes) | `PutDeliveryChannel` |
 | `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` | attachment → TGW / VPC / peer TGW | `DescribeTransitGatewayAttachments` → `TransitGatewayAttachments[].TransitGatewayId`, `.ResourceId` | ends with its source | — |
 | `ASSOCIATED_WITH_TGW_ROUTE_TABLE` | attachment → TGW route table | `TransitGatewayAttachments[].Association.TransitGatewayRouteTableId` | **last seen** | `DisassociateTransitGatewayRouteTable` |
@@ -1990,12 +2008,30 @@ so they are not listed.
 | `GRANTS_PERMISSION_SET`, `GRANTS_ACCESS_TO_ACCOUNT`, `GRANTED_TO_GROUP` | assignment → permission set / account / group | `ListAccountAssignments` → `AccountAssignments[].PermissionSetArn`, `.AccountId`, `.PrincipalId` | ends with its source (all three are in the key) | — |
 | `REPORTS_TO_ADMINISTRATOR` | GuardDuty detector / Security Hub hub → account | `GetAdministratorAccount` → `Administrator.AccountId` | **last seen** | `DisassociateFromAdministratorAccount` |
 
+#### Target keys
+
+An edge's payload value is not always its target's natural key. Where it is not, the derivation
+names the normalization, and a test feeds each documented payload form and asserts the edge lands on
+the target's key. Every other reference edge in the table above carries the target's own id, which
+is its natural key (read: each target model's `NATURAL_KEY`).
+
+| Edge | Payload | Normalized to |
+| --- | --- | --- |
+| `WRITES_LOGS` (flow log), `LogDestinationType` = `cloud-watch-logs` | a log-group ARN, possibly ending `:*` | the log group's natural key. On the fix-pack branch that is `log_group_arn`, the ARN without a trailing `:*` (DescribeLogGroups' `logGroupArn` form); on `main` today it is `name`, the ARN's `log-group:<name>` segment. The edge uses whichever key the model declares when this ships |
+| `WRITES_LOGS` (flow log), `LogDestinationType` = `s3` | `arn:<partition>:s3:::<bucket>[/<prefix>/]` | the bucket's key, `arn:<partition>:s3:::<bucket>`. The object prefix is kept as the flow log's typed field `log_destination_prefix` (empty when none) |
+| `WRITES_LOGS` (flow log), `LogDestinationType` = `kinesis-data-firehose` | a Firehose delivery-stream ARN | no edge: Firehose delivery streams are not modeled. `log_destination_type` and `log_destination` are typed fields, verbatim |
+| `WRITES_LOGS` (Config delivery channel) | `s3BucketName`, a bare bucket name | `arn:<run partition>:s3:::<s3BucketName>`; `s3KeyPrefix` is a typed field |
+| `APPLIES_TO_TARGET` | `targetIdentifier`, an OU ARN (`…:ou/o-…/ou-…`) or an account ARN (`…:account/o-…/<id>`) | the OU's `ou_id` or the account's `account_id`, the ARN's last segment, with the resource type naming the target type |
+| `MONITORS_TRAFFIC` | `ResourceId` (`vpc-`, `subnet-`, `eni-`, `tgw-attach-`) | the id itself; the prefix names the target type |
+| `GRANTED_TO_GROUP` | `PrincipalId` | `(identity_store_id, group_id)`, with the identity store id taken from the instance |
+
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-reference-derivation-1 | Derivation Source Declared | Proposed | Every reference edge type aws_core's collector emits names, in its manifest or edge file, the source node type and the payload path it is derived from. A test fails on an emitted reference edge without one. | Consumer: core's `req-grid-reconcile-falsifier-5`. |
 | req-aws-core-reference-derivation-2 | Last-Seen Edges Listed | Proposed | *Last-seen reference edges* lists every reference edge this epic adds or newly collects, with its source call and payload path, and marks each **last seen** or ends-with-its-source. A test compares that table with `-1`'s machine-readable declarations and fails on an emitted reference edge the table omits. | Edges aws_core emitted before the epic, other than the four named, are covered by `-1`'s declaration, which is the exhaustive source once built. |
+| req-aws-core-reference-derivation-3 | Payloads Normalized To Target Keys | Proposed | Every edge in *Target keys* normalizes its payload as stated; a test per row feeds each payload form (a log-group ARN with and without `:*`, an S3 destination with and without a prefix, a Firehose destination, a bare bucket name, an OU ARN and an account ARN, each `MONITORS_TRAFFIC` prefix, a group principal id) and asserts the edge lands on the target's natural key, or that no edge is emitted and the typed fields hold the value. | A raw payload that is not the target's key never matches a node. |
 
 ### Account Partition And GovCloud Pairing
 ----
