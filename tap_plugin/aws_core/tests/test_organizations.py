@@ -130,6 +130,25 @@ class FakeOrganizations:
             raise self.tag_errors[ResourceId]  # pylint: disable=raising-bad-type
         return {"Tags": self.tags_of.get(ResourceId, [])}
 
+    # Organizations completeness (aws-core-tap#65) reads these too; this fake answers them with an
+    # organization that has none of each. test_organizations_completeness.py covers them.
+    def list_aws_service_access_for_organization(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(("list_aws_service_access_for_organization", kwargs))
+        return {"EnabledServicePrincipals": []}
+
+    def list_delegated_administrators(self, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(("list_delegated_administrators", kwargs))
+        return {"DelegatedAdministrators": []}
+
+    def list_delegated_services_for_account(self, AccountId: str, **kwargs: Any) -> dict[str, Any]:
+        self.calls.append(("list_delegated_services_for_account", {"AccountId": AccountId, **kwargs}))
+        return {"DelegatedServices": []}
+
+    def describe_policy(self, PolicyId: str) -> dict[str, Any]:
+        self.calls.append(("describe_policy", {"PolicyId": PolicyId}))
+        content = '{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*"}]}'
+        return {"Policy": {"PolicySummary": {"Id": PolicyId}, "Content": content}}
+
 
 def _basic_org(client: FakeOrganizations, *, partition_arn: str = "arn:aws:organizations::111111111111:organization/o-abc1234567") -> None:
     client.describe_organization_response = {
@@ -203,10 +222,20 @@ class TestCollectOrganizationTree:
         assert len(_edges(tree, NESTED_UNDER_PARENT)) == 4
 
         # Completeness: one surface per parent's OU listing (org, top OU, nested OU) plus one for
-        # organization-wide account membership. Placement (ListAccountsForParent) and policy calls
-        # are NOT containment surfaces and record none.
+        # organization-wide account membership. Placement (ListAccountsForParent) and attachment
+        # calls are NOT containment surfaces and record none. aws-core-tap#65 adds the
+        # organization's delegation, SCP and other-policy surfaces and the SCP's statement surface.
         by_relation = {(s.relation, s.subject): s for s in tree.listings}
-        assert len(tree.listings) == 4
+        assert len(tree.listings) == 8
+        assert {s.relation for s in tree.listings} == {
+            "organization.organizational_units",
+            "organizational_unit.organizational_units",
+            "organization.accounts",
+            "organization.delegated_administrations",
+            "organization.service_control_policies",
+            "organization.organizations_policies",
+            "policy.statements",
+        }
         org_ou_surface = by_relation[("organization.organizational_units", org_node["entity"]["entity_id"])]
         assert org_ou_surface.complete is True
         assert org_ou_surface.count == 1
@@ -258,12 +287,18 @@ class TestCollectOrganizationTree:
         assert tree.state == "collected"
         org_node = _node(tree, ORGANIZATION, "organization_id", ORG_ID)
         assert org_node["node"]["root_id"] == ""
-        assert len(tree.listings) == 2
+        assert len(tree.listings) == 5
         for listing in tree.listings:
             assert listing.complete is False
             assert listing.authorized is False
             assert listing.admitted is False
-        assert {s.relation for s in tree.listings} == {"organization.organizational_units", "organization.accounts"}
+        assert {s.relation for s in tree.listings} == {
+            "organization.organizational_units",
+            "organization.accounts",
+            "organization.delegated_administrations",
+            "organization.service_control_policies",
+            "organization.organizations_policies",
+        }
 
     def test_ou_listing_failure_is_incomplete_not_empty(self) -> None:
         """A failed child listing must never read as 'this parent has no children' — the

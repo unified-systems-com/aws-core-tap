@@ -1,0 +1,14 @@
+{
+  "slug": "DECLARES_TAG_RULE__aws_core",
+  "name": "Declares Tag Rule",
+  "description": "A tag policy declares the rule for one tag key (tag policy -> rule), one entry under the document's `tags` block as organizations:DescribePolicy returns it. Containment: removing the key from the document makes its rule a retirement candidate, and retiring the policy retires its rules. Complete when DescribePolicy succeeded and the document parsed; a tag policy with no keys is complete and empty.",
+  "sources": [
+    "aws_core__aws_organizations_policy"
+  ],
+  "targets": [
+    "aws_core__aws_tag_policy_rule"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

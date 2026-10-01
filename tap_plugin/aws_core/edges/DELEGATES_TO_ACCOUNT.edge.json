@@ -1,0 +1,14 @@
+{
+  "slug": "DELEGATES_TO_ACCOUNT__aws_core",
+  "name": "Delegates To Account",
+  "description": "A delegated administration names the member account it makes an administrator of an AWS service (delegation -> account): DelegatedAdministrator.Id / ListDelegatedServicesForAccount(AccountId). A reference, not containment: the account outlives the delegation, and retiring a delegation ends this edge only.",
+  "sources": [
+    "aws_core__aws_delegated_administration"
+  ],
+  "targets": [
+    "aws_core__aws_account"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

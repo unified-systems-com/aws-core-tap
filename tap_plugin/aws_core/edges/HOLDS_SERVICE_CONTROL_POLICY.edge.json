@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_SERVICE_CONTROL_POLICY__aws_core",
+  "name": "Holds Service Control Policy",
+  "description": "An AWS Organizations organization holds a customer-managed service control policy (organization -> SCP), as organizations:ListPolicies(Filter=SERVICE_CONTROL_POLICY) lists it. Containment, emitted for customer-managed policies only: an AWS-managed policy such as FullAWSAccess has one ARN in every organization, so no one organization contains it. A completed listing that no longer names a customer-managed SCP makes it a retirement candidate for DescribePolicy to judge.",
+  "sources": [
+    "aws_core__aws_organization"
+  ],
+  "targets": [
+    "aws_core__aws_service_control_policy"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

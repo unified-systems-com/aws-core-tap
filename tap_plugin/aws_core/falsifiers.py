@@ -154,10 +154,18 @@ from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
 )
 from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import iam_endpoint_region
 from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
+    ACCOUNT_NOT_REGISTERED,
     INACTIVE_ACCOUNT_STATES,
     NESTED_UNDER_PARENT,
     account_state,
     organization_id_of_account_arn,
+    organization_id_of_policy_arn,
+    policy_id_of_arn,
+)
+from tap_plugin.aws_core.collectors.boto3_collector.policy_documents import (
+    PolicyDocumentError,
+    parse_statements,
+    parse_tag_rules,
 )
 
 from tap_grid.falsifiers import (
@@ -983,6 +991,277 @@ class AccountFalsifier(_OrganizationsFalsifier):
             else ""
         )
         return _finish(candidate, expected, probe, note=note)
+
+
+# ---------------------------------------------------------------------------
+# Organizations completeness (aws-core-tap#65): delegations, policies, statements, tag rules.
+# Registered, not armed: reconcile authority stays off, so none of these is dispatched in
+# production until a later step arms it.
+# ---------------------------------------------------------------------------
+
+#: A page loop that never ends is a defect in the source, not an answer.
+_MAX_PROBE_PAGES = 500
+
+
+def _unanswered(candidate: Candidate, exc: Exception) -> Verdict:
+    """``UNDETERMINED`` with the reason the failure maps to, never a destructive verdict: for the
+    calls below only a named code means "gone", so a generic not-found is ``errored``."""
+    status = probe_status_of(exc)
+    reason = status if status in ("forbidden", "rate_limited") else "errored"
+    code = error_code_of(exc) if isinstance(exc, ClientError) else type(exc).__name__
+    return _undetermined(candidate, reason, f"{code}: the probe could not answer")
+
+
+class DelegatedAdministrationFalsifier(_OrganizationsFalsifier):
+    """``organizations:ListDelegatedServicesForAccount(AccountId)``, read to its last page; is the
+    candidate's service principal still named?
+
+    A candidate is a delegation the organization-wide ``HOLDS_DELEGATION`` listing no longer named
+    (``req-aws-core-organizations-completeness-4``). What "gone" means, from the spec:
+
+    - A successful answer that no longer names the service principal is ``DROPPED_FROM_OBSERVATION``.
+    - ``AccountNotRegisteredException`` ("the specified account is not a delegated administrator",
+      botocore) is ``DROPPED_FROM_OBSERVATION``: it is AWS's answer once the account's last
+      delegation is removed.
+    - Every other error (``AccessDeniedException``, ``AccountNotFoundException``, a throttle, a page
+      after the first failing) is ``UNDETERMINED``.
+
+    Source identity is the service principal, qualified by the ``DelegationEnabledDate`` the grid
+    recorded when it recorded one: a delegation deregistered and registered again between the
+    listing and the probe is a new registration, ``REIDENTIFIED``, not the same one present. The
+    credential must be inside the delegation's own organization (``organization_id`` on the row).
+    """
+
+    def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
+        organization_id = str(getattr(row, "organization_id", "") or "")
+        account = str(getattr(row, "account_id", "") or "")
+        principal = str(getattr(row, "service_principal", "") or "")
+        if not organization_id or not account or not principal:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no (organization, account, service principal) for this delegation")
+        if organization_id != reach.organization_id:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this credential is in organization {reach.organization_id}, not {organization_id}: an absence "
+                "here says nothing about that organization's delegations",
+            )
+        recorded_date = str(getattr(row, "delegation_enabled_at", "") or "")
+        expected = Expected(source_id=_delegation_identity(principal, recorded_date))
+        services: list[dict[str, Any]] = []
+        token: str | None = None
+        try:
+            for _ in range(_MAX_PROBE_PAGES):
+                kwargs: dict[str, Any] = {"AccountId": account, "MaxResults": 20}
+                if token:
+                    kwargs["NextToken"] = token
+                response = client.list_delegated_services_for_account(**kwargs)
+                services.extend(response.get("DelegatedServices") or [])
+                token = response.get("NextToken")
+                if not token:
+                    break
+            else:
+                return _undetermined(candidate, "errored", "ListDelegatedServicesForAccount did not reach its last page")
+        except ClientError as exc:
+            if error_code_of(exc) == ACCOUNT_NOT_REGISTERED:
+                return verdict_from_probe(
+                    candidate, expected, Probe(status="not_found", detail=f"{ACCOUNT_NOT_REGISTERED}: the account is not a delegated administrator")
+                )
+            return _unanswered(candidate, exc)
+        except BotoCoreError as exc:
+            return _unanswered(candidate, exc)
+        named = next((s for s in services if str(s.get("ServicePrincipal") or "") == principal), None)
+        if named is None:
+            return verdict_from_probe(
+                candidate, expected, Probe(status="not_found", detail="ListDelegatedServicesForAccount no longer names this service principal")
+            )
+        enabled = named.get("DelegationEnabledDate")
+        probe_date = _iso_of(enabled) if recorded_date else ""
+        probe = Probe(
+            status="found",
+            source_id=_delegation_identity(principal, probe_date),
+            created_at=enabled if isinstance(enabled, datetime) else None,
+            detail="ListDelegatedServicesForAccount names the service principal",
+        )
+        return _finish(candidate, expected, probe)
+
+
+def _delegation_identity(principal: str, enabled_at: str) -> str:
+    return f"{principal}@{enabled_at}" if enabled_at else principal
+
+
+def _iso_of(value: Any) -> str:
+    """``DelegationEnabledDate`` in the collector's own ISO form (``organizations._iso``)."""
+    from tap_plugin.aws_core.collectors.boto3_collector.organizations import _iso
+
+    return _iso(value)
+
+
+class OrganizationsPolicyFalsifier(_OrganizationsFalsifier):
+    """``organizations:DescribePolicy(PolicyId)``; compare the policy ARN, its organization and its name.
+
+    Registered for both ``aws_service_control_policy`` and ``aws_organizations_policy``: a candidate
+    is a customer-managed policy its organization's complete ``ListPolicies`` no longer named
+    (``req-aws-core-organizations-completeness-6``). ``PolicyNotFoundException`` is
+    ``DROPPED_FROM_OBSERVATION``. Source identity is the ARN; the owner is the organization id the
+    ARN embeds (``arn:<partition>:organizations::<mgmt>:policy/<o-id>/<type>/<p-id>``).
+
+    An AWS-managed policy is never a containment child (one ARN in every organization), so a
+    candidate whose row says AWS-managed, or does not say, is refused before any call. So is one
+    whose ARN names an organization other than the credential's.
+    """
+
+    def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
+        arn = str(getattr(row, "policy_arn", "") or "")
+        if getattr(row, "aws_managed", None) is not False:
+            return _undetermined(
+                candidate, "scope_unknown", "not recorded as customer-managed: no organization contains an AWS-managed policy"
+            )
+        recorded_org = organization_id_of_policy_arn(arn)
+        policy_id = str(getattr(row, "policy_id", "") or "") or policy_id_of_arn(arn)
+        if not recorded_org or not policy_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no organization-scoped policy ARN for this policy")
+        if recorded_org != reach.organization_id:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this credential is in organization {reach.organization_id}, not {recorded_org}: an absence "
+                "here says nothing about that organization's policies",
+            )
+        expected = Expected(source_id=arn, owner=recorded_org, name=str(getattr(row, "name", "") or "") or None)
+        try:
+            summary = (client.describe_policy(PolicyId=policy_id).get("Policy") or {}).get("PolicySummary") or {}
+        except (ClientError, BotoCoreError) as exc:
+            return self._error_verdict(candidate, expected, exc)
+        found_arn = str(summary.get("Arn") or "")
+        probe = Probe(
+            status="found",
+            source_id=found_arn or None,
+            owner=organization_id_of_policy_arn(found_arn) or None,
+            name=str(summary.get("Name") or "") or None,
+            detail="DescribePolicy 200",
+        )
+        return _finish(candidate, expected, probe)
+
+
+class _PolicyBodyFalsifier(_OrganizationsFalsifier):
+    """Shared shape of the statement and tag-rule falsifiers: one ``DescribePolicy`` per policy per
+    batch, parsed by the collector's own parser (``policy_documents.py``), so the key looked for is
+    computed exactly as the collector computed it.
+
+    The candidate's own ``policy_arn`` names the policy. ``PolicyNotFoundException`` is
+    ``DROPPED_FROM_OBSERVATION`` (the policy, and with it the unit, is gone); a refused call or an
+    unparseable document is ``UNDETERMINED``. A customer-managed policy's ARN must name the
+    credential's organization; an AWS-managed policy's ARN names none, and the reach proof alone
+    (the credential is inside an organization) is what lets it read one.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._documents: dict[str, tuple[str, str] | Exception] = {}
+
+    def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
+        self._documents = {}
+        return super().judge_all(session, account_id, candidates)
+
+    def _document(self, client: Any, policy_id: str) -> tuple[str, str]:
+        """``(the policy's ARN as AWS reports it, its document)``; raises what the call raised."""
+        if policy_id not in self._documents:
+            try:
+                policy = client.describe_policy(PolicyId=policy_id).get("Policy") or {}
+                summary = policy.get("PolicySummary") or {}
+                content = policy.get("Content")
+                self._documents[policy_id] = (
+                    str(summary.get("Arn") or ""),
+                    content if isinstance(content, str) else "",
+                )
+            except (ClientError, BotoCoreError) as exc:
+                self._documents[policy_id] = exc
+        cached = self._documents[policy_id]
+        if isinstance(cached, Exception):
+            raise cached
+        return cached
+
+    def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
+        arn = str(getattr(row, "policy_arn", "") or "")
+        key = self._key_of(row)
+        policy_id = policy_id_of_arn(arn)
+        if not policy_id or not key:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no policy ARN or key for this unit")
+        recorded_org = organization_id_of_policy_arn(arn)
+        if recorded_org and recorded_org != reach.organization_id:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"this credential is in organization {reach.organization_id}, not {recorded_org}: an absence "
+                "here says nothing about that organization's policies",
+            )
+        expected = Expected(source_id=key, owner=arn)
+        try:
+            found_arn, document = self._document(client, policy_id)
+        except (ClientError, BotoCoreError) as exc:
+            return self._error_verdict(candidate, expected, exc)
+        try:
+            present, replaced_by = self._find(document, key)
+        except PolicyDocumentError as exc:
+            return _undetermined(candidate, "errored", f"the policy document could not be read: {exc}")
+        if present:
+            probe = Probe(status="found", source_id=key, owner=found_arn or None, detail="DescribePolicy names the key")
+        elif replaced_by:
+            probe = Probe(
+                status="found", source_id=replaced_by, owner=found_arn or None, detail="the same unit is present under a new key"
+            )
+        else:
+            probe = Probe(status="not_found", detail="DescribePolicy's document no longer holds this key")
+        return _finish(candidate, expected, probe)
+
+    def _key_of(self, row: Any) -> str:
+        raise NotImplementedError
+
+    def _find(self, document: str, key: str) -> tuple[bool, str]:
+        """``(key present, the key the same unit now has when it changed identity)``."""
+        raise NotImplementedError
+
+
+class PolicyStatementFalsifier(_PolicyBodyFalsifier):
+    """Is the statement's key still in its policy's document
+    (``req-aws-core-organizations-completeness-10``)?
+
+    Present: ``PRESENT_AT_PROBE``. Absent, or the policy gone: ``DROPPED_FROM_OBSERVATION``. A
+    ``sid:<Sid>`` statement whose Sid the document now repeats is the same named statement under a
+    new key (``dupsid:``): ``REIDENTIFIED``, the spec's "becomes duplicated" row, which retires the
+    old node while the new one is collected.
+    """
+
+    def _key_of(self, row: Any) -> str:
+        return str(getattr(row, "statement_key", "") or "")
+
+    def _find(self, document: str, key: str) -> tuple[bool, str]:
+        units = parse_statements(document).units
+        if key in units:
+            return True, ""
+        if key.startswith("sid:"):
+            sid = key[len("sid:"):]
+            renamed = sorted(k for k, unit in units.items() if unit.sid == sid)
+            if renamed:
+                return False, renamed[0]
+        return False, ""
+
+
+class TagPolicyRuleFalsifier(_PolicyBodyFalsifier):
+    """Is the rule's tag key still in its tag policy's document
+    (``req-aws-core-organizations-completeness-11``)?
+
+    Present: ``PRESENT_AT_PROBE``. Absent, or the policy gone: ``DROPPED_FROM_OBSERVATION``. A rule
+    is keyed by the lowercased tag key alone, so a rule cannot come back under another key:
+    ``REIDENTIFIED`` is structurally impossible here, and its tests prove present, dropped and
+    forbidden individually, as the S3 and IAM-policy falsifiers do.
+    """
+
+    def _key_of(self, row: Any) -> str:
+        return str(getattr(row, "tag_key_lower", "") or "")
+
+    def _find(self, document: str, key: str) -> tuple[bool, str]:
+        return key in parse_tag_rules(document), ""
 
 
 # ---------------------------------------------------------------------------

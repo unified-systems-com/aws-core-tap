@@ -1,9 +1,10 @@
 {
   "slug": "ATTACHED_TO_TARGET__aws_core",
   "name": "Attached To Target",
-  "description": "A service control policy is attached to a target in an AWS Organizations tree: an OU, a member account, or the organization, which stands for its root (policy -> target). AWS's own terms: organizations:AttachPolicy(PolicyId, TargetId) and ListTargetsForPolicy. The `_TO` is the locative preposition of 'attached to', not a direction marker. Scoped to service control policies; it is not a generic attachment edge.",
+  "description": "An AWS Organizations policy is attached to a target in an AWS Organizations tree: an OU, a member account, or the organization, which stands for its root (policy -> target). AWS's own terms: organizations:AttachPolicy(PolicyId, TargetId) and ListTargetsForPolicy. The `_TO` is the locative preposition of 'attached to', not a direction marker. Scoped to AWS Organizations policies (service control policies, and the other policy types an organization enables: RCPs, tag policies, declarative policies); it is not a generic attachment edge.",
   "sources": [
-    "aws_core__aws_service_control_policy"
+    "aws_core__aws_service_control_policy",
+    "aws_core__aws_organizations_policy"
   ],
   "targets": [
     "aws_core__aws_organizational_unit",

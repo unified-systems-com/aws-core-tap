@@ -3,6 +3,7 @@
 from typing import Any, ClassVar
 
 from django.db import models
+from tap_plugin.aws_core.policy_types import POLICY_TYPES
 
 from tap_grid.models import BaseModel
 
@@ -17,12 +18,16 @@ class AwsOrganization(BaseModel):
     land on this node.
 
     Collected by ``Boto3Collector`` (``collectors/boto3_collector/organizations.py``) from
-    ``organizations:DescribeOrganization`` and ``ListRoots``; also design vocabulary, so every id may
+    ``organizations:DescribeOrganization``, ``ListRoots`` (with the root's ``PolicyTypes``),
+    ``ListAWSServiceAccessForOrganization`` and the root's ``ListTagsForResource``; also design vocabulary, so every id may
     be blank because a designed organization exists before AWS mints one. Blank means not observed,
     for the ids and for the two enums alike (the aws_elb.lb_type convention). The organization is the
-    containment parent of its OUs and its member accounts (see CONTAINMENT_EDGES below).
+    containment parent of its OUs, its member accounts, its delegated administrations and its
+    customer-managed policies (see CONTAINMENT_EDGES below). AWS cannot tag an organization but can
+    tag its root (``organizations:TagResource`` takes an ``r-…`` id), and this node stands for the
+    root, so ``tags`` is the root's.
 
-    Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations)
+    Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations, req-aws-core-organizations-completeness)
     """
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_organization"
@@ -83,8 +88,33 @@ class AwsOrganization(BaseModel):
             "edges": [{"type": "PARTITIONED_INTO_OU__aws_core"}],
         },
         {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "ENROLLS_ACCOUNT__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_delegated_administration"}],
+            "edges": [{"type": "HOLDS_DELEGATION__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_service_control_policy"}],
+            "edges": [{"type": "HOLDS_SERVICE_CONTROL_POLICY__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_organizations_policy"}],
+            "edges": [{"type": "HOLDS_ORGANIZATIONS_POLICY__aws_core"}],
+        },
     ]
-    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("PARTITIONED_INTO_OU__aws_core", "ENROLLS_ACCOUNT__aws_core")
+    # Organizations completeness (aws-core-tap#65, req-aws-core-organizations-completeness): the
+    # organization also contains its delegated administrations and its CUSTOMER-MANAGED policies
+    # (an AWS-managed policy has one ARN in every organization, so the collector never emits the
+    # containment edge to one). Each has one organization-wide completeness surface, complete only
+    # when every listing behind it finished (-13, -14). A deliberate contained delete of the
+    # organization therefore also reaches those, and through the policies their statements and
+    # tag-policy rules; it reaches no account and no AWS-managed policy.
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
+        "PARTITIONED_INTO_OU__aws_core",
+        "ENROLLS_ACCOUNT__aws_core",
+        "HOLDS_DELEGATION__aws_core",
+        "HOLDS_SERVICE_CONTROL_POLICY__aws_core",
+        "HOLDS_ORGANIZATIONS_POLICY__aws_core",
+    )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
@@ -93,6 +123,34 @@ class AwsOrganization(BaseModel):
         "management_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
         "feature_set": {"type": "string", "enum": ["", "ALL", "CONSOLIDATED_BILLING"]},
         "partition": {"type": "string", "enum": ["", "aws", "aws-us-gov", "aws-cn"]},
+        # The root's tags (req-aws-core-organizations-completeness-1). Null means NOT READ: the one
+        # case is a credential that can DescribeOrganization but not ListRoots, which keeps the node
+        # (req-aws-core-organizations-collect-4) but has no root id to read tags for. A root whose
+        # tag read failed withholds the node instead, so null is never written over a read failure.
+        "tags": {
+            "type": ["object", "null"],
+            "description": "The root's AWS Organizations tags as a flat {key: value} map; null when the root could not be listed this run.",
+            "additionalProperties": {"type": "string", "description": "One tag value, verbatim."},
+        },
+        "enabled_policy_types": {
+            "type": ["array", "null"],
+            "description": "Root.PolicyTypes entries whose Status is ENABLED, sorted; null = not read, [] = observed none.",
+            "items": {"type": "string", "enum": list(POLICY_TYPES), "description": "One organizations PolicyType value."},
+        },
+        "enabled_service_principals": {
+            "type": ["array", "null"],
+            "description": "ListAWSServiceAccessForOrganization, sorted by service principal; null when the call failed or a page after the first failed.",
+            "items": {
+                "type": "object",
+                "description": "One AWS service with trusted access to the organization.",
+                "additionalProperties": False,
+                "required": ["service_principal", "enabled_at"],
+                "properties": {
+                    "service_principal": {"type": "string", "description": "EnabledServicePrincipal.ServicePrincipal, e.g. config.amazonaws.com."},
+                    "enabled_at": {"type": "string", "description": "EnabledServicePrincipal.DateEnabled as ISO 8601 UTC; \"\" when AWS reported none."},
+                },
+            },
+        },
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -108,6 +166,11 @@ class AwsOrganization(BaseModel):
     management_account_id = models.CharField(max_length=12, blank=True, default="")
     feature_set = models.CharField(max_length=32, blank=True, default="")
     partition = models.CharField(max_length=16, blank=True, default="")
+    # The root's tags via the Organizations lane (organizations:ListTagsForResource on r-…).
+    tags = models.JSONField(null=True, blank=True, default=dict)
+    # Structured facts default to null, "not observed" (req-aws-core-fields-8).
+    enabled_policy_types = models.JSONField(null=True, blank=True, default=None)
+    enabled_service_principals = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_organization"

@@ -1,0 +1,50 @@
+{
+  "description": "Tag-lane declarations for the types a custom reader emits, which have no manifest entry to declare a `tags` block in (req-aws-collector-tags-14). One row per (entity type, reader). `tags` is either a manifest `tags_block` (validated against aws_resource_manifest.schema.json $defs/tags_block) or {\"source\": \"organizations\"}, the Organizations lane (req-aws-collector-tags-10): organizations:ListTagsForResource, shape list_kv, through normalize_tags and the tags_of unread sentinel in organizations.py. This file covers the Organizations reader (aws-core-tap#65); the registry-wide test over every emitting path is req-aws-collector-tags-14's (aws-core-tap#69).",
+  "lanes": [
+    {
+      "entity_type": "aws_core__aws_organization",
+      "reader": "organizations",
+      "tags": { "source": "organizations" },
+      "why": "The organization stands for its root, and organizations:TagResource accepts a root id (req-aws-core-organizations-completeness-1)."
+    },
+    {
+      "entity_type": "aws_core__aws_organizational_unit",
+      "reader": "organizations",
+      "tags": { "source": "organizations" },
+      "why": "OU tags, organizations:ListTagsForResource on the ou- id."
+    },
+    {
+      "entity_type": "aws_core__aws_account",
+      "reader": "organizations",
+      "tags": { "source": "organizations" },
+      "why": "Account tags set through Organizations stay on aws_account.tags (ruling 2026-10-01). The manifest's aws_account_singleton path declares owned_by under aws-core-tap#69."
+    },
+    {
+      "entity_type": "aws_core__aws_service_control_policy",
+      "reader": "organizations",
+      "tags": { "source": "organizations" },
+      "why": "Customer-managed SCP tags; an AWS-managed policy cannot be tagged and is written with {} without a call."
+    },
+    {
+      "entity_type": "aws_core__aws_organizations_policy",
+      "reader": "organizations",
+      "tags": { "source": "organizations" },
+      "why": "Customer-managed policy tags for every other policy type; an AWS-managed policy cannot be tagged and is written with {} without a call."
+    },
+    {
+      "entity_type": "aws_core__aws_delegated_administration",
+      "reader": "organizations",
+      "tags": { "source": "none", "why": "AWS has no tagging operation for a delegated administration: it is a (member account, service principal) registration, not a resource." }
+    },
+    {
+      "entity_type": "aws_core__aws_policy_statement",
+      "reader": "organizations",
+      "tags": { "source": "none", "why": "A statement is part of a policy document, not an AWS resource; only the policy itself can be tagged." }
+    },
+    {
+      "entity_type": "aws_core__aws_tag_policy_rule",
+      "reader": "organizations",
+      "tags": { "source": "none", "why": "A tag-policy rule is one key's entry in a tag policy document, not an AWS resource; only the policy itself can be tagged." }
+    }
+  ]
+}
