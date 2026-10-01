@@ -79,6 +79,7 @@ falls back to ``Account.Status``), and that service control policies are enabled
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -1170,24 +1171,25 @@ def tag_rule_natural_key(policy_arn: str, tag_key_lower: str) -> str:
     return f"{policy_arn}#{tag_key_lower}"
 
 
+#: The two Organizations policy ARN forms, exactly (partition, empty region, account or ``aws``):
+#: customer-managed ``arn:<p>:organizations::<12 digits>:policy/<o-id>/<type>/<p-id>`` and
+#: AWS-managed ``arn:<p>:organizations::aws:policy/<type>/<p-id>``. Anything else is neither, and a
+#: falsifier refuses it rather than probe on a guessed scope.
+_CUSTOMER_POLICY_ARN = re.compile(
+    r"^arn:aws(?:-us-gov|-cn)?:organizations::[0-9]{12}:policy/(o-[a-z0-9]{10,32})/[a-z0-9_]+/p-[0-9a-zA-Z_]{8,128}$"
+)
+_AWS_MANAGED_POLICY_ARN = re.compile(r"^arn:aws(?:-us-gov|-cn)?:organizations::aws:policy/[a-z0-9_]+/p-[0-9a-zA-Z_]{8,128}$")
+
+
 def organization_id_of_policy_arn(arn: str) -> str:
-    """The organization id in a customer-managed policy ARN, or ``""`` (an AWS-managed policy's
-    ARN carries none): ``arn:<partition>:organizations::<management account>:policy/<o-id>/<type>/<p-id>``."""
-    segments = str(arn or "").split(":", 5)
-    if len(segments) != 6 or segments[2] != "organizations":
-        return ""
-    resource = segments[5].split("/")
-    return resource[1] if len(resource) == 4 and resource[0] == "policy" and resource[1].startswith("o-") else ""
+    """The organization id in a customer-managed policy ARN of the exact form, or ``""``."""
+    match = _CUSTOMER_POLICY_ARN.match(str(arn or ""))
+    return match.group(1) if match else ""
 
 
 def is_aws_managed_policy_arn(arn: str) -> bool:
-    """True only for the exact AWS-managed policy ARN form,
-    ``arn:<partition>:organizations::aws:policy/<type>/<p-id>``."""
-    segments = str(arn or "").split(":", 5)
-    if len(segments) != 6 or segments[0] != "arn" or segments[2] != "organizations" or segments[4] != "aws":
-        return False
-    resource = segments[5].split("/")
-    return len(resource) == 3 and resource[0] == "policy" and resource[2].startswith("p-")
+    """True only for the exact AWS-managed policy ARN form."""
+    return _AWS_MANAGED_POLICY_ARN.match(str(arn or "")) is not None
 
 
 def policy_id_of_arn(arn: str) -> str:

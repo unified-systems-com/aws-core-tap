@@ -789,6 +789,8 @@ class TestTripleAndDeclarations:
         assert is_aws_managed_policy_arn(FULL_AWS_ACCESS_ARN)
         assert not is_aws_managed_policy_arn(SCP_DENY_ARN)
         assert not is_aws_managed_policy_arn("invalid/p-example123")
+        assert not is_aws_managed_policy_arn("arn:evil:organizations:bogus:aws:policy/type/p-example123")
+        assert organization_id_of_policy_arn("arn:evil:organizations::111111111111:policy/o-02tvy5y4l7/t/p-example123") == ""
 
 
 # ---------------------------------------------------------------------------
@@ -997,7 +999,15 @@ class TestPolicyStatementFalsifier:
         assert [v.verdict for v in verdicts] == [DROPPED_FROM_OBSERVATION, DROPPED_FROM_OBSERVATION, UNDETERMINED]
         assert client.calls.count(f"describe_policy:{policy_id_of_arn(gone)}") == 1
 
-    @pytest.mark.parametrize("arn", ["invalid/p-example123", "arn:aws-us-gov:organizations::111111111111:policy/p-example123"])
+    @pytest.mark.parametrize(
+        "arn",
+        [
+            "invalid/p-example123",
+            "arn:aws-us-gov:organizations::111111111111:policy/p-example123",
+            "arn:evil:organizations:bogus:aws:policy/type/p-example123",
+            "arn:aws-us-gov:organizations:us-gov-west-1:aws:policy/service_control_policy/p-example123",
+        ],
+    )
     def test_malformed_policy_arn_is_refused_without_a_probe(self, arn: str) -> None:
         """Only the exact AWS-managed ARN form skips the organization check (PR #72 review)."""
         client = FakeProbeClient()
