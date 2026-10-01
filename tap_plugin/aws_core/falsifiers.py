@@ -158,6 +158,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
     INACTIVE_ACCOUNT_STATES,
     NESTED_UNDER_PARENT,
     account_state,
+    is_aws_managed_policy_arn,
     organization_id_of_account_arn,
     organization_id_of_policy_arn,
     policy_id_of_arn,
@@ -1151,8 +1152,9 @@ class _PolicyBodyFalsifier(_OrganizationsFalsifier):
     The candidate's own ``policy_arn`` names the policy. ``PolicyNotFoundException`` is
     ``DROPPED_FROM_OBSERVATION`` (the policy, and with it the unit, is gone); a refused call or an
     unparseable document is ``UNDETERMINED``. A customer-managed policy's ARN must name the
-    credential's organization; an AWS-managed policy's ARN names none, and the reach proof alone
-    (the credential is inside an organization) is what lets it read one.
+    credential's organization; only the exact AWS-managed ARN form names none, and for it the reach
+    proof alone (the credential is inside an organization) is what lets it read one. Any other ARN
+    is refused as ``scope_unknown`` before a call.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -1188,6 +1190,10 @@ class _PolicyBodyFalsifier(_OrganizationsFalsifier):
         if not policy_id or not key:
             return _undetermined(candidate, "scope_unknown", "the grid holds no policy ARN or key for this unit")
         recorded_org = organization_id_of_policy_arn(arn)
+        if not recorded_org and not is_aws_managed_policy_arn(arn):
+            # Only the exact AWS-managed ARN form may skip the organization check; any other ARN
+            # that names no organization says nothing about which organization to ask.
+            return _undetermined(candidate, "scope_unknown", "the policy ARN is neither customer-managed nor AWS-managed in form")
         if recorded_org and recorded_org != reach.organization_id:
             return _undetermined(
                 candidate,

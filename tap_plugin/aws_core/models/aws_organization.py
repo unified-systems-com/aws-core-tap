@@ -107,7 +107,8 @@ class AwsOrganization(BaseModel):
     # containment edge to one). Each has one organization-wide completeness surface, complete only
     # when every listing behind it finished (-13, -14). A deliberate contained delete of the
     # organization therefore also reaches those, and through the policies their statements and
-    # tag-policy rules; it reaches no account and no AWS-managed policy.
+    # tag-policy rules. It still reaches member accounts through ENROLLS_ACCOUNT (see above; the
+    # membership change, aws-core-tap#68, is what removes that), and no AWS-managed policy.
     CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
         "PARTITIONED_INTO_OU__aws_core",
         "ENROLLS_ACCOUNT__aws_core",
@@ -167,7 +168,8 @@ class AwsOrganization(BaseModel):
     feature_set = models.CharField(max_length=32, blank=True, default="")
     partition = models.CharField(max_length=16, blank=True, default="")
     # The root's tags via the Organizations lane (organizations:ListTagsForResource on r-…).
-    tags = models.JSONField(null=True, blank=True, default=dict)
+    # Default null ("not read"), not {}: an existing or designed organization has no observed root tags.
+    tags = models.JSONField(null=True, blank=True, default=None)
     # Structured facts default to null, "not observed" (req-aws-core-fields-8).
     enabled_policy_types = models.JSONField(null=True, blank=True, default=None)
     enabled_service_principals = models.JSONField(null=True, blank=True, default=None)

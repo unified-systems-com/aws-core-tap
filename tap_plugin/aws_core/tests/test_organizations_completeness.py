@@ -35,6 +35,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
     SERVICE_CONTROL_POLICY,
     TAG_POLICY_RULE,
     collect_organization,
+    is_aws_managed_policy_arn,
     organization_id_of_policy_arn,
     policy_id_of_arn,
 )
@@ -174,7 +175,7 @@ class PagedOrganizations:
         index = int(kwargs.get("NextToken") or 0)
         page = pages[index]
         if isinstance(page, Exception):
-            raise page
+            raise page  # pylint: disable=raising-bad-type
         response: dict[str, Any] = {result_key: page}
         if index + 1 < len(pages):
             response["NextToken"] = str(index + 1)
@@ -220,7 +221,7 @@ class PagedOrganizations:
         self.calls.append(("describe_policy", {"PolicyId": PolicyId}))
         entry = self.documents[PolicyId]
         if isinstance(entry, Exception):
-            raise entry
+            raise entry  # pylint: disable=raising-bad-type
         summary, content = entry
         return {"Policy": {"PolicySummary": summary, "Content": content}}
 
@@ -450,13 +451,25 @@ class TestPolicies:
         assert (_id(full), _id(org)) in attached
 
     @pytest.mark.spec("req-aws-core-organizations-completeness-6", "req-aws-collector-pagination-2")
-    def test_failed_scp_second_page_is_incomplete(self) -> None:
+    def test_failed_scp_second_page_is_incomplete_but_keeps_page_one(self) -> None:
+        """Page one's policies are real observations and are written; the surface is incomplete,
+        so nothing is inferred from what page two would have named (PR #72 review)."""
         client = _govcloud_org()
-        client.set("list_policies", "SERVICE_CONTROL_POLICY", [], _err("ServiceException"))
+        deny = _summary(SCP_DENY_ARN, "DenyS3", "SERVICE_CONTROL_POLICY")
+        client.set("list_policies", "SERVICE_CONTROL_POLICY", [deny], _err("ServiceException"))
         tree = collect_organization(client, DIMENSIONS)
         [surface] = _surfaces(tree, HOLDS_SERVICE_CONTROL_POLICY)
         assert surface.complete is False
-        assert _nodes(tree, SERVICE_CONTROL_POLICY) == []
+        assert [n["node"]["policy_arn"] for n in _nodes(tree, SERVICE_CONTROL_POLICY)] == [SCP_DENY_ARN]
+
+    @pytest.mark.spec("req-aws-core-organizations-completeness-14", "req-aws-collector-pagination-2")
+    def test_failed_per_type_second_page_keeps_page_one(self) -> None:
+        client = _govcloud_org()
+        client.set("list_policies", "TAG_POLICY", [_summary(TAG_POLICY_ARN, "tt-environment-tag", "TAG_POLICY")], _err("ServiceException"))
+        tree = collect_organization(client, DIMENSIONS)
+        [surface] = _surfaces(tree, HOLDS_ORGANIZATIONS_POLICY)
+        assert surface.complete is False
+        _one(tree, ORGANIZATIONS_POLICY, policy_arn=TAG_POLICY_ARN)
 
     @pytest.mark.spec("req-aws-core-organizations-completeness-5", "req-aws-core-organizations-completeness-14")
     def test_tag_policy_is_an_organizations_policy_with_its_attachment_and_tags(self) -> None:
@@ -740,7 +753,10 @@ class TestTripleAndDeclarations:
     def test_every_call_is_walked_against_botocore(self) -> None:
         import boto3
 
-        client = boto3.session.Session().client("organizations", region_name=REGION)
+        # Dummy credentials: a metadata-only client must never walk the ambient provider chain (IMDS).
+        client = boto3.session.Session(aws_access_key_id="x", aws_secret_access_key="x").client(
+            "organizations", region_name=REGION
+        )
         operations = set(client.meta.service_model.operation_names)
         for op in PAGINATED_OPERATIONS:
             assert client.can_paginate(op), op
@@ -753,10 +769,19 @@ class TestTripleAndDeclarations:
             assert pascal in operations, op
         assert not client.can_paginate("describe_policy")
 
+    @pytest.mark.django_db
+    def test_organization_tags_default_to_not_read(self) -> None:
+        result = create_node(ORGANIZATION, {"name": "designed"})
+        assert result.success, result.errors
+        assert get_node(result.entity_id).tags is None
+
     def test_policy_arn_helpers(self) -> None:
         assert organization_id_of_policy_arn(SCP_DENY_ARN) == ORG_ID
         assert organization_id_of_policy_arn(FULL_AWS_ACCESS_ARN) == ""
         assert policy_id_of_arn(FULL_AWS_ACCESS_ARN) == "p-FullAWSAccess"
+        assert is_aws_managed_policy_arn(FULL_AWS_ACCESS_ARN)
+        assert not is_aws_managed_policy_arn(SCP_DENY_ARN)
+        assert not is_aws_managed_policy_arn("invalid/p-example123")
 
 
 # ---------------------------------------------------------------------------
@@ -783,7 +808,7 @@ class FakeProbeClient:
         index = int(kw.get("NextToken") or 0)
         page = pages[index]
         if isinstance(page, Exception):
-            raise page
+            raise page  # pylint: disable=raising-bad-type
         response: dict[str, Any] = {"DelegatedServices": page}
         if index + 1 < len(pages):
             response["NextToken"] = str(index + 1)
@@ -793,7 +818,7 @@ class FakeProbeClient:
         self.calls.append(f"describe_policy:{PolicyId}")
         entry = self.documents[PolicyId]
         if isinstance(entry, Exception):
-            raise entry
+            raise entry  # pylint: disable=raising-bad-type
         return {"Policy": entry}
 
 
@@ -964,6 +989,15 @@ class TestPolicyStatementFalsifier:
         )
         assert [v.verdict for v in verdicts] == [DROPPED_FROM_OBSERVATION, DROPPED_FROM_OBSERVATION, UNDETERMINED]
         assert client.calls.count(f"describe_policy:{policy_id_of_arn(gone)}") == 1
+
+    @pytest.mark.parametrize("arn", ["invalid/p-example123", "arn:aws-us-gov:organizations::111111111111:policy/p-example123"])
+    def test_malformed_policy_arn_is_refused_without_a_probe(self, arn: str) -> None:
+        """Only the exact AWS-managed ARN form skips the organization check (PR #72 review)."""
+        client = FakeProbeClient()
+        f = PolicyStatementFalsifier(session=FakeSession(client), account_id=MGMT, region=REGION)
+        [v] = f.batch_falsify([_cand(_statement_row(arn, "sid:A"), POLICY_STATEMENT)], _ctx())
+        assert v.verdict == UNDETERMINED and v.reason == "scope_unknown"
+        assert client.calls == []
 
     def test_aws_managed_policy_statement_is_probed_under_reach_alone(self) -> None:
         client = FakeProbeClient()

@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="awsorganization",
             name="tags",
-            field=models.JSONField(blank=True, default=dict, null=True),
+            field=models.JSONField(blank=True, default=None, null=True),
         ),
         migrations.AddField(
             model_name="historicalawsorganization",
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="historicalawsorganization",
             name="tags",
-            field=models.JSONField(blank=True, default=dict, null=True),
+            field=models.JSONField(blank=True, default=None, null=True),
         ),
         migrations.CreateModel(
             name="AwsOrganizationsPolicy",

@@ -890,9 +890,8 @@ class _Reader:
         ``HOLDS_SERVICE_CONTROL_POLICY`` surface for the organization; only customer-managed SCPs
         are its children (``req-aws-core-organizations-completeness-6``)."""
         listed = self.read("list_policies", "Policies", Filter=_SCP_FILTER)
-        if not listed.complete:
-            self.surface(listed, RELATION_ORGANIZATION_SCPS, HOLDS_SERVICE_CONTROL_POLICY, ORGANIZATION, org_id)
-            return
+        # Policies a failed listing did return are real observations and are written; the
+        # surface is then incomplete, so nothing is inferred from what it did not name.
         emitted, skipped = self._add_policies(org_id, listed.items, SERVICE_CONTROL_POLICY, HOLDS_SERVICE_CONTROL_POLICY)
         listing = self.surface(
             listed, RELATION_ORGANIZATION_SCPS, HOLDS_SERVICE_CONTROL_POLICY, ORGANIZATION, org_id, count=emitted
@@ -922,8 +921,6 @@ class _Reader:
                 continue
             listed = self.read("list_policies", "Policies", Filter=policy_type)
             reads.append(listed)
-            if not listed.complete:
-                continue
             added, refused = self._add_policies(org_id, listed.items, ORGANIZATIONS_POLICY, HOLDS_ORGANIZATIONS_POLICY)
             emitted += added
             skipped += refused
@@ -1183,6 +1180,16 @@ def organization_id_of_policy_arn(arn: str) -> str:
     return resource[1] if len(resource) == 4 and resource[0] == "policy" and resource[1].startswith("o-") else ""
 
 
+def is_aws_managed_policy_arn(arn: str) -> bool:
+    """True only for the exact AWS-managed policy ARN form,
+    ``arn:<partition>:organizations::aws:policy/<type>/<p-id>``."""
+    segments = str(arn or "").split(":", 5)
+    if len(segments) != 6 or segments[0] != "arn" or segments[2] != "organizations" or segments[4] != "aws":
+        return False
+    resource = segments[5].split("/")
+    return len(resource) == 3 and resource[0] == "policy" and resource[2].startswith("p-")
+
+
 def policy_id_of_arn(arn: str) -> str:
     """The ``p-…`` id that ends a policy ARN, or ``""``."""
     last = str(arn or "").rsplit("/", 1)[-1]
@@ -1221,6 +1228,7 @@ __all__ = [
     "POLICY_STATEMENT",
     "TAG_POLICY_RULE",
     "delegation_key",
+    "is_aws_managed_policy_arn",
     "organization_id_of_policy_arn",
     "policy_id_of_arn",
     "statement_natural_key",
