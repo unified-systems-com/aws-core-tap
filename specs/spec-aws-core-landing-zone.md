@@ -76,7 +76,9 @@ Status: `Proposed`
 
 #### Implementation
 
-Read from the management account, in the landing zone's home region. Gruntwork builds the landing
+Read from the management account, in the landing zone's home region. `ListEnabledControls` and
+`ListEnabledBaselines` are called with no target or filter: `targetIdentifier` is optional, since
+neither input shape has required members (read: botocore 1.43.103 `controltower` model). Gruntwork builds the landing
 zone either by hand in the console (the 2.0 guide) or with `control-tower-landing-zone` (default
 version 4.0). The two paths produce the same API objects (inferred: both create an `aws_controltower_landing_zone`).
 

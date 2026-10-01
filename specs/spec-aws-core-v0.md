@@ -1691,7 +1691,7 @@ type's probe and what counts as gone. Edge names are working names, finalized th
 | --- | --- | --- | --- | --- | --- | --- |
 | `aws_route_table` | exists, **no `tags`** | `ec2:DescribeRouteTables` | field, `Tags[]`, list_kv | footprint, `HOSTS_ROUTE_TABLE` | `InvalidRouteTableID.NotFound` | `RESIDES_IN_VPC` (exists) |
 | `aws_route_table_association` **(new)** | — | inside `RouteTables[].Associations[]`, keyed `RouteTableAssociationId` | AWS cannot tag an association (the `RouteTableAssociation` shape has no tags) | route table, `DECLARES_RT_ASSOCIATION` | the table's describe no longer lists the id, **or `AssociationState.State` = `disassociated`** | `ROUTES_FOR_SUBNET` (→ subnet, when `SubnetId` is set; `GatewayId` and `Main` are typed fields) |
-| `aws_route` **(new)** | — | inside `RouteTables[].Routes[]` | AWS cannot tag a route | route table, `DECLARES_ROUTE` | the route table's describe no longer lists that destination | `ROUTES_TRAFFIC` (exists; source becomes the route) → IGW / NAT / TGW / peering / endpoint / ENI; `state` = `active\|blackhole\|filtered` |
+| `aws_route` **(new)** | — | inside `RouteTables[].Routes[]` | AWS cannot tag a route | route table, `DECLARES_ROUTE` | the route table's describe no longer lists that destination | `ROUTES_TRAFFIC` (exists; source becomes the route) → each modeled target in *Route targets* below; every target member is also kept as a typed field; `state` = `active\|blackhole\|filtered` |
 | `aws_internet_gateway` | exists, **no `tags`** | `ec2:DescribeInternetGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_INTERNET_GATEWAY` | `InvalidInternetGatewayID.NotFound` | `ATTACHED_TO_VPC` (exists) |
 | `aws_nat_gateway` | exists, **no `tags`** | `ec2:DescribeNatGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_NAT_GATEWAY` | not found, **or `State` = `deleted`** | `RESIDES_IN_SUBNET` (exists); `USES_ELASTIC_IP` (→ EIP) |
 | `aws_elastic_ip` | exists, **no `tags`** | `ec2:DescribeAddresses` (unpaginated) | field, `Tags[]`, list_kv | footprint, `HOSTS_ELASTIC_IP` | `InvalidAllocationID.NotFound` | — |
@@ -1706,12 +1706,39 @@ type's probe and what counts as gone. Edge names are working names, finalized th
 | `aws_transit_gateway` | exists, has `tags` | `ec2:DescribeTransitGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_TRANSIT_GATEWAY` (**owner only**, RAM) | not found, or `State` = `deleted` | — |
 | `aws_transit_gateway_attachment` | exists, has `tags` | `ec2:DescribeTransitGatewayAttachments` | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ATTACHMENT` (observed from the gateway owner) | not found, or `State` = `deleted` | `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` (exist); `ASSOCIATED_WITH_TGW_ROUTE_TABLE`, `PROPAGATES_TO_TGW_ROUTE_TABLE` |
 | `aws_transit_gateway_route_table` **(new)** | — | `ec2:DescribeTransitGatewayRouteTables`, then `GetTransitGatewayRouteTablePropagations` per table (for `PROPAGATES_TO_TGW_ROUTE_TABLE`) | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ROUTE_TABLE` | not found, or `deleted` | — |
-| `aws_transit_gateway_route` **(new)** | — | `ec2:SearchTransitGatewayRoutes` per table | AWS cannot tag a route | TGW route table, `DECLARES_TGW_ROUTE` | the search no longer returns that destination | `ROUTES_TRAFFIC` → attachment |
+| `aws_transit_gateway_route` **(new)** | — | `ec2:SearchTransitGatewayRoutes` per table | AWS cannot tag a route | TGW route table, `DECLARES_TGW_ROUTE` | the search no longer returns that destination | `ROUTES_TRAFFIC` → each `TransitGatewayAttachments[].TransitGatewayAttachmentId`; `ResourceId`, `ResourceType`, `Type`, `State` and `TransitGatewayRouteTableAnnouncementId` are typed fields; a blackhole route has no attachment and no edge |
 | `aws_vpc_peering_connection` **(new)** | — | `ec2:DescribeVpcPeeringConnections` | field, `Tags[]`, list_kv | footprint of the **requester** owner, `HOSTS_VPC_PEERING_CONNECTION` | not found, or `Status.Code` ∈ `deleted\|rejected\|expired\|failed` | `CONNECTS_VPC` (→ requester and accepter VPC, `side` property) |
 | `aws_route53_resolver_endpoint` **(new)** | — | `route53resolver:ListResolverEndpoints` | service, `ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_RESOLVER_ENDPOINT` | `ResourceNotFoundException` | `USES_SECURITY_GROUP` |
 | `aws_route53_resolver_endpoint_ip` **(new)** | — | `ListResolverEndpointIpAddresses(ResolverEndpointId)`, keyed `(resolver_endpoint_id, IpId)` | AWS cannot tag an endpoint IP (`IpAddressResponse` has no ARN) | resolver endpoint, `DECLARES_ENDPOINT_IP` | the listing no longer names the `IpId`, **or `Status` ∈ `DETACHING\|DELETING\|FAILED_RESOURCE_GONE`** | `RESIDES_IN_SUBNET` (extend sources; → subnet) |
 | `aws_route53_resolver_rule` **(new)** | — | `route53resolver:ListResolverRules` | service, as above | footprint of the **owner**, `HOSTS_RESOLVER_RULE` (RAM-shareable) | `ResourceNotFoundException` | `FORWARDS_THROUGH_ENDPOINT` (→ outbound endpoint) |
 | `aws_route53_resolver_rule_association` **(new)** | — | `route53resolver:ListResolverRuleAssociations`, keyed by the association `Id` | AWS cannot tag an association (the shape has no ARN) | footprint of the VPC owner (the account whose listing returns it), `HOSTS_RESOLVER_RULE_ASSOCIATION` | `GetResolverRuleAssociation` → `ResourceNotFoundException`, **or `Status` = `DELETING`** | `ASSOCIATES_RESOLVER_RULE` (→ rule), `FORWARDS_VPC_DNS` (→ VPC) |
+
+**Route targets.** Every member of botocore 1.43.103's EC2 `Route` shape is classified below, and
+a test fails when the pinned shape gains a member this table does not name. Every target member,
+modeled or not, is kept verbatim on the route node in a typed `targets` map
+(`{member: value}` for each target member present). So a target with no node type is preserved,
+not dropped, and gains an edge when its type is modeled.
+
+| `Route` member | Role | Edge |
+| --- | --- | --- |
+| `DestinationCidrBlock`, `DestinationIpv6CidrBlock`, `DestinationPrefixListId` | destination (the key) | — |
+| `GatewayId` = `local` | the VPC's local route | none; `targets.GatewayId = "local"` |
+| `GatewayId` = `igw-…` | internet gateway | `ROUTES_TRAFFIC` → `aws_internet_gateway` |
+| `GatewayId` = `vpce-…` | gateway VPC endpoint (S3, DynamoDB) or Gateway Load Balancer endpoint | `ROUTES_TRAFFIC` → `aws_vpc_endpoint`. The pinned `Route` shape has no `VpcEndpointId` member, so endpoint targets arrive here (inferred from the id prefix) |
+| `GatewayId` = `vgw-…` | virtual private gateway | none (not modeled); typed field |
+| `NatGatewayId` | NAT gateway | `ROUTES_TRAFFIC` → `aws_nat_gateway` |
+| `TransitGatewayId` | transit gateway | `ROUTES_TRAFFIC` → `aws_transit_gateway` |
+| `VpcPeeringConnectionId` | peering connection | `ROUTES_TRAFFIC` → `aws_vpc_peering_connection` |
+| `NetworkInterfaceId` | network interface | `ROUTES_TRAFFIC` → `aws_network_interface` |
+| `InstanceId` (with `InstanceOwnerId`) | NAT instance or appliance | `ROUTES_TRAFFIC` → `aws_ec2_instance`; AWS also fills `NetworkInterfaceId`, which gets its own edge |
+| `EgressOnlyInternetGatewayId` | egress-only internet gateway | none (not modeled); typed field |
+| `LocalGatewayId`, `CarrierGatewayId`, `CoreNetworkArn`, `OdbNetworkArn` | Outposts, Wavelength, Cloud WAN, ODB network | none (not modeled); typed fields |
+| `IpAddress` | next hop from VPC Route Server | none; typed field |
+| `Origin`, `State` | how the route was created; `active\|blackhole\|filtered` | — (typed fields) |
+
+A TGW route's targets are `TransitGatewayAttachments[]` (`ResourceId`, `TransitGatewayAttachmentId`,
+`ResourceType`). Each attachment id gets a `ROUTES_TRAFFIC` edge to the attachment node, and the
+resource fields are kept as typed fields.
 
 The state values were read from botocore 1.43.104's enums: `NatGatewayState` includes `deleted`,
 the EC2 `State` enum includes `Deleted`, `TransitGatewayState` and `TransitGatewayAttachmentState`
@@ -1876,7 +1903,7 @@ per-region rules.
 | transit gateway | `HOLDS_TGW_ROUTE_TABLE` | TGW route table | regional `DescribeTransitGatewayRouteTables`, grouped by `TransitGatewayId` (owner's run) | the regional listing read to its end | TGW route-table falsifier |
 | TGW route table | `DECLARES_TGW_ROUTE` | TGW route | `SearchTransitGatewayRoutes(TransitGatewayRouteTableId, Filters=[type ∈ static, propagated])` | read to its end, `AdditionalRoutesAvailable` false, and the filter's positive control passed (the call requires `Filters`; read: botocore) | TGW-route falsifier |
 | footprint (management account) | `HOSTS_LANDING_ZONE` | landing zone | `ListLandingZones` in that region | regional rules | `ResourceNotFoundException` |
-| landing zone | `HOLDS_ENABLED_CONTROL` | enabled control | `ListEnabledControls` with no `targetIdentifier` or filter | read to its end | `GetEnabledControl` |
+| landing zone | `HOLDS_ENABLED_CONTROL` | enabled control | `ListEnabledControls` with no `targetIdentifier` or filter (the input has no required members: read, botocore 1.43.103 `controltower` model) | read to its end | `GetEnabledControl` |
 | landing zone | `HOLDS_ENABLED_BASELINE` | enabled baseline | `ListEnabledBaselines` with no filter | read to its end | `GetEnabledBaseline` |
 | footprint | `HOSTS_IDENTITY_CENTER_INSTANCE` | instance | `sso-admin:ListInstances` in that region | regional rules | absent from `ListInstances` |
 | instance | `HOLDS_PERMISSION_SET` | permission set | `ListPermissionSets(InstanceArn)` | read to its end | `DescribePermissionSet` |
@@ -1932,7 +1959,7 @@ so they are not listed.
 | `ENROLLS_ACCOUNT` | membership → account | `ListAccounts` → `Accounts[].Id` | ends with its source (`account_id` is in the membership key) | — |
 | `DELEGATES_TO_ACCOUNT` | delegation → account | `ListDelegatedAdministrators` → `DelegatedAdministrators[].Id` | ends with its source (in the key) | — |
 | `ROUTES_FOR_SUBNET` | route-table association → subnet | `DescribeRouteTables` → `RouteTables[].Associations[].SubnetId` | ends with its source (`ReplaceRouteTableAssociation` mints a new association id) | — |
-| `ROUTES_TRAFFIC` | route → IGW / NAT / TGW / peering / ENI | `DescribeRouteTables` → `RouteTables[].Routes[].GatewayId \| NatGatewayId \| TransitGatewayId \| VpcPeeringConnectionId \| NetworkInterfaceId` | **last seen** (the route keeps its destination key) | `ReplaceRoute` |
+| `ROUTES_TRAFFIC` | route → IGW / VPC endpoint / NAT / TGW / peering / ENI / EC2 instance | `DescribeRouteTables` → `RouteTables[].Routes[].GatewayId` (`igw-…`, `vpce-…`) `\| NatGatewayId \| TransitGatewayId \| VpcPeeringConnectionId \| NetworkInterfaceId \| InstanceId` (*Route targets*) | **last seen** (the route keeps its destination key) | `ReplaceRoute` |
 | `ROUTES_TRAFFIC` | TGW route → attachment | `SearchTransitGatewayRoutes` → `Routes[].TransitGatewayAttachments[].TransitGatewayAttachmentId` | **last seen** | `ReplaceTransitGatewayRoute` |
 | `RESIDES_IN_VPC` | route table / NACL / endpoint → VPC | `RouteTables[].VpcId`, `NetworkAcls[].VpcId`, `VpcEndpoints[].VpcId` | ends with its source (no operation moves them) | — |
 | `ATTACHED_TO_VPC` | IGW → VPC | `DescribeInternetGateways` → `InternetGateways[].Attachments[].VpcId` | **last seen** | `DetachInternetGateway`, `AttachInternetGateway` |
