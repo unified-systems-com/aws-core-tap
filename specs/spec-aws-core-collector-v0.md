@@ -99,7 +99,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
-| req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-13` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane |
+| req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
 | req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
 | req-aws-collector-model-deps | [Model Dependencies](#model-dependencies) | Proposed | CloudFront / CloudWatch log group / EventBridge rule models must exist |
 | req-aws-collector-sam-example | [Sam Worked Example](#sam-worked-example) | Proposed | Concrete manifest + edge set for the demo target |
@@ -1341,7 +1341,8 @@ it in every member account, never an administrator role:
   Gruntwork account baseline (Gruntwork's `cross-account-iam-roles` module already ships a comparable
   role, `allow-read-only-access-from-other-accounts`;
   [SEC-MODS](https://github.com/gruntwork-io/docs/tree/main/docs/reference/modules/terraform-aws-security/)).
-- **Name:** operator-declared (`member_role_name`), never defaulted in code, so an estate can use the
+- **Name:** operator-declared (`member_role_name`), a plain role name with no path (the role is
+  deployed at the root path `/`; `req-aws-core-secret-member-fanout-2`), never defaulted in code, so an estate can use the
   name its baseline deploys.
 - **Not used:** `OrganizationAccountAccessRole`, the administrator role `CreateGovCloudAccount`
   creates in each member ([C-GCORG](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-organizations.html)), and
@@ -1368,6 +1369,28 @@ The base account's own credential, partition or identity failure still aborts th
 ("multi-batch collectors wanting partial-success", `tap_cares/collectors/base.py:306-308`). One
 rejected batch, for example a member that hits unified-systems-com/aws-core-tap#14's tombstone conflict, then
 loses only that account's data.
+
+**Which batch owns what.** The organization tree is read with the base credential, so it is the
+base account's observation and belongs to the base account's batch. That batch carries the
+organization, its OUs, policies, statements, tag-policy rules, delegations, memberships, and one
+`aws_account` envelope per listed account with the org-sourced fields. It is submitted first. Each
+collected member's batch then carries everything read through that member's session, and also
+that account's merged `aws_account` envelope: the same org-sourced values from this run's tree, plus
+the account-sourced fields (`-8`). Because the member's write is the union, it replaces the
+base batch's write of that node without blanking anything. So:
+
+- **Member collected:** the account node ends the run with both sources' fields.
+  `ACCOUNT_RESULT.batch_id` is the member's batch.
+- **Member skipped before collection** (not `ACTIVE`, excluded, `AssumeRole` denied, identity
+  mismatch): no member batch exists. The base batch's tree envelope is the only write, and its
+  `ACCOUNT_RESULT.batch_id` is `null`.
+- **Member batch rejected:** the base batch's tree envelope has already landed, and the member's
+  batch, merged envelope included, writes nothing. `ACCOUNT_RESULT.batch_id` is the rejected batch.
+- In the last two cases, the tree envelope resets the account-sourced fields. That is `-16`'s
+  named dependency on unified-systems-com/tap#886.
+
+"One batch per account" therefore means one batch per account's credential session. The base
+account's batch also holds the organization tree, because that is what the base credential read.
 
 **The account node, merged and not clobbered.** The same `aws_account` node is described by two
 readers: the organization tree (name, email, state, Organizations tags, `ParentId`;
@@ -1446,9 +1469,9 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-3 | Assert-On-Land Per Member | Proposed | After `AssumeRole`, the member session's `GetCallerIdentity` account equals the member id, or the member is skipped as `MEMBER_ACCOUNT_MISMATCH` and nothing from it is written. | Reuses `account_mismatch_error`. |
 | req-aws-collector-fanout-4 | Member Failure Is Local | Proposed | A denied or failed `AssumeRole`, a member identity mismatch, or a member's rejected batch is recorded as that account's outcome and the run continues. A base-credential, partition or base-identity failure still aborts. | |
 | req-aws-collector-fanout-5 | Per-Account Results | Proposed | Every listed account has exactly one `ACCOUNT_RESULT` entry (id, outcome ∈ `collected\|partial\|skipped`, reason, regions, counts, batch id), and the summary counts each outcome. The batch id is `null` for an account skipped before any batch was submitted, and the rejected batch's id for an account whose batch was rejected. | The per-account run results the epic asks for. |
-| req-aws-collector-fanout-6 | One Batch Per Account | Proposed | Each account's observations are one GRIFT batch submitted with `on_rejection="return"`; a rejected batch fails only that account. | Supersedes `req-aws-collector-grift-batch-1` for fan-out runs. |
+| req-aws-collector-fanout-6 | One Batch Per Account | Proposed | Each account's observations are one GRIFT batch submitted with `on_rejection="return"`; a rejected batch fails only that account. The organization tree, including one org-sourced `aws_account` envelope per listed account, is the base account's observation and is in the base batch, which is submitted first; a collected member's batch re-carries its account's merged envelope. | Supersedes `req-aws-collector-grift-batch-1` for fan-out runs. |
 | req-aws-collector-fanout-7 | Surfaces Per Account | Proposed | Completeness surfaces are recorded per account against that account's own batch. A listed member that was not collected records its surfaces as not authorized with the reason, and never omits them; with no submitted batch its surfaces carry `applied_batches: []`, and with a rejected batch they cite it, so core derives `applied: false` either way. | Core still derives `scope_withdrawn` candidates for those surfaces (`spec-grid-reconcile.md` §candidates), so the falsifier is the backstop (`-9`). Nothing is armed (unified-systems-com/aws-core-tap#14). |
-| req-aws-collector-fanout-8 | Account Node Merged In A Run | Proposed | For every account both the organization tree and a member collection describe in one run, the batch carries one envelope whose fields are the union by source; neither reader's fields are dropped or blanked. | Generalizes `collector.py:635-653`, which keeps the tree node and drops the singleton's fields. |
+| req-aws-collector-fanout-8 | Account Node Merged In A Run | Proposed | For every account both the organization tree and a member collection describe in one run, the member's batch carries one envelope whose fields are the union by source (the org-sourced values from this run's tree plus the account-sourced ones); neither reader's fields are dropped or blanked, and the base batch's earlier tree envelope is superseded by it. | Generalizes `collector.py:635-653`, which keeps the tree node and drops the singleton's fields. |
 | req-aws-collector-fanout-9 | Falsifier Reach Per Account | Proposed | A falsifier resolves the candidate's account credentials through the base-then-member-role path, with assert-on-land; an unreachable account is `UNDETERMINED(scope_unknown)`. | Today every falsifier resolves the one secret (`falsifiers.py:449-485`). |
 | req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
 | req-aws-collector-fanout-11 | Ledgered Per Account | Proposed | Every `AssumeRole` and every member-session call is in the run's call ledger tagged with the member account id. | `req-aws-core-secret-aws-assumed-role-6`. |

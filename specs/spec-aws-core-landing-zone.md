@@ -85,7 +85,7 @@ version 4.0). The two paths produce the same API objects (inferred: both create 
 | Type | Source (read: botocore) | Key | Tags (lane, path, shape) | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
 | `aws_controltower_landing_zone` | `controltower:ListLandingZones`, `GetLandingZone` | landing zone ARN | service, `ListTagsForResource(resourceArn)`, `tags`, **map** | home-region footprint of the management account, `HOSTS_LANDING_ZONE` | `ResourceNotFoundException` | — (version, status, drift status, governed regions are typed fields) |
-| `aws_controltower_enabled_control` | `controltower:ListEnabledControls` | enabled-control ARN | service, as above | landing zone, `HOLDS_ENABLED_CONTROL` | `GetEnabledControl` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU, from `targetIdentifier`) |
+| `aws_controltower_enabled_control` | `controltower:ListEnabledControls` | enabled-control ARN | service, as above | landing zone, `HOLDS_ENABLED_CONTROL` | `GetEnabledControl` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU or account, from `targetIdentifier`, which names either) |
 | `aws_controltower_enabled_baseline` | `controltower:ListEnabledBaselines` | enabled-baseline ARN | service, as above | landing zone, `HOLDS_ENABLED_BASELINE` | `GetEnabledBaseline` → `ResourceNotFoundException` | `APPLIES_TO_TARGET` (→ OU or account) |
 
 - The Control Tower tag `aws-control-tower` = `managed-by-control-tower`, which AWS evidences only
@@ -102,7 +102,7 @@ version 4.0). The two paths produce the same API objects (inferred: both create 
 | --- | --- | :---: | --- | --- |
 | req-aws-landing-zone-control-tower-1 | Landing Zone Collected | Proposed | A management-account run with Control Tower writes one landing-zone node with version, status, drift status and governed regions; a run without one writes none and says so. | |
 | req-aws-landing-zone-control-tower-2 | Controls And Baselines Attached | Proposed | Each enabled control and enabled baseline is a node with an `APPLIES_TO_TARGET` edge to the OU or account its target identifier names. | |
-| req-aws-landing-zone-control-tower-3 | Retirement Path | Proposed | All three types are containment targets with registered falsifiers passing the four-case harness. | |
+| req-aws-landing-zone-control-tower-3 | Retirement Path | Proposed | All three types are containment targets with registered falsifiers passing the four-case harness. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` (`spec-aws-core-v0.md`) lists for it, including a complete-empty surface for a parent with no children. | |
 | req-aws-landing-zone-control-tower-4 | Tags Via Map Lane | Proposed | Control Tower tags come from `ListTagsForResource`'s lowercase `tags` map through the `service` lane, shape `map`. | Read: botocore `controltower` model. |
 
 ### Identity Center Access
@@ -158,7 +158,7 @@ region.
 | req-aws-landing-zone-identity-center-1 | Instance Collected | Proposed | A run whose credential can `ListInstances` writes the instance with `home_region` and `identity_store_id`. | Closes "modelled, never collected". |
 | req-aws-landing-zone-identity-center-2 | Who Reaches Which Account | Proposed | A Gryphon query from a group to the accounts it can reach, with the permission set, is answered from assignment nodes and their three edges. | |
 | req-aws-landing-zone-identity-center-3 | No User Nodes | Proposed | No identity-store user is written as a node; a user assignment carries its principal id only. | Ruling 2026-10-01. |
-| req-aws-landing-zone-identity-center-4 | Retirement Path | Proposed | Permission set, group and assignment are containment targets with registered falsifiers passing the four-case harness. | |
+| req-aws-landing-zone-identity-center-4 | Retirement Path | Proposed | Permission set, group and assignment are containment targets with registered falsifiers passing the four-case harness. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` (`spec-aws-core-v0.md`) lists for it, including a complete-empty surface for a parent with no children. | |
 | req-aws-landing-zone-identity-center-5 | Assignment Surface Spans Nested Listings | Proposed | The collector records exactly one `HOLDS_ACCOUNT_ASSIGNMENT` surface per instance, complete only when the organization's account listing, every `ListPermissionSetsProvisionedToAccount` and every `ListAccountAssignments` read to their end; otherwise it is recorded incomplete with the reason. No surface is recorded per (account, permission set). A test fails one nested listing and asserts the surface is incomplete and no assignment is a candidate. | Core fans candidates out from parent and edge type (`req-grid-reconcile-candidates`), so a per-pair surface would nominate other pairs' assignments. Same rule as `req-aws-core-organizations-completeness-13`. |
 
 ### Security Services
@@ -200,7 +200,7 @@ Gruntwork's baselines turn these on per opt-in region (`control-tower-app-accoun
 | --- | --- | :---: | --- | --- |
 | req-aws-landing-zone-security-services-1 | Per Account And Region | Proposed | For every account and region a fan-out run reaches, each service's presence is a node (or, for the two settings, typed fields) or an explicit not-enabled observation; a denied read is recorded as unknown, never as off. | |
 | req-aws-landing-zone-security-services-2 | Administrator Edges | Proposed | A member detector or hub whose administrator is another account has `REPORTS_TO_ADMINISTRATOR` to that account. | Pairs with `req-aws-core-organizations-completeness-4`. |
-| req-aws-landing-zone-security-services-3 | Retirement Path | Proposed | Every node type here is a footprint containment target with a registered falsifier passing the four-case harness; the two settings are fields replaced every run and need none. | |
+| req-aws-landing-zone-security-services-3 | Retirement Path | Proposed | Every node type here is a footprint containment target with a registered falsifier passing the four-case harness; the two settings are fields replaced every run and need none. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` (`spec-aws-core-v0.md`) lists for it, including a complete-empty surface for a parent with no children. | |
 | req-aws-landing-zone-security-services-4 | Tags Per Botocore | Proposed | Each type's tag lane, path and shape are as tabled and pass `req-aws-collector-tags-13`'s botocore check. | GuardDuty, Security Hub, Access Analyzer are `map`; Config is `list_kv`. |
 
 ### Non-Goals

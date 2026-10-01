@@ -209,7 +209,12 @@ The `aws_static_access_key` kind gains one optional key:
 
 - `data.member_fanout` — absent or `{"enabled": false}` means today's single-account run, unchanged.
   When `enabled` is true:
-  - `member_role_name` — required. An IAM role **name** (optionally with a path), never an ARN. The
+  - `member_role_name` — required. A plain IAM role **name**, matching `^[\w+=,.@-]{1,64}$` (the
+    pattern the committed CloudFormation template already uses for `RoleName`,
+    `cross-account-role.yaml:70`), never an ARN and never a path. The member role is deployed at the
+    root path `/`, so the ARN the collector builds, `…:role/<member_role_name>`, is the role's real
+    ARN. A role under a non-root path is not supported here. Supporting one needs a separate
+    `member_role_path` field and template parameter, and is Future. The
     collector builds the ARN from the run's resolved partition and each member's id, so a secret
     cannot carry a wrong-partition ARN. It names the dedicated read-only member role
     (`req-aws-collector-fanout`, ruling 2026-10-01). No default: the roles a member has by default
@@ -242,7 +247,7 @@ baseline (an organization StackSet or the Gruntwork account baseline). It uses `
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-secret-member-fanout-1 | Optional, Additive | Proposed | A static-key secret without `member_fanout`, or with `enabled: false`, validates and runs exactly as before. | |
-| req-aws-core-secret-member-fanout-2 | Role Name, Never ARN | Proposed | `member_role_name` validates as an IAM role name with optional path; an ARN is refused at validation. | The partition comes from the run, never from the secret. |
+| req-aws-core-secret-member-fanout-2 | Role Name, Never ARN | Proposed | `member_role_name` validates against `^[\w+=,.@-]{1,64}$`: a plain role name, so a value containing `/` (a path) or an ARN is refused at validation; every handoff variant deploys the member role at path `/` and validates its role-name input with the same pattern. | The partition comes from the run, never from the secret. |
 | req-aws-core-secret-member-fanout-3 | No Default Role | Proposed | `enabled: true` without `member_role_name` fails validation; the collector never falls back to `OrganizationAccountAccessRole` or `AWSControlTowerExecution`. | Both are administrator roles. |
 | req-aws-core-secret-member-fanout-4 | Cap Required | Proposed | `enabled: true` without an integer `max_member_accounts` ≥ 1 fails validation. | `req-aws-collector-fanout-10`. |
 | req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, and deploys in `aws-us-gov` without edits. | `req-aws-collector-fanout-13`; the same templates unified-systems-com/aws-core-tap#51 names. |

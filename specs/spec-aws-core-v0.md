@@ -52,6 +52,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-organizations-completeness | [Organizations Completeness](#organizations-completeness) | Proposed | Root tags, enabled policy types, enabled service access, delegated administration, the other GovCloud-allowed policy types, a retirement path for policies; SCP and RCP statements and tag-policy rules as contained nodes |
 | req-aws-core-network-plane | [Network Plane Collection](#network-plane-collection) | Proposed | Route tables + routes, IGW, NAT, EIP, NACLs + entries, SG rules, VPC endpoints, flow logs, ENIs, TGW + attachments + route tables + routes, peering, Route 53 Resolver; each with tags lane and retirement path |
 | req-aws-core-account-footprint | [Account Owns Its Region Footprints](#account-owns-its-region-footprints) | Proposed | `OWNS_REGION_FOOTPRINT` account → footprint containment; a never-drop `FootprintFalsifier` |
+| req-aws-core-contained-type-triple | [Every Contained Type Has Its Three Parts](#every-contained-type-has-its-three-parts) | Proposed | Every (parent, edge type) the epic adds has containment, a completeness surface and a falsifier; empty parents are complete-empty; unfinished listings are incomplete |
 | req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
 | req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
 
@@ -777,7 +778,7 @@ override in review.
 | `resources`, `not_resources` | Lists of resource ARN patterns, de-duplicated and sorted. |
 | `principals`, `not_principals` | RCP only: a list of `{type, value}` (for example `{"type": "AWS", "value": "*"}`); `[]` on an SCP, whose grammar has no principal. |
 | `conditions` | A list of `{operator, condition_key, values}`, one entry per key under each operator of the `Condition` block, `values` a sorted list of strings. `[]` when there is no `Condition`. |
-| `position` | The 0-based index of the statement in the document as last read. Informational, never identity. |
+| `positions` | The sorted 0-based indices at which this statement appears in the document as last read: one entry normally, `occurrences` entries when identical statements share the node. Informational, never identity. |
 | `occurrences` | How many identical statements the document holds under this key (normally 1). |
 | `content_sha256` | SHA-256 of the canonical form (below), as a change detector. |
 | `tags` | Declared `{"source": "none", ...}`: a statement is not an AWS resource. |
@@ -812,7 +813,7 @@ excluded from the canonical form.
 
 | Change in AWS | What the grid shows |
 | --- | --- |
-| Statements reordered | Same nodes. `position` changes; nothing retires. Statement order has no effect on IAM evaluation (every statement is evaluated, and an explicit deny wins). |
+| Statements reordered | Same nodes. `positions` changes; nothing retires. Statement order has no effect on IAM evaluation (every statement is evaluated, and an explicit deny wins). |
 | A statement with a `Sid` is edited | Same node, fields replaced in place. `content_sha256` changes, and the node's history holds the before and after. |
 | A statement without a `Sid` is edited | Its content key changes. The old node retires and a new node is created. This is the honest reading: AWS gives such a statement no identity beyond its content. Authors who want edits to read as edits give their statements a `Sid`. |
 | A `Sid` is added, removed or renamed, or becomes or stops being duplicated | The key changes: the old node retires and a new one is created. |
@@ -846,7 +847,10 @@ document:
   capitalization the rule assigns), `allowed_values` (null when the rule does not constrain values),
   `enforced_for` (null when absent) and `inheritance_operators` (the operators the rule uses). Its
   tags are declared `none`. An edit to a key's rule updates the node in place; removing the key
-  retires it. Same falsifier shape as statements.
+  retires it. Same falsifier shape as statements, and the same surface: `DECLARES_TAG_RULE` is
+  backed by the policy's `DescribePolicy` document, complete when the call succeeded and the
+  document parsed (a policy with no keys is complete-empty), and incomplete with the reason
+  otherwise (`req-aws-core-contained-type-triple`).
 - **Declarative EC2 and S3 policies.** The unit is one top-level attribute (for example an EC2 image
   block-public-access setting). The typed fields differ per attribute, and this spec does not yet
   name them. Their bodies are **not read** until an amendment specifies each attribute's fields from
@@ -864,9 +868,9 @@ document:
 | req-aws-core-organizations-completeness-6 | Policies Contained | Proposed | Customer-managed SCPs and other policies are containment children of the organization with registered falsifiers; AWS-managed policies are not. | |
 | req-aws-core-organizations-completeness-7 | Statements Are Nodes | Proposed | Each statement of a customer-managed or AWS-managed SCP or RCP read by `DescribePolicy` is an `aws_policy_statement` node contained by its policy (`DECLARES_STATEMENT`), with `effect`, `actions`, `not_actions`, `resources`, `not_resources`, `principals`, `not_principals` and `conditions` as typed fields. No action is a node, and no policy document is stored. | The 2026-10-01 rule, as read in *Policy Statements*. `req-aws-core-organizations-7` stands. |
 | req-aws-core-organizations-completeness-8 | Statement Identity | Proposed | A statement is keyed `sid:<Sid>` when it has a unique `Sid`; `content:<sha256 of the canonical form>` when it has no `Sid`; and `dupsid:<sha256 of the Sid and the canonical form>`, with a `DUPLICATE_SID` warning, when its `Sid` is repeated in the document. Identical statements under one key are one node with `occurrences`. A test holds a duplicate-Sid statement and a Sid-less statement with identical content, and statements with identical content under two different duplicated Sids, and asserts each gets its own node. | The canonical form excludes `Sid`, so the Sid enters the fallback hash explicitly. |
-| req-aws-core-organizations-completeness-9 | Statement Update Semantics | Proposed | Reordering changes only `position`; editing a statement with a `Sid` updates its node in place; editing a Sid-less statement, or adding, removing or renaming a `Sid`, retires the old node and creates a new one; deleting the policy cascades to its statements. | Each row of the update table is a test. |
+| req-aws-core-organizations-completeness-9 | Statement Update Semantics | Proposed | Reordering changes only `positions`; editing a statement with a `Sid` updates its node in place; editing a Sid-less statement, or adding, removing or renaming a `Sid`, retires the old node and creates a new one; deleting the policy cascades to its statements. | Each row of the update table is a test. |
 | req-aws-core-organizations-completeness-10 | Statement Retirement Path | Proposed | `DECLARES_STATEMENT` is containment, its listing is the policy's `DescribePolicy` document (incomplete when the call or the parse fails), and `PolicyStatementFalsifier` is registered and passes the four-case harness. | |
-| req-aws-core-organizations-completeness-11 | Tag Policy Rules | Proposed | Each tag key in a `TAG_POLICY` is an `aws_tag_policy_rule` node keyed `(policy_arn, tag_key_lower)` and contained by its policy, with a registered falsifier. | Ruling 2026-10-01: collecting tag policies is in scope. |
+| req-aws-core-organizations-completeness-11 | Tag Policy Rules | Proposed | Each tag key in a `TAG_POLICY` is an `aws_tag_policy_rule` node keyed `(policy_arn, tag_key_lower)` and contained by its policy, with a registered falsifier. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` lists for it. | Ruling 2026-10-01: collecting tag policies is in scope. |
 | req-aws-core-organizations-completeness-12 | Declarative Bodies Not Yet Read | Proposed | Declarative EC2 and S3 policies are collected as policy nodes with their attachments; their bodies are not read until an amendment specifies each attribute's typed fields. | |
 | req-aws-core-organizations-completeness-13 | Delegation Surface Spans Nested Listings | Proposed | The collector records exactly one `HOLDS_DELEGATION` surface per organization, complete only when `ListDelegatedAdministrators` and every `ListDelegatedServicesForAccount` it implies read to their end; otherwise it is recorded incomplete with the reason. No surface is recorded per delegated account. A test fails one inner listing and asserts the surface is incomplete and no delegation is a candidate. | Core fans candidates out from parent and edge type (`req-grid-reconcile-candidates`), so a per-call surface would nominate other accounts' delegations. |
 | req-aws-core-organizations-completeness-14 | Policy Surface Spans Per-Type Listings | Proposed | The collector records exactly one `HOLDS_ORGANIZATIONS_POLICY` surface per organization, complete only when `enabled_policy_types` was read and every per-type `ListPolicies` read to its end; otherwise it is recorded incomplete. | Same rule as `-13`. |
@@ -1602,7 +1606,8 @@ these types as the next regional containment rows.
 A route, a NACL entry and a security-group rule each have an identity AWS itself uses to delete them:
 `DeleteRoute(RouteTableId, DestinationCidrBlock|…)`, `DeleteNetworkAclEntry(NetworkAclId, RuleNumber, Egress)`,
 `RevokeSecurityGroupIngress(SecurityGroupRuleIds)`. Each is therefore a node, keyed on that identity
-and contained by its parent with a falsifier. That gives them a retirement path. The edges they emit
+and contained by its parent with a falsifier and a per-parent completeness surface
+(`req-aws-core-contained-type-triple`). That gives them a retirement path. The edges they emit
 (a route's target, a rule's referenced group) end when they retire, instead of staying stale while
 both endpoints live (`req-aws-core-reference-derivation`, below). A sub-structure AWS does not address individually stays a typed field.
 
@@ -1674,7 +1679,7 @@ and is never read as an empty listing.
 | req-aws-core-network-plane-2 | Tags On Every Type | Proposed | Route table, IGW, NAT gateway, EIP and NACL gain the `tags` field by additive migration; every type in the table carries it and declares its lane per the table. | `req-aws-collector-tags-13`. |
 | req-aws-core-network-plane-3 | Field Lane For EC2 | Proposed | EC2 types take tags from the enumerate item (`field` lane, `Tags[]`, ENI `TagSet[]`), never from the RGTA sweep. | Keeps these types off the RGTA sweep and its false-empty write. |
 | req-aws-core-network-plane-4 | Addressable Sub-Resources Are Nodes | Proposed | Routes, NACL entries, security-group rules and TGW routes are nodes keyed on AWS's own delete identity, contained by their parent, each with a registered falsifier. | `req-aws-core-reference-derivation`, for these edges. |
-| req-aws-core-network-plane-5 | Every Type Has A Retirement Path | Proposed | Every type in the table is a containment target with a `[falsifiers]` row; `validate_plugin --level loads --strict` is green; `NOT_YET_WIRED` no longer names route table, IGW, NAT gateway, NACL, EIP or VPC endpoint. | EBS and RDS stay on the worklist (not network plane). |
+| req-aws-core-network-plane-5 | Every Type Has A Retirement Path | Proposed | Every type in the table is a containment target with a `[falsifiers]` row; `validate_plugin --level loads --strict` is green; `NOT_YET_WIRED` no longer names route table, IGW, NAT gateway, NACL, EIP or VPC endpoint. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` lists for it. | EBS and RDS stay on the worklist (not network plane). |
 | req-aws-core-network-plane-6 | Soft-Deleted Is Absent | Proposed | A NAT gateway, VPC endpoint, transit gateway, attachment or peering connection in a deleted, rejected, expired or failed state is not projected as live, and its falsifier treats that state as not found. | unified-systems-com/aws-core-tap#15 hazards. |
 | req-aws-core-network-plane-7 | Owner, Not Observer | Proposed | RAM-shared and cross-account types route `BELONGS_TO_ACCOUNT` to the owner and emit `HOSTS_*` only from the owner's footprint. | `req-aws-core-regional-containment-5`. |
 | req-aws-core-network-plane-8 | Edge Names Through The Skill | Proposed | Every new edge type is named and declared through the `add-edge` skill; the working names here are not canon. | |
@@ -1729,6 +1734,84 @@ is never retired.
 | req-aws-core-account-footprint-1 | Account Contains Footprints | Proposed | `AwsAccount.CONTAINMENT_EDGES` includes `OWNS_REGION_FOOTPRINT`; every footprint the collector writes has that edge from its account. | |
 | req-aws-core-account-footprint-2 | Never-Drop Falsifier | Proposed | `FootprintFalsifier` is registered, returns `PRESENT_AT_PROBE` or `UNDETERMINED`, and has a test proving it never returns `DROPPED_FROM_OBSERVATION`. | |
 | req-aws-core-account-footprint-3 | Cascade Reach Tested | Proposed | A contained cascade from an account retires its footprints and their `HOSTS_*` children, and refuses past `TAP_CASCADE_MAX_CLOSURE`. | |
+
+### Every Contained Type Has Its Three Parts
+----
+RID: `req-aws-core-contained-type-triple`
+
+Status: `Proposed`
+
+Core retires nothing unless three parts agree on the same (parent, edge type). Containment must be
+declared in the parent's `CONTAINMENT_EDGES`. A completeness surface must name that edge type for
+that parent. And the child type needs a registered falsifier. Candidate derivation is
+`children(P, R) − observed(this run) − outside_scope`, read per parent from a surface whose
+`edge_type` is `R` (`req-grid-reconcile-candidates`; `tap_grid.candidates`). A containment edge
+with no surface never nominates anything, and a surface with no falsifier stops at dispatch. This
+requirement lists every (parent, edge type) the landing-zone epic adds, across
+`spec-aws-core-v0.md`, `spec-aws-core-landing-zone.md` and `spec-aws-core-collector-v0.md`. Each
+row gives the listing that backs its surface and when that surface is complete.
+
+#### Implementation
+
+**Rules every row follows.**
+
+- **One surface per observed parent.** It is recorded for every parent the run observed, and never
+  omitted. A parent observed with no children records a **complete, empty** surface, for example
+  a security group with zero rules, a transit gateway with no attachments, or an instance with no
+  groups. That is what lets the last child's removal nominate it.
+- **Incomplete, with the reason, when the listing did not finish.** That covers a failed call, a
+  partial page, a filtered listing without a passing positive control (`req-grid-reconcile-evidence`),
+  an unknown or disabled region (`req-aws-core-regional-containment-3`), and an unparseable
+  document. A parent the run did not observe records no surface. Core's per-parent prerequisite
+  already refuses to derive under it.
+- **A child listing read once per region covers every parent it groups.** Security-group rules,
+  TGW attachments and TGW route tables come from one regional listing, grouped by the parent's id.
+  Each observed parent's surface is complete only if that regional listing read to its end.
+- **Nested listings aggregate.** When one (parent, edge type) is filled by several listings, it
+  gets one surface, complete only when every listing finished
+  (`req-aws-core-organizations-completeness-13`, `-14`; `req-aws-landing-zone-identity-center-5`).
+- **Owner only.** For a RAM-shareable parent (transit gateway), only the owner's run records the
+  surface, matching where `HOSTS_*` is emitted (`req-aws-core-network-plane-7`).
+
+**The pairs.** "Regional" means the existing footprint mechanism (`containment.py::surface_of`,
+per region, `req-aws-core-regional-containment`). A custom reader's footprint type follows the same
+per-region rules.
+
+| Parent | Edge type | Child | Surface backed by | Complete when | Falsifier |
+| --- | --- | --- | --- | --- | --- |
+| organization | `HOLDS_MEMBERSHIP` | membership | `ListAccounts` | read to its end | `MembershipFalsifier` |
+| organization | `HOLDS_DELEGATION` | delegation | `ListDelegatedAdministrators` + every `ListDelegatedServicesForAccount` | all read to their end | delegation falsifier (`-organizations-completeness-4`) |
+| organization | `HOLDS_SERVICE_CONTROL_POLICY` | customer-managed SCP | `ListPolicies(Filter=SERVICE_CONTROL_POLICY)` | read to its end | `DescribePolicy` |
+| organization | `HOLDS_ORGANIZATIONS_POLICY` | customer-managed other policy | every per-type `ListPolicies` | `enabled_policy_types` read and all listings finished | `DescribePolicy` |
+| SCP, RCP | `DECLARES_STATEMENT` | statement | the policy's `DescribePolicy` document | call succeeded and the document parsed | `PolicyStatementFalsifier` |
+| tag policy | `DECLARES_TAG_RULE` | tag-policy rule | the policy's `DescribePolicy` document | call succeeded and the document parsed; a policy with no keys is complete-empty | `TagPolicyRuleFalsifier` (`DescribePolicy`) |
+| account | `OWNS_REGION_FOOTPRINT` | footprint | the run's region scope for the account | `DescribeRegions` answered | `FootprintFalsifier` (never drops) |
+| footprint | `HOSTS_ROUTE_TABLE`, `HOSTS_INTERNET_GATEWAY`, `HOSTS_NAT_GATEWAY`, `HOSTS_ELASTIC_IP`, `HOSTS_NETWORK_ACL`, `HOSTS_VPC_ENDPOINT`, `HOSTS_FLOW_LOG`, `HOSTS_NETWORK_INTERFACE`, `HOSTS_TRANSIT_GATEWAY`, `HOSTS_VPC_PEERING_CONNECTION`, `HOSTS_RESOLVER_ENDPOINT`, `HOSTS_RESOLVER_RULE` | the network-plane type | that type's regional `Describe*` / `List*` | regional rules | per `req-aws-core-network-plane`'s table |
+| route table | `DECLARES_ROUTE` | route | the table's own `Routes[]` in `DescribeRouteTables` | the regional `DescribeRouteTables` read to its end | route falsifier |
+| network ACL | `DECLARES_ACL_ENTRY` | NACL entry | the ACL's own `Entries[]` in `DescribeNetworkAcls` | the regional `DescribeNetworkAcls` read to its end | NACL-entry falsifier |
+| security group | `DECLARES_SG_RULE` | SG rule | regional `DescribeSecurityGroupRules`, grouped by `GroupId` | the regional listing read to its end; a group with no rules is complete-empty | `InvalidSecurityGroupRuleId.NotFound` |
+| transit gateway | `HOLDS_TGW_ATTACHMENT` | attachment | regional `DescribeTransitGatewayAttachments`, grouped by `TransitGatewayId` (owner's run) | the regional listing read to its end | attachment falsifier |
+| transit gateway | `HOLDS_TGW_ROUTE_TABLE` | TGW route table | regional `DescribeTransitGatewayRouteTables`, grouped by `TransitGatewayId` (owner's run) | the regional listing read to its end | TGW route-table falsifier |
+| TGW route table | `DECLARES_TGW_ROUTE` | TGW route | `SearchTransitGatewayRoutes(TransitGatewayRouteTableId, Filters=[type ∈ static, propagated])` | read to its end, `AdditionalRoutesAvailable` false, and the filter's positive control passed (the call requires `Filters`; read: botocore) | TGW-route falsifier |
+| footprint (management account) | `HOSTS_LANDING_ZONE` | landing zone | `ListLandingZones` in that region | regional rules | `ResourceNotFoundException` |
+| landing zone | `HOLDS_ENABLED_CONTROL` | enabled control | `ListEnabledControls` with no `targetIdentifier` or filter | read to its end | `GetEnabledControl` |
+| landing zone | `HOLDS_ENABLED_BASELINE` | enabled baseline | `ListEnabledBaselines` with no filter | read to its end | `GetEnabledBaseline` |
+| footprint | `HOSTS_IDENTITY_CENTER_INSTANCE` | instance | `sso-admin:ListInstances` in that region | regional rules | absent from `ListInstances` |
+| instance | `HOLDS_PERMISSION_SET` | permission set | `ListPermissionSets(InstanceArn)` | read to its end | `DescribePermissionSet` |
+| instance | `HOLDS_IDENTITY_GROUP` | group | `identitystore:ListGroups(IdentityStoreId)` with no `Filters` | read to its end | `DescribeGroup` |
+| instance | `HOLDS_ACCOUNT_ASSIGNMENT` | assignment | `ListAccounts` + every `ListPermissionSetsProvisionedToAccount` + every `ListAccountAssignments` | all read to their end | assignment falsifier |
+| footprint | `HOSTS_CONFIG_RECORDER`, `HOSTS_CONFIG_AGGREGATOR`, `HOSTS_GUARDDUTY_DETECTOR`, `HOSTS_ACCESS_ANALYZER` | the security-service type | `DescribeConfigurationRecorders` (unpaginated), `DescribeConfigurationAggregators`, `ListDetectors`, `ListAnalyzers` | regional rules | per `req-aws-landing-zone-security-services`' table |
+| footprint | `HOSTS_SECURITYHUB_HUB` | hub | `DescribeHub` | a hub returned, or complete-empty only on the verified "not subscribed" error code; any other error is incomplete | per that table |
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-contained-type-triple-1 | Every Pair Has All Three | Proposed | Every (parent type, edge type) in an aws_core model's `CONTAINMENT_EDGES` has a child type with a `[falsifiers]` row and a collector path that records a surface naming that edge type. A test collects from the full fake source and fails if any live parent node observed in the run lacks a surface for any containment edge type its model declares. | The table above is the epic's list; the test is the guard against the next one. |
+| req-aws-core-contained-type-triple-2 | Empty Parent Is Complete-Empty | Proposed | A parent observed with no children records a complete surface with zero items; a test removes a security group's last rule and asserts the rule becomes a candidate. | |
+| req-aws-core-contained-type-triple-3 | Unfinished Listing Is Incomplete | Proposed | A failed, partial, unverified-empty or uncontrolled-filter listing records the surface `enumeration_complete: false` with the reason, for every parent it would have covered, and never omits it. | `req-grid-reconcile-evidence`. |
+| req-aws-core-contained-type-triple-4 | Regional Child Listings Cover Each Parent | Proposed | For children read by one regional listing grouped by parent (SG rules, TGW attachments, TGW route tables), each observed parent's surface is complete only when that regional listing read to its end. | |
+| req-aws-core-contained-type-triple-5 | TGW Route Search Is Controlled | Proposed | The `DECLARES_TGW_ROUTE` surface is complete only when `SearchTransitGatewayRoutes` read to its end, `AdditionalRoutesAvailable` is false, and its required filter's positive control passed. | `SearchTransitGatewayRoutes` requires `Filters` (read: botocore 1.43.103). |
 
 ### Reference Edges Declare What They Derive From
 ----
