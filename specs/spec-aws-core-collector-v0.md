@@ -101,6 +101,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
 | req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
 | req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
+| req-aws-collector-pagination | [Every Paginated Call Read To Its End](#every-paginated-call-read-to-its-end) | Proposed | Every call the landing-zone epic names that botocore paginates is read to exhaustion; a later-page failure leaves the field or surface unknown, never partial |
 | req-aws-collector-model-deps | [Model Dependencies](#model-dependencies) | Proposed | CloudFront / CloudWatch log group / EventBridge rule models must exist |
 | req-aws-collector-sam-example | [Sam Worked Example](#sam-worked-example) | Proposed | Concrete manifest + edge set for the demo target |
 | req-aws-collector-build-skill | [Build-Collector Skill Direction](#build-collector-skill-direction) | Proposed | Skill is a manifest generator; trust-tier axis |
@@ -1379,6 +1380,12 @@ it in every member account, never an administrator role:
   manifest engine's entries, region facts, and the per-account security services and settings.
   The member policy is generated **only** from `account`-context declarations. A base-only action
   is never granted to the member role (`-20`).
+  **Falsifier probes are calls too.** A falsifier reaches a member through the same member role
+  (`-9`), and its probe is often not a collection call. For example, resolver-rule associations are
+  collected with `ListResolverRuleAssociations` but probed with `GetResolverRuleAssociation`. So
+  every registered falsifier declares its probe calls with a context, in the same declared call set
+  the policy is generated from. A probe left out of the policy would be denied on every candidate
+  and could never retire one (`-22`).
   **The gate is an allowlist, not a name pattern.** A prefix rule ("begins with `Get`") with a
   denylist does not fail closed: `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and
   `ssm:GetDocument` all pass it and read content. So the generator reads a committed, reviewed
@@ -1579,11 +1586,12 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-14 | A Degraded Run Is Never Plain Success | Proposed | When the organization listing did not read to its end, the base account is not the organization's management account, or any listed member's outcome is not `collected`, the run's top-level result is marked degraded and carries the per-outcome counts. It is never reported as a plain success, so automation cannot read base-account-only collection as full coverage. | Uses core's job status for a partial run if one exists; otherwise a top-level `degraded` flag in `CollectionJob.results`. Member failure stays local to the run (`-4`); this makes it visible at the top. |
 | req-aws-collector-fanout-15 | Account Name Has One Owner | Proposed | In a run that read the organization tree, `AwsAccount.name` is Organizations `Account.Name` and nothing else writes it; the IAM alias is `AwsAccount.account_alias` (`""` = observed none, `null` = not read); the singleton's caller identity is `configuration.caller_identity`, never a top-level `Arn`. A test merges a tree envelope and a singleton for one account and asserts each field's source. | Closes the alias-for-name collision in fan-out runs. The member-scoped cross-run overwrite of `name` depends on unified-systems-com/tap#886. |
 | req-aws-collector-fanout-16 | Member-Sourced Fields Survive A Member Failure | Proposed | When a listed member is not collected (skipped, `AssumeRole` denied, identity mismatch, batch rejected), the organization tree's envelope for that account leaves its account-sourced fields (`account_alias`, `configuration.caller_identity`, the S3 account public-access-block flags) at their last observed values, through a GRIFT write that marks them not observed. Fan-out writes do not ship before that write exists (*Sequencing*). | Depends on core's replacement-semantics work, unified-systems-com/tap#886, as the tag false-empty write does; no collector workaround (no withheld node, no read-back of stored values). |
-| req-aws-collector-fanout-17 | Repo-Owned Member Policy | Proposed | The member role's permissions are exactly `collectors/boto3_collector/handoff/member-read-policy.json`, generated from the manifest's operations and every custom reader's declared call list through a declared API-to-IAM action map, and drawn only from the committed, reviewed allowlist `member-read-actions.json` (each entry one action with a one-line `why`). Generation fails when a declared call maps to an action not on the allowlist. Every member-role handoff variant attaches only that policy and no AWS-managed policy. Tests fail when a collector call made in a member is not granted by the policy, when generation succeeds for a call whose action is not allowlisted, when the committed policy differs from a fresh generation, and when a member-role template attaches any other policy. The verb-prefix check (`Describe`, `List`, `Get`, `BatchGet`, `Search`) runs over the allowlist as a sanity check, not as the gate. | AWS-managed policies such as `SecurityAudit` change without review in this repo, which would widen every member role. A prefix rule alone admits content reads such as `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and `ssm:GetDocument`. |
+| req-aws-collector-fanout-17 | Repo-Owned Member Policy | Proposed | The member role's permissions are exactly `collectors/boto3_collector/handoff/member-read-policy.json`, generated from the manifest's operations, every custom reader's declared call list and every falsifier's declared `account`-context probe calls (`-22`) through a declared API-to-IAM action map, and drawn only from the committed, reviewed allowlist `member-read-actions.json` (each entry one action with a one-line `why`). Generation fails when a declared call maps to an action not on the allowlist. Every member-role handoff variant attaches only that policy and no AWS-managed policy. Tests fail when a collector call made in a member is not granted by the policy, when generation succeeds for a call whose action is not allowlisted, when the committed policy differs from a fresh generation, and when a member-role template attaches any other policy. The verb-prefix check (`Describe`, `List`, `Get`, `BatchGet`, `Search`) runs over the allowlist as a sanity check, not as the gate. | AWS-managed policies such as `SecurityAudit` change without review in this repo, which would widen every member role. A prefix rule alone admits content reads such as `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and `ssm:GetDocument`. |
 | req-aws-collector-fanout-18 | Data-Plane Reads Denied | Proposed | A second, independent test over the allowlist itself: no entry of `member-read-actions.json` is on a committed denylist of actions that read customer data or secret material (at least `secretsmanager:GetSecretValue`, `ssm:GetParameter*` with decryption, `ssm:GetDocument`, `kms:Decrypt`, `s3:GetObject*`, `dynamodb:GetItem`/`Query`/`Scan`/`BatchGetItem`, `logs:GetLogEvents`/`FilterLogEvents`, `lambda:GetFunction` code download, `codecommit:GetFile`/`GetBlob`, `ecr:GetDownloadUrlForLayer`/`BatchGetImage`). A test fails when a denylisted action is added to the allowlist. | Belt and braces over `-17`'s allowlist gate: the allowlist is reviewed, and the denylist catches a review that let a content read through. Collection is metadata-only (`req-aws-collector-scope`). |
 | req-aws-collector-fanout-19 | Caller-Side AssumeRole Grant | Proposed | `collector-principal-policy.json` grants the base principal `sts:AssumeRole` on `arn:${Partition}:iam::*:role/<member_role_name>` only, with an `aws:ResourceOrgID` condition equal to the organization's id (fallback, if STS does not evaluate that key for `AssumeRole`: `aws:ResourceAccount` limited to the listed member ids). Tests fail on an `arn:aws:` literal, a wildcard role name, or a grant with neither condition. | Without a caller-side allow, every member `AssumeRole` is denied whatever the member trust says. `aws:ResourceOrgID` support for `sts:AssumeRole` is inferred and confirmed before build. |
 | req-aws-collector-fanout-20 | Member Policy From Member-Reachable Calls Only | Proposed | Every call declaration (manifest and custom readers) carries `context: base` or `context: account`; `member-read-policy.json` is generated only from `account`-context calls. A test fails when an action of a `base`-only call (at least `organizations:*`, `controltower:*`, `sso:*`/`sso-admin` actions, `identitystore:*`) appears in the member policy, and when a call declaration has no context. | Least privilege: the Organizations, Control Tower and Identity Center readers run only with the base credential. |
 | req-aws-collector-fanout-21 | Base Batch Rejection Stops The Run | Proposed | When the base batch is rejected, no member role is assumed and no member batch is submitted; every listed account's `ACCOUNT_RESULT` is `skipped` with reason `base_batch_rejected`; the run records no completeness statement (no surface and no `declare_no_surfaces`); and the job ends failed. A test rejects the base batch in the fake importer and asserts all four, and that candidate derivation records nothing for the run. | Checked against core: any statement omitting the members would read as a narrowed scope and derive `scope_withdrawn` for their resources (`tap_grid/candidates.py` `_scope_of`); a failed job is never the previous run compared against (`tap_cares/tasks.py` `_previous_run`). |
+| req-aws-collector-fanout-22 | Falsifier Probes In The Member Policy | Proposed | Every falsifier registered in `[falsifiers]` declares each AWS call its probe makes, with `context: base` or `context: account`; the member policy's source set is manifest operations, custom-reader calls and `account`-context probe calls, all through `-17`'s allowlist. A test fails when an `account`-context probe call is not granted by `member-read-policy.json`, and when a registered falsifier declares no probe calls. | `-9` runs probes through the member role; `GetResolverRuleAssociation` is a probe-only call. |
 
 #### Future
 
@@ -1593,6 +1601,58 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
   closed by `req-aws-core-organization-membership`; its tags and `name` halves, and `-16`'s
   preservation of a failed member's fields, wait on core's replacement semantics
   (unified-systems-com/tap#886).
+
+### Every Paginated Call Read To Its End
+----
+RID: `req-aws-collector-pagination`
+
+Status: `Proposed`
+
+One rule for every call the landing-zone epic names: listings, hydrate sub-calls, tag lanes and
+falsifier probes alike. A call that botocore can paginate is read to its last page. One page is
+never treated as the whole answer.
+
+#### Implementation
+
+- **Which calls.** A call is paginated when the pinned botocore's `paginators-1.json` for its
+  service lists the operation (`client.can_paginate(op)` is true). The hydrate seam makes one
+  direct call today (`hydrate.py:91`), so this rule changes it for paginated operations.
+- **A later page fails.** If any page after the first fails, the result is unknown, never the pages
+  read so far:
+  - a typed field written from the call is `null`, with the hydrate slot's `error` status;
+  - a completeness surface backed by the call is `enumeration_complete: false` with the reason;
+  - a falsifier probe answers `UNDETERMINED`.
+- **The service tag lane** (`req-aws-collector-tags-15`) is this rule applied to tags.
+- **Calls this applies to** (read: botocore 1.43.103 `paginators-1.json` for every call the epic's
+  specs name; result key in parentheses):
+
+| Service | Paginated calls |
+| --- | --- |
+| `ec2` | `DescribeFlowLogs`, `DescribeInternetGateways`, `DescribeNatGateways`, `DescribeNetworkAcls`, `DescribeNetworkInterfaces`, `DescribeRouteTables`, `DescribeSecurityGroupRules`, `DescribeTransitGatewayAttachments`, `DescribeTransitGatewayRouteTables`, `DescribeTransitGateways`, `DescribeVpcEndpoints`, `DescribeVpcPeeringConnections`, `GetTransitGatewayRouteTablePropagations`, `SearchTransitGatewayRoutes` (also bounded by `AdditionalRoutesAvailable`) |
+| `organizations` | `ListAccounts`, `ListAccountsForParent`, `ListAWSServiceAccessForOrganization`, `ListDelegatedAdministrators`, `ListDelegatedServicesForAccount`, `ListOrganizationalUnitsForParent`, `ListPolicies`, `ListRoots`, `ListTagsForResource`, `ListTargetsForPolicy`; `ListCreateAccountStatus` (Future, pairing) |
+| `sso-admin` | `ListAccountAssignments`, `ListInstances`, `ListManagedPoliciesInPermissionSet` (`AttachedManagedPolicies`), `ListPermissionSets`, `ListPermissionSetsProvisionedToAccount`, `ListTagsForResource` |
+| `identitystore` | `ListGroups` |
+| `controltower` | `ListEnabledBaselines`, `ListEnabledControls`, `ListLandingZones` |
+| `config` | `DescribeConfigurationAggregators`, `ListConfigurationRecorders`, `ListTagsForResource` |
+| `guardduty` | `ListDetectors` |
+| `securityhub` | `GetEnabledStandards` (`StandardsSubscriptions`) |
+| `accessanalyzer` | `ListAnalyzers` |
+| `route53resolver` | `ListResolverEndpointIpAddresses`, `ListResolverEndpoints`, `ListResolverRuleAssociations`, `ListResolverRules`, `ListTagsForResource` |
+| `iam` | `ListAccountAliases`, `ListOpenIDConnectProviderTags`, `ListRoleTags` |
+
+Not paginated in the same data, so one call is the whole answer: `ec2:DescribeAddresses`,
+`DescribeRegions`, `GetEbsEncryptionByDefault`, `GetEbsDefaultKmsKeyId`;
+`config:DescribeConfigurationRecorders`, `DescribeConfigurationRecorderStatus`,
+`DescribeDeliveryChannels`; `securityhub:DescribeHub`, `ListTagsForResource`;
+`controltower:ListTagsForResource`; `s3control:GetPublicAccessBlock`.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-pagination-1 | Read To Exhaustion | Proposed | Every declared call (manifest, custom reader, hydrate sub-call, tag lane, falsifier probe) whose operation the pinned botocore can paginate is read until no continuation token remains. | |
+| req-aws-collector-pagination-2 | Later-Page Failure Is Unknown | Proposed | A failure on any page after the first leaves the field `null`, the surface incomplete, or the probe `UNDETERMINED`; the pages already read are never written as the answer. A test fails the second page of a paginated hydrate call, listing and probe, and asserts each outcome. | |
+| req-aws-collector-pagination-3 | Walked Against botocore | Proposed | A test walks every declared call against the pinned botocore's `paginators-1.json` and fails when a paginated operation is read through a single-call path, or when a declared call's operation does not exist in the service model. | Keeps the table above from going stale. |
 
 ### Model Dependencies
 ----
