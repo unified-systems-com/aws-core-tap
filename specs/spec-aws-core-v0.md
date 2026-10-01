@@ -638,7 +638,10 @@ membership becomes the observed thing, and the thing that retires.
   them. That gap is named here (`-6`) and in `req-aws-core-reference-derivation-2`, so a reader does
   not read those edges as current.
 - **Email and status move to the membership** (ruling 2026-10-01). The organization-sourced
-  facts `email` and `state` live on the membership, and `AwsAccount.email` and `AwsAccount.status`
+  lifecycle facts from `ListAccounts` (`email`, `state`, `joined_method`, `joined_at`) live on the
+  membership and nowhere else: no `aws_account` envelope carries them, as typed fields or in
+  `configuration` (`State`, `Status`, `JoinedMethod`, `JoinedTimestamp` leave the account's
+  `configuration` too). `AwsAccount.email` and `AwsAccount.status`
   are deprecated: the collector stops writing them, and they are removed by a later migration once
   nothing reads them. No page reads either today (grep of `grift/pages.grift.json` and
   `static/aws_core/js`). That gives those facts one writer and closes their half of the cross-run
@@ -667,7 +670,7 @@ membership becomes the observed thing, and the thing that retires.
 | req-aws-core-organization-membership-4 | Membership Falsifier | Proposed | `MembershipFalsifier` is registered for the membership type and passes the four-case harness; `AccountFalsifier` is no longer registered. | Supersedes `req-aws-core-organizations-collect-3`'s `AccountFalsifier` half. |
 | req-aws-core-organization-membership-5 | Account Untouched | Proposed | Applying `DROPPED_FROM_OBSERVATION` to a membership tombstones the membership only: the account node, its `OWNS_*` children and its footprints stay live, and `contained_closure` of the membership is the membership alone. | The done-test for the 2026-09-30 ruling. |
 | req-aws-core-organization-membership-6 | Placement Gap Named | Proposed | The spec states which placement edges a departed account keeps (`NESTED_UNDER_PARENT`, `ATTACHED_TO_TARGET`) and why: they stay last seen until core edge re-derivation can end them. | Ruling 2026-10-01: placement stays on the account. |
-| req-aws-core-organization-membership-7 | One Writer Per Account Fact | Proposed | `email` and `state` live on the membership and the collector no longer writes `AwsAccount.email` or `AwsAccount.status`; a member-scoped run writing the account node cannot blank them. | Ruling 2026-10-01. Closes the email and status half of `req-aws-collector-fanout-8`'s cross-run case; the tags and `name` halves depend on unified-systems-com/tap#886 (`req-aws-collector-fanout-15`). |
+| req-aws-core-organization-membership-7 | One Writer Per Account Fact | Proposed | `email`, `state`, `joined_method` and `joined_at` live on the membership only; the collector no longer writes `AwsAccount.email` or `AwsAccount.status`, and no account envelope carries `State`, `Status`, `JoinedMethod` or `JoinedTimestamp` in `configuration`; a member-scoped run writing the account node cannot blank them. | Ruling 2026-10-01. Closes the email and status half of `req-aws-collector-fanout-8`'s cross-run case; the tags and `name` halves depend on unified-systems-com/tap#886 (`req-aws-collector-fanout-15`). |
 | req-aws-core-organization-membership-8 | Account Retirement Out Of Scope | Proposed | No requirement here retires an `aws_account`; a later requirement owns it. | Ruling 2026-09-30. |
 
 ### Organizations Completeness
@@ -787,10 +790,31 @@ Each JSON-typed field carries a schema with a description of the field and of ea
 (`req-aws-core-fields`). Statement content is access-control configuration and is classified
 `access_policy` (`req-aws-collector-manifest-6`).
 
-**Canonical form.** The statement as JSON with sorted keys; every member AWS allows as a string or a
-list (`Action`, `NotAction`, `Resource`, `NotResource`, each condition value) as a de-duplicated,
-sorted list; action names lowercased, since IAM matches action names case-insensitively. `Sid` is
-excluded from the canonical form.
+**Canonical form.** The hash is computed from the normalized typed fields, never from the raw
+statement. The canonical form is the JSON object `{effect, actions, not_actions, resources,
+not_resources, principals, not_principals, conditions}`, exactly as those fields are stored,
+serialized with sorted keys and no insignificant whitespace. So two statements that store the same
+fields have the same hash, and every spelling AWS treats as one value is folded before storage:
+
+- Every member AWS allows as a string or a list becomes a de-duplicated, sorted list. That covers
+  `Action`, `NotAction`, `Resource`, `NotResource`, each condition value, and each principal type's
+  value under `Principal` and `NotPrincipal` (`{"AWS": "arn:…"}` and `{"AWS": ["arn:…"]}` store the
+  same entries).
+- `principals` and `not_principals` are lists of `{type, value}`, one entry per value, sorted by
+  `(type, value)`. A bare `"Principal": "*"` is stored as `{type: "*", value: "*"}`. It is not
+  folded into `{type: "AWS", value: "*"}`: IAM's documentation describes the two as equivalent
+  (inferred, not verified against the page for SCPs and RCPs), and folding them is left to an
+  amendment that cites it.
+- Action names are lowercased, since IAM matches action names case-insensitively. Condition
+  operator names and condition-key names are lowercased, since IAM matches both case-insensitively
+  (inferred from IAM's policy-grammar documentation). Condition values, resource ARNs and principal
+  values keep their case.
+- `conditions` entries are sorted by `(operator, condition_key)`.
+- `Sid` is excluded.
+
+`content_sha256` is the SHA-256 of that serialization. A test recomputes it from the stored fields
+of every statement node and asserts equality, and asserts that each pair of equivalent spellings
+above hashes the same.
 
 **Identity.**
 
@@ -799,7 +823,8 @@ excluded from the canonical form.
   against AWS's SCP syntax page before build).
 - A statement without a `Sid` is keyed `content:<content_sha256>`.
 - If a document repeats a `Sid`, every statement carrying that `Sid` is keyed
-  `dupsid:<sha256 of the Sid and the canonical form>`, and a `DUPLICATE_SID` warning names the
+  `dupsid:<sha256>`, hashing the canonical serialization with a `sid` member added, and a
+  `DUPLICATE_SID` warning names the
   policy. The Sid is in the hash because the canonical form excludes it: without it, a duplicate-Sid
   statement and a Sid-less statement with the same content, or statements under two different
   duplicated Sids, would get one key and be merged although their `sid` values differ. The distinct
@@ -867,7 +892,7 @@ document:
 | req-aws-core-organizations-completeness-5 | Other Policy Types | Proposed | Non-SCP policies of each enabled type are `aws_organizations_policy` nodes with `policy_type`; a type not enabled on the root is never listed. | GovCloud: SCP, RCP, TAG, declarative EC2, S3. |
 | req-aws-core-organizations-completeness-6 | Policies Contained | Proposed | Customer-managed SCPs and other policies are containment children of the organization with registered falsifiers; AWS-managed policies are not. | |
 | req-aws-core-organizations-completeness-7 | Statements Are Nodes | Proposed | Each statement of a customer-managed or AWS-managed SCP or RCP read by `DescribePolicy` is an `aws_policy_statement` node contained by its policy (`DECLARES_STATEMENT`), with `effect`, `actions`, `not_actions`, `resources`, `not_resources`, `principals`, `not_principals` and `conditions` as typed fields. No action is a node, and no policy document is stored. | The 2026-10-01 rule, as read in *Policy Statements*. `req-aws-core-organizations-7` stands. |
-| req-aws-core-organizations-completeness-8 | Statement Identity | Proposed | A statement is keyed `sid:<Sid>` when it has a unique `Sid`; `content:<sha256 of the canonical form>` when it has no `Sid`; and `dupsid:<sha256 of the Sid and the canonical form>`, with a `DUPLICATE_SID` warning, when its `Sid` is repeated in the document. Identical statements under one key are one node with `occurrences`. A test holds a duplicate-Sid statement and a Sid-less statement with identical content, and statements with identical content under two different duplicated Sids, and asserts each gets its own node. | The canonical form excludes `Sid`, so the Sid enters the fallback hash explicitly. |
+| req-aws-core-organizations-completeness-8 | Statement Identity | Proposed | A statement is keyed `sid:<Sid>` when it has a unique `Sid`; `content:<content_sha256>` when it has no `Sid`; and `dupsid:<sha256 of the Sid and the canonical form>`, with a `DUPLICATE_SID` warning, when its `Sid` is repeated. The canonical form is built from the normalized typed fields, principals and not-principals included, never the raw statement. Identical statements under one key are one node with `occurrences`. Tests: a duplicate-Sid statement and a Sid-less statement with identical content get different nodes; statements under two different duplicated Sids get different nodes; a string and a singleton-list spelling of an action, resource, condition value or principal value hash the same; `content_sha256` recomputed from the stored fields equals the stored value. | The canonical form excludes `Sid`, so the Sid enters the fallback hash explicitly. |
 | req-aws-core-organizations-completeness-9 | Statement Update Semantics | Proposed | Reordering changes only `positions`; editing a statement with a `Sid` updates its node in place; editing a Sid-less statement, or adding, removing or renaming a `Sid`, retires the old node and creates a new one; deleting the policy cascades to its statements. | Each row of the update table is a test. |
 | req-aws-core-organizations-completeness-10 | Statement Retirement Path | Proposed | `DECLARES_STATEMENT` is containment, its listing is the policy's `DescribePolicy` document (incomplete when the call or the parse fails), and `PolicyStatementFalsifier` is registered and passes the four-case harness. | |
 | req-aws-core-organizations-completeness-11 | Tag Policy Rules | Proposed | Each tag key in a `TAG_POLICY` is an `aws_tag_policy_rule` node keyed `(policy_arn, tag_key_lower)` and contained by its policy, with a registered falsifier. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` lists for it. | Ruling 2026-10-01: collecting tag policies is in scope. |
@@ -1609,7 +1634,37 @@ A route, a NACL entry and a security-group rule each have an identity AWS itself
 and contained by its parent with a falsifier and a per-parent completeness surface
 (`req-aws-core-contained-type-triple`). That gives them a retirement path. The edges they emit
 (a route's target, a rule's referenced group) end when they retire, instead of staying stale while
-both endpoints live (`req-aws-core-reference-derivation`, below). A sub-structure AWS does not address individually stays a typed field.
+both endpoints live (`req-aws-core-reference-derivation`, below).
+
+The rule, stated in full, has three cases:
+
+1. **A sub-structure is a node** when AWS gives it its own identity within its parent (a minted id
+   such as `rtbassoc-…`, `aclassoc-…`, `eipassoc-…`, an `IpId` or a resolver-rule association id,
+   or a key AWS defines within the parent, such as a route's destination or a NACL entry's
+   direction and rule number), **and** it carries a reference edge or attributes of its own. So
+   route-table associations, NACL associations, Elastic IP associations, resolver endpoint IP
+   addresses, resolver-rule associations and Config delivery channels are nodes, alongside routes,
+   NACL entries, SG rules and TGW routes. The edge each carries then ends when AWS deletes that
+   identity, instead of staying last seen.
+2. **A relationship AWS addresses only by naming the two resources it joins stays a reference
+   edge.** Examples are a TGW route-table association or propagation
+   (`DisassociateTransitGatewayRouteTable(TransitGatewayRouteTableId, TransitGatewayAttachmentId)`), a policy
+   attachment (`DetachPolicy(PolicyId, TargetId)`), a VPC endpoint's subnets and security groups
+   (`ModifyVpcEndpoint` by id lists), an ENI's security groups, and a detector's administrator.
+   There is no identity to retire, only the pair, so these are listed **last seen** in
+   `req-aws-core-reference-derivation` until core re-derivation exists.
+3. **A sub-structure with no reference edge stays a typed field** on its parent, even when AWS
+   can address it: enabled policy types, enabled service principals, Security Hub's enabled
+   standards, Control Tower's governed regions, a permission set's managed policies. A typed field
+   is replaced whole on every write of its parent, so it cannot go stale the way an edge can.
+
+**Keys, normalized.** A route's key is `(route_table_id, destination_kind, destination)`, with
+`destination_kind` ∈ `ipv4|ipv6|prefix_list` naming which of `DestinationCidrBlock`,
+`DestinationIpv6CidrBlock` or `DestinationPrefixListId` is set. An IPv6 CIDR is stored in its
+compressed lowercase form, so two spellings of one prefix are one key. A TGW route's key is
+`(tgw_route_table_id, destination_kind, destination)` with `destination_kind` ∈
+`ipv4|prefix_list`. A NACL entry's key is `(network_acl_id, egress, rule_number)`. An SG rule's
+key is its `SecurityGroupRuleId`. Each association node's key is its AWS-minted id.
 
 #### Types, tags and retirement
 
@@ -1625,12 +1680,15 @@ type's probe and what counts as gone. Edge names are working names, finalized th
 
 | Type | Model today | Enumerate (read: botocore) | Tags (lane, path, shape) | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
-| `aws_route_table` | exists, **no `tags`** | `ec2:DescribeRouteTables` | field, `Tags[]`, list_kv | footprint, `HOSTS_ROUTE_TABLE` | `InvalidRouteTableID.NotFound` | `RESIDES_IN_VPC` (exists); `ROUTES_FOR_SUBNET` (→ subnet, from `Associations[].SubnetId`; main = `is_main`) |
+| `aws_route_table` | exists, **no `tags`** | `ec2:DescribeRouteTables` | field, `Tags[]`, list_kv | footprint, `HOSTS_ROUTE_TABLE` | `InvalidRouteTableID.NotFound` | `RESIDES_IN_VPC` (exists) |
+| `aws_route_table_association` **(new)** | — | inside `RouteTables[].Associations[]`, keyed `RouteTableAssociationId` | AWS cannot tag an association (the `RouteTableAssociation` shape has no tags) | route table, `DECLARES_RT_ASSOCIATION` | the table's describe no longer lists the id, **or `AssociationState.State` = `disassociated`** | `ROUTES_FOR_SUBNET` (→ subnet, when `SubnetId` is set; `GatewayId` and `Main` are typed fields) |
 | `aws_route` **(new)** | — | inside `RouteTables[].Routes[]` | AWS cannot tag a route | route table, `DECLARES_ROUTE` | the route table's describe no longer lists that destination | `ROUTES_TRAFFIC` (exists; source becomes the route) → IGW / NAT / TGW / peering / endpoint / ENI; `state` = `active\|blackhole\|filtered` |
 | `aws_internet_gateway` | exists, **no `tags`** | `ec2:DescribeInternetGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_INTERNET_GATEWAY` | `InvalidInternetGatewayID.NotFound` | `ATTACHED_TO_VPC` (exists) |
 | `aws_nat_gateway` | exists, **no `tags`** | `ec2:DescribeNatGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_NAT_GATEWAY` | not found, **or `State` = `deleted`** | `RESIDES_IN_SUBNET` (exists); `USES_ELASTIC_IP` (→ EIP) |
-| `aws_elastic_ip` | exists, **no `tags`** | `ec2:DescribeAddresses` (unpaginated) | field, `Tags[]`, list_kv | footprint, `HOSTS_ELASTIC_IP` | `InvalidAllocationID.NotFound` | `ASSOCIATED_WITH_INTERFACE` (→ ENI) |
-| `aws_network_acl` | exists, **no `tags`** | `ec2:DescribeNetworkAcls` | field, `Tags[]`, list_kv | footprint, `HOSTS_NETWORK_ACL` | `InvalidNetworkAclID.NotFound` | `RESIDES_IN_VPC` (exists); `FILTERS_SUBNET` (→ subnet, `Associations[]`) |
+| `aws_elastic_ip` | exists, **no `tags`** | `ec2:DescribeAddresses` (unpaginated) | field, `Tags[]`, list_kv | footprint, `HOSTS_ELASTIC_IP` | `InvalidAllocationID.NotFound` | — |
+| `aws_eip_association` **(new)** | — | `Addresses[]` carrying an `AssociationId`, keyed by it | AWS cannot tag an association (inferred: no tag field on the address's association members) | Elastic IP, `HOLDS_EIP_ASSOCIATION` | the EIP's describe no longer carries that `AssociationId` | `ASSOCIATED_WITH_INTERFACE` (→ ENI, from `NetworkInterfaceId`) |
+| `aws_network_acl` | exists, **no `tags`** | `ec2:DescribeNetworkAcls` | field, `Tags[]`, list_kv | footprint, `HOSTS_NETWORK_ACL` | `InvalidNetworkAclID.NotFound` | `RESIDES_IN_VPC` (exists) |
+| `aws_network_acl_association` **(new)** | — | inside `NetworkAcls[].Associations[]`, keyed `NetworkAclAssociationId` | AWS cannot tag an association (the shape has no tags) | NACL, `DECLARES_ACL_ASSOCIATION` | the NACL's describe no longer lists the id (`ReplaceNetworkAclAssociation` mints a new one) | `FILTERS_SUBNET` (→ subnet) |
 | `aws_network_acl_entry` **(new)** | — | inside `NetworkAcls[].Entries[]` | AWS cannot tag an entry | NACL, `DECLARES_ACL_ENTRY` | the NACL no longer lists (egress, rule number) | — (CIDR, ports, action are typed fields) |
 | `aws_security_group_rule` **(new)** | — | `ec2:DescribeSecurityGroupRules` | field, `Tags[]`, list_kv | security group, `DECLARES_SG_RULE` | `InvalidSecurityGroupRuleId.NotFound` | `REFERENCES_SECURITY_GROUP` (→ SG); prefix list id is a typed field |
 | `aws_vpc_endpoint` | exists, has `tags` | `ec2:DescribeVpcEndpoints` | field, `Tags[]`, list_kv | footprint, `HOSTS_VPC_ENDPOINT` | not found, **or `State` = `Deleted`** | `RESIDES_IN_VPC`, `RESIDES_IN_SUBNET`, `CONSUMES_ENDPOINT_SERVICE` (exist); `USES_SECURITY_GROUP` |
@@ -1641,8 +1699,10 @@ type's probe and what counts as gone. Edge names are working names, finalized th
 | `aws_transit_gateway_route_table` **(new)** | — | `ec2:DescribeTransitGatewayRouteTables`, then `GetTransitGatewayRouteTablePropagations` per table (for `PROPAGATES_TO_TGW_ROUTE_TABLE`) | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ROUTE_TABLE` | not found, or `deleted` | — |
 | `aws_transit_gateway_route` **(new)** | — | `ec2:SearchTransitGatewayRoutes` per table | AWS cannot tag a route | TGW route table, `DECLARES_TGW_ROUTE` | the search no longer returns that destination | `ROUTES_TRAFFIC` → attachment |
 | `aws_vpc_peering_connection` **(new)** | — | `ec2:DescribeVpcPeeringConnections` | field, `Tags[]`, list_kv | footprint of the **requester** owner, `HOSTS_VPC_PEERING_CONNECTION` | not found, or `Status.Code` ∈ `deleted\|rejected\|expired\|failed` | `CONNECTS_VPC` (→ requester and accepter VPC, `side` property) |
-| `aws_route53_resolver_endpoint` **(new)** | — | `route53resolver:ListResolverEndpoints` + `ListResolverEndpointIpAddresses` | service, `ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_RESOLVER_ENDPOINT` | `ResourceNotFoundException` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
-| `aws_route53_resolver_rule` **(new)** | — | `route53resolver:ListResolverRules` + `ListResolverRuleAssociations` | service, as above | footprint of the **owner**, `HOSTS_RESOLVER_RULE` (RAM-shareable) | `ResourceNotFoundException` | `FORWARDS_VPC_DNS` (→ VPC, per association); `FORWARDS_THROUGH_ENDPOINT` (→ outbound endpoint) |
+| `aws_route53_resolver_endpoint` **(new)** | — | `route53resolver:ListResolverEndpoints` | service, `ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_RESOLVER_ENDPOINT` | `ResourceNotFoundException` | `USES_SECURITY_GROUP` |
+| `aws_route53_resolver_endpoint_ip` **(new)** | — | `ListResolverEndpointIpAddresses(ResolverEndpointId)`, keyed `(resolver_endpoint_id, IpId)` | AWS cannot tag an endpoint IP (`IpAddressResponse` has no ARN) | resolver endpoint, `DECLARES_ENDPOINT_IP` | the listing no longer names the `IpId`, **or `Status` ∈ `DETACHING\|DELETING\|FAILED_RESOURCE_GONE`** | `RESIDES_IN_SUBNET` (extend sources; → subnet) |
+| `aws_route53_resolver_rule` **(new)** | — | `route53resolver:ListResolverRules` | service, as above | footprint of the **owner**, `HOSTS_RESOLVER_RULE` (RAM-shareable) | `ResourceNotFoundException` | `FORWARDS_THROUGH_ENDPOINT` (→ outbound endpoint) |
+| `aws_route53_resolver_rule_association` **(new)** | — | `route53resolver:ListResolverRuleAssociations`, keyed by the association `Id` | AWS cannot tag an association (the shape has no ARN) | footprint of the VPC owner (the account whose listing returns it), `HOSTS_RESOLVER_RULE_ASSOCIATION` | `GetResolverRuleAssociation` → `ResourceNotFoundException`, **or `Status` = `DELETING`** | `ASSOCIATES_RESOLVER_RULE` (→ rule), `FORWARDS_VPC_DNS` (→ VPC) |
 
 The state values were read from botocore 1.43.104's enums: `NatGatewayState` includes `deleted`,
 the EC2 `State` enum includes `Deleted`, `TransitGatewayState` and `TransitGatewayAttachmentState`
@@ -1661,7 +1721,7 @@ real owner, and no `HOSTS_*` edge is emitted from a non-owner's footprint.
 **Tags field rollout.** Route table, IGW, NAT gateway, EIP and NACL have no `tags` field today (read:
 `grep -c tags` is 0 in each model file). Each gains it, by an additive migration
 (`req-aws-core-fields-4`). New types are born with it (`req-aws-collector-tags-13`). A type AWS
-cannot tag (route, NACL entry, TGW route) declares `{"source": "none", ...}` (`req-aws-collector-tags-12`).
+cannot tag (route, NACL entry, TGW route, route-table, NACL and EIP associations, resolver endpoint IP, resolver-rule association) declares `{"source": "none", ...}` (`req-aws-collector-tags-12`).
 
 **Sensitivity.** Security-group rule and NACL descriptions are `free_text`. Resolver endpoint IPs and
 flow-log destinations are `reviewer_judgement` reviews (`req-aws-collector-manifest-6`). No entry
@@ -1678,9 +1738,9 @@ and is never read as an empty listing.
 | req-aws-core-network-plane-1 | Collected | Proposed | Each type in the table has a manifest entry (or, for sub-resources, is emitted from its parent's entry) and appears on the grid from a collection run against a fake source. | |
 | req-aws-core-network-plane-2 | Tags On Every Type | Proposed | Route table, IGW, NAT gateway, EIP and NACL gain the `tags` field by additive migration; every type in the table carries it and declares its lane per the table. | `req-aws-collector-tags-13`. |
 | req-aws-core-network-plane-3 | Field Lane For EC2 | Proposed | EC2 types take tags from the enumerate item (`field` lane, `Tags[]`, ENI `TagSet[]`), never from the RGTA sweep. | Keeps these types off the RGTA sweep and its false-empty write. |
-| req-aws-core-network-plane-4 | Addressable Sub-Resources Are Nodes | Proposed | Routes, NACL entries, security-group rules and TGW routes are nodes keyed on AWS's own delete identity, contained by their parent, each with a registered falsifier. | `req-aws-core-reference-derivation`, for these edges. |
+| req-aws-core-network-plane-4 | Addressable Sub-Resources Are Nodes | Proposed | Routes, NACL entries, security-group rules, TGW routes, route-table associations, NACL associations, Elastic IP associations, resolver endpoint IPs and resolver-rule associations are nodes keyed on AWS's own identity (normalized as *Keys, normalized* states), contained by their parent, each with a registered falsifier; relationships AWS addresses only by their two ends stay reference edges, and sub-structures with no edge stay typed fields, per the three-case rule. | `req-aws-core-reference-derivation`, for these edges. |
 | req-aws-core-network-plane-5 | Every Type Has A Retirement Path | Proposed | Every type in the table is a containment target with a `[falsifiers]` row; `validate_plugin --level loads --strict` is green; `NOT_YET_WIRED` no longer names route table, IGW, NAT gateway, NACL, EIP or VPC endpoint. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` lists for it. | EBS and RDS stay on the worklist (not network plane). |
-| req-aws-core-network-plane-6 | Soft-Deleted Is Absent | Proposed | A NAT gateway, VPC endpoint, transit gateway, attachment or peering connection in a deleted, rejected, expired or failed state is not projected as live, and its falsifier treats that state as not found. | unified-systems-com/aws-core-tap#15 hazards. |
+| req-aws-core-network-plane-6 | Soft-Deleted Is Absent | Proposed | A NAT gateway, VPC endpoint, transit gateway, attachment, peering connection, route-table association, resolver endpoint IP or resolver-rule association in a deleted, disassociated, detaching, rejected, expired or failed state is not projected as live, and its falsifier treats that state as not found. | unified-systems-com/aws-core-tap#15 hazards. |
 | req-aws-core-network-plane-7 | Owner, Not Observer | Proposed | RAM-shared and cross-account types route `BELONGS_TO_ACCOUNT` to the owner and emit `HOSTS_*` only from the owner's footprint. | `req-aws-core-regional-containment-5`. |
 | req-aws-core-network-plane-8 | Edge Names Through The Skill | Proposed | Every new edge type is named and declared through the `add-edge` skill; the working names here are not canon. | |
 
@@ -1698,6 +1758,10 @@ is never retired.
 
 #### Implementation
 
+- **Sequencing (binding).** This requirement ships only after `req-aws-core-organization-membership`
+  (unified-systems-com/aws-core-tap#68). Before the membership exists, `AccountFalsifier` can retire
+  an account, and this edge would extend that cascade to every footprint and its regional network
+  plane. Epic unified-systems-com/aws-core-tap#62 records the order.
 - `OWNS_REGION_FOOTPRINT` (account → footprint), containment, in `AwsAccount.CONTAINMENT_EDGES`
   beside the five `OWNS_*` edges. The listing behind it is the run's own region scope for that
   account, which the collector already iterates (`collector.py:401-410`). Its completeness surface
@@ -1787,6 +1851,11 @@ per-region rules.
 | tag policy | `DECLARES_TAG_RULE` | tag-policy rule | the policy's `DescribePolicy` document | call succeeded and the document parsed; a policy with no keys is complete-empty | `TagPolicyRuleFalsifier` (`DescribePolicy`) |
 | account | `OWNS_REGION_FOOTPRINT` | footprint | the run's region scope for the account | `DescribeRegions` answered | `FootprintFalsifier` (never drops) |
 | footprint | `HOSTS_ROUTE_TABLE`, `HOSTS_INTERNET_GATEWAY`, `HOSTS_NAT_GATEWAY`, `HOSTS_ELASTIC_IP`, `HOSTS_NETWORK_ACL`, `HOSTS_VPC_ENDPOINT`, `HOSTS_FLOW_LOG`, `HOSTS_NETWORK_INTERFACE`, `HOSTS_TRANSIT_GATEWAY`, `HOSTS_VPC_PEERING_CONNECTION`, `HOSTS_RESOLVER_ENDPOINT`, `HOSTS_RESOLVER_RULE` | the network-plane type | that type's regional `Describe*` / `List*` | regional rules | per `req-aws-core-network-plane`'s table |
+| route table | `DECLARES_RT_ASSOCIATION` | route-table association | the table's own `Associations[]` in `DescribeRouteTables` | the regional `DescribeRouteTables` read to its end | association falsifier |
+| network ACL | `DECLARES_ACL_ASSOCIATION` | NACL association | the ACL's own `Associations[]` in `DescribeNetworkAcls` | the regional `DescribeNetworkAcls` read to its end | association falsifier |
+| Elastic IP | `HOLDS_EIP_ASSOCIATION` | EIP association | the address's own `AssociationId` in `DescribeAddresses` | `DescribeAddresses` answered (unpaginated); an unassociated address is complete-empty | association falsifier |
+| resolver endpoint | `DECLARES_ENDPOINT_IP` | endpoint IP | `ListResolverEndpointIpAddresses(ResolverEndpointId)` | read to its end | endpoint-IP falsifier |
+| footprint (VPC owner) | `HOSTS_RESOLVER_RULE_ASSOCIATION` | resolver-rule association | regional `ListResolverRuleAssociations` | regional rules | `GetResolverRuleAssociation` |
 | route table | `DECLARES_ROUTE` | route | the table's own `Routes[]` in `DescribeRouteTables` | the regional `DescribeRouteTables` read to its end | route falsifier |
 | network ACL | `DECLARES_ACL_ENTRY` | NACL entry | the ACL's own `Entries[]` in `DescribeNetworkAcls` | the regional `DescribeNetworkAcls` read to its end | NACL-entry falsifier |
 | security group | `DECLARES_SG_RULE` | SG rule | regional `DescribeSecurityGroupRules`, grouped by `GroupId` | the regional listing read to its end; a group with no rules is complete-empty | `InvalidSecurityGroupRuleId.NotFound` |
@@ -1801,6 +1870,7 @@ per-region rules.
 | instance | `HOLDS_IDENTITY_GROUP` | group | `identitystore:ListGroups(IdentityStoreId)` with no `Filters` | read to its end | `DescribeGroup` |
 | instance | `HOLDS_ACCOUNT_ASSIGNMENT` | assignment | `ListAccounts` + every `ListPermissionSetsProvisionedToAccount` + every `ListAccountAssignments` | all read to their end | assignment falsifier |
 | footprint | `HOSTS_CONFIG_RECORDER`, `HOSTS_CONFIG_AGGREGATOR`, `HOSTS_GUARDDUTY_DETECTOR`, `HOSTS_ACCESS_ANALYZER` | the security-service type | `DescribeConfigurationRecorders` (unpaginated), `DescribeConfigurationAggregators`, `ListDetectors`, `ListAnalyzers` | regional rules | per `req-aws-landing-zone-security-services`' table |
+| footprint | `HOSTS_CONFIG_DELIVERY_CHANNEL` | delivery channel | `DescribeDeliveryChannels` (unpaginated) | regional rules | absent from `DescribeDeliveryChannels` |
 | footprint | `HOSTS_SECURITYHUB_HUB` | hub | `DescribeHub` | a hub returned, or complete-empty only on the verified "not subscribed" error code; any other error is incomplete | per that table |
 
 #### Acceptance Criteria
@@ -1848,7 +1918,7 @@ so they are not listed.
 | `ATTACHED_TO_TARGET` | SCP / organizations policy → root / OU / account | `ListTargetsForPolicy(PolicyId)` → `Targets[].TargetId`, `Targets[].Type` (`organizations.py:696-705`) | **last seen** | `DetachPolicy` |
 | `ENROLLS_ACCOUNT` | membership → account | `ListAccounts` → `Accounts[].Id` | ends with its source (`account_id` is in the membership key) | — |
 | `DELEGATES_TO_ACCOUNT` | delegation → account | `ListDelegatedAdministrators` → `DelegatedAdministrators[].Id` | ends with its source (in the key) | — |
-| `ROUTES_FOR_SUBNET` | route table → subnet | `DescribeRouteTables` → `RouteTables[].Associations[].SubnetId` | **last seen** | `ReplaceRouteTableAssociation`, `DisassociateRouteTable` |
+| `ROUTES_FOR_SUBNET` | route-table association → subnet | `DescribeRouteTables` → `RouteTables[].Associations[].SubnetId` | ends with its source (`ReplaceRouteTableAssociation` mints a new association id) | — |
 | `ROUTES_TRAFFIC` | route → IGW / NAT / TGW / peering / ENI | `DescribeRouteTables` → `RouteTables[].Routes[].GatewayId \| NatGatewayId \| TransitGatewayId \| VpcPeeringConnectionId \| NetworkInterfaceId` | **last seen** (the route keeps its destination key) | `ReplaceRoute` |
 | `ROUTES_TRAFFIC` | TGW route → attachment | `SearchTransitGatewayRoutes` → `Routes[].TransitGatewayAttachments[].TransitGatewayAttachmentId` | **last seen** | `ReplaceTransitGatewayRoute` |
 | `RESIDES_IN_VPC` | route table / NACL / endpoint → VPC | `RouteTables[].VpcId`, `NetworkAcls[].VpcId`, `VpcEndpoints[].VpcId` | ends with its source (no operation moves them) | — |
@@ -1856,10 +1926,10 @@ so they are not listed.
 | `RESIDES_IN_SUBNET` | NAT gateway → subnet | `DescribeNatGateways` → `NatGateways[].SubnetId` | ends with its source | — |
 | `RESIDES_IN_SUBNET` | VPC endpoint → subnet | `DescribeVpcEndpoints` → `VpcEndpoints[].SubnetIds[]` | **last seen** | `ModifyVpcEndpoint` (`RemoveSubnetIds`) |
 | `RESIDES_IN_SUBNET` | ENI → subnet | `DescribeNetworkInterfaces` → `NetworkInterfaces[].SubnetId` | ends with its source | — |
-| `RESIDES_IN_SUBNET` | resolver endpoint → subnet | `ListResolverEndpointIpAddresses` → `IpAddresses[].SubnetId` | **last seen** | `DisassociateResolverEndpointIpAddress` |
-| `USES_ELASTIC_IP` | NAT gateway → EIP | `DescribeNatGateways` → `NatGateways[].NatGatewayAddresses[].AllocationId` | **last seen** (secondary addresses) | `DisassociateNatGatewayAddress` |
-| `ASSOCIATED_WITH_INTERFACE` | EIP → ENI | `DescribeAddresses` → `Addresses[].NetworkInterfaceId` | **last seen** | `DisassociateAddress`, `AssociateAddress` |
-| `FILTERS_SUBNET` | NACL → subnet | `DescribeNetworkAcls` → `NetworkAcls[].Associations[].SubnetId` | **last seen** | `ReplaceNetworkAclAssociation` |
+| `RESIDES_IN_SUBNET` | resolver endpoint IP → subnet | `ListResolverEndpointIpAddresses` → `IpAddresses[].SubnetId` | ends with its source (`UpdateResolverEndpoint`'s `UpdateIpAddresses` takes only `IpId` and `Ipv6`) | — |
+| `USES_ELASTIC_IP` | NAT gateway → EIP | `DescribeNatGateways` → `NatGateways[].NatGatewayAddresses[].AllocationId` | **last seen** (secondary addresses). The same link is also carried by the EIP association node, whose `ASSOCIATED_WITH_INTERFACE` reaches the NAT gateway's ENI and ends with that association; this edge is a convenience shortcut | `DisassociateNatGatewayAddress` |
+| `ASSOCIATED_WITH_INTERFACE` | EIP association → ENI | `DescribeAddresses` → `Addresses[].NetworkInterfaceId` | ends with its source (a re-association mints a new `AssociationId`) | — |
+| `FILTERS_SUBNET` | NACL association → subnet | `DescribeNetworkAcls` → `NetworkAcls[].Associations[].SubnetId` | ends with its source (`ReplaceNetworkAclAssociation` mints a new association id) | — |
 | `REFERENCES_SECURITY_GROUP` | SG rule → SG | `DescribeSecurityGroupRules` → `SecurityGroupRules[].ReferencedGroupInfo.GroupId` | **last seen** (the rule id survives an edit) | `ModifySecurityGroupRules` |
 | `CONSUMES_ENDPOINT_SERVICE` | VPC endpoint → endpoint service | `VpcEndpoints[].ServiceName` | ends with its source | — |
 | `USES_SECURITY_GROUP` | VPC endpoint → SG | `VpcEndpoints[].Groups[].GroupId` | **last seen** | `ModifyVpcEndpoint` (`RemoveSecurityGroupIds`) |
@@ -1867,12 +1937,13 @@ so they are not listed.
 | `USES_SECURITY_GROUP` | resolver endpoint → SG | `ListResolverEndpoints` → `ResolverEndpoints[].SecurityGroupIds[]` | ends with its source (set only by `CreateResolverEndpoint`) | — |
 | `MONITORS_TRAFFIC` | flow log → VPC / subnet / ENI / TGW attachment | `DescribeFlowLogs` → `FlowLogs[].ResourceId` | ends with its source (no modify operation for flow logs) | — |
 | `WRITES_LOGS` | flow log → log group / bucket | `FlowLogs[].LogGroupName`, `FlowLogs[].LogDestination` | ends with its source | — |
-| `WRITES_LOGS` | config recorder → bucket | `DescribeDeliveryChannels` → `DeliveryChannels[].s3BucketName` | **last seen** | `PutDeliveryChannel` |
+| `WRITES_LOGS` | Config delivery channel → bucket | `DescribeDeliveryChannels` → `DeliveryChannels[].s3BucketName` | **last seen** (the channel keeps its name when its bucket changes) | `PutDeliveryChannel` |
 | `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` | attachment → TGW / VPC / peer TGW | `DescribeTransitGatewayAttachments` → `TransitGatewayAttachments[].TransitGatewayId`, `.ResourceId` | ends with its source | — |
 | `ASSOCIATED_WITH_TGW_ROUTE_TABLE` | attachment → TGW route table | `TransitGatewayAttachments[].Association.TransitGatewayRouteTableId` | **last seen** | `DisassociateTransitGatewayRouteTable` |
 | `PROPAGATES_TO_TGW_ROUTE_TABLE` | attachment → TGW route table | `GetTransitGatewayRouteTablePropagations(TransitGatewayRouteTableId)` → `TransitGatewayRouteTablePropagations[].TransitGatewayAttachmentId` (read per route table; this call is added to the network-plane reads) | **last seen** | `DisableTransitGatewayRouteTablePropagation` |
 | `CONNECTS_VPC` | peering → requester / accepter VPC | `DescribeVpcPeeringConnections` → `RequesterVpcInfo.VpcId`, `AccepterVpcInfo.VpcId` | ends with its source | — |
-| `FORWARDS_VPC_DNS` | resolver rule → VPC | `ListResolverRuleAssociations` → `ResolverRuleAssociations[].VPCId` (the association is not a node) | **last seen** | `DisassociateResolverRule` |
+| `FORWARDS_VPC_DNS` | resolver-rule association → VPC | `ListResolverRuleAssociations` → `ResolverRuleAssociations[].VPCId` | ends with its source | — |
+| `ASSOCIATES_RESOLVER_RULE` | resolver-rule association → rule | `ResolverRuleAssociations[].ResolverRuleId` | ends with its source | — |
 | `FORWARDS_THROUGH_ENDPOINT` | resolver rule → outbound endpoint | `ListResolverRules` → `ResolverRules[].ResolverEndpointId` | **last seen** | `UpdateResolverRule` |
 | `BELONGS_TO_ACCOUNT` | each new regional type → owner account | the entry's `owner_path` (`req-aws-core-regional-containment-5`) | ends with its source (an owner does not change) | — |
 | `APPLIES_TO_TARGET` | enabled control / baseline → OU / account | `ListEnabledControls` → `enabledControls[].targetIdentifier`; `ListEnabledBaselines` → `enabledBaselines[].targetIdentifier` | ends with its source (`UpdateEnabledControl` and `UpdateEnabledBaseline` take no target) | — |

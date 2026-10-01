@@ -242,6 +242,29 @@ StackSet- or Terraform-deployable variant of the same role, deployed per account
 baseline (an organization StackSet or the Gruntwork account baseline). It uses `${AWS::Partition}` /
 `data.aws_partition`, so it is correct in `aws-us-gov` on first use.
 
+### Base credential blast radius
+
+**The risk.** Fan-out turns one long-lived access key, for a read-only IAM user in the management
+account, into read access to every member account: whoever holds the key can assume the member
+role in each of them. The role is read-only, but `SecurityAudit` reads configuration across the
+whole organization. So one leaked key exposes the organization's full configuration, not one
+account's. Static keys do not expire on their own, and the 2026-09-30 ruling chose them for the
+first GovCloud run.
+
+**Already in place.** The member role trusts only the collector's one management-account principal,
+and only with the External ID (`req-aws-collector-fanout-12`, `-7` below).
+
+**Candidate compensating controls, pending a maintainer decision.** None of these is ruled. Each
+is listed as a Proposed criterion (`-8`..`-10`) so the decision has something concrete to accept or
+strike:
+
+- Enforced key rotation: a declared maximum key age, checked by `self_test` against the key's
+  `CreateDate` (`iam:ListAccessKeys` on the collector's own user), failing past the limit.
+- A network condition on the member-role trust: `aws:SourceIp` or `aws:SourceVpc` limiting
+  `sts:AssumeRole` to where the collector runs.
+- Short-lived credentials as the target state: replace the static key with IAM Roles Anywhere or an
+  OIDC / workload-identity federation, so no long-lived secret exists to leak.
+
 ### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
@@ -253,3 +276,6 @@ baseline (an organization StackSet or the Gruntwork account baseline). It uses `
 | req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, and deploys in `aws-us-gov` without edits. | `req-aws-collector-fanout-13`; the same templates unified-systems-com/aws-core-tap#51 names. |
 | req-aws-core-secret-member-fanout-6 | Redacted | Proposed | `external_id` is never logged, matching the assumed-role kind. | |
 | req-aws-core-secret-member-fanout-7 | External ID Required | Proposed | `enabled: true` without a non-empty `external_id` fails validation, and the collector never calls `AssumeRole` into a member without it. | Ruling 2026-10-01; mirrors `req-aws-core-secret-aws-assumed-role-2`. |
+| req-aws-core-secret-member-fanout-8 | Key Age Enforced | Proposed | With fan-out enabled, the secret declares a maximum access-key age, and `self_test` fails when the base key's `CreateDate` is older. | Pending maintainer decision (base credential blast radius); not ruled. |
+| req-aws-core-secret-member-fanout-9 | Network-Bound Member Trust | Proposed | The member-role trust policy in every handoff variant carries an `aws:SourceIp` or `aws:SourceVpc` condition naming where the collector runs. | Pending maintainer decision; not ruled. |
+| req-aws-core-secret-member-fanout-10 | Short-Lived Base Credential | Proposed | The base credential for fan-out is short-lived (IAM Roles Anywhere, or OIDC / workload-identity federation); no long-lived access key is stored. | Pending maintainer decision; the target state, not the first run's (ruling 2026-09-30 chose static keys). |

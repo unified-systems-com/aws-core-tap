@@ -1201,19 +1201,30 @@ The rulings of 2026-10-01 are encoded below as decided.
 - **A type AWS cannot tag declares it.** Today "no `tags` block" means "carries no tags" (`-1`), and
   reads the same as "forgot to declare". The schema gains a fourth variant,
   `{"source": "none", "why": <non-empty string>}` (ruling 2026-10-01), so that every manifest entry
-  declares a tag lane and a test can require one (`-12`). Routes, NACL entries, TGW routes, Identity
-  Center groups and assignments, delegations and memberships use it.
+  declares a tag lane and a test can require one (`-12`). Routes, NACL entries, TGW routes,
+  route-table, NACL and Elastic IP associations, resolver endpoint IPs, resolver-rule associations,
+  Config delivery channels, Identity Center groups and assignments, delegations and memberships use
+  it.
 - **A type with no manifest entry still declares its lane.** Several types are not enumerated by a
   manifest entry of their own: they are emitted from a parent's entry (routes from
   `DescribeRouteTables`, NACL entries from `DescribeNetworkAcls`, TGW routes per route table) or by a
   custom reader (the Organizations reader's organization, OUs, accounts, memberships, delegations,
   policies, policy statements and tag-policy rules). A manifest-entry test cannot see them. So the
-  declaration is made per **entity type**, not per manifest entry: a type with its own manifest
-  entry declares in that entry's `tags` block, and every other type declares in one
-  manifest-adjacent registry, `collectors/boto3_collector/tag_lanes.json`, keyed by entity type.
-  A registry row holds a `tags_block` validated by the same schema `$defs`, or
-  `{"source": "organizations"}`, which names `-10`'s lane and nothing else. A type is declared in
-  exactly one of the two places (`-14`).
+  declaration is made per **(entity type, emitting path)**, not per manifest entry. A path is a
+  manifest entry or a named custom reader (`organizations`, and each reader the epic adds). A
+  manifest entry declares in its own `tags` block. A reader declares in one manifest-adjacent
+  registry, `collectors/boto3_collector/tag_lanes.json`, keyed by entity type and reader. Its rows
+  hold a `tags_block` validated by the same schema `$defs`, or `{"source": "organizations"}`, which
+  names `-10`'s lane.
+- **A type with two writers declares both, and one owns the tags.** `aws_account` is emitted by
+  two paths: the manifest's `aws_account_singleton` entry and the Organizations reader. Account tags
+  come only from Organizations (ruling 2026-10-01). Neither `none` (the type is taggable) nor a
+  second reading lane is true of the singleton. So the schema gains one more variant,
+  `{"source": "owned_by", "lane": <lane>, "why": <non-empty string>}`. It means "this path does not
+  read this type's tags; the named lane does". The singleton entry declares
+  `{"source": "owned_by", "lane": "organizations", ...}`, and the Organizations reader declares
+  `{"source": "organizations"}`. Today `aws_account` is the only type with two emitting paths
+  (`-14`).
 - **The `service` lane reads every page.** The lane makes one hydrate call (`collector.py:176-186`;
   `hydrate_item` calls the operation once, `hydrate.py:91`) and normalizes that one response. Several
   tag operations the epic adds are paginated in botocore's own paginator data:
@@ -1267,7 +1278,7 @@ The rulings of 2026-10-01 are encoded below as decided.
 | req-aws-collector-tags-11 | AWS-Reserved Keys Kept Verbatim | Proposed | Tag keys under the AWS-reserved `aws:` prefix are kept verbatim in the same `tags` map as operator tags, never filtered, renamed or moved. | States today's behaviour (`tags.py:39-50`). Ruling 2026-10-01. |
 | req-aws-collector-tags-12 | Untaggable Is Declared | Proposed | The manifest schema's `tags_block` accepts `{"source": "none", "why": <non-empty string>}`, and every manifest entry declares a `tags` block; a test fails on an entry with none. Existing entries without a block gain a lane or `none` in the same change. | Ruling 2026-10-01. A schema change to the tag mechanism; no tag key or dimension changes. |
 | req-aws-collector-tags-13 | Every New Type Declares Its Lane | Proposed | Every type added by `req-aws-collector-fanout`, `req-aws-core-network-plane`, `req-aws-core-organizations-completeness`, `req-aws-core-organization-membership` or `spec-aws-core-landing-zone.md` carries the `tags` field (`req-aws-core-fields-4`) and declares its lane, or `none` for a type AWS cannot tag. For `field` and `service` lanes a test resolves the declared tag path and shape against the pinned botocore output shape, as `req-aws-collector-manifest-6` does for sensitivity paths. | Shapes read from botocore 1.43.104: no `-8` extension needed. |
-| req-aws-collector-tags-14 | Every Emitted Type Declares, Once | Proposed | Every entity type the collector emits declares its tag lane exactly once: in its own manifest entry's `tags` block, or, for a type with no manifest entry of its own (a sub-resource emitted from a parent's entry, or a custom reader's type), in `collectors/boto3_collector/tag_lanes.json`, whose rows validate against the manifest schema's `tags_block` or are `{"source": "organizations"}`. A test collects from the full fake source and fails on any emitted entity type with no declaration or with two; a second test fails on a registry row naming a type that is not an aws_core model. | Makes `-12` and `-13` enforceable for routes, NACL entries, TGW routes, memberships, delegations, policies, statements and tag-policy rules, which have no manifest entry. |
+| req-aws-collector-tags-14 | Every Emitted Type Declares, Once | Proposed | Every (entity type, emitting path) the collector emits declares a tag lane exactly once: a manifest entry in its own `tags` block, a custom reader in `collectors/boto3_collector/tag_lanes.json` (rows validate against the manifest schema's `tags_block`, or are `{"source": "organizations"}`). The schema accepts `{"source": "owned_by", "lane": <lane>, "why": <non-empty>}` for a path that does not read a type's tags because another path's lane does. For each entity type, exactly one emitting path declares a reading lane, or every path declares `none`; every other path declares `owned_by` naming that lane. A test collects from the full fake source and fails on any (type, path) with no declaration or two, and on a type with two reading lanes; a second test fails on a registry row naming a type that is not an aws_core model. | Makes `-12` and `-13` enforceable for routes, NACL entries, TGW routes, memberships, delegations, policies, statements and tag-policy rules, which have no manifest entry. |
 | req-aws-collector-tags-15 | Service Lane Reads Every Page | Proposed | For every `service`-lane operation that the pinned botocore's paginator data lists, the lane follows the continuation token to the last page and normalizes the union of all pages. A failure on any page makes the slot `error`, exactly as a first-page failure does; the pages read so far are never written as the resource's tags. A test per such operation feeds a fake client two pages joined by a continuation token and asserts tags from both pages land, and a second test fails the second page and asserts the slot is `error`. | Today one call (`collector.py:176-186`). Paginated in botocore 1.43.103: `sso-admin`, `config` and `route53resolver` `ListTagsForResource`; IAM `ListRoleTags`, `ListOpenIDConnectProviderTags`. |
 
 ### Multi-Account Fan-Out
@@ -1290,6 +1301,20 @@ member accounts. Depends on unified-systems-com/aws-core-tap#14 (assigned identi
 reconcile is armed, and on `req-aws-collector-partition`, which the code cites and which the fix for
 unified-systems-com/aws-core-tap#60 defines (part of unified-systems-com/aws-core-tap#51; not yet on
 main when this section was written).
+
+**Sequencing (binding).** Two orderings are part of this requirement:
+
+- **Fan-out writes land only after core's field preservation.** No release writes fan-out batches
+  until unified-systems-com/tap#886 gives GRIFT a write that leaves a field "not observed" instead
+  of resetting it. Without it, every skipped or rejected member erases its own account-sourced
+  fields (`-16`), and fan-out repeats the tag false-empty write in every member.
+- **The membership lands before account → footprint containment.**
+  `req-aws-core-organization-membership` (step 8, unified-systems-com/aws-core-tap#68) ships before
+  `req-aws-core-account-footprint`. Until the membership exists, `AccountFalsifier` can retire an
+  account, and footprint containment would extend that cascade to the account's whole regional
+  network plane.
+
+Epic unified-systems-com/aws-core-tap#62 states both constraints in its checklist.
 
 #### Why the current shape cannot do this (read, aws_core@d5b1cf8)
 
@@ -1393,7 +1418,8 @@ base batch's write of that node without blanking anything. So:
 account's batch also holds the organization tree, because that is what the base credential read.
 
 **The account node, merged and not clobbered.** The same `aws_account` node is described by two
-readers: the organization tree (name, email, state, Organizations tags, `ParentId`;
+readers: the organization tree (name, Organizations tags, `ParentId`; email and state today, which
+move to the membership;
 `organizations.py:607-659`) and the member's own collection (the STS/alias singleton,
 `customfns.py:321-363`, and the account-level settings that `spec-aws-core-landing-zone.md`
 adds). GRIFT upsert replaces the node and resets every optional field the envelope omits
@@ -1418,8 +1444,11 @@ the base account. Fan-out makes every member hit this path:
     that read the tree.
   - The singleton's caller identity moves under `configuration.caller_identity` (`Arn`, `UserId`),
     so the account's `Arn` from the tree is not overwritten by the caller's.
-  - Org-sourced: `name`, `tags` (the Organizations lane), `configuration` from `ListAccounts`
-    (`Arn`, `State`, `Status`, `JoinedMethod`, `JoinedTimestamp`, `ParentId`), `partition`.
+  - Org-sourced: `name`, `tags` (the Organizations lane), `configuration.Arn` and
+    `configuration.ParentId`, `partition`. The account's lifecycle facts from `ListAccounts`
+    (`State`, `Status`, `JoinedMethod`, `JoinedTimestamp`, `Email`) belong to the membership
+    (`req-aws-core-organization-membership-7`). No account envelope carries them, in
+    `configuration` or in a typed field, so a member-scoped write has nothing of theirs to blank.
     Account-sourced: `account_alias`, `configuration.caller_identity`, and the account settings
     `spec-aws-core-landing-zone.md` adds (the four S3 account public-access-block flags).
 - **A member that was not collected keeps its account-sourced fields.** A member can be skipped,
@@ -1431,11 +1460,12 @@ the base account. Fan-out makes every member hit this path:
   false-empty write: a GRIFT write that marks a field not observed instead of resetting it (core's
   replacement-semantics work, unified-systems-com/tap#886, on its default path). aws_core takes no
   collector workaround for it: it does not withhold the account node, and it does not read stored
-  grid values back into the envelope. Until that core work lands, the reset is a named defect,
-  recorded in that account's `ACCOUNT_RESULT` (`-16`).
+  grid values back into the envelope. Fan-out writes do not ship before that core work does
+  (*Sequencing*, under Status Details), so no release has an interim period in which the reset
+  happens (`-16`).
 - **Across runs:** a run that did not read the organization does not fan out, and so writes no
   member's node. The remaining cross-run case is a separately configured member-scoped
-  installation, which writes the singleton with `tags: {}`, blank email and status, and a `name`
+  installation, which today writes the singleton with `tags: {}`, blank email and status, and a `name`
   from its alias or id. `req-aws-core-organization-membership` (step 8) closes the email and status
   half: it moves those organization-sourced facts onto the membership node (ruling 2026-10-01). The
   alias half is closed by `account_alias` above: the alias is never stored as the Organizations
@@ -1479,7 +1509,7 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-13 | Partition-Neutral Handoff Templates | Proposed | Every committed handoff artifact builds its ARNs from the deploying partition: no `arn:aws:` literal in a template value, parameter pattern or policy ARN decides the partition, and the README shows a GovCloud example beside each commercial one. | In scope for this step by the 2026-10-01 ruling; overlaps unified-systems-com/aws-core-tap#51, which named the same templates. |
 | req-aws-collector-fanout-14 | A Degraded Run Is Never Plain Success | Proposed | When the organization listing did not read to its end, the base account is not the organization's management account, or any listed member's outcome is not `collected`, the run's top-level result is marked degraded and carries the per-outcome counts. It is never reported as a plain success, so automation cannot read base-account-only collection as full coverage. | Uses core's job status for a partial run if one exists; otherwise a top-level `degraded` flag in `CollectionJob.results`. Member failure stays local to the run (`-4`); this makes it visible at the top. |
 | req-aws-collector-fanout-15 | Account Name Has One Owner | Proposed | In a run that read the organization tree, `AwsAccount.name` is Organizations `Account.Name` and nothing else writes it; the IAM alias is `AwsAccount.account_alias` (`""` = observed none, `null` = not read); the singleton's caller identity is `configuration.caller_identity`, never a top-level `Arn`. A test merges a tree envelope and a singleton for one account and asserts each field's source. | Closes the alias-for-name collision in fan-out runs. The member-scoped cross-run overwrite of `name` depends on unified-systems-com/tap#886. |
-| req-aws-collector-fanout-16 | Member-Sourced Fields Survive A Member Failure | Proposed | When a listed member is not collected (skipped, `AssumeRole` denied, identity mismatch, batch rejected), the organization tree's envelope for that account leaves its account-sourced fields (`account_alias`, `configuration.caller_identity`, the S3 account public-access-block flags) at their last observed values, through a GRIFT write that marks them not observed. Until that write exists the reset is a named defect, and that account's `ACCOUNT_RESULT` names the account-sourced fields the write reset. | Depends on core's replacement-semantics work, unified-systems-com/tap#886, as the tag false-empty write does; no collector workaround (no withheld node, no read-back of stored values). |
+| req-aws-collector-fanout-16 | Member-Sourced Fields Survive A Member Failure | Proposed | When a listed member is not collected (skipped, `AssumeRole` denied, identity mismatch, batch rejected), the organization tree's envelope for that account leaves its account-sourced fields (`account_alias`, `configuration.caller_identity`, the S3 account public-access-block flags) at their last observed values, through a GRIFT write that marks them not observed. Fan-out writes do not ship before that write exists (*Sequencing*). | Depends on core's replacement-semantics work, unified-systems-com/tap#886, as the tag false-empty write does; no collector workaround (no withheld node, no read-back of stored values). |
 
 #### Future
 
