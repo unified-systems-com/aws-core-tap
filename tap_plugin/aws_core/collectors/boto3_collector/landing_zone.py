@@ -302,6 +302,13 @@ def _aggregate(walks: list[_Walk], *, why: str = "") -> _Walk:
     return _Walk([], first, last, exc=exc, operation="; ".join(reasons))
 
 
+def _unidentified(items: list[Any]) -> int:
+    """How many listed items carry no identity. Each one is counted as not written, so the surface
+    that listed it is withdrawn from ``admitted``: an item the reader could not represent must never
+    leave a surface claiming every listed child reached the batch."""
+    return sum(1 for item in items if not item)
+
+
 def region_of_arn(arn: str) -> str:
     """The region segment of an ARN, or ``""``."""
     parsed = parse_arn(arn)
@@ -719,13 +726,15 @@ class _Reader:
         regions = self.readable_regions(((HOSTS_LANDING_ZONE, RELATION_LANDING_ZONES),), "controltower")
         reads: dict[str, _Walk] = {}
         found: dict[str, str] = {}  # landing zone ARN -> the first region whose listing returned it
+        skipped: dict[str, int] = {}
         for region in regions:
             reads[region] = self.walk("controltower", region, "list_landing_zones", "landingZones")
             for item in reads[region].items:
                 arn = str((item or {}).get("arn") or "")
                 if arn:
                     found.setdefault(arn, region)
-        skipped: dict[str, int] = {}
+                else:
+                    skipped[region] = skipped.get(region, 0) + 1
         written: list[tuple[str, str]] = []
         for arn in sorted(found):
             home = region_of_arn(arn) or found[arn]
@@ -836,6 +845,7 @@ class _Reader:
         for item in read.items:
             arn = str((item or {}).get("arn") or "")
             if not arn:
+                skipped += 1
                 continue
             target = str(item.get("targetIdentifier") or "")
             if kind == "control":
@@ -892,13 +902,15 @@ class _Reader:
         regions = self.readable_regions(((HOSTS_IDENTITY_CENTER_INSTANCE, RELATION_INSTANCES),), "sso-admin")
         reads: dict[str, _Walk] = {}
         found: dict[str, tuple[dict[str, Any], str]] = {}
+        skipped: dict[str, int] = {}
         for region in regions:
             reads[region] = self.walk("sso-admin", region, "list_instances", "Instances")
             for item in reads[region].items:
                 arn = str((item or {}).get("InstanceArn") or "")
                 if arn:
                     found.setdefault(arn, (item, region))
-        skipped: dict[str, int] = {}
+                else:
+                    skipped[region] = skipped.get(region, 0) + 1
         for arn in sorted(found):
             item, returned_in = found[arn]
             home = str(item.get("PrimaryRegion") or "") or returned_in
@@ -963,7 +975,7 @@ class _Reader:
 
     def _permission_sets(self, instance_arn: str, region: str) -> None:
         read = self.walk("sso-admin", region, "list_permission_sets", "PermissionSets", InstanceArn=instance_arn)
-        skipped = 0
+        skipped = _unidentified(read.items)
         for ps_arn in sorted({str(a) for a in read.items if a}):
             response, described = self.call(
                 "sso-admin", region, "describe_permission_set", InstanceArn=instance_arn, PermissionSetArn=ps_arn
@@ -1052,6 +1064,7 @@ class _Reader:
         for group in read.items:
             group_id = str((group or {}).get("GroupId") or "")
             if not group_id:
+                skipped += 1
                 continue
             display = str(group.get("DisplayName") or "")
             key = group_key(identity_store_id, group_id)
@@ -1105,6 +1118,7 @@ class _Reader:
                 AccountId=account,
             )
             reads.append(provisioned)
+            skipped += _unidentified(provisioned.items)
             for ps_arn in sorted({str(a) for a in provisioned.items if a}):
                 listed = self.walk(
                     "sso-admin",
@@ -1122,6 +1136,7 @@ class _Reader:
                     account_id = str(assignment.get("AccountId") or account)
                     permission_set = str(assignment.get("PermissionSetArn") or ps_arn)
                     if not principal_type or not principal_id:
+                        skipped += 1
                         continue
                     key = assignment_key(instance_arn, account_id, permission_set, principal_type, principal_id)
                     name = f"{principal_type} {principal_id} -> {account_id} ({permission_set.rsplit('/', 1)[-1]})"
@@ -1185,6 +1200,7 @@ class _Reader:
         for summary in read.items:
             arn = str((summary or {}).get("arn") or "")
             if not arn:
+                skipped += 1
                 continue
             response, described = self.call("config", region, "describe_configuration_recorders", Arn=arn)
             recorder = next(iter((response or {}).get("ConfigurationRecorders") or []), None)
@@ -1233,6 +1249,7 @@ class _Reader:
         for channel in channels:
             channel_name = str((channel or {}).get("name") or "")
             if not channel_name:
+                skipped += 1
                 continue
             key = regional_key(self.account_id, region, channel_name)
             bucket = str(channel.get("s3BucketName") or "")
@@ -1274,6 +1291,7 @@ class _Reader:
         for aggregator in read.items:
             arn = str((aggregator or {}).get("ConfigurationAggregatorArn") or "")
             if not arn:
+                skipped += 1
                 continue
             organization = aggregator.get("OrganizationAggregationSource")
             account_sources = [s for s in (aggregator.get("AccountAggregationSources") or []) if isinstance(s, dict)]
@@ -1301,7 +1319,7 @@ class _Reader:
 
     def _guardduty(self, region: str) -> None:
         read = self.walk("guardduty", region, "list_detectors", "DetectorIds")
-        skipped = 0
+        skipped = _unidentified(read.items)
         for detector_id in sorted({str(d) for d in read.items if d}):
             response, described = self.call("guardduty", region, "get_detector", DetectorId=detector_id)
             if response is None:
@@ -1409,6 +1427,7 @@ class _Reader:
     def _access_analyzers(self, region: str) -> None:
         reads: list[_Walk] = []
         analyzers: dict[str, dict[str, Any]] = {}
+        unidentified = 0
         for analyzer_type in ANALYZER_TYPES:
             read = self.walk("accessanalyzer", region, "list_analyzers", "analyzers", type=analyzer_type)
             reads.append(read)
@@ -1416,7 +1435,9 @@ class _Reader:
                 arn = str((item or {}).get("arn") or "")
                 if arn:
                     analyzers.setdefault(arn, item)
-        skipped = 0
+                else:
+                    unidentified += 1
+        skipped = unidentified
         for arn in sorted(analyzers):
             item = analyzers[arn]
             kind = str(item.get("type") or "")

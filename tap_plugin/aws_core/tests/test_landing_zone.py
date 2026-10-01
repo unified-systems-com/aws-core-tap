@@ -753,6 +753,25 @@ class TestControlTower:
         assert _nodes(read, ENABLED_CONTROL) == [] and "list_enabled_controls" not in aws.ops("controltower")
         assert "LANDING_ZONE_AMBIGUOUS" in _codes(read)
 
+    @pytest.mark.spec("req-aws-core-contained-type-triple-3")
+    def test_a_listed_item_with_no_identity_withdraws_admitted(self) -> None:
+        aws = govcloud()
+        aws.on(
+            "controltower",
+            "list_enabled_controls",
+            paged(
+                "enabledControls",
+                [{"arn": CONTROL_OU, "targetIdentifier": OU_TARGET}, {"controlIdentifier": "no-arn"}],
+                token="nextToken",
+            ),
+        )
+        aws.on("guardduty", "list_detectors", paged("DetectorIds", [DETECTOR_ID, ""]), region=WEST)
+        read = collect(aws)
+        controls = _parent(read, HOLDS_ENABLED_CONTROL, _id(LANDING_ZONE, LZ_ARN))
+        assert controls.complete is True and controls.admitted is False
+        detectors = _regional(read, HOSTS_GUARDDUTY_DETECTOR, WEST)
+        assert detectors["enumeration_complete"] is True and detectors["admitted"] is False
+
     def test_home_region_out_of_scope_is_written_without_containment(self) -> None:
         read = collect(govcloud(), regions=[EAST], facts={EAST: RegionFacts(EAST, PARTITION, "", STATUS_ENABLED, "t")})
         assert _one(read, LANDING_ZONE)["home_region"] == WEST
