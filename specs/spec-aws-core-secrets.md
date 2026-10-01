@@ -24,6 +24,7 @@ concrete instance of the consumer-owned-shape contract.
 | --- | --- | :---: | --- |
 | req-aws-core-secret-aws-static | [AWS Static Access Key Kind](#aws-static-access-key-kind) | Approved for Development | `aws_static_access_key` `data` shape + region scope; relocated from `req-tap-cares-secrets-aws-static` |
 | req-aws-core-secret-aws-assumed-role | [AWS Assumed-Role Kind (cross-account)](#aws-assumed-role-kind-cross-account) | Proposed | `aws_assumed_role` `data` shape; STS AssumeRole + mandatory External ID for cross-account read-only collection; supersedes the deferral in `req-aws-core-secret-aws-static-3` |
+| req-aws-core-secret-member-fanout | [Member Fan-Out Settings](#member-fan-out-settings) | Proposed | Optional `data.member_fanout` block on the static kind: the dedicated member role's name, its required External ID, an exclude list and a cap; consumed by `req-aws-collector-fanout` |
 
 ## AWS Static Access Key Kind
 ----
@@ -191,3 +192,99 @@ This requirement lifts the deferral recorded in
 `req-aws-core-secret-aws-static-3` (Assume Role Deferred → Superseded). The
 concrete collector need is the samsite next-iteration app running in a separate
 AWS account.
+
+## Member Fan-Out Settings
+----
+RID: `req-aws-core-secret-member-fanout`
+
+Status: `Proposed`
+
+The data shape behind `req-aws-collector-fanout` (`spec-aws-core-collector-v0.md`). Ruling
+(George, 2026-09-30): the first GovCloud run uses static access keys for a read-only IAM user in the
+GovCloud organization's **management account**. So fan-out rides the existing
+`aws_static_access_key` kind as an optional block. It is not a third kind, and the base is not an
+assumed role.
+
+The `aws_static_access_key` kind gains one optional key:
+
+- `data.member_fanout` — absent or `{"enabled": false}` means today's single-account run, unchanged.
+  When `enabled` is true:
+  - `member_role_name` — required. A plain IAM role **name**, matching `^[A-Za-z0-9_+=,.@-]{1,64}$`, the ASCII set IAM documents
+    for role names. The committed CloudFormation template uses `^[\w+=,.@-]{1,64}$`
+    (`cross-account-role.yaml:70`); `\w` matches non-ASCII letters in Python's regex engine, which
+    the repository's JSON Schema validation uses, so the template, the secret schema and the tests
+    all move to the explicit ASCII class, never an ARN and never a path. The member role is deployed at the
+    root path `/`, so the ARN the collector builds, `…:role/<member_role_name>`, is the role's real
+    ARN. A role under a non-root path is not supported here. Supporting one needs a separate
+    `member_role_path` field and template parameter, and is Future. The
+    collector builds the ARN from the run's resolved partition and each member's id, so a secret
+    cannot carry a wrong-partition ARN. It names the dedicated read-only member role
+    (`req-aws-collector-fanout`, ruling 2026-10-01). No default: the roles a member has by default
+    (`OrganizationAccountAccessRole`, `AWSControlTowerExecution`) are administrator roles, and the
+    collector never assumes one silently.
+  - `external_id` — required (ruling 2026-10-01). The member role trusts only the collector's
+    management-account principal and only with this External ID, consistent with the assumed-role
+    kind (`req-aws-core-secret-aws-assumed-role-2`), even though base and members share one
+    organization. One value serves every member, because one baseline deploys the role everywhere.
+  - `exclude_account_ids` — optional list of 12-digit ids never assumed into (for example a
+    break-glass account). Each one is reported as `skipped: excluded`. This is a scope control,
+    not a security boundary: the base credential's AssumeRole grant (`req-aws-collector-fanout-19`)
+    still names every account. An account that must be unreachable is kept out of the member-role
+    deployment (the baseline does not create the role there), and where the operator wants a
+    belt-and-braces guard the caller policy adds an explicit `Deny sts:AssumeRole` on each excluded
+    account's member-role ARN; the handoff template generates that deny from this list.
+  - `max_member_accounts` — required integer ≥ 1. A larger organization refuses fan-out; it never
+    collects a silent prefix.
+  - `role_session_name` / `duration_seconds` — optional, the same semantics as the assumed-role kind.
+
+The base keys' own `expected_account_id` (`req-aws-core-secret-aws-static-5`) still asserts the
+**management** account. Each member is asserted against its own id by the collector
+(`req-aws-collector-fanout-3`), never against a value in the secret.
+
+The committed handoff artifacts (`collectors/boto3_collector/handoff/`) are commercial-only today.
+The CFN parameter pattern and the managed-policy ARN are `arn:aws:` literals (`cross-account-role.yaml:51,103`,
+`cross-account-role.tf:72`, `collector-principal-policy.json:9`). Fixing them is in scope for the
+fan-out step (`req-aws-collector-fanout-13`; ruling 2026-10-01). The member-role artifact is a
+StackSet- or Terraform-deployable role, deployed per account by the account baseline (an
+organization StackSet or the Gruntwork account baseline). Unlike the existing cross-account role, it
+attaches no AWS-managed policy: its only permissions are the repo-owned, generated
+`member-read-policy.json` (`req-aws-collector-fanout-17`). It uses `${AWS::Partition}` /
+`data.aws_partition`, so it is correct in `aws-us-gov` on first use.
+
+### Base credential blast radius
+
+**The risk.** Fan-out turns one long-lived access key, for a read-only IAM user in the management
+account, into read access to every member account: whoever holds the key can assume the member
+role in each of them. The role is read-only, but it reads configuration across the whole
+organization. So one leaked key exposes the organization's full configuration, not one
+account's. Static keys do not expire on their own, and the 2026-09-30 ruling chose them for the
+first GovCloud run.
+
+**Already in place.** The member role trusts only the collector's one management-account principal,
+and only with the External ID (`req-aws-collector-fanout-12`, `-7` below).
+
+**Open decision (pending maintainer, Q118).** This block is not normative. Nothing in it is a
+requirement or an acceptance criterion until it is ruled. A ruling turns the chosen items into
+criteria, with their secret and template inputs defined. The candidates are:
+
+- **Enforced key rotation:** a declared maximum key age, checked by `self_test` against the key's
+  `CreateDate` (`iam:ListAccessKeys` on the collector's own user), failing past the limit. Needs a
+  new secret field for the maximum age.
+- **A network condition on the member-role trust:** `aws:SourceIp` or `aws:SourceVpc` limiting
+  `sts:AssumeRole` to where the collector runs. Needs a template parameter for the range or VPC.
+- **Short-lived credentials, as a target state:** replace the static key with IAM Roles Anywhere or
+  OIDC / workload-identity federation, so no long-lived secret exists to leak. The first fan-out
+  implementation stays on `aws_static_access_key` (ruling 2026-09-30). This is a direction for a
+  later credential kind, not a requirement on this one.
+
+### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-secret-member-fanout-1 | Optional, Additive | Proposed | A static-key secret without `member_fanout`, or with `enabled: false`, validates and runs exactly as before. | |
+| req-aws-core-secret-member-fanout-2 | Role Name, Never ARN | Proposed | `member_role_name` validates against `^[A-Za-z0-9_+=,.@-]{1,64}$` (ASCII only; never `\w`): a plain role name, so a value containing `/` (a path) or an ARN is refused at validation; every handoff variant deploys the member role at path `/` and validates its role-name input with the same pattern; a test feeds a non-ASCII letter (for example `é`) and asserts the secret schema, every template pattern and the collector all refuse it. | The partition comes from the run, never from the secret. |
+| req-aws-core-secret-member-fanout-3 | No Default Role | Proposed | `enabled: true` without `member_role_name` fails validation; the collector never falls back to `OrganizationAccountAccessRole` or `AWSControlTowerExecution`. | Both are administrator roles. |
+| req-aws-core-secret-member-fanout-4 | Cap Required | Proposed | `enabled: true` without an integer `max_member_accounts` ≥ 1 fails validation. | `req-aws-collector-fanout-10`. |
+| req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, deploys in `aws-us-gov` without edits, and attaches only the repo-owned `member-read-policy.json`, never an AWS-managed policy. | `req-aws-collector-fanout-13`, `-17`; the same templates unified-systems-com/aws-core-tap#51 names. |
+| req-aws-core-secret-member-fanout-6 | Redacted | Proposed | `external_id` is never logged, matching the assumed-role kind. | |
+| req-aws-core-secret-member-fanout-7 | External ID Required | Proposed | `enabled: true` without a non-empty `external_id` fails validation, and the collector never calls `AssumeRole` into a member without it. | Ruling 2026-10-01; mirrors `req-aws-core-secret-aws-assumed-role-2`. |

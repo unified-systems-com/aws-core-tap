@@ -100,7 +100,9 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
-| req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field |
+| req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
+| req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
+| req-aws-collector-pagination | [Every Paginated Call Read To Its End](#every-paginated-call-read-to-its-end) | Proposed | Every call the landing-zone epic names that botocore paginates is read to exhaustion; a later-page failure leaves the field or surface unknown, never partial |
 | req-aws-collector-model-deps | [Model Dependencies](#model-dependencies) | Proposed | CloudFront / CloudWatch log group / EventBridge rule models must exist |
 | req-aws-collector-sam-example | [Sam Worked Example](#sam-worked-example) | Proposed | Concrete manifest + edge set for the demo target |
 | req-aws-collector-build-skill | [Build-Collector Skill Direction](#build-collector-skill-direction) | Proposed | Skill is a manifest generator; trust-tier axis |
@@ -138,7 +140,7 @@ the China and isolated partitions.
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-scope-1 | Single Account | Approved for Development | v0 targets exactly one AWS account per collection run. | |
+| req-aws-collector-scope-1 | Single Account | Approved for Development | v0 targets exactly one AWS account per collection run. | Proposed to be superseded by `req-aws-collector-fanout` (one run, the organization's member accounts). Unchanged until that requirement is approved. |
 | req-aws-collector-scope-2 | Sam Resource Set | Approved for Development | The v0 manifest covers exactly the eight named resource types. | Driven by the demo, not by completeness. |
 | req-aws-collector-scope-3 | No Deletion Semantics | Approved for Development | v0 only creates/upserts; absence from a run never deletes a node. | Reaping deferred (`req-aws-collector-nongoals`). |
 | req-aws-collector-scope-4 | Commercial and GovCloud | Approved for Development | A run collects one partition: commercial (`aws`) or AWS GovCloud (US) (`aws-us-gov`). The China and isolated partitions are refused by name. | Mirrors `req-aws-core-scope-2`; the mechanism is `req-aws-collector-partition`. |
@@ -873,7 +875,7 @@ collector never reads credential files directly.
 | req-aws-collector-credentials-1 | Secrets Subsystem Only | Approved for Development | Credentials resolve via `resolve_secret`; no direct file reads. | |
 | req-aws-collector-credentials-2 | Consumer-Side Validation | Approved for Development | The collector validates `kind` and required `data` against an `aws_core`-owned schema before use. | |
 | req-aws-collector-credentials-3 | Visible Redacted Failure | Approved for Development | Missing/malformed secret fails the run with a structured redacted error; no secret material is logged. | |
-| req-aws-collector-credentials-4 | Static Keys v0 | Approved for Development | v0 supports static access keys for the operating account. | Multi-account fan-out deferred. |
+| req-aws-collector-credentials-4 | Static Keys v0 | Approved for Development | v0 supports static access keys for the operating account. | Multi-account fan-out deferred. Proposed: lifted by `req-aws-collector-fanout`, whose base credential is exactly this kind (static keys of a read-only user in the organization's management account; ruling 2026-09-30). |
 | req-aws-collector-credentials-5 | Cross-Account Assume-Role | Proposed | The collector resolves the `aws_assumed_role` kind, assumes the target-account role via STS (with a mandatory External ID), and collects with the returned short-lived credentials; the STS probe doubles as the assert-on-land check. | Specified by `req-aws-core-secret-aws-assumed-role`. |
 
 ### Collector Runtime Integration
@@ -1061,7 +1063,7 @@ edges, submitted through the approved import surface.
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-grift-batch-1 | One Batch Per Run | Approved for Development | A run produces a single GRIFT batch. | |
+| req-aws-collector-grift-batch-1 | One Batch Per Run | Approved for Development | A run produces a single GRIFT batch. | Proposed to be superseded for fan-out runs by `req-aws-collector-fanout-6` (one batch per account per run). A single-account run is unchanged. |
 | req-aws-collector-grift-batch-2 | Provenance Recorded | Approved for Development | The batch records account, regions, manifest version, and counts. | |
 | req-aws-collector-grift-batch-3 | Approved Surface Only | Approved for Development | Submission is via `self.submit_grift`. | |
 | req-aws-collector-grift-batch-4 | No Deletion Content | Approved for Development | The batch contains no deletion/tombstone semantics. | |
@@ -1238,11 +1240,95 @@ not).
   nesting, WAFv2 wrapped — are real but out of scope, named as a future
   enum extension, not built.
 
+#### Landing-Zone Amendments (Proposed)
+
+Ruling (George, 2026-09-30): the mechanism above **is** the tag normalization. The
+landing-zone epic adds no tag keys, no tag vocabulary and no tag-to-dimension mapping, and touches
+no dimension. What it changes is limited to making the spec say what the code does, declaring the
+one tag path that lives outside the manifest, and holding every type the epic adds to the contract.
+The rulings of 2026-10-01 are encoded below as decided.
+
+- **Three lanes, not two.** The manifest schema has carried a third lane since the field-lane work:
+  `{"source": "field", "from": <path>, "shape": "list_kv"|"map"}`, normalizing tags the enumerate
+  item already carries (`aws_resource_manifest.schema.json` `$defs/tags_block`, `oneOf[0]`;
+  `collector.py:167-168`). Ten of the 23 entries use it, including VPC, subnet, EC2 instance and security
+  group. `-1` names only `rgta|service`; `-9` states all three, plus the `none` and `owned_by` declarations below.
+- **The Organizations lane.** `organizations.py` is not a manifest entry, and it calls
+  `normalize_tags(raw, "list_kv")` from its own code (`organizations.py:431`) for OU, account and
+  customer-managed SCP tags. Under `-1` ("no hidden per-service code") that path is undeclared.
+  `-10` declares it, so it is a named lane and not hidden code. The epic routes the root's tags and
+  every new Organizations policy type through the same `tags_of` (`organizations.py:387-431`).
+  Account tags set through Organizations (for example by Gruntwork's `control-tower-account-tagger`,
+  outside Terraform state) stay in `aws_account.tags` (ruling 2026-10-01). They are not a second tag
+  system and are not moved to the membership node.
+- **A type AWS cannot tag declares it.** Today "no `tags` block" means "carries no tags" (`-1`), and
+  reads the same as "forgot to declare". The schema gains a fourth variant,
+  `{"source": "none", "why": <non-empty string>}` (ruling 2026-10-01), so that every manifest entry
+  declares a tag lane and a test can require one (`-12`). Routes, NACL entries, TGW routes,
+  route-table, NACL and Elastic IP associations, resolver endpoint IPs, resolver-rule associations,
+  Config delivery channels, Identity Center groups and assignments, delegations and memberships use
+  it.
+- **A type with no manifest entry still declares its lane.** Several types are not enumerated by a
+  manifest entry of their own: they are emitted from a parent's entry (routes from
+  `DescribeRouteTables`, NACL entries from `DescribeNetworkAcls`, TGW routes per route table) or by a
+  custom reader (the Organizations reader's organization, OUs, accounts, memberships, delegations,
+  policies, policy statements and tag-policy rules). A manifest-entry test cannot see them. So the
+  declaration is made per **(entity type, emitting path)**, not per manifest entry. A path is a
+  manifest entry or a named custom reader (`organizations`, and each reader the epic adds). A
+  manifest entry declares in its own `tags` block. A reader declares in one manifest-adjacent
+  registry, `collectors/boto3_collector/tag_lanes.json`, keyed by entity type and reader. Its rows
+  hold a `tags_block` validated by the same schema `$defs`, or `{"source": "organizations"}`, which
+  names `-10`'s lane.
+- **A type with two writers declares both, and one owns the tags.** `aws_account` is emitted by
+  two paths: the manifest's `aws_account_singleton` entry and the Organizations reader. Account tags
+  come only from Organizations (ruling 2026-10-01). Neither `none` (the type is taggable) nor a
+  second reading lane is true of the singleton. So the schema gains one more variant,
+  `{"source": "owned_by", "lane": <lane>, "why": <non-empty string>}`. It means "this path does not
+  read this type's tags; the named lane does". The singleton entry declares
+  `{"source": "owned_by", "lane": "organizations", ...}`, and the Organizations reader declares
+  `{"source": "organizations"}`. Today `aws_account` is the only type with two emitting paths
+  (`-14`).
+- **The `service` lane reads every page.** The lane makes one hydrate call (`collector.py:176-186`;
+  `hydrate_item` calls the operation once, `hydrate.py:91`) and normalizes that one response. Several
+  tag operations the epic adds are paginated in botocore's own paginator data:
+  `sso-admin:ListTagsForResource` (`NextToken`), `config:ListTagsForResource` (`NextToken`, `Limit`)
+  and `route53resolver:ListTagsForResource` (`NextToken`, `MaxResults`). So are the existing IAM
+  lanes, `ListRoleTags` and `ListOpenIDConnectProviderTags` (`Marker`, `IsTruncated`). Control Tower,
+  Security Hub, CloudFront and Route 53 `ListTagsForResource` have no paginator (read: botocore
+  1.43.103 `paginators-1.json`, the local copy; the spec's pin is 1.43.104). One call silently drops
+  every tag after the first page, and a path-and-shape check accepts it. `-15` requires the lane to
+  read to the last page for every operation botocore paginates.
+- **AWS-reserved keys stay in the one map** (ruling 2026-10-01). Tags under the `aws:` prefix (for
+  example `aws:cloudformation:stack-name`) are written by AWS, cannot be changed by the owner, and
+  arrive in the same wire lists as operator tags. `normalize_tags` keeps them verbatim in the same map
+  (`tags.py:39-50`); nothing filters them. `-11` states that as the contract, so a reader of `tags`
+  knows such keys are provenance stamped by AWS, not operator intent. Control Tower's
+  `aws-control-tower` key and Gruntwork's org-prefixed keys are not under `aws:` and are ordinary tags.
+- **New types.** Every type the epic adds carries the `tags` field and declares its lane (`-13`).
+  The wire shapes were read from botocore 1.43.104's service models (offline data, not a live
+  call): every new taggable type returns tags either as a list of `{Key, Value}` (`list_kv`) or as a
+  string map (`map`). ENIs carry theirs under `TagSet`, not `Tags`; Control Tower and Access
+  Analyzer under a lowercase `tags` map. Both are a path difference, not a shape. **No shape-enum
+  extension is needed for this epic**; `-8` stays as written.
+- **A failed tag read is still written as `{}`: a named defect with a core dependency, not a task
+  here.** `batch.py:79` writes `"tags": tags or {}`, and `collector.py:166` returns `{}` for a node
+  whose region's RGTA sweep failed (`collector.py:375-381` records `RGTA_SWEEP_SKIPPED` and
+  continues). The KMS, SQS and CloudTrail custom functions do the same when their tag call fails
+  (`customfns.py:897-898`, `:929-930`, `:972-973`). GRIFT upsert resets an omitted field, so omitting
+  `tags` does not preserve the stored value either. Only the Organizations reader avoids the false
+  empty today, by withholding the node (`organizations.py:387-451`). The general fix needs a write
+  that leaves a field "not observed" instead of replacing it, which is core's GRIFT replacement
+  semantics work (unified-systems-com/tap#886, its GRIFT write-semantics track). aws_core takes no
+  interim withhold-everything rule. Fan-out repeats the defect in every member account, so it is
+  named here and in `req-aws-collector-fanout`. Item 1 of unified-systems-com/aws-core-tap#60
+  records the same defect. The partition home-region change to `-6` belongs to that issue's fix and
+  is not restated here.
+
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-tags-1 | Declarative Source | Approved for Development | A manifest `tags.source` ∈ `rgta\|service` declares per-type tag retrieval; absent ⇒ no tags. No hidden per-service code. | |
+| req-aws-collector-tags-1 | Declarative Source | Approved for Development | A manifest `tags.source` ∈ `rgta\|service` declares per-type tag retrieval; absent ⇒ no tags. No hidden per-service code. | Names two of the schema's three lanes; see `-9`. |
 | req-aws-collector-tags-2 | RGTA Default Path | Approved for Development | One paginated per-region `GetResources` sweep, `ResourceTypeFilters`-scoped, joined to nodes by ARN (`natural_key` or a declared transform). Untagged ⇒ `{}`, correct (discovery is independent). | RGTA never drives discovery. |
 | req-aws-collector-tags-3 | Side-Quest Path | Approved for Development | `service` sources resolve via the hydrate seam with a `params` dict (each entry `{literal:…}` or `{from:<path>}`) so multi-param tag APIs are first-class; v0 = `aws_iam_role` (`ListRoleTags`), `aws_cloudfront_distribution` (`ListTagsForResource`), `aws_route53_zone` (`ListTagsForResource`, multi-param), `aws_iam_oidc_provider` (`ListOpenIDConnectProviderTags`). | RGTA excludes IAM roles, Route 53 zones, and IAM OIDC providers; CloudFront unsupported. |
 | req-aws-collector-tags-4 | One Canonical Normalizer | Approved for Development | A single engine seam folds any declared shape → `{str:str}`; no per-service loops; raw retained losslessly. | CloudQuery pattern; not Steampipe boilerplate. |
@@ -1250,6 +1336,396 @@ not).
 | req-aws-collector-tags-6 | Home-Region Invariant | Approved for Development | Region scope must include the partition's home region for global services (`us-east-1` commercial, `us-gov-west-1` GovCloud); the run warns (`REGION_INVARIANT`) if absent, or global / CloudFront-cert tags are silently missed. | Was a literal `us-east-1` before GovCloud entered scope (`req-aws-collector-partition`). |
 | req-aws-collector-tags-7 | RGTA Op-Contract | Approved for Development | 15-min pagination-token TTL (restart, not resume), throttle backoff, `ResourceTypeFilters` only; RGTA decorates, never authoritative for existence. | Eventually consistent. |
 | req-aws-collector-tags-8 | Shape Enum Fenced | Approved for Development | v0 `shape` ∈ `list_kv\|map` (all of Sam's 8); ECS / CloudTrail / WAFv2 outliers named as a future extension, not built. | |
+| req-aws-collector-tags-9 | Declared Lanes | Proposed | A manifest entry's `tags.source` ∈ `field\|rgta\|service\|none\|owned_by`, matching `aws_resource_manifest.schema.json`. `field` normalizes a path into the enumerate item with a declared `shape`; `none` carries a non-empty `why` and means the type carries no AWS tags; `owned_by` names another path's lane that owns this type's tags (`-14`). The reading lane `organizations` is not a manifest value: it appears only in `tag_lanes.json` rows, for the Organizations reader (`-10`). | Supersedes `-1`'s two-lane wording on approval. `none` is new schema (`-12`). |
+| req-aws-collector-tags-10 | Organizations Lane Declared | Proposed | The Organizations reader is the one tag path outside the manifest: `organizations:ListTagsForResource`, shape `list_kv`, for the root, OUs, accounts and customer-managed policies of every type it reads, through `normalize_tags` and the `tags_of` unread sentinel (an unreadable tag set withholds the node, as today). Account tags read here are written to `aws_account.tags`. No type the epic adds folds tags by hand. | `organizations.py:80,431`. Ruling 2026-10-01: Organizations account tags stay on the account. Existing debt, named and not fixed here: two custom functions fold tags by hand before the `field` lane sees them, KMS from `[{TagKey, TagValue}]` (`customfns.py:890-895`, a wire shape outside the `-8` enum) and CloudTrail from nested `ResourceTagList[].TagsList[]` (`customfns.py:966-971`). Both bypass `-4`'s single normalizer. |
+| req-aws-collector-tags-11 | AWS-Reserved Keys Kept Verbatim | Proposed | Tag keys under the AWS-reserved `aws:` prefix are kept verbatim in the same `tags` map as operator tags, never filtered, renamed or moved. | States today's behaviour (`tags.py:39-50`). Ruling 2026-10-01. |
+| req-aws-collector-tags-12 | Untaggable Is Declared | Proposed | The manifest schema's `tags_block` accepts `{"source": "none", "why": <non-empty string>}`, and every manifest entry declares a `tags` block; a test fails on an entry with none. Existing entries without a block gain a lane or `none` in the same change. | Ruling 2026-10-01. A schema change to the tag mechanism; no tag key or dimension changes. |
+| req-aws-collector-tags-13 | Every New Type Declares Its Lane | Proposed | Every type added by `req-aws-collector-fanout`, `req-aws-core-network-plane`, `req-aws-core-organizations-completeness`, `req-aws-core-organization-membership` or `spec-aws-core-landing-zone.md` carries the `tags` field (`req-aws-core-fields-4`) and declares its lane, or `none` for a type AWS cannot tag. For `field` and `service` lanes a test resolves the declared tag path and shape against the pinned botocore output shape, as `req-aws-collector-manifest-6` does for sensitivity paths. | Shapes read from botocore 1.43.104: no `-8` extension needed. |
+| req-aws-collector-tags-14 | Every Emitted Type Declares, Once | Proposed | Every (entity type, emitting path) the collector emits declares a tag lane exactly once: a manifest entry in its own `tags` block, a custom reader in `collectors/boto3_collector/tag_lanes.json` (rows validate against the manifest schema's `tags_block`, or are `{"source": "organizations"}`). The schema accepts `{"source": "owned_by", "lane": <lane>, "why": <non-empty>}` for a path that does not read a type's tags because another path's lane does. For each entity type, exactly one emitting path declares a reading lane, or every path declares `none`; every other path declares `owned_by` naming that lane. A test collects from the full fake source and fails on any (type, path) with no declaration or two, and on a type with two reading lanes; a second test fails on a registry row naming a type that is not an aws_core model. | Makes `-12` and `-13` enforceable for routes, NACL entries, TGW routes, memberships, delegations, policies, statements and tag-policy rules, which have no manifest entry. |
+| req-aws-collector-tags-15 | Service Lane Reads Every Page | Proposed | For every `service`-lane operation that the pinned botocore's paginator data lists, the lane follows the continuation token to the last page and normalizes the union of all pages. A failure on any page makes the slot `error`, exactly as a first-page failure does; the pages read so far are never written as the resource's tags. A test per such operation feeds a fake client two pages joined by a continuation token and asserts tags from both pages land, and a second test fails the second page and asserts the slot is `error`. | Today one call (`collector.py:176-186`). Paginated in botocore 1.43.103: `sso-admin`, `config` and `route53resolver` `ListTagsForResource`; IAM `ListRoleTags`, `ListOpenIDConnectProviderTags`. |
+
+### Multi-Account Fan-Out
+----
+RID: `req-aws-collector-fanout`
+
+Status: `Proposed`
+
+One run collects every member account of an AWS organization from one credential in the
+organization's **management account**, by assuming a read-only role in each member. This is the
+path to a landing zone's member accounts. A Gruntwork landing zone is AWS Control Tower
+([AF-LZ](https://docs.gruntwork.io/2.0/docs/accountfactory/prerequisites/awslandingzone)) with tens of accounts, and today a run reaches one of them.
+
+#### Status Details
+
+Proposed by the landing-zone epic, step 2. Ruling (George, 2026-09-30): the first GovCloud run uses
+**static access keys for a read-only IAM user in the GovCloud organization's management account**,
+with FIPS optional for the first run (Q103c). Endpoint FIPS is the operator's existing opt-in,
+`use_fips_endpoint` (`req-aws-collector-partition-6`, defined on the fix-pack branch). This
+requirement sets no default for it, and the first run's setting is an operator decision recorded
+with that run. It is AWS SDK endpoint selection only, independent of TAP's FIPS-validated
+cryptographic module. Fan-out from the organization is therefore the only path to
+member accounts. Depends on unified-systems-com/aws-core-tap#14 (assigned identity) before any
+reconcile is armed, and on `req-aws-collector-partition`, which the code cites and which the fix for
+unified-systems-com/aws-core-tap#60 defines (part of unified-systems-com/aws-core-tap#51; not yet on
+main when this section was written).
+
+**Sequencing (binding).** Two orderings are part of this requirement:
+
+- **Fan-out writes land only after core's field preservation.** No release writes fan-out batches
+  until unified-systems-com/tap#886 gives GRIFT a write that leaves a field "not observed" instead
+  of resetting it. Without it, every skipped or rejected member erases its own account-sourced
+  fields (`-16`), and fan-out repeats the tag false-empty write in every member.
+- **The membership lands before account → footprint containment.**
+  `req-aws-core-organization-membership` (step 8, unified-systems-com/aws-core-tap#68) ships before
+  `req-aws-core-account-footprint`. Until the membership exists, `AccountFalsifier` can retire an
+  account, and footprint containment would extend that cascade to the account's whole regional
+  network plane.
+
+Epic unified-systems-com/aws-core-tap#62 states both constraints in its checklist.
+
+#### Why the current shape cannot do this (read, aws_core@d5b1cf8)
+
+- The secret ref is one module constant, `SecretRef(scope="aws_core", key="boto_collector")`
+  (`collectors/boto3_collector/credentials.py:64`), resolved once per run (`collector.py:253`).
+- The `aws_assumed_role` kind assumes exactly one `role_arn` (`credentials.py:339-371`).
+- The Organizations reader discovers every member and writes it as a node, and nothing consumes the
+  list (`collector.py:608-654`).
+- The falsifiers resolve the same one secret, so in a multi-account grid every candidate outside
+  that account is `UNDETERMINED(scope_unknown)` (`falsifiers.py:449-485`).
+
+#### Implementation
+
+**Order of a fan-out run.**
+
+1. Resolve the base credential (`req-aws-core-secret-member-fanout`), the region scope and the
+   partition exactly as today, then STS-identify the base account.
+2. Read the Organizations tree with the base credential (`organizations.py`). Fan-out runs only when
+   `DescribeOrganization` reports the base account as `MasterAccountId` and the organization-wide
+   `ListAccounts` read to its end. Otherwise the run records `FANOUT_NOT_POSSIBLE` with the reason and
+   collects the base account alone, as today.
+3. Collect the base account with the manifest engine, as today.
+4. For each member account `ListAccounts` returned, in account-id order: skip it with a recorded
+   reason if its `State` is not `ACTIVE`, if it is the base account, or if the secret's exclude list
+   names it. Otherwise call `sts:AssumeRole` on
+   `arn:<partition>:iam::<member id>:role/<member_role_name>`, where `<partition>` is the run's
+   resolved partition and never a literal (`aws`, `aws-us-gov`). Assert on land: the assumed
+   session's `GetCallerIdentity` account must equal the member id. Then read that member's region
+   facts and run the manifest engine against it with the run's region scope.
+5. Submit one GRIFT batch per account and record that account's completeness surfaces against its
+   own batch. A member skipped before collection (not `ACTIVE`, excluded, `AssumeRole` denied,
+   identity mismatch) submits no batch: its result's batch id is `null`. Its account node is
+   observed this run (the tree envelope in the base batch), so it records a not-authorized surface
+   for each containment edge type on that account, carrying `applied_batches: []`. It records no
+   surface for parents below the account (its footprints and their children), because this run
+   did not observe them (`req-aws-core-contained-type-triple`). A member whose batch was submitted and rejected cites that batch, and
+   core derives `applied: false` from it (`tap_grid/completeness.py`, `applied` is derived from the
+   cited batches, never authored).
+
+**Member role: a dedicated read-only role** (ruling 2026-10-01). Fan-out assumes a role created for
+it in every member account, never an administrator role:
+
+- **Trust:** only the collector's principal in the management account (the base credential's IAM
+  user), and only when the call presents the External ID. The External ID is required, consistent
+  with aws_core's existing cross-account rule (`req-aws-core-secret-aws-assumed-role-2`), even though
+  base and members share one organization.
+- **Permissions: one repo-owned, least-privilege read-only policy, and no AWS-managed policy.**
+  AWS changes its managed policies on its own schedule (`SecurityAudit` included), and a change to
+  one would widen every member role in every estate without review. So the member role carries only
+  `collectors/boto3_collector/handoff/member-read-policy.json`. That policy is generated from the
+  manifest's operations and each custom reader's declared call list: the same list `-12`'s test
+  checks calls against. The generator maps each API operation to its IAM action through a declared
+  table, for the operations whose action name differs from the API name.
+  **Every call declaration names its execution context.** `context: base` marks a call made only
+  with the base (management) credential: the Organizations reader, Control Tower, Identity Center
+  administration (`sso-admin`, `identitystore`), and the fan-out's own `sts:AssumeRole`.
+  `context: account` marks a call made in every account session, base and members alike: the
+  manifest engine's entries, region facts, and the per-account security services and settings.
+  The member policy is generated **only** from `account`-context declarations. A base-only action
+  is never granted to the member role (`-20`).
+  **Falsifier probes are calls too.** A falsifier reaches a member through the same member role
+  (`-9`), and its probe is often not a collection call. For example, resolver-rule associations are
+  collected with `ListResolverRuleAssociations` but probed with `GetResolverRuleAssociation`. So
+  every registered falsifier declares its probe calls with a context, in the same declared call set
+  the policy is generated from. A probe left out of the policy would be denied on every candidate
+  and could never retire one (`-22`).
+  **The gate is an allowlist, not a name pattern.** A prefix rule ("begins with `Get`") with a
+  denylist does not fail closed: `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and
+  `ssm:GetDocument` all pass it and read content. So the generator reads a committed, reviewed
+  allowlist of metadata actions, `collectors/boto3_collector/handoff/member-read-actions.json`.
+  Each entry is one IAM action with a one-line `why` saying what metadata it reads. Generation
+  **fails** when a declared call maps to an action that is not on the allowlist. Adding a call
+  therefore needs a reviewed allowlist entry first. The committed policy is the allowlisted
+  actions the declared calls need, regenerated in CI and failing when stale (`-17`). Two further
+  tests run over the allowlist itself, as sanity checks rather than the gate: every entry's name
+  begins with `Describe`, `List`, `Get`, `BatchGet` or `Search` unless its `why` says why not, and
+  no entry is on the data-plane denylist (`-18`). The 2026-10-01 ruling, a dedicated read-only
+  role, stands; this is how "read-only" is enforced.
+- **Deployment:** per account, through the account baseline: an organization StackSet or the
+  Gruntwork account baseline, attaching the repo-owned policy above and nothing else (Gruntwork's
+  `cross-account-iam-roles` module already ships a comparable role,
+  `allow-read-only-access-from-other-accounts`;
+  [SEC-MODS](https://github.com/gruntwork-io/docs/tree/main/docs/reference/modules/terraform-aws-security/)).
+- **Name:** operator-declared (`member_role_name`), a plain role name with no path (the role is
+  deployed at the root path `/`; `req-aws-core-secret-member-fanout-2`), never defaulted in code, so an estate can use the
+  name its baseline deploys.
+- **Not used:** `OrganizationAccountAccessRole`, the administrator role `CreateGovCloudAccount`
+  creates in each member ([C-GCORG](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-organizations.html)), and
+  `AWSControlTowerExecution`, Control Tower's administration role
+  ([C-ROLES](https://docs.aws.amazon.com/controltower/latest/userguide/roles-how.html)).
+
+**Handoff templates are in scope.** The committed handoff artifacts
+(`collectors/boto3_collector/handoff/`) are the natural home for the member role, and they are
+commercial-only today: `arn:aws:` literals in the CloudFormation parameter pattern and managed-policy
+ARN (`cross-account-role.yaml:51,103`), the Terraform policy ARN (`cross-account-role.tf:72`) and the
+collector principal policy (`collector-principal-policy.json:9`). Making them partition-neutral
+(`${AWS::Partition}`, `data.aws_partition`) is part of this requirement's delivery, so the member
+role deploys in `aws-us-gov` on first use (`req-aws-core-secret-member-fanout-5`). The member-role
+variant of each template attaches only `member-read-policy.json`, with no `ManagedPolicyArns` entry
+and no `aws_iam_role_policy_attachment` to an AWS-managed policy (`-17`).
+
+**The caller side of `AssumeRole`.** The member role's trust policy admits the collector, but the
+collector's own principal also needs an IAM allow to call `sts:AssumeRole`. Today
+`collector-principal-policy.json` grants it for one `<PARTNER_ACCOUNT_ID>` role with an `arn:aws:`
+literal. For fan-out, that file grants `sts:AssumeRole` on
+`arn:${Partition}:iam::*:role/<member_role_name>`. The partition comes from the deploying
+partition, and the role name from the same parameter the member-role template takes. The grant
+carries an `aws:ResourceOrgID` condition equal to the organization's id, so it can reach only
+roles in this organization's accounts. Whether STS evaluates `aws:ResourceOrgID` for
+`AssumeRole` is inferred from IAM's global-condition-key documentation and is to be confirmed
+before build. If it is not, the fallback is `aws:ResourceAccount` limited to the member ids
+the organization listed, regenerated when membership changes. No `*` role name and no
+`arn:aws:` literal appears (`-19`).
+
+**Per-account results.** Every account the organization listed gets exactly one `ACCOUNT_RESULT`
+run-log entry: account id, outcome (`collected` / `partial` / `skipped`), reason, regions read,
+node and edge counts, and its batch id (`null` when no batch was submitted). The run summary counts each outcome. A member's failure
+(denied `AssumeRole`, account mismatch, rejected batch) is that account's outcome and does not abort
+the run. It still marks the run's top-level result degraded (`-14`).
+The base account's own credential, partition or identity failure still aborts the run
+(`req-aws-collector-runtime-3`).
+
+**The base batch is rejected.** The base batch carries the organization tree and every account's
+org-sourced envelope, and it is submitted first. If it is rejected, nothing this run observed has
+landed, and member batches would land account resources with no membership or tree under them.
+So the run stops there:
+
+- No member role is assumed and no member batch is submitted.
+- Every listed account, the base account included, gets an `ACCOUNT_RESULT` with outcome
+  `skipped`, reason `base_batch_rejected`, and `batch_id` the rejected base batch for the base
+  account and `null` for the others.
+- **The run records no completeness statement.** It neither records surfaces nor declares that it
+  read none. This was checked against core: candidate derivation compares a run's in-scope
+  surfaces with the previous successful run's (`tap_grid/candidates.py`, `_scope_of` counts only
+  `scope_authorized: true`). Any statement that omitted the members, or marked them not
+  authorized, would therefore read as a narrowed scope, and would nominate every member's
+  previously observed resources as `scope_withdrawn`. With no statement, `tap_cares/tasks.py`
+  `_record_candidates` derives nothing.
+- The run ends **failed**, not degraded, as a base-credential failure does (`-4`). A failed job is
+  never the "previous successful run" (`tap_cares/tasks.py` `_previous_run`), so the next run
+  compares its scope against the last run that did land, and no withdrawal is lost or invented.
+  The results, `ACCOUNT_RESULT` entries included, are still persisted on the failure path (`-21`).
+
+**One batch per account.** Each account's nodes and edges are their own GRIFT batch, submitted with
+`submit_grift(..., on_rejection="return")`. tap_cares offers that mode for exactly this case
+("multi-batch collectors wanting partial-success", `tap_cares/collectors/base.py:306-308`). One
+rejected batch, for example a member that hits unified-systems-com/aws-core-tap#14's tombstone conflict, then
+loses only that account's data.
+
+**Which batch owns what.** The organization tree is read with the base credential, so it is the
+base account's observation and belongs to the base account's batch. That batch carries the
+organization, its OUs, policies, statements, tag-policy rules, delegations, memberships, and one
+`aws_account` envelope per listed account with the org-sourced fields. It is submitted first. Each
+collected member's batch then carries everything read through that member's session, and also
+that account's merged `aws_account` envelope: the same org-sourced values from this run's tree, plus
+the account-sourced fields (`-8`). Because the member's write is the union, it replaces the
+base batch's write of that node without blanking anything. So:
+
+- **Member collected:** the account node ends the run with both sources' fields.
+  `ACCOUNT_RESULT.batch_id` is the member's batch.
+- **Member skipped before collection** (not `ACTIVE`, excluded, `AssumeRole` denied, identity
+  mismatch): no member batch exists. The base batch's tree envelope is the only write, and its
+  `ACCOUNT_RESULT.batch_id` is `null`.
+- **Member batch rejected:** the base batch's tree envelope has already landed, and the member's
+  batch, merged envelope included, writes nothing. `ACCOUNT_RESULT.batch_id` is the rejected batch.
+- In the last two cases, the tree envelope resets the account-sourced fields. That is `-16`'s
+  named dependency on unified-systems-com/tap#886.
+- **Base batch rejected:** nothing landed, and the run stops before any member (*The base batch is
+  rejected*, below; `-21`).
+
+"One batch per account" therefore means one batch per account's credential session. The base
+account's batch also holds the organization tree, because that is what the base credential read.
+
+**The account node, merged and not clobbered.** The same `aws_account` node is described by two
+readers: the organization tree (name, Organizations tags, `ParentId`; email and state today, which
+move to the membership;
+`organizations.py:607-659`) and the member's own collection (the STS/alias singleton,
+`customfns.py:321-363`, and the account-level settings that `spec-aws-core-landing-zone.md`
+adds). GRIFT upsert replaces the node and resets every optional field the envelope omits
+(`organizations.py:390-397`), so whichever envelope lands second blanks the other's fields.
+Within one run the collector already prefers the org-tree node for its own account
+(`collector.py:635-653`), but it drops the singleton's fields instead of merging them, and only for
+the base account. Fan-out makes every member hit this path:
+
+- **In a run:** one envelope per account id, with fields merged by source. Org-sourced fields come
+  from the tree; account-sourced fields come from the member collection. Neither replaces the other.
+- **Which source owns which field.** Two fields have two writers today. `name`: the singleton writes
+  the IAM account alias, or `AWS Account <id>` (`aws_resource_manifest.json:33`,
+  `customfns.py:357-363`), and the tree writes Organizations `Account.Name`
+  (`organizations.py:623`). `configuration`: both persist it, and both put a top-level `Arn` in it,
+  which is the caller's ARN from STS in one and the account's ARN from `ListAccounts` in the other.
+  So:
+  - `name` is the account's Organizations name. When the run read the organization tree, the tree
+    owns `name` and the singleton never writes it.
+  - The alias is its own fact, `AwsAccount.account_alias`, written only by the member collection:
+    the alias string, `""` when `ListAccountAliases` answered with none, `null` when the call was
+    denied or failed (the grid's null-is-unobserved convention). It never feeds `name` in a run
+    that read the tree.
+  - The singleton's caller identity moves under `configuration.caller_identity` (`Arn`, `UserId`),
+    so the account's `Arn` from the tree is not overwritten by the caller's.
+  - Org-sourced: `name`, `tags` (the Organizations lane), `configuration.Arn` and
+    `configuration.ParentId`, `partition`. The account's lifecycle facts from `ListAccounts`
+    (`State`, `Status`, `JoinedMethod`, `JoinedTimestamp`, `Email`) belong to the membership
+    (`req-aws-core-organization-membership-7`). No account envelope carries them, in
+    `configuration` or in a typed field, so a member-scoped write has nothing of theirs to blank.
+    Account-sourced: `account_alias`, `configuration.caller_identity`, and the account settings
+    `spec-aws-core-landing-zone.md` adds (the four S3 account public-access-block flags).
+- **A member that was not collected keeps its account-sourced fields.** A member can be skipped,
+  denied at `AssumeRole`, fail assert-on-land, or have its batch rejected (`-4`). The tree still
+  writes that account's envelope, and today's replace resets every optional field the envelope
+  omits (`tap_grid/services/_impl.py` `_apply_replace`). So the tree envelope alone erases the last
+  observed alias, caller identity and public-access-block flags. The requirement is that those
+  fields keep their last observed values, and it depends on the same core work as the tag
+  false-empty write: a GRIFT write that marks a field not observed instead of resetting it (core's
+  replacement-semantics work, unified-systems-com/tap#886, on its default path). aws_core takes no
+  collector workaround for it: it does not withhold the account node, and it does not read stored
+  grid values back into the envelope. Fan-out writes do not ship before that core work does
+  (*Sequencing*, under Status Details), so no release has an interim period in which the reset
+  happens (`-16`).
+- **Across runs:** a run that did not read the organization does not fan out, and so writes no
+  member's node. The remaining cross-run case is a separately configured member-scoped
+  installation, which today writes the singleton with `tags: {}`, blank email and status, and a `name`
+  from its alias or id. `req-aws-core-organization-membership` (step 8) closes the email and status
+  half: it moves those organization-sourced facts onto the membership node (ruling 2026-10-01). The
+  alias half is closed by `account_alias` above: the alias is never stored as the Organizations
+  name by a run that read the tree. Two halves stay open. Organizations account tags stay in
+  `aws_account.tags` (ruling 2026-10-01), so a member-scoped run that cannot read them still writes
+  `{}` over them; that is the false-empty write named under `req-aws-collector-tags`. And `name` is
+  required on every write (`CREATE_REQUIRED`, `minLength: 1`; `models/aws_account.py:81,101`), so a
+  member-scoped run still writes its alias-or-id fallback over the Organizations name. Both depend
+  on core's GRIFT replacement semantics (unified-systems-com/tap#886), not on this requirement.
+
+**Falsifier reach.** A falsifier judging a candidate in account X resolves X's credentials through
+the same base-then-member-role path, assert-on-land included. A candidate whose account the member
+role cannot reach is `UNDETERMINED(scope_unknown)`, as today.
+
+**Bounds.** Members are collected one at a time in v0. A declared `max_member_accounts` cap
+**refuses** the fan-out (`FANOUT_CAP_EXCEEDED`, base account still collected) rather than collecting
+a silent prefix of the organization. Every `AssumeRole` and every member call lands in the run's call
+ledger tagged with its account id (`req-aws-collector-audit-ledger`).
+
+**What fan-out does not do.** It does not read Control Tower's or Gruntwork's account lists, model
+account vending, or assume roles across partitions. A GovCloud management credential reaches
+GovCloud members only, and the paired commercial accounts are a separate organization
+(`req-aws-core-partition-pairing`). It arms no reconcile.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-fanout-1 | Organization Listing Drives Fan-Out | Proposed | The member set is this run's organization-wide `ListAccounts`, `ACTIVE` members only, minus the base account and the secret's exclude list. It is never read from grid state, and fan-out does not run unless that listing read to its end and the base account is the organization's `MasterAccountId`. | |
+| req-aws-collector-fanout-2 | Partition-Aware Role ARN | Proposed | The member role ARN is `arn:<run partition>:iam::<member>:role/<member_role_name>`, with the partition from the run's resolved partition; no literal `arn:aws:` appears in the fan-out path. | A GovCloud test captures `arn:aws-us-gov:iam::…` on the wire, as `test_govcloud.py:351-399` does for the single role. |
+| req-aws-collector-fanout-3 | Assert-On-Land Per Member | Proposed | After `AssumeRole`, the member session's `GetCallerIdentity` account equals the member id, or the member is skipped as `MEMBER_ACCOUNT_MISMATCH` and nothing from it is written. | Reuses `account_mismatch_error`. |
+| req-aws-collector-fanout-4 | Member Failure Is Local | Proposed | A denied or failed `AssumeRole`, a member identity mismatch, or a member's rejected batch is recorded as that account's outcome and the run continues. A base-credential, partition or base-identity failure, or a rejected base batch (`-21`), still aborts. | |
+| req-aws-collector-fanout-5 | Per-Account Results | Proposed | Every listed account has exactly one `ACCOUNT_RESULT` entry (id, outcome ∈ `collected\|partial\|skipped`, reason, regions, counts, batch id), and the summary counts each outcome. The batch id is `null` for an account skipped before any batch was submitted, and the rejected batch's id for an account whose batch was rejected. | The per-account run results the epic asks for. |
+| req-aws-collector-fanout-6 | One Batch Per Account | Proposed | Each account's observations are one GRIFT batch submitted with `on_rejection="return"`; a rejected member batch fails only that account, and a rejected base batch stops the run (`-21`). The organization tree, including one org-sourced `aws_account` envelope per listed account, is the base account's observation and is in the base batch, which is submitted first; a collected member's batch re-carries its account's merged envelope. | Supersedes `req-aws-collector-grift-batch-1` for fan-out runs. |
+| req-aws-collector-fanout-7 | Surfaces Per Account | Proposed | Completeness surfaces are recorded per account against that account's own batch. A listed member that was not collected records, for each containment edge type declared on its `aws_account` node (observed this run through the base batch's tree envelope), a surface with `scope_authorized: false` and the reason, never omitting one; it records no surface for parents below the account, which this run did not observe. With no submitted batch those surfaces carry `applied_batches: []`; with a rejected batch they cite it, so core derives `applied: false` either way. | Consistent with `req-aws-core-contained-type-triple` (no surface for an unobserved parent). Core counts only `scope_authorized: true` surfaces as in scope (`tap_grid/candidates.py` `_scope_of`), so recording a not-authorized surface and omitting one read the same to withdrawal: core still derives `scope_withdrawn` candidates for the member's previous surfaces, and the falsifier is the backstop (`-9`). The not-authorized surfaces carry the reason on the record. Nothing is armed (unified-systems-com/aws-core-tap#14). |
+| req-aws-collector-fanout-8 | Account Node Merged In A Run | Proposed | For every account both the organization tree and a member collection describe in one run, the member's batch carries one envelope whose fields are the union by source (the org-sourced values from this run's tree plus the account-sourced ones); neither reader's fields are dropped or blanked, and the base batch's earlier tree envelope is superseded by it. | Generalizes `collector.py:635-653`, which keeps the tree node and drops the singleton's fields. |
+| req-aws-collector-fanout-9 | Falsifier Reach Per Account | Proposed | A falsifier resolves the candidate's account credentials through the base-then-member-role path, with assert-on-land; an unreachable account is `UNDETERMINED(scope_unknown)`. | Today every falsifier resolves the one secret (`falsifiers.py:449-485`). |
+| req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
+| req-aws-collector-fanout-11 | Ledgered Per Account | Proposed | Every `AssumeRole` and every member-session call is in the run's call ledger tagged with the member account id. | `req-aws-core-secret-aws-assumed-role-6`. |
+| req-aws-collector-fanout-12 | Dedicated Read-Only Member Role | Proposed | The member role is a dedicated role trusting only the collector's management-account principal with a required External ID, whose only permissions are the repo-owned read-only policy of `-17`; a test fails on a collector call in a member that the policy does not grant. `OrganizationAccountAccessRole` and `AWSControlTowerExecution` are never assumed by default. | Ruling 2026-10-01 (dedicated read-only role). How read-only is enforced is refined by `-17`: no AWS-managed policy. |
+| req-aws-collector-fanout-13 | Partition-Neutral Handoff Templates | Proposed | Every committed handoff artifact builds its ARNs from the deploying partition: no `arn:aws:` literal in a template value, parameter pattern or policy ARN decides the partition, and the README shows a GovCloud example beside each commercial one. | In scope for this step by the 2026-10-01 ruling; overlaps unified-systems-com/aws-core-tap#51, which named the same templates. |
+| req-aws-collector-fanout-14 | A Degraded Run Is Never Plain Success | Proposed | When the organization listing did not read to its end, the base account is not the organization's management account, or any listed member's outcome is not `collected`, the run's top-level result is marked degraded and carries the per-outcome counts. It is never reported as a plain success, so automation cannot read base-account-only collection as full coverage. | Uses core's job status for a partial run if one exists; otherwise a top-level `degraded` flag in `CollectionJob.results`. Member failure stays local to the run (`-4`); this makes it visible at the top. |
+| req-aws-collector-fanout-15 | Account Name Has One Owner | Proposed | In a run that read the organization tree, `AwsAccount.name` is Organizations `Account.Name` and nothing else writes it; the IAM alias is `AwsAccount.account_alias` (`""` = observed none, `null` = not read); the singleton's caller identity is `configuration.caller_identity`, never a top-level `Arn`. A test merges a tree envelope and a singleton for one account and asserts each field's source. | Closes the alias-for-name collision in fan-out runs. The member-scoped cross-run overwrite of `name` depends on unified-systems-com/tap#886. |
+| req-aws-collector-fanout-16 | Member-Sourced Fields Survive A Member Failure | Proposed | When a listed member is not collected (skipped, `AssumeRole` denied, identity mismatch, batch rejected), the organization tree's envelope for that account leaves its account-sourced fields (`account_alias`, `configuration.caller_identity`, the S3 account public-access-block flags) at their last observed values, through a GRIFT write that marks them not observed. Fan-out writes do not ship before that write exists (*Sequencing*). | Depends on core's replacement-semantics work, unified-systems-com/tap#886, as the tag false-empty write does; no collector workaround (no withheld node, no read-back of stored values). |
+| req-aws-collector-fanout-17 | Repo-Owned Member Policy | Proposed | The member role's permissions are exactly `collectors/boto3_collector/handoff/member-read-policy.json`, generated from the manifest's operations, every custom reader's declared call list and every falsifier's declared `account`-context probe calls (`-22`) through a declared API-to-IAM action map, and drawn only from the committed, reviewed allowlist `member-read-actions.json` (each entry one action with a one-line `why`). Generation fails when a declared call maps to an action not on the allowlist. Every member-role handoff variant attaches only that policy and no AWS-managed policy. Tests fail when a collector call made in a member is not granted by the policy, when generation succeeds for a call whose action is not allowlisted, when the committed policy differs from a fresh generation, and when a member-role template attaches any other policy. The verb-prefix check (`Describe`, `List`, `Get`, `BatchGet`, `Search`) runs over the allowlist as a sanity check, not as the gate. | AWS-managed policies such as `SecurityAudit` change without review in this repo, which would widen every member role. A prefix rule alone admits content reads such as `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and `ssm:GetDocument`. |
+| req-aws-collector-fanout-18 | Data-Plane Reads Denied | Proposed | A second, independent test over the allowlist itself: no entry of `member-read-actions.json` is on a committed denylist of actions that read customer data or secret material (at least `secretsmanager:GetSecretValue`, `ssm:GetParameter`, `ssm:GetParameters`, `ssm:GetParametersByPath` and `ssm:GetParameterHistory` outright (each returns parameter values, and `WithDecryption` is a request parameter, not an IAM action, so it cannot be denied separately; parameter metadata comes from `ssm:DescribeParameters`), `ssm:GetDocument`, `kms:Decrypt`, `s3:GetObject*`, `dynamodb:GetItem`/`Query`/`Scan`/`BatchGetItem`, `logs:GetLogEvents`/`FilterLogEvents`, `lambda:GetFunction` outright (its response carries a code-download URL whatever the request; function metadata comes from `lambda:ListFunctions`), `codecommit:GetFile`/`GetBlob`, `ecr:GetDownloadUrlForLayer`/`BatchGetImage`). A test fails when a denylisted action is added to the allowlist. | Belt and braces over `-17`'s allowlist gate: the allowlist is reviewed, and the denylist catches a review that let a content read through. Collection is metadata-only (`req-aws-collector-scope`). Every entry is a whole IAM action or action pattern; none is qualified by a request parameter, which IAM cannot match. |
+| req-aws-collector-fanout-19 | Caller-Side AssumeRole Grant | Proposed | `collector-principal-policy.json` grants the base principal `sts:AssumeRole` on `arn:${Partition}:iam::*:role/<member_role_name>` only, with an `aws:ResourceOrgID` condition equal to the organization's id (fallback, if STS does not evaluate that key for `AssumeRole`: `aws:ResourceAccount` limited to the listed member ids). Tests fail on an `arn:aws:` literal, a wildcard role name, or a grant with neither condition. | Without a caller-side allow, every member `AssumeRole` is denied whatever the member trust says. `aws:ResourceOrgID` support for `sts:AssumeRole` is inferred and confirmed before build. |
+| req-aws-collector-fanout-20 | Member Policy From Member-Reachable Calls Only | Proposed | Every call declaration (manifest and custom readers) carries `context: base` or `context: account`; `member-read-policy.json` is generated only from `account`-context calls. A test fails when an action of a `base`-only call (at least `organizations:*`, `controltower:*`, `sso:*`/`sso-admin` actions, `identitystore:*`) appears in the member policy, and when a call declaration has no context. | Least privilege: the Organizations, Control Tower and Identity Center readers run only with the base credential. |
+| req-aws-collector-fanout-21 | Base Batch Rejection Stops The Run | Proposed | When the base batch is rejected, no member role is assumed and no member batch is submitted; every listed account's `ACCOUNT_RESULT` is `skipped` with reason `base_batch_rejected`; the run records no completeness statement (no surface and no `declare_no_surfaces`); and the job ends failed. A test rejects the base batch in the fake importer and asserts all four, and that candidate derivation records nothing for the run. | Checked against core: any statement omitting the members would read as a narrowed scope and derive `scope_withdrawn` for their resources (`tap_grid/candidates.py` `_scope_of`); a failed job is never the previous run compared against (`tap_cares/tasks.py` `_previous_run`). |
+| req-aws-collector-fanout-22 | Falsifier Probes In The Member Policy | Proposed | Every falsifier registered in `[falsifiers]` declares each AWS call its probe makes, with `context: base` or `context: account`; the member policy's source set is manifest operations, custom-reader calls and `account`-context probe calls, all through `-17`'s allowlist. A test fails when an `account`-context probe call is not granted by `member-read-policy.json`, and when a registered falsifier declares no probe calls. | `-9` runs probes through the member role; `GetResolverRuleAssociation` is a probe-only call. |
+
+#### Future
+
+- Concurrency across members, with Organizations and STS quotas named.
+- A delegated-administrator base credential instead of the management account.
+- The cross-run singleton clobber for member-scoped installations: its email and status half is
+  closed by `req-aws-core-organization-membership`; its tags and `name` halves, and `-16`'s
+  preservation of a failed member's fields, wait on core's replacement semantics
+  (unified-systems-com/tap#886).
+
+### Every Paginated Call Read To Its End
+----
+RID: `req-aws-collector-pagination`
+
+Status: `Proposed`
+
+One rule for every call the landing-zone epic names: listings, hydrate sub-calls, tag lanes and
+falsifier probes alike. A call that botocore can paginate is read to its last page. One page is
+never treated as the whole answer.
+
+#### Implementation
+
+- **Which calls.** A call is paginated when the pinned botocore's `paginators-1.json` for its
+  service lists the operation (`client.can_paginate(op)` is true). The hydrate seam makes one
+  direct call today (`hydrate.py:91`), so this rule changes it for paginated operations.
+- **When a read is finished.** A read ends by its paginator's own stop condition: no output token,
+  and, where the paginator declares a `more_results` flag, that flag false on the last page. Two
+  calls declare one: `ec2:SearchTransitGatewayRoutes` (`AdditionalRoutesAvailable`) and the IAM
+  `List*Tags` / `ListAccountAliases` calls (`IsTruncated`). A page whose flag says more while it
+  carries no token is a truncated answer: the result is unknown (incomplete surface, `null` field,
+  `UNDETERMINED` probe), never complete. For `SearchTransitGatewayRoutes` the pinned model has
+  both: input `NextToken` and `MaxResults` (default 1000), and output `NextToken` and
+  `AdditionalRoutesAvailable`, and its paginator joins them (read: botocore 1.43.103). The call is
+  made with the maximum page size. If a table is truncated anyway, the surface stays incomplete.
+  Narrowing the search by filter (per attachment or per CIDR) to get under the cap is allowed only
+  as a set of filtered searches whose union is controlled (`req-aws-core-contained-type-triple-5`).
+- **A later page fails.** If any page after the first fails, the result is unknown, never the pages
+  read so far:
+  - a typed field written from the call is `null`, with the hydrate slot's `error` status;
+  - a completeness surface backed by the call is `enumeration_complete: false` with the reason;
+  - a falsifier probe answers `UNDETERMINED`.
+- **The service tag lane** (`req-aws-collector-tags-15`) is this rule applied to tags.
+- **Calls this applies to** (read: botocore 1.43.103 `paginators-1.json` for every call the epic's
+  specs name; result key in parentheses):
+
+| Service | Paginated calls |
+| --- | --- |
+| `ec2` | `DescribeFlowLogs`, `DescribeInternetGateways`, `DescribeNatGateways`, `DescribeNetworkAcls`, `DescribeNetworkInterfaces`, `DescribeRouteTables`, `DescribeSecurityGroupRules`, `DescribeTransitGatewayAttachments`, `DescribeTransitGatewayRouteTables`, `DescribeTransitGateways`, `DescribeVpcEndpoints`, `DescribeVpcPeeringConnections`, `GetTransitGatewayRouteTablePropagations`, `SearchTransitGatewayRoutes` (stop condition also requires `AdditionalRoutesAvailable` false) |
+| `organizations` | `ListAccounts`, `ListAccountsForParent`, `ListAWSServiceAccessForOrganization`, `ListDelegatedAdministrators`, `ListDelegatedServicesForAccount`, `ListOrganizationalUnitsForParent`, `ListPolicies`, `ListRoots`, `ListTagsForResource`, `ListTargetsForPolicy`; `ListCreateAccountStatus` (Future, pairing) |
+| `sso-admin` | `ListAccountAssignments`, `ListInstances`, `ListManagedPoliciesInPermissionSet` (`AttachedManagedPolicies`), `ListPermissionSets`, `ListPermissionSetsProvisionedToAccount`, `ListTagsForResource` |
+| `identitystore` | `ListGroups` |
+| `controltower` | `ListEnabledBaselines`, `ListEnabledControls`, `ListLandingZones` |
+| `config` | `DescribeConfigurationAggregators`, `ListConfigurationRecorders`, `ListTagsForResource` |
+| `guardduty` | `ListDetectors` |
+| `securityhub` | `GetEnabledStandards` (`StandardsSubscriptions`) |
+| `accessanalyzer` | `ListAnalyzers` |
+| `route53resolver` | `ListResolverEndpointIpAddresses`, `ListResolverEndpoints`, `ListResolverRuleAssociations`, `ListResolverRules`, `ListTagsForResource` |
+| `iam` | `ListAccountAliases`, `ListOpenIDConnectProviderTags`, `ListRoleTags` |
+
+Not paginated in the same data, so one call is the whole answer: `ec2:DescribeAddresses`,
+`DescribeRegions`, `GetEbsEncryptionByDefault`, `GetEbsDefaultKmsKeyId`;
+`config:DescribeConfigurationRecorders`, `DescribeConfigurationRecorderStatus`,
+`DescribeDeliveryChannels`; `securityhub:DescribeHub`, `ListTagsForResource`;
+`controltower:ListTagsForResource`; `s3control:GetPublicAccessBlock`.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-pagination-1 | Read To Exhaustion | Proposed | Every declared call (manifest, custom reader, hydrate sub-call, tag lane, falsifier probe) whose operation the pinned botocore can paginate is read until no continuation token remains. | |
+| req-aws-collector-pagination-2 | Later-Page Failure Is Unknown | Proposed | A failure on any page after the first leaves the field `null`, the surface incomplete, or the probe `UNDETERMINED`; the pages already read are never written as the answer. A test fails the second page of a paginated hydrate call, listing and probe, and asserts each outcome. | |
+| req-aws-collector-pagination-3 | Walked Against botocore | Proposed | A test walks every declared call against the pinned botocore's `paginators-1.json` and fails when a paginated operation is read through a single-call path, or when a declared call's operation does not exist in the service model. | Keeps the table above from going stale. |
 
 ### Model Dependencies
 ----
@@ -1465,6 +1941,12 @@ Deferred from v0:
   `BELONGS_TO_ACCOUNT`-sourced entries are regional, RAM-shareable, or both, and remain exactly
   as Backlog as before — this is a slice of `req-aws-collector-reconcile`, not its close-out. v0 is one account. The secrets model already frames
   multi-account as "more secret files"; orchestration across accounts is later.
+
+  **Proposed (landing-zone epic):** multi-account is no longer deferred. `req-aws-collector-fanout`
+  specifies orchestration across an organization's member accounts from one management-account
+  credential. "More secret files" never worked as written: the secret ref is one module constant
+  (`collectors/boto3_collector/credentials.py:64`), so a second account meant rewriting the one file
+  between runs.
 - **Uniform-enumeration APIs** (Resource Groups Tagging API, Cloud Control API,
   AWS Config). Evaluated and rejected for v0: Tagging API returns spine only,
   Cloud Control is CFN-shaped with uneven coverage and strips edge-bearing
