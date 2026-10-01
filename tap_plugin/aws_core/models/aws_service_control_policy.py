@@ -13,11 +13,14 @@ class AwsServiceControlPolicy(BaseModel):
     Where it applies is the ``ATTACHED_TO_TARGET`` edge to an OU, an account or the organization (the
     root). The policy document is not stored: no source fills a typed summary of it yet, and a raw
     document blob is exactly the unsourced JSON the model contract forbids. ``description`` carries
-    the author's statement of intent, which is AWS's own field. Design vocabulary: no collector emits
-    it yet. Fields are those ``organizations:DescribePolicy`` (``PolicySummary``) and
-    ``ListTagsForResource`` report.
+    the author's statement of intent, which is AWS's own field. Collected by ``Boto3Collector``
+    (``collectors/boto3_collector/organizations.py``). Fields are those ``organizations:ListPolicies``
+    (``PolicySummary``) and ``ListTagsForResource`` report. Its statements are
+    ``aws_policy_statement`` nodes it contains (``DECLARES_STATEMENT``), read from
+    ``DescribePolicy``; a customer-managed SCP is itself contained by its organization
+    (``HOLDS_SERVICE_CONTROL_POLICY``), an AWS-managed one by none.
 
-    Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations)
+    Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations, req-aws-core-organizations-completeness)
     """
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_service_control_policy"
@@ -42,6 +45,14 @@ class AwsServiceControlPolicy(BaseModel):
     # (arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess), because it is one
     # AWS-owned object: one node, with each organization's use of it its own ATTACHED_TO_TARGET edge.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)
+
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_policy_statement"}], "edges": [{"type": "DECLARES_STATEMENT__aws_core"}]},
+    ]
+    # A statement removed from the document becomes a candidate; retiring the SCP retires its
+    # statements (req-aws-core-organizations-completeness-9, -10). This holds for AWS-managed SCPs
+    # too: FullAWSAccess is contained by no organization, but its statements are contained by it.
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("DECLARES_STATEMENT__aws_core",)
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

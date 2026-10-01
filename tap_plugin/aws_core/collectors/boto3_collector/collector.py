@@ -152,7 +152,8 @@ def resolve_node_tags(
       (so ``ok|absent|denied|error`` status + raw land in ``_hydrate``,
       and a ``denied``/``error`` is surfaced as ``HYDRATE_GAP`` by the
       existing run scan); the slot's data is normalized to ``{str:str}``.
-    - no ``tags`` block — ``({}, None, None)``.
+    - no ``tags`` block, or ``{"source": "none", ...}`` (AWS cannot tag the
+      type, ``req-aws-collector-tags-12``) — ``({}, None, None)``.
 
     Tags reach the node envelope ONLY through this resolver — a manifest
     entry must never project tags via its ``fields`` map (the envelope
@@ -160,7 +161,7 @@ def resolve_node_tags(
     ``tags`` field is silently clobbered; the v0.4.0 scar).
     """
     block = entry.get("tags")
-    if not block:
+    if not block or block["source"] == "none":
         return {}, None, None
     if block["source"] == "rgta":
         return rgta_map.get(rgta_join_arn(entry, item) or "", {}), None, None

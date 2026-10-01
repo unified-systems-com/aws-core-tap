@@ -377,6 +377,13 @@ class TestFalsifierManifestWiring:
             # reconcilable by the same containment, but their falsifiers are aws-core-tap#41's,
             # registered there rather than duplicated here.
             OIDC_PROVIDER: "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier",
+            # aws-core-tap#65 (Organizations completeness): the organization's delegations and
+            # customer-managed policies, a policy's statements and a tag policy's rules.
+            "aws_core__aws_delegated_administration": "tap_plugin.aws_core.falsifiers.DelegatedAdministrationFalsifier",
+            "aws_core__aws_service_control_policy": "tap_plugin.aws_core.falsifiers.OrganizationsPolicyFalsifier",
+            "aws_core__aws_organizations_policy": "tap_plugin.aws_core.falsifiers.OrganizationsPolicyFalsifier",
+            "aws_core__aws_policy_statement": "tap_plugin.aws_core.falsifiers.PolicyStatementFalsifier",
+            "aws_core__aws_tag_policy_rule": "tap_plugin.aws_core.falsifiers.TagPolicyRuleFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
@@ -478,9 +485,14 @@ class TestOrganizationContainment:
     reference — see the CONTAINMENT_EDGES comment on models/aws_organization.py."""
 
     def test_aws_organization_declares_the_two_new_containment_edges(self) -> None:
+        """The tree's two edges (tap-plugin-aws-core#50), then the organization-completeness three
+        (aws-core-tap#65): delegations and customer-managed policies of each kind."""
         assert AwsOrganization.CONTAINMENT_EDGES == (
             "PARTITIONED_INTO_OU__aws_core",
             "ENROLLS_ACCOUNT__aws_core",
+            "HOLDS_DELEGATION__aws_core",
+            "HOLDS_SERVICE_CONTROL_POLICY__aws_core",
+            "HOLDS_ORGANIZATIONS_POLICY__aws_core",
         )
 
     def test_aws_organization_has_no_falsifier(self) -> None:

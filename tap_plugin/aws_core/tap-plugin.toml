@@ -61,6 +61,10 @@ aws_core__aws_cloudtrail_trail = "tap_plugin.aws_core.models.cloudtrail_trail.Cl
 aws_core__aws_organization = "tap_plugin.aws_core.models.aws_organization.AwsOrganization"
 aws_core__aws_organizational_unit = "tap_plugin.aws_core.models.aws_organizational_unit.AwsOrganizationalUnit"
 aws_core__aws_service_control_policy = "tap_plugin.aws_core.models.aws_service_control_policy.AwsServiceControlPolicy"
+aws_core__aws_organizations_policy = "tap_plugin.aws_core.models.aws_organizations_policy.AwsOrganizationsPolicy"
+aws_core__aws_policy_statement = "tap_plugin.aws_core.models.aws_policy_statement.AwsPolicyStatement"
+aws_core__aws_tag_policy_rule = "tap_plugin.aws_core.models.aws_tag_policy_rule.AwsTagPolicyRule"
+aws_core__aws_delegated_administration = "tap_plugin.aws_core.models.aws_delegated_administration.AwsDelegatedAdministration"
 aws_core__aws_identity_center_instance = "tap_plugin.aws_core.models.aws_identity_center_instance.AwsIdentityCenterInstance"
 aws_core__aws_transit_gateway = "tap_plugin.aws_core.models.transit_gateway.TransitGateway"
 aws_core__aws_transit_gateway_attachment = "tap_plugin.aws_core.models.transit_gateway_attachment.TransitGatewayAttachment"
@@ -88,6 +92,12 @@ NESTED_UNDER_PARENT__aws_core = "edges/NESTED_UNDER_PARENT.edge.json"
 ATTACHED_TO_TARGET__aws_core = "edges/ATTACHED_TO_TARGET.edge.json"
 PARTITIONED_INTO_OU__aws_core = "edges/PARTITIONED_INTO_OU.edge.json"
 ENROLLS_ACCOUNT__aws_core = "edges/ENROLLS_ACCOUNT.edge.json"
+HOLDS_DELEGATION__aws_core = "edges/HOLDS_DELEGATION.edge.json"
+DELEGATES_TO_ACCOUNT__aws_core = "edges/DELEGATES_TO_ACCOUNT.edge.json"
+HOLDS_SERVICE_CONTROL_POLICY__aws_core = "edges/HOLDS_SERVICE_CONTROL_POLICY.edge.json"
+HOLDS_ORGANIZATIONS_POLICY__aws_core = "edges/HOLDS_ORGANIZATIONS_POLICY.edge.json"
+DECLARES_STATEMENT__aws_core = "edges/DECLARES_STATEMENT.edge.json"
+DECLARES_TAG_RULE__aws_core = "edges/DECLARES_TAG_RULE.edge.json"
 TRUSTS_IDENTITY_SOURCE__aws_core = "edges/TRUSTS_IDENTITY_SOURCE.edge.json"
 ATTACHED_TO_TRANSIT_GATEWAY__aws_core = "edges/ATTACHED_TO_TRANSIT_GATEWAY.edge.json"
 ATTACHES_VPC__aws_core = "edges/ATTACHES_VPC.edge.json"
@@ -154,6 +164,16 @@ aws_core__aws_iam_policy = "tap_plugin.aws_core.falsifiers.IamPolicyFalsifier"
 # Account-scoped containment (aws-core-tap#43): OWNS_OIDC_PROVIDER__aws_core makes an IAM OIDC
 # provider reconcilable.
 aws_core__aws_iam_oidc_provider = "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier"
+# Organizations completeness (aws-core-tap#65, req-aws-core-organizations-completeness): the
+# organization contains its delegations (HOLDS_DELEGATION) and its customer-managed policies
+# (HOLDS_SERVICE_CONTROL_POLICY, HOLDS_ORGANIZATIONS_POLICY); a policy contains its statements
+# (DECLARES_STATEMENT) and a tag policy its rules (DECLARES_TAG_RULE). The collector records a
+# surface for every one of those pairs. Registered, not armed: reconcile authority stays off.
+aws_core__aws_delegated_administration = "tap_plugin.aws_core.falsifiers.DelegatedAdministrationFalsifier"
+aws_core__aws_service_control_policy = "tap_plugin.aws_core.falsifiers.OrganizationsPolicyFalsifier"
+aws_core__aws_organizations_policy = "tap_plugin.aws_core.falsifiers.OrganizationsPolicyFalsifier"
+aws_core__aws_policy_statement = "tap_plugin.aws_core.falsifiers.PolicyStatementFalsifier"
+aws_core__aws_tag_policy_rule = "tap_plugin.aws_core.falsifiers.TagPolicyRuleFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"

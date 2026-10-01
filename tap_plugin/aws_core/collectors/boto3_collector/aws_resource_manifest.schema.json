@@ -249,6 +249,16 @@
             "shape": { "type": "string", "enum": ["list_kv", "map"] },
             "why": { "type": "string", "minLength": 1 }
           }
+        },
+        {
+          "description": "The type carries no AWS tags because AWS has no tagging operation for it; `why` says so (req-aws-collector-tags-9, -12). Also the row form collectors/boto3_collector/tag_lanes.json uses for a custom reader's untaggable types.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "why"],
+          "properties": {
+            "source": { "const": "none" },
+            "why": { "type": "string", "minLength": 1 }
+          }
         }
       ]
     },

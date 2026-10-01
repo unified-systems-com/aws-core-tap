@@ -703,6 +703,13 @@ rule on what becomes a node (*Policy Statements*, below).
   organization and false of its root. `AwsOrganization` gains the `tags` field, filled by `tags_of(root_id)`
   under the Organizations lane (`req-aws-collector-tags-10`), with the same unread rule: an unreadable
   root tag set withholds the organization node, as it withholds OUs and accounts today.
+  **Root unreadable** (the finding carried from aws-core-tap#71, settled in aws-core-tap#65): when
+  `ListRoots` itself fails or is refused, there is no root id to read tags for, and
+  `req-aws-core-organizations-collect-4` keeps the organization node. Withholding it would break
+  `-collect-4`, and writing `{}` would claim an observed empty. So the node is kept with
+  `tags: null`, meaning not read, and `enabled_policy_types` is `null` for the same reason. The
+  organization's `tags` field is the one aws_core `tags` field that accepts `null`; a root whose tag
+  read failed still withholds the node, so `null` is never written over a failed tag read.
 - **Enabled policy types.** `ListRoots` returns `Root.PolicyTypes` (read: botocore `Root` shape),
   and the reader drops it today (`organizations.py:485-487`). `AwsOrganization` gains
   `enabled_policy_types`, a typed list of the API's `PolicyType` enum values whose status is
@@ -896,7 +903,7 @@ document:
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-core-organizations-completeness-1 | Root Tags | Proposed | `AwsOrganization.tags` holds the root's Organizations tags via the Organizations lane; an unreadable root tag set withholds the organization node (`req-aws-collector-tags-10`). | Amends `req-aws-core-organizations`' "carries no tags". |
+| req-aws-core-organizations-completeness-1 | Root Tags | Proposed | `AwsOrganization.tags` holds the root's Organizations tags via the Organizations lane; an unreadable root tag set withholds the organization node (`req-aws-collector-tags-10`). When `ListRoots` fails, the node is kept (`req-aws-core-organizations-collect-4`) with `tags: null` (not read), never `{}`. | Amends `req-aws-core-organizations`' "carries no tags". The root-unreadable case settles the Copilot finding carried from aws-core-tap#71. |
 | req-aws-core-organizations-completeness-2 | Enabled Policy Types | Proposed | `enabled_policy_types` lists the root's `ENABLED` policy types; `null` = not read, `[]` = observed none. | |
 | req-aws-core-organizations-completeness-3 | Enabled Service Access | Proposed | `enabled_service_principals` lists `{service_principal, enabled_at}`; a denied call leaves `null`. | |
 | req-aws-core-organizations-completeness-4 | Delegated Administration | Proposed | One `aws_delegated_administration` per (organization, account, service principal), keyed `NATURAL_KEY = ("organization_id", "account_id", "service_principal")`, contained by the organization, with a registered falsifier passing the four-case harness. | |

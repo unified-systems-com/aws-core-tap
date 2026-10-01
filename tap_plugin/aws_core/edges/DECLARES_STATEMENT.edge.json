@@ -1,0 +1,15 @@
+{
+  "slug": "DECLARES_STATEMENT__aws_core",
+  "name": "Declares Statement",
+  "description": "An authorization policy (an SCP or an RCP) declares one statement of its policy document (policy -> statement), as organizations:DescribePolicy returns the document. Containment: the policy declares it in CONTAINMENT_EDGES, so a statement removed from the document becomes a retirement candidate, and retiring the policy retires its statements. The listing behind it is the policy's own document: complete when DescribePolicy succeeded and the document parsed.",
+  "sources": [
+    "aws_core__aws_service_control_policy",
+    "aws_core__aws_organizations_policy"
+  ],
+  "targets": [
+    "aws_core__aws_policy_statement"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

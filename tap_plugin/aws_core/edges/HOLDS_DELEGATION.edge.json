@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_DELEGATION__aws_core",
+  "name": "Holds Delegation",
+  "description": "An AWS Organizations organization holds a delegated administration (organization -> delegation): one (member account, service principal) pair that organizations:RegisterDelegatedAdministrator created and DeregisterDelegatedAdministrator(AccountId, ServicePrincipal) removes. Containment: the organization declares it in CONTAINMENT_EDGES. Its listing is ListDelegatedAdministrators plus one ListDelegatedServicesForAccount per delegated account, recorded as ONE organization-wide completeness surface, complete only when every one of those calls read to its end (req-aws-core-organizations-completeness-13): a surface per inner call would nominate every other account's delegations.",
+  "sources": [
+    "aws_core__aws_organization"
+  ],
+  "targets": [
+    "aws_core__aws_delegated_administration"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

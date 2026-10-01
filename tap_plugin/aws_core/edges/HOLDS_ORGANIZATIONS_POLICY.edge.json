@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_ORGANIZATIONS_POLICY__aws_core",
+  "name": "Holds Organizations Policy",
+  "description": "An AWS Organizations organization holds a customer-managed policy of a type other than SCP (organization -> policy): RCP, tag policy, declarative policy and the rest of the PolicyType enum, one organizations:ListPolicies(Filter=<type>) per type enabled on the root. Containment, for customer-managed policies only. All the per-type listings share one parent and one edge type, so they are recorded as ONE completeness surface, complete only when the root's enabled policy types were read and every per-type listing read to its end (req-aws-core-organizations-completeness-14).",
+  "sources": [
+    "aws_core__aws_organization"
+  ],
+  "targets": [
+    "aws_core__aws_organizations_policy"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

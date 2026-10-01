@@ -7,11 +7,15 @@ from tap_plugin.aws_core.models.apigateway_http_api import ApiGatewayHttpApi
 from tap_plugin.aws_core.models.availability_zone import AvailabilityZone
 from tap_plugin.aws_core.models.aws_account import AwsAccount
 from tap_plugin.aws_core.models.aws_account_region import AwsAccountRegion
+from tap_plugin.aws_core.models.aws_delegated_administration import AwsDelegatedAdministration
 from tap_plugin.aws_core.models.aws_identity_center_instance import AwsIdentityCenterInstance
 from tap_plugin.aws_core.models.aws_organization import AwsOrganization
 from tap_plugin.aws_core.models.aws_organizational_unit import AwsOrganizationalUnit
+from tap_plugin.aws_core.models.aws_organizations_policy import AwsOrganizationsPolicy
+from tap_plugin.aws_core.models.aws_policy_statement import AwsPolicyStatement
 from tap_plugin.aws_core.models.aws_region import AwsRegion
 from tap_plugin.aws_core.models.aws_service_control_policy import AwsServiceControlPolicy
+from tap_plugin.aws_core.models.aws_tag_policy_rule import AwsTagPolicyRule
 from tap_plugin.aws_core.models.bedrock_model import BedrockModel
 from tap_plugin.aws_core.models.cloudfront_distribution import CloudfrontDistribution
 from tap_plugin.aws_core.models.cloudtrail_trail import CloudtrailTrail
@@ -69,11 +73,15 @@ __all__ = [
     "AvailabilityZone",
     "AwsAccount",
     "AwsAccountRegion",
+    "AwsDelegatedAdministration",
     "AwsIdentityCenterInstance",
     "AwsOrganization",
     "AwsOrganizationalUnit",
+    "AwsOrganizationsPolicy",
+    "AwsPolicyStatement",
     "AwsRegion",
     "AwsServiceControlPolicy",
+    "AwsTagPolicyRule",
     "BedrockModel",
     "CloudfrontDistribution",
     "CloudtrailTrail",
