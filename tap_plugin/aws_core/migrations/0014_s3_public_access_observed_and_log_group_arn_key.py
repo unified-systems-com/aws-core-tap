@@ -4,12 +4,13 @@ from django.db import migrations, models
 
 
 def unobserve_public_access(apps, schema_editor):
-    """Every stored ``public_access_blocked`` before this migration is the old model default
-    (True): the collector never projected the field, so no row holds an observation. Clear them to
-    null (not observed, req-aws-core-fields-8) rather than leave every bucket reading "blocked";
-    the next collection fills the field from GetPublicAccessBlock (req-aws-core-fields-9)."""
+    """Clear the old model default (True) to null (not observed, req-aws-core-fields-8): the
+    collector never projected the field, so a stored True is indistinguishable from the default
+    and holds no observation. A stored False can only have been written explicitly (a design
+    GRIFT, the API, a hand correction), so it is kept. The next collection fills the field from
+    GetPublicAccessBlock (req-aws-core-fields-9)."""
     S3Bucket = apps.get_model("aws_core", "S3Bucket")
-    S3Bucket.objects.update(public_access_blocked=None)
+    S3Bucket.objects.filter(public_access_blocked=True).update(public_access_blocked=None)
 
 
 class Migration(migrations.Migration):
