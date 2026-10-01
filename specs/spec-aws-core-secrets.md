@@ -225,7 +225,12 @@ The `aws_static_access_key` kind gains one optional key:
     kind (`req-aws-core-secret-aws-assumed-role-2`), even though base and members share one
     organization. One value serves every member, because one baseline deploys the role everywhere.
   - `exclude_account_ids` — optional list of 12-digit ids never assumed into (for example a
-    break-glass account). Each one is reported as `skipped: excluded`.
+    break-glass account). Each one is reported as `skipped: excluded`. This is a scope control,
+    not a security boundary: the base credential's AssumeRole grant (`req-aws-collector-fanout-19`)
+    still names every account. An account that must be unreachable is kept out of the member-role
+    deployment (the baseline does not create the role there), and where the operator wants a
+    belt-and-braces guard the caller policy adds an explicit `Deny sts:AssumeRole` on each excluded
+    account's member-role ARN; the handoff template generates that deny from this list.
   - `max_member_accounts` — required integer ≥ 1. A larger organization refuses fan-out; it never
     collects a silent prefix.
   - `role_session_name` / `duration_seconds` — optional, the same semantics as the assumed-role kind.
