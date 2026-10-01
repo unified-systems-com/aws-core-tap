@@ -1372,6 +1372,13 @@ it in every member account, never an administrator role:
   manifest's operations and each custom reader's declared call list: the same list `-12`'s test
   checks calls against. The generator maps each API operation to its IAM action through a declared
   table, for the operations whose action name differs from the API name.
+  **Every call declaration names its execution context.** `context: base` marks a call made only
+  with the base (management) credential: the Organizations reader, Control Tower, Identity Center
+  administration (`sso-admin`, `identitystore`), and the fan-out's own `sts:AssumeRole`.
+  `context: account` marks a call made in every account session, base and members alike: the
+  manifest engine's entries, region facts, and the per-account security services and settings.
+  The member policy is generated **only** from `account`-context declarations. A base-only action
+  is never granted to the member role (`-20`).
   **The gate is an allowlist, not a name pattern.** A prefix rule ("begins with `Get`") with a
   denylist does not fail closed: `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and
   `ssm:GetDocument` all pass it and read content. So the generator reads a committed, reviewed
@@ -1407,6 +1414,19 @@ role deploys in `aws-us-gov` on first use (`req-aws-core-secret-member-fanout-5`
 variant of each template attaches only `member-read-policy.json`, with no `ManagedPolicyArns` entry
 and no `aws_iam_role_policy_attachment` to an AWS-managed policy (`-17`).
 
+**The caller side of `AssumeRole`.** The member role's trust policy admits the collector, but the
+collector's own principal also needs an IAM allow to call `sts:AssumeRole`. Today
+`collector-principal-policy.json` grants it for one `<PARTNER_ACCOUNT_ID>` role with an `arn:aws:`
+literal. For fan-out, that file grants `sts:AssumeRole` on
+`arn:${Partition}:iam::*:role/<member_role_name>`. The partition comes from the deploying
+partition, and the role name from the same parameter the member-role template takes. The grant
+carries an `aws:ResourceOrgID` condition equal to the organization's id, so it can reach only
+roles in this organization's accounts. Whether STS evaluates `aws:ResourceOrgID` for
+`AssumeRole` is inferred from IAM's global-condition-key documentation and is to be confirmed
+before build. If it is not, the fallback is `aws:ResourceAccount` limited to the member ids
+the organization listed, regenerated when membership changes. No `*` role name and no
+`arn:aws:` literal appears (`-19`).
+
 **Per-account results.** Every account the organization listed gets exactly one `ACCOUNT_RESULT`
 run-log entry: account id, outcome (`collected` / `partial` / `skipped`), reason, regions read,
 node and edge counts, and its batch id (`null` when no batch was submitted). The run summary counts each outcome. A member's failure
@@ -1414,6 +1434,27 @@ node and edge counts, and its batch id (`null` when no batch was submitted). The
 the run. It still marks the run's top-level result degraded (`-14`).
 The base account's own credential, partition or identity failure still aborts the run
 (`req-aws-collector-runtime-3`).
+
+**The base batch is rejected.** The base batch carries the organization tree and every account's
+org-sourced envelope, and it is submitted first. If it is rejected, nothing this run observed has
+landed, and member batches would land account resources with no membership or tree under them.
+So the run stops there:
+
+- No member role is assumed and no member batch is submitted.
+- Every listed account, the base account included, gets an `ACCOUNT_RESULT` with outcome
+  `skipped`, reason `base_batch_rejected`, and `batch_id` the rejected base batch for the base
+  account and `null` for the others.
+- **The run records no completeness statement.** It neither records surfaces nor declares that it
+  read none. This was checked against core: candidate derivation compares a run's in-scope
+  surfaces with the previous successful run's (`tap_grid/candidates.py`, `_scope_of` counts only
+  `scope_authorized: true`). Any statement that omitted the members, or marked them not
+  authorized, would therefore read as a narrowed scope, and would nominate every member's
+  previously observed resources as `scope_withdrawn`. With no statement, `tap_cares/tasks.py`
+  `_record_candidates` derives nothing.
+- The run ends **failed**, not degraded, as a base-credential failure does (`-4`). A failed job is
+  never the "previous successful run" (`tap_cares/tasks.py` `_previous_run`), so the next run
+  compares its scope against the last run that did land, and no withdrawal is lost or invented.
+  The results, `ACCOUNT_RESULT` entries included, are still persisted on the failure path (`-21`).
 
 **One batch per account.** Each account's nodes and edges are their own GRIFT batch, submitted with
 `submit_grift(..., on_rejection="return")`. tap_cares offers that mode for exactly this case
@@ -1439,6 +1480,8 @@ base batch's write of that node without blanking anything. So:
   batch, merged envelope included, writes nothing. `ACCOUNT_RESULT.batch_id` is the rejected batch.
 - In the last two cases, the tree envelope resets the account-sourced fields. That is `-16`'s
   named dependency on unified-systems-com/tap#886.
+- **Base batch rejected:** nothing landed, and the run stops before any member (*The base batch is
+  rejected*, below; `-21`).
 
 "One batch per account" therefore means one batch per account's credential session. The base
 account's batch also holds the organization tree, because that is what the base credential read.
@@ -1523,9 +1566,9 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-1 | Organization Listing Drives Fan-Out | Proposed | The member set is this run's organization-wide `ListAccounts`, `ACTIVE` members only, minus the base account and the secret's exclude list. It is never read from grid state, and fan-out does not run unless that listing read to its end and the base account is the organization's `MasterAccountId`. | |
 | req-aws-collector-fanout-2 | Partition-Aware Role ARN | Proposed | The member role ARN is `arn:<run partition>:iam::<member>:role/<member_role_name>`, with the partition from the run's resolved partition; no literal `arn:aws:` appears in the fan-out path. | A GovCloud test captures `arn:aws-us-gov:iam::…` on the wire, as `test_govcloud.py:351-399` does for the single role. |
 | req-aws-collector-fanout-3 | Assert-On-Land Per Member | Proposed | After `AssumeRole`, the member session's `GetCallerIdentity` account equals the member id, or the member is skipped as `MEMBER_ACCOUNT_MISMATCH` and nothing from it is written. | Reuses `account_mismatch_error`. |
-| req-aws-collector-fanout-4 | Member Failure Is Local | Proposed | A denied or failed `AssumeRole`, a member identity mismatch, or a member's rejected batch is recorded as that account's outcome and the run continues. A base-credential, partition or base-identity failure still aborts. | |
+| req-aws-collector-fanout-4 | Member Failure Is Local | Proposed | A denied or failed `AssumeRole`, a member identity mismatch, or a member's rejected batch is recorded as that account's outcome and the run continues. A base-credential, partition or base-identity failure, or a rejected base batch (`-21`), still aborts. | |
 | req-aws-collector-fanout-5 | Per-Account Results | Proposed | Every listed account has exactly one `ACCOUNT_RESULT` entry (id, outcome ∈ `collected\|partial\|skipped`, reason, regions, counts, batch id), and the summary counts each outcome. The batch id is `null` for an account skipped before any batch was submitted, and the rejected batch's id for an account whose batch was rejected. | The per-account run results the epic asks for. |
-| req-aws-collector-fanout-6 | One Batch Per Account | Proposed | Each account's observations are one GRIFT batch submitted with `on_rejection="return"`; a rejected batch fails only that account. The organization tree, including one org-sourced `aws_account` envelope per listed account, is the base account's observation and is in the base batch, which is submitted first; a collected member's batch re-carries its account's merged envelope. | Supersedes `req-aws-collector-grift-batch-1` for fan-out runs. |
+| req-aws-collector-fanout-6 | One Batch Per Account | Proposed | Each account's observations are one GRIFT batch submitted with `on_rejection="return"`; a rejected member batch fails only that account, and a rejected base batch stops the run (`-21`). The organization tree, including one org-sourced `aws_account` envelope per listed account, is the base account's observation and is in the base batch, which is submitted first; a collected member's batch re-carries its account's merged envelope. | Supersedes `req-aws-collector-grift-batch-1` for fan-out runs. |
 | req-aws-collector-fanout-7 | Surfaces Per Account | Proposed | Completeness surfaces are recorded per account against that account's own batch. A listed member that was not collected records, for each containment edge type declared on its `aws_account` node (observed this run through the base batch's tree envelope), a surface with `scope_authorized: false` and the reason, never omitting one; it records no surface for parents below the account, which this run did not observe. With no submitted batch those surfaces carry `applied_batches: []`; with a rejected batch they cite it, so core derives `applied: false` either way. | Consistent with `req-aws-core-contained-type-triple` (no surface for an unobserved parent). Core counts only `scope_authorized: true` surfaces as in scope (`tap_grid/candidates.py` `_scope_of`), so recording a not-authorized surface and omitting one read the same to withdrawal: core still derives `scope_withdrawn` candidates for the member's previous surfaces, and the falsifier is the backstop (`-9`). The not-authorized surfaces carry the reason on the record. Nothing is armed (unified-systems-com/aws-core-tap#14). |
 | req-aws-collector-fanout-8 | Account Node Merged In A Run | Proposed | For every account both the organization tree and a member collection describe in one run, the member's batch carries one envelope whose fields are the union by source (the org-sourced values from this run's tree plus the account-sourced ones); neither reader's fields are dropped or blanked, and the base batch's earlier tree envelope is superseded by it. | Generalizes `collector.py:635-653`, which keeps the tree node and drops the singleton's fields. |
 | req-aws-collector-fanout-9 | Falsifier Reach Per Account | Proposed | A falsifier resolves the candidate's account credentials through the base-then-member-role path, with assert-on-land; an unreachable account is `UNDETERMINED(scope_unknown)`. | Today every falsifier resolves the one secret (`falsifiers.py:449-485`). |
@@ -1538,6 +1581,9 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-16 | Member-Sourced Fields Survive A Member Failure | Proposed | When a listed member is not collected (skipped, `AssumeRole` denied, identity mismatch, batch rejected), the organization tree's envelope for that account leaves its account-sourced fields (`account_alias`, `configuration.caller_identity`, the S3 account public-access-block flags) at their last observed values, through a GRIFT write that marks them not observed. Fan-out writes do not ship before that write exists (*Sequencing*). | Depends on core's replacement-semantics work, unified-systems-com/tap#886, as the tag false-empty write does; no collector workaround (no withheld node, no read-back of stored values). |
 | req-aws-collector-fanout-17 | Repo-Owned Member Policy | Proposed | The member role's permissions are exactly `collectors/boto3_collector/handoff/member-read-policy.json`, generated from the manifest's operations and every custom reader's declared call list through a declared API-to-IAM action map, and drawn only from the committed, reviewed allowlist `member-read-actions.json` (each entry one action with a one-line `why`). Generation fails when a declared call maps to an action not on the allowlist. Every member-role handoff variant attaches only that policy and no AWS-managed policy. Tests fail when a collector call made in a member is not granted by the policy, when generation succeeds for a call whose action is not allowlisted, when the committed policy differs from a fresh generation, and when a member-role template attaches any other policy. The verb-prefix check (`Describe`, `List`, `Get`, `BatchGet`, `Search`) runs over the allowlist as a sanity check, not as the gate. | AWS-managed policies such as `SecurityAudit` change without review in this repo, which would widen every member role. A prefix rule alone admits content reads such as `codecommit:GetFile`, `ecr:GetDownloadUrlForLayer` and `ssm:GetDocument`. |
 | req-aws-collector-fanout-18 | Data-Plane Reads Denied | Proposed | A second, independent test over the allowlist itself: no entry of `member-read-actions.json` is on a committed denylist of actions that read customer data or secret material (at least `secretsmanager:GetSecretValue`, `ssm:GetParameter*` with decryption, `ssm:GetDocument`, `kms:Decrypt`, `s3:GetObject*`, `dynamodb:GetItem`/`Query`/`Scan`/`BatchGetItem`, `logs:GetLogEvents`/`FilterLogEvents`, `lambda:GetFunction` code download, `codecommit:GetFile`/`GetBlob`, `ecr:GetDownloadUrlForLayer`/`BatchGetImage`). A test fails when a denylisted action is added to the allowlist. | Belt and braces over `-17`'s allowlist gate: the allowlist is reviewed, and the denylist catches a review that let a content read through. Collection is metadata-only (`req-aws-collector-scope`). |
+| req-aws-collector-fanout-19 | Caller-Side AssumeRole Grant | Proposed | `collector-principal-policy.json` grants the base principal `sts:AssumeRole` on `arn:${Partition}:iam::*:role/<member_role_name>` only, with an `aws:ResourceOrgID` condition equal to the organization's id (fallback, if STS does not evaluate that key for `AssumeRole`: `aws:ResourceAccount` limited to the listed member ids). Tests fail on an `arn:aws:` literal, a wildcard role name, or a grant with neither condition. | Without a caller-side allow, every member `AssumeRole` is denied whatever the member trust says. `aws:ResourceOrgID` support for `sts:AssumeRole` is inferred and confirmed before build. |
+| req-aws-collector-fanout-20 | Member Policy From Member-Reachable Calls Only | Proposed | Every call declaration (manifest and custom readers) carries `context: base` or `context: account`; `member-read-policy.json` is generated only from `account`-context calls. A test fails when an action of a `base`-only call (at least `organizations:*`, `controltower:*`, `sso:*`/`sso-admin` actions, `identitystore:*`) appears in the member policy, and when a call declaration has no context. | Least privilege: the Organizations, Control Tower and Identity Center readers run only with the base credential. |
+| req-aws-collector-fanout-21 | Base Batch Rejection Stops The Run | Proposed | When the base batch is rejected, no member role is assumed and no member batch is submitted; every listed account's `ACCOUNT_RESULT` is `skipped` with reason `base_batch_rejected`; the run records no completeness statement (no surface and no `declare_no_surfaces`); and the job ends failed. A test rejects the base batch in the fake importer and asserts all four, and that candidate derivation records nothing for the run. | Checked against core: any statement omitting the members would read as a narrowed scope and derive `scope_withdrawn` for their resources (`tap_grid/candidates.py` `_scope_of`); a failed job is never the previous run compared against (`tap_cares/tasks.py` `_previous_run`). |
 
 #### Future
 
