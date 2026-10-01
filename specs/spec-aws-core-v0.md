@@ -48,6 +48,12 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Amended | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org's original "excluded by design" is narrowed — `AwsAccount` now has both a falsifier and containment, see the rows below |
 | req-aws-core-reconcile-containment | [Account-Scoped Containment — IAM & S3 Reconcile](#account-scoped-containment--iam--s3-reconcile) | Implemented | Five NEW `AwsAccount` → owned-type containment edges (IAM role/user/policy, OIDC provider, S3 bucket); `IamOidcProviderFalsifier`; collector-emitted completeness per listing |
 | req-aws-core-regional-containment | [Region-Scoped Containment](#region-scoped-containment) | Implemented | `aws_account_region` (account × region footprint), `HOSTS_*` containment edges, per-region completeness surfaces; VPC, subnet, EC2 instance, security group |
+| req-aws-core-organization-membership | [Organization Membership](#organization-membership) | Proposed | An account leaving the organization ends its membership, never the account: `aws_organization_membership` contained by the organization, `ENROLLS_ACCOUNT` re-sourced as a reference, `MembershipFalsifier` replaces `AccountFalsifier` (ruling 2026-09-30) |
+| req-aws-core-organizations-completeness | [Organizations Completeness](#organizations-completeness) | Proposed | Root tags, enabled policy types, enabled service access, delegated administration, the other GovCloud-allowed policy types, a retirement path for policies; SCP and RCP statements and tag-policy rules as contained nodes |
+| req-aws-core-network-plane | [Network Plane Collection](#network-plane-collection) | Proposed | Route tables + routes, IGW, NAT, EIP, NACLs + entries, SG rules, VPC endpoints, flow logs, ENIs, TGW + attachments + route tables + routes, peering, Route 53 Resolver; each with tags lane and retirement path |
+| req-aws-core-account-footprint | [Account Owns Its Region Footprints](#account-owns-its-region-footprints) | Proposed | `OWNS_REGION_FOOTPRINT` account → footprint containment; a never-drop `FootprintFalsifier` |
+| req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
+| req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
 
 ### Plugin Scope
 ----
@@ -415,6 +421,9 @@ resource list.
   `aws-us-gov` or `aws-cn`, the three partitions AWS Organizations runs in). Source: `organizations:DescribeOrganization` and `ListRoots`; the partition is the
   organization ARN's partition segment. An organization has no name in AWS, so `name` is the label
   its author or collector gives it. It carries no `tags`: AWS cannot tag an organization.
+  *(Proposed amendment, `req-aws-core-organizations-completeness-1`: the organization stands for
+  its root, and AWS can tag a root — `organizations:TagResource` accepts an `r-…` id — so the
+  organization node carries the root's tags.)*
   Blank means not observed for every id and enum field on these types, as on
   `aws_elb.lb_type`: `""` is in each enum, and nothing here is nullable except the transit
   gateway's integer and boolean options.
@@ -460,7 +469,7 @@ resource list.
 | req-aws-core-organizations-4 | Organization Is Its Own Root | Implemented | There is no root type; `root_id` is a field on the organization, and root-level edges target the organization. | |
 | req-aws-core-organizations-5 | Tree Edge | Implemented | `NESTED_UNDER_PARENT` declares OU or account → OU or organization and no other pair. | |
 | req-aws-core-organizations-6 | SCP Attachment Edge | Implemented | `ATTACHED_TO_TARGET` declares SCP → OU, account or organization and no other pair. | |
-| req-aws-core-organizations-7 | No Policy Document Blob | Implemented | The SCP model carries no policy document or `configuration` field. | A typed summary field can be added when a source fills it. |
+| req-aws-core-organizations-7 | No Policy Document Blob | Implemented | The SCP model carries no policy document or `configuration` field. | A typed summary field can be added when a source fills it. Proposed (landing-zone epic): statements become typed nodes instead, and this criterion stands (`req-aws-core-organizations-completeness-7`). |
 
 ### Organizations Tree Collection And Reconciliation
 ----
@@ -548,12 +557,295 @@ Organizations tree is one connected structure, not a per-account resource list.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-organizations-collect-1 | Nested OUs Walked | Implemented | `ListOrganizationalUnitsForParent` recurses from the root through every depth AWS returns. | `test_organizations.py::TestCollectOrganizationTree::test_full_tree_nodes_edges_and_surfaces` |
-| req-aws-core-organizations-collect-2 | New Containment Edges | Implemented | `PARTITIONED_INTO_OU` and `ENROLLS_ACCOUNT` are declared in `CONTAINMENT_EDGES` on their parent model(s); `NESTED_UNDER_PARENT` is unchanged and stays a reference. | `test_falsifiers.py::TestOrganizationContainment` |
-| req-aws-core-organizations-collect-3 | Falsifiers Registered | Implemented | `OrganizationalUnitFalsifier` and `AccountFalsifier` subclass `_AwsFalsifier`, are registered in `[falsifiers]`, and pass the four-case proof harness. | `test_organizations.py::TestOrganizationalUnitFalsifierFourCases`, `TestAccountFalsifierFourCases` |
+| req-aws-core-organizations-collect-2 | New Containment Edges | Implemented | `PARTITIONED_INTO_OU` and `ENROLLS_ACCOUNT` are declared in `CONTAINMENT_EDGES` on their parent model(s); `NESTED_UNDER_PARENT` is unchanged and stays a reference. | `test_falsifiers.py::TestOrganizationContainment`. The `ENROLLS_ACCOUNT` half is proposed to be superseded by `req-aws-core-organization-membership-2` (ruling 2026-09-30). |
+| req-aws-core-organizations-collect-3 | Falsifiers Registered | Implemented | `OrganizationalUnitFalsifier` and `AccountFalsifier` subclass `_AwsFalsifier`, are registered in `[falsifiers]`, and pass the four-case proof harness. | `test_organizations.py::TestOrganizationalUnitFalsifierFourCases`, `TestAccountFalsifierFourCases`. The `AccountFalsifier` half is proposed to be superseded by `req-aws-core-organization-membership-4`. |
 | req-aws-core-organizations-collect-4 | Failed Listing Is Incomplete, Never Empty | Implemented | A denied or failing parent listing records `enumeration_complete: false` with a reason; no node is fabricated and no candidate is derivable from it. | `test_organizations.py::test_ou_listing_failure_is_incomplete_not_empty`, `test_list_roots_denied_refuses_both_child_surfaces_but_keeps_the_org_node` |
 | req-aws-core-organizations-collect-5 | Reach Gates Every Probe | Implemented | Neither falsifier probes without first proving the credential is inside the candidate's own organization (account id / OU root suffix); a mismatch is `UNDETERMINED(scope_unknown)`. | `test_ou_from_another_organizations_root_is_scope_unknown`, `test_wrong_organization_reach_is_scope_unknown` |
-| req-aws-core-organizations-collect-6 | Closed/Suspended Present, Moved Invisible, Removed Dropped | Implemented | A suspended/closed account is `PRESENT_AT_PROBE` with its status noted; a moved account never reaches the falsifier (organization-wide membership); a removed one is `DROPPED_FROM_OBSERVATION`. | `test_closed_account_is_reported_present_not_dropped`, `test_account_moved_mid_walk_still_placed_and_enrolled`, `TestAccountFalsifierFourCases::test_four_cases` |
+| req-aws-core-organizations-collect-6 | Closed/Suspended Present, Moved Invisible, Removed Dropped | Implemented | A suspended/closed account is `PRESENT_AT_PROBE` with its status noted; a moved account never reaches the falsifier (organization-wide membership); a removed one is `DROPPED_FROM_OBSERVATION`. | `test_closed_account_is_reported_present_not_dropped`, `test_account_moved_mid_walk_still_placed_and_enrolled`, `TestAccountFalsifierFourCases::test_four_cases` Proposed: "removed" retires the **membership**, not the account (`req-aws-core-organization-membership-5`; ruling 2026-09-30). |
 | req-aws-core-organizations-collect-7 | Partition Never Hardcoded | Implemented | The `organizations` client is built from the credential's own resolved region; the organization's `partition` field is read from the returned ARN. | `test_govcloud_partition_read_from_arn` (offline, against botocore's own endpoint resolution — not a live GovCloud organization) |
+
+### Organization Membership
+----
+RID: `req-aws-core-organization-membership`
+
+Status: `Proposed`
+
+When an account disappears from the organization's listing, what ends is its **membership**: the
+fact that this organization enrolls it. The account is not retired, and nothing it holds is retired
+with it.
+
+#### Status Details
+
+Proposed by the landing-zone epic, step 8. Ruling (George, 2026-09-30): an account that leaves
+the organization's listing has its membership ended, meaning the `ENROLLS_ACCOUNT` and placement
+edges. The account is not retired, and nothing cascades to its IAM or S3. Retiring or deleting an
+account is a **separate later step and out of scope here**.
+
+#### Why the current design cannot honour the ruling (read, aws_core@d5b1cf8)
+
+- `ENROLLS_ACCOUNT` (organization → account) is containment
+  (`models/aws_organization.py:87`). So the account itself is the reconcile candidate.
+- `AccountFalsifier` answers `AccountNotFoundException` with `DROPPED_FROM_OBSERVATION`
+  (`falsifiers.py:934-937`).
+- Core applies `DROPPED_FROM_OBSERVATION` as `delete_node(cascade="contained")`
+  (`spec-grid-reconcile.md`, the verb). That walks `AwsAccount.CONTAINMENT_EDGES`
+  (`OWNS_IAM_ROLE/USER/POLICY`, `OWNS_OIDC_PROVIDER`, `OWNS_BUCKET`; `models/aws_account.py:64-70`)
+  and tombstones the account's IAM and S3 inventory. The AWS account still exists after
+  `RemoveAccountFromOrganization`.
+- Re-mapping the verdict cannot fix it inside core's canon. `RELOCATED(transferred)` ends only the
+  parent's containment edge, but it fires **only when the probe succeeded and returned a different
+  owner**. A transfer out of reach "presents as a probe that answers not-found … and is handled like
+  any other loss of observation" (`req-grid-reconcile-observation-lifetime`, ruled 2026-09-15). An
+  account removed from this organization answers not-found to this organization's credential.
+
+So the epic follows canon's own sentence: "retirement ends an observation, not a thing". The
+membership becomes the observed thing, and the thing that retires.
+
+#### Implementation
+
+- **`aws_core__aws_organization_membership`** — one node per (organization, member account), with
+  `NATURAL_KEY = ("organization_id", "account_id")`. Fields: `organization_id`, `account_id`,
+  `state` (`Account.State`, falling back to `Status`, as `account_state` does today), `joined_method`,
+  `joined_at`, `email` (the address the organization records), and the `tags` field
+  (`req-aws-core-fields-4`). Source: the organization-wide `ListAccounts` the reader already makes
+  (`organizations.py:630-659`). AWS cannot tag a membership, so its declaration is
+  `{"source": "none", ...}` (`req-aws-collector-tags-12`). Account tags set through Organizations
+  stay on `aws_account.tags` (ruling 2026-10-01), not here.
+- **`HOLDS_MEMBERSHIP`** (organization → membership), containment, declared in
+  `AwsOrganization.CONTAINMENT_EDGES` **in place of** `ENROLLS_ACCOUNT`. The `ListAccounts` listing's
+  completeness surface names this edge type. The surface rules, the reach gate and the
+  failed-listing rules are unchanged (`req-aws-core-organizations-collect-4`, `-5`).
+- **`ENROLLS_ACCOUNT`** is re-sourced from the organization to the membership (membership → account)
+  and becomes a **reference**. Retiring a membership ends it by core's endpoint rule: node
+  retirement ends every incident edge, and the far node stays live
+  (`req-grid-service-delete-baseline-2`).
+- **`MembershipFalsifier`** replaces `AccountFalsifier` in `[falsifiers]`. Its probe, its reach gate
+  and its verdict table are `AccountFalsifier`'s (`DescribeAccount`; closed or suspended is
+  present with a note; `AccountNotFoundException` after reach is proven is
+  `DROPPED_FROM_OBSERVATION`). The verdict now lands on the membership, which declares no
+  containment, so the cascade closure of a retired membership is the membership alone.
+- **What retiring a membership touches:** the membership node; its `HOLDS_MEMBERSHIP` and
+  `ENROLLS_ACCOUNT` edges. **What it does not touch:** the account node, the account's
+  `OWNS_*` children, its region footprints, anything collected inside it.
+- **Placement stays on the account** (ruling 2026-10-01). The 2026-09-30 ruling names
+  placement edges too: `NESTED_UNDER_PARENT` (account → OU) and `ATTACHED_TO_TARGET` (SCP →
+  account). Both start at, or land on, the account, which stays live, so retiring the membership
+  does not end them. Moving placement onto the membership was considered and declined for now: it
+  would change `req-aws-core-organizations-5` and the `/aws/organization` tree, which nests accounts
+  on `NESTED_UNDER_PARENT` (`grift/pages.grift.json:265`). So a departed account keeps its last-seen
+  placement edges until core's edge re-derivation (`req-grid-reconcile-falsifier-5`, Proposed) can end
+  them. That gap is named here (`-6`) and in `req-aws-core-reference-derivation-2`, so a reader does
+  not read those edges as current.
+- **Email and status move to the membership** (ruling 2026-10-01). The organization-sourced
+  facts `email` and `state` live on the membership, and `AwsAccount.email` and `AwsAccount.status`
+  are deprecated: the collector stops writing them, and they are removed by a later migration once
+  nothing reads them. No page reads either today (grep of `grift/pages.grift.json` and
+  `static/aws_core/js`). That gives those facts one writer and closes their half of the cross-run
+  clobber `req-aws-collector-fanout` leaves open. The other half is not closed here: Organizations
+  account tags stay on `aws_account.tags` (ruling 2026-10-01), so the account's `tags` still has two writers. A
+  member-scoped run that cannot read them writes `{}`, which is the false-empty write named under
+  `req-aws-collector-tags` and waits on core's GRIFT replacement semantics
+  (unified-systems-com/tap#886).
+- **Organization cascade.** A deliberate `delete_node(cascade="contained")` of the organization
+  tombstones its OUs and memberships, **not** its accounts. That narrows the blast radius
+  `models/aws_organization.py:61-79` flags for human sign-off.
+- **Migration.** Existing grids hold organization → account `ENROLLS_ACCOUNT` edges. They are
+  retired once, by an operator-run GRIFT bundle with a `deletes` section
+  (`req-grift-import-deletes`). The collector never retires anything.
+- **Out of scope:** retiring or deleting an `aws_account` node, and any account falsifier. After this
+  change no containment edge targets `aws_account` except through a deliberate manual delete, so an
+  account has no automatic retirement path. That is deliberate (ruling 2026-09-30).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-organization-membership-1 | Membership Node | Proposed | `aws_core__aws_organization_membership` exists, keyed `(organization_id, account_id)`, one per account `ListAccounts` returns, carrying `state`, `joined_method`, `joined_at`, `email` and the `tags` field (declared `none`). | Ruling 2026-10-01: the node design is approved for specification. |
+| req-aws-core-organization-membership-2 | Organization Holds Memberships | Proposed | `AwsOrganization.CONTAINMENT_EDGES` names `HOLDS_MEMBERSHIP` and not `ENROLLS_ACCOUNT`; the `ListAccounts` surface's `edge_type` is `HOLDS_MEMBERSHIP`. | Supersedes `req-aws-core-organizations-collect-2`'s `ENROLLS_ACCOUNT` half on approval. |
+| req-aws-core-organization-membership-3 | Enrollment Is A Reference | Proposed | `ENROLLS_ACCOUNT` declares membership → account and is in no model's `CONTAINMENT_EDGES`. | |
+| req-aws-core-organization-membership-4 | Membership Falsifier | Proposed | `MembershipFalsifier` is registered for the membership type and passes the four-case harness; `AccountFalsifier` is no longer registered. | Supersedes `req-aws-core-organizations-collect-3`'s `AccountFalsifier` half. |
+| req-aws-core-organization-membership-5 | Account Untouched | Proposed | Applying `DROPPED_FROM_OBSERVATION` to a membership tombstones the membership only: the account node, its `OWNS_*` children and its footprints stay live, and `contained_closure` of the membership is the membership alone. | The done-test for the 2026-09-30 ruling. |
+| req-aws-core-organization-membership-6 | Placement Gap Named | Proposed | The spec states which placement edges a departed account keeps (`NESTED_UNDER_PARENT`, `ATTACHED_TO_TARGET`) and why: they stay last seen until core edge re-derivation can end them. | Ruling 2026-10-01: placement stays on the account. |
+| req-aws-core-organization-membership-7 | One Writer Per Account Fact | Proposed | `email` and `state` live on the membership and the collector no longer writes `AwsAccount.email` or `AwsAccount.status`; a member-scoped run writing the account node cannot blank them. | Ruling 2026-10-01. Closes the email and status half of `req-aws-collector-fanout-8`'s cross-run case; the tags half depends on unified-systems-com/tap#886. |
+| req-aws-core-organization-membership-8 | Account Retirement Out Of Scope | Proposed | No requirement here retires an `aws_account`; a later requirement owns it. | Ruling 2026-09-30. |
+
+### Organizations Completeness
+----
+RID: `req-aws-core-organizations-completeness`
+
+Status: `Proposed`
+
+What a landing zone's management account holds in AWS Organizations beyond the tree and its SCPs:
+the root's tags, which policy types and which AWS services are enabled, who is a delegated
+administrator, and the other policy types GovCloud allows.
+
+#### Status Details
+
+Proposed by the landing-zone epic, step 4. The reader's own op list (`organizations.py:14-23`) is
+what is read today. Everything below is absent from it (read). Policy bodies follow the 2026-10-01
+rule on what becomes a node (*Policy Statements*, below).
+
+#### Implementation
+
+- **Root tags.** The organization stands for its root (`req-aws-core-organizations-4`).
+  `organizations:TagResource` accepts a root id (`r-…`) as a taggable resource (read: botocore
+  1.43.104 `organizations` model, `TagResource.ResourceId` documentation). So the sentence "It carries
+  no tags: AWS cannot tag an organization" in `req-aws-core-organizations` is true of the
+  organization and false of its root. `AwsOrganization` gains the `tags` field, filled by `tags_of(root_id)`
+  under the Organizations lane (`req-aws-collector-tags-10`), with the same unread rule: an unreadable
+  root tag set withholds the organization node, as it withholds OUs and accounts today.
+- **Enabled policy types.** `ListRoots` returns `Root.PolicyTypes` (read: botocore `Root` shape),
+  and the reader drops it today (`organizations.py:485-487`). `AwsOrganization` gains
+  `enabled_policy_types`, a typed list of the API's `PolicyType` enum values whose status is
+  `ENABLED`. `null` means not read, and `[]` is an observed empty.
+- **Enabled service access.** `ListAWSServiceAccessForOrganization` →
+  `AwsOrganization.enabled_service_principals`, a typed list of `{service_principal, enabled_at}`.
+  A denied call leaves it `null`, never `[]`.
+- **Delegated administration.** `ListDelegatedAdministrators`, then `ListDelegatedServicesForAccount`
+  per delegated account → **`aws_core__aws_delegated_administration`**, keyed
+  `(organization_id, account_id, service_principal)`. AWS addresses a delegation by exactly that pair:
+  `DeregisterDelegatedAdministrator(AccountId, ServicePrincipal)`. Edges: `HOLDS_DELEGATION`
+  (organization → delegation, containment) and `DELEGATES_TO_ACCOUNT` (delegation → account,
+  reference). Falsifier: `ListDelegatedServicesForAccount(AccountId)` no longer naming the service
+  principal is `DROPPED_FROM_OBSERVATION`, after the same reach gate. AWS cannot tag a delegation, so
+  its tags are declared `none` (`req-aws-collector-tags-12`).
+  Landing-zone relevance: Control Tower 4.0 makes the audit account the Config delegated administrator
+  ([C-CFGV4](https://docs.aws.amazon.com/controltower/latest/userguide/config-updates-v4.html)), and GuardDuty and Security Hub are commonly delegated to the security account
+  (inferred from [CT-SECB](https://docs.gruntwork.io/reference/modules/terraform-aws-control-tower/control-tower-security-account-baseline/); not stated there).
+- **Other policy types.** **`aws_core__aws_organizations_policy`**, keyed `policy_arn`, with
+  `policy_type` drawn from the API's `PolicyType` enum. It is read with
+  `ListPolicies(Filter=<type>)` only for types in `enabled_policy_types`, so an unavailable type is
+  never called and so never misread. GovCloud's allowed set is SCP, RCP, TAG, declarative EC2 and S3
+  (web, [C-GCORG](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-organizations.html)). Backup, chat and AI opt-out policies are not available there.
+  SCPs keep their own model, `req-aws-core-organizations`; this adds no second SCP node.
+  `ATTACHED_TO_TARGET` gains the new type as a source. Tags: the Organizations lane, for customer-managed policies.
+- **Policies get a retirement path.** `HOLDS_SERVICE_CONTROL_POLICY` and
+  `HOLDS_ORGANIZATIONS_POLICY` (organization → policy, containment) carry the org-wide `ListPolicies`
+  listing's completeness. The falsifier is `DescribePolicy`, where `PolicyNotFoundException` is
+  `DROPPED_FROM_OBSERVATION`. An AWS-managed policy (one ARN in every organization,
+  `req-aws-core-organizations`) is never a containment child of one organization, so the edge is
+  emitted for customer-managed policies only. Today an SCP has no containment parent and no falsifier (`models/aws_service_control_policy.py`, `tap-plugin.toml` `[falsifiers]`), so it can never retire; this closes that for SCPs.
+- **Tag policies are collected** (ruling 2026-10-01). A `TAG_POLICY` is AWS's own tag governance.
+  Collecting it as policy nodes adds nothing to TAP's tag normalization and is not a new tag system.
+
+#### Policy Statements
+
+**The rule, and this spec's reading of it.** George's rule (2026-10-01): if statement, action and
+effect would make sense to reference independently, break them into nodes, with cascade delete and
+the ability to update them thoughtfully as they change; if they always ship together and make no
+sense alone, keep them together. This section is this spec's reading of that rule. It is open to
+override in review.
+
+- **A statement is independently meaningful, so it is a node.** A statement has its own name (`Sid`),
+  and the questions asked of policies are statement questions: "which policy denies
+  `iam:CreateUser`", "which statements restrict regions", "what did this `Sid` say last month". So
+  each statement of an authorization policy (SCP, RCP) is a node contained by its policy.
+- **Effect, actions, resources and conditions ship together, so they are fields.** An effect means
+  nothing without the actions it applies to, and an action list means nothing without its effect and
+  conditions. They are typed fields on the statement, not nodes.
+- **An action is not a node.** `s3:PutObject` has no identity outside the statement that names it:
+  the same string in two statements is two different facts. "Which statements deny `s3:PutObject`"
+  is a query over the `actions` field, and IAM wildcard matching (`s3:*`, `s3:Put*`) is the query's
+  concern, not the model's.
+
+**`aws_core__aws_policy_statement`.** One node per statement of an SCP or RCP document read by
+`DescribePolicy`.
+
+| Field | Meaning |
+| --- | --- |
+| `policy_arn` | The containing policy's ARN. |
+| `statement_key` | Identity within the policy (below). `NATURAL_KEY = ("policy_arn", "statement_key")`. |
+| `sid` | The statement's `Sid`, blank when it has none. |
+| `effect` | `Allow` or `Deny`. |
+| `actions`, `not_actions` | Lists of action strings, de-duplicated and sorted; exactly one is non-empty. |
+| `resources`, `not_resources` | Lists of resource ARN patterns, de-duplicated and sorted. |
+| `principals`, `not_principals` | RCP only: a list of `{type, value}` (for example `{"type": "AWS", "value": "*"}`); `[]` on an SCP, whose grammar has no principal. |
+| `conditions` | A list of `{operator, condition_key, values}`, one entry per key under each operator of the `Condition` block, `values` a sorted list of strings. `[]` when there is no `Condition`. |
+| `position` | The 0-based index of the statement in the document as last read. Informational, never identity. |
+| `occurrences` | How many identical statements the document holds under this key (normally 1). |
+| `content_sha256` | SHA-256 of the canonical form (below), as a change detector. |
+| `tags` | Declared `{"source": "none", ...}`: a statement is not an AWS resource. |
+
+Each JSON-typed field carries a schema with a description of the field and of each entry
+(`req-aws-core-fields`). Statement content is access-control configuration and is classified
+`access_policy` (`req-aws-collector-manifest-6`).
+
+**Canonical form.** The statement as JSON with sorted keys; every member AWS allows as a string or a
+list (`Action`, `NotAction`, `Resource`, `NotResource`, each condition value) as a de-duplicated,
+sorted list; action names lowercased, since IAM matches action names case-insensitively. `Sid` is
+excluded from the canonical form.
+
+**Identity.**
+
+- A statement with a `Sid` is keyed `sid:<Sid>`. IAM's policy grammar requires a `Sid` to be unique
+  within a policy (inferred to hold for SCPs and RCPs, which use that grammar; to be confirmed
+  against AWS's SCP syntax page before build).
+- A statement without a `Sid` is keyed `content:<content_sha256>`.
+- If a document repeats a `Sid`, every statement carrying that `Sid` falls back to its content key,
+  and a `DUPLICATE_SID` warning names the policy. Two statements are never merged by a shared `Sid`.
+- Identical statements without a `Sid` share one key. Repeating a statement changes nothing in IAM
+  evaluation, so they are one node with `occurrences` counting them.
+
+**Update semantics.**
+
+| Change in AWS | What the grid shows |
+| --- | --- |
+| Statements reordered | Same nodes. `position` changes; nothing retires. Statement order has no effect on IAM evaluation (every statement is evaluated, and an explicit deny wins). |
+| A statement with a `Sid` is edited | Same node, fields replaced in place. `content_sha256` changes, and the node's history holds the before and after. |
+| A statement without a `Sid` is edited | Its content key changes. The old node retires and a new node is created. This is the honest reading: AWS gives such a statement no identity beyond its content. Authors who want edits to read as edits give their statements a `Sid`. |
+| A `Sid` is added, removed or renamed | The key changes: the old node retires and a new one is created. |
+| A statement is removed | Its node retires (below). |
+| The policy is deleted | The policy retires, and the cascade retires its statements (containment). |
+
+**Retirement.** `DECLARES_STATEMENT` (policy → statement) is containment. The listing behind it is
+the policy's own `DescribePolicy` document: complete when the call succeeded and the document parsed,
+and recorded `enumeration_complete: false` with the reason otherwise, so a failed read never derives a
+candidate. `PolicyStatementFalsifier` re-reads `DescribePolicy`: the key present is
+`PRESENT_AT_PROBE`; the policy found and the key absent, or `PolicyNotFoundException`, is
+`DROPPED_FROM_OBSERVATION`; a denied call or an unparseable document is `UNDETERMINED`. It uses the
+same reach gate as the other Organizations falsifiers (`req-aws-core-organizations-collect-5`). An
+AWS-managed policy (one ARN in every organization) is not a containment child of the organization,
+but its statements are containment children of it, so an AWS edit to `FullAWSAccess` retires and
+creates statements like any other.
+
+**No edges from statements yet.** Resolving a statement's actions and resources to grid nodes is the
+policy-document edge resolver, which stays deferred (`spec-aws-core-collector-v0.md`, v0 Non-Goals).
+
+**`req-aws-core-organizations-7` stands.** It forbids a policy document blob on the policy model,
+and nothing here stores one: the statement fields are typed, and the document itself is not kept.
+
+**Management policy types.** Tag policies and the declarative EC2 and S3 policies are not statement
+documents. They are trees of settings with inheritance operators (`@@assign`, `@@append`,
+`@@remove`). Read by the same rule, their independently meaningful unit is the setting, not the
+document:
+
+- **Tag policies.** The unit is one tag key's rule. **`aws_core__aws_tag_policy_rule`**, keyed
+  `(policy_arn, tag_key_lower)`, contained by its policy (`DECLARES_TAG_RULE`), with `tag_key` (the
+  capitalization the rule assigns), `allowed_values` (null when the rule does not constrain values),
+  `enforced_for` (null when absent) and `inheritance_operators` (the operators the rule uses). Its
+  tags are declared `none`. An edit to a key's rule updates the node in place; removing the key
+  retires it. Same falsifier shape as statements.
+- **Declarative EC2 and S3 policies.** The unit is one top-level attribute (for example an EC2 image
+  block-public-access setting). The typed fields differ per attribute, and this spec does not yet
+  name them. Their bodies are **not read** until an amendment specifies each attribute's fields from
+  AWS's declarative-policy syntax reference. The policy node and its attachments are collected.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-organizations-completeness-1 | Root Tags | Proposed | `AwsOrganization.tags` holds the root's Organizations tags via the Organizations lane; an unreadable root tag set withholds the organization node (`req-aws-collector-tags-10`). | Amends `req-aws-core-organizations`' "carries no tags". |
+| req-aws-core-organizations-completeness-2 | Enabled Policy Types | Proposed | `enabled_policy_types` lists the root's `ENABLED` policy types; `null` = not read, `[]` = observed none. | |
+| req-aws-core-organizations-completeness-3 | Enabled Service Access | Proposed | `enabled_service_principals` lists `{service_principal, enabled_at}`; a denied call leaves `null`. | |
+| req-aws-core-organizations-completeness-4 | Delegated Administration | Proposed | One `aws_delegated_administration` per (account, service principal), contained by the organization, with a registered falsifier passing the four-case harness. | |
+| req-aws-core-organizations-completeness-5 | Other Policy Types | Proposed | Non-SCP policies of each enabled type are `aws_organizations_policy` nodes with `policy_type`; a type not enabled on the root is never listed. | GovCloud: SCP, RCP, TAG, declarative EC2, S3. |
+| req-aws-core-organizations-completeness-6 | Policies Contained | Proposed | Customer-managed SCPs and other policies are containment children of the organization with registered falsifiers; AWS-managed policies are not. | |
+| req-aws-core-organizations-completeness-7 | Statements Are Nodes | Proposed | Each statement of a customer-managed or AWS-managed SCP or RCP read by `DescribePolicy` is an `aws_policy_statement` node contained by its policy (`DECLARES_STATEMENT`), with `effect`, `actions`, `not_actions`, `resources`, `not_resources`, `principals`, `not_principals` and `conditions` as typed fields. No action is a node, and no policy document is stored. | The 2026-10-01 rule, as read in *Policy Statements*. `req-aws-core-organizations-7` stands. |
+| req-aws-core-organizations-completeness-8 | Statement Identity | Proposed | A statement is keyed `sid:<Sid>` when it has a unique `Sid`, else `content:<sha256 of the canonical form>`; a repeated `Sid` falls back to content keys with a `DUPLICATE_SID` warning; identical Sid-less statements are one node with `occurrences`. | |
+| req-aws-core-organizations-completeness-9 | Statement Update Semantics | Proposed | Reordering changes only `position`; editing a statement with a `Sid` updates its node in place; editing a Sid-less statement, or adding, removing or renaming a `Sid`, retires the old node and creates a new one; deleting the policy cascades to its statements. | Each row of the update table is a test. |
+| req-aws-core-organizations-completeness-10 | Statement Retirement Path | Proposed | `DECLARES_STATEMENT` is containment, its listing is the policy's `DescribePolicy` document (incomplete when the call or the parse fails), and `PolicyStatementFalsifier` is registered and passes the four-case harness. | |
+| req-aws-core-organizations-completeness-11 | Tag Policy Rules | Proposed | Each tag key in a `TAG_POLICY` is an `aws_tag_policy_rule` node keyed `(policy_arn, tag_key_lower)` and contained by its policy, with a registered falsifier. | Ruling 2026-10-01: collecting tag policies is in scope. |
+| req-aws-core-organizations-completeness-12 | Declarative Bodies Not Yet Read | Proposed | Declarative EC2 and S3 policies are collected as policy nodes with their attachments; their bodies are not read until an amendment specifies each attribute's typed fields. | |
 
 ### IAM Identity Center
 ----
@@ -1260,4 +1552,236 @@ rest can extend.
 | req-aws-core-regional-containment-4 | GovCloud Partition-Aware | Implemented | `partition_of` derives `aws-us-gov` from `us-gov-*`; a mixed-partition scope is warned once. | |
 | req-aws-core-regional-containment-5 | RAM Share Observed, Not Hosted | Implemented | `owner_path` on a containment entry routes `BELONGS_TO_ACCOUNT` to the real owner and withholds the `HOSTS_*` edge when it differs from the observing account. | |
 | req-aws-core-regional-containment-6 | All Four Falsifiers Live | Implemented | `VpcFalsifier` / `SubnetFalsifier` / `Ec2InstanceFalsifier` / `SecurityGroupFalsifier` (tap-plugin-aws-core#44, #46) are all registered in `[falsifiers]`; `validate_plugin --level loads --strict`'s falsifier-coverage check is green for every `REGIONAL_CHILDREN` target. | |
-| req-aws-core-regional-containment-7 | Remaining Regional Types Named, Not Silently Skipped | Proposed | `NOT_YET_WIRED` names 8 region-scoped types with no containment yet, each blocked on pairing a new row with a new falsifier. | Backlog. |
+| req-aws-core-regional-containment-7 | Remaining Regional Types Named, Not Silently Skipped | Proposed | `NOT_YET_WIRED` names 8 region-scoped types with no containment yet, each blocked on pairing a new row with a new falsifier. | Backlog. `req-aws-core-network-plane-5` wires six of the eight; EBS volume and RDS instance remain. |
+
+### Network Plane Collection
+----
+RID: `req-aws-core-network-plane`
+
+Status: `Proposed`
+
+Collect the network plane a landing zone deploys, so egress and segmentation questions are answered
+from collected data. Today most of it is vocabulary only: route table, IGW, NAT, EIP, NACL, VPC endpoint, transit gateway and attachment are models with no manifest entry (`collectors/boto3_collector/aws_resource_manifest.json`; `regional.py:86-95`).
+
+#### Status Details
+
+Proposed by the landing-zone epic, step 3. What a Gruntwork landing zone deploys per account is
+`vpc-app`: public, private-app and private-persistence subnets, a route table per tier, an IGW, NAT
+gateways with EIPs, per-tier NACLs, gateway and interface endpoints, and flow logs. VPC peering to a
+management VPC is optional. A transit gateway or network firewall appears only as an Enterprise
+customisation ([VPC-APP](https://docs.gruntwork.io/reference/modules/terraform-aws-vpc/vpc-app/), [AF-NET](https://docs.gruntwork.io/2.0/docs/accountfactory/architecture/network-topology)). highbar's design adds a transit gateway
+with four attachments (highbar `grift/design-staging.grift.json`, branch `feat/org-layout-v2`). `regional.py:86-95` (`NOT_YET_WIRED`) already names six of
+these types as the next regional containment rows.
+
+#### Rule for sub-resources: what AWS addresses individually is a node
+
+A route, a NACL entry and a security-group rule each have an identity AWS itself uses to delete them:
+`DeleteRoute(RouteTableId, DestinationCidrBlock|…)`, `DeleteNetworkAclEntry(NetworkAclId, RuleNumber, Egress)`,
+`RevokeSecurityGroupIngress(SecurityGroupRuleIds)`. Each is therefore a node, keyed on that identity
+and contained by its parent with a falsifier. That gives them a retirement path. The edges they emit
+(a route's target, a rule's referenced group) end when they retire, instead of staying stale while
+both endpoints live (`req-aws-core-reference-derivation`, below). A sub-structure AWS does not address individually stays a typed field.
+
+#### Types, tags and retirement
+
+"Lane" is the `req-aws-collector-tags` lane. Every EC2 `Describe*` below returns its tags inline as
+`[{Key, Value}]` (read: botocore 1.43.104 `ec2` model), so the EC2 types use the `field` lane. That
+costs no extra call and does not depend on the RGTA sweep, whose failure today writes a false empty
+(`req-aws-collector-tags`, *Landing-Zone Amendments*).
+"Contained by" is the containment parent and edge, so the type has a candidate. "Falsifier" is the
+type's probe and what counts as gone. Edge names are working names, finalized through the
+`add-edge` skill.
+
+**Error codes are not verified.** The not-found codes in the falsifier columns come from AWS API knowledge (inferred). Each must be checked against the pinned botocore and the service's documented errors before a falsifier is written, as unified-systems-com/aws-core-tap#15 requires. A code that turns out to be shared with "you may not look" makes that type's falsifier `UNDETERMINED`, never `DROPPED`.
+
+| Type | Model today | Enumerate (read: botocore) | Tags (lane, path, shape) | Contained by | Falsifier: gone when | Reference edges |
+| --- | --- | --- | --- | --- | --- | --- |
+| `aws_route_table` | exists, **no `tags`** | `ec2:DescribeRouteTables` | field, `Tags[]`, list_kv | footprint, `HOSTS_ROUTE_TABLE` | `InvalidRouteTableID.NotFound` | `RESIDES_IN_VPC` (exists); `ROUTES_FOR_SUBNET` (→ subnet, from `Associations[].SubnetId`; main = `is_main`) |
+| `aws_route` **(new)** | — | inside `RouteTables[].Routes[]` | AWS cannot tag a route | route table, `DECLARES_ROUTE` | the route table's describe no longer lists that destination | `ROUTES_TRAFFIC` (exists; source becomes the route) → IGW / NAT / TGW / peering / endpoint / ENI; `state` = `active\|blackhole\|filtered` |
+| `aws_internet_gateway` | exists, **no `tags`** | `ec2:DescribeInternetGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_INTERNET_GATEWAY` | `InvalidInternetGatewayID.NotFound` | `ATTACHED_TO_VPC` (exists) |
+| `aws_nat_gateway` | exists, **no `tags`** | `ec2:DescribeNatGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_NAT_GATEWAY` | not found, **or `State` = `deleted`** | `RESIDES_IN_SUBNET` (exists); `USES_ELASTIC_IP` (→ EIP) |
+| `aws_elastic_ip` | exists, **no `tags`** | `ec2:DescribeAddresses` (unpaginated) | field, `Tags[]`, list_kv | footprint, `HOSTS_ELASTIC_IP` | `InvalidAllocationID.NotFound` | `ASSOCIATED_WITH_INTERFACE` (→ ENI) |
+| `aws_network_acl` | exists, **no `tags`** | `ec2:DescribeNetworkAcls` | field, `Tags[]`, list_kv | footprint, `HOSTS_NETWORK_ACL` | `InvalidNetworkAclID.NotFound` | `RESIDES_IN_VPC` (exists); `FILTERS_SUBNET` (→ subnet, `Associations[]`) |
+| `aws_network_acl_entry` **(new)** | — | inside `NetworkAcls[].Entries[]` | AWS cannot tag an entry | NACL, `DECLARES_ACL_ENTRY` | the NACL no longer lists (egress, rule number) | — (CIDR, ports, action are typed fields) |
+| `aws_security_group_rule` **(new)** | — | `ec2:DescribeSecurityGroupRules` | field, `Tags[]`, list_kv | security group, `DECLARES_SG_RULE` | `InvalidSecurityGroupRuleId.NotFound` | `REFERENCES_SECURITY_GROUP` (→ SG); prefix list id is a typed field |
+| `aws_vpc_endpoint` | exists, has `tags` | `ec2:DescribeVpcEndpoints` | field, `Tags[]`, list_kv | footprint, `HOSTS_VPC_ENDPOINT` | not found, **or `State` = `Deleted`** | `RESIDES_IN_VPC`, `RESIDES_IN_SUBNET`, `CONSUMES_ENDPOINT_SERVICE` (exist); `USES_SECURITY_GROUP` |
+| `aws_vpc_flow_log` **(new)** | — | `ec2:DescribeFlowLogs` | field, `Tags[]`, list_kv | footprint, `HOSTS_FLOW_LOG` | `InvalidFlowLogId.NotFound` | `MONITORS_TRAFFIC` (→ VPC / subnet / ENI / TGW attachment); `WRITES_LOGS` (exists; → log group / S3 bucket) |
+| `aws_network_interface` **(new)** | — | `ec2:DescribeNetworkInterfaces` | field, **`TagSet[]`**, list_kv | footprint, `HOSTS_NETWORK_INTERFACE` (owner only) | `InvalidNetworkInterfaceID.NotFound` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
+| `aws_transit_gateway` | exists, has `tags` | `ec2:DescribeTransitGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_TRANSIT_GATEWAY` (**owner only**, RAM) | not found, or `State` = `deleted` | — |
+| `aws_transit_gateway_attachment` | exists, has `tags` | `ec2:DescribeTransitGatewayAttachments` | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ATTACHMENT` (observed from the gateway owner) | not found, or `State` = `deleted` | `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` (exist); `ASSOCIATED_WITH_TGW_ROUTE_TABLE`, `PROPAGATES_TO_TGW_ROUTE_TABLE` |
+| `aws_transit_gateway_route_table` **(new)** | — | `ec2:DescribeTransitGatewayRouteTables` | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ROUTE_TABLE` | not found, or `deleted` | — |
+| `aws_transit_gateway_route` **(new)** | — | `ec2:SearchTransitGatewayRoutes` per table | AWS cannot tag a route | TGW route table, `DECLARES_TGW_ROUTE` | the search no longer returns that destination | `ROUTES_TRAFFIC` → attachment |
+| `aws_vpc_peering_connection` **(new)** | — | `ec2:DescribeVpcPeeringConnections` | field, `Tags[]`, list_kv | footprint of the **requester** owner, `HOSTS_VPC_PEERING_CONNECTION` | not found, or `Status.Code` ∈ `deleted\|rejected\|expired\|failed` | `CONNECTS_VPC` (→ requester and accepter VPC, `side` property) |
+| `aws_route53_resolver_endpoint` **(new)** | — | `route53resolver:ListResolverEndpoints` + `ListResolverEndpointIpAddresses` | service, `ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_RESOLVER_ENDPOINT` | `ResourceNotFoundException` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
+| `aws_route53_resolver_rule` **(new)** | — | `route53resolver:ListResolverRules` + `ListResolverRuleAssociations` | service, as above | footprint of the **owner**, `HOSTS_RESOLVER_RULE` (RAM-shareable) | `ResourceNotFoundException` | `FORWARDS_VPC_DNS` (→ VPC, per association); `FORWARDS_THROUGH_ENDPOINT` (→ outbound endpoint) |
+
+The state values were read from botocore 1.43.104's enums: `NatGatewayState` includes `deleted`,
+the EC2 `State` enum includes `Deleted`, `TransitGatewayState` and `TransitGatewayAttachmentState`
+include `deleted`, and `VpcPeeringConnectionStateReasonCode` includes `deleted`, `rejected` and
+`expired`. AWS keeps returning a deleted NAT gateway, endpoint, peering or attachment for a while
+after deletion (inferred from those enums; the retention period is not verified). These are the
+soft-delete hazards unified-systems-com/aws-core-tap#15 names: a falsifier that counted "the describe answered"
+as present would never retire them. The collector filters these states out of the listing, with a
+recorded count, so that it does not re-observe a dead object as live.
+
+**Ownership, not presence.** A RAM-shared transit gateway, subnet or resolver rule, or the accepter
+side of a peering connection, is observed from an account that does not own it. Each such entry
+declares an `owner_path` (`req-aws-core-regional-containment-5`). `BELONGS_TO_ACCOUNT` goes to the
+real owner, and no `HOSTS_*` edge is emitted from a non-owner's footprint.
+
+**Tags field rollout.** Route table, IGW, NAT gateway, EIP and NACL have no `tags` field today (read:
+`grep -c tags` is 0 in each model file). Each gains it, by an additive migration
+(`req-aws-core-fields-4`). New types are born with it (`req-aws-collector-tags-13`). A type AWS
+cannot tag (route, NACL entry, TGW route) declares `{"source": "none", ...}` (`req-aws-collector-tags-12`).
+
+**Sensitivity.** Security-group rule and NACL descriptions are `free_text`. Resolver endpoint IPs and
+flow-log destinations are `reviewer_judgement` reviews (`req-aws-collector-manifest-6`). No entry
+persists `configuration` until it has been reviewed (`req-aws-collector-manifest-7`).
+
+**GovCloud.** Every EC2 operation above is in `aws-us-gov` (read: botocore 1.43.104 endpoint data). Route 53 Resolver's availability in GovCloud is **not verified**. An
+`EndpointConnectionError` there is reported by the existing partition hint (`collector.py:571-575`)
+and is never read as an empty listing.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-network-plane-1 | Collected | Proposed | Each type in the table has a manifest entry (or, for sub-resources, is emitted from its parent's entry) and appears on the grid from a collection run against a fake source. | |
+| req-aws-core-network-plane-2 | Tags On Every Type | Proposed | Route table, IGW, NAT gateway, EIP and NACL gain the `tags` field by additive migration; every type in the table carries it and declares its lane per the table. | `req-aws-collector-tags-13`. |
+| req-aws-core-network-plane-3 | Field Lane For EC2 | Proposed | EC2 types take tags from the enumerate item (`field` lane, `Tags[]`, ENI `TagSet[]`), never from the RGTA sweep. | Keeps these types off the RGTA sweep and its false-empty write. |
+| req-aws-core-network-plane-4 | Addressable Sub-Resources Are Nodes | Proposed | Routes, NACL entries, security-group rules and TGW routes are nodes keyed on AWS's own delete identity, contained by their parent, each with a registered falsifier. | `req-aws-core-reference-derivation`, for these edges. |
+| req-aws-core-network-plane-5 | Every Type Has A Retirement Path | Proposed | Every type in the table is a containment target with a `[falsifiers]` row; `validate_plugin --level loads --strict` is green; `NOT_YET_WIRED` no longer names route table, IGW, NAT gateway, NACL, EIP or VPC endpoint. | EBS and RDS stay on the worklist (not network plane). |
+| req-aws-core-network-plane-6 | Soft-Deleted Is Absent | Proposed | A NAT gateway, VPC endpoint, transit gateway, attachment or peering connection in a deleted, rejected, expired or failed state is not projected as live, and its falsifier treats that state as not found. | unified-systems-com/aws-core-tap#15 hazards. |
+| req-aws-core-network-plane-7 | Owner, Not Observer | Proposed | RAM-shared and cross-account types route `BELONGS_TO_ACCOUNT` to the owner and emit `HOSTS_*` only from the owner's footprint. | `req-aws-core-regional-containment-5`. |
+| req-aws-core-network-plane-8 | Edge Names Through The Skill | Proposed | Every new edge type is named and declared through the `add-edge` skill; the working names here are not canon. | |
+
+### Account Owns Its Region Footprints
+----
+RID: `req-aws-core-account-footprint`
+
+Status: `Proposed`
+
+Close the break in the containment chain at account → footprint. Today
+`aws_account_region` has no containing parent and no falsifier. Its edge to the account,
+`BELONGS_TO_ACCOUNT`, is a reference (`collectors/boto3_collector/containment.py:59-66`). So
+organization → account → {VPC, subnet, instance, SG} is not a chain, and a footprint, once written,
+is never retired.
+
+#### Implementation
+
+- `OWNS_REGION_FOOTPRINT` (account → footprint), containment, in `AwsAccount.CONTAINMENT_EDGES`
+  beside the five `OWNS_*` edges. The listing behind it is the run's own region scope for that
+  account, which the collector already iterates (`collector.py:401-410`). Its completeness surface
+  is authored per account.
+- **`FootprintFalsifier` never drops.** What would make a footprint "gone" is a region the account
+  disabled, or a region the operator stopped scoping. Neither means the resources in it no longer
+  exist: opting out of a region does not delete them. So the falsifier answers
+  `PRESENT_AT_PROBE` when `DescribeRegions` reports the region enabled for the account, and
+  `UNDETERMINED` otherwise. It never answers `DROPPED_FROM_OBSERVATION`. It exists so that the
+  `falsifier-coverage` check passes honestly, which is the same "may find, never drop" posture as
+  `_Ec2Falsifier`'s fallback sweep (`falsifiers.py` module docstring).
+- **Consequence, stated:** a deliberate `delete_node(cascade="contained")` of an account now reaches
+  its footprints and, through `HOSTS_*`, its regional network plane, bounded by
+  `TAP_CASCADE_MAX_CLOSURE`. A closure over the cap refuses rather than half-applying.
+  `req-aws-core-organization-membership` ensures no automatic path retires an account.
+- **The cascade-cap reasoning still holds.**
+  `req-aws-core-regional-containment` (Implemented) chose the footprint over `AwsAccount` as the
+  parent of regional resources because "one account-wide fan-out would exceed the cascade cap and
+  conflate independently-succeeding or -failing regional listings". Both halves of that reason are
+  about the parent that **derives candidates** for regional resources, and that parent is still the
+  footprint: each region's listing stays its own surface, so a failed region withdraws only its own
+  candidates. This requirement adds one level above it, and the listing behind
+  `OWNS_REGION_FOOTPRINT` is the run's region scope, a handful of rows. What changes is the reach of
+  a cascade that starts at the account. No automatic path starts one: `FootprintFalsifier` never
+  drops a footprint, and after `req-aws-core-organization-membership` no falsifier retires an
+  account. The only such cascade is a deliberate operator delete, where a closure over
+  `TAP_CASCADE_MAX_CLOSURE` is refused whole, never half-applied. That is the outcome the cap exists
+  to produce: the operator retires footprints first, or raises the cap knowingly.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-account-footprint-1 | Account Contains Footprints | Proposed | `AwsAccount.CONTAINMENT_EDGES` includes `OWNS_REGION_FOOTPRINT`; every footprint the collector writes has that edge from its account. | |
+| req-aws-core-account-footprint-2 | Never-Drop Falsifier | Proposed | `FootprintFalsifier` is registered, returns `PRESENT_AT_PROBE` or `UNDETERMINED`, and has a test proving it never returns `DROPPED_FROM_OBSERVATION`. | |
+| req-aws-core-account-footprint-3 | Cascade Reach Tested | Proposed | A contained cascade from an account retires its footprints and their `HOSTS_*` children, and refuses past `TAP_CASCADE_MAX_CLOSURE`. | |
+
+### Reference Edges Declare What They Derive From
+----
+RID: `req-aws-core-reference-derivation`
+
+Status: `Proposed`
+
+No core verb ends a reference edge while both of its endpoints are live. Edge re-derivation,
+`req-grid-reconcile-falsifier-5`, is Proposed and unbuilt. So `ATTACHES_POLICY` after a
+detach, `TRUSTS_ACCOUNT` after a trust edit, `NESTED_UNDER_PARENT` after `MoveAccount`, and
+`ATTACHED_TO_TARGET` after an SCP detach all persist as stale positive security facts. aws_core
+cannot fix that alone. What it can do is (1) avoid it where AWS gives an identity
+(`req-aws-core-network-plane-4`), and (2) declare, for every reference edge, which source node's
+payload it is derived from, so that re-derivation can apply once core builds it.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-reference-derivation-1 | Derivation Source Declared | Proposed | Every reference edge type aws_core's collector emits names, in its manifest or edge file, the source node type and the payload path it is derived from. A test fails on an emitted reference edge without one. | Consumer: core's `req-grid-reconcile-falsifier-5`. |
+| req-aws-core-reference-derivation-2 | Last-Seen Edges Listed | Proposed | The spec lists the reference edges that remain "last seen" until core re-derivation exists, so a reader does not treat them as current. | |
+
+### Account Partition And GovCloud Pairing
+----
+RID: `req-aws-core-partition-pairing`
+
+Status: `Proposed`
+
+A GovCloud account is always created together with a commercial account. Its pair lives in a
+separate commercial organization, in a separate partition. The grid should say which partition an
+account is in, and which commercial account a GovCloud account is paired with.
+
+#### Status Details
+
+Proposed by the landing-zone epic, step 7. Ruling (George, 2026-09-30): model the pairing,
+not the vending. Both initial accounts were created manually, so there is **no** Service Catalog
+provisioned-product requirement and no `CreateGovCloudAccount` workflow model.
+
+#### Implementation
+
+- **`AwsAccount.partition`** (`""`, `aws`, `aws-us-gov`, `aws-cn`; blank = not observed), the same
+  enum as `AwsOrganization.partition` (`models/aws_organization.py:95`). Read from the partition
+  segment of the STS caller ARN for the account's own run, or of the account ARN `ListAccounts`
+  returns for an organization-listed account. Never inferred from a region string. Today only the
+  footprint and the organization carry a partition (`models/aws_account.py` has no `partition`).
+- **Not a dimension.** An `aws_partition` dimension was considered. The ruling is to touch no
+  dimension, so the partition is a field only. A query that separates GovCloud from commercial reads
+  the field.
+- **`PAIRED_WITH_ACCOUNT`** (GovCloud account → commercial account), a reference, at most one per
+  GovCloud account. Neither account contains the other.
+- **Not discoverable from the GovCloud side (read).** The Organizations `Account` shape a GovCloud
+  management credential reads has `Id, Arn, Email, Name, Status, State, Paths, JoinedMethod,
+  JoinedTimestamp`, and no paired-account member (botocore 1.43.104). The pair is recorded only on
+  the commercial side: `CreateAccountStatus` carries both `AccountId` and `GovCloudAccountId`, read
+  through `ListCreateAccountStatus` / `DescribeCreateAccountStatus` by the **commercial**
+  management account, and only for accounts that organization created and still tracks (read:
+  botocore shape and operation docs).
+- **So the pairing is declared, in highbar's design** (ruling 2026-10-01). For the first GovCloud
+  estate the edge is declared data with `declared` provenance in highbar's own GRIFT, never
+  discovered or invented by the GovCloud collector, and never carried on a secret: the pairing is a
+  fact about the estate, not about a credential. The edge points GovCloud → commercial because the
+  GovCloud account exists by virtue of its commercial pair (`CreateGovCloudAccount` is called from
+  the commercial side), and "at most one per GovCloud account" is then a per-source rule a test can
+  check. A later commercial-side run may *observe* the pair from `ListCreateAccountStatus`. That is
+  Future: it needs the commercial account collected in the same grid, with its own collector
+  configuration, which is unified-systems-com/aws-core-tap#70 (Backlog).
+- **Two organizations, one grid.** A commercial organization and a GovCloud organization in one grid
+  are two `aws_organization` nodes with distinct `organization_id`s. Every Organizations falsifier
+  already gates on the candidate's own organization (`req-aws-core-organizations-collect-5`).
+  GovCloud account ids differ from their commercial pair's (web, [C-GCORG](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-organizations.html): two accounts are created), so `account_id` stays a
+  sufficient key. EC2 ids (`vpc-…`, `subnet-…`) carry no partition; that is unified-systems-com/aws-core-tap#14's concern.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-partition-pairing-1 | Account Partition Field | Proposed | `AwsAccount.partition` is filled from an ARN the run read, for both the self-collected and the organization-listed path; blank means not observed. | |
+| req-aws-core-partition-pairing-2 | No Partition Dimension | Proposed | No dimension key is added or changed by this requirement. | Ruling 2026-09-30. |
+| req-aws-core-partition-pairing-3 | Pairing Edge | Proposed | `PAIRED_WITH_ACCOUNT` declares GovCloud account → commercial account, reference, and the spec states it is declared, not collected, from the GovCloud side. | Ruling 2026-10-01: declared as data in highbar's design. |
+| req-aws-core-partition-pairing-4 | No Vending Model | Proposed | No model or requirement here represents account vending (Service Catalog provisioned product, `CreateGovCloudAccount` request). | Ruling 2026-09-30. |
