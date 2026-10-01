@@ -22,7 +22,7 @@ from typing import Any
 
 from .edges import TransformRegistry
 from .iam_trust import account_of_iam_arn
-from .partition import PARTITION_AWS, PARTITION_RE, build_arn
+from .partition import PARTITION_AWS, PARTITION_RE, build_arn, parse_arn
 
 # CloudFront S3 origin DomainName forms, all ending amazonaws.com (amazonaws.com.cn in the China
 # partition; CloudFront itself does not exist in GovCloud, so a GovCloud run never reaches this):
@@ -98,22 +98,38 @@ def s3_bucket_arn_from_name(value: object, *, partition: str = PARTITION_AWS) ->
     return build_arn(partition, "s3", "", "", candidate)
 
 
-def log_group_name_from_arn(value: object) -> str | None:
-    """A CloudWatch Logs log-group ARN -> the group's natural key (its name).
+def log_group_arn(value: object, *, source_key: object = None) -> str | None:
+    """A log-group reference -> the group's natural key: its ARN without the ``:*`` suffix.
 
-    The log-group entry's natural key is ``logGroupName``, but referrers
-    (e.g. a trail's ``CloudWatchLogsLogGroupArn``) carry the ARN —
-    ``arn:aws:logs:<region>:<acct>:log-group:<name>[:*]``. Extract the name;
-    a non-log-group ARN drops.
+    A log-group name is unique only within one account and region, so the log group is keyed by
+    ``logGroupArn`` (``arn:<partition>:logs:<region>:<account>:log-group:<name>``), which carries
+    all three; two groups of the same name in two regions are two nodes. Referrers come in two
+    forms:
+
+    - an ARN (a trail's ``CloudWatchLogsLogGroupArn``, which ends ``:*``) — the suffix is dropped
+      and the rest is the key;
+    - a bare name (a Lambda's ``LoggingConfig.LogGroup``) — a Lambda can only log to a group in its
+      own account and region, so partition, region and account are read from ``source_key``, the
+      referring node's own ARN. A source key that is not a regional ARN drops the edge rather
+      than guess.
+
+    Anything else (a non-log-group ARN, an empty value) drops.
     """
-    if not isinstance(value, str):
+    if not isinstance(value, str) or not value.strip():
         return None
-    marker = ":log-group:"
-    index = value.find(marker)
-    if index == -1:
+    candidate = value.strip()
+    if candidate.startswith("arn:"):
+        parsed = parse_arn(candidate)
+        if parsed is None or parsed.service != "logs" or not parsed.resource.startswith("log-group:"):
+            return None
+        name = parsed.resource.removeprefix("log-group:").removesuffix(":*")
+        if not name:
+            return None
+        return build_arn(parsed.partition, "logs", parsed.region, parsed.account, f"log-group:{name}")
+    source = parse_arn(source_key)
+    if source is None or not source.region or not source.account.isdigit():
         return None
-    name = value[index + len(marker) :].removesuffix(":*")
-    return name or None
+    return build_arn(source.partition, "logs", source.region, source.account, f"log-group:{candidate}")
 
 
 def customer_managed_policy_arn_or_none(value: object) -> str | None:
@@ -135,7 +151,7 @@ _TRANSFORMS: dict[str, Callable[..., Any]] = {
     "s3_bucket_name_from_origin_domain": s3_bucket_name_from_origin_domain,
     "kms_key_arn_or_none": kms_key_arn_or_none,
     "s3_bucket_arn_from_name": s3_bucket_arn_from_name,
-    "log_group_name_from_arn": log_group_name_from_arn,
+    "log_group_arn": log_group_arn,
 }
 
 
@@ -143,10 +159,18 @@ _TRANSFORMS: dict[str, Callable[..., Any]] = {
 # partition. The rest only read an ARN they were handed, which already carries its partition.
 _PARTITION_AWARE = frozenset({"s3_bucket_name_from_origin_domain", "s3_bucket_arn_from_name"})
 
+# Transforms that read the REFERRING node's natural key (its ARN) for the region and account the
+# referring value does not carry (TransformRegistry.register(source_aware=True)).
+_SOURCE_AWARE = frozenset({"log_group_arn"})
+
 
 def build_transform_registry(partition: str = PARTITION_AWS) -> TransformRegistry:
     """The populated edge-transform registry for the collector, bound to the run's ``partition``."""
     registry = TransformRegistry()
     for name, fn in _TRANSFORMS.items():
-        registry.register(name, partial(fn, partition=partition) if name in _PARTITION_AWARE else fn)
+        registry.register(
+            name,
+            partial(fn, partition=partition) if name in _PARTITION_AWARE else fn,
+            source_aware=name in _SOURCE_AWARE,
+        )
     return registry

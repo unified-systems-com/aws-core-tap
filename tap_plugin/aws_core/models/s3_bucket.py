@@ -30,7 +30,7 @@ class S3Bucket(BaseModel):
         "bucket_arn": {"type": "string"},
         "versioning": {"type": "string"},
         "encryption": {"type": "string"},
-        "public_access_blocked": {"type": "boolean"},
+        "public_access_blocked": {"type": ["boolean", "null"]},
         "size_bytes": {"type": ["integer", "null"]},
         "object_count": {"type": ["integer", "null"]},
         "size_observed_at": {"type": "string"},
@@ -43,7 +43,7 @@ class S3Bucket(BaseModel):
         "bucket_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
         "versioning": {"validation": "jsonschema", "schema": {"type": "string"}},
         "encryption": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "public_access_blocked": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "public_access_blocked": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "size_bytes": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "object_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "size_observed_at": {"validation": "jsonschema", "schema": {"type": "string"}},
@@ -56,7 +56,20 @@ class S3Bucket(BaseModel):
     bucket_arn = models.CharField(max_length=512, blank=True, default="")
     versioning = models.CharField(max_length=32, blank=True, default="")
     encryption = models.CharField(max_length=64, blank=True, default="")
-    public_access_blocked = models.BooleanField(default=True)
+    # The bucket's OWN S3 Block Public Access configuration (GetPublicAccessBlock), never the
+    # account-level one, which is not modelled (req-aws-core-fields-9): True when all four flags
+    # are on, False when any is off or the bucket has no configuration at all, null when it was
+    # not read (denied, errored, or never collected). Null is not observed (req-aws-core-fields-8):
+    # an unread bucket must never read as blocked.
+    public_access_blocked = models.BooleanField(
+        blank=True,
+        null=True,
+        default=None,
+        help_text=(
+            "Bucket-level S3 Block Public Access: true when all four flags are on, false when any is off "
+            "or none is configured, null when not observed. Account-level Block Public Access is not modelled."
+        ),
+    )
     # Aggregate object stats from CloudWatch daily storage metrics — null when
     # CloudWatch has no datapoint yet (unknown, never a misleading 0).
     # `size_observed_at` is the datapoint's own timestamp (ISO 8601); the

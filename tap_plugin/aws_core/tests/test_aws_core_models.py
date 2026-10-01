@@ -27,9 +27,11 @@ def _create(type_slug: str, payload: dict):
 class TestAwsCoreDomainDefaults:
     """Test domain-specific default values."""
 
-    def test_s3_bucket_public_access_blocked_defaults_true(self):
+    def test_s3_bucket_public_access_blocked_defaults_null_not_observed(self):
+        # NULL = not observed (req-aws-core-fields-8/-9): a bucket nobody has read must never read
+        # as blocked.
         node = _create("aws_core__aws_s3_bucket", {"name": "my-bucket"})
-        assert node.public_access_blocked is True
+        assert node.public_access_blocked is None
 
     def test_ebs_volume_encrypted_defaults_false(self):
         node = _create("aws_core__aws_ebs_volume", {"volume_id": "vol-123"})

@@ -39,7 +39,7 @@ class EdgeError(Exception):
 # A transform maps a raw extracted value to the target's natural key. It may
 # return a scalar or a list (further fan-out). Specific transforms are
 # registered by the fan-out increment, not here.
-Transform = Callable[[Any], Any]
+Transform = Callable[..., Any]
 
 
 class TransformRegistry:
@@ -51,10 +51,25 @@ class TransformRegistry:
 
     def __init__(self) -> None:
         self._fns: dict[str, Transform] = {}
+        self._source_aware: set[str] = set()
 
-    def register(self, name: str, fn: Transform) -> None:
-        """Register ``fn`` under ``name`` (last registration wins)."""
+    def register(self, name: str, fn: Transform, *, source_aware: bool = False) -> None:
+        """Register ``fn`` under ``name`` (last registration wins).
+
+        A ``source_aware`` transform is also handed the SOURCE node's natural key
+        (``fn(value, source_key=...)``): for a target whose identity carries the region and account
+        the referring value does not (a Lambda names its log group by bare name; the log group is
+        keyed by its ARN), the source's own ARN is where they come from.
+        """
         self._fns[name] = fn
+        if source_aware:
+            self._source_aware.add(name)
+        else:
+            self._source_aware.discard(name)
+
+    def is_source_aware(self, name: str) -> bool:
+        """Whether ``name`` was registered ``source_aware``."""
+        return name in self._source_aware
 
     def get(self, name: str) -> Transform:
         """Resolve a registered transform or raise ``EdgeError``."""
@@ -186,6 +201,7 @@ def emit_edges(
         raw = eval_path(node.raw_item, rule["value_path"])
         transform_name = rule.get("transform")
         transform = transforms.get(transform_name) if transform_name else None
+        source_aware = bool(transform_name) and transforms.is_source_aware(str(transform_name))
 
         for raw_value in _as_value_list(raw):
             # The transform maps each extracted value to the target's
@@ -195,7 +211,12 @@ def emit_edges(
             # A transform may return None to mean "this value is not a
             # valid target of this edge" — drop it so no bogus edge is
             # fabricated (the transforms.py contract).
-            value = transform(raw_value) if transform else raw_value
+            if transform is None:
+                value = raw_value
+            elif source_aware:
+                value = transform(raw_value, source_key=node.natural_key)
+            else:
+                value = transform(raw_value)
             if value is None:
                 continue
             target_key = str(value)
