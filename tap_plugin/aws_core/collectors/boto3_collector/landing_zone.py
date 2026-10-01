@@ -202,6 +202,13 @@ SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
 #: here uses ``NextToken``.
 _LOWER_TOKEN_SERVICES = frozenset({"controltower", "accessanalyzer"})
 
+
+def continuation_token(service: str) -> str:
+    """The continuation-token member a paginated call of ``service`` takes and returns (a test checks
+    every ``PAGINATED_OPERATIONS`` row against botocore's paginator data)."""
+    return "nextToken" if service in _LOWER_TOKEN_SERVICES else "NextToken"
+
+
 #: ``securityhub:DescribeHub``'s answer for an account that has not enabled Security Hub. botocore
 #: documents it as "the account doesn't have permission to perform this action", the same code a
 #: refused credential gets, so it cannot be read as "no hub" (the spec's error-code rule): the
@@ -429,7 +436,7 @@ class _Reader:
     def walk(self, service: str, region: str, operation: str, result_key: str, **params: Any) -> _Walk:
         """Read one paginated call to its end. A failure keeps the items it did get but marks the
         read incomplete, so nothing is inferred from what it did not name."""
-        token = "nextToken" if service in _LOWER_TOKEN_SERVICES else "NextToken"
+        token = continuation_token(service)
         result = _Walk([], _now(), _now(), operation=operation)
         try:
             client = self.client(service, region)
@@ -739,12 +746,13 @@ class _Reader:
                 not_hosted=len(read.items) - own,
                 skipped=skipped.get(region, 0),
             )
-        if len(written) > 1:
-            # ListEnabledControls and ListEnabledBaselines are not scoped to a landing zone: with two,
-            # neither listing can be said to be one's children.
+        if len(found) > 1:
+            # ListEnabledControls and ListEnabledBaselines are not scoped to a landing zone: with two
+            # LISTED (whether or not each was written this run), neither listing can be said to be
+            # one's children, so every written one records both child surfaces incomplete.
             now = _now()
-            why = f"{len(written)} landing zones listed; the enabled-control and enabled-baseline listings are not scoped to one"
-            self.notice("warn", "LANDING_ZONE_AMBIGUOUS", why, landing_zones=[a for a, _ in written])
+            why = f"{len(found)} landing zones listed; the enabled-control and enabled-baseline listings are not scoped to one"
+            self.notice("warn", "LANDING_ZONE_AMBIGUOUS", why, landing_zones=sorted(found))
             unread = _Walk(
                 [],
                 now,
@@ -1522,6 +1530,7 @@ __all__ = [
     "assignment_key",
     "bucket_arn",
     "collect_landing_zone",
+    "continuation_token",
     "group_key",
     "region_of_arn",
     "regional_key",

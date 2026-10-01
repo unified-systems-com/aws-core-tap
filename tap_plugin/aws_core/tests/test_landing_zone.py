@@ -60,6 +60,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import (
     LandingZoneRead,
     assignment_key,
     collect_landing_zone,
+    continuation_token,
     group_key,
     regional_key,
     target_of,
@@ -727,6 +728,31 @@ class TestControlTower:
         assert surface["enumeration_complete"] is True and surface["admitted"] is False
         assert "LANDING_ZONE_TAGS_DENIED" in _codes(read)
 
+    @pytest.mark.spec("req-aws-core-contained-type-triple-3")
+    def test_two_listed_landing_zones_leave_the_survivor_incomplete(self) -> None:
+        """Ambiguity is decided by what was LISTED, not by what could be written: a second landing
+        zone whose GetLandingZone fails still makes the unscoped child listings unattributable."""
+        aws = govcloud()
+        other = f"arn:{PARTITION}:controltower:{WEST}:{MGMT}:landingzone/SECONDLZ00000000"
+        aws.on(
+            "controltower",
+            "list_landing_zones",
+            paged("landingZones", [{"arn": LZ_ARN}, {"arn": other}], token="nextToken"),
+        )
+        good = govcloud().handlers[("controltower", "get_landing_zone", None)]
+        aws.on(
+            "controltower",
+            "get_landing_zone",
+            by(lambda kw: kw["landingZoneIdentifier"], {LZ_ARN: good, other: _err("InternalServerException")}),
+        )
+        read = collect(aws)
+        assert [n["node"]["landing_zone_arn"] for n in _nodes(read, LANDING_ZONE)] == [LZ_ARN]
+        for edge in (HOLDS_ENABLED_CONTROL, HOLDS_ENABLED_BASELINE):
+            listing = _parent(read, edge, _id(LANDING_ZONE, LZ_ARN))
+            assert listing.complete is False and listing.admitted is False
+        assert _nodes(read, ENABLED_CONTROL) == [] and "list_enabled_controls" not in aws.ops("controltower")
+        assert "LANDING_ZONE_AMBIGUOUS" in _codes(read)
+
     def test_home_region_out_of_scope_is_written_without_containment(self) -> None:
         read = collect(govcloud(), regions=[EAST], facts={EAST: RegionFacts(EAST, PARTITION, "", STATUS_ENABLED, "t")})
         assert _one(read, LANDING_ZONE)["home_region"] == WEST
@@ -1282,6 +1308,12 @@ class TestTripleAndDeclarations:
         for service, op in SINGLE_OPERATIONS:
             assert not clients[service].can_paginate(op), (service, op)
             assert hasattr(clients[service], op), (service, op)
+        # The continuation token the page loop sends and reads is botocore's own, per operation.
+        loader = boto3.session.Session()._session
+        for service, op in PAGINATED_OPERATIONS:
+            pascal = clients[service].meta.method_to_api_mapping[op]
+            config = loader.get_paginator_model(service).get_paginator(pascal)
+            assert (config["input_token"], config["output_token"]) == (continuation_token(service),) * 2, (service, op)
         aws = govcloud()
         collect(aws)
         used = {(svc, op) for svc, _r, op, _kw in aws.calls}
