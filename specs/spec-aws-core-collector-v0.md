@@ -1296,7 +1296,11 @@ path to a landing zone's member accounts. A Gruntwork landing zone is AWS Contro
 
 Proposed by the landing-zone epic, step 2. Ruling (George, 2026-09-30): the first GovCloud run uses
 **static access keys for a read-only IAM user in the GovCloud organization's management account**,
-FIPS optional and off for the first run. Fan-out from the organization is therefore the only path to
+with FIPS optional for the first run (Q103c). Endpoint FIPS is the operator's existing opt-in,
+`use_fips_endpoint` (`req-aws-collector-partition-6`, defined on the fix-pack branch). This
+requirement sets no default for it, and the first run's setting is an operator decision recorded
+with that run. It is AWS SDK endpoint selection only, independent of TAP's FIPS-validated
+cryptographic module. Fan-out from the organization is therefore the only path to
 member accounts. Depends on unified-systems-com/aws-core-tap#14 (assigned identity) before any
 reconcile is armed, and on `req-aws-collector-partition`, which the code cites and which the fix for
 unified-systems-com/aws-core-tap#60 defines (part of unified-systems-com/aws-core-tap#51; not yet on
@@ -1358,13 +1362,21 @@ it in every member account, never an administrator role:
   user), and only when the call presents the External ID. The External ID is required, consistent
   with aws_core's existing cross-account rule (`req-aws-core-secret-aws-assumed-role-2`), even though
   base and members share one organization.
-- **Permissions:** AWS-managed `SecurityAudit`, plus a supplementary read-only policy naming exactly
-  the collector's reads that `SecurityAudit` does not grant. The supplement is derived from the
-  manifest and the custom functions, and a test fails when the collector calls an operation in a
-  member that neither grants.
+- **Permissions: one repo-owned, least-privilege read-only policy, and no AWS-managed policy.**
+  AWS changes its managed policies on its own schedule (`SecurityAudit` included), and a change to
+  one would widen every member role in every estate without review. So the member role carries only
+  `collectors/boto3_collector/handoff/member-read-policy.json`. That policy is generated from the
+  manifest's operations and each custom reader's declared call list: the same list `-12`'s test
+  checks calls against. The generator maps each API operation to its IAM action through a declared
+  table, for the operations whose action name differs from the API name. The committed file is
+  regenerated in CI and fails when stale. It grants only read actions: an action whose name does
+  not begin with `Describe`, `List`, `Get`, `BatchGet` or `Search` fails the test unless the
+  generator's allowlist names it with a reason (`-17`). The 2026-10-01 ruling, a dedicated
+  read-only role, stands; this is how "read-only" is enforced.
 - **Deployment:** per account, through the account baseline: an organization StackSet or the
-  Gruntwork account baseline (Gruntwork's `cross-account-iam-roles` module already ships a comparable
-  role, `allow-read-only-access-from-other-accounts`;
+  Gruntwork account baseline, attaching the repo-owned policy above and nothing else (Gruntwork's
+  `cross-account-iam-roles` module already ships a comparable role,
+  `allow-read-only-access-from-other-accounts`;
   [SEC-MODS](https://github.com/gruntwork-io/docs/tree/main/docs/reference/modules/terraform-aws-security/)).
 - **Name:** operator-declared (`member_role_name`), a plain role name with no path (the role is
   deployed at the root path `/`; `req-aws-core-secret-member-fanout-2`), never defaulted in code, so an estate can use the
@@ -1380,7 +1392,9 @@ commercial-only today: `arn:aws:` literals in the CloudFormation parameter patte
 ARN (`cross-account-role.yaml:51,103`), the Terraform policy ARN (`cross-account-role.tf:72`) and the
 collector principal policy (`collector-principal-policy.json:9`). Making them partition-neutral
 (`${AWS::Partition}`, `data.aws_partition`) is part of this requirement's delivery, so the member
-role deploys in `aws-us-gov` on first use (`req-aws-core-secret-member-fanout-5`).
+role deploys in `aws-us-gov` on first use (`req-aws-core-secret-member-fanout-5`). The member-role
+variant of each template attaches only `member-read-policy.json`, with no `ManagedPolicyArns` entry
+and no `aws_iam_role_policy_attachment` to an AWS-managed policy (`-17`).
 
 **Per-account results.** Every account the organization listed gets exactly one `ACCOUNT_RESULT`
 run-log entry: account id, outcome (`collected` / `partial` / `skipped`), reason, regions read,
@@ -1506,11 +1520,12 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-9 | Falsifier Reach Per Account | Proposed | A falsifier resolves the candidate's account credentials through the base-then-member-role path, with assert-on-land; an unreachable account is `UNDETERMINED(scope_unknown)`. | Today every falsifier resolves the one secret (`falsifiers.py:449-485`). |
 | req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
 | req-aws-collector-fanout-11 | Ledgered Per Account | Proposed | Every `AssumeRole` and every member-session call is in the run's call ledger tagged with the member account id. | `req-aws-core-secret-aws-assumed-role-6`. |
-| req-aws-collector-fanout-12 | Dedicated Read-Only Member Role | Proposed | The member role is a dedicated role trusting only the collector's management-account principal with a required External ID, granting `SecurityAudit` plus a manifest-derived read-only supplement; a test fails on a member call neither grants. `OrganizationAccountAccessRole` and `AWSControlTowerExecution` are never assumed by default. | Ruling 2026-10-01. |
+| req-aws-collector-fanout-12 | Dedicated Read-Only Member Role | Proposed | The member role is a dedicated role trusting only the collector's management-account principal with a required External ID, whose only permissions are the repo-owned read-only policy of `-17`; a test fails on a collector call in a member that the policy does not grant. `OrganizationAccountAccessRole` and `AWSControlTowerExecution` are never assumed by default. | Ruling 2026-10-01 (dedicated read-only role). How read-only is enforced is refined by `-17`: no AWS-managed policy. |
 | req-aws-collector-fanout-13 | Partition-Neutral Handoff Templates | Proposed | Every committed handoff artifact builds its ARNs from the deploying partition: no `arn:aws:` literal in a template value, parameter pattern or policy ARN decides the partition, and the README shows a GovCloud example beside each commercial one. | In scope for this step by the 2026-10-01 ruling; overlaps unified-systems-com/aws-core-tap#51, which named the same templates. |
 | req-aws-collector-fanout-14 | A Degraded Run Is Never Plain Success | Proposed | When the organization listing did not read to its end, the base account is not the organization's management account, or any listed member's outcome is not `collected`, the run's top-level result is marked degraded and carries the per-outcome counts. It is never reported as a plain success, so automation cannot read base-account-only collection as full coverage. | Uses core's job status for a partial run if one exists; otherwise a top-level `degraded` flag in `CollectionJob.results`. Member failure stays local to the run (`-4`); this makes it visible at the top. |
 | req-aws-collector-fanout-15 | Account Name Has One Owner | Proposed | In a run that read the organization tree, `AwsAccount.name` is Organizations `Account.Name` and nothing else writes it; the IAM alias is `AwsAccount.account_alias` (`""` = observed none, `null` = not read); the singleton's caller identity is `configuration.caller_identity`, never a top-level `Arn`. A test merges a tree envelope and a singleton for one account and asserts each field's source. | Closes the alias-for-name collision in fan-out runs. The member-scoped cross-run overwrite of `name` depends on unified-systems-com/tap#886. |
 | req-aws-collector-fanout-16 | Member-Sourced Fields Survive A Member Failure | Proposed | When a listed member is not collected (skipped, `AssumeRole` denied, identity mismatch, batch rejected), the organization tree's envelope for that account leaves its account-sourced fields (`account_alias`, `configuration.caller_identity`, the S3 account public-access-block flags) at their last observed values, through a GRIFT write that marks them not observed. Fan-out writes do not ship before that write exists (*Sequencing*). | Depends on core's replacement-semantics work, unified-systems-com/tap#886, as the tag false-empty write does; no collector workaround (no withheld node, no read-back of stored values). |
+| req-aws-collector-fanout-17 | Repo-Owned Member Policy | Proposed | The member role's permissions are exactly `collectors/boto3_collector/handoff/member-read-policy.json`, generated from the manifest's operations and every custom reader's declared call list through a declared API-to-IAM action map. Every member-role handoff variant attaches only that policy and no AWS-managed policy. Tests fail when a collector call made in a member is not granted by the policy, when the policy grants an action that is not read-only (its name does not begin with `Describe`, `List`, `Get`, `BatchGet` or `Search` and the generator's reasoned allowlist does not name it), when the committed policy differs from a fresh generation, and when a member-role template attaches any other policy. | AWS-managed policies such as `SecurityAudit` change without review in this repo, which would widen every member role. |
 
 #### Future
 

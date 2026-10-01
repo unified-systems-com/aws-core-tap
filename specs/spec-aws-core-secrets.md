@@ -238,16 +238,18 @@ The committed handoff artifacts (`collectors/boto3_collector/handoff/`) are comm
 The CFN parameter pattern and the managed-policy ARN are `arn:aws:` literals (`cross-account-role.yaml:51,103`,
 `cross-account-role.tf:72`, `collector-principal-policy.json:9`). Fixing them is in scope for the
 fan-out step (`req-aws-collector-fanout-13`; ruling 2026-10-01). The member-role artifact is a
-StackSet- or Terraform-deployable variant of the same role, deployed per account by the account
-baseline (an organization StackSet or the Gruntwork account baseline). It uses `${AWS::Partition}` /
+StackSet- or Terraform-deployable role, deployed per account by the account baseline (an
+organization StackSet or the Gruntwork account baseline). Unlike the existing cross-account role, it
+attaches no AWS-managed policy: its only permissions are the repo-owned, generated
+`member-read-policy.json` (`req-aws-collector-fanout-17`). It uses `${AWS::Partition}` /
 `data.aws_partition`, so it is correct in `aws-us-gov` on first use.
 
 ### Base credential blast radius
 
 **The risk.** Fan-out turns one long-lived access key, for a read-only IAM user in the management
 account, into read access to every member account: whoever holds the key can assume the member
-role in each of them. The role is read-only, but `SecurityAudit` reads configuration across the
-whole organization. So one leaked key exposes the organization's full configuration, not one
+role in each of them. The role is read-only, but it reads configuration across the whole
+organization. So one leaked key exposes the organization's full configuration, not one
 account's. Static keys do not expire on their own, and the 2026-09-30 ruling chose them for the
 first GovCloud run.
 
@@ -276,6 +278,6 @@ criteria, with their secret and template inputs defined. The candidates are:
 | req-aws-core-secret-member-fanout-2 | Role Name, Never ARN | Proposed | `member_role_name` validates against `^[\w+=,.@-]{1,64}$`: a plain role name, so a value containing `/` (a path) or an ARN is refused at validation; every handoff variant deploys the member role at path `/` and validates its role-name input with the same pattern. | The partition comes from the run, never from the secret. |
 | req-aws-core-secret-member-fanout-3 | No Default Role | Proposed | `enabled: true` without `member_role_name` fails validation; the collector never falls back to `OrganizationAccountAccessRole` or `AWSControlTowerExecution`. | Both are administrator roles. |
 | req-aws-core-secret-member-fanout-4 | Cap Required | Proposed | `enabled: true` without an integer `max_member_accounts` ≥ 1 fails validation. | `req-aws-collector-fanout-10`. |
-| req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, and deploys in `aws-us-gov` without edits. | `req-aws-collector-fanout-13`; the same templates unified-systems-com/aws-core-tap#51 names. |
+| req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, deploys in `aws-us-gov` without edits, and attaches only the repo-owned `member-read-policy.json`, never an AWS-managed policy. | `req-aws-collector-fanout-13`, `-17`; the same templates unified-systems-com/aws-core-tap#51 names. |
 | req-aws-core-secret-member-fanout-6 | Redacted | Proposed | `external_id` is never logged, matching the assumed-role kind. | |
 | req-aws-core-secret-member-fanout-7 | External ID Required | Proposed | `enabled: true` without a non-empty `external_id` fails validation, and the collector never calls `AssumeRole` into a member without it. | Ruling 2026-10-01; mirrors `req-aws-core-secret-aws-assumed-role-2`. |
