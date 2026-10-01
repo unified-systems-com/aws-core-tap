@@ -1672,7 +1672,10 @@ The rule, stated in full, has three cases:
 `DestinationIpv6CidrBlock` or `DestinationPrefixListId` is set. An IPv6 CIDR is stored in its
 compressed lowercase form, so two spellings of one prefix are one key. A TGW route's key is
 `(tgw_route_table_id, destination_kind, destination)` with `destination_kind` ∈
-`ipv4|prefix_list`. A NACL entry's key is `(network_acl_id, egress, rule_number)`. An SG rule's
+`ipv4|ipv6|prefix_list`. `DestinationCidrBlock` carries IPv4 and IPv6 alike, so its kind is the
+parsed address family, never assumed, and an IPv6 CIDR is normalized to the same compressed
+lowercase form before keying. The EC2 route key classifies the same way: each CIDR is parsed, and
+a value in the wrong member for its family is still keyed by its parsed family. A NACL entry's key is `(network_acl_id, egress, rule_number)`. An SG rule's
 key is its `SecurityGroupRuleId`. Each association node's key is its AWS-minted id.
 
 #### Types, tags and retirement
@@ -1919,10 +1922,10 @@ per-region rules.
 | transit gateway | `HOLDS_TGW_ATTACHMENT` | attachment | regional `DescribeTransitGatewayAttachments`, grouped by `TransitGatewayId` (owner's run) | the regional listing read to its end | attachment falsifier |
 | transit gateway | `HOLDS_TGW_ROUTE_TABLE` | TGW route table | regional `DescribeTransitGatewayRouteTables`, grouped by `TransitGatewayId` (owner's run) | the regional listing read to its end | TGW route-table falsifier |
 | TGW route table | `DECLARES_TGW_ROUTE` | TGW route | `SearchTransitGatewayRoutes(TransitGatewayRouteTableId, Filters=[type ∈ static, propagated])` | read to its end, `AdditionalRoutesAvailable` false, and the filter's positive control passed (the call requires `Filters`; read: botocore) | TGW-route falsifier |
-| footprint (management account) | `HOSTS_LANDING_ZONE` | landing zone | `ListLandingZones` in that region | regional rules | `ResourceNotFoundException` |
+| footprint (management account) | `HOSTS_LANDING_ZONE` | landing zone | `ListLandingZones` in that region; only a landing zone whose ARN names this region is this footprint's child | regional rules | `ResourceNotFoundException` |
 | landing zone | `HOLDS_ENABLED_CONTROL` | enabled control | `ListEnabledControls` with no `targetIdentifier` or filter and `includeChildren: true` (the input has no required members: read, botocore 1.43.103 `controltower` model) | read to its end | `GetEnabledControl` |
 | landing zone | `HOLDS_ENABLED_BASELINE` | enabled baseline | `ListEnabledBaselines` with no filter and `includeChildren: true` (it defaults to false) | read to its end | `GetEnabledBaseline` |
-| footprint | `HOSTS_IDENTITY_CENTER_INSTANCE` | instance | `sso-admin:ListInstances` in that region | regional rules | absent from `ListInstances` |
+| footprint | `HOSTS_IDENTITY_CENTER_INSTANCE` | instance | `sso-admin:ListInstances` in that region; only instances whose `PrimaryRegion` is this region are this footprint's children | regional rules | absent from `ListInstances` |
 | instance | `HOLDS_PERMISSION_SET` | permission set | `ListPermissionSets(InstanceArn)` | read to its end | `DescribePermissionSet` |
 | instance | `HOLDS_IDENTITY_GROUP` | group | `identitystore:ListGroups(IdentityStoreId)` with no `Filters` | read to its end | `DescribeGroup` |
 | instance | `HOLDS_ACCOUNT_ASSIGNMENT` | assignment | `ListAccounts` + every `ListPermissionSetsProvisionedToAccount` + every `ListAccountAssignments` | all read to their end | assignment falsifier |
