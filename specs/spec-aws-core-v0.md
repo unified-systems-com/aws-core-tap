@@ -666,7 +666,7 @@ membership becomes the observed thing, and the thing that retires.
 | req-aws-core-organization-membership-4 | Membership Falsifier | Proposed | `MembershipFalsifier` is registered for the membership type and passes the four-case harness; `AccountFalsifier` is no longer registered. | Supersedes `req-aws-core-organizations-collect-3`'s `AccountFalsifier` half. |
 | req-aws-core-organization-membership-5 | Account Untouched | Proposed | Applying `DROPPED_FROM_OBSERVATION` to a membership tombstones the membership only: the account node, its `OWNS_*` children and its footprints stay live, and `contained_closure` of the membership is the membership alone. | The done-test for the 2026-09-30 ruling. |
 | req-aws-core-organization-membership-6 | Placement Gap Named | Proposed | The spec states which placement edges a departed account keeps (`NESTED_UNDER_PARENT`, `ATTACHED_TO_TARGET`) and why: they stay last seen until core edge re-derivation can end them. | Ruling 2026-10-01: placement stays on the account. |
-| req-aws-core-organization-membership-7 | One Writer Per Account Fact | Proposed | `email` and `state` live on the membership and the collector no longer writes `AwsAccount.email` or `AwsAccount.status`; a member-scoped run writing the account node cannot blank them. | Ruling 2026-10-01. Closes the email and status half of `req-aws-collector-fanout-8`'s cross-run case; the tags half depends on unified-systems-com/tap#886. |
+| req-aws-core-organization-membership-7 | One Writer Per Account Fact | Proposed | `email` and `state` live on the membership and the collector no longer writes `AwsAccount.email` or `AwsAccount.status`; a member-scoped run writing the account node cannot blank them. | Ruling 2026-10-01. Closes the email and status half of `req-aws-collector-fanout-8`'s cross-run case; the tags and `name` halves depend on unified-systems-com/tap#886 (`req-aws-collector-fanout-15`). |
 | req-aws-core-organization-membership-8 | Account Retirement Out Of Scope | Proposed | No requirement here retires an `aws_account`; a later requirement owns it. | Ruling 2026-09-30. |
 
 ### Organizations Completeness
@@ -709,6 +709,19 @@ rule on what becomes a node (*Policy Statements*, below).
   reference). Falsifier: `ListDelegatedServicesForAccount(AccountId)` no longer naming the service
   principal is `DROPPED_FROM_OBSERVATION`, after the same reach gate. AWS cannot tag a delegation, so
   its tags are declared `none` (`req-aws-collector-tags-12`).
+  **One surface for the nested listings.** Every delegation hangs directly off the organization, but
+  the inventory comes from one outer listing plus one inner listing per delegated account. Core
+  derives candidates by fanning out from the surface's parent through its edge type
+  (`req-grid-reconcile-candidates`: `children(P, R) − observed`), so a surface recorded for any one
+  inner call would nominate every other account's delegations. The rule is one organization-wide
+  `HOLDS_DELEGATION` surface, recorded complete only when `ListDelegatedAdministrators` read to its
+  end **and** `ListDelegatedServicesForAccount` read to its end for every account it returned; any
+  failed or partial call records it `enumeration_complete: false` with the reason, and no
+  per-account surface is recorded. A per-account parent node was considered and declined: AWS
+  addresses a delegation by (account, service principal), and has no object for "the delegations of
+  one account" to retire, so the parent would be a node AWS does not address
+  (`req-aws-core-network-plane`'s rule). The cost of the aggregate is that one failed inner listing
+  defers every delegation's retirement for that run, which fails closed.
   Landing-zone relevance: Control Tower 4.0 makes the audit account the Config delegated administrator
   ([C-CFGV4](https://docs.aws.amazon.com/controltower/latest/userguide/config-updates-v4.html)), and GuardDuty and Security Hub are commonly delegated to the security account
   (inferred from [CT-SECB](https://docs.gruntwork.io/reference/modules/terraform-aws-control-tower/control-tower-security-account-baseline/); not stated there).
@@ -721,7 +734,10 @@ rule on what becomes a node (*Policy Statements*, below).
   `ATTACHED_TO_TARGET` gains the new type as a source. Tags: the Organizations lane, for customer-managed policies.
 - **Policies get a retirement path.** `HOLDS_SERVICE_CONTROL_POLICY` and
   `HOLDS_ORGANIZATIONS_POLICY` (organization → policy, containment) carry the org-wide `ListPolicies`
-  listing's completeness. The falsifier is `DescribePolicy`, where `PolicyNotFoundException` is
+  listing's completeness. `HOLDS_ORGANIZATIONS_POLICY` is filled by one `ListPolicies(Filter=<type>)`
+  per enabled non-SCP type, all under the same parent and edge type, so it follows the delegation
+  rule: one surface, complete only when `enabled_policy_types` was read (not `null`) and every
+  per-type listing read to its end. The falsifier is `DescribePolicy`, where `PolicyNotFoundException` is
   `DROPPED_FROM_OBSERVATION`. An AWS-managed policy (one ARN in every organization,
   `req-aws-core-organizations`) is never a containment child of one organization, so the edge is
   emitted for customer-managed policies only. Today an SCP has no containment parent and no falsifier (`models/aws_service_control_policy.py`, `tap-plugin.toml` `[falsifiers]`), so it can never retire; this closes that for SCPs.
@@ -781,8 +797,14 @@ excluded from the canonical form.
   within a policy (inferred to hold for SCPs and RCPs, which use that grammar; to be confirmed
   against AWS's SCP syntax page before build).
 - A statement without a `Sid` is keyed `content:<content_sha256>`.
-- If a document repeats a `Sid`, every statement carrying that `Sid` falls back to its content key,
-  and a `DUPLICATE_SID` warning names the policy. Two statements are never merged by a shared `Sid`.
+- If a document repeats a `Sid`, every statement carrying that `Sid` is keyed
+  `dupsid:<sha256 of the Sid and the canonical form>`, and a `DUPLICATE_SID` warning names the
+  policy. The Sid is in the hash because the canonical form excludes it: without it, a duplicate-Sid
+  statement and a Sid-less statement with the same content, or statements under two different
+  duplicated Sids, would get one key and be merged although their `sid` values differ. The distinct
+  `dupsid:` prefix keeps the fallback apart from `content:` keys. Two statements are never merged by
+  a shared `Sid` alone; two statements under the same duplicated `Sid` with identical content are one
+  node with `occurrences`, as identical Sid-less statements are.
 - Identical statements without a `Sid` share one key. Repeating a statement changes nothing in IAM
   evaluation, so they are one node with `occurrences` counting them.
 
@@ -793,7 +815,7 @@ excluded from the canonical form.
 | Statements reordered | Same nodes. `position` changes; nothing retires. Statement order has no effect on IAM evaluation (every statement is evaluated, and an explicit deny wins). |
 | A statement with a `Sid` is edited | Same node, fields replaced in place. `content_sha256` changes, and the node's history holds the before and after. |
 | A statement without a `Sid` is edited | Its content key changes. The old node retires and a new node is created. This is the honest reading: AWS gives such a statement no identity beyond its content. Authors who want edits to read as edits give their statements a `Sid`. |
-| A `Sid` is added, removed or renamed | The key changes: the old node retires and a new one is created. |
+| A `Sid` is added, removed or renamed, or becomes or stops being duplicated | The key changes: the old node retires and a new one is created. |
 | A statement is removed | Its node retires (below). |
 | The policy is deleted | The policy retires, and the cascade retires its statements (containment). |
 
@@ -837,15 +859,17 @@ document:
 | req-aws-core-organizations-completeness-1 | Root Tags | Proposed | `AwsOrganization.tags` holds the root's Organizations tags via the Organizations lane; an unreadable root tag set withholds the organization node (`req-aws-collector-tags-10`). | Amends `req-aws-core-organizations`' "carries no tags". |
 | req-aws-core-organizations-completeness-2 | Enabled Policy Types | Proposed | `enabled_policy_types` lists the root's `ENABLED` policy types; `null` = not read, `[]` = observed none. | |
 | req-aws-core-organizations-completeness-3 | Enabled Service Access | Proposed | `enabled_service_principals` lists `{service_principal, enabled_at}`; a denied call leaves `null`. | |
-| req-aws-core-organizations-completeness-4 | Delegated Administration | Proposed | One `aws_delegated_administration` per (account, service principal), contained by the organization, with a registered falsifier passing the four-case harness. | |
+| req-aws-core-organizations-completeness-4 | Delegated Administration | Proposed | One `aws_delegated_administration` per (organization, account, service principal), keyed `NATURAL_KEY = ("organization_id", "account_id", "service_principal")`, contained by the organization, with a registered falsifier passing the four-case harness. | |
 | req-aws-core-organizations-completeness-5 | Other Policy Types | Proposed | Non-SCP policies of each enabled type are `aws_organizations_policy` nodes with `policy_type`; a type not enabled on the root is never listed. | GovCloud: SCP, RCP, TAG, declarative EC2, S3. |
 | req-aws-core-organizations-completeness-6 | Policies Contained | Proposed | Customer-managed SCPs and other policies are containment children of the organization with registered falsifiers; AWS-managed policies are not. | |
 | req-aws-core-organizations-completeness-7 | Statements Are Nodes | Proposed | Each statement of a customer-managed or AWS-managed SCP or RCP read by `DescribePolicy` is an `aws_policy_statement` node contained by its policy (`DECLARES_STATEMENT`), with `effect`, `actions`, `not_actions`, `resources`, `not_resources`, `principals`, `not_principals` and `conditions` as typed fields. No action is a node, and no policy document is stored. | The 2026-10-01 rule, as read in *Policy Statements*. `req-aws-core-organizations-7` stands. |
-| req-aws-core-organizations-completeness-8 | Statement Identity | Proposed | A statement is keyed `sid:<Sid>` when it has a unique `Sid`, else `content:<sha256 of the canonical form>`; a repeated `Sid` falls back to content keys with a `DUPLICATE_SID` warning; identical Sid-less statements are one node with `occurrences`. | |
+| req-aws-core-organizations-completeness-8 | Statement Identity | Proposed | A statement is keyed `sid:<Sid>` when it has a unique `Sid`; `content:<sha256 of the canonical form>` when it has no `Sid`; and `dupsid:<sha256 of the Sid and the canonical form>`, with a `DUPLICATE_SID` warning, when its `Sid` is repeated in the document. Identical statements under one key are one node with `occurrences`. A test holds a duplicate-Sid statement and a Sid-less statement with identical content, and statements with identical content under two different duplicated Sids, and asserts each gets its own node. | The canonical form excludes `Sid`, so the Sid enters the fallback hash explicitly. |
 | req-aws-core-organizations-completeness-9 | Statement Update Semantics | Proposed | Reordering changes only `position`; editing a statement with a `Sid` updates its node in place; editing a Sid-less statement, or adding, removing or renaming a `Sid`, retires the old node and creates a new one; deleting the policy cascades to its statements. | Each row of the update table is a test. |
 | req-aws-core-organizations-completeness-10 | Statement Retirement Path | Proposed | `DECLARES_STATEMENT` is containment, its listing is the policy's `DescribePolicy` document (incomplete when the call or the parse fails), and `PolicyStatementFalsifier` is registered and passes the four-case harness. | |
 | req-aws-core-organizations-completeness-11 | Tag Policy Rules | Proposed | Each tag key in a `TAG_POLICY` is an `aws_tag_policy_rule` node keyed `(policy_arn, tag_key_lower)` and contained by its policy, with a registered falsifier. | Ruling 2026-10-01: collecting tag policies is in scope. |
 | req-aws-core-organizations-completeness-12 | Declarative Bodies Not Yet Read | Proposed | Declarative EC2 and S3 policies are collected as policy nodes with their attachments; their bodies are not read until an amendment specifies each attribute's typed fields. | |
+| req-aws-core-organizations-completeness-13 | Delegation Surface Spans Nested Listings | Proposed | The collector records exactly one `HOLDS_DELEGATION` surface per organization, complete only when `ListDelegatedAdministrators` and every `ListDelegatedServicesForAccount` it implies read to their end; otherwise it is recorded incomplete with the reason. No surface is recorded per delegated account. A test fails one inner listing and asserts the surface is incomplete and no delegation is a candidate. | Core fans candidates out from parent and edge type (`req-grid-reconcile-candidates`), so a per-call surface would nominate other accounts' delegations. |
+| req-aws-core-organizations-completeness-14 | Policy Surface Spans Per-Type Listings | Proposed | The collector records exactly one `HOLDS_ORGANIZATIONS_POLICY` surface per organization, complete only when `enabled_policy_types` was read and every per-type `ListPolicies` read to its end; otherwise it is recorded incomplete. | Same rule as `-13`. |
 
 ### IAM Identity Center
 ----
@@ -1609,7 +1633,7 @@ type's probe and what counts as gone. Edge names are working names, finalized th
 | `aws_network_interface` **(new)** | — | `ec2:DescribeNetworkInterfaces` | field, **`TagSet[]`**, list_kv | footprint, `HOSTS_NETWORK_INTERFACE` (owner only) | `InvalidNetworkInterfaceID.NotFound` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
 | `aws_transit_gateway` | exists, has `tags` | `ec2:DescribeTransitGateways` | field, `Tags[]`, list_kv | footprint, `HOSTS_TRANSIT_GATEWAY` (**owner only**, RAM) | not found, or `State` = `deleted` | — |
 | `aws_transit_gateway_attachment` | exists, has `tags` | `ec2:DescribeTransitGatewayAttachments` | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ATTACHMENT` (observed from the gateway owner) | not found, or `State` = `deleted` | `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` (exist); `ASSOCIATED_WITH_TGW_ROUTE_TABLE`, `PROPAGATES_TO_TGW_ROUTE_TABLE` |
-| `aws_transit_gateway_route_table` **(new)** | — | `ec2:DescribeTransitGatewayRouteTables` | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ROUTE_TABLE` | not found, or `deleted` | — |
+| `aws_transit_gateway_route_table` **(new)** | — | `ec2:DescribeTransitGatewayRouteTables`, then `GetTransitGatewayRouteTablePropagations` per table (for `PROPAGATES_TO_TGW_ROUTE_TABLE`) | field, `Tags[]`, list_kv | transit gateway, `HOLDS_TGW_ROUTE_TABLE` | not found, or `deleted` | — |
 | `aws_transit_gateway_route` **(new)** | — | `ec2:SearchTransitGatewayRoutes` per table | AWS cannot tag a route | TGW route table, `DECLARES_TGW_ROUTE` | the search no longer returns that destination | `ROUTES_TRAFFIC` → attachment |
 | `aws_vpc_peering_connection` **(new)** | — | `ec2:DescribeVpcPeeringConnections` | field, `Tags[]`, list_kv | footprint of the **requester** owner, `HOSTS_VPC_PEERING_CONNECTION` | not found, or `Status.Code` ∈ `deleted\|rejected\|expired\|failed` | `CONNECTS_VPC` (→ requester and accepter VPC, `side` property) |
 | `aws_route53_resolver_endpoint` **(new)** | — | `route53resolver:ListResolverEndpoints` + `ListResolverEndpointIpAddresses` | service, `ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_RESOLVER_ENDPOINT` | `ResourceNotFoundException` | `RESIDES_IN_SUBNET` (extend sources); `USES_SECURITY_GROUP` |
@@ -1720,12 +1744,64 @@ cannot fix that alone. What it can do is (1) avoid it where AWS gives an identit
 (`req-aws-core-network-plane-4`), and (2) declare, for every reference edge, which source node's
 payload it is derived from, so that re-derivation can apply once core builds it.
 
+#### Last-seen reference edges
+
+Below is every reference edge this epic adds or newly collects, plus the four named above. "Last
+seen" means AWS can change the edge's payload while both endpoints stay live. The edge then
+persists after the change until core re-derivation exists. "Ends with its source" means the target
+is part of the source node's key, or AWS offers no operation that changes it. Then a change retires
+the source node, and core's endpoint rule ends the edge. The changing operations were read from
+botocore 1.43.103's operation list (the local copy; the spec's pin is 1.43.104). Paths are relative
+to the named call's response. `PAIRED_WITH_ACCOUNT` (declared, not collected; `-3` below) and
+`TRUSTS_IDENTITY_SOURCE` (target open, not emitted by the collector) are not derived from a payload,
+so they are not listed.
+
+| Edge | Source → target | Derived from (call, payload path) | Lifetime | Changed by |
+| --- | --- | --- | --- | --- |
+| `ATTACHES_POLICY` | role / user → policy | role and user manifest entries, `value_path` `_attached_policy_arns` (`aws_resource_manifest.json:225-231,752-758`) | **last seen** | `DetachRolePolicy`, `DetachUserPolicy` |
+| `TRUSTS_ACCOUNT` | role → account | role manifest entry, `value_path` `_trusted_account_ids` (`aws_resource_manifest.json:218-223`), derived from the trust policy | **last seen** | `UpdateAssumeRolePolicy` |
+| `NESTED_UNDER_PARENT` | account → root / OU | `ListAccountsForParent(ParentId)` → `Accounts[].Id` under that parent (`organizations.py:636-661`) | **last seen** | `MoveAccount` |
+| `NESTED_UNDER_PARENT` | OU → parent | `ListOrganizationalUnitsForParent(ParentId)` → `OrganizationalUnits[].Id` (`organizations.py:506-521`) | ends with its source (Organizations has no operation that moves an OU) | — |
+| `ATTACHED_TO_TARGET` | SCP / organizations policy → root / OU / account | `ListTargetsForPolicy(PolicyId)` → `Targets[].TargetId`, `Targets[].Type` (`organizations.py:696-705`) | **last seen** | `DetachPolicy` |
+| `ENROLLS_ACCOUNT` | membership → account | `ListAccounts` → `Accounts[].Id` | ends with its source (`account_id` is in the membership key) | — |
+| `DELEGATES_TO_ACCOUNT` | delegation → account | `ListDelegatedAdministrators` → `DelegatedAdministrators[].Id` | ends with its source (in the key) | — |
+| `ROUTES_FOR_SUBNET` | route table → subnet | `DescribeRouteTables` → `RouteTables[].Associations[].SubnetId` | **last seen** | `ReplaceRouteTableAssociation`, `DisassociateRouteTable` |
+| `ROUTES_TRAFFIC` | route → IGW / NAT / TGW / peering / ENI | `DescribeRouteTables` → `RouteTables[].Routes[].GatewayId \| NatGatewayId \| TransitGatewayId \| VpcPeeringConnectionId \| NetworkInterfaceId` | **last seen** (the route keeps its destination key) | `ReplaceRoute` |
+| `ROUTES_TRAFFIC` | TGW route → attachment | `SearchTransitGatewayRoutes` → `Routes[].TransitGatewayAttachments[].TransitGatewayAttachmentId` | **last seen** | `ReplaceTransitGatewayRoute` |
+| `RESIDES_IN_VPC` | route table / NACL / endpoint → VPC | `RouteTables[].VpcId`, `NetworkAcls[].VpcId`, `VpcEndpoints[].VpcId` | ends with its source (no operation moves them) | — |
+| `ATTACHED_TO_VPC` | IGW → VPC | `DescribeInternetGateways` → `InternetGateways[].Attachments[].VpcId` | **last seen** | `DetachInternetGateway`, `AttachInternetGateway` |
+| `RESIDES_IN_SUBNET` | NAT gateway → subnet | `DescribeNatGateways` → `NatGateways[].SubnetId` | ends with its source | — |
+| `RESIDES_IN_SUBNET` | VPC endpoint → subnet | `DescribeVpcEndpoints` → `VpcEndpoints[].SubnetIds[]` | **last seen** | `ModifyVpcEndpoint` (`RemoveSubnetIds`) |
+| `RESIDES_IN_SUBNET` | ENI → subnet | `DescribeNetworkInterfaces` → `NetworkInterfaces[].SubnetId` | ends with its source | — |
+| `RESIDES_IN_SUBNET` | resolver endpoint → subnet | `ListResolverEndpointIpAddresses` → `IpAddresses[].SubnetId` | **last seen** | `DisassociateResolverEndpointIpAddress` |
+| `USES_ELASTIC_IP` | NAT gateway → EIP | `DescribeNatGateways` → `NatGateways[].NatGatewayAddresses[].AllocationId` | **last seen** (secondary addresses) | `DisassociateNatGatewayAddress` |
+| `ASSOCIATED_WITH_INTERFACE` | EIP → ENI | `DescribeAddresses` → `Addresses[].NetworkInterfaceId` | **last seen** | `DisassociateAddress`, `AssociateAddress` |
+| `FILTERS_SUBNET` | NACL → subnet | `DescribeNetworkAcls` → `NetworkAcls[].Associations[].SubnetId` | **last seen** | `ReplaceNetworkAclAssociation` |
+| `REFERENCES_SECURITY_GROUP` | SG rule → SG | `DescribeSecurityGroupRules` → `SecurityGroupRules[].ReferencedGroupInfo.GroupId` | **last seen** (the rule id survives an edit) | `ModifySecurityGroupRules` |
+| `CONSUMES_ENDPOINT_SERVICE` | VPC endpoint → endpoint service | `VpcEndpoints[].ServiceName` | ends with its source | — |
+| `USES_SECURITY_GROUP` | VPC endpoint → SG | `VpcEndpoints[].Groups[].GroupId` | **last seen** | `ModifyVpcEndpoint` (`RemoveSecurityGroupIds`) |
+| `USES_SECURITY_GROUP` | ENI → SG | `NetworkInterfaces[].Groups[].GroupId` | **last seen** | `ModifyNetworkInterfaceAttribute` |
+| `USES_SECURITY_GROUP` | resolver endpoint → SG | `ListResolverEndpoints` → `ResolverEndpoints[].SecurityGroupIds[]` | ends with its source (set only by `CreateResolverEndpoint`) | — |
+| `MONITORS_TRAFFIC` | flow log → VPC / subnet / ENI / TGW attachment | `DescribeFlowLogs` → `FlowLogs[].ResourceId` | ends with its source (no modify operation for flow logs) | — |
+| `WRITES_LOGS` | flow log → log group / bucket | `FlowLogs[].LogGroupName`, `FlowLogs[].LogDestination` | ends with its source | — |
+| `WRITES_LOGS` | config recorder → bucket | `DescribeDeliveryChannels` → `DeliveryChannels[].s3BucketName` | **last seen** | `PutDeliveryChannel` |
+| `ATTACHED_TO_TRANSIT_GATEWAY`, `ATTACHES_VPC`, `PEERS_WITH_TRANSIT_GATEWAY` | attachment → TGW / VPC / peer TGW | `DescribeTransitGatewayAttachments` → `TransitGatewayAttachments[].TransitGatewayId`, `.ResourceId` | ends with its source | — |
+| `ASSOCIATED_WITH_TGW_ROUTE_TABLE` | attachment → TGW route table | `TransitGatewayAttachments[].Association.TransitGatewayRouteTableId` | **last seen** | `DisassociateTransitGatewayRouteTable` |
+| `PROPAGATES_TO_TGW_ROUTE_TABLE` | attachment → TGW route table | `GetTransitGatewayRouteTablePropagations(TransitGatewayRouteTableId)` → `TransitGatewayRouteTablePropagations[].TransitGatewayAttachmentId` (read per route table; this call is added to the network-plane reads) | **last seen** | `DisableTransitGatewayRouteTablePropagation` |
+| `CONNECTS_VPC` | peering → requester / accepter VPC | `DescribeVpcPeeringConnections` → `RequesterVpcInfo.VpcId`, `AccepterVpcInfo.VpcId` | ends with its source | — |
+| `FORWARDS_VPC_DNS` | resolver rule → VPC | `ListResolverRuleAssociations` → `ResolverRuleAssociations[].VPCId` (the association is not a node) | **last seen** | `DisassociateResolverRule` |
+| `FORWARDS_THROUGH_ENDPOINT` | resolver rule → outbound endpoint | `ListResolverRules` → `ResolverRules[].ResolverEndpointId` | **last seen** | `UpdateResolverRule` |
+| `BELONGS_TO_ACCOUNT` | each new regional type → owner account | the entry's `owner_path` (`req-aws-core-regional-containment-5`) | ends with its source (an owner does not change) | — |
+| `APPLIES_TO_TARGET` | enabled control / baseline → OU / account | `ListEnabledControls` → `enabledControls[].targetIdentifier`; `ListEnabledBaselines` → `enabledBaselines[].targetIdentifier` | ends with its source (`UpdateEnabledControl` and `UpdateEnabledBaseline` take no target) | — |
+| `GRANTS_PERMISSION_SET`, `GRANTS_ACCESS_TO_ACCOUNT`, `GRANTED_TO_GROUP` | assignment → permission set / account / group | `ListAccountAssignments` → `AccountAssignments[].PermissionSetArn`, `.AccountId`, `.PrincipalId` | ends with its source (all three are in the key) | — |
+| `REPORTS_TO_ADMINISTRATOR` | GuardDuty detector / Security Hub hub → account | `GetAdministratorAccount` → `Administrator.AccountId` | **last seen** | `DisassociateFromAdministratorAccount` |
+
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-reference-derivation-1 | Derivation Source Declared | Proposed | Every reference edge type aws_core's collector emits names, in its manifest or edge file, the source node type and the payload path it is derived from. A test fails on an emitted reference edge without one. | Consumer: core's `req-grid-reconcile-falsifier-5`. |
-| req-aws-core-reference-derivation-2 | Last-Seen Edges Listed | Proposed | The spec lists the reference edges that remain "last seen" until core re-derivation exists, so a reader does not treat them as current. | |
+| req-aws-core-reference-derivation-2 | Last-Seen Edges Listed | Proposed | *Last-seen reference edges* lists every reference edge this epic adds or newly collects, with its source call and payload path, and marks each **last seen** or ends-with-its-source. A test compares that table with `-1`'s machine-readable declarations and fails on an emitted reference edge the table omits. | Edges aws_core emitted before the epic, other than the four named, are covered by `-1`'s declaration, which is the exhaustive source once built. |
 
 ### Account Partition And GovCloud Pairing
 ----

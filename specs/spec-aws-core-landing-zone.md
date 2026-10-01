@@ -129,6 +129,21 @@ region.
 - **Users are not nodes** (ruling 2026-10-01). A `USER` assignment records `principal_type` and
   `principal_id` only, and no identity-store user is read or written. Groups are nodes because the
   question asked is which group reaches which account.
+- **One surface for the assignment listings.** Every assignment hangs directly off the instance
+  (`HOLDS_ACCOUNT_ASSIGNMENT`), but the inventory comes from many listings: the organization's
+  account set, one `ListPermissionSetsProvisionedToAccount` per account, and one
+  `ListAccountAssignments` per (account, permission set) pair. Core derives candidates by fanning
+  out from the surface's parent through its edge type (`req-grid-reconcile-candidates`), so a surface
+  recorded for one pair would nominate the assignments of every other pair. The rule is one
+  `HOLDS_ACCOUNT_ASSIGNMENT` surface per instance, recorded complete only when the account set read
+  to its end (the organization-wide `ListAccounts`) and every nested listing for every account read
+  to its end; any failed or partial call records it `enumeration_complete: false` with the reason.
+  No surface is recorded per pair. A per-pair parent node was considered and declined: AWS has no
+  object for "permission set P provisioned to account A" that it addresses or deletes on its own (an
+  assignment is removed by `DeleteAccountAssignment`, which names the whole assignment), so that
+  parent would be a node AWS does not address (`req-aws-core-network-plane`'s rule), with its own
+  falsifier to write. The cost of the aggregate is that one failed nested listing defers every
+  assignment's retirement for that run, which fails closed.
 - **Cost.** Assignments cost one call per (account × permission set provisioned to it). With fan-out
   that is bounded by the organization's size, and it is counted in the per-account results.
 - **Untaggable types declare it.** Identity-store groups and account assignments cannot be tagged in
@@ -144,6 +159,7 @@ region.
 | req-aws-landing-zone-identity-center-2 | Who Reaches Which Account | Proposed | A Gryphon query from a group to the accounts it can reach, with the permission set, is answered from assignment nodes and their three edges. | |
 | req-aws-landing-zone-identity-center-3 | No User Nodes | Proposed | No identity-store user is written as a node; a user assignment carries its principal id only. | Ruling 2026-10-01. |
 | req-aws-landing-zone-identity-center-4 | Retirement Path | Proposed | Permission set, group and assignment are containment targets with registered falsifiers passing the four-case harness. | |
+| req-aws-landing-zone-identity-center-5 | Assignment Surface Spans Nested Listings | Proposed | The collector records exactly one `HOLDS_ACCOUNT_ASSIGNMENT` surface per instance, complete only when the organization's account listing, every `ListPermissionSetsProvisionedToAccount` and every `ListAccountAssignments` read to their end; otherwise it is recorded incomplete with the reason. No surface is recorded per (account, permission set). A test fails one nested listing and asserts the surface is incomplete and no assignment is a candidate. | Core fans candidates out from parent and edge type (`req-grid-reconcile-candidates`), so a per-pair surface would nominate other pairs' assignments. Same rule as `req-aws-core-organizations-completeness-13`. |
 
 ### Security Services
 ----
@@ -164,7 +180,7 @@ Gruntwork's baselines turn these on per opt-in region (`control-tower-app-accoun
 | `aws_config_aggregator` **(new)** | `config:DescribeConfigurationAggregators` | aggregator ARN | service, as above | footprint, `HOSTS_CONFIG_AGGREGATOR` | `NoSuchConfigurationAggregatorException` | — (organization-wide vs account sources are typed fields) |
 | `aws_guardduty_detector` **(new)** | `guardduty:ListDetectors`, `GetDetector`, `GetAdministratorAccount` | (account, region, detector id) | field, `Tags`, **map** (`GetDetector` returns it) | footprint, `HOSTS_GUARDDUTY_DETECTOR` | `BadRequestException` naming the detector / absent from `ListDetectors` | `REPORTS_TO_ADMINISTRATOR` (→ administrator account) |
 | `aws_securityhub_hub` **(new)** | `securityhub:DescribeHub`, `GetEnabledStandards`, `GetAdministratorAccount` | hub ARN | service, `ListTagsForResource(ResourceArn)`, `Tags`, **map** | footprint, `HOSTS_SECURITYHUB_HUB` | `InvalidAccessException` "not subscribed" / `ResourceNotFoundException` | `REPORTS_TO_ADMINISTRATOR`. The enabled standards are a typed list |
-| `aws_access_analyzer` **(new)** | `accessanalyzer:ListAnalyzers` | analyzer ARN | field, **`tags`**, map (lowercase; read) | footprint, `HOSTS_ACCESS_ANALYZER` | `ResourceNotFoundException` | — (type `ACCOUNT\|ORGANIZATION` is a typed field) |
+| `aws_access_analyzer` **(new)** | `accessanalyzer:ListAnalyzers` | analyzer ARN | field, **`tags`**, map (lowercase; read) | footprint, `HOSTS_ACCESS_ANALYZER` | `ResourceNotFoundException` | — (`type` is a typed field holding the API's `Type` enum: `ACCOUNT`, `ORGANIZATION`, `ACCOUNT_UNUSED_ACCESS`, `ORGANIZATION_UNUSED_ACCESS`, `ACCOUNT_INTERNAL_ACCESS`, `ORGANIZATION_INTERNAL_ACCESS`; read: botocore 1.43.103 `accessanalyzer` model. A value outside the pinned enum is kept verbatim with an `UNKNOWN_ENUM_VALUE` warning, never rejected) |
 | EBS default encryption | `ec2:GetEbsEncryptionByDefault`, `GetEbsDefaultKmsKeyId` | — (a per-region account setting, not a resource) | not a resource, so nothing to tag | — (typed fields on the existing footprint: `ebs_encryption_by_default`, `ebs_default_kms_key_id`) | — (replaced every run) | — |
 | S3 account public-access block | `s3control:GetPublicAccessBlock(AccountId)` | — (an account setting) | not a resource, so nothing to tag | — (typed fields on `aws_account`: the four block flags) | — (replaced every run) | — |
 
