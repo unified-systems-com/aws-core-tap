@@ -49,7 +49,9 @@ class AwsPolicyStatement(BaseModel):
     ``content:<content_sha256>`` for a statement without one, ``dupsid:<sha256>`` for a repeated
     ``Sid``. ``content_sha256`` is the SHA-256 of the canonical form built from the stored typed
     fields (``collectors/boto3_collector/policy_documents.py``). Statement content is access-control
-    configuration (category ``access_policy``, ``req-aws-collector-manifest-6``). AWS cannot tag a
+    configuration: ``collectors/boto3_collector/reader_sensitivity.json`` declares ``conditions``,
+    ``principals``, ``not_principals``, ``resources`` and ``not_resources`` as ``access_policy``
+    locations, and the reader refuses to write the type without that declaration. AWS cannot tag a
     statement: ``tags`` is always ``{}`` and its lane is declared ``none``.
 
     Spec: specs/spec-aws-core-v0.md (req-aws-core-organizations-completeness-7, -8, -9, -10)

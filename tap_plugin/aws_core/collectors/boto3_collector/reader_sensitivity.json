@@ -1,0 +1,97 @@
+{
+  "description": "Sensitivity declarations for the types a custom reader emits. These types have no manifest entry, so they have no entry-level `sensitivity` block (req-aws-collector-manifest-6). One row per (entity type, reader). `sensitivity` validates against aws_resource_manifest.schema.json $defs/sensitivity. Location paths use the manifest's path dialect, rooted at the emitted node's TYPED FIELDS (a custom reader stores no configuration envelope), so a path's first segment is a model field. Enforced by the reader at write time (organizations.py, add_node): a type with no row is not written; an `unreviewed` row is not written, because typed fields have no persist_configuration switch, so this mirrors req-aws-collector-manifest-7; and a `credential` location is not written, because a typed field cannot be withheld while the node is kept, so this mirrors req-aws-collector-field-projection-7's credential default.",
+  "rows": [
+    {
+      "entity_type": "aws_core__aws_organization",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the organization model's typed fields and botocore organizations DescribeOrganization, ListRoots, ListAWSServiceAccessForOrganization and ListTagsForResource output shapes (1.43.106), 2026-10-01.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set root tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_organizational_unit",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the OU model's typed fields and botocore ListOrganizationalUnitsForParent and ListTagsForResource output shapes (1.43.106), 2026-10-01.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set OU tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_account",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the fields organizations.py writes for an account (name, email, status, configuration from ListAccounts) and ListTagsForResource (botocore 1.43.106), 2026-10-01.",
+        "locations": [
+          { "path": "email", "category": "personal_data", "reason": "The account's root email address, often a person's address.", "evidence": "reviewer_judgement" },
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set account tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_service_control_policy",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the SCP model's typed fields and botocore ListPolicies (PolicySummary) and ListTagsForResource output shapes (1.43.106), 2026-10-01.",
+        "locations": [
+          { "path": "description", "category": "free_text", "reason": "Operator-authored policy description.", "evidence": "reviewer_judgement" },
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set policy tag values.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_organizations_policy",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the policy model's typed fields and botocore ListPolicies (PolicySummary) and ListTagsForResource output shapes (1.43.106), 2026-10-01.",
+        "locations": [
+          { "path": "description", "category": "free_text", "reason": "Operator-authored policy description.", "evidence": "reviewer_judgement" },
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set policy tag values.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_delegated_administration",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the delegation model's typed fields (organization id, account id, service principal, delegation date) and botocore ListDelegatedServicesForAccount (1.43.106), 2026-10-01. The email and name ListDelegatedAdministrators returns are not stored."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_policy_statement",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the statement model's typed fields and the IAM policy grammar SCPs and RCPs use, 2026-10-01. Follows the manifest's precedent for IAM trust policies (aws_iam_role AssumeRolePolicyDocument: access_policy, with sts:ExternalId named in the reason).",
+        "locations": [
+          { "path": "conditions", "category": "access_policy", "reason": "Condition values name account ids, organization ids, source IPs, VPC endpoints, principal ARNs and can name an sts:ExternalId value.", "evidence": "reviewer_judgement" },
+          { "path": "principals", "category": "access_policy", "reason": "RCP principals: the accounts, roles and services a resource policy admits.", "evidence": "reviewer_judgement" },
+          { "path": "not_principals", "category": "access_policy", "reason": "RCP NotPrincipal values, in the same form as principals.", "evidence": "reviewer_judgement" },
+          { "path": "resources", "category": "access_policy", "reason": "Resource ARN patterns naming accounts, buckets and keys the statement governs.", "evidence": "reviewer_judgement" },
+          { "path": "not_resources", "category": "access_policy", "reason": "NotResource ARN patterns, in the same form as resources.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_tag_policy_rule",
+      "reader": "organizations",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the tag-rule model's typed fields and AWS's tag policy syntax (tag_key, tag_value, enforced_for), 2026-10-01.",
+        "locations": [
+          { "path": "allowed_values", "category": "customer_content", "reason": "Operator-chosen allowed tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    }
+  ]
+}

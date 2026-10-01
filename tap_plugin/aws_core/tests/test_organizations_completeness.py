@@ -1077,3 +1077,65 @@ class TestFalsifierWiring:
             cls = import_string(manifest["falsifiers"][entity_type])
             assert issubclass(cls, Falsifier)
             assert cls()
+
+
+# ---------------------------------------------------------------------------
+# Sensitivity of custom-reader types (req-aws-collector-manifest-6/-7, type-level equivalent)
+# ---------------------------------------------------------------------------
+
+
+class TestReaderSensitivity:
+    @pytest.mark.spec("req-aws-collector-manifest-6")
+    def test_every_emitted_type_declares_sensitivity_on_its_own_fields(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.organizations import reader_sensitivity
+
+        from tap_grid.registry import get_model_class
+
+        declared = reader_sensitivity()
+        enabled = [(t, "ENABLED") for t in ("SERVICE_CONTROL_POLICY", "TAG_POLICY")]
+        tree = collect_organization(_govcloud_org(enabled=enabled), DIMENSIONS)
+        emitted = {n["entity"]["entity_type"] for n in tree.nodes}
+        assert emitted <= set(declared), emitted - set(declared)
+        for entity_type, block in declared.items():
+            fields = set(get_model_class(entity_type).FIELD_CRUD_SCHEMA)
+            for location in block.get("locations", []):
+                assert location["path"].split("[]")[0].split(".")[0] in fields, (entity_type, location["path"])
+
+    @pytest.mark.spec("req-aws-collector-manifest-6")
+    def test_statement_access_policy_fields_are_declared(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.organizations import reader_sensitivity
+
+        block = reader_sensitivity()[POLICY_STATEMENT]
+        categories = {loc["path"]: loc["category"] for loc in block["locations"]}
+        for path in ("conditions", "principals", "not_principals", "resources", "not_resources"):
+            assert categories[path] == "access_policy", path
+
+    @pytest.mark.spec("req-aws-collector-manifest-7")
+    @pytest.mark.parametrize(
+        "replacement",
+        [
+            None,
+            {"status": "unreviewed"},
+            {
+                "status": "reviewed_may_contain",
+                "basis": "test",
+                "locations": [{"path": "conditions", "category": "credential", "reason": "test", "evidence": "reviewer_judgement"}],
+            },
+        ],
+        ids=["undeclared", "unreviewed", "credential"],
+    )
+    def test_statements_are_not_written_without_a_safe_declaration(self, replacement: dict[str, Any] | None) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.organizations import reader_sensitivity
+
+        declared = dict(reader_sensitivity())
+        if replacement is None:
+            declared.pop(POLICY_STATEMENT)
+        else:
+            declared[POLICY_STATEMENT] = replacement
+        tree = collect_organization(_govcloud_org(), DIMENSIONS, sensitivity=declared)
+        assert _nodes(tree, POLICY_STATEMENT) == []
+        assert any(n.code == "ORG_NODE_SKIPPED" and n.data.get("entity_type") == POLICY_STATEMENT for n in tree.notices)
+        scps = {_id(n) for n in _nodes(tree, SERVICE_CONTROL_POLICY)}
+        refused = [s for s in tree.listings if s.edge_type == DECLARES_STATEMENT and s.subject in scps]
+        assert refused and all(s.admitted is False for s in refused), "a refused child withdraws admitted"
+        assert _nodes(tree, SERVICE_CONTROL_POLICY), "only the refused type is withheld"

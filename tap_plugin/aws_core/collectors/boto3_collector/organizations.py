@@ -79,10 +79,13 @@ falls back to ``Account.Status``), and that service control policies are enabled
 
 from __future__ import annotations
 
+import functools
+import json
 import re
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from botocore.config import Config
@@ -185,6 +188,50 @@ _DENIED_CODES = frozenset(
 #: suspended accounts stay visible in Organizations (for a period AWS controls) — visibility, not
 #: existence, is what a listing observes, so these are reported in ``status`` and never dropped.
 INACTIVE_ACCOUNT_STATES = frozenset({"SUSPENDED", "PENDING_CLOSURE", "CLOSED"})
+
+
+#: This reader's name in the custom-reader registries (tag_lanes.json, reader_sensitivity.json).
+READER = "organizations"
+_HERE = Path(__file__).resolve().parent
+
+
+@functools.cache
+def reader_sensitivity() -> dict[str, dict[str, Any]]:
+    """``{entity type: sensitivity block}`` for every type this reader may emit, from
+    ``reader_sensitivity.json``, each block validated against the manifest schema's
+    ``$defs/sensitivity`` (``req-aws-collector-manifest-6``). An invalid file raises: it is a
+    defect in the plugin, and the collector isolates it like any other defect in this read."""
+    import jsonschema
+
+    schema = json.loads((_HERE / "aws_resource_manifest.schema.json").read_text())
+    block_schema = {**schema["$defs"]["sensitivity"], "$defs": schema["$defs"]}
+    declared: dict[str, dict[str, Any]] = {}
+    for row in json.loads((_HERE / "reader_sensitivity.json").read_text())["rows"]:
+        if row["reader"] != READER:
+            continue
+        jsonschema.validate(row["sensitivity"], block_schema)
+        if row["entity_type"] in declared:
+            raise ValueError(f"reader_sensitivity.json declares {row['entity_type']} twice for {READER}")
+        declared[row["entity_type"]] = row["sensitivity"]
+    return declared
+
+
+def sensitivity_refusal(entity_type: str, declared: dict[str, dict[str, Any]]) -> str | None:
+    """Why a node of ``entity_type`` may not be written by this reader, or None.
+
+    The type-level equivalent of the manifest's per-entry rules for a reader that stores typed
+    fields only: there is no ``persist_configuration`` switch, so a type nobody reviewed
+    (``req-aws-collector-manifest-7``) or one with a ``credential`` location
+    (``req-aws-collector-field-projection-7``'s default) is not written at all."""
+    block = declared.get(entity_type)
+    if block is None:
+        return "no sensitivity declaration in reader_sensitivity.json"
+    if block["status"] == "unreviewed":
+        return "its sensitivity is unreviewed, and a custom reader's typed fields cannot be withheld"
+    credential = [loc["path"] for loc in block.get("locations", []) if loc["category"] == "credential"]
+    if credential:
+        return f"its typed field(s) {', '.join(credential)} are declared credential"
+    return None
 
 
 def organizations_client(session: Any, region: str) -> Any:
@@ -392,9 +439,10 @@ def _aggregate(reads: list[_Read], *, why: str = "") -> _Read:
 class _Reader:
     """One Organizations read. Holds the client, the accumulators and the tag-permission latch."""
 
-    def __init__(self, client: Any, dimensions: dict[str, str]) -> None:
+    def __init__(self, client: Any, dimensions: dict[str, str], sensitivity: dict[str, dict[str, Any]] | None = None) -> None:
         self.client = client
         self.dimensions = dimensions
+        self.sensitivity = reader_sensitivity() if sensitivity is None else sensitivity
         self.tree = OrganizationTree()
         #: Once ListTagsForResource is denied it is denied for every resource; stop asking.
         self._tags_denied = False
@@ -552,6 +600,12 @@ class _Reader:
                 "ORG_NODE_SKIPPED",
                 f"{entity_type} {natural_key}: skipped, tags could not be read this run",
                 entity_type=entity_type,
+            )
+            return False
+        refused = sensitivity_refusal(entity_type, self.sensitivity)
+        if refused is not None:
+            self.notice(
+                "warn", "ORG_NODE_SKIPPED", f"{entity_type} {natural_key}: skipped, {refused}", entity_type=entity_type
             )
             return False
         problem = _schema_problem(entity_type, fields)
@@ -1205,18 +1259,22 @@ def _iso(value: Any) -> str:
     return str(value or "")
 
 
-def collect_organization(client: Any, dimensions: dict[str, str]) -> OrganizationTree:
+def collect_organization(
+    client: Any, dimensions: dict[str, str], *, sensitivity: dict[str, dict[str, Any]] | None = None
+) -> OrganizationTree:
     """Read the Organizations tree with ``client``; never raises for an AWS failure.
 
     ``dimensions`` are stamped on every node and edge (the run's own
-    ``{"cloud", "aws_account", "aws_region"}``, region ``global``).
+    ``{"cloud", "aws_account", "aws_region"}``, region ``global``). ``sensitivity`` replaces
+    ``reader_sensitivity()`` (tests only).
     """
-    return _Reader(client, dimensions).collect()
+    return _Reader(client, dimensions, sensitivity).collect()
 
 
 __all__ = [
     "ACCOUNT",
     "ACCOUNT_NOT_REGISTERED",
+    "READER",
     "CONTAINMENT_SURFACES",
     "DECLARES_STATEMENT",
     "DECLARES_TAG_RULE",
@@ -1233,6 +1291,8 @@ __all__ = [
     "is_aws_managed_policy_arn",
     "organization_id_of_policy_arn",
     "policy_id_of_arn",
+    "reader_sensitivity",
+    "sensitivity_refusal",
     "statement_natural_key",
     "tag_rule_natural_key",
     "ENROLLS_ACCOUNT",
