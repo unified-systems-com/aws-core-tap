@@ -20,7 +20,8 @@ One row per account and region (an ``aws_account_region`` footprint), one column
 node is "not seen": the collector proves a service is off only by a complete, empty listing, and that
 completeness statement lives on the run's batch, which Gryphon does not read. So absence is unknown here,
 and "off" appears only where AWS itself answered off (a false flag, a stopped recorder, a disabled
-detector or analyzer, a failed baseline).
+detector or analyzer, a failed baseline). Design nodes (dcom=design) are planned, not observed: a design
+footprint gets no row, and a design account, service node or baseline is never read as AWS's answer.
 
 Reads go through Gryphon (``execute_gryphon_raw``, gated on ``grid.read``), one query per control because
 Gryphon's OPTIONAL MATCH v0 allows one optional hop and returns only its count; folding the rows into the
@@ -48,13 +49,15 @@ ON, OFF, UNKNOWN, FAILED = "on", "off", "unknown", "failed"
 
 FOOTPRINTS_QUERY = (
     f"MATCH (f:{FOOTPRINT}) RETURN f.entity_id AS footprint, f.name AS name, f.data.account_id AS account_id, "
-    "f.data.region_code AS region, f.data.ebs_encryption_by_default AS ebs, f.data.ebs_default_kms_key_id AS ebs_key"
+    "f.data.region_code AS region, f.data.ebs_encryption_by_default AS ebs, f.data.ebs_default_kms_key_id AS ebs_key, "
+    "f.dimensions AS dims"
 )
 ACCOUNTS_QUERY = (
     f"MATCH (f:{FOOTPRINT})-[:BELONGS_TO_ACCOUNT__aws_core]->(a:aws_core__aws_account) "
     "RETURN f.entity_id AS footprint, a.entity_id AS account, a.name AS account_name, "
     "a.data.s3_block_public_acls AS block_public_acls, a.data.s3_ignore_public_acls AS ignore_public_acls, "
-    "a.data.s3_block_public_policy AS block_public_policy, a.data.s3_restrict_public_buckets AS restrict_public_buckets"
+    "a.data.s3_block_public_policy AS block_public_policy, a.data.s3_restrict_public_buckets AS restrict_public_buckets, "
+    "a.dimensions AS dims"
 )
 TREE_QUERY = "MATCH (c)-[:NESTED_UNDER_PARENT__aws_core]->(p) RETURN c.entity_id AS child, p.entity_id AS parent"
 BASELINES_QUERY = (
@@ -200,7 +203,11 @@ def fold_baseline(footprints: list[dict[str, Any]], accounts: list[dict[str, Any
                   services: dict[str, list[dict[str, Any]] | None], tree: list[dict[str, Any]] | None,
                   baselines: list[dict[str, Any]] | None, account_failed: bool = False) -> dict[str, Any]:
     """The matrix. A ``None`` read is a failed read: its column says failed, never off."""
-    by_fp_account = {r["footprint"]: r for r in accounts if r.get("footprint")}
+    # A design footprint or account (dcom=design) is planned, not observed: its settings are never
+    # drawn as AWS's answer. Design footprints get no row; a design account leaves S3 and Control Tower
+    # unknown on the observed footprint it is linked to.
+    footprints = _observed(footprints)
+    by_fp_account = {r["footprint"]: r for r in _observed(accounts) if r.get("footprint")}
     parent = {r["child"]: r["parent"] for r in (tree or []) if r.get("child") and r.get("parent")}
     covering: dict[str, list[dict[str, Any]]] = {}
     for b in _observed(baselines or []):
