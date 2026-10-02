@@ -45,13 +45,14 @@ logger = logging.getLogger(__name__)
 NESTED = "NESTED_UNDER_PARENT__aws_core"
 SCOPED = "SCOPED_TO_COMPLIANCE_BOUNDARY__compliance_core"
 ACCOUNT = "aws_core__aws_account"
-SG ="aws_core__aws_security_group"
+SG = "aws_core__aws_security_group"
 SCP = "aws_core__aws_service_control_policy"
 STATEMENT = "aws_core__aws_policy_statement"
 ROLE = "aws_core__aws_iam_role"
 
-#: A rule open to the whole internet, as Postgres prints a rule list as text: the quoted CIDR value.
-OPEN_TO_INTERNET_RE = r'"(0\.0\.0\.0/0|::/0)"'
+#: A rule open to the whole internet, as Postgres prints a rule list as text: the CIDR key and its value
+#: together, so a rule whose Description merely mentions 0.0.0.0/0 is not flagged.
+OPEN_TO_INTERNET_RE = r'"CidrIp(v6)?": "(0\.0\.0\.0/0|::/0)"'
 #: A rule that allows every protocol (and so every port).
 ALL_PROTOCOLS_RE = '"IpProtocol": "-1"'
 #: The statement belongs to a service control policy (its policy ARN names the policy type).

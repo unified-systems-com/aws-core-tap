@@ -1595,7 +1595,7 @@
             "definition": {
               "query": [
                 "MATCH (f:aws_core__aws_account_region)-[:HOSTS_SECURITY_GROUP__aws_core]->(s:aws_core__aws_security_group)-[:RESIDES_IN_VPC__aws_core]->(v:aws_core__aws_vpc)",
-                "WHERE s.data.configuration.IpPermissions =~ \"\\\"(0\\\\.0\\\\.0\\\\.0/0|::/0)\\\"\"",
+                "WHERE s.data.configuration.IpPermissions =~ \"\\\"CidrIp(v6)?\\\": \\\"(0\\\\.0\\\\.0\\\\.0/0|::/0)\\\"\"",
                 "RETURN v.name AS vpc, f.data.region_code AS region, s.name AS sg"
               ]
             }
@@ -1717,7 +1717,7 @@
             "description": "States what the firewall-rules page reads and what it cannot, so a reader does not take a per-group flag for a per-rule finding.",
             "view": "tap_web/panels/text_panel.html",
             "config": {
-              "text": "Rules are not nodes yet. Each security group carries its rules only in its raw configuration (IpPermissions for inbound, IpPermissionsEgress for outbound), and Gryphon cannot walk into a JSON list.\n\nWhat this page does with that:\n• Rule counts are the length of each list.\n• \"Open to the internet\" and \"All-protocol\" match the list as text (0.0.0.0/0 or ::/0; IpProtocol -1). They flag the group when any rule matches. They cannot say whether the open range and the all-protocol entry are the same rule, which ports are open, or what a rule references.\n• Outbound 0.0.0.0/0 is AWS's default for every new group, so it is counted, not flagged.\n\nPer-rule nodes, with ports, sources and references as fields and edges, are aws-core-tap#64."
+              "text": "Rules are not nodes yet. Each security group carries its rules only in its raw configuration (IpPermissions for inbound, IpPermissionsEgress for outbound), and Gryphon cannot walk into a JSON list.\n\nWhat this page does with that:\n• Rule counts are the length of each list.\n• \"Open to the internet\" and \"All-protocol\" match the list as text (a CidrIp or CidrIpv6 of 0.0.0.0/0 or ::/0; IpProtocol -1). They flag the group when any rule matches. They cannot say whether the open range and the all-protocol entry are the same rule, which ports are open, or what a rule references.\n• Outbound 0.0.0.0/0 is AWS's default for every new group, so it is counted, not flagged.\n\nPer-rule nodes, with ports, sources and references as fields and edges, are aws-core-tap#64."
             }
           }
         },
