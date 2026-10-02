@@ -1,0 +1,49 @@
+{% comment %}
+aws-scp-rulebook — req-aws-core-panel-scp-rulebook. SCP statements of one effect (default Deny), grouped by
+policy, each policy with what it is attached to, each statement one numbered rule in plain words.
+{% endcomment %}
+<div class="tap-panel tap-panel--aws-scp-rulebook awp">
+  <header class="awp__head{% if effect == 'Deny' %} awp__head--loud{% endif %}">
+    <p class="awp__kind">AWS · service control policies</p>
+    <h3>{{ title|default:"The rulebook" }}</h3>
+    <p class="awp__sub">{% if intro %}{{ intro }}{% else %}Every {{ effect }} statement in a service control policy, in words. An SCP sets the most an account may do; a Deny here holds even against an administrator in the accounts it reaches.{% endif %}</p>
+  </header>
+{% if error %}
+  <p class="awp__failed">The statement read failed; see the server log ([c4d1]). This is not an empty rulebook.</p>
+{% elif not policies %}
+  <p class="awp__absent">No service control policy on the grid declares a {{ effect }} statement.</p>
+{% else %}
+  {% for p in policies %}
+  <section class="awp-policy{% if p.targets_known and not p.targets %} awp-policy--idle{% endif %}">
+    <h4 class="awp-policy__name"><code>{{ p.name }}</code>
+      {% if p.aws_managed is True %}<span class="awp-badge awp-badge--muted">AWS-managed</span>{% elif p.aws_managed is False %}<span class="awp-badge awp-badge--scope">customer</span>{% endif %}
+    </h4>
+    {% if p.description %}<p class="awp-policy__desc">{{ p.description }}</p>{% endif %}
+    <p class="awp-policy__targets">
+      {% if not p.targets_known %}<span class="awp__muted">Attachments could not be read.</span>
+      {% elif p.targets %}Applies to {% for t in p.targets %}<span class="awp-target">{{ t.name }} <span class="awp__muted">{{ t.kind }}</span></span>{% if not forloop.last %} {% endif %}{% endfor %}
+      {% else %}<span class="awp-badge awp-badge--warn">attached to nothing</span> <span class="awp__muted">— has no effect until attached.</span>{% endif %}
+    </p>
+    <ol class="awp-rules">
+      {% for r in p.rules %}
+      <li class="awp-rule" value="{{ r.number }}">
+        <p class="awp-rule__text">
+          {% if r.sid %}<strong class="awp-rule__sid">{{ r.sid }}</strong> — {% endif %}<span class="awp-rule__verb awp-rule__verb--{{ effect|lower }}">{{ verb }}</span>
+          {% if r.actions.lead %}{{ r.actions.lead }}{% endif %}{% for a in r.actions.items %} <code>{{ a }}</code>{% if not forloop.last %},{% endif %}{% endfor %}
+          on {% if r.resources.lead %}{{ r.resources.lead }}{% endif %}{% for x in r.resources.items %} <code>{{ x }}</code>{% if not forloop.last %},{% endif %}{% endfor %}{% if not r.conditions %}.{% endif %}
+        </p>
+        {% if r.conditions %}
+        <ul class="awp-rule__when">
+          {% for c in r.conditions %}
+          <li>{% if forloop.first %}when{% else %}and{% endif %} <code>{{ c.key }}</code> <span title="{{ c.raw }}">{{ c.words }}</span>{% for v in c.values %} <code>{{ v }}</code>{% if not forloop.last %} or{% endif %}{% endfor %}{% if c.if_exists %} <span class="awp__muted">({{ c.if_exists }})</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endfor %}
+  <p class="awp__muted awp-rules__foot">{{ rule_count }} {{ effect }} rule{{ rule_count|pluralize }} in {{ policies|length }} polic{{ policies|length|pluralize:"y,ies" }}. Read from the <code>aws_policy_statement</code> nodes each policy declares.</p>
+{% endif %}
+</div>

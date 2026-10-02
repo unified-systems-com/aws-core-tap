@@ -43,6 +43,11 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-page-organization | [AWS Pages](#aws-pages) | Implemented | `/aws/organization`: the OU tree as nested boxes, SCP attachments, account placement |
 | req-aws-core-page-network | [AWS Pages](#aws-pages) | Implemented | `/aws/network`: transit gateways, attachments, VPCs around their subnets, gateways, firewalls, Direct Connect |
 | req-aws-core-panel-counts | [AWS Pages](#aws-pages) | Implemented | The `aws-counts` panel type: count tiles over the estate |
+| req-aws-core-page-scps | [AWS Pages](#aws-pages) | Implemented | `/aws/scps`: every SCP, its statements and attachments, the Deny statements as a rulebook |
+| req-aws-core-page-security-groups | [AWS Pages](#aws-pages) | Implemented | `/aws/security-groups`: security groups by VPC with rule counts, groups open to the internet or allowing every protocol |
+| req-aws-core-page-baseline | [AWS Pages](#aws-pages) | Implemented | `/aws/baseline`: the security baseline per account and region, each control on, off or unknown |
+| req-aws-core-panel-baseline | [AWS Pages](#aws-pages) | Implemented | The `aws-baseline` panel type: the baseline matrix, unknown never shown as off |
+| req-aws-core-panel-scp-rulebook | [AWS Pages](#aws-pages) | Implemented | The `aws-scp-rulebook` panel type: SCP statements of one effect written out as rules |
 | req-aws-core-layout-hints | [AWS Pages](#aws-pages) | Implemented | Placement read from a node's own `layout:*` tags; where the organization's top level carries none, it is placed best-effort by OU role (amended 2026-10-02) |
 | req-aws-core-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | Explicitly deferred concerns |
 | req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Amended | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org's original "excluded by design" is narrowed — `AwsAccount` now has both a falsifier and containment, see the rows below |
@@ -999,24 +1004,35 @@ vocabulary, as above.
 ### AWS Pages
 ----
 RIDs: `req-aws-core-page-dashboard`, `req-aws-core-page-organization`, `req-aws-core-page-network`,
-`req-aws-core-panel-counts`, `req-aws-core-layout-hints`
+`req-aws-core-page-scps`, `req-aws-core-page-security-groups`, `req-aws-core-page-baseline`,
+`req-aws-core-panel-counts`, `req-aws-core-panel-baseline`, `req-aws-core-panel-scp-rulebook`,
+`req-aws-core-layout-hints`
 
 Status: `Implemented`
 
 Reusable pages over whatever AWS nodes a grid holds. Nothing on them names a deployment: a consumer
 that wants them in its own navigation adds a `NESTS_UNDER` edge from `/aws` to its page (highbar does,
-under `/highbar`). `/aws/organization` and `/aws/network` nest under `/aws` by URL. URLs carry no
-entity id.
+under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/security-groups` and
+`/aws/baseline` nest under `/aws` by URL. URLs carry no entity id.
 
 #### Implementation
 
-- Bundle `grift/pages.grift.json` (`pages` in `tap-plugin.toml`): three pages, three graph panels
-  with their projections, elevations, layouts and scene searches, five standard table panels, one
-  standard text panel and one `aws-counts` panel.
+- Bundle `grift/pages.grift.json` (`pages` in `tap-plugin.toml`): six pages, three graph panels
+  with their projections, elevations, layouts and scene searches, standard table and text panels,
+  `aws-counts` panels (one per page that shows tiles), one `aws-baseline` and one `aws-scp-rulebook`
+  panel. v0.4.0 added the last three pages and the side columns on `/aws` and `/aws/network`
+  (aws-core-tap#75, George, highbar Q135, 2026-10-02).
 - `/aws` (**AWS**): `counts` (aws-counts), `estate` (graph: organisation tree, transit gateways and
   their attachments, VPCs, internet and NAT gateways, network firewalls, the boundaries OUs are scoped
   to), `per-ou` (projection table: accounts directly in each OU), `scope` (projection table: what each
-  compliance boundary is scoped from).
+  compliance boundary is scoped from). Beside them, a side column (`col-2-iam`, 1fr against the main
+  column's 2fr): `iam` (aws-counts: roles AWS services assume, roles other accounts assume, roles anyone
+  can assume, IAM users without MFA), then one table per trust type from the role's trust-policy summary
+  fields — `roles-services` (`trusted_services`), `roles-accounts` (`trusted_account_ids`, never the
+  role's own account), `roles-anyone` (`trusts_wildcard_principal`), `roles-other` (none of the three:
+  principals in the role's own account or a federated provider) — and `users-no-mfa` (`mfa_enabled`
+  false; a user whose MFA was not read is not listed). Side tables use `chrome: minimal` with every row
+  loaded: the tiles above them carry the counts.
 - `/aws/organization` (**Organization**): `tree` (graph: organization ⊃ OU ⊃ account and nothing
   else, laid out by `aws-organization.js`), `scp` (SCP attachments), `placement` (each account and
   its parent). Policies, boundaries and Identity Center stay in the tables and on `/aws`; drawing
@@ -1026,7 +1042,52 @@ entity id.
   and its internet gateway; NAT gateways and network firewalls placed by `RESIDES_IN_SUBNET`),
   `attachments` (gateway, attachment, VPC, CIDR), `subnets` (VPC, subnet, availability zone, CIDR,
   public), `igw` (every internet gateway), `dx` (Direct Connect: a text panel that says plainly that
-  no connection is on the grid; the table of connections is future work).
+  no connection is on the grid; the table of connections is future work). Beside them (`col-2-exposure`):
+  `exposure` (aws-counts: default VPCs, public subnets, internet gateways), `default-vpcs` (each VPC with
+  `is_default`, by the footprint that `HOSTS_VPC` it) and `public-subnets` (each subnet with `public`).
+- `/aws/scps` (**Service control policies**, nav weight 230): main column `counts` (aws-counts: SCPs,
+  customer SCPs, SCP statements, Deny statements), `policies` (each SCP: AWS-managed or customer, its
+  description and how many targets it is `ATTACHED_TO_TARGET`, counted through Gryphon's one optional
+  hop), `statements` (each `aws_policy_statement` a policy `DECLARES_STATEMENT`: Sid, effect, actions,
+  NotAction, resources, conditions; NotResource is written out by the rulebook), `attachments` (the
+  same panel instance as `/aws/organization`'s `scp`); side column `rulebook` (aws-scp-rulebook, Deny).
+- `/aws/security-groups` (**Firewall rules**, nav weight 240): `counts` (aws-counts: security groups,
+  groups open to the internet inbound, groups with an all-protocol inbound rule, groups open to the
+  internet outbound), `groups` (each group the footprint `HOSTS_SECURITY_GROUP`, the VPC it
+  `RESIDES_IN_VPC`, inbound and outbound rule counts and the raw inbound list), `open` and
+  `all-protocols` (the groups each flag matches); side column `reach` (a text panel saying what the
+  page can and cannot see). **Narrowed:** rules exist only inside each group's raw `configuration`
+  (`IpPermissions`, `IpPermissionsEgress`). Gryphon cannot walk into a JSON list
+  (`req-grid-traversal-lang-filters-jsonpath` is Proposed), so a rule count is the list's length
+  (`arrayCount`) and each flag is a `=~` match over the list as Postgres prints it as text: `"0.0.0.0/0"`
+  or `"::/0"` quoted, and `"IpProtocol": "-1"`. A flag says some rule of the group matches; it cannot say
+  that the open range and the all-protocol entry are the same rule, which ports a rule opens, or what a
+  rule references. Outbound `0.0.0.0/0` is AWS's default for a new group, so it is counted, not flagged.
+  Per-rule nodes are aws-core-tap#64.
+- `/aws/baseline` (**Security baseline**, nav weight 250): `matrix` (aws-baseline).
+- Panel type `aws-baseline` (`panels/baseline/__init__.py`, `templates/aws_core/panels/baseline.html`,
+  `static/aws_core/css/posture.css`): one row per `aws_account_region` footprint, one column per
+  control, each on, off or unknown with the reason in the cell's title. EBS default encryption is the
+  footprint's `ebs_encryption_by_default`. The S3 public-access block is the four flags on the account
+  the footprint `BELONGS_TO_ACCOUNT` (on when all four are on, off when any is off). Config recorder,
+  GuardDuty, Security Hub and Access Analyzer are the nodes the footprint `HOSTS_*`: on when one is
+  recording / `ENABLED` / present / `ACTIVE`, off when one exists and none is. Control Tower is on when
+  an enabled baseline with status `SUCCEEDED` `APPLIES_TO_TARGET` the account or an OU above it
+  (`NESTED_UNDER_PARENT`, any depth), off when every covering baseline `FAILED`. Everything else is
+  unknown: a null field is not read, and a missing node is not seen. The collector proves a service is
+  off only with a complete, empty listing (spec-aws-core-landing-zone.md § Security Services), and that
+  completeness statement is kept on the run's batch, which Gryphon does not read; so absence is never
+  drawn as off. One Gryphon read per control (OPTIONAL MATCH v0 admits one optional hop and returns only
+  its count); folding is pure (`fold_baseline`); a failed read marks its column failed.
+- Panel type `aws-scp-rulebook` (`panels/scp_rulebook/__init__.py`,
+  `templates/aws_core/panels/scp_rulebook.html`, `static/aws_core/css/posture.css`): the statements of
+  `config.effect` (default `Deny`) grouped by policy, each policy with the targets it is
+  `ATTACHED_TO_TARGET` (or "attached to nothing — has no effect"), each statement one numbered rule:
+  "Denies every action on any resource when `aws:principalarn` matches `arn:…:root`". `*` reads as every
+  action / any resource, NotAction and NotResource as "every action except" / "any resource except",
+  and condition operators in words (`stringlike` → matches, `ForAllValues:` → every value, `IfExists` →
+  if present); an operator outside the vocabulary is shown as AWS spells it. Turning a statement into
+  words is pure (`rule_of`).
 - Layout module `static/aws_core/js/projections/aws-organization.js` (the organization graph): nests
   on `NESTED_UNDER_PARENT` only and drops any other node a search brings in. The organization lays
   its children out in columns; each OU lays its children out in rows, wrapping at its
@@ -1079,9 +1140,12 @@ entity id.
   bands. Nothing is placed by name or id. Standard icon-badge node style.
 - Panel type `aws-counts` (`panels/counts/__init__.py`, `templates/aws_core/panels/counts.html`,
   `static/aws_core/css/counts.css`), registered in `AppConfig.ready()`. `config.tiles` picks tiles
-  from a fixed catalogue (default all): accounts, OUs, SCPs, VPCs, internet gateways, internet-facing
-  load balancers, buckets not blocking public access, network firewalls, transit gateways,
-  attachments, KMS keys; `config.boundaries` (default true) adds one tile per compliance boundary
+  from a fixed catalogue (default: the dashboard set — accounts, OUs, SCPs, VPCs, internet gateways,
+  internet-facing load balancers, buckets not blocking public access, network firewalls, transit
+  gateways, attachments, KMS keys). The catalogue's later tiles appear only where an instance names
+  them, each narrowed by a Gryphon `WHERE`, never by Python over raw configuration: customer SCPs, SCP
+  statements, Deny statements, security groups, the three security-group rule flags, default VPCs,
+  public subnets, roles by trust type and IAM users without MFA; `config.boundaries` (default true) adds one tile per compliance boundary
   counting the accounts inside it, where an account is inside when it or any OU above it is
   `SCOPED_TO_COMPLIANCE_BOUNDARY` the boundary. Reads go through Gryphon; folding is pure.
 
@@ -1103,12 +1167,27 @@ entity id.
 | req-aws-core-panel-counts-1 | Counts Fold Purely | Implemented | Tiles fold from Gryphon envelopes by pure functions; a failed read renders "read failed", never 0. | `tests/test_counts_panel.py` |
 | req-aws-core-panel-counts-2 | Design Marked | Implemented | A tile whose counted nodes are all dcom=design is marked design. | `tests/test_counts_panel.py` |
 | req-aws-core-panel-counts-3 | Boundary Membership Follows The Tree | Implemented | An account counts inside a boundary when it or an OU above it at any depth is scoped to the boundary. | `tests/test_counts_panel.py` |
+| req-aws-core-panel-counts-4 | Dashboard Set By Default | Implemented | An instance with no `config.tiles` shows the eleven dashboard tiles; every later tile appears only where an instance names it, and narrows in Gryphon. | `tests/test_counts_panel.py` |
+| req-aws-core-page-dashboard-2 | IAM Side Column | Implemented | `/aws` mounts iam, roles-services, roles-accounts, roles-anyone, roles-other and users-no-mfa in a side column beside the existing four. | `tests/test_demo_pages_bundle.py`; rendered on the GovCloud demo grid, 2026-10-02. |
+| req-aws-core-page-network-5 | Exposure Side Column | Implemented | `/aws/network` mounts exposure, default-vpcs and public-subnets in a side column; the main column is unchanged. | `tests/test_demo_pages_bundle.py`; rendered on the GovCloud demo grid, 2026-10-02. |
+| req-aws-core-page-scps-1 | SCP Page Seeded | Implemented | `/aws/scps` exists, mounts counts, policies, statements, attachments and rulebook, and its attachments slot is the same panel instance as `/aws/organization`'s scp slot. | `tests/test_demo_pages_bundle.py` |
+| req-aws-core-page-security-groups-1 | Firewall Page Seeded | Implemented | `/aws/security-groups` exists and mounts counts, groups, open, all-protocols and reach. | `tests/test_demo_pages_bundle.py` |
+| req-aws-core-page-security-groups-2 | Flags Say What They Are | Implemented | The open-to-the-internet and all-protocol searches and tiles use one pattern each, matched over the group's rule list as text; the page states that a flag marks the group, not the rule. | `tests/test_counts_panel.py`, `tests/test_demo_pages_bundle.py` |
+| req-aws-core-page-baseline-1 | Baseline Page Seeded | Implemented | `/aws/baseline` exists and mounts matrix. | `tests/test_demo_pages_bundle.py` |
+| req-aws-core-panel-baseline-1 | Unknown Is Never Off | Implemented | A null setting, a missing service node, a missing account link and an uncovered account each render unknown; a failed read renders failed; only a value AWS answered renders off. | `tests/test_baseline_panel.py` |
+| req-aws-core-panel-baseline-2 | One Row Per Footprint | Implemented | The matrix has one row per `aws_account_region`, each with a cell per control in a fixed order, and a service node lands on the footprint that hosts it. | `tests/test_baseline_panel.py` |
+| req-aws-core-panel-scp-rulebook-1 | Statements In Words | Implemented | `*`, NotAction, NotResource and condition operators read as words; an unknown operator is shown as AWS spells it; rules are numbered across the book in policy order. | `tests/test_scp_rulebook_panel.py` |
+| req-aws-core-panel-scp-rulebook-2 | Unattached Is Said | Implemented | A policy attached to nothing says it has no effect; when attachments could not be read it says that instead. | `tests/test_scp_rulebook_panel.py` |
 
 #### Future
 
 - Nest VPCs in their accounts on the network graph from `BELONGS_TO_ACCOUNT` (`req-aws-core-placement`).
 - Replace the dx text panel with a table of connections, virtual interfaces and Direct Connect
   gateways (`req-aws-core-direct-connect`) once a grid holds one.
+- Per-rule security-group flags once rules are nodes (aws-core-tap#64): the open range, ports and
+  protocol of the same rule, and what a rule references.
+- An "off" for Config, GuardDuty, Security Hub and Access Analyzer when the collector's completeness
+  statement says the listing was complete and empty: needs that statement readable from a page.
 
 ### Resource Placement
 ----

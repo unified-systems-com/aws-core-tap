@@ -18,10 +18,13 @@ class AwsCoreConfig(TapPluginConfig):
             Boto3Collector,
         )
         from tap_cares.registry import register_collector
+        from tap_plugin.aws_core.panels.baseline import AwsBaselinePanelType
         from tap_plugin.aws_core.panels.counts import AwsCountsPanelType
+        from tap_plugin.aws_core.panels.scp_rulebook import AwsScpRulebookPanelType
         from tap_web.registry import panel_type_registry
 
-        panel_type_registry.register(AwsCountsPanelType.slug, AwsCountsPanelType)
+        for panel_type in (AwsCountsPanelType, AwsBaselinePanelType, AwsScpRulebookPanelType):
+            panel_type_registry.register(panel_type.slug, panel_type)
 
         register_collector(
             key="boto3",

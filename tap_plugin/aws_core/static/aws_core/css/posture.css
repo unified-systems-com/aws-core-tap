@@ -1,0 +1,70 @@
+/* aws_core posture panels: aws-baseline (req-aws-core-panel-baseline) and aws-scp-rulebook
+   (req-aws-core-panel-scp-rulebook). The type scale follows the estate's finding pages: a small uppercase
+   kind line, one large title, a muted sub line, sections, provenance collapsed. Tones: on = green,
+   off = red, unknown = grey, warn = amber. Text carries every state; colour is a second channel. */
+.awp { padding: .75rem 1rem 1rem; font-size: .95rem; color: #1e293b; }
+.awp code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .84em; background: #f1f5f9;
+  border-radius: 3px; padding: 0 .25rem; }
+.awp__muted { color: #64748b; }
+.awp__absent { color: #64748b; font-style: italic; }
+.awp__failed { color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 4px; padding: .5rem .75rem; }
+.awp__head { margin: 0 0 .9rem; padding-left: .9rem; border-left: 3px solid #cbd5e1; }
+.awp__head--loud { border-left-color: #dc2626; }
+.awp__kind { margin: 0 0 .15rem; font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: #64748b; }
+.awp__head h3 { margin: .1rem 0 .25rem; font-size: 1.4rem; line-height: 1.2; font-weight: 600; letter-spacing: -.01em; }
+.awp__sub { margin: 0; font-size: .9rem; color: #475569; max-width: 60rem; }
+
+.awp-pill { display: inline-block; min-width: 4.6rem; text-align: center; padding: .12rem .55rem; border-radius: 999px;
+  font-size: .74rem; font-weight: 600; font-variant-numeric: tabular-nums; cursor: help; border: 1px solid transparent; }
+.awp-pill--on { background: #dcfce7; color: #166534; }
+.awp-pill--off { background: #fee2e2; color: #991b1b; }
+.awp-pill--unknown { background: #f1f5f9; color: #64748b; border: 1px dashed #cbd5e1; }
+.awp-pill--failed { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+.awp-legend { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; margin: 0 0 .8rem; padding: 0;
+  font-size: .8rem; color: #475569; }
+.awp-legend .awp-pill { min-width: 0; margin-right: .3rem; cursor: default; }
+
+.awp-matrix__wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+.awp-matrix { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.awp-matrix th, .awp-matrix td { padding: .5rem .7rem; border-bottom: 1px solid #f1f5f9; text-align: center; vertical-align: middle; }
+.awp-matrix thead th { background: #f8fafc; font-weight: 600; font-size: .78rem; color: #334155; vertical-align: bottom; }
+.awp-matrix tbody tr:last-child th, .awp-matrix tbody tr:last-child td { border-bottom: 0; }
+.awp-matrix tbody tr:hover { background: #f8fafc; }
+.awp-matrix__where { text-align: left !important; white-space: nowrap; }
+.awp-matrix tbody .awp-matrix__where { font-weight: 500; }
+.awp-matrix__col { display: block; }
+.awp-matrix__tally { display: block; font-weight: 400; color: #64748b; font-size: .7rem; margin-top: .1rem; }
+.awp-matrix__acct { display: block; font-size: .72rem; font-weight: 400; }
+
+.awp-prov { margin-top: 1rem; font-size: .84rem; color: #475569; }
+.awp-prov summary { cursor: pointer; color: #64748b; }
+.awp-prov__list { margin: .6rem 0 0; display: grid; gap: .5rem; }
+.awp-prov__list dt { font-weight: 600; color: #334155; }
+.awp-prov__list dd { margin: .1rem 0 0; max-width: 70rem; }
+
+.awp-badge { display: inline-block; padding: .05rem .45rem; border-radius: 999px; font-size: .7rem; font-weight: 600;
+  vertical-align: .1em; background: #f1f5f9; color: #334155; }
+.awp-badge--muted { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+.awp-badge--scope { background: #ede9fe; color: #5b21b6; }
+.awp-badge--warn { background: #fef3c7; color: #92400e; }
+
+.awp-policy { margin-top: 1rem; padding: .7rem .85rem .5rem; border: 1px solid #e2e8f0; border-left: 3px solid #f87171;
+  border-radius: 5px; background: #fff; }
+.awp-policy--idle { border-left-color: #fbbf24; border-style: dashed solid dashed solid; }
+.awp-policy__name { margin: 0; font-size: 1rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: .45rem; align-items: baseline; }
+.awp-policy__name code { background: none; padding: 0; font-size: .98rem; }
+.awp-policy__desc { margin: .2rem 0 0; font-size: .86rem; color: #475569; }
+.awp-policy__targets { margin: .35rem 0 0; font-size: .82rem; color: #334155; }
+.awp-target { display: inline-block; margin: .1rem .15rem .1rem 0; padding: 0 .4rem; border: 1px solid #e2e8f0;
+  border-radius: 4px; background: #f8fafc; }
+.awp-rules { list-style: decimal; margin: .6rem 0 .2rem; padding-left: 1.6rem; display: grid; gap: .45rem; }
+.awp-rule::marker { color: #94a3b8; font-weight: 600; font-variant-numeric: tabular-nums; }
+.awp-rule__text { margin: 0; line-height: 1.5; }
+.awp-rule__sid { font-weight: 600; }
+.awp-rule__verb { font-weight: 700; }
+.awp-rule__verb--deny { color: #b91c1c; }
+.awp-rule__verb--allow { color: #15803d; }
+.awp-rule__when { list-style: none; margin: .15rem 0 0; padding: 0 0 0 .9rem; border-left: 2px solid #e2e8f0;
+  font-size: .86rem; color: #334155; display: grid; gap: .1rem; }
+.awp-rules__foot { margin: .9rem 0 0; font-size: .8rem; }
