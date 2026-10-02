@@ -113,3 +113,16 @@ def test_design_nodes_do_not_turn_a_control_on() -> None:
     planned = [{"target": "acct-1", "name": "b", "status": "SUCCEEDED", "dims": {"dcom": "design"}}]
     m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("f1", True)], {s.key: [] for s in SERVICES}, [], planned)
     assert _state(m, 0, "control_tower") == "unknown"
+
+
+def test_design_footprints_and_accounts_are_never_observed_off() -> None:
+    design = {"dcom": "design"}
+    fps = [{**_fp("f-design", "us-gov-east-1", ebs=False), "dims": design, "account_id": "222222222222"},
+           _fp("f-real", "us-gov-west-1", ebs=None)]
+    accts = [{**_acct("f-design", False), "dims": design},
+             {**_acct("f-real", False), "account": "acct-design", "dims": design}]
+    m = fold_baseline(fps, accts, {s.key: [] for s in SERVICES}, [], [])
+    assert [r["region"] for r in m["rows"]] == ["us-gov-west-1"]
+    assert m["accounts"] == 1 and m["cells_off"] == 0
+    assert _state(m, 0, "s3_pab") == "unknown"
+    assert _state(m, 0, "control_tower") == "unknown"
