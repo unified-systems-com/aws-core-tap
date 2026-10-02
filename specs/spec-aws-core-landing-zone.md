@@ -340,8 +340,11 @@ Status: `Proposed`
   modelled. Gruntwork's baseline must run there with `disable_macie`.
 - **AFT.** It is closed to new customers in GovCloud ([C-GCCT](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-controltower.html)).
 - **Archived findings, and writing back.** Config rules, conformance packs and active findings are
-  collected (`req-aws-landing-zone-findings`, aws-core-tap#76). Archived or resolved findings are
-  not read, and nothing updates a finding's workflow or archives it.
+  collected (`req-aws-landing-zone-findings`, aws-core-tap#76). Findings that left their
+  service's active set are not read: GuardDuty archived, Security Hub `RecordState` ARCHIVED,
+  Access Analyzer ARCHIVED or RESOLVED. A Security Hub finding whose record is ACTIVE but whose
+  workflow is RESOLVED or SUPPRESSED is still read, with `workflow_status` saying so: the workflow
+  is an operator's triage state, not the record's. Nothing updates a finding's workflow or archives it.
 - **Inspector and Detective.** No Gruntwork baseline read enables them (not found in the module reference pages).
 
 #### Acceptance Criteria
