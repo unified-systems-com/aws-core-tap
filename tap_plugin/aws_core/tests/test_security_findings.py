@@ -758,7 +758,13 @@ class TestDeclarations:
             ("at 12:30:45 on 999.1.1.1", "at 12:30:45 on 999.1.1.1"),
             (f"AWS::::Account:{MGMT}", f"AWS::::Account:{MGMT}"),
             ("cafe bad face 1234 a:b", "cafe bad face 1234 a:b"),
-            ("mapped ::ffff:192.0.2.1 here", "mapped ::ffff:[ip] here"),
+            ("mapped ::ffff:192.0.2.1 here", "mapped [ip] here"),
+            ("embedded 2001:db8::192.0.2.1 tail", "embedded [ip] tail"),
+            ("plain 2001:db8:85a3::8a2e:370:7334 v6", "plain [ip] v6"),
+            ("v6 at sentence end fe80::1.", "v6 at sentence end [ip]."),
+            ("plain 10.20.30.40 v4", "plain [ip] v4"),
+            ("node ip-172-31-5-9 down", "node [ip] down"),
+            ("No address here: just text, 3.5 stars, v1.2.3", "No address here: just text, 3.5 stars, v1.2.3"),
         ],
     )
     def test_redact_ips(self, text: str, expected: str) -> None:

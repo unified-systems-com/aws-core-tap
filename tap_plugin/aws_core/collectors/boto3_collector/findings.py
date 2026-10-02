@@ -140,35 +140,45 @@ def standards_id_of(standards_arn: str) -> str:
 #: What an IP address in stored free text is replaced with.
 IP_REDACTION = "[ip]"
 _IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d])")
-#: An IPv6 candidate: one bounded run of hex digits and colons (no nested quantifier, so no
-#: catastrophic backtracking), kept only when ``ipaddress`` accepts it.
-_IPV6 = re.compile(r"(?<![\w:])[0-9A-Fa-f:]{2,39}(?![\w:])")
+#: An IPv6 candidate: one bounded run of hex digits, colons and dots (a single character class, no
+#: nested quantifier, so no catastrophic backtracking). The dot admits an embedded IPv4 tail
+#: (``2001:db8::192.0.2.1``), so the address is replaced whole. A candidate is replaced only when
+#: it has two or more colons and ``ipaddress`` accepts it, after a trailing sentence period is set aside.
+_IPV6 = re.compile(r"(?<![\w:.])[0-9A-Fa-f:.]{2,45}(?![\w:])")
 #: An EC2 private DNS host name spells its address with dashes (``ip-10-0-1-5``).
 _EC2_HOST = re.compile(r"\bip-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})\b")
 
 
-def redact_ips(text: str) -> str:
-    """``text`` with every IPv4 or IPv6 address, and every EC2 ``ip-a-b-c-d`` host name, replaced by
-    ``IP_REDACTION``. A finding's title is service- or product-written free text that can name an
-    address it observed; only the address is removed, so the title stays readable."""
+def _is_ip(text: str) -> bool:
+    try:
+        ipaddress.ip_address(text)
+    except ValueError:
+        return False
+    return True
 
-    def address(match: re.Match[str]) -> str:
-        if match.re is _IPV6 and match.group(0).count(":") < 2:
-            return match.group(0)
-        try:
-            ipaddress.ip_address(match.group(0))
-        except ValueError:
-            return match.group(0)
-        return IP_REDACTION
+
+def redact_ips(text: str) -> str:
+    """``text`` with every IPv6 or IPv4 address, and every EC2 ``ip-a-b-c-d`` host name, replaced by
+    ``IP_REDACTION``. A finding's title is service- or product-written free text that can name an
+    address it observed; only the address is removed, so the title stays readable.
+
+    IPv6 is replaced first, whole, so an IPv6 address with an embedded IPv4 tail never leaves its
+    network prefix behind; the IPv4 pass then sees only what is left."""
+
+    def ipv6(match: re.Match[str]) -> str:
+        candidate = match.group(0)
+        core = candidate.rstrip(".")
+        if core.count(":") >= 2 and _is_ip(core):
+            return IP_REDACTION + candidate[len(core) :]
+        return candidate
+
+    def ipv4(match: re.Match[str]) -> str:
+        return IP_REDACTION if _is_ip(match.group(0)) else match.group(0)
 
     def host(match: re.Match[str]) -> str:
-        try:
-            ipaddress.ip_address(".".join(match.groups()))
-        except ValueError:
-            return match.group(0)
-        return IP_REDACTION
+        return IP_REDACTION if _is_ip(".".join(match.groups())) else match.group(0)
 
-    return _EC2_HOST.sub(host, _IPV6.sub(address, _IPV4.sub(address, text)))
+    return _EC2_HOST.sub(host, _IPV4.sub(ipv4, _IPV6.sub(ipv6, text)))
 
 
 def _int(value: Any) -> int | None:
