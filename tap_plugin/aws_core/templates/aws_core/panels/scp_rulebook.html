@@ -35,7 +35,7 @@ policy, each policy with what it is attached to, each statement one numbered rul
         {% if r.conditions %}
         <ul class="awp-rule__when">
           {% for c in r.conditions %}
-          <li>{% if forloop.first %}when{% else %}and{% endif %} <code>{{ c.key }}</code> <span title="{{ c.raw }}">{{ c.words }}</span>{% for v in c.values %} <code>{{ v }}</code>{% if not forloop.last %} or{% endif %}{% endfor %}{% if c.if_exists %} <span class="awp__muted">({{ c.if_exists }})</span>{% endif %}</li>
+          <li>{% if forloop.first %}when{% else %}and{% endif %} <code>{{ c.key }}</code> <span title="{{ c.raw }}">{{ c.words }}</span>{% for v in c.values %} <code>{{ v }}</code>{% if not forloop.last %}{% if c.join == "or" %} or{% else %},{% endif %}{% endif %}{% endfor %}{% if c.if_exists %} <span class="awp__muted">({{ c.if_exists }})</span>{% endif %}</li>
           {% endfor %}
         </ul>
         {% endif %}

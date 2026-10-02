@@ -59,14 +59,14 @@ ACCOUNTS_QUERY = (
 TREE_QUERY = "MATCH (c)-[:NESTED_UNDER_PARENT__aws_core]->(p) RETURN c.entity_id AS child, p.entity_id AS parent"
 BASELINES_QUERY = (
     "MATCH (b:aws_core__aws_controltower_enabled_baseline)-[:APPLIES_TO_TARGET__aws_core]->(t) "
-    "RETURN t.entity_id AS target, b.name AS name, b.data.status AS status"
+    "RETURN t.entity_id AS target, b.name AS name, b.data.status AS status, b.dimensions AS dims"
 )
 PAB_FLAGS = ("block_public_acls", "ignore_public_acls", "block_public_policy", "restrict_public_buckets")
 
 
 def _service_query(edge: str, etype: str, field: str) -> str:
     return (f"MATCH (f:{FOOTPRINT})-[:{edge}]->(x:{etype}) "
-            f"RETURN f.entity_id AS footprint, x.name AS name, x.data.{field} AS value")
+            f"RETURN f.entity_id AS footprint, x.name AS name, x.data.{field} AS value, x.dimensions AS dims")
 
 
 @dataclass(frozen=True)
@@ -124,6 +124,11 @@ COLUMNS: tuple[tuple[str, str], ...] = (
 )
 
 
+def _observed(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Drop design nodes (dcom=design): a planned recorder or baseline is not one AWS reported."""
+    return [r for r in rows if (r.get("dims") or {}).get("dcom") != "design"]
+
+
 def _cell(state: str, note: str) -> dict[str, str]:
     return {"state": state, "note": note}
 
@@ -152,6 +157,10 @@ def s3_pab_cell(flags: dict[str, Any] | None) -> dict[str, str]:
 def service_cell(service: ServiceDef, rows: Iterable[dict[str, Any]]) -> dict[str, str]:
     """The service in one footprint, from the nodes it hosts (``rows`` already narrowed to the footprint)."""
     rows = list(rows)
+    observed = _observed(rows)
+    if rows and not observed:
+        return _cell(UNKNOWN, f"Only design (planned) {service.label} nodes on the grid: not observed.")
+    rows = observed
     if not rows:
         return _cell(UNKNOWN, f"No {service.label} node on the grid for this account and region: not seen, "
                               "which is not the same as off.")
@@ -194,7 +203,7 @@ def fold_baseline(footprints: list[dict[str, Any]], accounts: list[dict[str, Any
     by_fp_account = {r["footprint"]: r for r in accounts if r.get("footprint")}
     parent = {r["child"]: r["parent"] for r in (tree or []) if r.get("child") and r.get("parent")}
     covering: dict[str, list[dict[str, Any]]] = {}
-    for b in baselines or []:
+    for b in _observed(baselines or []):
         if b.get("target"):
             covering.setdefault(b["target"], []).append(b)
     by_fp_service: dict[str, dict[str, list[dict[str, Any]]]] = {}

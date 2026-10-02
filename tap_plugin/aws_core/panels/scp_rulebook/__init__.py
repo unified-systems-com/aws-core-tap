@@ -55,6 +55,9 @@ OPERATORS = {
     "dategreaterthan": "is after", "dategreaterthanequals": "is on or after",
     "bool": "is", "ipaddress": "is in", "notipaddress": "is not in", "null": "is absent:",
 }
+#: Negated operators read over several values as "none of" (IAM evaluates them as NOR, not OR).
+NONE_OF = {"is not": "is none of", "does not match": "matches none of", "is not in": "is in none of",
+           "is not (any case)": "is none of (any case)"}
 EFFECT_VERB = {"Deny": "Denies", "Allow": "Allows"}
 
 
@@ -96,8 +99,14 @@ def rule_of(row: dict[str, Any]) -> dict[str, Any]:
     for c in row.get("conditions") or []:
         if not isinstance(c, dict):
             continue
-        conditions.append({"key": str(c.get("condition_key") or ""), **_operator(str(c.get("operator") or "")),
-                           "values": _list(c.get("values"))})
+        op = _operator(str(c.get("operator") or ""))
+        values = _list(c.get("values"))
+        join = "or"
+        bare = op["words"].removeprefix("every value ").removeprefix("any value ")
+        if len(values) > 1 and bare in NONE_OF:
+            op["words"] = op["words"][: len(op["words"]) - len(bare)] + NONE_OF[bare]
+            join = ","
+        conditions.append({"key": str(c.get("condition_key") or ""), **op, "values": values, "join": join})
     return {
         "sid": str(row.get("sid") or ""),
         "actions": _scope(_list(row.get("actions")), _list(row.get("not_actions")), "every action", "every action"),
