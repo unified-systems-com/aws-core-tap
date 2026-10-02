@@ -196,22 +196,23 @@ _HERE = Path(__file__).resolve().parent
 
 
 @functools.cache
-def reader_sensitivity() -> dict[str, dict[str, Any]]:
-    """``{entity type: sensitivity block}`` for every type this reader may emit, from
-    ``reader_sensitivity.json``, each block validated against the manifest schema's
-    ``$defs/sensitivity`` (``req-aws-collector-manifest-6``). An invalid file raises: it is a
-    defect in the plugin, and the collector isolates it like any other defect in this read."""
+def reader_sensitivity(reader: str = READER) -> dict[str, dict[str, Any]]:
+    """``{entity type: sensitivity block}`` for every type ``reader`` may emit (this reader by
+    default; the landing-zone reader passes its own name), from ``reader_sensitivity.json``, each
+    block validated against the manifest schema's ``$defs/sensitivity``
+    (``req-aws-collector-manifest-6``). An invalid file raises: it is a defect in the plugin, and
+    the collector isolates it like any other defect in this read."""
     import jsonschema
 
     schema = json.loads((_HERE / "aws_resource_manifest.schema.json").read_text())
     block_schema = {**schema["$defs"]["sensitivity"], "$defs": schema["$defs"]}
     declared: dict[str, dict[str, Any]] = {}
     for row in json.loads((_HERE / "reader_sensitivity.json").read_text())["rows"]:
-        if row["reader"] != READER:
+        if row["reader"] != reader:
             continue
         jsonschema.validate(row["sensitivity"], block_schema)
         if row["entity_type"] in declared:
-            raise ValueError(f"reader_sensitivity.json declares {row['entity_type']} twice for {READER}")
+            raise ValueError(f"reader_sensitivity.json declares {row['entity_type']} twice for {reader}")
         declared[row["entity_type"]] = row["sensitivity"]
     return declared
 
@@ -335,6 +336,11 @@ class OrganizationTree:
     edges: list[dict[str, Any]] = field(default_factory=list)
     listings: list[Listing] = field(default_factory=list)
     notices: list[Notice] = field(default_factory=list)
+    #: Every member account id the organization-wide ``ListAccounts`` named, or None when that
+    #: listing did not read to its end (or was never reached). The landing-zone reader's Identity
+    #: Center assignment surface is complete only over a complete account set
+    #: (``req-aws-landing-zone-identity-center-5``).
+    member_accounts: list[str] | None = None
 
     def node_ids(self, entity_type: str) -> set[str]:
         return {n["entity"]["entity_id"] for n in self.nodes if n["entity"]["entity_type"] == entity_type}
@@ -841,6 +847,8 @@ class _Reader:
         """Membership from ``ListAccounts``; placement from ``ListAccountsForParent`` per parent."""
         members = self.read("list_accounts", "Accounts")
         membership = self.surface(members, RELATION_ORGANIZATION_ACCOUNTS, ENROLLS_ACCOUNT, ORGANIZATION, org_id)
+        if members.complete:
+            self.tree.member_accounts = sorted({str(a["Id"]) for a in members.items if a.get("Id")})
         by_id: dict[str, dict[str, Any]] = {str(a["Id"]): a for a in members.items if a.get("Id")}
         placement: dict[str, tuple[str, str, str]] = {}
         placement_complete = True

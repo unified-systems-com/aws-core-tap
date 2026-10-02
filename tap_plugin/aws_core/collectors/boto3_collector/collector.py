@@ -72,6 +72,7 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_entity_id, emit_containment, emit_edges
 from .hydrate import hydrate_item
+from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
@@ -119,6 +120,8 @@ _SITE_REGION_SKIPPED = "7f2a"
 _SITE_ORG_NOTICE = "c81a"
 _SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
 _SITE_ORG_READ_FAILED = "a4f0"
+_SITE_LZ_NOTICE = "7e19"
+_SITE_LZ_READ_FAILED = "b3c6"
 
 _DOCS = (
     CollectorDocRef(
@@ -654,6 +657,50 @@ class Boto3Collector(CollectorBase):
         node_envelopes.extend(org_tree.nodes)
         edge_envelopes.extend(org_tree.edges)
 
+        # --- Landing-zone governance (aws-core-tap#66, spec-aws-core-landing-zone.md) ---
+        # Control Tower, Identity Center and the per-region security services of this run's account:
+        # its own collaborator for the same reason the Organizations tree is (collectors/boto3_collector/
+        # landing_zone.py). Collect-only: every surface it records is inert until reconcile authority is
+        # armed. It never lets an AWS call escape; this guard isolates a defect in its own shaping code,
+        # exactly as the Organizations read above is isolated.
+        try:
+            landing_zone = collect_landing_zone(
+                lambda service, region: session.client(
+                    service, region_name=region, config=Config(retries={"mode": "standard"})
+                ),
+                account_id=account_id,
+                partition=partition,
+                regions=regions,
+                facts=facts,
+                member_accounts=org_tree.member_accounts,
+            )
+        except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
+            self.record_warn(
+                _SITE_LZ_READ_FAILED,
+                "LANDING_ZONE_READ_FAILED",
+                f"Landing-zone collection failed unexpectedly and was skipped: {type(exc).__name__}: {exc}",
+            )
+            landing_zone = LandingZoneRead()
+        for lz_notice in landing_zone.notices:
+            (self.record_warn if lz_notice.level == "warn" else self.record_info)(
+                _SITE_LZ_NOTICE, lz_notice.code, lz_notice.message, message_data=lz_notice.data
+            )
+        present = {n["entity"]["entity_id"] for n in node_envelopes}
+        node_envelopes.extend(n for n in landing_zone.nodes if n["entity"]["entity_id"] not in present)
+        edge_envelopes.extend(landing_zone.edges)
+        surfaces.extend(landing_zone.regional_surfaces)
+        # The two account settings are typed fields on nodes this run already writes: EBS default
+        # encryption on each footprint, the S3 account public-access block on the run's own account
+        # node (whichever path wrote it, the manifest singleton or the Organizations tree).
+        by_id = {n["entity"]["entity_id"]: n for n in node_envelopes}
+        for region, fields in landing_zone.footprint_fields.items():
+            footprint = by_id.get(str(footprint_id(account_id, region)))
+            if footprint is not None:
+                footprint["node"].update(fields)
+        own_account = by_id.get(str(account_entity_id(account_id)))
+        if own_account is not None and landing_zone.account_fields:
+            own_account["node"].update(landing_zone.account_fields)
+
         # --- one GRIFT batch per run (permissive: dangling edges resolve on a
         # later run by deterministic identity, never fail) ---
         document = assemble_batch(
@@ -710,7 +757,9 @@ class Boto3Collector(CollectorBase):
         applied_batches = [str(b.batch_entity_id) for b in result.imported_batches]
         for org_listing in org_tree.listings:
             self.record_surface(**org_listing.surface(applied_batches))
-        if not org_tree.listings:
+        for lz_listing in landing_zone.listings:
+            self.record_surface(**lz_listing.surface(applied_batches))
+        if not org_tree.listings and not landing_zone.listings:
             self.declare_no_surfaces()
 
         imported = result.counts.batches_imported

@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_ACCOUNT_ASSIGNMENT__aws_core",
+  "name": "Holds Account Assignment",
+  "description": "An IAM Identity Center instance holds an account assignment (instance -> assignment). Its inventory comes from many listings: the organization's ListAccounts, one ListPermissionSetsProvisionedToAccount per account and one ListAccountAssignments per (account, permission set). They are recorded as ONE surface per instance, complete only when every one of them read to its end (req-aws-landing-zone-identity-center-5): candidate derivation fans out from the parent through this edge type, so a surface per (account, permission set) would nominate every other pair's assignments.",
+  "sources": [
+    "aws_core__aws_identity_center_instance"
+  ],
+  "targets": [
+    "aws_core__aws_identity_center_account_assignment"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

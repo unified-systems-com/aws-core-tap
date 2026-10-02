@@ -1,0 +1,14 @@
+{
+  "slug": "HOSTS_CONFIG_DELIVERY_CHANNEL__aws_core",
+  "name": "Hosts Config Delivery Channel",
+  "description": "An account's footprint in one region hosts an AWS Config delivery channel (footprint -> delivery channel): a channel config:DescribeDeliveryChannels returned. Containment, parent -> child: the footprint declares this edge in CONTAINMENT_EDGES, so a delivery channel the grid holds under a footprint whose account_region.config_delivery_channels listing a run read to the end and did not name becomes a retirement candidate, which this type's falsifier then probes. Collected by the landing-zone reader (collectors/boto3_collector/landing_zone.py), which records that footprint's completeness surface under the same per-region rules as a manifest entry. One edge type per listed type: see tap_plugin.aws_core.regional.",
+  "sources": [
+    "aws_core__aws_account_region"
+  ],
+  "targets": [
+    "aws_core__aws_config_delivery_channel"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_PERMISSION_SET__aws_core",
+  "name": "Holds Permission Set",
+  "description": "An IAM Identity Center instance holds a permission set (instance -> permission set): one ARN sso-admin:ListPermissionSets(InstanceArn) returned. Containment: the instance declares it in CONTAINMENT_EDGES, and its one surface is complete only when that listing read to its end.",
+  "sources": [
+    "aws_core__aws_identity_center_instance"
+  ],
+  "targets": [
+    "aws_core__aws_identity_center_permission_set"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

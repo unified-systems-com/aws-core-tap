@@ -93,3 +93,70 @@ NOT_YET_WIRED: Final[tuple[tuple[str, str], ...]] = (
     ("aws_core__aws_ebs_volume", "ec2:DescribeVolumes"),
     ("aws_core__aws_rds_instance", "rds:DescribeDBInstances"),
 )
+
+#: Footprint children the landing-zone reader emits (``collectors/boto3_collector/landing_zone.py``,
+#: aws-core-tap#66, ``req-aws-core-contained-type-triple``). Kept apart from ``REGIONAL_CHILDREN``
+#: because they are not manifest entries: a custom reader lists them and records each footprint's
+#: surface itself, under the same per-region rules (``containment.surface_of``). Everything else
+#: ``REGIONAL_CHILDREN`` must agree with (edge files, the parent's declarations, ``[falsifiers]``)
+#: applies to these rows too, and ``tests/test_regional_containment.py`` checks both tables.
+LANDING_ZONE_CHILDREN: Final[tuple[RegionalChild, ...]] = (
+    RegionalChild(
+        "aws_core__aws_controltower_landing_zone",
+        "HOSTS_LANDING_ZONE__aws_core",
+        "account_region.landing_zones",
+        "a Control Tower landing zone",
+        "controltower:ListLandingZones",
+    ),
+    RegionalChild(
+        "aws_core__aws_identity_center_instance",
+        "HOSTS_IDENTITY_CENTER_INSTANCE__aws_core",
+        "account_region.identity_center_instances",
+        "an IAM Identity Center instance",
+        "sso-admin:ListInstances",
+    ),
+    RegionalChild(
+        "aws_core__aws_config_recorder",
+        "HOSTS_CONFIG_RECORDER__aws_core",
+        "account_region.config_recorders",
+        "an AWS Config configuration recorder",
+        "config:ListConfigurationRecorders",
+    ),
+    RegionalChild(
+        "aws_core__aws_config_delivery_channel",
+        "HOSTS_CONFIG_DELIVERY_CHANNEL__aws_core",
+        "account_region.config_delivery_channels",
+        "an AWS Config delivery channel",
+        "config:DescribeDeliveryChannels",
+    ),
+    RegionalChild(
+        "aws_core__aws_config_aggregator",
+        "HOSTS_CONFIG_AGGREGATOR__aws_core",
+        "account_region.config_aggregators",
+        "an AWS Config configuration aggregator",
+        "config:DescribeConfigurationAggregators",
+    ),
+    RegionalChild(
+        "aws_core__aws_guardduty_detector",
+        "HOSTS_GUARDDUTY_DETECTOR__aws_core",
+        "account_region.guardduty_detectors",
+        "a GuardDuty detector",
+        "guardduty:ListDetectors",
+    ),
+    RegionalChild(
+        "aws_core__aws_securityhub_hub",
+        "HOSTS_SECURITYHUB_HUB__aws_core",
+        "account_region.securityhub_hubs",
+        "a Security Hub hub",
+        "securityhub:DescribeHub",
+    ),
+    RegionalChild(
+        "aws_core__aws_access_analyzer",
+        "HOSTS_ACCESS_ANALYZER__aws_core",
+        "account_region.access_analyzers",
+        "an IAM Access Analyzer analyzer",
+        "accessanalyzer:ListAnalyzers",
+    ),
+)
+
+LANDING_ZONE_CHILD_BY_TYPE: Final = {c.entity_type: c for c in LANDING_ZONE_CHILDREN}

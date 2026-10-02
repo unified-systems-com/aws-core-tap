@@ -1,0 +1,15 @@
+{
+  "slug": "REPORTS_TO_ADMINISTRATOR__aws_core",
+  "name": "Reports To Administrator",
+  "description": "A GuardDuty detector or Security Hub hub reports to its administrator account (detector / hub -> account): Administrator.AccountId from guardduty:GetAdministratorAccount or securityhub:GetAdministratorAccount, emitted only when that account is not the detector's or hub's own. A reference, not containment; last seen: DisassociateFromAdministratorAccount ends it while the source lives.",
+  "sources": [
+    "aws_core__aws_guardduty_detector",
+    "aws_core__aws_securityhub_hub"
+  ],
+  "targets": [
+    "aws_core__aws_account"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

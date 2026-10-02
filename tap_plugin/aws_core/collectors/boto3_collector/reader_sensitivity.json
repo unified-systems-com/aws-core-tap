@@ -1,5 +1,5 @@
 {
-  "description": "Sensitivity declarations for the types a custom reader emits. These types have no manifest entry, so they have no entry-level `sensitivity` block (req-aws-collector-manifest-6). One row per (entity type, reader). `sensitivity` validates against aws_resource_manifest.schema.json $defs/sensitivity. Location paths use the manifest's path dialect, rooted at the emitted node's TYPED FIELDS (a custom reader stores no configuration envelope), so a path's first segment is a model field. Enforced by the reader at write time (organizations.py, add_node): a type with no row is not written; an `unreviewed` row is not written, because typed fields have no persist_configuration switch, so this mirrors req-aws-collector-manifest-7; and a `credential` location is not written, because a typed field cannot be withheld while the node is kept, so this mirrors req-aws-collector-field-projection-7's credential default.",
+  "description": "Sensitivity declarations for the types a custom reader emits. These types have no manifest entry, so they have no entry-level `sensitivity` block (req-aws-collector-manifest-6). One row per (entity type, reader). `sensitivity` validates against aws_resource_manifest.schema.json $defs/sensitivity. Location paths use the manifest's path dialect, rooted at the emitted node's TYPED FIELDS (a custom reader stores no configuration envelope), so a path's first segment is a model field. Enforced by each reader at write time (organizations.py and landing_zone.py, add_node): a type with no row is not written; an `unreviewed` row is not written, because typed fields have no persist_configuration switch, so this mirrors req-aws-collector-manifest-7; and a `credential` location is not written, because a typed field cannot be withheld while the node is kept, so this mirrors req-aws-collector-field-projection-7's credential default.",
   "rows": [
     {
       "entity_type": "aws_core__aws_organization",
@@ -90,6 +90,149 @@
         "basis": "Read the tag-rule model's typed fields and AWS's tag policy syntax (tag_key, tag_value, enforced_for), 2026-10-01.",
         "locations": [
           { "path": "allowed_values", "category": "customer_content", "reason": "Operator-chosen allowed tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_controltower_landing_zone",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the landing-zone model's typed fields and botocore 1.43.107 controltower ListLandingZones, GetLandingZone and ListTagsForResource output shapes, 2026-10-01. The GetLandingZone manifest document is not stored; only governedRegions is read out of it.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set landing-zone tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_controltower_enabled_control",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the enabled-control model's typed fields and botocore 1.43.107 controltower ListEnabledControls and ListTagsForResource output shapes, 2026-10-01. Control parameters (GetEnabledControl) are not read.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set enabled-control tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_controltower_enabled_baseline",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the enabled-baseline model's typed fields and botocore 1.43.107 controltower ListEnabledBaselines and ListTagsForResource output shapes, 2026-10-01. Baseline parameters are not read.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set enabled-baseline tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_instance",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the instance model's typed fields and botocore 1.43.107 sso-admin ListInstances and ListTagsForResource output shapes, 2026-10-01.",
+        "locations": [
+          { "path": "name", "category": "free_text", "reason": "Operator-chosen instance name.", "evidence": "reviewer_judgement" },
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set instance tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_permission_set",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the permission-set model's typed fields and botocore 1.43.107 sso-admin ListPermissionSets, DescribePermissionSet, ListManagedPoliciesInPermissionSet and ListTagsForResource output shapes, 2026-10-01. The inline policy is not read.",
+        "locations": [
+          { "path": "description", "category": "free_text", "reason": "Operator-authored permission-set description.", "evidence": "reviewer_judgement" },
+          { "path": "relay_state", "category": "other", "reason": "An operator-set URL users land on after sign-in; a URL can carry query parameters.", "evidence": "reviewer_judgement" },
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set permission-set tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_group",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the group model's typed fields and botocore 1.43.107 identitystore ListGroups output shape, 2026-10-01: DisplayName, Description and ExternalIds (Issuer, Id) carry botocore's sensitive trait.",
+        "locations": [
+          { "path": "name", "category": "customer_content", "reason": "The group's DisplayName (botocore marks it sensitive).", "evidence": "botocore_sensitive" },
+          { "path": "display_name", "category": "customer_content", "reason": "Group.DisplayName, marked sensitive by botocore.", "evidence": "botocore_sensitive" },
+          { "path": "description", "category": "free_text", "reason": "Group.Description, marked sensitive by botocore.", "evidence": "botocore_sensitive" },
+          { "path": "external_ids", "category": "customer_content", "reason": "Group.ExternalIds Issuer and Id from the SCIM provider, marked sensitive by botocore.", "evidence": "botocore_sensitive" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_account_assignment",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the assignment model's typed fields and botocore 1.43.107 sso-admin ListPermissionSetsProvisionedToAccount and ListAccountAssignments output shapes, 2026-10-01: ARNs, an account id, a principal type and an opaque principal id. No user name, email or display name is read (users are not nodes)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_recorder",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the recorder model's typed fields and botocore 1.43.107 config ListConfigurationRecorders, DescribeConfigurationRecorders, DescribeConfigurationRecorderStatus and ListTagsForResource output shapes, 2026-10-01. lastErrorMessage is not stored.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set recorder tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_delivery_channel",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the delivery-channel model's typed fields and botocore 1.43.107 config DescribeDeliveryChannels output shape, 2026-10-01: a name, a bucket name and key prefix, ARNs and a frequency."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_aggregator",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the aggregator model's typed fields and botocore 1.43.107 config DescribeConfigurationAggregators and ListTagsForResource output shapes, 2026-10-01.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set aggregator tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_detector",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the detector model's typed fields and botocore 1.43.107 guardduty ListDetectors, GetDetector and GetAdministratorAccount output shapes, 2026-10-01. Data sources and features are not stored.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set detector tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_hub",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the hub model's typed fields and botocore 1.43.107 securityhub DescribeHub, GetEnabledStandards, GetAdministratorAccount and ListTagsForResource output shapes, 2026-10-01. StandardsInput is not stored.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set hub tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_access_analyzer",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the analyzer model's typed fields and botocore 1.43.107 accessanalyzer ListAnalyzers output shape, 2026-10-01. The analyzer configuration and lastResourceAnalyzed are not stored.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set analyzer tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
         ]
       }
     }

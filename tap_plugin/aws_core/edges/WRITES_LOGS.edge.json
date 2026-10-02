@@ -1,9 +1,10 @@
 {
   "slug": "WRITES_LOGS__aws_core",
   "name": "Writes Logs",
-  "description": "A source writes its log stream to a log destination: a Lambda function to its CloudWatch log group, a CloudTrail trail to its S3 delivery bucket / CloudWatch log group, or an ECS service to the log group its task log driver ships to. Action and data both flow from the source to the destination (forward; no `_FROM`).",
+  "description": "A source writes its log stream to a log destination: a Lambda function to its CloudWatch log group, a CloudTrail trail to its S3 delivery bucket / CloudWatch log group, an ECS service to the log group its task log driver ships to, or an AWS Config delivery channel to the S3 bucket it delivers configuration snapshots and history to (s3BucketName, keyed arn:<run partition>:s3:::<bucket>). Action and data both flow from the source to the destination (forward; no `_FROM`).",
   "sources": [
     "aws_core__aws_cloudtrail_trail",
+    "aws_core__aws_config_delivery_channel",
     "aws_core__aws_ecs_service",
     "aws_core__aws_lambda"
   ],

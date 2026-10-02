@@ -1,0 +1,14 @@
+{
+  "slug": "GRANTED_TO_GROUP__aws_core",
+  "name": "Granted To Group",
+  "description": "An Identity Center account assignment is granted to an identity-store group (assignment -> group), when its PrincipalType is GROUP: AccountAssignments[].PrincipalId, normalized to the group's key (identity store id, group id) with the identity store id taken from the instance. A USER assignment has no edge of this type: users are not nodes (ruling 2026-10-01). A reference, not containment; it ends with its source, since the principal id is part of the assignment's key.",
+  "sources": [
+    "aws_core__aws_identity_center_account_assignment"
+  ],
+  "targets": [
+    "aws_core__aws_identity_center_group"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

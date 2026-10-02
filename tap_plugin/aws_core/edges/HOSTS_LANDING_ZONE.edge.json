@@ -1,0 +1,14 @@
+{
+  "slug": "HOSTS_LANDING_ZONE__aws_core",
+  "name": "Hosts Landing Zone",
+  "description": "An account's footprint in one region hosts a Control Tower landing zone (footprint -> landing zone): the landing zone controltower:ListLandingZones returned whose ARN names this region, its home region. A landing zone is emitted once by ARN, whichever regional endpoint returned it. Containment, parent -> child: the footprint declares this edge in CONTAINMENT_EDGES, so a landing zone the grid holds under a footprint whose account_region.landing_zones listing a run read to the end and did not name becomes a retirement candidate, which this type's falsifier then probes. Collected by the landing-zone reader (collectors/boto3_collector/landing_zone.py), which records that footprint's completeness surface under the same per-region rules as a manifest entry. One edge type per listed type: see tap_plugin.aws_core.regional.",
+  "sources": [
+    "aws_core__aws_account_region"
+  ],
+  "targets": [
+    "aws_core__aws_controltower_landing_zone"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

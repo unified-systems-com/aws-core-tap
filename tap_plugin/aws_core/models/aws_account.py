@@ -84,6 +84,14 @@ class AwsAccount(BaseModel):
         "status": {"type": "string"},
         "configuration": {"type": "object"},
         "tags": {"type": "object"},
+        # The account-level S3 Block Public Access settings (s3control:GetPublicAccessBlock, read once
+        # per account in the partition's home region; req-aws-landing-zone-security-services). All
+        # four false when AWS reports no configuration; null when the read was denied or failed, or
+        # was not made this run.
+        "s3_block_public_acls": {"type": ["boolean", "null"]},
+        "s3_ignore_public_acls": {"type": ["boolean", "null"]},
+        "s3_block_public_policy": {"type": ["boolean", "null"]},
+        "s3_restrict_public_buckets": {"type": ["boolean", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -93,6 +101,10 @@ class AwsAccount(BaseModel):
         "status": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "s3_block_public_acls": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "s3_ignore_public_acls": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "s3_block_public_policy": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "s3_restrict_public_buckets": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
     }
     # account_id is NOT required at create: a designed account (dcom=design) exists on the grid
     # before AWS has minted it, so its id is not observed yet. Blank (the field default) means
@@ -106,6 +118,10 @@ class AwsAccount(BaseModel):
     status = models.CharField(max_length=64, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(default=dict, blank=True)
+    s3_block_public_acls = models.BooleanField(null=True, blank=True, default=None)
+    s3_ignore_public_acls = models.BooleanField(null=True, blank=True, default=None)
+    s3_block_public_policy = models.BooleanField(null=True, blank=True, default=None)
+    s3_restrict_public_buckets = models.BooleanField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_account"

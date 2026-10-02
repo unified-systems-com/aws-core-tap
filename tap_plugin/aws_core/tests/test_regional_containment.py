@@ -15,7 +15,13 @@ import pytest
 
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.models.aws_account_region import AwsAccountRegion
-from tap_plugin.aws_core.regional import CHILD_BY_TYPE, NOT_YET_WIRED, PARENT_ENTITY_TYPE, REGIONAL_CHILDREN
+from tap_plugin.aws_core.regional import (
+    CHILD_BY_TYPE,
+    LANDING_ZONE_CHILDREN,
+    NOT_YET_WIRED,
+    PARENT_ENTITY_TYPE,
+    REGIONAL_CHILDREN,
+)
 
 _PLUGIN_DIR = Path(__file__).resolve().parents[1]
 _TOML = tomllib.loads((_PLUGIN_DIR / "tap-plugin.toml").read_text())
@@ -56,6 +62,33 @@ class TestEveryRegionalChild:
         assert block["relation"] == child.relation
         assert entry["scope"] == "regional"
         assert "aws_op" in entry["source"], "containment requires an aws_op source (custom_fn is opaque to the engine)"
+
+
+@pytest.mark.parametrize("child", LANDING_ZONE_CHILDREN, ids=lambda c: c.entity_type)
+class TestEveryLandingZoneChild:
+    """The landing-zone reader's footprint children (aws-core-tap#66) agree with the same sources of
+    truth, except a manifest entry: a custom reader lists them, not the manifest engine."""
+
+    def test_edge_file_matches(self, child):
+        import json
+
+        d = json.loads((_PLUGIN_DIR / _TOML["edges"][child.edge_type]).read_text())
+        assert (d["slug"], d["sources"], d["targets"]) == (child.edge_type, [PARENT_ENTITY_TYPE], [child.entity_type])
+
+    def test_declared_on_the_parent_as_both_outbound_and_containment(self, child):
+        assert child.edge_type in AwsAccountRegion.CONTAINMENT_EDGES
+        assert child.edge_type in {e["type"] for rule in AwsAccountRegion.OUTBOUND_EDGES for e in rule["edges"]}
+
+    def test_falsifier_registered(self, child):
+        assert child.entity_type in _TOML["falsifiers"]
+
+    def test_not_a_manifest_entry(self, child):
+        assert child.entity_type not in {e["entity_type"] for e in manifest_entries()}
+
+
+def test_every_footprint_containment_edge_is_in_one_table():
+    tables = [c.edge_type for c in REGIONAL_CHILDREN + LANDING_ZONE_CHILDREN]
+    assert sorted(tables) == sorted(AwsAccountRegion.CONTAINMENT_EDGES)
 
 
 def test_containment_edges_is_a_subset_of_outbound_edges():

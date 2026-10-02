@@ -826,22 +826,7 @@ class _OrganizationsFalsifier(_AwsFalsifier):
 
     def _read_reach(self, client: Any) -> _OrgReach:
         """Prove the credential is inside an organization and can read its tree."""
-        try:
-            organization = (client.describe_organization().get("Organization")) or {}
-            roots = client.list_roots().get("Roots") or []
-        except ClientError as exc:
-            code = error_code_of(exc)
-            if code in _NOT_IN_ORGANIZATION_CODES:
-                return _OrgReach("scope_unknown", note="this credential's account is not in an organization")
-            status = probe_status_of(exc)
-            reason = {"forbidden": "forbidden", "rate_limited": "rate_limited"}.get(status, "errored")
-            return _OrgReach(reason, note=f"organization reach unproven: {code or type(exc).__name__}")
-        except BotoCoreError as exc:
-            return _OrgReach("errored", note=f"organization reach unproven: {type(exc).__name__}")
-        has_root = any(str(r.get("Id") or "").startswith("r-") for r in roots)
-        if not organization.get("Id") or not has_root:
-            return _OrgReach("errored", note="the organization read returned no organization id or no root")
-        return _OrgReach("ok", organization_id=str(organization["Id"]))
+        return _read_org_reach(client)
 
     def _judge_one(self, client: Any, reach: _OrgReach, row: Any, candidate: Candidate) -> Verdict:
         raise NotImplementedError
@@ -857,6 +842,27 @@ class _OrganizationsFalsifier(_AwsFalsifier):
             detail = NOT_FOUND_DETAIL if status == "not_found" else f"{error_code_of(exc)}: {exc}"
             return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
         return verdict_from_probe(candidate, expected, Probe(status="errored", detail=str(exc)))
+
+
+def _read_org_reach(client: Any) -> _OrgReach:
+    """Prove the credential is inside an organization and can read its tree (shared by the
+    Organizations falsifiers and the Identity Center assignment falsifier's account probe)."""
+    try:
+        organization = (client.describe_organization().get("Organization")) or {}
+        roots = client.list_roots().get("Roots") or []
+    except ClientError as exc:
+        code = error_code_of(exc)
+        if code in _NOT_IN_ORGANIZATION_CODES:
+            return _OrgReach("scope_unknown", note="this credential's account is not in an organization")
+        status = probe_status_of(exc)
+        reason = {"forbidden": "forbidden", "rate_limited": "rate_limited"}.get(status, "errored")
+        return _OrgReach(reason, note=f"organization reach unproven: {code or type(exc).__name__}")
+    except BotoCoreError as exc:
+        return _OrgReach("errored", note=f"organization reach unproven: {type(exc).__name__}")
+    has_root = any(str(r.get("Id") or "").startswith("r-") for r in roots)
+    if not organization.get("Id") or not has_root:
+        return _OrgReach("errored", note="the organization read returned no organization id or no root")
+    return _OrgReach("ok", organization_id=str(organization["Id"]))
 
 
 class OrganizationalUnitFalsifier(_OrganizationsFalsifier):
@@ -1759,9 +1765,543 @@ class IamOidcProviderFalsifier(_AwsFalsifier):
         return verdict_from_probe(candidate, expected, probe)
 
 
+# ---------------------------------------------------------------------------
+# Landing zone (aws-core-tap#66, spec-aws-core-landing-zone.md): Control Tower, Identity Center and
+# the per-region security services. Registered, not armed: reconcile authority stays off, so none of
+# these is dispatched in production until a later step arms it.
+#
+# Every not-found code below was checked against botocore 1.43.107's error list and documentation
+# for the operation (aws-core-tap#15's rule): each is distinct from that operation's "you may not
+# look" code. securityhub:DescribeHub is the exception: its InvalidAccessException is documented as
+# "the account doesn't have permission to perform this action", which is also what an account
+# without Security Hub receives, so that code is UNDETERMINED, never a drop.
+# ---------------------------------------------------------------------------
+
+
+class _ProbePagesExceeded(Exception):
+    """A continuation chain that never ended: the probe could not answer."""
+
+
+def _probe_all(fn: Callable[..., dict[str, Any]], result_key: str, *, token: str = "NextToken", **params: Any) -> list[Any]:
+    """Every item of a paginated probe call, read to its last page (``req-aws-collector-pagination-1``).
+    Raises what the call raises; a failure on any page leaves the probe unanswered (``-2``)."""
+    items: list[Any] = []
+    next_token: str | None = None
+    for _ in range(_MAX_PROBE_PAGES):
+        kwargs = dict(params)
+        if next_token:
+            kwargs[token] = next_token
+        response = fn(**kwargs)
+        items.extend(response.get(result_key) or [])
+        next_token = response.get(token)
+        if not next_token:
+            return items
+    raise _ProbePagesExceeded(f"{result_key}: the continuation chain did not end")
+
+
+def _arn_account(arn: str) -> str | None:
+    """The account segment of an ARN, or None."""
+    from tap_plugin.aws_core.collectors.boto3_collector.partition import parse_arn
+
+    parsed = parse_arn(arn)
+    return parsed.account if parsed and parsed.account and parsed.account != "aws" else None
+
+
+def _arn_region(arn: str) -> str:
+    from tap_plugin.aws_core.collectors.boto3_collector.partition import parse_arn
+
+    parsed = parse_arn(arn)
+    return parsed.region if parsed else ""
+
+
+def _failed_probe(candidate: Candidate, expected: Expected, exc: Exception, *, gone_codes: frozenset[str] = frozenset()) -> Verdict:
+    """The verdict for a probe call that raised. ``gone_codes`` names the operation's own verified
+    not-found codes beyond the generic ``*NotFound*`` shapes; everything else that is not a
+    not-found is ``UNDETERMINED`` through ``verdict_from_probe``'s own classification."""
+    if isinstance(exc, ClientError):
+        code = error_code_of(exc)
+        status = "not_found" if code in gone_codes else probe_status_of(exc)
+        detail = NOT_FOUND_DETAIL if status == "not_found" else f"{code}: the probe could not answer"
+        return verdict_from_probe(candidate, expected, Probe(status=status, detail=detail))  # type: ignore[arg-type]
+    return verdict_from_probe(candidate, expected, Probe(status="errored", detail=type(exc).__name__))
+
+
+class _LandingZoneFalsifier(_AwsFalsifier):
+    """Shared shape: read the row, check the account, find the region, probe once.
+
+    Every landing-zone type is regional (Control Tower and Identity Center in their home region),
+    and the collector stamps the region it read the resource through on ``dimensions["aws_region"]``,
+    so it is trusted. A row with no region is refused (``scope_unknown``), never swept: these
+    listings are cheap to read whole, but a sweep could only show where a resource is, never where
+    it was collected.
+
+    The probe never leaves the collector's configured region scope (``regions_allowed``). A
+    resource's own region (its ARN's, or an instance's ``home_region``) is preferred; when that is
+    outside the scope, the region the collector read it through is used; when neither is in scope,
+    the candidate is refused (``scope_unknown``) with no call. An instance whose primary region is
+    out of scope (``req-aws-landing-zone-identity-center-7``) is therefore probed where it was read.
+    """
+
+    service = ""
+
+    def __init__(self, *args: Any, allowed_regions: list[str] | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._allowed_injected = allowed_regions is not None
+        self._allowed: list[str] | None = list(allowed_regions) if allowed_regions is not None else None
+
+    def _begin_run(self, batch_id: str) -> None:
+        if batch_id != self._batch_id and not self._allowed_injected:
+            self._allowed = None
+        super()._begin_run(batch_id)
+
+    def _allowed_regions(self) -> list[str]:
+        """The collector's configured region scope, read once per run; ``[]`` when unreadable, which
+        refuses every candidate rather than probe an unchecked region."""
+        if self._allowed is None:
+            try:
+                self._allowed = list(resolve_regions(dict(resolve_aws_secret().data)))
+            except Exception:  # noqa: BLE001 — no region scope is an answer (UNDETERMINED), not a crash
+                logger.warning("[c4e8] %s: could not resolve the configured region scope", type(self).__name__)
+                self._allowed = []
+        return self._allowed
+
+    def _region_hint(self, row: Any) -> str | None:
+        return None
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        dimensions = _dimensions_of(row)
+        expected_account = dimensions.get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        recorded = [r for r in (self._region_hint(row), dimensions.get("aws_region")) if r and r != "global"]
+        if not recorded:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no region for this resource")
+        allowed = set(self._allowed_regions())
+        region = next((r for r in recorded if r in allowed), None)
+        if region is None:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"{' and '.join(dict.fromkeys(recorded))} outside the configured region scope: not probed",
+            )
+        try:
+            client = session.client(self.service, region_name=region)
+        except Exception as exc:  # noqa: BLE001 — an unbuildable client is an answer, not a crash
+            return _undetermined(candidate, "errored", f"{self.service} client unavailable: {type(exc).__name__}")
+        try:
+            return self._probe(client, row, candidate, expected_account or "")
+        except (ClientError, BotoCoreError, _ProbePagesExceeded) as exc:
+            return self._failed(candidate, row, expected_account or "", exc)
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        raise NotImplementedError
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        raise NotImplementedError
+
+    #: This operation's verified not-found codes beyond the generic ``*NotFound*`` shapes.
+    gone_codes: frozenset[str] = frozenset()
+
+    def _failed(self, candidate: Candidate, row: Any, expected_account: str, exc: Exception) -> Verdict:
+        expected = self._expected(row, expected_account)
+        if not expected.source_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no source identity for this resource")
+        return _failed_probe(candidate, expected, exc, gone_codes=self.gone_codes)
+
+
+class _GetByArnFalsifier(_LandingZoneFalsifier):
+    """A ``Get*``/``Describe*`` by ARN whose ``ResourceNotFoundException`` is the operation's own
+    not-found (read: botocore 1.43.107, distinct from its ``AccessDeniedException``). The owner is the
+    account in the ARN, compared with the account the row was collected under."""
+
+    arn_field = ""
+
+    def _region_hint(self, row: Any) -> str | None:
+        return _arn_region(str(getattr(row, self.arn_field, "") or "")) or None
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        arn = str(getattr(row, self.arn_field, "") or "")
+        # The owner is compared only when the ARN carries an account to compare it with.
+        owner = (expected_account or None) if _arn_account(arn) else None
+        return Expected(source_id=arn, owner=owner)
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        if not expected.source_id:
+            return _undetermined(candidate, "scope_unknown", f"the grid holds no {self.arn_field} for this resource")
+        found = self._get(client, row, expected.source_id)
+        probe = Probe(status="found", source_id=found or None, owner=_arn_account(found), detail=f"{self.service} probe 200")
+        return _finish(candidate, expected, probe)
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        """The ARN AWS reports for the object the grid's ARN names. Raises what the call raises."""
+        raise NotImplementedError
+
+
+class LandingZoneFalsifier(_GetByArnFalsifier):
+    """``controltower:GetLandingZone(landingZoneIdentifier)``; ``ResourceNotFoundException`` is
+    ``DROPPED_FROM_OBSERVATION`` (``req-aws-landing-zone-control-tower-3``)."""
+
+    service = "controltower"
+    arn_field = "landing_zone_arn"
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        return str((client.get_landing_zone(landingZoneIdentifier=arn).get("landingZone") or {}).get("arn") or "")
+
+
+class EnabledControlFalsifier(_GetByArnFalsifier):
+    """``controltower:GetEnabledControl(enabledControlIdentifier)``."""
+
+    service = "controltower"
+    arn_field = "enabled_control_arn"
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        return str((client.get_enabled_control(enabledControlIdentifier=arn).get("enabledControlDetails") or {}).get("arn") or "")
+
+
+class EnabledBaselineFalsifier(_GetByArnFalsifier):
+    """``controltower:GetEnabledBaseline(enabledBaselineIdentifier)``."""
+
+    service = "controltower"
+    arn_field = "enabled_baseline_arn"
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        return str((client.get_enabled_baseline(enabledBaselineIdentifier=arn).get("enabledBaselineDetails") or {}).get("arn") or "")
+
+
+class ConfigAggregatorFalsifier(_GetByArnFalsifier):
+    """``config:DescribeConfigurationAggregators(ConfigurationAggregatorNames=[name])``;
+    ``NoSuchConfigurationAggregatorException`` ("you have specified a configuration aggregator that
+    does not exist", botocore) is ``DROPPED_FROM_OBSERVATION``."""
+
+    service = "config"
+    arn_field = "aggregator_arn"
+    gone_codes = frozenset({"NoSuchConfigurationAggregatorException"})
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        name = str(getattr(row, "aggregator_name", "") or "") or arn.rsplit("/", 1)[-1]
+        found = client.describe_configuration_aggregators(ConfigurationAggregatorNames=[name]).get("ConfigurationAggregators") or []
+        return str((found[0] if found else {}).get("ConfigurationAggregatorArn") or "")
+
+
+class SecurityHubHubFalsifier(_GetByArnFalsifier):
+    """``securityhub:DescribeHub(HubArn)``. ``ResourceNotFoundException`` is ``DROPPED_FROM_OBSERVATION``.
+    ``InvalidAccessException`` is documented as "the account doesn't have permission to perform this
+    action", and is also the answer for an account that disabled Security Hub: the two cannot be told
+    apart, so it is ``UNDETERMINED(forbidden)``, never a drop."""
+
+    service = "securityhub"
+    arn_field = "hub_arn"
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        return str(client.describe_hub(HubArn=arn).get("HubArn") or "")
+
+    def _failed(self, candidate: Candidate, row: Any, expected_account: str, exc: Exception) -> Verdict:
+        if isinstance(exc, ClientError) and error_code_of(exc) == "InvalidAccessException":
+            return _undetermined(
+                candidate, "forbidden", "InvalidAccessException: Security Hub disabled and access refused share this code"
+            )
+        return super()._failed(candidate, row, expected_account, exc)
+
+
+class AccessAnalyzerFalsifier(_GetByArnFalsifier):
+    """``accessanalyzer:GetAnalyzer(analyzerName)``; ``ResourceNotFoundException`` is
+    ``DROPPED_FROM_OBSERVATION``."""
+
+    service = "accessanalyzer"
+    arn_field = "analyzer_arn"
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        name = str(getattr(row, "analyzer_name", "") or "") or arn.rsplit("/", 1)[-1]
+        return str((client.get_analyzer(analyzerName=name).get("analyzer") or {}).get("arn") or "")
+
+
+class _ListingFalsifier(_LandingZoneFalsifier):
+    """Gone when a complete listing in the resource's own region no longer names it (the spec's
+    "absent from <listing>"). A listing that failed on any page answers nothing. A key cannot come
+    back under another identity in a listing looked up by that same key, so ``REIDENTIFIED`` is
+    structurally impossible here; the tests prove present, dropped and forbidden one by one."""
+
+    def _identity(self, row: Any) -> str:
+        raise NotImplementedError
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        """``{identity: owner}`` for every object the listing names."""
+        raise NotImplementedError
+
+    def _owner_of(self, row: Any, expected_account: str) -> str | None:
+        return None
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        return Expected(source_id=self._identity(row), owner=self._owner_of(row, expected_account))
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        if not expected.source_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no source identity for this resource")
+        listed = self._listed(client, row)
+        if expected.source_id not in listed:
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="the complete listing no longer names it"))
+        probe = Probe(status="found", source_id=expected.source_id, owner=listed[expected.source_id], detail="the listing names it")
+        return _finish(candidate, expected, probe)
+
+
+class IdentityCenterInstanceFalsifier(_ListingFalsifier):
+    """Absent from ``sso-admin:ListInstances`` in its home region (read to its last page). The owner
+    is the instance's ``OwnerAccountId``, compared when the grid holds one."""
+
+    service = "sso-admin"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return str(getattr(row, "home_region", "") or "") or None
+
+    def _identity(self, row: Any) -> str:
+        return str(getattr(row, "instance_arn", "") or "")
+
+    def _owner_of(self, row: Any, expected_account: str) -> str | None:
+        return str(getattr(row, "owner_account_id", "") or "") or None
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        return {
+            str(i.get("InstanceArn") or ""): str(i.get("OwnerAccountId") or "") or None
+            for i in _probe_all(client.list_instances, "Instances")
+        }
+
+
+class ConfigRecorderFalsifier(_ListingFalsifier):
+    """Absent from ``config:ListConfigurationRecorders`` (paginated, unfiltered) in its region."""
+
+    service = "config"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return _arn_region(str(getattr(row, "recorder_arn", "") or "")) or None
+
+    def _identity(self, row: Any) -> str:
+        return str(getattr(row, "recorder_arn", "") or "")
+
+    def _owner_of(self, row: Any, expected_account: str) -> str | None:
+        return (expected_account or None) if _arn_account(self._identity(row)) else None
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        summaries = _probe_all(client.list_configuration_recorders, "ConfigurationRecorderSummaries")
+        return {str(r.get("arn") or ""): _arn_account(str(r.get("arn") or "")) for r in summaries}
+
+
+class ConfigDeliveryChannelFalsifier(_ListingFalsifier):
+    """Absent from ``config:DescribeDeliveryChannels`` (one call, not paginated) in its region."""
+
+    service = "config"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return str(getattr(row, "region", "") or "") or None
+
+    def _identity(self, row: Any) -> str:
+        return str(getattr(row, "channel_name", "") or "")
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        return {str(c.get("name") or ""): None for c in client.describe_delivery_channels().get("DeliveryChannels") or []}
+
+
+class GuardDutyDetectorFalsifier(_ListingFalsifier):
+    """Absent from ``guardduty:ListDetectors`` (read to its last page) in its region. ``GetDetector``'s
+    only failure code is the generic ``BadRequestException``, which cannot say "gone", so the listing
+    is the probe."""
+
+    service = "guardduty"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return str(getattr(row, "region", "") or "") or None
+
+    def _identity(self, row: Any) -> str:
+        return str(getattr(row, "detector_id", "") or "")
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        return {str(d): None for d in _probe_all(client.list_detectors, "DetectorIds")}
+
+
+class PermissionSetFalsifier(_LandingZoneFalsifier):
+    """``sso-admin:DescribePermissionSet(InstanceArn, PermissionSetArn)``. Its
+    ``ResourceNotFoundException`` names either the permission set or its instance; both mean the
+    permission set is gone (an instance's permission sets go with it), so either is
+    ``DROPPED_FROM_OBSERVATION``."""
+
+    service = "sso-admin"
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        return Expected(source_id=str(getattr(row, "permission_set_arn", "") or ""))
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        instance = str(getattr(row, "instance_arn", "") or "")
+        if not expected.source_id or not instance:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no (instance, permission set) ARN pair")
+        found = client.describe_permission_set(InstanceArn=instance, PermissionSetArn=expected.source_id).get("PermissionSet") or {}
+        probe = Probe(status="found", source_id=str(found.get("PermissionSetArn") or "") or None, detail="DescribePermissionSet 200")
+        return _finish(candidate, expected, probe)
+
+
+class IdentityGroupFalsifier(_LandingZoneFalsifier):
+    """``identitystore:DescribeGroup(IdentityStoreId, GroupId)``. ``ResourceNotFoundException`` names
+    the group or its identity store; either way the group is gone. A renamed group is
+    ``RELOCATED(renamed)``, not retired."""
+
+    service = "identitystore"
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        return Expected(source_id=str(getattr(row, "group_id", "") or ""), name=str(getattr(row, "display_name", "") or "") or None)
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        store = str(getattr(row, "identity_store_id", "") or "")
+        if not expected.source_id or not store:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no (identity store, group) id pair")
+        found = client.describe_group(IdentityStoreId=store, GroupId=expected.source_id)
+        probe = Probe(
+            status="found",
+            source_id=str(found.get("GroupId") or "") or None,
+            name=str(found.get("DisplayName") or "") or None,
+            detail="DescribeGroup 200",
+        )
+        return _finish(candidate, expected, probe)
+
+
+class AccountAssignmentFalsifier(_LandingZoneFalsifier):
+    """``sso-admin:ListAccountAssignments(InstanceArn, AccountId, PermissionSetArn)``, read to its
+    last page: does it still name the (principal type, principal id)?
+    (``req-aws-landing-zone-identity-center-4``, ``-6``.)
+
+    - A complete answer that names it: ``PRESENT_AT_PROBE``. One that does not:
+      ``DROPPED_FROM_OBSERVATION``.
+    - ``ResourceNotFoundException`` alone proves nothing: sso-admin raises it for the instance, the
+      account and the permission set alike (read: botocore). Two probes disambiguate:
+      ``DescribePermissionSet`` answering not-found means the permission set is gone (dropped); else
+      the account's absence from the organization, proven by ``organizations:DescribeAccount``
+      answering ``AccountNotFoundException`` after the credential's organization reach is proven and
+      the credential is the instance's owner (dropped: an assignment to a departed account would
+      otherwise stay forever). Neither confirmed: ``UNDETERMINED``.
+
+    The account probe is the one ``AccountFalsifier`` makes today. When the membership node lands
+    (aws-core-tap#68, ``req-aws-core-organization-membership-4``) it is the membership falsifier's.
+    """
+
+    service = "sso-admin"
+
+    def __init__(self, *args: Any, org_region: str | None = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._org_region = org_region
+        self._session_for_org: ProbeSession | None = None
+        self._credential_account = ""
+
+    def _organizations_region(self) -> str:
+        if self._org_region is None:
+            self._org_region = resolve_regions(dict(resolve_aws_secret().data))[0]
+        return self._org_region
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        principal = f"{getattr(row, 'principal_type', '') or ''}:{getattr(row, 'principal_id', '') or ''}"
+        return Expected(source_id=principal if principal != ":" else "")
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        self._session_for_org = session
+        self._credential_account = account_id
+        return super().judge(session, account_id, candidate)
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        instance = str(getattr(row, "instance_arn", "") or "")
+        member = str(getattr(row, "account_id", "") or "")
+        permission_set = str(getattr(row, "permission_set_arn", "") or "")
+        if not expected.source_id or not instance or not member or not permission_set:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no complete assignment key")
+        try:
+            listed = _probe_all(
+                client.list_account_assignments, "AccountAssignments", InstanceArn=instance, AccountId=member, PermissionSetArn=permission_set
+            )
+        except ClientError as exc:
+            if error_code_of(exc) != "ResourceNotFoundException":
+                raise
+            return self._disambiguate(client, row, candidate, expected, instance, member, permission_set)
+        named = {f"{a.get('PrincipalType') or ''}:{a.get('PrincipalId') or ''}" for a in listed}
+        if expected.source_id not in named:
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="ListAccountAssignments no longer names the principal"))
+        return _finish(candidate, expected, Probe(status="found", source_id=expected.source_id, detail="ListAccountAssignments names the principal"))
+
+    def _disambiguate(
+        self, client: Any, row: Any, candidate: Candidate, expected: Expected, instance: str, member: str, permission_set: str
+    ) -> Verdict:
+        try:
+            client.describe_permission_set(InstanceArn=instance, PermissionSetArn=permission_set)
+        except ClientError as exc:
+            if error_code_of(exc) == "ResourceNotFoundException":
+                return verdict_from_probe(
+                    candidate, expected, Probe(status="not_found", detail="DescribePermissionSet: the permission set is gone")
+                )
+            return _unanswered(candidate, exc)
+        except BotoCoreError as exc:
+            return _unanswered(candidate, exc)
+        departed = self._account_departed(candidate, member)
+        if isinstance(departed, Verdict):
+            return departed
+        if departed:
+            return verdict_from_probe(
+                candidate, expected, Probe(status="not_found", detail="DescribeAccount: the account is no longer in the organization")
+            )
+        return _undetermined(
+            candidate,
+            "errored",
+            "ListAccountAssignments answered ResourceNotFoundException, but neither the permission set nor the account is confirmed gone",
+        )
+
+    def _account_departed(self, candidate: Candidate, member: str) -> bool | Verdict:
+        """True when the organization proves ``member`` is no longer in it; False when it is still
+        there; an ``UNDETERMINED`` verdict when that cannot be proven."""
+        owner = str(getattr(_row_of(candidate.parent), "owner_account_id", "") or "") if candidate.parent else ""
+        if not owner or owner != self._credential_account:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                "the credential is not recorded as this assignment's instance owner, so its organization says nothing about the account",
+            )
+        try:
+            if self._session_for_org is None:
+                raise RuntimeError("no session")
+            org = self._session_for_org.client("organizations", region_name=self._organizations_region())
+        except Exception as exc:  # noqa: BLE001 — an unbuildable client is an answer, not a crash
+            return _undetermined(candidate, "errored", f"organizations client unavailable: {type(exc).__name__}")
+        reach = _read_org_reach(org)
+        if reach.status != "ok":
+            return _undetermined(candidate, reach.status, reach.note)
+        try:
+            org.describe_account(AccountId=member)
+        except ClientError as exc:
+            if error_code_of(exc) == "AccountNotFoundException":
+                return True
+            return _unanswered(candidate, exc)
+        except BotoCoreError as exc:
+            return _unanswered(candidate, exc)
+        return False
+
+
 __all__ = [
     "NOT_FOUND_DETAIL",
+    "AccessAnalyzerFalsifier",
+    "AccountAssignmentFalsifier",
     "AccountFalsifier",
+    "ConfigAggregatorFalsifier",
+    "ConfigDeliveryChannelFalsifier",
+    "ConfigRecorderFalsifier",
+    "EnabledBaselineFalsifier",
+    "EnabledControlFalsifier",
+    "GuardDutyDetectorFalsifier",
+    "IdentityCenterInstanceFalsifier",
+    "IdentityGroupFalsifier",
+    "LandingZoneFalsifier",
+    "PermissionSetFalsifier",
+    "SecurityHubHubFalsifier",
     "Ec2InstanceFalsifier",
     "IamOidcProviderFalsifier",
     "IamPolicyFalsifier",

@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_ENABLED_CONTROL__aws_core",
+  "name": "Holds Enabled Control",
+  "description": "A Control Tower landing zone holds an enabled control (landing zone -> enabled control): one control controltower:ListEnabledControls returned, called with no target or filter and includeChildren true so controls enabled on nested OUs and on accounts are listed. Containment: the landing zone declares it in CONTAINMENT_EDGES, and its one surface is complete only when that listing read to its end.",
+  "sources": [
+    "aws_core__aws_controltower_landing_zone"
+  ],
+  "targets": [
+    "aws_core__aws_controltower_enabled_control"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

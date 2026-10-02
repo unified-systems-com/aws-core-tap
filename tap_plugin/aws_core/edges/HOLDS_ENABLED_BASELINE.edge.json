@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_ENABLED_BASELINE__aws_core",
+  "name": "Holds Enabled Baseline",
+  "description": "A Control Tower landing zone holds an enabled baseline (landing zone -> enabled baseline): one baseline controltower:ListEnabledBaselines returned, called with no filter and includeChildren true (it defaults to false, which omits child baselines). Containment: the landing zone declares it in CONTAINMENT_EDGES, and its one surface is complete only when that listing read to its end.",
+  "sources": [
+    "aws_core__aws_controltower_landing_zone"
+  ],
+  "targets": [
+    "aws_core__aws_controltower_enabled_baseline"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
