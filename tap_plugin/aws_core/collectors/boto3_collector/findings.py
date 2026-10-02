@@ -28,6 +28,8 @@ policy body is kept (``reader_sensitivity.json``).
 
 from __future__ import annotations
 
+import ipaddress
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -133,6 +135,36 @@ def standards_id_of(standards_arn: str) -> str:
     names (read: botocore ``AssociatedStandard`` documentation)."""
     parsed = parse_arn(standards_arn)
     return parsed.resource if parsed else ""
+
+
+#: What an IP address in stored free text is replaced with.
+IP_REDACTION = "[ip]"
+_IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d])")
+_IPV6 = re.compile(r"(?<![\w:])[0-9A-Fa-f]{0,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?![\w:])")
+#: An EC2 private DNS host name spells its address with dashes (``ip-10-0-1-5``).
+_EC2_HOST = re.compile(r"\bip-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})\b")
+
+
+def redact_ips(text: str) -> str:
+    """``text`` with every IPv4 or IPv6 address, and every EC2 ``ip-a-b-c-d`` host name, replaced by
+    ``IP_REDACTION``. A finding's title is service- or product-written free text that can name an
+    address it observed; only the address is removed, so the title stays readable."""
+
+    def address(match: re.Match[str]) -> str:
+        try:
+            ipaddress.ip_address(match.group(0))
+        except ValueError:
+            return match.group(0)
+        return IP_REDACTION
+
+    def host(match: re.Match[str]) -> str:
+        try:
+            ipaddress.ip_address(".".join(match.groups()))
+        except ValueError:
+            return match.group(0)
+        return IP_REDACTION
+
+    return _EC2_HOST.sub(host, _IPV6.sub(address, _IPV4.sub(address, text)))
 
 
 def _int(value: Any) -> int | None:
@@ -318,7 +350,7 @@ class FindingsReads:
             or str((resource.get("EksClusterDetails") or {}).get("Name") or "")
         )
         severity = finding.get("Severity")
-        title = str(finding.get("Title") or "")
+        title = redact_ips(str(finding.get("Title") or ""))
         finding_type = str(finding.get("Type") or "")
         fields: dict[str, Any] = {
             "name": (title or finding_type or finding_id)[:255],
@@ -490,7 +522,7 @@ class FindingsReads:
             [s.get("StandardsId") for s in compliance.get("AssociatedStandards") or [] if isinstance(s, dict)]
         )
         resources = [r for r in finding.get("Resources") or [] if isinstance(r, dict)]
-        title = str(finding.get("Title") or "")
+        title = redact_ips(str(finding.get("Title") or ""))
         fields: dict[str, Any] = {
             "name": (title or finding_id)[:255],
             "finding_id": finding_id[:512],
@@ -508,7 +540,8 @@ class FindingsReads:
             "security_control_id": str(compliance.get("SecurityControlId") or ""),
             "associated_standards": associated,
             "resource_types": _str_list([r.get("Type") for r in resources]),
-            "resource_ids": _str_list([r.get("Id") for r in resources]),
+            # A product may identify a resource by its address alone: redacted like the title.
+            "resource_ids": _str_list([redact_ips(str(r.get("Id") or "")) for r in resources]),
             "first_observed_at": str(finding.get("FirstObservedAt") or ""),
             "last_observed_at": str(finding.get("LastObservedAt") or ""),
             "created_at": str(finding.get("CreatedAt") or ""),
@@ -748,12 +781,14 @@ def _asff_target(resource_type: str, resource_id: str) -> tuple[str, str] | None
 __all__ = [
     "CONCERNS_RESOURCE",
     "FINDINGS_CAP",
+    "IP_REDACTION",
     "PAGINATED_OPERATIONS",
     "SINGLE_OPERATIONS",
     "FindingsReads",
     "Prepared",
     "analyzer_finding_key",
     "guardduty_severity_label",
+    "redact_ips",
     "securityhub_finding_key",
     "standards_id_of",
 ]

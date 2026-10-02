@@ -243,7 +243,7 @@
         "status": "reviewed_may_contain",
         "basis": "Read the finding model's typed fields and botocore 1.43.103 guardduty ListFindings, GetFindings and GetFindingsStatistics output shapes, 2026-10-02. botocore marks LocalIpDetails/RemoteIpDetails IpAddressV4/V6, NetworkInterface.PrivateIpAddress and PrivateIpAddressDetails.PrivateIpAddress sensitive; none is stored, because Service.Action, Resource.InstanceDetails.NetworkInterfaces, Description and Evidence are not read into any field.",
         "locations": [
-          { "path": "title", "category": "free_text", "reason": "GuardDuty's finding title can name a remote host, domain, port or user it observed.", "evidence": "reviewer_judgement" },
+          { "path": "title", "category": "free_text", "reason": "GuardDuty's finding title can name a remote host, domain, port or user it observed. IPv4/IPv6 addresses and EC2 ip-a-b-c-d host names in it are replaced with [ip] (findings.redact_ips).", "evidence": "reviewer_judgement" },
           { "path": "resource_id", "category": "customer_content", "reason": "The instance id, bucket name(s), access-key user name or EKS cluster name the finding concerns: operator-chosen names.", "evidence": "reviewer_judgement" },
           { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" }
         ]
@@ -256,9 +256,9 @@
         "status": "reviewed_may_contain",
         "basis": "Read the finding model's typed fields and botocore 1.43.103 securityhub GetFindings output shape (AwsSecurityFinding), 2026-10-02. botocore marks no member sensitive. Description, Remediation, Network, NetworkPath, Process, Threats, Malware, Vulnerabilities, ProductFields, UserDefinedFields, Note and Resources[].Details are not read into any field.",
         "locations": [
-          { "path": "title", "category": "free_text", "reason": "An integrated product's finding title can name hosts, users or values it observed.", "evidence": "reviewer_judgement" },
+          { "path": "title", "category": "free_text", "reason": "An integrated product's finding title can name hosts, users or values it observed. IPv4/IPv6 addresses and EC2 ip-a-b-c-d host names in it are replaced with [ip] (findings.redact_ips).", "evidence": "reviewer_judgement" },
           { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" },
-          { "path": "resource_ids", "category": "customer_content", "reason": "Resource identifiers (ARNs, ids) the finding names, which can carry operator-chosen names.", "evidence": "reviewer_judgement" },
+          { "path": "resource_ids", "category": "customer_content", "reason": "Resource identifiers (ARNs, ids) the finding names, which can carry operator-chosen names. An address used as an id is replaced with [ip].", "evidence": "reviewer_judgement" },
           { "path": "generator_id", "category": "other", "reason": "The producing rule or detector's identifier; for a third-party product this is product-defined text.", "evidence": "reviewer_judgement" }
         ]
       }

@@ -33,6 +33,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.findings import (
     STANDARDS_SUBSCRIPTION,
     analyzer_finding_key,
     guardduty_severity_label,
+    redact_ips,
     securityhub_finding_key,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import (
@@ -716,10 +717,49 @@ _NEW_TYPES = (
 class TestDeclarations:
     @pytest.mark.spec("req-aws-landing-zone-findings-7", "req-aws-collector-manifest-6")
     def test_no_description_ip_condition_value_or_parameter_is_stored(self) -> None:
-        read = collect(with_findings())
+        aws = with_findings()
+        titled = {
+            **GD_FINDINGS,
+            "gd-high": _gd_finding("gd-high", 8.0, Title=f"Instance is communicating with {CANARY_IP} (ip-10-0-1-5)."),
+        }
+        aws.on(
+            "guardduty",
+            "get_findings",
+            lambda _r, kw: {"Findings": [titled[i] for i in kw["FindingIds"] if i in titled]},
+        )
+        noisy = {
+            **SH_CONTROL,
+            "Title": f"Traffic from {CANARY_IP} and 2001:db8::7 to the instance",
+            "Resources": [*SH_CONTROL["Resources"], {"Type": "Other", "Id": "2001:db8::7"}],
+        }
+        aws.on(
+            "securityhub", "get_findings", _sh_handler({"HIGH": [[noisy]], "INFORMATIONAL": [[SH_PASSED]]}), region=WEST
+        )
+        read = collect(aws)
         dumped = json.dumps([n["node"] for n in read.nodes])
-        assert CANARY_IP not in dumped and CANARY_TEXT not in dumped
-        assert "not stored" not in dumped
+        for planted in (CANARY_IP, CANARY_TEXT, "not stored", "2001:db8::7", "ip-10-0-1-5"):
+            assert planted not in dumped, planted
+        gd = next(n["node"] for n in _nodes(read, GUARDDUTY_FINDING) if n["node"]["finding_id"] == "gd-high")
+        assert gd["title"] == "Instance is communicating with [ip] ([ip])."
+        sh = next(n["node"] for n in _nodes(read, SECURITYHUB_FINDING) if n["node"]["security_control_id"] == "EC2.8")
+        assert sh["title"] == "Traffic from [ip] and [ip] to the instance" and "[ip]" in sh["resource_ids"]
+
+    @pytest.mark.parametrize(
+        ("text", "expected"),
+        [
+            ("probe from 203.0.113.9.", "probe from [ip]."),
+            ("host ip-10-0-1-5.ec2.internal", "host [ip].ec2.internal"),
+            ("v6 fe80::1 and 2001:db8:0:0:0:0:0:1", "v6 [ip] and [ip]"),
+            (f"arn:{PARTITION}:s3:::bucket", f"arn:{PARTITION}:s3:::bucket"),
+            (
+                f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:instance/{INSTANCE_ID}",
+                f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:instance/{INSTANCE_ID}",
+            ),
+            ("at 12:30:45 on 999.1.1.1", "at 12:30:45 on 999.1.1.1"),
+        ],
+    )
+    def test_redact_ips(self, text: str, expected: str) -> None:
+        assert redact_ips(text) == expected
 
     @pytest.mark.spec("req-aws-collector-tags-14")
     def test_every_new_type_is_emitted_with_one_lane_and_a_sensitivity_row(self) -> None:
@@ -971,11 +1011,18 @@ class TestFindingFalsifiers:
         _supported(run_four_cases(falsifier, cases, _ctx()))
 
 
-def test_new_falsifiers_construct_with_no_arguments() -> None:
-    import importlib
+def test_new_falsifiers_are_wired_and_construct_with_no_arguments() -> None:
     import tomllib
 
     toml = tomllib.loads((Path(__file__).resolve().parents[1] / "tap-plugin.toml").read_text())
-    for entity_type in _NEW_TYPES:
-        module, _, name = toml["falsifiers"][entity_type].rpartition(".")
-        assert getattr(importlib.import_module(module), name)() is not None, entity_type
+    expected = {
+        GUARDDUTY_FINDING: GuardDutyFindingFalsifier,
+        SECURITYHUB_FINDING: SecurityHubFindingFalsifier,
+        STANDARDS_SUBSCRIPTION: StandardsSubscriptionFalsifier,
+        ACCESS_ANALYZER_FINDING: AccessAnalyzerFindingFalsifier,
+        CONFIG_RULE: ConfigRuleFalsifier,
+        CONFORMANCE_PACK: ConformancePackFalsifier,
+    }
+    for entity_type, cls in expected.items():
+        assert toml["falsifiers"][entity_type] == f"{cls.__module__}.{cls.__qualname__}", entity_type
+        assert cls() is not None, entity_type
