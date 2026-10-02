@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a0d55c-2855-77b1-9352-8023d4c5d72d",
+        "entity_id": "01a0fcc2-2cc5-711a-ad89-0d34a3cd87c8",
         "entity_type": "batch",
-        "name": "aws_core pages v0.3.1",
+        "name": "aws_core pages v0.4.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "tap_plugin.aws_core.grift.pages",
-        "name": "aws_core pages v0.3.1",
-        "description": "aws_core's reusable pages (req-aws-core-page-dashboard, -organization, -network): /aws, a dashboard of count tiles, the estate as one picture and two tables; /aws/organization, the OU tree placed by layout tags, with SCP attachments and account placement; /aws/network, transit gateways, attachments, gateways, firewalls and Direct Connect. Every search reads whatever AWS nodes the grid holds: nothing here names a deployment. The children nest under /aws by URL. The graphs share one layout module (aws-estate.js) and the tiles are the aws-counts panel type. v0.2.0 (George, 2026-09-24): the organization graph draws the OU tree only, laid out by aws-organization.js from the nodes' layout:* tags; its scoped, scp and idp searches are gone (on an existing grid, retire those three search nodes: a batch cannot remove a node). v0.3.0 (George, 2026-09-24): the network graph nests each VPC's subnets in it, one column per availability zone, with its internet gateway beside them and a NAT gateway inside its subnet, from PARTITIONED_INTO_SUBNET, ATTACHED_TO_VPC and RESIDES_IN_SUBNET; a subnets table lists each VPC's subnets with zone and CIDR. v0.3.1: the Subnets search drops ORDER BY, which Gryphon refuses on a single-hop traversal (the table sorts client-side)."
+        "name": "aws_core pages v0.4.0",
+        "description": "aws_core's reusable pages (req-aws-core-page-dashboard, -organization, -network): /aws, a dashboard of count tiles, the estate as one picture and two tables; /aws/organization, the OU tree placed by layout tags, with SCP attachments and account placement; /aws/network, transit gateways, attachments, gateways, firewalls and Direct Connect. Every search reads whatever AWS nodes the grid holds: nothing here names a deployment. The children nest under /aws by URL. The graphs share one layout module (aws-estate.js) and the tiles are the aws-counts panel type. v0.2.0 (George, 2026-09-24): the organization graph draws the OU tree only, laid out by aws-organization.js from the nodes' layout:* tags; its scoped, scp and idp searches are gone (on an existing grid, retire those three search nodes: a batch cannot remove a node). v0.3.0 (George, 2026-09-24): the network graph nests each VPC's subnets in it, one column per availability zone, with its internet gateway beside them and a NAT gateway inside its subnet, from PARTITIONED_INTO_SUBNET, ATTACHED_TO_VPC and RESIDES_IN_SUBNET; a subnets table lists each VPC's subnets with zone and CIDR. v0.3.1: the Subnets search drops ORDER BY, which Gryphon refuses on a single-hop traversal (the table sorts client-side). v0.4.0 (George, highbar Q135, 2026-10-02; aws-core-tap#75): /aws/scps lists every SCP, its statements and attachments, with the Deny statements written out as a rulebook (aws-scp-rulebook); /aws/security-groups lists security groups by VPC with rule counts and flags groups open to the internet or allowing every protocol, read from each group's raw rule lists (per-rule nodes are aws-core-tap#64); /aws/baseline is the security baseline per account and region, each control on, off or unknown (aws-baseline); /aws gains an IAM column and /aws/network an exposure column. The SCP attachments panel is mounted on both /aws/organization and /aws/scps."
       },
       "nodes": [
         {
@@ -341,12 +341,12 @@
             "name": "AWS",
             "slug": "/aws",
             "nav_weight": 200,
-            "description": "The AWS dashboard: count tiles over the estate, the estate as one picture (organisation tree, transit gateways and their attachments, VPCs and gateways, boundaries), accounts per OU and what each compliance boundary is scoped from. The organization and network pages go deeper.",
+            "description": "The AWS dashboard: count tiles over the estate, the estate as one picture (organisation tree, transit gateways and their attachments, VPCs and gateways, boundaries), accounts per OU and what each compliance boundary is scoped from. The organization and network pages go deeper. A column beside them reads IAM: roles by who may assume them (AWS services, other accounts, anyone, or only this account and federation) and the IAM users without MFA.",
             "layout": {
               "full_bleed": true,
               "columns": {
                 "col-1": {
-                  "width": "1fr",
+                  "width": "2fr",
                   "rows": {
                     "row-1": {
                       "panel-id": "counts",
@@ -362,6 +362,35 @@
                     },
                     "row-4": {
                       "panel-id": "scope",
+                      "height": "auto"
+                    }
+                  }
+                },
+                "col-2-iam": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "iam",
+                      "height": "auto"
+                    },
+                    "row-2": {
+                      "panel-id": "roles-services",
+                      "height": "auto"
+                    },
+                    "row-3": {
+                      "panel-id": "roles-accounts",
+                      "height": "auto"
+                    },
+                    "row-4": {
+                      "panel-id": "roles-anyone",
+                      "height": "auto"
+                    },
+                    "row-5": {
+                      "panel-id": "roles-other",
+                      "height": "auto"
+                    },
+                    "row-6": {
+                      "panel-id": "users-no-mfa",
                       "height": "auto"
                     }
                   }
@@ -966,12 +995,12 @@
             "name": "Network",
             "slug": "/aws/network",
             "nav_weight": 220,
-            "description": "The AWS network plane: transit gateways and their VPC attachments, each VPC's subnets by zone, the VPCs' internet gateways, NAT gateways and network firewalls, and Direct Connect.",
+            "description": "The AWS network plane: transit gateways and their VPC attachments, each VPC's subnets by zone, the VPCs' internet gateways, NAT gateways and network firewalls, and Direct Connect. A column beside them flags exposure: default VPCs and public subnets, with the internet gateways.",
             "layout": {
               "full_bleed": true,
               "columns": {
                 "col-1": {
-                  "width": "1fr",
+                  "width": "2fr",
                   "rows": {
                     "row-1": {
                       "panel-id": "plane",
@@ -991,6 +1020,23 @@
                     },
                     "row-5": {
                       "panel-id": "dx",
+                      "height": "auto"
+                    }
+                  }
+                },
+                "col-2-exposure": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "exposure",
+                      "height": "auto"
+                    },
+                    "row-2": {
+                      "panel-id": "default-vpcs",
+                      "height": "auto"
+                    },
+                    "row-3": {
+                      "panel-id": "public-subnets",
                       "height": "auto"
                     }
                   }
@@ -1128,6 +1174,1120 @@
                 "MATCH (v:aws_core__aws_vpc)-[:PARTITIONED_INTO_SUBNET__aws_core]->(s:aws_core__aws_subnet)",
                 "RETURN v.name AS vpc, s.name AS subnet, s.data.availability_zone AS zone, s.data.cidr_block AS cidr, s.data.public AS public"
               ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf231cc9239",
+            "entity_type": "panel",
+            "name": "SCP counts",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "SCP counts",
+            "slug": "aws-scp-counts",
+            "description": "Count tiles for /aws/scps: every SCP, the customer-written ones, their statements and the Deny statements among them.",
+            "view": "aws_core/panels/counts.html",
+            "config": {
+              "hide_header": true,
+              "boundaries": false,
+              "tiles": [
+                "service_control_policies",
+                "customer_scps",
+                "scp_statements",
+                "scp_deny_statements"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf3f03b8808",
+            "entity_type": "search",
+            "name": "aws — Service control policies",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Service control policies",
+            "description": "Every service control policy: AWS-managed or written by the organization, what it says it does, and how many OUs, accounts or roots it is attached to (ATTACHED_TO_TARGET). A policy attached to nothing has no effect.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (p:aws_core__aws_service_control_policy)",
+                "OPTIONAL MATCH (p)-[:ATTACHED_TO_TARGET__aws_core]->(t)",
+                "RETURN p.name AS policy, p.data.aws_managed AS aws_managed, p.data.description AS description, count(t) AS targets"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf4a905fb77",
+            "entity_type": "panel",
+            "name": "Service control policies",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Service control policies",
+            "slug": "aws-scps",
+            "description": "Every service control policy: AWS-managed or written by the organization, what it says it does, and how many OUs, accounts or roots it is attached to (ATTACHED_TO_TARGET). A policy attached to nothing has no effect.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 25,
+              "columns": [
+                {
+                  "field": "policy",
+                  "title": "Policy",
+                  "header_tooltip": "The service control policy.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "aws_managed",
+                  "title": "Written by",
+                  "header_tooltip": "AWS-managed (FullAWSAccess) or written by the organization.",
+                  "width": 130,
+                  "formatter": "toneBadge",
+                  "formatter_params": {
+                    "tones": {
+                      "true": "muted",
+                      "false": "muted"
+                    },
+                    "labels": {
+                      "true": "AWS",
+                      "false": "Customer"
+                    }
+                  }
+                },
+                {
+                  "field": "description",
+                  "title": "What it says it does",
+                  "header_tooltip": "The policy's own description.",
+                  "widthGrow": 4
+                },
+                {
+                  "field": "targets",
+                  "title": "Attached to",
+                  "header_tooltip": "How many OUs, accounts or roots it is attached to; 0 means it has no effect. The attachments table below names them.",
+                  "width": 120,
+                  "align": "right"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf621ce7f19",
+            "entity_type": "search",
+            "name": "aws — SCP statements",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — SCP statements",
+            "description": "Every statement a service control policy declares (DECLARES_STATEMENT, the aws_policy_statement nodes): its Sid, effect, actions, resources and conditions, as the collector normalised them (lowercased action and condition names).",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (p:aws_core__aws_service_control_policy)-[:DECLARES_STATEMENT__aws_core]->(s:aws_core__aws_policy_statement)",
+                "RETURN p.name AS policy, s.data.sid AS sid, s.data.effect AS effect, s.data.actions AS actions, s.data.not_actions AS not_actions, s.data.resources AS resources, s.data.conditions AS conditions"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf76854fb67",
+            "entity_type": "panel",
+            "name": "SCP statements",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "SCP statements",
+            "slug": "aws-scp-statements",
+            "description": "Every statement a service control policy declares (DECLARES_STATEMENT, the aws_policy_statement nodes): its Sid, effect, actions, resources and conditions, as the collector normalised them (lowercased action and condition names).",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 25,
+              "columns": [
+                {
+                  "field": "policy",
+                  "title": "Policy",
+                  "header_tooltip": "The policy that declares the statement.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "sid",
+                  "title": "Sid",
+                  "header_tooltip": "The statement's id; blank when the policy gives none.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "effect",
+                  "title": "Effect",
+                  "header_tooltip": "Allow or Deny.",
+                  "formatter": "toneBadge",
+                  "formatter_params": {
+                    "tones": {
+                      "Deny": "bad",
+                      "Allow": "good"
+                    }
+                  },
+                  "width": 95
+                },
+                {
+                  "field": "actions",
+                  "title": "Actions",
+                  "header_tooltip": "The actions it covers (Action); * is every action.",
+                  "tooltip": "full_value",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "not_actions",
+                  "title": "NotAction",
+                  "header_tooltip": "NotAction: every action but these. Blank when the statement uses Action.",
+                  "tooltip": "full_value",
+                  "width": 125
+                },
+                {
+                  "field": "resources",
+                  "title": "Resources",
+                  "header_tooltip": "The resources it covers; * is any resource. Blank when the statement names NotResource instead: the Deny rulebook writes that out as 'any resource except'.",
+                  "tooltip": "full_value",
+                  "width": 120
+                },
+                {
+                  "field": "conditions",
+                  "title": "Conditions",
+                  "header_tooltip": "Each condition: key, operator and values. The rulebook writes them out in words.",
+                  "formatter": "json",
+                  "tooltip": "full_value",
+                  "widthGrow": 3
+                }
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf959f2d00f",
+            "entity_type": "panel",
+            "name": "Deny rules",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Deny rules",
+            "slug": "aws-scp-deny-rules",
+            "description": "The Deny statements of every service control policy written out as numbered rules, grouped by policy, each policy with what it is attached to.",
+            "view": "aws_core/panels/scp_rulebook.html",
+            "config": {
+              "effect": "Deny",
+              "title": "Deny rules"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cfacf09bc80",
+            "entity_type": "page",
+            "name": "Service control policies",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Service control policies",
+            "slug": "/aws/scps",
+            "nav_weight": 230,
+            "description": "Every service control policy, its statements and attachments, with the Deny statements written out as a rulebook beside them.",
+            "layout": {
+              "full_bleed": true,
+              "columns": {
+                "col-1": {
+                  "width": "2fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "counts",
+                      "height": "auto"
+                    },
+                    "row-2": {
+                      "panel-id": "policies",
+                      "height": "auto"
+                    },
+                    "row-3": {
+                      "panel-id": "statements",
+                      "height": "auto"
+                    },
+                    "row-4": {
+                      "panel-id": "attachments",
+                      "height": "auto"
+                    }
+                  }
+                },
+                "col-2-rules": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "rulebook",
+                      "height": "auto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0009e525ea",
+            "entity_type": "panel",
+            "name": "Firewall rule counts",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Firewall rule counts",
+            "slug": "aws-sg-counts",
+            "description": "Count tiles for /aws/security-groups: every security group, and those with at least one rule open to the internet or for every protocol.",
+            "view": "aws_core/panels/counts.html",
+            "config": {
+              "hide_header": true,
+              "boundaries": false,
+              "tiles": [
+                "security_groups",
+                "sg_ingress_open",
+                "sg_ingress_all_protocols",
+                "sg_egress_open"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d012c73b145",
+            "entity_type": "search",
+            "name": "aws — Security groups by VPC",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Security groups by VPC",
+            "description": "Every security group the footprint HOSTS_SECURITY_GROUP, the VPC it RESIDES_IN_VPC, and how many inbound and outbound rules its configuration holds. The rules themselves are the raw IpPermissions lists.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (f:aws_core__aws_account_region)-[:HOSTS_SECURITY_GROUP__aws_core]->(s:aws_core__aws_security_group)-[:RESIDES_IN_VPC__aws_core]->(v:aws_core__aws_vpc)",
+                "RETURN v.name AS vpc, v.data.is_default AS default_vpc, f.data.account_id AS account, f.data.region_code AS region, s.name AS sg, s.data.group_id AS group_id, s.data.description AS description, s.data.configuration.IpPermissions AS ingress, s.data.configuration.IpPermissionsEgress AS egress, s.data.configuration.IpPermissions AS ingress_rules"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d021fee1d0b",
+            "entity_type": "panel",
+            "name": "Security groups by VPC",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Security groups by VPC",
+            "slug": "aws-security-groups",
+            "description": "Every security group the footprint HOSTS_SECURITY_GROUP, the VPC it RESIDES_IN_VPC, and how many inbound and outbound rules its configuration holds. The rules themselves are the raw IpPermissions lists.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 25,
+              "columns": [
+                {
+                  "field": "vpc",
+                  "title": "VPC",
+                  "header_tooltip": "The VPC the group belongs to.",
+                  "width": 180
+                },
+                {
+                  "field": "default_vpc",
+                  "title": "Kind",
+                  "header_tooltip": "Whether AWS created the VPC by default.",
+                  "formatter": "toneBadge",
+                  "formatter_params": {
+                    "tones": {
+                      "true": "warn",
+                      "false": "muted"
+                    },
+                    "labels": {
+                      "true": "default",
+                      "false": "custom"
+                    }
+                  },
+                  "width": 80
+                },
+                {
+                  "field": "region",
+                  "title": "Region",
+                  "header_tooltip": "The region the group is in.",
+                  "width": 115
+                },
+                {
+                  "field": "sg",
+                  "title": "Group",
+                  "header_tooltip": "The group's name.",
+                  "width": 150
+                },
+                {
+                  "field": "group_id",
+                  "title": "Group id",
+                  "header_tooltip": "AWS's id for the group.",
+                  "width": 175
+                },
+                {
+                  "field": "ingress",
+                  "title": "In",
+                  "header_tooltip": "Inbound rules: entries in IpPermissions (one per protocol and port range; a rule can name several sources). – means none.",
+                  "formatter": "arrayCount",
+                  "align": "right",
+                  "width": 65
+                },
+                {
+                  "field": "egress",
+                  "title": "Out",
+                  "header_tooltip": "Outbound rules: entries in IpPermissionsEgress. – means none. Every new group gets one outbound rule to 0.0.0.0/0; the egress tile counts the groups that still have it.",
+                  "formatter": "arrayCount",
+                  "align": "right",
+                  "width": 70
+                },
+                {
+                  "field": "ingress_rules",
+                  "title": "Inbound rules (raw)",
+                  "header_tooltip": "IpPermissions as AWS returned it. Hover for all of it.",
+                  "formatter": "json",
+                  "tooltip": "full_value",
+                  "widthGrow": 3
+                }
+              ],
+              "quick_filter": true
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d040a57831e",
+            "entity_type": "search",
+            "name": "aws — Open to the internet",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Open to the internet",
+            "description": "Security groups with at least one inbound rule whose source is 0.0.0.0/0 or ::/0: reachable from anywhere on the ports that rule opens. Matched as text over the rule list, so it flags the group, not the rule.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (f:aws_core__aws_account_region)-[:HOSTS_SECURITY_GROUP__aws_core]->(s:aws_core__aws_security_group)-[:RESIDES_IN_VPC__aws_core]->(v:aws_core__aws_vpc)",
+                "WHERE s.data.configuration.IpPermissions =~ \"\\\"CidrIp(v6)?\\\": \\\"(0\\\\.0\\\\.0\\\\.0/0|::/0)\\\"\"",
+                "RETURN v.name AS vpc, f.data.region_code AS region, s.name AS sg"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d05dec95082",
+            "entity_type": "panel",
+            "name": "Open to the internet",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Open to the internet",
+            "slug": "aws-sg-open-ingress",
+            "description": "Security groups with at least one inbound rule whose source is 0.0.0.0/0 or ::/0: reachable from anywhere on the ports that rule opens. Matched as text over the rule list, so it flags the group, not the rule.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "vpc",
+                  "title": "VPC",
+                  "header_tooltip": "The VPC the group belongs to.",
+                  "width": 220
+                },
+                {
+                  "field": "region",
+                  "title": "Region",
+                  "header_tooltip": "The region.",
+                  "width": 160
+                },
+                {
+                  "field": "sg",
+                  "title": "Security group",
+                  "header_tooltip": "The group's name.",
+                  "widthGrow": 2
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0791bd3864",
+            "entity_type": "search",
+            "name": "aws — All-protocol inbound rules",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — All-protocol inbound rules",
+            "description": "Security groups with at least one inbound rule for every protocol and port (IpProtocol -1), from any source: another group (the default group's self-rule is one), a range or the internet.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (f:aws_core__aws_account_region)-[:HOSTS_SECURITY_GROUP__aws_core]->(s:aws_core__aws_security_group)-[:RESIDES_IN_VPC__aws_core]->(v:aws_core__aws_vpc)",
+                "WHERE s.data.configuration.IpPermissions =~ \"\\\"IpProtocol\\\": \\\"-1\\\"\"",
+                "RETURN v.name AS vpc, f.data.region_code AS region, s.name AS sg"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d08969a6319",
+            "entity_type": "panel",
+            "name": "All-protocol inbound rules",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "All-protocol inbound rules",
+            "slug": "aws-sg-all-protocols",
+            "description": "Security groups with at least one inbound rule for every protocol and port (IpProtocol -1), from any source: another group (the default group's self-rule is one), a range or the internet.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "vpc",
+                  "title": "VPC",
+                  "header_tooltip": "The VPC the group belongs to.",
+                  "width": 220
+                },
+                {
+                  "field": "region",
+                  "title": "Region",
+                  "header_tooltip": "The region.",
+                  "width": 160
+                },
+                {
+                  "field": "sg",
+                  "title": "Security group",
+                  "header_tooltip": "The group's name.",
+                  "widthGrow": 2
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0a4f5472e4",
+            "entity_type": "panel",
+            "name": "What this page can see",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "What this page can see",
+            "slug": "aws-sg-reach",
+            "description": "States what the firewall-rules page reads and what it cannot, so a reader does not take a per-group flag for a per-rule finding.",
+            "view": "tap_web/panels/text_panel.html",
+            "config": {
+              "text": "Rules are not nodes yet. Each security group carries its rules only in its raw configuration (IpPermissions for inbound, IpPermissionsEgress for outbound), and Gryphon cannot walk into a JSON list.\n\nWhat this page does with that:\n• Rule counts are the length of each list.\n• \"Open to the internet\" and \"All-protocol\" match the list as text (a CidrIp or CidrIpv6 of 0.0.0.0/0 or ::/0; IpProtocol -1). They flag the group when any rule matches. They cannot say whether the open range and the all-protocol entry are the same rule, which ports are open, or what a rule references.\n• Outbound 0.0.0.0/0 is AWS's default for every new group, so it is counted, not flagged.\n\nPer-rule nodes, with ports, sources and references as fields and edges, are aws-core-tap#64."
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0b3c1e0d60",
+            "entity_type": "page",
+            "name": "Firewall rules",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Firewall rules",
+            "slug": "/aws/security-groups",
+            "nav_weight": 240,
+            "description": "Security groups by VPC with inbound and outbound rule counts, and the groups open to the internet or allowing every protocol. Rules are read from each group's raw configuration; per-rule nodes are aws-core-tap#64.",
+            "layout": {
+              "full_bleed": true,
+              "columns": {
+                "col-1": {
+                  "width": "3fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "counts",
+                      "height": "auto"
+                    },
+                    "row-2": {
+                      "panel-id": "groups",
+                      "height": "auto"
+                    },
+                    "row-3": {
+                      "panel-id": "open",
+                      "height": "auto"
+                    },
+                    "row-4": {
+                      "panel-id": "all-protocols",
+                      "height": "auto"
+                    }
+                  }
+                },
+                "col-2-notes": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "reach",
+                      "height": "auto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d11892e7c50",
+            "entity_type": "panel",
+            "name": "Security baseline",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Security baseline",
+            "slug": "aws-baseline",
+            "description": "One row per account and region: EBS default encryption, the account's S3 public-access block, Config, GuardDuty, Security Hub, Access Analyzer and Control Tower enrollment, each on, off or unknown.",
+            "view": "aws_core/panels/baseline.html",
+            "config": {
+              "hide_header": true
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d128df83417",
+            "entity_type": "page",
+            "name": "Security baseline",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Security baseline",
+            "slug": "/aws/baseline",
+            "nav_weight": 250,
+            "description": "The security baseline per account and region, each control on, off or unknown. Unknown (not read or not seen) is never shown as off.",
+            "layout": {
+              "full_bleed": true,
+              "columns": {
+                "col-1": {
+                  "width": "1fr",
+                  "rows": {
+                    "row-1": {
+                      "panel-id": "matrix",
+                      "height": "auto"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d14871f7956",
+            "entity_type": "panel",
+            "name": "IAM counts",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "IAM counts",
+            "slug": "aws-iam-counts",
+            "description": "Count tiles for the IAM column on /aws: roles by who may assume them, and IAM users without MFA.",
+            "view": "aws_core/panels/counts.html",
+            "config": {
+              "hide_header": true,
+              "boundaries": false,
+              "tiles": [
+                "roles_trust_services",
+                "roles_trust_accounts",
+                "roles_trust_anyone",
+                "users_without_mfa"
+              ],
+              "title": "IAM",
+              "intro": "Who can assume each role, from its trust policy, and the users without MFA."
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1591aac715",
+            "entity_type": "search",
+            "name": "aws — Assumed by AWS services",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Assumed by AWS services",
+            "description": "IAM roles whose trust policy names an AWS service principal (trusted_services).",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (r:aws_core__aws_iam_role)",
+                "WHERE r.data.trusted_services =~ \"[a-z]\"",
+                "RETURN r.name AS role, r.data.trusted_services AS services"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d16ee6a519b",
+            "entity_type": "panel",
+            "name": "Assumed by AWS services",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Assumed by AWS services",
+            "slug": "aws-iam-roles-services",
+            "description": "IAM roles whose trust policy names an AWS service principal (trusted_services).",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "role",
+                  "title": "Role",
+                  "header_tooltip": "The IAM role.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "services",
+                  "title": "Service",
+                  "header_tooltip": "The service principals the trust policy names.",
+                  "widthGrow": 2
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1895a2c4df",
+            "entity_type": "search",
+            "name": "aws — Assumed by other accounts",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Assumed by other accounts",
+            "description": "IAM roles whose trust policy names another AWS account (trusted_account_ids; never the role's own).",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (r:aws_core__aws_iam_role)",
+                "WHERE r.data.trusted_account_ids =~ \"[0-9]\"",
+                "RETURN r.name AS role, r.data.trusted_account_ids AS accounts"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d19178a6560",
+            "entity_type": "panel",
+            "name": "Assumed by other accounts",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Assumed by other accounts",
+            "slug": "aws-iam-roles-accounts",
+            "description": "IAM roles whose trust policy names another AWS account (trusted_account_ids; never the role's own).",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "role",
+                  "title": "Role",
+                  "header_tooltip": "The IAM role.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "accounts",
+                  "title": "Accounts",
+                  "header_tooltip": "The other accounts whose principals may assume it.",
+                  "widthGrow": 2
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1b83378b04",
+            "entity_type": "search",
+            "name": "aws — Assumable by anyone (*)",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Assumable by anyone (*)",
+            "description": "IAM roles whose trust policy allows the wildcard principal (*): anyone, subject to its conditions.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (r:aws_core__aws_iam_role)",
+                "WHERE r.data.trusts_wildcard_principal = true",
+                "RETURN r.name AS role, r.data.trusted_services AS services, r.data.trusted_account_ids AS accounts"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1cad22dc43",
+            "entity_type": "panel",
+            "name": "Assumable by anyone (*)",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Assumable by anyone (*)",
+            "slug": "aws-iam-roles-anyone",
+            "description": "IAM roles whose trust policy allows the wildcard principal (*): anyone, subject to its conditions.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "role",
+                  "title": "Role",
+                  "header_tooltip": "The IAM role.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "services",
+                  "title": "Services",
+                  "header_tooltip": "Service principals it also names.",
+                  "widthGrow": 1
+                },
+                {
+                  "field": "accounts",
+                  "title": "Accounts",
+                  "header_tooltip": "Other accounts it also names.",
+                  "widthGrow": 1
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1e9e7fc1c4",
+            "entity_type": "search",
+            "name": "aws — Assumed only from this account",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Assumed only from this account",
+            "description": "IAM roles whose trust policy names no AWS service, no other account and no wildcard: principals in the role's own account (a user or role ARN), or a federated identity provider.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (r:aws_core__aws_iam_role)",
+                "WHERE NOT r.data.trusted_services =~ \"[a-z]\" AND NOT r.data.trusted_account_ids =~ \"[0-9]\" AND NOT r.data.trusts_wildcard_principal = true",
+                "RETURN r.name AS role, r.data.path AS path"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1faa81f356",
+            "entity_type": "panel",
+            "name": "Assumed only from this account",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Assumed only from this account",
+            "slug": "aws-iam-roles-other",
+            "description": "IAM roles whose trust policy names no AWS service, no other account and no wildcard: principals in the role's own account (a user or role ARN), or a federated identity provider.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "role",
+                  "title": "Role",
+                  "header_tooltip": "The IAM role.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "path",
+                  "title": "Path",
+                  "header_tooltip": "The role's IAM path.",
+                  "widthGrow": 1
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d21bfd3e82f",
+            "entity_type": "search",
+            "name": "aws — Users without MFA",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Users without MFA",
+            "description": "IAM users observed with no MFA device (mfa_enabled false). A user whose MFA was not read is not listed.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (u:aws_core__aws_iam_user)",
+                "WHERE u.data.mfa_enabled = false",
+                "RETURN u.name AS user, u.data.password_last_used AS password_last_used"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d22fc984b93",
+            "entity_type": "panel",
+            "name": "Users without MFA",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Users without MFA",
+            "slug": "aws-iam-users-no-mfa",
+            "description": "IAM users observed with no MFA device (mfa_enabled false). A user whose MFA was not read is not listed.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "user",
+                  "title": "User",
+                  "header_tooltip": "The IAM user.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "password_last_used",
+                  "title": "Console password last used",
+                  "header_tooltip": "Blank when the user has never signed in to the console (an access-key-only user).",
+                  "widthGrow": 2,
+                  "formatter": "datetime"
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2ac9aa3e87",
+            "entity_type": "panel",
+            "name": "Network exposure counts",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Network exposure counts",
+            "slug": "aws-net-exposure",
+            "description": "Count tiles for the exposure column on /aws/network: default VPCs, public subnets and internet gateways.",
+            "view": "aws_core/panels/counts.html",
+            "config": {
+              "hide_header": true,
+              "boundaries": false,
+              "tiles": [
+                "default_vpcs",
+                "public_subnets",
+                "internet_gateways"
+              ],
+              "title": "Exposure",
+              "intro": "What AWS left open by default, and every path to the internet."
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2b35754aa4",
+            "entity_type": "search",
+            "name": "aws — Default VPCs",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Default VPCs",
+            "description": "VPCs AWS created by default (is_default), in each account and region the footprint HOSTS_VPC. A default VPC comes with public subnets and an internet gateway in every zone.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (f:aws_core__aws_account_region)-[:HOSTS_VPC__aws_core]->(v:aws_core__aws_vpc)",
+                "WHERE v.data.is_default = true",
+                "RETURN f.data.account_id AS account, f.data.region_code AS region, v.name AS vpc, v.data.cidr_block AS cidr"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2c2a9e20c3",
+            "entity_type": "panel",
+            "name": "Default VPCs",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Default VPCs",
+            "slug": "aws-default-vpcs",
+            "description": "VPCs AWS created by default (is_default), in each account and region the footprint HOSTS_VPC. A default VPC comes with public subnets and an internet gateway in every zone.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "region",
+                  "title": "Region",
+                  "header_tooltip": "The region.",
+                  "width": 120
+                },
+                {
+                  "field": "vpc",
+                  "title": "VPC",
+                  "header_tooltip": "The default VPC.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "cidr",
+                  "title": "CIDR",
+                  "header_tooltip": "Its CIDR block.",
+                  "widthGrow": 1
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2e00a9d432",
+            "entity_type": "search",
+            "name": "aws — Public subnets",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Public subnets",
+            "description": "Subnets whose route table sends traffic to an internet gateway (public), in the VPC that PARTITIONED_INTO_SUBNET them.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (v:aws_core__aws_vpc)-[:PARTITIONED_INTO_SUBNET__aws_core]->(s:aws_core__aws_subnet)",
+                "WHERE s.data.public = true",
+                "RETURN v.name AS vpc, v.data.is_default AS default_vpc, s.name AS subnet, s.data.availability_zone AS zone"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2f8ddab6e3",
+            "entity_type": "panel",
+            "name": "Public subnets",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Public subnets",
+            "slug": "aws-public-subnets",
+            "description": "Subnets whose route table sends traffic to an internet gateway (public), in the VPC that PARTITIONED_INTO_SUBNET them.",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "subnet",
+                  "title": "Subnet",
+                  "header_tooltip": "The public subnet.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "zone",
+                  "title": "Zone",
+                  "header_tooltip": "Its availability zone.",
+                  "width": 120
+                },
+                {
+                  "field": "default_vpc",
+                  "title": "Kind",
+                  "header_tooltip": "Whether its VPC is a default VPC.",
+                  "width": 90,
+                  "formatter": "toneBadge",
+                  "formatter_params": {
+                    "tones": {
+                      "true": "warn",
+                      "false": "muted"
+                    },
+                    "labels": {
+                      "true": "default",
+                      "false": "custom"
+                    }
+                  }
+                }
+              ],
+              "chrome": "minimal"
             }
           }
         }
@@ -1885,6 +3045,574 @@
                 "model": "page",
                 "spec": "page-panels",
                 "value": "subnets"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf5c211bbe1",
+            "entity_type": "edge",
+            "name": "Service control policies USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf4a905fb77",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf3f03b8808",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cf84ba11da3",
+            "entity_type": "edge",
+            "name": "SCP statements USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf76854fb67",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf621ce7f19",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cfb102aaf5f",
+            "entity_type": "edge",
+            "name": "SCPs page USES_PANEL counts",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cfacf09bc80",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf231cc9239",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "counts"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cfcdeee6e54",
+            "entity_type": "edge",
+            "name": "SCPs page USES_PANEL policies",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cfacf09bc80",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf4a905fb77",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "policies"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cfd389a6276",
+            "entity_type": "edge",
+            "name": "SCPs page USES_PANEL statements",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cfacf09bc80",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf76854fb67",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "statements"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cfef01c458a",
+            "entity_type": "edge",
+            "name": "SCPs page USES_PANEL attachments",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cfacf09bc80",
+            "to_entity_id": "01a0d4ae-f0ec-7131-a40b-01a48be46803",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "attachments"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0cffad3f6707",
+            "entity_type": "edge",
+            "name": "SCPs page USES_PANEL rulebook",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0cfacf09bc80",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0cf959f2d00f",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "rulebook"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d03dd9c0b0b",
+            "entity_type": "edge",
+            "name": "Security groups by VPC USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d021fee1d0b",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d012c73b145",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d064426ce32",
+            "entity_type": "edge",
+            "name": "Open to the internet USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d05dec95082",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d040a57831e",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d09f936e2b6",
+            "entity_type": "edge",
+            "name": "All-protocol inbound rules USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d08969a6319",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0791bd3864",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0cc1f32bd4",
+            "entity_type": "edge",
+            "name": "Firewall rules page USES_PANEL counts",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0b3c1e0d60",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0009e525ea",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "counts"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0d3f8ba4c7",
+            "entity_type": "edge",
+            "name": "Firewall rules page USES_PANEL groups",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0b3c1e0d60",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d021fee1d0b",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "groups"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0e1550b29c",
+            "entity_type": "edge",
+            "name": "Firewall rules page USES_PANEL open",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0b3c1e0d60",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d05dec95082",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "open"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d0fd783087e",
+            "entity_type": "edge",
+            "name": "Firewall rules page USES_PANEL all-protocols",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0b3c1e0d60",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d08969a6319",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "all-protocols"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1020f82fef",
+            "entity_type": "edge",
+            "name": "Firewall rules page USES_PANEL reach",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0b3c1e0d60",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d0a4f5472e4",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "reach"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d13c95dd88c",
+            "entity_type": "edge",
+            "name": "Baseline page USES_PANEL matrix",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d128df83417",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d11892e7c50",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "matrix"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1754301801",
+            "entity_type": "edge",
+            "name": "Assumed by AWS services USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d16ee6a519b",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1591aac715",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1a76232fe4",
+            "entity_type": "edge",
+            "name": "Assumed by other accounts USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d19178a6560",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1895a2c4df",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d1d8e27bdf5",
+            "entity_type": "edge",
+            "name": "Assumable by anyone (*) USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1cad22dc43",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1b83378b04",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2090f15658",
+            "entity_type": "edge",
+            "name": "Assumed only from this account USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1faa81f356",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1e9e7fc1c4",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d23019b3d4f",
+            "entity_type": "edge",
+            "name": "Users without MFA USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d22fc984b93",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d21bfd3e82f",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d24f03bb3f1",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL iam",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d14871f7956",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "iam"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d25f1d083ff",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL roles-services",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d16ee6a519b",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "roles-services"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d263fe92996",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL roles-accounts",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d19178a6560",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "roles-accounts"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d27490de127",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL roles-anyone",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1cad22dc43",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "roles-anyone"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d286b501bec",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL roles-other",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d1faa81f356",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "roles-other"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d29ee3a788f",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL users-no-mfa",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d22fc984b93",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "users-no-mfa"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d2d823f3933",
+            "entity_type": "edge",
+            "name": "Default VPCs USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2c2a9e20c3",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2b35754aa4",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d30a55e104c",
+            "entity_type": "edge",
+            "name": "Public subnets USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2f8ddab6e3",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2e00a9d432",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d31fccb8a2a",
+            "entity_type": "edge",
+            "name": "Network page USES_PANEL exposure",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-faf2-772c-8669-99ee76d8302e",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2ac9aa3e87",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "exposure"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d3246727355",
+            "entity_type": "edge",
+            "name": "Network page USES_PANEL default-vpcs",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-faf2-772c-8669-99ee76d8302e",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2c2a9e20c3",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "default-vpcs"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a0fcc2-2cc5-711a-ad89-0d339c2a5715",
+            "entity_type": "edge",
+            "name": "Network page USES_PANEL public-subnets",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-faf2-772c-8669-99ee76d8302e",
+            "to_entity_id": "01a0fcc2-2cc5-711a-ad89-0d2f8ddab6e3",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "public-subnets"
               }
             }
           }
