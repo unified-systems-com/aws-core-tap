@@ -60,3 +60,43 @@ def test_a_cycle_in_the_tree_terminates() -> None:
 def test_a_boundary_nothing_is_scoped_to_shows_zero() -> None:
     tiles = boundary_tiles([_n("a")], [], [], [{"entity_id": "b9", "name": "empty"}])
     assert [(t["label"], t["value"]) for t in tiles] == [("Accounts in empty", 0)]
+
+
+def test_an_instance_without_tiles_shows_only_the_dashboard_set() -> None:
+    """The tiles the demo pages add (aws-core-tap#75) appear only where an instance names them."""
+    from tap_plugin.aws_core.panels.counts import DEFAULT_KEYS
+
+    assert DEFAULT_KEYS == tuple(t.key for t in CATALOGUE[: len(DEFAULT_KEYS)])
+    assert "security_groups" not in DEFAULT_KEYS and "users_without_mfa" not in DEFAULT_KEYS
+
+
+def test_security_group_flags_match_the_rule_text_postgres_prints() -> None:
+    """The open-to-the-internet and all-protocol tiles regex-match a rule list rendered as jsonb text."""
+    import json
+    import re
+
+    from tap_plugin.aws_core.panels.counts import ALL_PROTOCOLS_RE, OPEN_TO_INTERNET_RE
+
+    def as_jsonb_text(rules: list[dict]) -> str:  # Postgres prints jsonb with ", " and ": " separators
+        return json.dumps(rules, separators=(", ", ": "))
+
+    open_v4 = [{"IpProtocol": "tcp", "FromPort": 443, "ToPort": 443, "IpRanges": [{"CidrIp": "0.0.0.0/0"}]}]
+    open_v6 = [{"IpProtocol": "tcp", "Ipv6Ranges": [{"CidrIpv6": "::/0"}]}]
+    narrow = [{"IpProtocol": "tcp", "IpRanges": [{"CidrIp": "10.0.0.0/8"}, {"CidrIp": "10.0.0.0/0"}],
+               "Ipv6Ranges": [{"CidrIpv6": "2001:db8::/0"}]}]
+    all_proto = [{"IpProtocol": "-1", "UserIdGroupPairs": [{"GroupId": "sg-1"}]}]
+    assert re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(open_v4))
+    assert re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(open_v6))
+    assert not re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(narrow))
+    assert re.search(ALL_PROTOCOLS_RE, as_jsonb_text(all_proto))
+    assert not re.search(ALL_PROTOCOLS_RE, as_jsonb_text(open_v4))
+
+
+def test_new_tiles_filter_in_gryphon_not_in_python() -> None:
+    """Every added tile narrows with a Gryphon WHERE; none folds raw configuration in Python."""
+    from tap_plugin.aws_core.panels.counts import DEFAULT_KEYS
+
+    for tile in CATALOGUE:
+        if tile.key in DEFAULT_KEYS or tile.key == "security_groups":
+            continue
+        assert " WHERE " in tile.query and tile.keep is None, tile.key

@@ -1,0 +1,66 @@
+{% comment %}
+aws-baseline — req-aws-core-panel-baseline. One row per account and region, one column per control, each
+cell on / off / unknown, with the reason in its title. Unknown is never drawn as off. Text carries every
+state; colour is a second channel.
+{% endcomment %}
+<div class="tap-panel tap-panel--aws-baseline awp">
+{% if error %}
+  <p class="awp__failed">The account-and-region read failed; see the server log ([b7e2]). Nothing below would be true, so nothing is shown.</p>
+{% elif not matrix.rows %}
+  <header class="awp__head">
+    <p class="awp__kind">AWS · security baseline</p>
+    <h3>No account-and-region footprint is on the grid</h3>
+    <p class="awp__sub">The baseline is read per account and region (<code>aws_account_region</code>). Run the aws_core collector to land them.</p>
+  </header>
+{% else %}
+  <header class="awp__head">
+    <p class="awp__kind">AWS · security baseline</p>
+    <h3>{{ matrix.cells_on }} of {{ matrix.cells_total }} controls on across {{ matrix.rows|length }} account-region{{ matrix.rows|length|pluralize }}</h3>
+    <p class="awp__sub">{{ matrix.cells_off }} observed off · {{ matrix.cells_unknown }} unknown. One row per account and region the collector reached{% if matrix.accounts > 1 %}, {{ matrix.accounts }} accounts{% endif %}.</p>
+  </header>
+
+  <ul class="awp-legend" aria-label="Legend">
+    <li><span class="awp-pill awp-pill--on">on</span> AWS answered that it is on.</li>
+    <li><span class="awp-pill awp-pill--off">off</span> AWS answered that it is off: a false setting, a stopped recorder, a disabled detector.</li>
+    <li><span class="awp-pill awp-pill--unknown">unknown</span> Not read, or not seen on the grid. Never the same as off.</li>
+  </ul>
+
+  <div class="awp-matrix__wrap">
+  <table class="awp-matrix">
+    <thead>
+      <tr>
+        <th scope="col" class="awp-matrix__where">Account</th>
+        <th scope="col" class="awp-matrix__where">Region</th>
+        {% for c in matrix.summary %}
+        <th scope="col" title="{{ c.label }}: on in {{ c.on }}, off in {{ c.off }}, unknown in {{ c.unknown }}{% if c.failed %}, failed in {{ c.failed }}{% endif %}.">
+          <span class="awp-matrix__col">{{ c.label }}</span>
+          <span class="awp-matrix__tally">{{ c.on }}/{{ matrix.rows|length }} on</span>
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in matrix.rows %}
+      <tr>
+        <th scope="row" class="awp-matrix__where"><code>{{ r.account }}</code>{% if r.account_name and r.account not in r.account_name %}<span class="awp__muted awp-matrix__acct">{{ r.account_name }}</span>{% endif %}</th>
+        <td class="awp-matrix__where"><code>{{ r.region }}</code></td>
+        {% for cell in r.cells %}
+        <td><span class="awp-pill awp-pill--{{ cell.state }}" title="{{ cell.label }}: {{ cell.note }}">{{ cell.state }}</span></td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <details class="awp-prov">
+    <summary>How each column is read</summary>
+    <dl class="awp-prov__list">
+      <div><dt>EBS default encryption</dt><dd>The footprint's <code>ebs_encryption_by_default</code>, from <code>ec2:GetEbsEncryptionByDefault</code> in that region.</dd></div>
+      <div><dt>S3 public-access block</dt><dd>The four account flags on the account the footprint <code>BELONGS_TO_ACCOUNT</code>, read once per account through <code>s3control</code>: on when all four are on, off when any is off. Every region row of an account shows the same value.</dd></div>
+      <div><dt>Config, GuardDuty, Security Hub, Access Analyzer</dt><dd>The recorder, detector, hub or analyzer the footprint <code>HOSTS_*</code>: on when one is recording, ENABLED, present or ACTIVE; off when one exists and none is. With no node it is unknown: the collector proves "not enabled" only with a complete, empty listing, and that statement is kept on the collection run, which this page cannot read. Security Hub is never shown off: AWS answers "not subscribed" with the same code as "access denied".</dd></div>
+      <div><dt>Control Tower</dt><dd>On when an enabled baseline that succeeded <code>APPLIES_TO_TARGET</code> the account or an OU above it; off when every baseline covering it failed; otherwise unknown.</dd></div>
+    </dl>
+  </details>
+{% endif %}
+</div>
