@@ -30,7 +30,13 @@ def test_not_action_reads_as_every_action_except() -> None:
     r = rule_of(REGION_DENY)
     assert r["actions"] == {"lead": "every action except", "items": ["iam:*", "sts:*"]}
     (c,) = r["conditions"]
-    assert c["words"] == "every value is not" and c["if_exists"] == "if present"
+    assert c["words"] == "every value is none of" and c["join"] == "," and c["if_exists"] == "if present"
+
+
+def test_a_negated_operator_with_one_value_stays_plain() -> None:
+    row = {**DENY_ROOT, "conditions": [{"condition_key": "k", "operator": "stringnotlike", "values": ["v"]}]}
+    (c,) = rule_of(row)["conditions"]
+    assert (c["words"], c["join"]) == ("does not match", "or")
 
 
 def test_an_unknown_operator_is_shown_as_aws_spells_it() -> None:
