@@ -756,6 +756,9 @@ class TestDeclarations:
                 f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:instance/{INSTANCE_ID}",
             ),
             ("at 12:30:45 on 999.1.1.1", "at 12:30:45 on 999.1.1.1"),
+            (f"AWS::::Account:{MGMT}", f"AWS::::Account:{MGMT}"),
+            ("cafe bad face 1234 a:b", "cafe bad face 1234 a:b"),
+            ("mapped ::ffff:192.0.2.1 here", "mapped ::ffff:[ip] here"),
         ],
     )
     def test_redact_ips(self, text: str, expected: str) -> None:

@@ -292,10 +292,11 @@ models; nothing was observed against a live account.
   the capped read and are marked incomplete. Security Hub's are exact for every label read to its
   end. GuardDuty's labels are its documented bands: Critical 9.0-10.0, High 7.0-8.9, Medium
   4.0-6.9, Low 1.0-3.9 (web: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html).
-- **Typed fields only.** No ASFF document, description, remediation, product fields, network
+- **Typed fields only.** No ASFF document, finding description, remediation, product fields, network
   detail, remote or private IP (botocore marks GuardDuty's sensitive), Access Analyzer condition
   value, Config rule `InputParameters` or conformance-pack parameter is stored. An Access Analyzer
-  finding's condition summary is its condition **keys**. A finding's title is service- or
+  finding's condition summary is its condition **keys**. A Config rule's own `description`
+  (operator-authored, at most 256 characters) is kept and declared `free_text`. A finding's title is service- or
   product-written free text that can name an address it observed, so every IPv4 or IPv6 address,
   and every EC2 `ip-a-b-c-d` host name, in a stored title or Security Hub resource id is replaced
   with `[ip]` (`findings.redact_ips`). Each type's declaration is in `reader_sensitivity.json`.
@@ -323,7 +324,7 @@ models; nothing was observed against a live account.
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |
 | req-aws-landing-zone-findings-6 | Control Results And Standards | Proposed | A control finding carries its compliance status and security control id, and `EVALUATED_UNDER_STANDARD` to each enabled standard it names; enabled standards are nodes contained by the hub. | |
-| req-aws-landing-zone-findings-7 | Typed Fields Only | Proposed | No description, IP address, condition value or rule parameter reaches a node; an address inside a title or resource id is replaced with `[ip]`. A test plants each, titles included, and finds none. | |
+| req-aws-landing-zone-findings-7 | Typed Fields Only | Proposed | No finding description, IP address, condition value or rule parameter reaches a node (a Config rule's own operator-authored `description` is kept, declared `free_text`); an address inside a title or resource id is replaced with `[ip]`. A test plants each, titles included, and finds none. | |
 | req-aws-landing-zone-findings-8 | Config Rules And Conformance Packs | Proposed | Every Config rule (service-linked included) and conformance pack is a footprint child with its compliance; a failed compliance read is null, never compliant. | |
 
 ### Non-Goals

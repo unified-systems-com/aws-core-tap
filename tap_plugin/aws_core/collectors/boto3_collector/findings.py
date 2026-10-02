@@ -140,7 +140,9 @@ def standards_id_of(standards_arn: str) -> str:
 #: What an IP address in stored free text is replaced with.
 IP_REDACTION = "[ip]"
 _IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d])")
-_IPV6 = re.compile(r"(?<![\w:])[0-9A-Fa-f]{0,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?![\w:])")
+#: An IPv6 candidate: one bounded run of hex digits and colons (no nested quantifier, so no
+#: catastrophic backtracking), kept only when ``ipaddress`` accepts it.
+_IPV6 = re.compile(r"(?<![\w:])[0-9A-Fa-f:]{2,39}(?![\w:])")
 #: An EC2 private DNS host name spells its address with dashes (``ip-10-0-1-5``).
 _EC2_HOST = re.compile(r"\bip-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})\b")
 
@@ -151,6 +153,8 @@ def redact_ips(text: str) -> str:
     address it observed; only the address is removed, so the title stays readable."""
 
     def address(match: re.Match[str]) -> str:
+        if match.re is _IPV6 and match.group(0).count(":") < 2:
+            return match.group(0)
         try:
             ipaddress.ip_address(match.group(0))
         except ValueError:
