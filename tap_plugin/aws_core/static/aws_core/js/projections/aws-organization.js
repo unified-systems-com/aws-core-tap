@@ -6,7 +6,7 @@
  * brings into the scene (a policy, a boundary, an identity source) is dropped before layout, so
  * the tree has no lines across it.
  *
- * Placement comes from the nodes' own layout tags (layout-hints.js), never from a name or id:
+ * Placement comes from the nodes' own layout tags (layout-hints.js) where they carry any:
  *
  *   - the organization lays its children out in columns: `layout:column` picks the column
  *     (0, the default, is the main one), `layout:order` the place in it, top to bottom;
@@ -15,7 +15,13 @@
  *   - a box tagged `layout:fill` widens to its lane (its parent's single column, its column, or
  *     the rest of its row).
  *
- * With no tags at all the tree still draws: one column under the organization, rows by label.
+ * When no child of the organization carries a placement tag (`layout:order`, `layout:column`,
+ * `layout:row`), its top level is placed best-effort by OU role (org-rows.js): each workload OU in
+ * a row of its own, the largest subtree first, and AWS's recommended foundational OUs (Security,
+ * Sandbox, Suspended, ...) side by side in one bottom row with the accounts the organization holds
+ * directly. That is the one place a name is read, and only against AWS's published list. Tags on
+ * the real AWS resources are never used for ordering (George, 2026-10-02). Below the top level,
+ * untagged OUs still lay their children out in rows by label.
  *
  * Standard tap layout module: `export async function execute(context)` (spec-viz-layouts.md).
  */
@@ -25,6 +31,7 @@ import {applyStandardChrome, placeParentLabels, parentLabelInset} from "/static/
 import {
     stampColumns, arrangeRows, fill, childrenOf, rowLayouts, styleRows, ROW_RELATIONSHIP,
 } from "/static/aws_core/js/runtime/layout-hints.js";
+import {isFoundational, planOrgRows, subtreeSizes} from "/static/aws_core/js/runtime/org-rows.js";
 
 const T = {
     organization: "aws_core__aws_organization",
@@ -49,10 +56,32 @@ function _stamp(cy) {
         if (!byParent.has(parent.id())) byParent.set(parent.id(), {parent, children: []});
         byParent.get(parent.id()).children.push(e.source());
     });
+    const sizes = subtreeSizes(nested.map((e) => ({child: e.source().id(), parent: e.target().id()})));
     byParent.forEach(({parent, children}) => {
-        if (parent.data("entity_type") === T.organization) stampColumns(children);
-        else arrangeRows(cy, parent, children, {containEdges: nested});
+        if (parent.data("entity_type") !== T.organization) arrangeRows(cy, parent, children, {containEdges: nested});
+        else if (!_stampOrgRows(cy, parent, children, sizes, nested)) stampColumns(children);
     });
+}
+
+//: Best-effort rows for an organization's children; false (nothing stamped) when any carries a
+//: placement tag, so the tag-driven columns apply instead.
+function _stampOrgRows(cy, org, children, sizes, nested) {
+    const byId = new Map(children.map((n) => [n.id(), n]));
+    const plan = planOrgRows(children.map((n) => ({
+        id: n.id(),
+        name: n.data("label") || "",
+        kind: n.data("entity_type") === T.ou ? "ou" : "account",
+        size: sizes.get(n.id()) || 0,
+        tags: n.data("tags") || {},
+    })));
+    if (plan === null) return false;
+    const rows = plan.map((row) => row.map((id) => byId.get(id)));
+    // A workload OU stands alone in its row; let it stretch across the organization.
+    children.forEach((n) => {
+        if (n.data("entity_type") === T.ou && !isFoundational(n.data("label"))) n.data("_layout_fill", true);
+    });
+    arrangeRows(cy, org, children, {rows, containEdges: nested});
+    return true;
 }
 
 export async function execute(context) {

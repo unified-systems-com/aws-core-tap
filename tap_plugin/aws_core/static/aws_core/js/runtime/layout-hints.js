@@ -84,7 +84,8 @@ export function stampColumns(siblings) {
 /**
  * Lay a parent's children out in rows, for a parent whose inner layout is `ranked`.
  *
- * Rows come from `layout:row` when `byRowTag` is set (untagged children each take their own row
+ * Rows come from `rows` when given (the caller's own rows, top to bottom, each already in order),
+ * else from `layout:row` when `byRowTag` is set (untagged children each take their own row
  * after the tagged ones), else from wrapping the ordered children at `columns` per row
  * (default: the parent's layout:columns tag, else unlimited). One row: each child its own
  * `ranked` column. Every row a single child: one column, stacked. Otherwise each row becomes an
@@ -94,14 +95,17 @@ export function stampColumns(siblings) {
  * @param {cytoscape.Core} cy
  * @param {cytoscape.NodeSingular} parent
  * @param {cytoscape.NodeSingular[]} children - the parent's children, found by the caller
- * @param {{columns?: number, byRowTag?: boolean, containEdges?: cytoscape.EdgeCollection}} [opts]
+ * @param {{columns?: number, byRowTag?: boolean, rows?: cytoscape.NodeSingular[][],
+ *          containEdges?: cytoscape.EdgeCollection}} [opts]
  *   containEdges: the edges that make `parent` the parent of each child (hidden when rows form).
  */
 export function arrangeRows(cy, parent, children, opts) {
     const o = opts || {};
-    const ordered = sortSiblings(children);
+    const ordered = o.rows ? o.rows.flat() : sortSiblings(children);
     let rows;
-    if (o.byRowTag) {
+    if (o.rows) {
+        rows = o.rows.filter((r) => r.length);
+    } else if (o.byRowTag) {
         const tagged = new Map();
         const loose = [];
         ordered.forEach((n) => {
