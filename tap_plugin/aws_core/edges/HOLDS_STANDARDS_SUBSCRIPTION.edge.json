@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_STANDARDS_SUBSCRIPTION__aws_core",
+  "name": "Holds Standards Subscription",
+  "description": "A Security Hub hub holds a standard enabled on it (hub -> standards subscription): one item securityhub:GetEnabledStandards returned, called unfiltered and read to its last page. Containment: the hub declares it in CONTAINMENT_EDGES, and its one surface per hub is complete when that listing read to its end. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_securityhub_hub"
+  ],
+  "targets": [
+    "aws_core__aws_securityhub_standards_subscription"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

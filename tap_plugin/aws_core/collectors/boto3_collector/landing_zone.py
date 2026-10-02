@@ -24,6 +24,8 @@ What it reads, all read-only, every paginated call to its last page (``req-aws-c
     guardduty      ListDetectors, GetDetector, GetAdministratorAccount
     securityhub    DescribeHub, GetEnabledStandards, GetAdministratorAccount, ListTagsForResource
     accessanalyzer ListAnalyzers(type) once per value of the pinned Type enum
+    (findings)     each detector's, hub's and analyzer's active findings, and the region's Config
+                   rules and conformance packs: ``findings.py`` (aws-core-tap#76)
     ec2            GetEbsEncryptionByDefault, GetEbsDefaultKmsKeyId (per region)
     s3control      GetPublicAccessBlock(AccountId), once, in the partition's home region
 
@@ -58,8 +60,20 @@ from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 
+from . import findings as findings_mod
 from .containment import Listing as RegionListing
 from .containment import footprint_id, footprint_key, surface_of
+from .findings import (
+    HOLDS_ACCESS_ANALYZER_FINDING,
+    HOLDS_GUARDDUTY_FINDING,
+    HOLDS_SECURITYHUB_FINDING,
+    HOLDS_STANDARDS_SUBSCRIPTION,
+    HOSTS_CONFIG_RULE,
+    HOSTS_CONFORMANCE_PACK,
+    RELATION_CONFIG_RULES,
+    RELATION_CONFORMANCE_PACKS,
+    FindingsReads,
+)
 from .identity import edge_entity_id, node_entity_id
 from .organizations import (
     _DENIED_CODES,
@@ -128,9 +142,15 @@ CONTAINMENT_SURFACES: dict[str, tuple[str, ...]] = {
         HOSTS_GUARDDUTY_DETECTOR,
         HOSTS_SECURITYHUB_HUB,
         HOSTS_ACCESS_ANALYZER,
+        HOSTS_CONFIG_RULE,
+        HOSTS_CONFORMANCE_PACK,
     ),
     LANDING_ZONE: (HOLDS_ENABLED_CONTROL, HOLDS_ENABLED_BASELINE),
     IDENTITY_CENTER_INSTANCE: (HOLDS_PERMISSION_SET, HOLDS_IDENTITY_GROUP, HOLDS_ACCOUNT_ASSIGNMENT),
+    # Findings (aws-core-tap#76, findings.py): filtered and capped, so never recorded complete.
+    GUARDDUTY_DETECTOR: (HOLDS_GUARDDUTY_FINDING,),
+    SECURITYHUB_HUB: (HOLDS_SECURITYHUB_FINDING, HOLDS_STANDARDS_SUBSCRIPTION),
+    ACCESS_ANALYZER: (HOLDS_ACCESS_ANALYZER_FINDING,),
 }
 
 #: Completeness-surface relation names: ``<parent kind>.<what was listed>`` (the footprint's match
@@ -180,6 +200,7 @@ PAGINATED_OPERATIONS: tuple[tuple[str, str], ...] = (
     ("guardduty", "list_detectors"),
     ("securityhub", "get_enabled_standards"),
     ("accessanalyzer", "list_analyzers"),
+    *findings_mod.PAGINATED_OPERATIONS,
 )
 #: The single calls, not paginated in the pinned botocore (a test checks that too).
 SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
@@ -197,6 +218,7 @@ SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
     ("ec2", "get_ebs_encryption_by_default"),
     ("ec2", "get_ebs_default_kms_key_id"),
     ("s3control", "get_public_access_block"),
+    *findings_mod.SINGLE_OPERATIONS,
 )
 #: The lower-camel continuation token Control Tower and Access Analyzer use; every other service
 #: here uses ``NextToken``.
@@ -382,6 +404,7 @@ class _Reader:
         self._tags_denied: set[str] = set()
         self._tags_missing = 0
         self._unavailable_said: set[str] = set()
+        self.findings = FindingsReads(self)
 
     # -- plumbing ---------------------------------------------------------
 
@@ -454,6 +477,47 @@ class _Reader:
             self._failed(service, operation, exc)
         result.last = _now()
         return result
+
+    def capped_walk(
+        self, service: str, region: str, operation: str, result_key: str, *, cap: int, **params: Any
+    ) -> tuple[_Walk, bool]:
+        """Read one paginated call until its end or until ``cap`` items: ``(the read, truncated)``.
+        Truncated means the cap was reached with a continuation token still outstanding (or more
+        items on the last page than the cap allowed), so the listing is partial by design. A
+        failure is recorded as in ``walk``."""
+        token = continuation_token(service)
+        result = _Walk([], _now(), _now(), operation=operation)
+        truncated = False
+        try:
+            fn: Callable[..., dict[str, Any]] = getattr(self.client(service, region), operation)
+            next_token: str | None = None
+            for _ in range(_MAX_PAGES):
+                kwargs = dict(params)
+                if next_token:
+                    kwargs[token] = next_token
+                response = fn(**kwargs)
+                page = list(response.get(result_key) or [])
+                room = cap - len(result.items)
+                result.items.extend(page[:room])
+                next_token = response.get(token)
+                if len(page) > room or (next_token and len(result.items) >= cap):
+                    truncated = True
+                    break
+                if not next_token:
+                    break
+            else:
+                raise EndpointConnectionError(endpoint_url=f"{operation}: continuation chain exceeded {_MAX_PAGES} pages")
+        except (ClientError, BotoCoreError) as exc:
+            result.exc = exc
+            self._failed(service, operation, exc)
+        result.last = _now()
+        return result, truncated
+
+    def aggregate(self, walks: list[_Walk]) -> _Walk:
+        """Several reads behind one surface (``_aggregate``), keeping every item read."""
+        combined = _aggregate(walks)
+        combined.items = [item for w in walks for item in w.items]
+        return combined
 
     def call(
         self, service: str, region: str, operation: str, *, quiet: tuple[str, ...] = (), **params: Any
@@ -691,6 +755,8 @@ class _Reader:
                 (HOSTS_CONFIG_RECORDER, RELATION_CONFIG_RECORDERS),
                 (HOSTS_CONFIG_DELIVERY_CHANNEL, RELATION_DELIVERY_CHANNELS),
                 (HOSTS_CONFIG_AGGREGATOR, RELATION_AGGREGATORS),
+                (HOSTS_CONFIG_RULE, RELATION_CONFIG_RULES),
+                (HOSTS_CONFORMANCE_PACK, RELATION_CONFORMANCE_PACKS),
             ),
             "config",
         ):
@@ -1316,6 +1382,9 @@ class _Reader:
         self.footprint_surface(
             region, HOSTS_CONFIG_AGGREGATOR, RELATION_AGGREGATORS, read, count=len(read.items), skipped=skipped
         )
+        # Config rules and conformance packs with their compliance (aws-core-tap#76).
+        self.findings.config_rules(region)
+        self.findings.conformance_packs(region)
 
     def _guardduty(self, region: str) -> None:
         read = self.walk("guardduty", region, "list_detectors", "DetectorIds")
@@ -1345,10 +1414,15 @@ class _Reader:
                 # Field lane: GetDetector carries the detector's own Tags map.
                 "tags": normalize_tags(response.get("Tags") or {}, "map"),
             }
+            # Its active findings (aws-core-tap#76): the counts go on the detector itself, the
+            # findings are written under it only once it is kept.
+            prepared = self.findings.guardduty(region, detector_id, key, GUARDDUTY_DETECTOR)
+            fields.update(prepared.parent_fields)
             if not self.add_node(GUARDDUTY_DETECTOR, key, str(fields["name"]), fields, region):
                 skipped += 1
                 continue
             self.hosts(HOSTS_GUARDDUTY_DETECTOR, region, GUARDDUTY_DETECTOR, key)
+            prepared.emit()
             if administrator and administrator != self.account_id:
                 self.add_edge(REPORTS_TO_ADMINISTRATOR, GUARDDUTY_DETECTOR, key, ACCOUNT, administrator, region)
         self.footprint_surface(
@@ -1415,9 +1489,14 @@ class _Reader:
             "administrator_account_id": administrator,
             "tags": self.tags("securityhub", region, "list_tags_for_resource", "map", "Tags", ResourceArn=arn),
         }
+        # Its active findings (aws-core-tap#76): counts on the hub, findings written under it.
+        prepared, write_findings = self.findings.securityhub(region)
+        fields.update(prepared.parent_fields)
         skipped = 0
         if self.add_node(SECURITYHUB_HUB, arn, str(fields["name"]), fields, region):
             self.hosts(HOSTS_SECURITYHUB_HUB, region, SECURITYHUB_HUB, arn)
+            subscriptions = self.findings.standards_subscriptions(region, arn, SECURITYHUB_HUB, standards)
+            write_findings(arn, SECURITYHUB_HUB, subscriptions)
             if administrator and administrator != self.account_id:
                 self.add_edge(REPORTS_TO_ADMINISTRATOR, SECURITYHUB_HUB, arn, ACCOUNT, administrator, region)
         else:
@@ -1459,10 +1538,14 @@ class _Reader:
                 # Field lane: the analyzer's own lowercase `tags` map.
                 "tags": normalize_tags(item.get("tags") or {}, "map"),
             }
+            # Its active findings (aws-core-tap#76).
+            prepared = self.findings.access_analyzer(region, arn, kind, ACCESS_ANALYZER)
+            fields.update(prepared.parent_fields)
             if not self.add_node(ACCESS_ANALYZER, arn, name, fields, region):
                 skipped += 1
                 continue
             self.hosts(HOSTS_ACCESS_ANALYZER, region, ACCESS_ANALYZER, arn)
+            prepared.emit()
         combined = _aggregate(reads)
         self.footprint_surface(
             region,

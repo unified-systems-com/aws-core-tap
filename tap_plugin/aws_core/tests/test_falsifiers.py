@@ -399,6 +399,13 @@ class TestFalsifierManifestWiring:
             "aws_core__aws_guardduty_detector": "tap_plugin.aws_core.falsifiers.GuardDutyDetectorFalsifier",
             "aws_core__aws_securityhub_hub": "tap_plugin.aws_core.falsifiers.SecurityHubHubFalsifier",
             "aws_core__aws_access_analyzer": "tap_plugin.aws_core.falsifiers.AccessAnalyzerFalsifier",
+            # aws-core-tap#76 (security findings and Config rule compliance).
+            "aws_core__aws_guardduty_finding": "tap_plugin.aws_core.falsifiers.GuardDutyFindingFalsifier",
+            "aws_core__aws_securityhub_finding": "tap_plugin.aws_core.falsifiers.SecurityHubFindingFalsifier",
+            "aws_core__aws_securityhub_standards_subscription": "tap_plugin.aws_core.falsifiers.StandardsSubscriptionFalsifier",
+            "aws_core__aws_access_analyzer_finding": "tap_plugin.aws_core.falsifiers.AccessAnalyzerFindingFalsifier",
+            "aws_core__aws_config_rule": "tap_plugin.aws_core.falsifiers.ConfigRuleFalsifier",
+            "aws_core__aws_config_conformance_pack": "tap_plugin.aws_core.falsifiers.ConformancePackFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself

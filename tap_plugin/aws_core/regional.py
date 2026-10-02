@@ -157,6 +157,21 @@ LANDING_ZONE_CHILDREN: Final[tuple[RegionalChild, ...]] = (
         "an IAM Access Analyzer analyzer",
         "accessanalyzer:ListAnalyzers",
     ),
+    # aws-core-tap#76 (collectors/boto3_collector/findings.py).
+    RegionalChild(
+        "aws_core__aws_config_rule",
+        "HOSTS_CONFIG_RULE__aws_core",
+        "account_region.config_rules",
+        "an AWS Config rule",
+        "config:DescribeConfigRules",
+    ),
+    RegionalChild(
+        "aws_core__aws_config_conformance_pack",
+        "HOSTS_CONFORMANCE_PACK__aws_core",
+        "account_region.conformance_packs",
+        "an AWS Config conformance pack",
+        "config:DescribeConformancePacks",
+    ),
 )
 
 LANDING_ZONE_CHILD_BY_TYPE: Final = {c.entity_type: c for c in LANDING_ZONE_CHILDREN}

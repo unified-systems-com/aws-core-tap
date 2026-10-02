@@ -19,6 +19,9 @@ class AwsGuardDutyDetector(BaseModel):
     ``administrator_account_id`` is null when the administrator read failed, ``""`` when the
     detector has no administrator.
 
+    It contains its active findings (``HOLDS_GUARDDUTY_FINDING``, aws-core-tap#76), and carries their
+    per-severity totals from ``GetFindingsStatistics(GroupBy=SEVERITY)``, exact whatever the cap.
+
     Spec: specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-security-services)
     """
 
@@ -37,8 +40,13 @@ class AwsGuardDutyDetector(BaseModel):
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "detector_id")
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
-        {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "REPORTS_TO_ADMINISTRATOR__aws_core"}]}
+        {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "REPORTS_TO_ADMINISTRATOR__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_guardduty_finding"}],
+            "edges": [{"type": "HOLDS_GUARDDUTY_FINDING__aws_core"}],
+        },
     ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("HOLDS_GUARDDUTY_FINDING__aws_core",)
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
@@ -50,6 +58,16 @@ class AwsGuardDutyDetector(BaseModel):
         "finding_publishing_frequency": {"type": "string"},
         "administrator_account_id": {"type": ["string", "null"]},
         "relationship_status": {"type": "string"},
+        # Active findings (aws-core-tap#76): {label: count}. Exact when
+        # active_finding_counts_complete is true; otherwise a lower bound over the capped read.
+        # Null when nothing was read.
+        "active_finding_counts": {
+            "type": ["object", "null"],
+            "additionalProperties": {"type": "integer", "minimum": 0},
+        },
+        "active_finding_counts_complete": {"type": ["boolean", "null"]},
+        # True when the read stopped at the findings cap; null when the listing itself failed.
+        "active_findings_truncated": {"type": ["boolean", "null"]},
         "tags": {"type": "object", "additionalProperties": {"type": "string"}},
     }
 
@@ -67,6 +85,10 @@ class AwsGuardDutyDetector(BaseModel):
     finding_publishing_frequency = models.CharField(max_length=32, blank=True, default="")
     administrator_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", "" is "no administrator"
     relationship_status = models.CharField(max_length=64, blank=True, default="")
+    # Active findings (aws-core-tap#76; collectors/boto3_collector/findings.py). Null is "not read".
+    active_finding_counts = models.JSONField(null=True, blank=True, default=None)
+    active_finding_counts_complete = models.BooleanField(null=True, blank=True, default=None)
+    active_findings_truncated = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: GetDetector `Tags` (map).
     tags = models.JSONField(default=dict, blank=True)
 

@@ -2286,9 +2286,188 @@ class AccountAssignmentFalsifier(_LandingZoneFalsifier):
         return False
 
 
+# ---------------------------------------------------------------------------
+# Security findings and Config rule compliance (aws-core-tap#76, collectors/boto3_collector/findings.py).
+# Registered, not armed. A findings surface is filtered (active findings of one account) with no
+# positive control and capped, so it is never complete: these finding falsifiers are never asked
+# while that holds. They are written so the contained-type triple is whole, and each says "gone"
+# for the same set the collector reads: a finding no longer active (archived, resolved, or no longer
+# returned) has left its parent's active set.
+# ---------------------------------------------------------------------------
+
+
+class GuardDutyFindingFalsifier(_LandingZoneFalsifier):
+    """``guardduty:GetFindings(DetectorId, FindingIds=[id])``. GuardDuty answers an unknown id with
+    no finding rather than an error (its only modelled error is the generic ``BadRequestException``),
+    so an answer that names no finding, or names it archived, is ``DROPPED_FROM_OBSERVATION``."""
+
+    service = "guardduty"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return str(getattr(row, "region", "") or "") or None
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        return Expected(source_id=str(getattr(row, "finding_arn", "") or ""))
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        detector = str(getattr(row, "detector_id", "") or "")
+        finding_id = str(getattr(row, "finding_id", "") or "")
+        if not expected.source_id or not detector or not finding_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no (detector, finding) id pair")
+        found = [f for f in client.get_findings(DetectorId=detector, FindingIds=[finding_id]).get("Findings") or [] if isinstance(f, dict)]
+        match = next((f for f in found if str(f.get("Id") or "") == finding_id), None)
+        if match is None:
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="GetFindings names no such finding"))
+        if (match.get("Service") or {}).get("Archived") is True:
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="archived: the finding left the active set"))
+        probe = Probe(status="found", source_id=str(match.get("Arn") or "") or None, detail="GetFindings names it, unarchived")
+        return _finish(candidate, expected, probe)
+
+
+class SecurityHubFindingFalsifier(_LandingZoneFalsifier):
+    """``securityhub:GetFindings`` filtered on the finding's ``Id`` and ``ProductArn``. No finding,
+    or the finding with ``RecordState`` ARCHIVED, is ``DROPPED_FROM_OBSERVATION``.
+    ``InvalidAccessException`` (Security Hub disabled and access refused share it) is
+    ``UNDETERMINED(forbidden)``, as for the hub."""
+
+    service = "securityhub"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return str(getattr(row, "region", "") or "") or None
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        product = str(getattr(row, "product_arn", "") or "")
+        finding_id = str(getattr(row, "finding_id", "") or "")
+        return Expected(source_id=f"{product}|{finding_id}" if product and finding_id else "")
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        if not expected.source_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no (product, finding) id pair")
+        product, finding_id = expected.source_id.split("|", 1)
+        found = client.get_findings(
+            Filters={
+                "Id": [{"Value": finding_id, "Comparison": "EQUALS"}],
+                "ProductArn": [{"Value": product, "Comparison": "EQUALS"}],
+            },
+            MaxResults=1,
+        ).get("Findings") or []
+        match = next((f for f in found if isinstance(f, dict) and f.get("Id") == finding_id), None)
+        if match is None:
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="GetFindings names no such finding"))
+        if match.get("RecordState") == "ARCHIVED":
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="archived: the finding left the active set"))
+        probe = Probe(status="found", source_id=f"{match.get('ProductArn') or ''}|{match.get('Id') or ''}", detail="GetFindings names it, active")
+        return _finish(candidate, expected, probe)
+
+    def _failed(self, candidate: Candidate, row: Any, expected_account: str, exc: Exception) -> Verdict:
+        if isinstance(exc, ClientError) and error_code_of(exc) == "InvalidAccessException":
+            return _undetermined(
+                candidate, "forbidden", "InvalidAccessException: Security Hub disabled and access refused share this code"
+            )
+        return super()._failed(candidate, row, expected_account, exc)
+
+
+class AccessAnalyzerFindingFalsifier(_LandingZoneFalsifier):
+    """``accessanalyzer:GetFindingV2(analyzerArn, id)`` (every analyzer type). Its
+    ``ResourceNotFoundException`` ("the specified resource could not be found", botocore, distinct
+    from ``AccessDeniedException``) names the finding or its analyzer; either way the finding is gone.
+    A finding whose status is no longer ACTIVE (ARCHIVED, RESOLVED) is ``DROPPED_FROM_OBSERVATION``.
+    The probe needs ``access-analyzer:GetFindingV2``, which SecurityAudit does not grant."""
+
+    service = "accessanalyzer"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return _arn_region(str(getattr(row, "analyzer_arn", "") or "")) or None
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        return Expected(source_id=str(getattr(row, "finding_id", "") or ""))
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        analyzer = str(getattr(row, "analyzer_arn", "") or "")
+        if not expected.source_id or not analyzer:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no (analyzer, finding) id pair")
+        found = client.get_finding_v2(analyzerArn=analyzer, id=expected.source_id)
+        if str(found.get("status") or "") != "ACTIVE":
+            return verdict_from_probe(
+                candidate, expected, Probe(status="not_found", detail=f"status {found.get('status')!r}: the finding left the active set")
+            )
+        probe = Probe(status="found", source_id=str(found.get("id") or "") or None, detail="GetFindingV2: ACTIVE")
+        return _finish(candidate, expected, probe)
+
+
+class StandardsSubscriptionFalsifier(_ListingFalsifier):
+    """Absent from ``securityhub:GetEnabledStandards`` (unfiltered, read to its last page) in the
+    hub's region. ``InvalidAccessException`` answers nothing (``UNDETERMINED``)."""
+
+    service = "securityhub"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return _arn_region(str(getattr(row, "subscription_arn", "") or "")) or None
+
+    def _identity(self, row: Any) -> str:
+        return str(getattr(row, "subscription_arn", "") or "")
+
+    def _owner_of(self, row: Any, expected_account: str) -> str | None:
+        return (expected_account or None) if _arn_account(self._identity(row)) else None
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        items = _probe_all(client.get_enabled_standards, "StandardsSubscriptions")
+        return {
+            str(i.get("StandardsSubscriptionArn") or ""): _arn_account(str(i.get("StandardsSubscriptionArn") or ""))
+            for i in items
+            if isinstance(i, dict)
+        }
+
+
+class ConfigRuleFalsifier(_ListingFalsifier):
+    """Absent from ``config:DescribeConfigRules`` (no names or filters, read to its last page) in its
+    region. ``NoSuchConfigRuleException`` is documented as "the Config rule in the request is not
+    valid" (botocore), not as "does not exist", so the rule is never looked up by name: the complete
+    listing is the probe."""
+
+    service = "config"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return _arn_region(str(getattr(row, "rule_arn", "") or "")) or None
+
+    def _identity(self, row: Any) -> str:
+        return str(getattr(row, "rule_arn", "") or "")
+
+    def _owner_of(self, row: Any, expected_account: str) -> str | None:
+        return (expected_account or None) if _arn_account(self._identity(row)) else None
+
+    def _listed(self, client: Any, row: Any) -> dict[str, str | None]:
+        rules = _probe_all(client.describe_config_rules, "ConfigRules")
+        return {str(r.get("ConfigRuleArn") or ""): _arn_account(str(r.get("ConfigRuleArn") or "")) for r in rules if isinstance(r, dict)}
+
+
+class ConformancePackFalsifier(_GetByArnFalsifier):
+    """``config:DescribeConformancePacks(ConformancePackNames=[name])``;
+    ``NoSuchConformancePackException`` ("you specified one or more conformance packs that do not
+    exist", botocore) is ``DROPPED_FROM_OBSERVATION``."""
+
+    service = "config"
+    arn_field = "pack_arn"
+    gone_codes = frozenset({"NoSuchConformancePackException"})
+
+    def _get(self, client: Any, row: Any, arn: str) -> str:
+        name = str(getattr(row, "pack_name", "") or "") or arn.rsplit("/", 2)[-2]
+        found = client.describe_conformance_packs(ConformancePackNames=[name]).get("ConformancePackDetails") or []
+        return str((found[0] if found else {}).get("ConformancePackArn") or "")
+
+
 __all__ = [
     "NOT_FOUND_DETAIL",
     "AccessAnalyzerFalsifier",
+    "AccessAnalyzerFindingFalsifier",
+    "ConfigRuleFalsifier",
+    "ConformancePackFalsifier",
+    "GuardDutyFindingFalsifier",
+    "SecurityHubFindingFalsifier",
+    "StandardsSubscriptionFalsifier",
     "AccountAssignmentFalsifier",
     "AccountFalsifier",
     "ConfigAggregatorFalsifier",

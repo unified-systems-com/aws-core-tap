@@ -1,0 +1,14 @@
+{
+  "slug": "EVALUATED_UNDER_STANDARD__aws_core",
+  "name": "Evaluated Under Standard",
+  "description": "A Security Hub control finding is evaluated under a standard enabled on its hub (finding -> standards subscription): each Compliance.AssociatedStandards[].StandardsId matched against the resource portion of an enabled standard's StandardsArn from the same hub's GetEnabledStandards. A reference, not containment; a StandardsId no enabled standard names has no edge. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_securityhub_finding"
+  ],
+  "targets": [
+    "aws_core__aws_securityhub_standards_subscription"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

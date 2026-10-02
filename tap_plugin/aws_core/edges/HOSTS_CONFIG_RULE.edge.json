@@ -1,0 +1,14 @@
+{
+  "slug": "HOSTS_CONFIG_RULE__aws_core",
+  "name": "Hosts Config Rule",
+  "description": "An account's footprint in one region hosts an AWS Config rule (footprint -> rule): a rule config:DescribeConfigRules returned, called with no names or filters (every rule, service-linked ones included). Containment, parent -> child: the footprint declares this edge in CONTAINMENT_EDGES, and the reader records that footprint's account_region.config_rules surface under the per-region rules. One edge type per listed type: see tap_plugin.aws_core.regional. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_account_region"
+  ],
+  "targets": [
+    "aws_core__aws_config_rule"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

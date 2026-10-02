@@ -92,6 +92,12 @@ class AwsAccountRegion(BaseModel):
         },
         {"nodes": [{"type": "aws_core__aws_securityhub_hub"}], "edges": [{"type": "HOSTS_SECURITYHUB_HUB__aws_core"}]},
         {"nodes": [{"type": "aws_core__aws_access_analyzer"}], "edges": [{"type": "HOSTS_ACCESS_ANALYZER__aws_core"}]},
+        # Config rules and conformance packs (aws-core-tap#76, collectors/boto3_collector/findings.py).
+        {"nodes": [{"type": "aws_core__aws_config_rule"}], "edges": [{"type": "HOSTS_CONFIG_RULE__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_config_conformance_pack"}],
+            "edges": [{"type": "HOSTS_CONFORMANCE_PACK__aws_core"}],
+        },
     ]
     CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
         "HOSTS_VPC__aws_core",
@@ -106,6 +112,8 @@ class AwsAccountRegion(BaseModel):
         "HOSTS_GUARDDUTY_DETECTOR__aws_core",
         "HOSTS_SECURITYHUB_HUB__aws_core",
         "HOSTS_ACCESS_ANALYZER__aws_core",
+        "HOSTS_CONFIG_RULE__aws_core",
+        "HOSTS_CONFORMANCE_PACK__aws_core",
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
