@@ -66,6 +66,9 @@ function _stamp(cy) {
 //: Best-effort rows for an organization's children; false (nothing stamped) when any carries a
 //: placement tag, so the tag-driven columns apply instead.
 function _stampOrgRows(cy, org, children, sizes, nested) {
+    // The fill below is this function's own stamp: clear any left by an earlier run on this scene,
+    // so a level that has since gained a placement tag (or a foundational name) is not stretched.
+    children.forEach((n) => n.removeData("_layout_fill"));
     const byId = new Map(children.map((n) => [n.id(), n]));
     const plan = planOrgRows(children.map((n) => ({
         id: n.id(),
