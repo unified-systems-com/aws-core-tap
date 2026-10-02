@@ -229,8 +229,9 @@ def fold_baseline(footprints: list[dict[str, Any]], accounts: list[dict[str, Any
     total = len(out_rows) * len(COLUMNS)
     on = sum(s["on"] for s in summary)
     off = sum(s["off"] for s in summary)
+    failed_n = sum(s["failed"] for s in summary)
     return {"rows": out_rows, "columns": [{"key": k, "label": label} for k, label in COLUMNS], "summary": summary,
-            "cells_total": total, "cells_on": on, "cells_off": off, "cells_unknown": total - on - off,
+            "cells_total": total, "cells_on": on, "cells_off": off, "cells_unknown": total - on - off - failed_n, "cells_failed": failed_n,
             "accounts": len({r["account"] for r in out_rows})}
 
 

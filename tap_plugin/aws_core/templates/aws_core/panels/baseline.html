@@ -16,7 +16,7 @@ state; colour is a second channel.
   <header class="awp__head">
     <p class="awp__kind">AWS · security baseline</p>
     <h3>{{ matrix.cells_on }} of {{ matrix.cells_total }} controls on across {{ matrix.rows|length }} account-region{{ matrix.rows|length|pluralize }}</h3>
-    <p class="awp__sub">{{ matrix.cells_off }} observed off · {{ matrix.cells_unknown }} unknown. One row per account and region the collector reached{% if matrix.accounts > 1 %}, {{ matrix.accounts }} accounts{% endif %}.</p>
+    <p class="awp__sub">{{ matrix.cells_off }} observed off · {{ matrix.cells_unknown }} unknown{% if matrix.cells_failed %} · {{ matrix.cells_failed }} read failed{% endif %}. One row per account and region the collector reached{% if matrix.accounts > 1 %}, {{ matrix.accounts }} accounts{% endif %}.</p>
   </header>
 
   <ul class="awp-legend" aria-label="Legend">

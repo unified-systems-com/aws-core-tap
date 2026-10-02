@@ -95,6 +95,7 @@ def test_a_failed_read_marks_its_column_failed_not_off() -> None:
     assert _state(m, 0, "s3_pab") == "failed"
     assert _state(m, 0, "control_tower") == "failed"
     assert _state(m, 0, "config") == "unknown"
+    assert m["cells_failed"] == 3 and m["cells_unknown"] == m["cells_total"] - m["cells_on"] - m["cells_off"] - 3
 
 
 def test_service_rows_land_on_their_own_footprint() -> None:

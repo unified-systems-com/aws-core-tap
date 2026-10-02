@@ -85,6 +85,9 @@ def test_security_group_flags_match_the_rule_text_postgres_prints() -> None:
     narrow = [{"IpProtocol": "tcp", "IpRanges": [{"CidrIp": "10.0.0.0/8"}, {"CidrIp": "10.0.0.0/0"}],
                "Ipv6Ranges": [{"CidrIpv6": "2001:db8::/0"}]}]
     all_proto = [{"IpProtocol": "-1", "UserIdGroupPairs": [{"GroupId": "sg-1"}]}]
+    described = [{"IpProtocol": "tcp", "IpRanges": [{"CidrIp": "10.0.0.0/8", "Description": "replaces 0.0.0.0/0"}],
+                  "Ipv6Ranges": [{"CidrIpv6": "2001:db8::/32", "Description": "\"CidrIp\": \"0.0.0.0/0\""}]}]
+    assert not re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(described))
     assert re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(open_v4))
     assert re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(open_v6))
     assert not re.search(OPEN_TO_INTERNET_RE, as_jsonb_text(narrow))
