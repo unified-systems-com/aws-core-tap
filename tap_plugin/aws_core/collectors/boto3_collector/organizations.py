@@ -294,12 +294,18 @@ class Listing:
     count: int | None
     admitted: bool = True
     reasons: dict[str, str] = field(default_factory=dict)
+    #: The source-side filter the listing depended on, verbatim, or None when it was unfiltered.
+    #: A filtered surface is recorded with no positive control (``filter_control`` null), which
+    #: the recorder reads as not complete (``req-grid-reconcile-evidence-4``).
+    filter: str | None = None
 
     def surface(self, applied_batches: list[str]) -> dict[str, Any]:
         """The authored surface fields ``CollectorBase.record_surface`` takes."""
         reasons = dict(self.reasons)
         reasons.setdefault("source_consistent", "no_promise: AWS Organizations makes no snapshot promise across pages")
+        filtered = {"filter": self.filter, "filter_control": None} if self.filter is not None else {}
         return {
+            **filtered,
             "relation": self.relation,
             "edge_type": self.edge_type,
             "subject": self.subject,

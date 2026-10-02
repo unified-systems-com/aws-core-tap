@@ -235,6 +235,78 @@
           { "path": "tags", "category": "customer_content", "reason": "Operator-set analyzer tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
         ]
       }
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_finding",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the finding model's typed fields and botocore 1.43.103 guardduty ListFindings, GetFindings and GetFindingsStatistics output shapes, 2026-10-02. botocore marks LocalIpDetails/RemoteIpDetails IpAddressV4/V6, NetworkInterface.PrivateIpAddress and PrivateIpAddressDetails.PrivateIpAddress sensitive; none is stored, because Service.Action, Resource.InstanceDetails.NetworkInterfaces, Description and Evidence are not read into any field.",
+        "locations": [
+          { "path": "title", "category": "free_text", "reason": "GuardDuty's finding title can name a remote host, domain, port or user it observed.", "evidence": "reviewer_judgement" },
+          { "path": "resource_id", "category": "customer_content", "reason": "The instance id, bucket name(s), access-key user name or EKS cluster name the finding concerns: operator-chosen names.", "evidence": "reviewer_judgement" },
+          { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_finding",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the finding model's typed fields and botocore 1.43.103 securityhub GetFindings output shape (AwsSecurityFinding), 2026-10-02. botocore marks no member sensitive. Description, Remediation, Network, NetworkPath, Process, Threats, Malware, Vulnerabilities, ProductFields, UserDefinedFields, Note and Resources[].Details are not read into any field.",
+        "locations": [
+          { "path": "title", "category": "free_text", "reason": "An integrated product's finding title can name hosts, users or values it observed.", "evidence": "reviewer_judgement" },
+          { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" },
+          { "path": "resource_ids", "category": "customer_content", "reason": "Resource identifiers (ARNs, ids) the finding names, which can carry operator-chosen names.", "evidence": "reviewer_judgement" },
+          { "path": "generator_id", "category": "other", "reason": "The producing rule or detector's identifier; for a third-party product this is product-defined text.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_standards_subscription",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the subscription model's typed fields and botocore 1.43.103 securityhub GetEnabledStandards output shape, 2026-10-02: ARNs, a standards id, a status, a status reason code and an updatable flag. StandardsInput is not stored."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_access_analyzer_finding",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the finding model's typed fields and botocore 1.43.103 accessanalyzer ListFindings (FindingSummary) and ListFindingsV2 (FindingSummaryV2) output shapes, 2026-10-02. botocore marks no member of either sensitive. The condition's values are not stored, only its keys.",
+        "locations": [
+          { "path": "principal", "category": "other", "reason": "The principals the resource grants access to: external account ids, ARNs or a wildcard.", "evidence": "reviewer_judgement" },
+          { "path": "resource_arn", "category": "customer_content", "reason": "The resource's ARN, which carries operator-chosen names.", "evidence": "reviewer_judgement" },
+          { "path": "name", "category": "customer_content", "reason": "Built from the resource type and the last segment of its ARN (an operator-chosen name).", "evidence": "reviewer_judgement" },
+          { "path": "error", "category": "free_text", "reason": "Access Analyzer's error text for the finding.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_rule",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the rule model's typed fields and botocore 1.43.103 config DescribeConfigRules, DescribeComplianceByConfigRule and ListTagsForResource output shapes, 2026-10-02. botocore marks no config member sensitive. InputParameters, Scope and CustomPolicyDetails (a policy body) are not stored.",
+        "locations": [
+          { "path": "description", "category": "free_text", "reason": "Operator-authored rule description.", "evidence": "reviewer_judgement" },
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set rule tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_conformance_pack",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the pack model's typed fields and botocore 1.43.103 config DescribeConformancePacks, GetConformancePackComplianceSummary and ListTagsForResource output shapes, 2026-10-02. ConformancePackInputParameters and TemplateSSMDocumentDetails are not stored.",
+        "locations": [
+          { "path": "tags", "category": "customer_content", "reason": "Operator-set pack tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
+        ]
+      }
     }
   ]
 }

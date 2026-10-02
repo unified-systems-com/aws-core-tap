@@ -78,6 +78,12 @@ aws_core__aws_config_aggregator = "tap_plugin.aws_core.models.aws_config_aggrega
 aws_core__aws_guardduty_detector = "tap_plugin.aws_core.models.aws_guardduty_detector.AwsGuardDutyDetector"
 aws_core__aws_securityhub_hub = "tap_plugin.aws_core.models.aws_securityhub_hub.AwsSecurityHubHub"
 aws_core__aws_access_analyzer = "tap_plugin.aws_core.models.aws_access_analyzer.AwsAccessAnalyzer"
+aws_core__aws_guardduty_finding = "tap_plugin.aws_core.models.aws_guardduty_finding.AwsGuardDutyFinding"
+aws_core__aws_securityhub_finding = "tap_plugin.aws_core.models.aws_securityhub_finding.AwsSecurityHubFinding"
+aws_core__aws_securityhub_standards_subscription = "tap_plugin.aws_core.models.aws_securityhub_standards_subscription.AwsSecurityHubStandardsSubscription"
+aws_core__aws_access_analyzer_finding = "tap_plugin.aws_core.models.aws_access_analyzer_finding.AwsAccessAnalyzerFinding"
+aws_core__aws_config_rule = "tap_plugin.aws_core.models.aws_config_rule.AwsConfigRule"
+aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.models.aws_config_conformance_pack.AwsConfigConformancePack"
 aws_core__aws_transit_gateway = "tap_plugin.aws_core.models.transit_gateway.TransitGateway"
 aws_core__aws_transit_gateway_attachment = "tap_plugin.aws_core.models.transit_gateway_attachment.TransitGatewayAttachment"
 aws_core__aws_dx_connection = "tap_plugin.aws_core.models.dx_connection.DxConnection"
@@ -156,6 +162,14 @@ GRANTS_PERMISSION_SET__aws_core = "edges/GRANTS_PERMISSION_SET.edge.json"
 GRANTS_ACCESS_TO_ACCOUNT__aws_core = "edges/GRANTS_ACCESS_TO_ACCOUNT.edge.json"
 GRANTED_TO_GROUP__aws_core = "edges/GRANTED_TO_GROUP.edge.json"
 REPORTS_TO_ADMINISTRATOR__aws_core = "edges/REPORTS_TO_ADMINISTRATOR.edge.json"
+HOLDS_GUARDDUTY_FINDING__aws_core = "edges/HOLDS_GUARDDUTY_FINDING.edge.json"
+HOLDS_SECURITYHUB_FINDING__aws_core = "edges/HOLDS_SECURITYHUB_FINDING.edge.json"
+HOLDS_STANDARDS_SUBSCRIPTION__aws_core = "edges/HOLDS_STANDARDS_SUBSCRIPTION.edge.json"
+HOLDS_ACCESS_ANALYZER_FINDING__aws_core = "edges/HOLDS_ACCESS_ANALYZER_FINDING.edge.json"
+HOSTS_CONFIG_RULE__aws_core = "edges/HOSTS_CONFIG_RULE.edge.json"
+HOSTS_CONFORMANCE_PACK__aws_core = "edges/HOSTS_CONFORMANCE_PACK.edge.json"
+CONCERNS_RESOURCE__aws_core = "edges/CONCERNS_RESOURCE.edge.json"
+EVALUATED_UNDER_STANDARD__aws_core = "edges/EVALUATED_UNDER_STANDARD.edge.json"
 
 [falsifiers]
 # One per reconcilable type: every type some model's CONTAINMENT_EDGES makes a containment TARGET
@@ -223,6 +237,18 @@ aws_core__aws_config_aggregator = "tap_plugin.aws_core.falsifiers.ConfigAggregat
 aws_core__aws_guardduty_detector = "tap_plugin.aws_core.falsifiers.GuardDutyDetectorFalsifier"
 aws_core__aws_securityhub_hub = "tap_plugin.aws_core.falsifiers.SecurityHubHubFalsifier"
 aws_core__aws_access_analyzer = "tap_plugin.aws_core.falsifiers.AccessAnalyzerFalsifier"
+
+# Security findings and Config rule compliance (aws-core-tap#76, collectors/boto3_collector/findings.py):
+# the detector, hub and analyzer contain their active findings, the hub its enabled standards, the
+# footprint its Config rules and conformance packs. A findings surface is filtered and capped, so it is
+# never complete and these finding falsifiers are never asked; they are registered so the triple holds.
+# Registered, not armed: reconcile authority stays off.
+aws_core__aws_guardduty_finding = "tap_plugin.aws_core.falsifiers.GuardDutyFindingFalsifier"
+aws_core__aws_securityhub_finding = "tap_plugin.aws_core.falsifiers.SecurityHubFindingFalsifier"
+aws_core__aws_securityhub_standards_subscription = "tap_plugin.aws_core.falsifiers.StandardsSubscriptionFalsifier"
+aws_core__aws_access_analyzer_finding = "tap_plugin.aws_core.falsifiers.AccessAnalyzerFindingFalsifier"
+aws_core__aws_config_rule = "tap_plugin.aws_core.falsifiers.ConfigRuleFalsifier"
+aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.falsifiers.ConformancePackFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"

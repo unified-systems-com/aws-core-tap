@@ -1,0 +1,19 @@
+{
+  "slug": "CONCERNS_RESOURCE__aws_core",
+  "name": "Concerns Resource",
+  "description": "A security finding concerns a resource on the grid (finding -> EC2 instance / S3 bucket / IAM user / IAM role), keyed by that resource's natural key: a GuardDuty finding's Resource.InstanceDetails.InstanceId, S3BucketDetails[].Arn, or an IAMUser access key's UserName (as arn:<partition>:iam::<account>:user/<name>, inferred: the default path); a Security Hub finding's Resources[].Id for AwsEc2Instance (the instance id from the ARN), AwsS3Bucket, AwsIamUser and AwsIamRole; an Access Analyzer finding's resource ARN for AWS::S3::Bucket, AWS::IAM::Role and AWS::IAM::User. A reference, not containment; it ends with the finding. Emitted whether or not the target was collected: it resolves by deterministic identity when it is. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_guardduty_finding",
+    "aws_core__aws_securityhub_finding",
+    "aws_core__aws_access_analyzer_finding"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_s3_bucket",
+    "aws_core__aws_iam_user",
+    "aws_core__aws_iam_role"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

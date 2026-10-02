@@ -120,6 +120,38 @@
       "reader": "landing_zone",
       "tags": { "source": "field", "from": "tags", "shape": "map", "why": "ListAnalyzers returns each analyzer's own lowercase tags map." },
       "why": "Access Analyzer tags."
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_finding",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "A GuardDuty finding is not a taggable AWS resource (inferred: a finding has no tag operation or Tags member in botocore guardduty)." }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_finding",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "A Security Hub finding is not a taggable AWS resource (inferred: a finding has no tag operation or Tags member in botocore securityhub). UserDefinedFields are not tags and are not read." }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_standards_subscription",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "A standards subscription is not a taggable AWS resource (inferred: StandardsSubscription has no Tags member in botocore securityhub)." }
+    },
+    {
+      "entity_type": "aws_core__aws_access_analyzer_finding",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "An Access Analyzer finding is not a taggable AWS resource (inferred: neither finding summary has a tags member in botocore accessanalyzer)." }
+    },
+    {
+      "entity_type": "aws_core__aws_config_rule",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": {"ResourceArn": {"from": "ConfigRuleArn"}}, "path": "Tags", "shape": "list_kv", "why": "config:ListTagsForResource on the rule ARN, read to its last page." },
+      "why": "Config tags (req-aws-landing-zone-findings)."
+    },
+    {
+      "entity_type": "aws_core__aws_config_conformance_pack",
+      "reader": "landing_zone",
+      "tags": { "source": "service", "op": "ListTagsForResource", "params": {"ResourceArn": {"from": "ConformancePackArn"}}, "path": "Tags", "shape": "list_kv", "why": "config:ListTagsForResource on the pack ARN, read to its last page." },
+      "why": "Config tags (req-aws-landing-zone-findings)."
     }
   ]
 }

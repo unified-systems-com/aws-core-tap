@@ -27,6 +27,7 @@ service models, which are offline data. GovCloud availability is **web**, cited 
 | 2. | Reachable | Who can reach which account with which permission set is a graph query: Identity Center permission sets, groups and account assignments |
 | 3. | Watched | Which security services are on, per account and region, is a collected fact, not an assumption |
 | 4. | Partition-honest | A service AWS does not offer in a partition is recorded as such, never collected as empty |
+| 5. | Reported | What those services report (GuardDuty, Security Hub and Access Analyzer findings, Config rule compliance) is on the grid, attached to the service and the resource it concerns, bounded and never mistaken for a complete inventory |
 
 ## Requirements
 
@@ -36,7 +37,8 @@ service models, which are offline data. GovCloud availability is **web**, cited 
 | req-aws-landing-zone-control-tower | [Control Tower](#control-tower) | Proposed | Landing zone, enabled controls, enabled baselines; targets as reference edges; contained by the landing zone |
 | req-aws-landing-zone-identity-center | [Identity Center Access](#identity-center-access) | Proposed | Collect the instance; permission sets, groups and account assignments; users only as principal ids |
 | req-aws-landing-zone-security-services | [Security Services](#security-services) | Proposed | Config recorder, delivery channel and aggregator, GuardDuty detector, Security Hub hub, Access Analyzer analyzer per account × region; EBS default encryption and S3 account public-access block as typed fields |
-| req-aws-landing-zone-nongoals | [Non-Goals](#non-goals) | Proposed | Account vending, Macie, Control Tower Account Factory, AFT, Config rules and conformance packs, findings |
+| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active GuardDuty, Security Hub (control results included) and Access Analyzer findings, and Config rule and conformance pack compliance, for the run's own account; bounded by a declared cap; per-severity totals on the parent; findings surfaces never complete |
+| req-aws-landing-zone-nongoals | [Non-Goals](#non-goals) | Proposed | Account vending, Macie, Control Tower Account Factory, AFT, archived findings, writing back to a finding |
 
 ### GovCloud Availability
 ----
@@ -248,6 +250,80 @@ Gruntwork's baselines turn these on per opt-in region (`control-tower-app-accoun
 | req-aws-landing-zone-security-services-3 | Retirement Path | Proposed | Every node type here is a footprint containment target with a registered falsifier passing the four-case harness; the two settings are fields replaced every run and need none. Each containment pair also records the completeness surface `req-aws-core-contained-type-triple` (`spec-aws-core-v0.md`) lists for it, including a complete-empty surface for a parent with no children. | |
 | req-aws-landing-zone-security-services-4 | Tags Per Botocore | Proposed | Each type's tag lane, path and shape are as tabled and pass `req-aws-collector-tags-13`'s botocore check. | GuardDuty, Security Hub, Access Analyzer are `map`; Config is `list_kv`. |
 
+### Security Findings
+----
+RID: `req-aws-landing-zone-findings`
+
+Status: `Proposed`
+
+Approved 2026-10-02 (highbar Q137a), scoped to the account the collector's credential reads, the
+GovCloud management account (Q137b). Member accounts and the delegated security administrator are
+fan-out's (`req-aws-collector-fanout`, aws-core-tap#63). Collect-only: nothing here arms reconcile.
+
+#### Implementation
+
+Read by the landing-zone reader, from the detector, hub and analyzer it already reads
+(`collectors/boto3_collector/findings.py`). Shapes are **read** from botocore 1.43.103 service
+models; nothing was observed against a live account.
+
+| Type | Source (read: botocore) | Key | Tags | Contained by | Falsifier: gone when | Reference edges |
+| --- | --- | --- | --- | --- | --- | --- |
+| `aws_guardduty_finding` **(new)** | `guardduty:ListFindings(FindingCriteria: service.archived=false, accountId=<run account>; SortCriteria: severity DESC; MaxResults 50)`, capped; `GetFindings` (≤50 ids a call) | finding ARN | **none** (a finding is not taggable; inferred) | detector, `HOLDS_GUARDDUTY_FINDING` | `GetFindings` names no such id, or names it archived | `CONCERNS_RESOURCE` (→ EC2 instance by `InstanceId`, S3 bucket by `S3BucketDetails[].Arn`, IAM user for an `IAMUser` access key) |
+| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down, sharing one cap | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none, or names it `ARCHIVED`; `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ `AwsEc2Instance`, `AwsS3Bucket`, `AwsIamUser`, `AwsIamRole` by `Resources[].Id`) |
+| `aws_securityhub_standards_subscription` **(new)** | `securityhub:GetEnabledStandards` (unfiltered, to its end; the listing the hub's `enabled_standards` already comes from) | `StandardsSubscriptionArn` | **none** (inferred) | hub, `HOLDS_STANDARDS_SUBSCRIPTION` | absent from `GetEnabledStandards` | — |
+| `aws_access_analyzer_finding` **(new)** | `accessanalyzer:ListFindings` for an external-access analyzer (`ACCOUNT`, `ORGANIZATION`), `ListFindingsV2` for the others (botocore: v1 "is supported only for external access analyzers"), `filter: status=ACTIVE, resourceOwnerAccount=<run account>`, capped | (analyzer ARN, finding id) | **none** (inferred) | analyzer, `HOLDS_ACCESS_ANALYZER_FINDING` | `GetFindingV2` → `ResourceNotFoundException`, or a status other than `ACTIVE` | `CONCERNS_RESOURCE` (→ S3 bucket, IAM role, IAM user by resource ARN) |
+| `aws_config_rule` **(new)** | `config:DescribeConfigRules` (no names, no filters: botocore documents that as every rule), `DescribeComplianceByConfigRule` (every rule and compliance type), each to its end | rule ARN | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_CONFIG_RULE` | absent from a complete `DescribeConfigRules` (`NoSuchConfigRuleException` is documented as "not valid", not "does not exist", so it is not used) | — |
+| `aws_config_conformance_pack` **(new)** | `config:DescribeConformancePacks` (no names), `GetConformancePackComplianceSummary` (5 names a call) | pack ARN | service, as above | footprint, `HOSTS_CONFORMANCE_PACK` | `DescribeConformancePacks(name)` → `NoSuchConformancePackException` | — |
+
+- **Bounded.** `FINDINGS_CAP` is **1000 findings per parent** (detector, hub, analyzer) per run.
+  GuardDuty is read most severe first and Security Hub one label at a time from CRITICAL down, so
+  the cap drops the least severe. Access Analyzer findings carry no severity and are read in the
+  API's order. A read that reaches the cap stops; its surface records `reasons.truncated`.
+- **Never complete.** Each findings surface depends on a source-side filter (the run's account,
+  active only) with no bogus-value positive control, so it records `filter` verbatim and
+  `filter_control: null`, and is `enumeration_complete: false` (`req-grid-reconcile-evidence-4`).
+  It never nominates a retirement. The falsifiers are registered so the triple is whole, and they
+  say "gone" for the same set the collector reads (a finding no longer active has left it).
+- **Totals on the parent.** The detector, hub and analyzer carry `active_finding_counts`
+  (`{label: count}`; by finding type for an analyzer), `active_finding_counts_complete` and
+  `active_findings_truncated`. GuardDuty's totals come from
+  `GetFindingsStatistics(GroupBy=SEVERITY)` and are exact whatever the cap; when that call fails
+  or answers more than one page (its input takes no continuation token), the counts fall back to
+  the capped read and are marked incomplete. Security Hub's are exact for every label read to its
+  end. GuardDuty's labels are its documented bands: Critical 9.0-10.0, High 7.0-8.9, Medium
+  4.0-6.9, Low 1.0-3.9 (web: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html).
+- **Typed fields only.** No ASFF document, description, remediation, product fields, network
+  detail, remote or private IP (botocore marks GuardDuty's sensitive), Access Analyzer condition
+  value, Config rule `InputParameters` or conformance-pack parameter is stored. An Access Analyzer
+  finding's condition summary is its condition **keys**. Each type's declaration is in
+  `reader_sensitivity.json`.
+- **Resource keys.** `CONCERNS_RESOURCE` is emitted by the target's natural key whether or not the
+  target was collected, and resolves by deterministic identity when it is. GuardDuty names an IAM
+  user, not its ARN, so the key is built with the default path (inferred); a user under another path
+  is left dangling.
+- **GovCloud.** Every call is to a service already in the availability table. Two are not verified
+  in GovCloud: `GetFindingsStatistics` with `GroupBy` (the counts fall back) and
+  `ListFindingsV2` (the analyzer's findings surface is recorded failed). A failing call is
+  recorded, never read as empty.
+- **Permissions.** SecurityAudit (commercial v94, web:
+  https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SecurityAudit.html; GovCloud's
+  copy not verified) grants every read here through `guardduty:Get*`/`List*`,
+  `securityhub:Get*`, `access-analyzer:ListFindings` and `config:Describe*`/`Get*`/`List*`. The
+  Access Analyzer finding falsifier's `access-analyzer:GetFindingV2` is not in it.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page below the cap. | |
+| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. | |
+| req-aws-landing-zone-findings-3 | Bounded And Never Complete | Proposed | A findings read stops at `FINDINGS_CAP`; its surface records the filter with no control, is never complete, and names a truncation in `reasons.truncated`. | |
+| req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
+| req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |
+| req-aws-landing-zone-findings-6 | Control Results And Standards | Proposed | A control finding carries its compliance status and security control id, and `EVALUATED_UNDER_STANDARD` to each enabled standard it names; enabled standards are nodes contained by the hub. | |
+| req-aws-landing-zone-findings-7 | Typed Fields Only | Proposed | No description, IP address, condition value or rule parameter reaches a node; a test plants each and finds none. | |
+| req-aws-landing-zone-findings-8 | Config Rules And Conformance Packs | Proposed | Every Config rule (service-linked included) and conformance pack is a footprint child with its compliance; a failed compliance read is null, never compliant. | |
+
 ### Non-Goals
 ----
 RID: `req-aws-landing-zone-nongoals`
@@ -260,9 +336,9 @@ Status: `Proposed`
 - **Macie.** It is not available in GovCloud (inferred from https://docs.aws.amazon.com/general/latest/gr/macie.html), so it is not
   modelled. Gruntwork's baseline must run there with `disable_macie`.
 - **AFT.** It is closed to new customers in GovCloud ([C-GCCT](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-controltower.html)).
-- **Config rules, conformance packs and findings.** Control Tower's detective controls are Config
-  rules, numerous and service-linked. Findings from GuardDuty, Security Hub and Access Analyzer are
-  events, not resources. Both are later work.
+- **Archived findings, and writing back.** Config rules, conformance packs and active findings are
+  collected (`req-aws-landing-zone-findings`, aws-core-tap#76). Archived or resolved findings are
+  not read, and nothing updates a finding's workflow or archives it.
 - **Inspector and Detective.** No Gruntwork baseline read enables them (not found in the module reference pages).
 
 #### Acceptance Criteria

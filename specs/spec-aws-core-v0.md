@@ -1943,6 +1943,9 @@ per-region rules.
 | footprint | `HOSTS_CONFIG_RECORDER`, `HOSTS_CONFIG_AGGREGATOR`, `HOSTS_GUARDDUTY_DETECTOR`, `HOSTS_ACCESS_ANALYZER` | the security-service type | `ListConfigurationRecorders` (paginated, unfiltered), `DescribeConfigurationAggregators`, `ListDetectors`, `ListAnalyzers` once per `Type` value (aggregated) | regional rules; the analyzer surface is complete only when all six per-type listings finish | per `req-aws-landing-zone-security-services`' table |
 | footprint | `HOSTS_CONFIG_DELIVERY_CHANNEL` | delivery channel | `DescribeDeliveryChannels` (unpaginated) | regional rules | absent from `DescribeDeliveryChannels` |
 | footprint | `HOSTS_SECURITYHUB_HUB` | hub | `DescribeHub` | a hub returned, or complete-empty only on the verified "not subscribed" error code; any other error is incomplete. botocore 1.43.107 documents `InvalidAccessException` as a permission refusal, so no such code is verified and that answer is incomplete (aws-core-tap#66) | per that table |
+| footprint | `HOSTS_CONFIG_RULE`, `HOSTS_CONFORMANCE_PACK` | Config rule, conformance pack | `DescribeConfigRules` (no names or filters), `DescribeConformancePacks` (no names) | regional rules | absent from `DescribeConfigRules`; `NoSuchConformancePackException` |
+| hub | `HOLDS_STANDARDS_SUBSCRIPTION` | enabled standard | `GetEnabledStandards` (unfiltered) | read to its end | absent from `GetEnabledStandards` |
+| detector, hub, analyzer | `HOLDS_GUARDDUTY_FINDING`, `HOLDS_SECURITYHUB_FINDING`, `HOLDS_ACCESS_ANALYZER_FINDING` | finding | the filtered, capped findings read of `req-aws-landing-zone-findings` | **never**: filtered with no positive control, and capped (aws-core-tap#76) | per that requirement's table |
 
 #### Acceptance Criteria
 

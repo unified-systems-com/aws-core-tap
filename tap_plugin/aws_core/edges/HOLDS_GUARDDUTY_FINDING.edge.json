@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_GUARDDUTY_FINDING__aws_core",
+  "name": "Holds GuardDuty Finding",
+  "description": "A GuardDuty detector holds one of its active findings (detector -> finding): a finding id guardduty:ListFindings returned for the detector, filtered to unarchived findings of the run's own account, most severe first, and capped. Containment: the detector declares it in CONTAINMENT_EDGES. Its one surface per detector records the filter with no positive control and any truncation at the cap, so it is never complete and never nominates a retirement. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_guardduty_detector"
+  ],
+  "targets": [
+    "aws_core__aws_guardduty_finding"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

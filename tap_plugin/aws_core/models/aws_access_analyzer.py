@@ -16,6 +16,9 @@ class AwsAccessAnalyzer(BaseModel):
     verbatim, including a value newer than the pinned enum. Tags come from the item's own
     lowercase ``tags`` map. Contained by its footprint (``HOSTS_ACCESS_ANALYZER``).
 
+    It contains its active findings (``HOLDS_ACCESS_ANALYZER_FINDING``, aws-core-tap#76) and carries
+    their counts by finding type (Access Analyzer findings have no severity).
+
     Spec: specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-security-services)
     """
 
@@ -33,6 +36,14 @@ class AwsAccessAnalyzer(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("analyzer_arn",)
 
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {
+            "nodes": [{"type": "aws_core__aws_access_analyzer_finding"}],
+            "edges": [{"type": "HOLDS_ACCESS_ANALYZER_FINDING__aws_core"}],
+        },
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("HOLDS_ACCESS_ANALYZER_FINDING__aws_core",)
+
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "analyzer_arn": {"type": "string"},
@@ -41,6 +52,16 @@ class AwsAccessAnalyzer(BaseModel):
         "analyzer_type": {"type": "string"},
         "status": {"type": "string"},
         "created_at": {"type": "string"},
+        # Active findings (aws-core-tap#76): {label: count}. Exact when
+        # active_finding_counts_complete is true; otherwise a lower bound over the capped read.
+        # Null when nothing was read.
+        "active_finding_counts": {
+            "type": ["object", "null"],
+            "additionalProperties": {"type": "integer", "minimum": 0},
+        },
+        "active_finding_counts_complete": {"type": ["boolean", "null"]},
+        # True when the read stopped at the findings cap; null when the listing itself failed.
+        "active_findings_truncated": {"type": ["boolean", "null"]},
         "tags": {"type": "object", "additionalProperties": {"type": "string"}},
     }
 
@@ -56,6 +77,10 @@ class AwsAccessAnalyzer(BaseModel):
     analyzer_type = models.CharField(max_length=64, blank=True, default="")
     status = models.CharField(max_length=32, blank=True, default="")
     created_at = models.CharField(max_length=40, blank=True, default="")
+    # Active findings (aws-core-tap#76; collectors/boto3_collector/findings.py). Null is "not read".
+    active_finding_counts = models.JSONField(null=True, blank=True, default=None)
+    active_finding_counts_complete = models.BooleanField(null=True, blank=True, default=None)
+    active_findings_truncated = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: the analyzer's own `tags` map.
     tags = models.JSONField(default=dict, blank=True)
 

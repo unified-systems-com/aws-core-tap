@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_SECURITYHUB_FINDING__aws_core",
+  "name": "Holds Security Hub Finding",
+  "description": "A Security Hub hub holds one of its active findings (hub -> finding): a finding securityhub:GetFindings returned, filtered to the run's own account, the hub's region and RecordState ACTIVE, read one severity label at a time and capped. Containment: the hub declares it in CONTAINMENT_EDGES. Its one surface per hub records the filter with no positive control and any truncation, so it is never complete and never nominates a retirement. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_securityhub_hub"
+  ],
+  "targets": [
+    "aws_core__aws_securityhub_finding"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

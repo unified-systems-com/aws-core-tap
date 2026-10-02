@@ -1,0 +1,14 @@
+{
+  "slug": "HOLDS_ACCESS_ANALYZER_FINDING__aws_core",
+  "name": "Holds Access Analyzer Finding",
+  "description": "An IAM Access Analyzer analyzer holds one of its active findings (analyzer -> finding): a finding accessanalyzer:ListFindings (external-access analyzers) or ListFindingsV2 (the others) returned, filtered to status ACTIVE on the run's own account's resources, and capped. Containment: the analyzer declares it in CONTAINMENT_EDGES. Its one surface per analyzer records the filter with no positive control and any truncation, so it is never complete and never nominates a retirement. Collected by the landing-zone reader's findings half (collectors/boto3_collector/findings.py, aws-core-tap#76).",
+  "sources": [
+    "aws_core__aws_access_analyzer"
+  ],
+  "targets": [
+    "aws_core__aws_access_analyzer_finding"
+  ],
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
