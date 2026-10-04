@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_dx_gateway"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

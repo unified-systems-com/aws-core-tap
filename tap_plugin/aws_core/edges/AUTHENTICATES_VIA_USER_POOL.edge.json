@@ -4,6 +4,9 @@
   "description": "An API Gateway HTTP API gates access through a JWT authorizer whose issuer is a Cognito user pool — the API authenticates callers via that identity boundary.",
   "sources": ["aws_core__aws_apigateway_http_api"],
   "targets": ["aws_core__aws_cognito_user_pool"],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

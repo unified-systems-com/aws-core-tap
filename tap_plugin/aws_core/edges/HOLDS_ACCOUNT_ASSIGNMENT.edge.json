@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_identity_center_account_assignment"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

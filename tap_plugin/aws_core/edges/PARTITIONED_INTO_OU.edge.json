@@ -9,6 +9,9 @@
   "targets": [
     "aws_core__aws_organizational_unit"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

@@ -21,6 +21,9 @@
   "targets": [
     "aws_core__aws_subnet"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

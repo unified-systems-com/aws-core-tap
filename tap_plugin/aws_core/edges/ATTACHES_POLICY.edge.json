@@ -9,6 +9,9 @@
   "targets": [
     "aws_core__aws_iam_policy"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

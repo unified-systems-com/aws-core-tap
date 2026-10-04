@@ -5,6 +5,9 @@
   "sources": [
     "aws_core__aws_identity_center_instance"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

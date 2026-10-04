@@ -12,6 +12,9 @@
     "aws_core__aws_cloudwatch_log_group",
     "aws_core__aws_s3_bucket"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

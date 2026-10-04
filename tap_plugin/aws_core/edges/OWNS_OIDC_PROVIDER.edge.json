@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_iam_oidc_provider"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }
