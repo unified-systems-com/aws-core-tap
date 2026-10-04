@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_guardduty_detector"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_delegated_administration"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

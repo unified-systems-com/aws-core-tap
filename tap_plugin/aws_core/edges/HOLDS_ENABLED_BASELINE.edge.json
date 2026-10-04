@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_controltower_enabled_baseline"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

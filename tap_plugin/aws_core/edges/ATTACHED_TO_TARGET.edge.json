@@ -11,6 +11,9 @@
     "aws_core__aws_account",
     "aws_core__aws_organization"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

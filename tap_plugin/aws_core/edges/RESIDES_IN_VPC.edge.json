@@ -12,6 +12,9 @@
   "targets": [
     "aws_core__aws_vpc"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

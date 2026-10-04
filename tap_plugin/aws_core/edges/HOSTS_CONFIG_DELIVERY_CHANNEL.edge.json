@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_config_delivery_channel"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }
