@@ -571,6 +571,13 @@ class TestFieldPresence:
         dist = self._dist({"CloudFrontDefaultCertificate": True, "CertificateSource": "cloudfront"})
         assert _reads(self._DIST, dist)[self._CERT] == COMPLETE
 
+    def test_an_acm_source_without_its_arn_is_partial(self):
+        assert _reads(self._DIST, self._dist({"CertificateSource": "acm"}))[self._CERT] == PARTIAL
+
+    def test_an_iam_certificate_establishes_no_acm_certificate(self):
+        dist = self._dist({"IAMCertificateId": "ASCA1", "CertificateSource": "iam"})
+        assert _reads(self._DIST, dist)[self._CERT] == COMPLETE
+
     def test_a_viewer_certificate_that_names_no_source_is_partial(self):
         assert _reads(self._DIST, self._dist({}))[self._CERT] == PARTIAL
 

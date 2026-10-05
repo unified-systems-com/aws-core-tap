@@ -91,13 +91,20 @@ _OPPOSITE = {"outbound": "inbound", "inbound": "outbound"}
 
 
 def _cloudfront_certificate_answered(item: Mapping[str, Any]) -> bool:
-    """A ``DistributionSummary.ViewerCertificate`` that names its certificate source says, by itself,
-    whether an ACM certificate is in use: the default certificate, an IAM certificate, or the
-    ``CertificateSource`` field all answer the question an absent ``ACMCertificateArn`` leaves open."""
+    """A ``DistributionSummary.ViewerCertificate`` that names a NON-ACM source answers "no ACM
+    certificate": the CloudFront default certificate, an IAM certificate, or ``CertificateSource``
+    ``cloudfront`` / ``iam``. ``CertificateSource: acm`` without an ARN says the opposite and stays
+    unanswered."""
     cert = item.get("ViewerCertificate")
     if not isinstance(cert, dict):
         return False
-    return cert.get("CloudFrontDefaultCertificate") is True or "IAMCertificateId" in cert or "CertificateSource" in cert
+    if cert.get("CertificateSource") == "acm":
+        return False
+    return (
+        cert.get("CloudFrontDefaultCertificate") is True
+        or "IAMCertificateId" in cert
+        or cert.get("CertificateSource") in ("cloudfront", "iam")
+    )
 
 
 def _sqs_encryption_answered(item: Mapping[str, Any]) -> bool:
