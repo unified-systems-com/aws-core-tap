@@ -930,14 +930,21 @@ def apigateway_http_apis_detailed(session: Any, *, client_for: Any) -> Iterator[
                 elif integ.get("IntegrationType") == "AWS_PROXY" and not integ.get("IntegrationSubtype"):
                     unparsed_lambda = True
             pool_ids = []
+            # A Cognito issuer the pattern cannot read names a user pool the edge cannot key: partial.
+            unparsed_pool = False
             for auth in sub["_authorizers"]:
                 issuer = ((auth.get("JwtConfiguration") or {}).get("Issuer") or "").strip()
                 match = _COGNITO_ISSUER_RE.match(issuer)
                 if match:
                     pool_ids.append(match.group("pool"))
+                elif "cognito-idp." in issuer.lower():
+                    unparsed_pool = True
             integrations_read = reads["_integrations"]
             if integrations_read == COMPLETE and unparsed_lambda:
                 integrations_read = PARTIAL
+            authorizers_read = reads["_authorizers"]
+            if authorizers_read == COMPLETE and unparsed_pool:
+                authorizers_read = PARTIAL
             yield with_edge_reads(
                 {
                     **api,
@@ -956,7 +963,7 @@ def apigateway_http_apis_detailed(session: Any, *, client_for: Any) -> Iterator[
                 },
                 {
                     "_integration_lambda_arns": integrations_read,
-                    "_authorizer_user_pool_ids": reads["_authorizers"],
+                    "_authorizer_user_pool_ids": authorizers_read,
                 },
             )
 

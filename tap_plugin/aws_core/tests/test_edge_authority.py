@@ -246,6 +246,14 @@ class TestApiGatewayReads:
         }
         assert _reads(_APIGW, _api_item(get_integrations=other))[_API_INVOKES] == COMPLETE
 
+    def test_a_cognito_issuer_the_pattern_cannot_read_is_partial(self):
+        unreadable = {"Items": [{"JwtConfiguration": {"Issuer": f"{_POOL_ISSUER}/"}}]}
+        assert _reads(_APIGW, _api_item(get_authorizers=unreadable))[_API_AUTH] == PARTIAL
+
+    def test_a_non_cognito_issuer_is_out_of_scope_not_partial(self):
+        other = {"Items": [{"JwtConfiguration": {"Issuer": "https://login.example.com/"}}]}
+        assert _reads(_APIGW, _api_item(get_authorizers=other))[_API_AUTH] == COMPLETE
+
     def test_truncated_routes_leave_the_authorization_map_unknown(self):
         item = _api_item(get_routes={"Items": [{"RouteKey": "GET /"}], "NextToken": "more"})
         assert item["_route_authorization_types"] is None
