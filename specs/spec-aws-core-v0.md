@@ -43,7 +43,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-page-organization | [AWS Pages](#aws-pages) | Implemented | `/aws/organization`: the OU tree as nested boxes, SCP attachments, account placement |
 | req-aws-core-page-network | [AWS Pages](#aws-pages) | Implemented | `/aws/network`: transit gateways, attachments, VPCs around their subnets, gateways, firewalls, Direct Connect |
 | req-aws-core-panel-counts | [AWS Pages](#aws-pages) | Implemented | The `aws-counts` panel type: count tiles over the estate |
-| req-aws-core-layout-hints | [AWS Pages](#aws-pages) | Implemented | Placement read from a node's own `layout:*` tags, never its name or id |
+| req-aws-core-layout-hints | [AWS Pages](#aws-pages) | Implemented | Placement read from a node's own `layout:*` tags; where the organization's top level carries none, it is placed best-effort by OU role (amended 2026-10-02) |
 | req-aws-core-nongoals | [v0 Non-Goals](#v0-non-goals) | Proposed | Explicitly deferred concerns |
 | req-aws-core-reconcile-falsifiers | [Reconciliation Foundation — Falsifiers](#reconciliation-foundation--falsifiers) | Amended | `[falsifiers]` manifest table, base `_AwsFalsifier`, `SubnetFalsifier`; account/org's original "excluded by design" is narrowed — `AwsAccount` now has both a falsifier and containment, see the rows below |
 | req-aws-core-reconcile-containment | [Account-Scoped Containment — IAM & S3 Reconcile](#account-scoped-containment--iam--s3-reconcile) | Implemented | Five NEW `AwsAccount` → owned-type containment edges (IAM role/user/policy, OIDC provider, S3 bucket); `IamOidcProviderFalsifier`; collector-emitted completeness per listing |
@@ -1030,8 +1030,27 @@ entity id.
 - Layout module `static/aws_core/js/projections/aws-organization.js` (the organization graph): nests
   on `NESTED_UNDER_PARENT` only and drops any other node a search brings in. The organization lays
   its children out in columns; each OU lays its children out in rows, wrapping at its
-  `layout:columns`; both from the nodes' layout tags (below). With no tags it still draws: one
-  column, rows by label.
+  `layout:columns`; both from the nodes' layout tags (below). With no tags each OU still draws its
+  children in rows by label, and the organization's top level is placed best-effort by OU role
+  (below).
+- Best-effort organization rows `static/aws_core/js/runtime/org-rows.js` (George, 2026-10-02,
+  Q139/Q146: ordering of OUs on the org diagram belongs in the layout code). It applies only when no
+  direct child of the organization carries a placement tag (`layout:order`, `layout:column`,
+  `layout:row`); one such tag on any of them keeps the tag-driven columns above for the whole level,
+  so a design that places its top level explicitly (highbar's) does not move. `layout:fill` and
+  `layout:columns` size a box and do not count as placement. Otherwise:
+  **foundational OUs**, a top-level OU whose name, compared case-insensitively, is one of the OU
+  names AWS recommends in *Organizing Your AWS Environment Using Multiple Accounts* (Security,
+  Infrastructure, Sandbox, Suspended, Exceptions, Policy Staging, Transitional, Deployments,
+  Individual Business Users), share one bottom row in name order, followed in that row by the
+  accounts the organization holds directly (the management account), in name order. **Every other
+  top-level OU is a workload OU** and takes a row of its own above the foundational row, the largest
+  subtree first (OUs plus accounts beneath it, at any depth), ties in name order; a workload OU
+  stretches across the organization. This is the one place a layout reads a name, and only against
+  AWS's published list: no deployment's names are in the code. Below the top level nothing changes.
+  Tags on the real AWS resources are never used to declare ordering; using them as layout hints is
+  backlogged, not built (aws-core-tap#83). Pure functions, unit-tested under node in
+  `tests/js/org_rows.test.mjs`; no CI lane runs JavaScript yet, so that file is run by hand.
 - Layout hints `static/aws_core/js/runtime/layout-hints.js`, importable by any layout module: neutral
   tag keys on the node itself. `layout:order` (integer) orders siblings; unordered siblings follow,
   by label. `layout:column` (integer, default 0) picks a column where the parent lays out in columns.
@@ -1073,9 +1092,10 @@ entity id.
 | req-aws-core-page-dashboard-1 | Dashboard Seeded | Implemented | `/aws` exists and mounts counts, estate, per-ou and scope. | Observed on the highbar dev grid, 2026-09-24. |
 | req-aws-core-page-organization-1 | Organization Page Seeded | Implemented | `/aws/organization` exists, mounts tree, scp and placement, and its breadcrumb parent is `/aws`. | |
 | req-aws-core-page-organization-2 | Tree Only | Implemented | The tree graph's searches return organizations, OUs, accounts and `NESTED_UNDER_PARENT` edges, nothing else: no policy, boundary or Identity Center node or line. | Observed on the highbar dev grid, 2026-09-24. |
-| req-aws-core-layout-hints-1 | Order And Column From Tags | Implemented | Siblings are placed by `layout:order`, and under the organization by `layout:column`; a node's name and id are never read for placement. | Observed on the highbar dev grid, 2026-09-24. |
+| req-aws-core-layout-hints-1 | Order And Column From Tags | Implemented | Siblings are placed by `layout:order`, and under the organization by `layout:column`; a node's name and id are never read for placement, save the organization's untagged top level, which is matched against AWS's recommended OU names only (`req-aws-core-layout-hints-4`). | Observed on the highbar dev grid, 2026-09-24. |
 | req-aws-core-layout-hints-2 | Fill To Lane | Implemented | A `layout:fill` box sharing its column with siblings widens to the parent's inner width when all siblings share that column, else to the column's widest box; a box alone in its column takes the rest of its row. | Observed on the highbar dev grid, 2026-09-24. |
 | req-aws-core-layout-hints-3 | Rows From Tags | Implemented | A parent's `layout:columns` wraps its children into rows of at most that many (1 stacks them); where the layout groups by `layout:row`, children sharing a value share a row, and those in a row sharing a `layout:column` stack in one column. | Observed on the highbar dev grid, 2026-09-24. |
+| req-aws-core-layout-hints-4 | Organization Rows By OU Role | Implemented | When no direct child of the organization carries `layout:order`, `layout:column` or `layout:row`, each top-level OU not named in AWS's recommended OU list (case-insensitive) takes its own row, largest subtree first, ties by name, above one bottom row holding the listed (foundational) OUs by name and then the organization's own accounts by name; any one placement tag keeps the tag-driven placement for the whole level; deeper levels are unchanged; tags on collected AWS resources are not read for ordering. | `tests/js/org_rows.test.mjs` (node, run by hand). Rendered in headless Chromium with the real layout module on synthetic scenes, 2026-10-02; not yet observed on a running stack. |
 | req-aws-core-page-network-1 | Network Page Seeded | Implemented | `/aws/network` exists, mounts plane, attachments, igw and dx, and its breadcrumb parent is `/aws`. | |
 | req-aws-core-page-network-2 | Direct Connect Stated, Not Invented | Implemented | With no Direct Connect data, the dx section says no connection is on the grid; it draws no placeholder site. | |
 | req-aws-core-page-network-3 | VPCs Hold Their Subnets | Implemented | The plane nests each subnet in the VPC that `PARTITIONED_INTO_SUBNET` it, in its availability zone's column (a compact block while the scene carries no zone), and each internet gateway in the VPC it is `ATTACHED_TO_VPC`; a resource in one subnet nests in it, a resource in several subnets of one VPC nests in the VPC with a line to each. | `tests/test_network_page_bundle.py` (scene searches). The layout itself has no JS test and is not yet observed in a browser. |
