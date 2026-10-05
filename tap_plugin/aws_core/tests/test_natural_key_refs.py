@@ -21,6 +21,7 @@ from tap_plugin.aws_core.tests.grid_keys import edge_between, find_node_id, live
 
 from tap_cares.collectors.config import CollectorConfig
 
+from . import test_boto3_collector_slice as slice_tests
 from .test_boto3_collector_slice import (
     _ACCOUNT,
     _CANNED,
@@ -28,9 +29,10 @@ from .test_boto3_collector_slice import (
     _FN_ARN,
     _ROLE_ARN,
     _ZONE_ID,
-    _stub_aws,  # noqa: F401 — the canned-AWS fixture every test here runs under
 )
 
+#: The vertical-slice test's canned-AWS fixture, which every test here runs under.
+_stub_aws = slice_tests._stub_aws
 pytestmark = pytest.mark.usefixtures("_stub_aws")
 
 LAMBDA = "aws_core__aws_lambda"
