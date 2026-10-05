@@ -44,6 +44,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     route53_zones_with_alias_targets,
     s3_buckets_hydrated,
 )
+from tap_plugin.aws_core.collectors.boto3_collector.edges import emit_edges
 from tap_plugin.aws_core.collectors.boto3_collector.identity import node_entity_id
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
@@ -489,6 +490,17 @@ class TestJudgingRules:
         node = project_item(entry, _rule_item({"Targets": []}))
         reads = anchor_reads(node, entry, modeled_types=_MODELED - {"aws_core__aws_lambda"}, transforms=_TRANSFORMS)
         assert reads[_INVOKES] == PARTIAL
+
+    def test_every_edge_the_emitter_drops_with_a_warning_reads_partial(self):
+        # emit_edges warns (EDGE_DROPPED) on exactly one path: a target type the collector does not
+        # model. The same rule must never read complete, or a claim would cover an edge never sent.
+        entry = _entry(_EVENTBRIDGE)
+        node = project_item(entry, _rule_item({"Targets": [{"Id": "t", "Arn": _LAMBDA_ARN}]}))
+        modeled = _MODELED - {"aws_core__aws_lambda"}
+        emission = emit_edges(node, entry, modeled_types=modeled, transforms=_TRANSFORMS, dimensions={})
+        assert emission.warnings
+        assert not any(e["edge"]["edge_type"] == "INVOKES_LAMBDA__aws_core" for e in emission.envelopes)
+        assert anchor_reads(node, entry, modeled_types=modeled, transforms=_TRANSFORMS)[_INVOKES] == PARTIAL
 
     def test_rules_of_one_type_and_direction_fold_to_the_worst(self):
         # CloudTrail has two WRITES_LOGS rules (bucket, log group); a log-group reference the transform
