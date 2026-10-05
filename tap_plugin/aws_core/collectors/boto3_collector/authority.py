@@ -27,7 +27,13 @@ How a manifest edge rule's read is judged, per anchor (:func:`rule_read`):
 - then, for a rule that is ``complete`` so far, a transform that returns nothing for a non-empty
   reference makes it ``partial`` (the relationship exists, the collector could not wire it), unless
   the transform is one that filters out-of-scope values on purpose (:data:`FILTERING_TRANSFORMS`);
-- a rule whose target type the collector does not model is ``partial``: its edges are never emitted.
+- a rule whose target type the collector does not model is ``partial``: its edges are never emitted;
+- a rule reading a field of the item itself (not a hydrate slot) is ``complete`` only when the field's
+  presence is established (:func:`_field_established`). AWS omits an unset optional field from a
+  response, and an older API version omits a field it does not know: the two look the same, so an
+  absent field is ``partial`` unless a documented sibling in the same response says the field was
+  answerable (:data:`ABSENCE_ESTABLISHED`). Ruled 2026-10-05 (Q34): report ``partial``, never drop the
+  claim, so the gap stays visible on the batch record.
 
 All rules of one edge type and direction at one anchor are folded into one read, the worst of them
 (:func:`worst`), because tap accepts one claim per scope and a claim made from only some of the rules
@@ -37,7 +43,7 @@ would propose removing what the others assert.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from functools import cache
 from importlib import resources
 from typing import Any
@@ -61,6 +67,30 @@ EDGE_READS = "_edge_reads"
 FILTERING_TRANSFORMS = frozenset({"s3_bucket_name_from_origin_domain", "customer_managed_policy_arn_or_none"})
 
 _OPPOSITE = {"outbound": "inbound", "inbound": "outbound"}
+
+
+def _cloudfront_certificate_answered(item: Mapping[str, Any]) -> bool:
+    """A ``DistributionSummary.ViewerCertificate`` that names its certificate source says, by itself,
+    whether an ACM certificate is in use: the default certificate, an IAM certificate, or the
+    ``CertificateSource`` field all answer the question an absent ``ACMCertificateArn`` leaves open."""
+    cert = item.get("ViewerCertificate")
+    if not isinstance(cert, dict):
+        return False
+    return cert.get("CloudFrontDefaultCertificate") is True or "IAMCertificateId" in cert or "CertificateSource" in cert
+
+
+def _sqs_encryption_answered(item: Mapping[str, Any]) -> bool:
+    """``GetQueueAttributes(All)`` returns ``SqsManagedSseEnabled`` on every API version that reports a
+    queue's server-side encryption; when it is there, an absent ``KmsMasterKeyId`` means "no KMS key"."""
+    return "SqsManagedSseEnabled" in item
+
+
+#: ``(entity_type, value_path)`` -> a test on the item that establishes an ABSENT field as answered
+#: (complete and empty). Every field not named here reads ``partial`` when absent.
+ABSENCE_ESTABLISHED: dict[tuple[str, str], Callable[[Mapping[str, Any]], bool]] = {
+    ("aws_core__aws_cloudfront_distribution", "ViewerCertificate.ACMCertificateArn"): _cloudfront_certificate_answered,
+    ("aws_core__aws_sqs_queue", "KmsMasterKeyId"): _sqs_encryption_answered,
+}
 
 
 def worst(statuses: Iterable[str]) -> str:
@@ -103,6 +133,36 @@ def _declared_read(item: Any, value_path: str, *, from_custom_fn: bool) -> str:
     return PARTIAL if from_custom_fn else COMPLETE
 
 
+def _path_present(item: Any, value_path: str) -> bool:
+    """Whether every key on ``value_path`` is present, up to its last list segment.
+
+    A list segment's elements were read whole, so a key missing inside one element is that element's
+    own answer (a trust statement with no ``Federated`` principal). Above the last list, and on a path
+    with no list at all, a missing key is a field the response did not carry.
+    """
+    parts = value_path.split(".")
+    last_list = max((i for i, part in enumerate(parts) if part.endswith("[]")), default=None)
+    checked = parts if last_list is None else parts[: last_list + 1]
+    value: Any = item
+    for part in checked:
+        key = part.removesuffix("[]")
+        if not isinstance(value, dict) or key not in value:
+            return False
+        value = value[key]
+    return True
+
+
+def _field_established(node: ProjectedNode, value_path: str) -> bool:
+    """Whether the item's field at ``value_path`` is present, or its absence is a documented answer."""
+    item = node.raw_item
+    if not isinstance(item, dict):
+        return False
+    if _path_present(item, value_path):
+        return True
+    established = ABSENCE_ESTABLISHED.get((node.entity_type, value_path))
+    return established is not None and established(item)
+
+
 def _values(raw: Any) -> list[Any]:
     values = raw if isinstance(raw, list) else [raw]
     return [v for v in values if v is not None and v != ""]
@@ -121,6 +181,12 @@ def rule_read(
         return PARTIAL
     item = node.raw_item
     status = _declared_read(item, rule["value_path"], from_custom_fn="custom_fn" in entry["source"])
+    if (
+        status == COMPLETE
+        and not rule["value_path"].startswith("_hydrate")
+        and not _field_established(node, rule["value_path"])
+    ):
+        return PARTIAL
     transform_name = rule.get("transform")
     if status != COMPLETE or not transform_name or transform_name in FILTERING_TRANSFORMS:
         return status

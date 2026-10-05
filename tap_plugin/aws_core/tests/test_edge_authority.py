@@ -517,11 +517,90 @@ class TestJudgingRules:
             "TrailARN": f"arn:aws:cloudtrail:us-east-1:{_ACCOUNT}:trail/t",
             "S3BucketName": "logs",
             "CloudWatchLogsLogGroupArn": "arn:aws:s3:::not-a-log-group",
+            "KmsKeyId": _KMS_ARN,
             EDGE_READS: {"S3BucketName": COMPLETE, "CloudWatchLogsLogGroupArn": COMPLETE, "KmsKeyId": COMPLETE},
         }
         reads = _reads("aws_core__aws_cloudtrail_trail", trail)
         assert reads[("WRITES_LOGS__aws_core", "outbound")] == PARTIAL
         assert reads[_ENCRYPTED] == COMPLETE
+
+
+class TestFieldPresence:
+    """Q34 (2026-10-05): a field AWS omits when unset looks the same as a field an older API version
+    never returns. A read over an absent field is ``partial`` unless the same response establishes the
+    absence as an answer; the claim is still made, so the gap is on the batch record."""
+
+    _FN = {"FunctionName": "worker", "FunctionArn": _LAMBDA_ARN, "Role": _ROLE_ARN}
+    _WRITES_LOGS = ("WRITES_LOGS__aws_core", "outbound")
+    _CERT = ("RETRIEVES_CERT_FROM__aws_core", "outbound")
+    _DIST = "aws_core__aws_cloudfront_distribution"
+
+    def test_lambda_without_logging_config_drops_to_partial(self):
+        reads = _reads("aws_core__aws_lambda", dict(self._FN))
+        assert reads[self._WRITES_LOGS] == PARTIAL
+        assert reads[_ASSUMES] == COMPLETE
+
+    def test_lambda_with_logging_config_stays_complete(self):
+        fn = {**self._FN, "LoggingConfig": {"LogFormat": "Text", "LogGroup": "/aws/lambda/worker"}}
+        assert _reads("aws_core__aws_lambda", fn)[self._WRITES_LOGS] == COMPLETE
+
+    def test_an_unencrypted_log_group_is_partial(self):
+        group = {"logGroupName": "g", "logGroupArn": f"arn:aws:logs:us-east-1:{_ACCOUNT}:log-group:g"}
+        assert _reads("aws_core__aws_cloudwatch_log_group", group)[_ENCRYPTED] == PARTIAL
+        assert _reads("aws_core__aws_cloudwatch_log_group", {**group, "kmsKeyId": _KMS_ARN})[_ENCRYPTED] == COMPLETE
+
+    def test_an_eventbridge_rule_without_a_role_is_partial(self):
+        rule = {k: v for k, v in _RULE.items() if k != "RoleArn"}
+        client = _Client({"list_rules": {"Rules": [rule]}, "list_targets_by_rule": {"Targets": []}})
+        item = next(iter(eventbridge_rules_with_targets(None, client_for=lambda _svc: client)))
+        reads = _reads(_EVENTBRIDGE, item)
+        assert reads[_ASSUMES] == PARTIAL
+        assert reads[_INVOKES] == COMPLETE
+
+    def _dist(self, viewer_certificate: dict[str, Any]) -> dict[str, Any]:
+        return with_edge_reads(
+            {
+                "ARN": f"arn:aws:cloudfront::{_ACCOUNT}:distribution/E1",
+                "Origins": {"Quantity": 0, "Items": []},
+                "ViewerCertificate": viewer_certificate,
+            },
+            {"Origins": COMPLETE, "ViewerCertificate": COMPLETE},
+        )
+
+    def test_the_default_certificate_establishes_no_acm_certificate(self):
+        dist = self._dist({"CloudFrontDefaultCertificate": True, "CertificateSource": "cloudfront"})
+        assert _reads(self._DIST, dist)[self._CERT] == COMPLETE
+
+    def test_a_viewer_certificate_that_names_no_source_is_partial(self):
+        assert _reads(self._DIST, self._dist({}))[self._CERT] == PARTIAL
+
+    def test_sqs_without_a_key_is_complete_only_when_the_sse_attributes_were_returned(self):
+        queue = {"QueueArn": f"arn:aws:sqs:us-east-1:{_ACCOUNT}:q", EDGE_READS: {"KmsMasterKeyId": COMPLETE}}
+        assert _reads("aws_core__aws_sqs_queue", queue)[_ENCRYPTED] == PARTIAL
+        answered = {**queue, "SqsManagedSseEnabled": "true"}
+        assert _reads("aws_core__aws_sqs_queue", answered)[_ENCRYPTED] == COMPLETE
+
+    def test_a_field_absent_inside_a_list_element_is_that_element_s_answer(self):
+        # A trust statement with no Federated principal is read whole: FEDERATES_INTO_ROLE stays complete.
+        assert _reads(_IAM_ROLE, _role_item(_ONE_POLICY))[_FEDERATES] == COMPLETE
+
+    def test_a_trail_without_cloudwatch_logs_or_kms_is_partial(self):
+        trail = {
+            "TrailARN": f"arn:aws:cloudtrail:us-east-1:{_ACCOUNT}:trail/t",
+            "S3BucketName": "logs",
+            EDGE_READS: {"S3BucketName": COMPLETE, "CloudWatchLogsLogGroupArn": COMPLETE, "KmsKeyId": COMPLETE},
+        }
+        reads = _reads("aws_core__aws_cloudtrail_trail", trail)
+        assert reads[("WRITES_LOGS__aws_core", "outbound")] == PARTIAL
+        assert reads[_ENCRYPTED] == PARTIAL
+
+    def test_subnet_vpc_is_present_and_complete(self):
+        subnet = {
+            "SubnetId": "subnet-1",
+            "SubnetArn": f"arn:aws:ec2:us-east-1:{_ACCOUNT}:subnet/subnet-1",
+            "VpcId": "vpc-1",
+        }
+        assert _reads("aws_core__aws_subnet", subnet)[("PARTITIONED_INTO_SUBNET__aws_core", "inbound")] == COMPLETE
 
 
 class TestClaims:
