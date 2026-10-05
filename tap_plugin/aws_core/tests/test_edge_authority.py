@@ -603,6 +603,45 @@ class TestFieldPresence:
         assert _reads("aws_core__aws_subnet", subnet)[("PARTITIONED_INTO_SUBNET__aws_core", "inbound")] == COMPLETE
 
 
+class TestFilteringTransforms:
+    """A filtering transform's ``None`` leaves the read complete only for a value its own test
+    recognises as out of scope; any other value it cannot map is partial."""
+
+    _CONTENT = ("RETRIEVES_CONTENT_FROM__aws_core", "outbound")
+    _DIST = "aws_core__aws_cloudfront_distribution"
+
+    def _dist(self, *domains: str) -> dict[str, Any]:
+        return with_edge_reads(
+            {
+                "ARN": f"arn:aws:cloudfront::{_ACCOUNT}:distribution/E1",
+                "Origins": {"Items": [{"Id": d, "DomainName": d} for d in domains]},
+                "ViewerCertificate": {"CloudFrontDefaultCertificate": True},
+            },
+            {"Origins": COMPLETE, "ViewerCertificate": COMPLETE},
+        )
+
+    def test_a_non_s3_origin_is_out_of_scope(self):
+        assert (
+            _reads(self._DIST, self._dist("api.example.com", "lb-1.us-east-1.elb.amazonaws.com"))[self._CONTENT]
+            == COMPLETE
+        )
+
+    def test_an_s3_origin_the_transform_cannot_read_is_partial(self):
+        # An S3 host the origin pattern does not cover: a bucket the edge cannot name.
+        assert _reads(self._DIST, self._dist("bucket.s3.amazonaws.com.evil"))[self._CONTENT] == PARTIAL
+
+    def test_an_aws_managed_policy_is_out_of_scope(self):
+        managed = {
+            "AttachedPolicies": [{"PolicyArn": "arn:aws-us-gov:iam::aws:policy/ReadOnlyAccess"}],
+            "IsTruncated": False,
+        }
+        assert _reads(_IAM_ROLE, _role_item(managed))[_ATTACHES] == COMPLETE
+
+    def test_a_policy_reference_that_is_not_an_iam_arn_is_partial(self):
+        odd = {"AttachedPolicies": [{"PolicyArn": "ReadOnlyAccess"}], "IsTruncated": False}
+        assert _reads(_IAM_ROLE, _role_item(odd))[_ATTACHES] == PARTIAL
+
+
 class TestClaims:
     def test_claim_shape(self):
         entry = _entry(_EVENTBRIDGE)

@@ -26,7 +26,8 @@ How a manifest edge rule's read is judged, per anchor (:func:`rule_read`):
 - a rule reading an ``aws_op`` item is ``complete``: the item is the API's own record of the resource;
 - then, for a rule that is ``complete`` so far, a transform that returns nothing for a non-empty
   reference makes it ``partial`` (the relationship exists, the collector could not wire it), unless
-  the transform is one that filters out-of-scope values on purpose (:data:`FILTERING_TRANSFORMS`);
+  the value is one a filtering transform drops on purpose, recognised by its own test
+  (:data:`FILTERING_TRANSFORMS`: a non-S3 CloudFront origin, an AWS-managed policy);
 - a rule whose target type the collector does not model is ``partial``: its edges are never emitted;
 - a rule reading a field of the item itself (not a hydrate slot) is ``complete`` only when the field's
   presence is established (:func:`_field_established`). AWS omits an unset optional field from a
@@ -43,6 +44,7 @@ would propose removing what the others assert.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Iterable, Mapping
 from functools import cache
 from importlib import resources
@@ -61,10 +63,29 @@ _SEVERITY = {status: rank for rank, status in enumerate(READ_STATUSES)}
 #: The reserved item key a ``custom_fn`` uses to say how it read each key an edge rule reads.
 EDGE_READS = "_edge_reads"
 
-#: Transforms whose ``None`` means "this value is not a target of this edge" (a non-S3 CloudFront
-#: origin, an AWS-managed policy), so dropping it leaves the read complete. Every other transform's
-#: ``None`` for a non-empty value means "a reference the collector could not map": ``partial``.
-FILTERING_TRANSFORMS = frozenset({"s3_bucket_name_from_origin_domain", "customer_managed_policy_arn_or_none"})
+_AWS_MANAGED_POLICY_RE = re.compile(r"^arn:[a-z0-9-]+:iam::aws:policy/")
+_S3_HOST_RE = re.compile(r"\.s3[.-]|\.s3\.|^s3[.-]", re.IGNORECASE)
+
+
+def _not_an_s3_origin(value: Any) -> bool:
+    """A CloudFront origin domain with no S3 host segment: an ALB, API Gateway or custom origin,
+    which ``RETRIEVES_CONTENT_FROM`` (to an S3 bucket) does not cover. An S3-looking domain the
+    transform could not read is NOT out of scope."""
+    return isinstance(value, str) and not _S3_HOST_RE.search(value.strip())
+
+
+def _aws_managed_policy(value: Any) -> bool:
+    """``arn:<partition>:iam::aws:policy/...``: AWS's own policy, never a node of the account."""
+    return isinstance(value, str) and bool(_AWS_MANAGED_POLICY_RE.match(value.strip()))
+
+
+#: Transform name -> the test a value must pass for the transform's ``None`` to mean "this value is
+#: not a target of this edge", leaving the read complete. Any other ``None`` for a non-empty value,
+#: from these transforms or any other, is "a reference the collector could not map": ``partial``.
+FILTERING_TRANSFORMS: dict[str, Callable[[Any], bool]] = {
+    "s3_bucket_name_from_origin_domain": _not_an_s3_origin,
+    "customer_managed_policy_arn_or_none": _aws_managed_policy,
+}
 
 _OPPOSITE = {"outbound": "inbound", "inbound": "outbound"}
 
@@ -188,13 +209,14 @@ def rule_read(
     ):
         return PARTIAL
     transform_name = rule.get("transform")
-    if status != COMPLETE or not transform_name or transform_name in FILTERING_TRANSFORMS:
+    if status != COMPLETE or not transform_name:
         return status
     transform = transforms.get(transform_name)
     source_aware = transforms.is_source_aware(str(transform_name))
+    out_of_scope = FILTERING_TRANSFORMS.get(str(transform_name))
     for value in _values(eval_path(item, rule["value_path"])):
         mapped = transform(value, source_key=node.natural_key) if source_aware else transform(value)
-        if mapped is None:
+        if mapped is None and not (out_of_scope is not None and out_of_scope(value)):
             return PARTIAL
     return status
 
