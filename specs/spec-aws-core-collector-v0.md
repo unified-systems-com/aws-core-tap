@@ -99,6 +99,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
 | req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
+| req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
 | req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
 | req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
@@ -1067,6 +1068,56 @@ edges, submitted through the approved import surface.
 | req-aws-collector-grift-batch-2 | Provenance Recorded | Approved for Development | The batch records account, regions, manifest version, and counts. | |
 | req-aws-collector-grift-batch-3 | Approved Surface Only | Approved for Development | Submission is via `self.submit_grift`. | |
 | req-aws-collector-grift-batch-4 | No Deletion Content | Approved for Development | The batch contains no deletion/tombstone semantics. | |
+
+### Edge Authority Claims
+----
+RID: `req-aws-collector-edge-authority`
+
+Status: `Implemented`
+
+tap's `req-grid-reconcile-edge-authority` lets a batch state that, for an edge type at an anchor node
+in one direction, its edges are the whole set, and proposes removing every other live edge in that
+scope. Only a claim whose `read` is `complete` proposes anything. This requirement is the producer
+side for aws_core (aws-core-tap#77, child C10 of tap#911): every reader that feeds a manifest edge
+rule says, per anchor, how it read the rule's source, so that "found nothing" and "could not look"
+are never the same value.
+
+#### Implementation
+
+- **Three values.** `complete` (every source the scope draws on answered in full), `partial` (an
+  answer that is not all of it: a final page that still says more, a reference the collector could
+  not map to a target, a value it could not interpret), `failed` (a call the scope depends on
+  errored or was denied). Code: `collectors/boto3_collector/authority.py`.
+- **How a rule is judged.** A rule that reads a hydrate slot takes the slot's status (`ok` and
+  `absent` are complete; `denied`, `error` and a missing slot are failed). A rule that reads a key a
+  `custom_fn` declared in the item's `_edge_reads` map takes that declaration; any other key of a
+  `custom_fn` item is `partial` (a reader that did not say how it read a key is not trusted to have
+  read it all). An `aws_op` item is the API's own record of the resource and is `complete`. A
+  transform that returns nothing for a non-empty reference makes a complete read `partial`, except
+  the two transforms that filter out-of-scope values on purpose (a non-S3 CloudFront origin, an
+  AWS-managed policy). A rule whose target type is not modelled is `partial`.
+- **One claim per scope.** All rules of one edge type and direction at one anchor fold into one
+  claim with the worst read. The anchor is named by its entity id. A scope another manifest entry's
+  rules also write into is not claimed. Containment, Organizations, landing-zone and findings edges
+  are not claimed: their completeness is the reconcile surfaces' business.
+- **Sent only where accepted.** The claims are carried as the batch's `edge_cases.authority` when
+  the running tap's GRIFT schema defines that section; this plugin's tap floor predates it, so on an
+  older tap the claims are judged, logged, and not sent. Either way the run records one
+  `EDGE_AUTHORITY_CLAIMS` entry with the counts by read status and the claims that are not
+  `complete`.
+- **Not deletion content.** A claim removes nothing here: tap's first form is a dry-run that records
+  proposals (`req-aws-collector-grift-batch-4` is unchanged).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-edge-authority-1 | Failed Is Not Empty | Implemented | A reader whose sub-call for an anchor raised reports `failed` for every rule that reads it; the anchor's claim is never `complete`. | `eventbridge_rules_with_targets` (a denied `ListTargetsByRule`), the API Gateway sub-listings, the IAM attached-policy slots, the S3 encryption slot. `tests/test_edge_authority.py`. |
+| req-aws-collector-edge-authority-2 | Partial Is Not Complete | Implemented | A sub-listing whose last page says more, a reference a transform cannot map, or a document the rule's path cannot walk reports `partial`. | |
+| req-aws-collector-edge-authority-3 | Complete And Empty Is Said | Implemented | A read that answered with nothing is `complete` with no edges, distinct from the two above. | |
+| req-aws-collector-edge-authority-4 | Fail Closed | Implemented | A `custom_fn` key an edge rule reads that the reader did not declare is `partial`; an unknown status counts as `failed`; no status is ever defaulted to `complete`. | |
+| req-aws-collector-edge-authority-5 | One Claim Per Scope | Implemented | A batch carries at most one claim per (edge type, anchor, direction), with the worst read of every rule that contributes. | tap fails a batch with two (`duplicate_authority_claim`). |
+| req-aws-collector-edge-authority-6 | Sent Only Where Accepted | Implemented | The `edge_cases` section is written only when the importer's own schema defines it; the run record says whether it was sent. | Drop the check when `requires_tap` reaches a release that has the section. |
 
 ### Audit Verifiability
 ----

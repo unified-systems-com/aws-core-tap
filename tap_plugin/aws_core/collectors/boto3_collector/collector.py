@@ -45,6 +45,14 @@ from tap_cares.exceptions import (
     SecretValidationError,
 )
 
+from .authority import (
+    COMPLETE,
+    anchor_reads,
+    claims_for,
+    importer_accepts_edge_cases,
+    merge_claims,
+    shared_scopes,
+)
 from .batch import assemble_batch, node_envelope
 from .containment import (
     Listing,
@@ -122,6 +130,10 @@ _SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
 _SITE_ORG_READ_FAILED = "a4f0"
 _SITE_LZ_NOTICE = "7e19"
 _SITE_LZ_READ_FAILED = "b3c6"
+_SITE_EDGE_AUTHORITY = "f237"
+
+#: How many non-complete claims the run log names one by one; the counts always cover all of them.
+_AUTHORITY_DETAIL_CAP = 200
 
 _DOCS = (
     CollectorDocRef(
@@ -248,6 +260,45 @@ class Boto3Collector(CollectorBase):
                     message_data={"region": region, "opt_in_status": fact.opt_in_status},
                 )
         return facts
+
+    def _record_authority(
+        self, claims: list[dict[str, Any]], *, emitted: bool, node_envelopes: list[dict[str, Any]]
+    ) -> None:
+        """One run-log entry for the run's edge-authority claims (req-aws-collector-edge-authority).
+
+        The counts by read status cover every claim; the claims that are not ``complete`` are named
+        (entity type, name, edge type, direction, read) up to a cap, so a reader can see which anchors
+        could not be read without opening the batch. ``emitted`` is false when the importer this run
+        submits to does not accept an ``edge_cases`` section: the claims were judged and not sent.
+        """
+        counts = {"complete": 0, "partial": 0, "failed": 0}
+        for claim in claims:
+            counts[claim["read"]] = counts.get(claim["read"], 0) + 1
+        names = {n["entity"]["entity_id"]: (n["entity"]["entity_type"], n["entity"]["name"]) for n in node_envelopes}
+        incomplete = [
+            {
+                "entity_type": names.get(claim["anchor"].get("entity_id"), ("", ""))[0],
+                "name": names.get(claim["anchor"].get("entity_id"), ("", ""))[1],
+                "edge_type": claim["edge_type"],
+                "direction": claim["direction"],
+                "read": claim["read"],
+            }
+            for claim in claims
+            if claim["read"] != COMPLETE
+        ]
+        sent = "sent in the batch" if emitted else "not sent: the importer does not accept edge_cases"
+        self.record_info(
+            _SITE_EDGE_AUTHORITY,
+            "EDGE_AUTHORITY_CLAIMS",
+            f"{len(claims)} edge-authority claim(s), {sent}: {counts['complete']} complete, "
+            f"{counts['partial']} partial, {counts['failed']} failed.",
+            message_data={
+                "emitted": emitted,
+                "counts": counts,
+                "incomplete": incomplete[:_AUTHORITY_DETAIL_CAP],
+                "incomplete_truncated": len(incomplete) > _AUTHORITY_DETAIL_CAP,
+            },
+        )
 
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
@@ -399,6 +450,10 @@ class Boto3Collector(CollectorBase):
         #: scoped containment's counterpart to `surfaces` above; turned into completeness surfaces
         #: after the batch is submitted (tap-plugin-aws-core#43, req-aws-collector-reconcile).
         listings: list[tuple[dict[str, Any], ListingWalk]] = []
+        #: Edge-authority claims (req-aws-collector-edge-authority): one per (edge type, anchor,
+        #: direction) the manifest's edge rules cover at a node this run emitted, with how it was read.
+        claims: list[dict[str, Any]] = []
+        unclaimable = shared_scopes(entries)
 
         # The parent of every regional containment: one footprint per (account, region) in scope,
         # emitted whether or not the region turned out readable.
@@ -547,6 +602,15 @@ class Boto3Collector(CollectorBase):
                             if envelope["entity"]["entity_id"] not in seen_edges:
                                 seen_edges.add(envelope["entity"]["entity_id"])
                                 edge_envelopes.append(envelope)
+                        # Only once the node's edges are in the batch: a node whose edge pass raised
+                        # gets no claim, so no scope is ever claimed over edges that were not sent.
+                        claims.extend(
+                            claims_for(
+                                node,
+                                anchor_reads(node, entry, modeled_types=modeled_types, transforms=transforms),
+                                unclaimable=unclaimable,
+                            )
+                        )
                         for warning in emission.warnings:
                             self.record_warn(_SITE_EDGE_DROPPED, "EDGE_DROPPED", warning)
                         if contained and entry["scope"] != "regional":
@@ -703,6 +767,8 @@ class Boto3Collector(CollectorBase):
 
         # --- one GRIFT batch per run (permissive: dangling edges resolve on a
         # later run by deterministic identity, never fail) ---
+        claims = merge_claims(claims)
+        authority_emitted = bool(claims) and importer_accepts_edge_cases()
         document = assemble_batch(
             source=_SOURCE,
             manifest_version=manifest["manifest_version"],
@@ -710,7 +776,9 @@ class Boto3Collector(CollectorBase):
             regions=regions,
             node_envelopes=node_envelopes,
             edge_envelopes=edge_envelopes,
+            authority=claims if authority_emitted else None,
         )
+        self._record_authority(claims, emitted=authority_emitted, node_envelopes=node_envelopes)
         # Abort-on-rejection is owned by CollectorBase.submit_grift
         # (on_rejection="abort" default): a rejected batch records a
         # structured GRIFT_BATCH_REJECTED error and raises GriftRejectedError,

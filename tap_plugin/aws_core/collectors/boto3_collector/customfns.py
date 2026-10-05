@@ -21,14 +21,16 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterator
+from dataclasses import dataclass
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
 
+from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads
 from .envelope import jsonable, without_response_metadata
 from .hydrate import hydrate_item
 from .iam_trust import account_of_iam_arn, summarize_trust_policy
-from .listing import ListingWalk, page_says_more
+from .listing import ListingWalk, error_code, page_says_more
 from .manifest import manifest_entries
 from .partition import (
     PARTITION_AWS,
@@ -279,6 +281,38 @@ def _pages(client: Any, method: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
     yield without_response_metadata(getattr(client, method)(**kwargs))
 
 
+@dataclass(frozen=True)
+class SubRead:
+    """One per-resource sub-listing an edge rule reads, and how it went (authority.py's three values).
+
+    ``failed`` carries no items (what an errored walk returned is not the answer); ``partial`` keeps the
+    items read before the listing stopped short.
+    """
+
+    items: list[Any]
+    status: str
+    reason: str = ""
+
+
+def read_sub_listing(client: Any, method: str, items_key: str, **kwargs: Any) -> SubRead:
+    """Read one per-resource sub-listing to its end and say whether it got there.
+
+    A raised call is ``failed`` and a final page that still reports more is ``partial``: neither is
+    ever handed back as a complete answer, which is what lets an empty ``complete`` mean "none".
+    """
+    items: list[Any] = []
+    last: Any = None
+    try:
+        for page in _pages(client, method, **kwargs):
+            last = page
+            items.extend(page.get(items_key) or [])
+    except (BotoCoreError, ClientError) as exc:
+        return SubRead([], FAILED, f"{method}: {error_code(exc) or type(exc).__name__}")
+    if page_says_more(last):
+        return SubRead(items, PARTIAL, f"{method}: the last page still reports more")
+    return SubRead(items, COMPLETE)
+
+
 def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
     """Enumerate Route 53 hosted zones, resolving CloudFront alias targets.
 
@@ -318,7 +352,15 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
             zone_id = zone.get("Id")
             domains: list[str] = []
             arns: list[str] = []
+            # How the zone's ROUTES_TRAFFIC scope was read (authority.py). A record-set listing that
+            # raises still fails the whole entry, as before; one that stops on a page saying "more",
+            # or an alias whose distribution is not in this account's listing (another account's, or
+            # a partition without CloudFront), leaves the scope partial: a routing the collector saw
+            # but could not wire is not an absence.
+            routes_read = COMPLETE
+            last_page: Any = None
             for rpage in _pages(r53, "list_resource_record_sets", HostedZoneId=zone_id):
+                last_page = rpage
                 for rr in rpage.get("ResourceRecordSets", []):
                     dns = (rr.get("AliasTarget") or {}).get("DNSName") or ""
                     domain = dns.rstrip(".").lower()
@@ -328,22 +370,29 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                     arn = arn_by_domain.get(domain)
                     if arn is not None:
                         arns.append(arn)
+                    else:
+                        routes_read = PARTIAL
+            if page_says_more(last_page):
+                routes_read = PARTIAL
             # Dedupe order-preserving: a zone routing to one distribution
             # via BOTH an A and an AAAA alias (the standard IPv4+IPv6
             # setup) yields the domain/ARN twice. Without dedup, edge
             # fan-out emits two edges with the same deterministic
             # edge_entity_id -> a duplicate_entity_id that GRIFT rejects
             # the whole batch over. One CF distribution -> one edge.
-            yield {
-                **zone,
-                "alias_cloudfront_domains": list(dict.fromkeys(domains)),
-                "alias_cloudfront_arns": list(dict.fromkeys(arns)),
-                # Bare zone ID (last path segment of Id like "/hostedzone/Z…").
-                # list_tags_for_resource wants ResourceId in this form; Id
-                # itself stays as boto3 returned it so existing identity and
-                # downstream consumers don't shift.
-                "_zone_resource_id": (zone_id or "").rsplit("/", 1)[-1],
-            }
+            yield with_edge_reads(
+                {
+                    **zone,
+                    "alias_cloudfront_domains": list(dict.fromkeys(domains)),
+                    "alias_cloudfront_arns": list(dict.fromkeys(arns)),
+                    # Bare zone ID (last path segment of Id like "/hostedzone/Z…").
+                    # list_tags_for_resource wants ResourceId in this form; Id
+                    # itself stays as boto3 returned it so existing identity and
+                    # downstream consumers don't shift.
+                    "_zone_resource_id": (zone_id or "").rsplit("/", 1)[-1],
+                },
+                {"alias_cloudfront_arns": routes_read},
+            )
 
 
 def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
@@ -487,12 +536,17 @@ def cloudfront_distributions_with_oac(session: Any, *, client_for: Any = None) -
                         # collects; the slot records None so the gap is visible.
                         oac_cache[oac_id] = None
                 oacs[oac_id] = oac_cache[oac_id]
-            yield {
-                **dist,
-                "_origin_access_controls": oacs,
-                "_origin_access": origin_access,
-                "_origin_custom_headers_present": headers_present,
-            }
+            # Both edge rules read the DistributionSummary itself: the listing's own record, so a
+            # distribution that was listed was read whole for them (authority.py).
+            yield with_edge_reads(
+                {
+                    **dist,
+                    "_origin_access_controls": oacs,
+                    "_origin_access": origin_access,
+                    "_origin_custom_headers_present": headers_present,
+                },
+                {"Origins": COMPLETE, "ViewerCertificate": COMPLETE},
+            )
 
 
 def dynamodb_tables_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -545,26 +599,27 @@ def eventbridge_rules_with_targets(session: Any, *, client_for: Any) -> Iterator
     Regional: the engine binds ``client_for`` to the current region. Rules
     are enumerated on the default event bus (parity with the prior
     ``ListRules`` source); custom event buses are future scope.
+
+    A per-rule ``ListTargetsByRule`` failure is non-fatal: the rule still
+    collects, without target edges. It is not an empty target list, though:
+    ``_edge_reads`` records the ``INVOKES_LAMBDA`` read as ``failed`` (or
+    ``partial`` when the listing stopped on a page that said more), so an
+    authority claim made from it can never be ``complete``
+    (req-aws-collector-edge-authority). ``RoleArn`` is the ``ListRules``
+    item's own field.
     """
     client = client_for("events")
     for page in _pages(client, "list_rules"):
         for rule in page.get("Rules", []):
             name = rule.get("Name")
             bus = rule.get("EventBusName") or "default"
-            target_arns: list[str] = []
-            try:
-                for tpage in _pages(client, "list_targets_by_rule", Rule=name, EventBusName=bus):
-                    for target in tpage.get("Targets", []):
-                        arn = target.get("Arn")
-                        if arn:
-                            target_arns.append(arn)
-            except BotoCoreError, ClientError:
-                # A per-rule ListTargetsByRule failure is non-fatal: the rule
-                # still collects, just without resolved target edges.
-                target_arns = []
-            target_arns = list(dict.fromkeys(target_arns))
+            targets = read_sub_listing(client, "list_targets_by_rule", "Targets", Rule=name, EventBusName=bus)
+            target_arns = list(dict.fromkeys(t["Arn"] for t in targets.items if t.get("Arn")))
             lambda_arns = [a for a in target_arns if _LAMBDA_ARN_PREFIX_RE.match(a) and ":function:" in a]
-            yield {**rule, "_target_arns": target_arns, "_lambda_target_arns": lambda_arns}
+            yield with_edge_reads(
+                {**rule, "_target_arns": target_arns, "_lambda_target_arns": lambda_arns},
+                {"RoleArn": COMPLETE, "_lambda_target_arns": targets.status},
+            )
 
 
 def _iam_client(session: Any, client_for: Any) -> Any:
@@ -605,6 +660,31 @@ def _attached_policy_arns(data: Any) -> list[str] | None:
     return sorted(str(p["PolicyArn"]) for p in data.get("AttachedPolicies", []) if p.get("PolicyArn"))
 
 
+def _attached_policies_read(envelope: dict[str, Any]) -> str:
+    """How the ``attached_policies`` hydrate slot was read, for ``ATTACHES_POLICY`` (authority.py).
+
+    ``failed`` when the call did not answer (denied, error, or the entity was gone by the time it was
+    asked); ``partial`` when it answered with a page that says more; ``complete`` otherwise. Not the
+    same as ``_attached_policy_arns`` being ``None``, which folds the first two together.
+    """
+    slot = (envelope.get("_hydrate") or {}).get("attached_policies") or {}
+    if slot.get("status") != "ok":
+        return FAILED
+    return PARTIAL if page_says_more(slot.get("data")) else COMPLETE
+
+
+def _federated_principals_read(document: Any) -> str:
+    """How ``FEDERATES_INTO_ROLE``'s path (``AssumeRolePolicyDocument.Statement[].Principal.Federated``)
+    can read the trust policy: ``complete`` only for a decoded document whose ``Statement`` is a list.
+
+    A URL-encoded string, or a single-statement document written as an object, is a policy the path
+    cannot walk: no edge comes out of it, and that must not read as "trusts no identity provider".
+    """
+    if isinstance(document, dict) and isinstance(document.get("Statement"), list):
+        return COMPLETE
+    return PARTIAL
+
+
 def _boundary_arn(detail: Any) -> str | None:
     """'' when the entity was read and has no permissions boundary; ``None`` when it was not read."""
     if not isinstance(detail, dict):
@@ -642,14 +722,26 @@ def iam_roles_described(
         envelope = hydrate_item(client, role, hydrate_ops, call_kwargs={"RoleName": name})
         detail = (_hydrated_slot(envelope, "role") or {}).get("Role")
         last_used = ((detail or {}).get("RoleLastUsed") or {}).get("LastUsedDate")
-        trust = summarize_trust_policy(role.get("AssumeRolePolicyDocument"), own_account=account_of_iam_arn(role.get("Arn"))) or {}
+        summary = summarize_trust_policy(
+            role.get("AssumeRolePolicyDocument"), own_account=account_of_iam_arn(role.get("Arn"))
+        )
+        trust = summary or {}
         envelope["_permissions_boundary_arn"] = _boundary_arn(detail)
         envelope["_last_used_at"] = None if detail is None else (jsonable(last_used) if last_used else "")
         envelope["_attached_policy_arns"] = _attached_policy_arns(_hydrated_slot(envelope, "attached_policies"))
         envelope["_trusted_account_ids"] = trust.get("trusted_account_ids")
         envelope["_trusted_services"] = trust.get("trusted_services")
         envelope["_trusts_wildcard_principal"] = trust.get("trusts_wildcard_principal")
-        yield envelope
+        # How each edge rule's source was read (authority.py): an unreadable trust policy or an
+        # unanswered attached-policy listing is never "trusts nobody" / "has no policies".
+        yield with_edge_reads(
+            envelope,
+            {
+                "AssumeRolePolicyDocument": _federated_principals_read(role.get("AssumeRolePolicyDocument")),
+                "_trusted_account_ids": COMPLETE if summary is not None else PARTIAL,
+                "_attached_policy_arns": _attached_policies_read(envelope),
+            },
+        )
 
 
 def iam_users_described(
@@ -679,7 +771,7 @@ def iam_users_described(
         envelope["_password_last_used"] = jsonable(password_last_used) if password_last_used else ""
         envelope["_attached_policy_arns"] = _attached_policy_arns(_hydrated_slot(envelope, "attached_policies"))
         envelope["_mfa_enabled"] = bool(devices.get("MFADevices")) if isinstance(devices, dict) else None
-        yield envelope
+        yield with_edge_reads(envelope, {"_attached_policy_arns": _attached_policies_read(envelope)})
 
 
 def iam_customer_policies_listed(
@@ -814,49 +906,59 @@ def apigateway_http_apis_detailed(session: Any, *, client_for: Any) -> Iterator[
             if not api_id:
                 continue
             sub: dict[str, list[dict[str, Any]]] = {}
-            failed: set[str] = set()
+            reads: dict[str, str] = {}
             for key, method in (
                 ("_stages", "get_stages"),
                 ("_routes", "get_routes"),
                 ("_integrations", "get_integrations"),
                 ("_authorizers", "get_authorizers"),
             ):
-                items: list[dict[str, Any]] = []
-                try:
-                    for spage in _pages(client, method, ApiId=api_id):
-                        items.extend(spage.get("Items", []))
-                except BotoCoreError, ClientError:
-                    # A per-API sub-listing failure is non-fatal: the API
-                    # still collects, just without that facet (and without
-                    # the edges derived from it).
-                    items = []
-                    failed.add(key)
-                sub[key] = items
-            lambda_arns = [
-                arn
-                for integ in sub["_integrations"]
-                if (arn := _lambda_arn_from_integration_uri(integ.get("IntegrationUri") or ""))
-            ]
+                # A per-API sub-listing failure is non-fatal: the API still collects, without that
+                # facet. Its read status (failed, or partial when it stopped on a page saying more)
+                # travels with the edges derived from it (authority.py).
+                listing = read_sub_listing(client, method, "Items", ApiId=api_id)
+                sub[key] = listing.items
+                reads[key] = listing.status
+            lambda_arns: list[str] = []
+            # A Lambda-proxy integration (AWS_PROXY with no service subtype) whose URI does not parse
+            # to a function ARN is a Lambda the API invokes that the edge cannot name: partial.
+            unparsed_lambda = False
+            for integ in sub["_integrations"]:
+                arn = _lambda_arn_from_integration_uri(integ.get("IntegrationUri") or "")
+                if arn:
+                    lambda_arns.append(arn)
+                elif integ.get("IntegrationType") == "AWS_PROXY" and not integ.get("IntegrationSubtype"):
+                    unparsed_lambda = True
             pool_ids = []
             for auth in sub["_authorizers"]:
                 issuer = ((auth.get("JwtConfiguration") or {}).get("Issuer") or "").strip()
                 match = _COGNITO_ISSUER_RE.match(issuer)
                 if match:
                     pool_ids.append(match.group("pool"))
-            yield {
-                **api,
-                **sub,
-                "_api_arn": build_arn(partition_of_region(region), "apigateway", region, "", f"/apis/{api_id}"),
-                "_integration_lambda_arns": list(dict.fromkeys(lambda_arns)),
-                "_authorizer_user_pool_ids": list(dict.fromkeys(pool_ids)),
-                "_route_authorization_types": None
-                if "_routes" in failed
-                else {
-                    route["RouteKey"]: route.get("AuthorizationType") or "NONE"
-                    for route in sub["_routes"]
-                    if route.get("RouteKey")
+            integrations_read = reads["_integrations"]
+            if integrations_read == COMPLETE and unparsed_lambda:
+                integrations_read = PARTIAL
+            yield with_edge_reads(
+                {
+                    **api,
+                    **sub,
+                    "_api_arn": build_arn(partition_of_region(region), "apigateway", region, "", f"/apis/{api_id}"),
+                    "_integration_lambda_arns": list(dict.fromkeys(lambda_arns)),
+                    "_authorizer_user_pool_ids": list(dict.fromkeys(pool_ids)),
+                    # A routes listing that did not finish is not the whole map: None, never "no open routes".
+                    "_route_authorization_types": None
+                    if reads["_routes"] != COMPLETE
+                    else {
+                        route["RouteKey"]: route.get("AuthorizationType") or "NONE"
+                        for route in sub["_routes"]
+                        if route.get("RouteKey")
+                    },
                 },
-            }
+                {
+                    "_integration_lambda_arns": integrations_read,
+                    "_authorizer_user_pool_ids": reads["_authorizers"],
+                },
+            )
 
 
 def cognito_user_pools_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -956,12 +1058,17 @@ def sqs_queues_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
                 tags = without_response_metadata(client.list_queue_tags(QueueUrl=url)).get("Tags") or {}
             except BotoCoreError, ClientError:
                 tags = {}
-            yield {
-                **attrs,
-                "QueueUrl": url,
-                "_queue_name": attrs["QueueArn"].rsplit(":", 1)[-1],
-                "_tags": tags,
-            }
+            # KmsMasterKeyId is GetQueueAttributes(All)'s own answer; a queue whose attributes did
+            # not answer is not yielded at all, so no claim is made for it (authority.py).
+            yield with_edge_reads(
+                {
+                    **attrs,
+                    "QueueUrl": url,
+                    "_queue_name": attrs["QueueArn"].rsplit(":", 1)[-1],
+                    "_tags": tags,
+                },
+                {"KmsMasterKeyId": COMPLETE},
+            )
 
 
 def cloudtrail_trails_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -999,12 +1106,16 @@ def cloudtrail_trails_described(session: Any, *, client_for: Any) -> Iterator[di
                             tags[tag_key] = tag.get("Value") or ""
         except BotoCoreError, ClientError:
             tags = {}
-        yield {
-            **trail,
-            "_status": status,
-            "_is_logging": bool(status.get("IsLogging")),
-            "_tags": tags,
-        }
+        # The three edge rules read DescribeTrails' own record of the trail (authority.py).
+        yield with_edge_reads(
+            {
+                **trail,
+                "_status": status,
+                "_is_logging": bool(status.get("IsLogging")),
+                "_tags": tags,
+            },
+            {"S3BucketName": COMPLETE, "CloudWatchLogsLogGroupArn": COMPLETE, "KmsKeyId": COMPLETE},
+        )
 
 
 # Manifest custom_fn name -> callable.
