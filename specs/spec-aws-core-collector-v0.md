@@ -75,7 +75,7 @@ no encrypted secrets) are inherited as v0 fences.
 | :---: | ---       | ---                                                             |
 | 1. | Declarative   | A JSON manifest drives collection; adding a resource is a manifest entry, not a module |
 | 2. | Lossless      | The full AWS payload is retained in the in-memory `configuration` envelope and persisted for every entry whose manifest `persist_configuration` is true; projection never discards data |
-| 3. | Connected     | Relationships are materialized as edges via declarative rules resolved by deterministic identity |
+| 3. | Connected     | Relationships are materialized as edges via declarative rules, each endpoint named by natural key |
 | 4. | Bounded       | The non-declarative residue is two write-once seams, not per-service code |
 | 5. | Conventional  | The collector is an ordinary `CollectorBase` implementation; it invents no parallel runtime |
 | 6. | Fenced        | v0 collects Sam's finite resource set, one account, no deletion semantics |
@@ -88,8 +88,8 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-manifest | [Resource Manifest](#resource-manifest) | Approved for Development | The JSON descriptor format — the architectural heart |
 | req-aws-collector-source | [Source Primitive](#source-primitive) | Approved for Development | `source` ∈ {aws_op, custom_fn}, uniform "yields items" contract |
 | req-aws-collector-field-projection | [Field Projection](#field-projection) | Approved for Development | jsonpath → typed fields + full payload → `configuration` |
-| req-aws-collector-identity | [Deterministic Identity](#deterministic-identity) | Approved for Development | `uuid5(ns, "<type>:<natural_key>")`; re-runs upsert |
-| req-aws-collector-edges | [Declarative Edge Rules](#declarative-edge-rules) | Approved for Development | Recompute-uuid5 edge resolution; v0 make-it-work = mutually-available natural keys |
+| req-aws-collector-identity | [Identity By Natural Key](#identity-by-natural-key) | Approved for Development | Nodes and edges sent by ref and natural key; core assigns and finds ids; re-runs update in place |
+| req-aws-collector-edges | [Declarative Edge Rules](#declarative-edge-rules) | Approved for Development | Endpoints named by natural key, resolved by core; v0 make-it-work = mutually-available natural keys |
 | req-aws-collector-edge-resolver | [Edge Identifier Resolution (Future Seam)](#edge-identifier-resolution-future-seam) | Backlog | The durable fix: pre-batch resolution pass; `key_kind`-driven; misses become observable warnings |
 | req-aws-collector-reconcile | [Grid-State Reconciliation (Future Seam)](#v0-non-goals) | Backlog | Implied-absence/tombstone via the same grid-read primitive as the resolver; one generic reconcile vs Cartography per-type cleanup |
 | req-aws-collector-hydrate | [Fan-Out Hydrate Seam](#fan-out-hydrate-seam) | Approved for Development | First named seam; per-op error-swallow; S3-style many-call |
@@ -168,7 +168,7 @@ The manifest is an ordered list of resource entries. Each entry declares:
 | `source` | The enumeration source (see [Source Primitive](#source-primitive)). |
 | `why` | Human one-line reason this resource/enumerate call is collected; materialized into the node's `_source` (see [Field Projection](#field-projection)). |
 | `items_path` | jsonpath to the list of resource items within the source result, supporting nested-array flatten (e.g. `Reservations[].Instances[]`). |
-| `natural_key` | jsonpath to the value used for deterministic identity (see [Deterministic Identity](#deterministic-identity)). |
+| `natural_key` | jsonpath to the value the node is identified by (see [Identity By Natural Key](#identity-by-natural-key)). |
 | `fields` | Map of model field name → jsonpath into the item (see [Field Projection](#field-projection)). |
 | `hydrate` | Optional list of per-item hydrate ops, each `{key, op, why}` (see [Fan-Out Hydrate Seam](#fan-out-hydrate-seam)). |
 | `edges` | List of declarative edge rules (see [Declarative Edge Rules](#declarative-edge-rules)). |
@@ -180,8 +180,8 @@ The manifest is pure data. The engine validates the manifest against a JSON
 Schema shipped alongside it at load time; a malformed manifest fails the run
 visibly (it is operator/author error, not a runtime condition).
 
-Manifest entry order is advisory only — because edges resolve by deterministic
-identity (not by matching an already-loaded node), the engine does not depend on
+Manifest entry order is advisory only — because an edge names its endpoints by
+natural key (not by matching an already-loaded node), the engine does not depend on
 collection order. This is a deliberate divergence from the prior-art convention
 where sync order encodes the dependency graph.
 
@@ -256,7 +256,7 @@ not governed by `persist_configuration`.
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-manifest-1 | Data-Only Manifest | Approved for Development | The engine contains no per-resource-type branching; all per-type knowledge lives in the manifest. | The escape hatch is `custom_fn`, itself named in the manifest. |
 | req-aws-collector-manifest-2 | Schema Validated | Approved for Development | The manifest validates against a shipped JSON Schema at load; invalid manifest fails the run visibly. | |
-| req-aws-collector-manifest-3 | Order Independent | Approved for Development | Collection results are identical regardless of manifest entry order. | Enabled by deterministic identity. |
+| req-aws-collector-manifest-3 | Order Independent | Approved for Development | Collection results are identical regardless of manifest entry order. | Enabled by identity by natural key. |
 | req-aws-collector-manifest-4 | Versioned | Approved for Development | The manifest carries a version recorded in the GRIFT batch provenance. | Supports drift tracking. |
 | req-aws-collector-manifest-5 | Self-Describing Entries | Approved for Development | Each entry carries a `why`, and each `hydrate` element a `{key, op, why}`; the schema requires `why` so every collected call's rationale is authorable and visible in the manifest. | Materialized per-node (`_source`) so a grid object is legible without the manifest, for every entry that persists its configuration (`req-aws-collector-field-projection-7`). |
 | req-aws-collector-manifest-6 | Response Sensitivity Declared | Approved for Development | Every entry declares `sensitivity` in one of three states (`unreviewed`, `reviewed_none_known`, `reviewed_may_contain`); a missing declaration fails schema validation; `reviewed_may_contain` lists `{path, category, reason, evidence}` locations. | Ruling 2026-09-23. Credential locations default the entry to not persisting (see `req-aws-collector-field-projection-7`). `tests/test_boto3_collector_sensitivity.py`. |
@@ -469,44 +469,77 @@ custom origin header exists, never what it says.
 | req-aws-collector-field-projection-8 | Off-Type Security Facts Kept | Approved for Development | For entries whose `persist_configuration` is false, the Lambda VPC attachment (`vpc_subnet_ids`, `vpc_security_group_ids`), CloudFront per-origin access mode (`origin_access`) and API Gateway HTTP API per-route authorization type (`route_authorization_types`) are typed fields derived from data already fetched; configuration stays `{}`. | Migration 0007. `tests/test_boto3_collector_slice.py::test_promoted_security_facts_land_while_configuration_stays_empty`, `tests/test_boto3_collector_customfns.py::TestCloudfrontDistributionsWithOac::test_origin_access_mode_per_origin`, `tests/test_boto3_collector_new_service_types.py::TestApiGatewayHttpApisDetailed`. |
 | req-aws-collector-field-projection-9 | CloudFront Origin Header Presence | Approved for Development | Each CloudFront origin's custom-header presence is the typed field `origin_custom_headers_present` (`{origin Id: bool}`), derived from the `ListDistributions` origin with no extra call; an origin without headers is `false`, not absent or `null`; no header value or name reaches the field, the GRIFT batch, the stored row or its history. | Migration 0008 (additive `AddField` only). `tests/test_boto3_collector_slice.py::test_origin_header_presence_lands_and_the_value_never_does`, `tests/test_boto3_collector_customfns.py::TestCloudfrontDistributionsWithOac::test_custom_header_presence_per_origin`. |
 
-### Deterministic Identity
+### Identity By Natural Key
 ----
 RID: `req-aws-collector-identity`
 
 Status: `Approved for Development`
 
-Every collected node and edge has a deterministic `entity_id` so that repeated
-collection runs upsert in place rather than duplicating — the property that makes
-"re-run the collector live in the demo" safe.
+Every collected node and edge is identified by what it is, never by an id this collector makes
+up, so repeated collection runs update in place rather than duplicating — the property that makes
+"re-run the collector live in the demo" safe — and a resource deleted on the grid and seen again
+is simply created again. Core owns the ids (`req-grid-entity-natural-key`,
+`req-grid-edge-identity`); the collector only names things.
 
 #### Implementation
 
-- Node identity is `uuid5(NAMESPACE_AWS_COLLECTOR, f"{entity_type}:{natural_key}")`.
-- The natural key is the value at the manifest's `natural_key` jsonpath.
-  Preference order, declared per entry: the resource **ARN** where one exists
-  (the dominant case — Lambda, IAM role, ACM, EventBridge, CloudFront, S3,
-  CloudWatch log group);
-  otherwise the stable AWS **resource id** (e.g. a hosted-zone id, a subnet id).
-  The log group's key is its ARN without the `:*` suffix; how the `WRITES_LOGS`
-  referrers reach it is in
+- A node is sent with a batch-local `ref` (`<entity_type>:<natural_key>`) instead of an
+  `entity_id`, carrying its model's declared `NATURAL_KEY` fields in the payload. Core's
+  `resolve_identity` finds the live row those fields name, under an advisory lock, or assigns a
+  UUIDv7 on first sight (`req-grid-import-grift-identity-3`). The collector mints no node id.
+- The natural key is the value at the manifest's `natural_key` jsonpath, and it is the field the
+  model declares as its `NATURAL_KEY` (`req-aws-core-fields-7`). Preference order, declared per
+  entry: the resource **ARN** where one exists (the dominant case — Lambda, IAM role, ACM,
+  EventBridge, CloudFront, S3, CloudWatch log group); otherwise the stable AWS **resource id**
+  (e.g. a hosted-zone id, a subnet id). The log group's key is its ARN without the `:*` suffix; how
+  the `WRITES_LOGS` referrers reach it is in
   [v0 Make-It-Work: Mutually-Available Natural Keys](#v0-make-it-work-mutually-available-natural-keys).
-- Edge identity is `uuid5(NAMESPACE_AWS_COLLECTOR, f"edge:{edge_type}:{from_key}->{to_key}")`.
-- `NAMESPACE_AWS_COLLECTOR` is a frozen module-level UUID constant in the plugin;
-  changing it would re-identify every collected node and is not permitted.
+  The readers that are not manifest-driven (Organizations, landing zone, findings) send the same
+  shape, and some of their types declare composite keys (`(account_id, region_code)` for the
+  footprint, `(organization_id, account_id, service_principal)` for a delegation, and others).
+- An edge is sent with a `ref` too and is found by its type's declared identity
+  (`req-grid-edge-identity`; every aws_core edge type declares the plain key, `{"discriminators":
+  []}`, except `ROUTES_TRAFFIC`). An endpoint naming a node the same batch carries is a `from_ref` /
+  `to_ref`; any other endpoint names its node by type and natural key (`from_key` / `to_key`),
+  which core resolves against the batch, then the live grid, and never mints
+  (`req-grid-import-grift-edge-endpoints`). Only a node keyed on one field can be named that way;
+  a composite-key endpoint is always a node of the same batch.
+- An edge type that declares no identity (`ROUTES_TRAFFIC`, whose identity aws-core-tap#64
+  settles) cannot be sent by ref: core would create a ref-addressed edge of it afresh on every run.
+  It keeps the explicit id it always had, `uuid5(NAMESPACE_AWS_COLLECTOR,
+  f"edge:{edge_type}:{from_key}->{to_key}")`, so existing rows are replaced in place. When either
+  end was deleted, core ended that edge and its id is tombstoned; re-sending it would fail the batch
+  (`entity_tombstoned`), so the run leaves it out with an `UNDECLARED_EDGE_RETIRED` warning. It
+  returns once the type declares its identity.
+- Before the batch is assembled, the run checks every node's declared key: a part that is absent,
+  null or empty fails the run (`IDENTITY_INCOMPLETE`), because core's search finds nothing on a
+  null part and would create the node again every run. It keeps one node per identity (two refs
+  for one source object fail a batch, `duplicate_entity_id`) and one edge per (type, endpoints,
+  discriminators) (`duplicate_edge`).
+- A completeness surface (`req-grid-reconcile-evidence`) names its parent by ref while the run
+  reads; once the batch has imported, the subject becomes the grid id core resolved that ref to,
+  read from the import result (`resolved_refs`). A parent the batch did not carry keeps its ref,
+  which is its source locator, and candidate derivation reads it as unresolved.
 
-Because edge endpoints are computed from the same `uuid5` of the target's
-natural key, an edge can be emitted before — or without ever — the target node
-being collected in the same run; it resolves by identity, not by load order.
-GRIFT's dangling-edge handling governs the not-yet-present case.
+Edges no longer depend on collection order or on recomputing a hash: an edge to a node collected
+in an earlier run resolves to that row; an edge whose target is not on the grid at all is skipped by
+GRIFT's permissive dangling-edge mode and recorded as a `skip` event the run record lists.
+
+Collected nodes therefore no longer carry the same id on every grid: each grid assigns its own
+(intended, per the edge epic Issue# 911 - tap; shared seed nodes such as regions keep their fixed ids). Rows a grid already
+holds from before this change keep their `uuid5` ids, because they are found by key, not by id.
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-identity-1 | Deterministic Nodes | Approved for Development | The same AWS resource always yields the same `entity_id` across runs and grids. | |
-| req-aws-collector-identity-2 | ARN-Preferred Key | Approved for Development | Natural key is the ARN where available, else the stable resource id. `aws_cloudwatch_log_group` is keyed by its ARN without the `:*` suffix (`logGroupArn`), so same-named groups in two regions or accounts are two nodes. | Was keyed by `logGroupName` until tap-plugin-aws-core#60; the re-key changes its `entity_id`. |
-| req-aws-collector-identity-3 | Deterministic Edges | Approved for Development | Edge identity derives from edge type plus endpoint natural keys. | |
-| req-aws-collector-identity-4 | Idempotent Re-Run | Approved for Development | Re-running collection upserts; it never duplicates nodes or edges. | |
+| req-aws-collector-identity-1 | Found By Natural Key | Implemented | A node is sent by `ref` with its declared natural-key fields, never with an id the collector derived; core finds its live row or assigns a UUIDv7. The same AWS resource is the same row on every run of one grid. | `tests/test_natural_key_refs.py::test_a_rerun_keeps_every_id_and_adds_no_edge`, `::test_rows_written_under_uuid5_ids_are_found_not_duplicated`. |
+| req-aws-collector-identity-2 | ARN-Preferred Key | Approved for Development | Natural key is the ARN where available, else the stable resource id. `aws_cloudwatch_log_group` is keyed by its ARN without the `:*` suffix (`logGroupArn`), so same-named groups in two regions or accounts are two nodes. | Was keyed by `logGroupName` until tap-plugin-aws-core#60; a group re-keyed then is a new row. |
+| req-aws-collector-identity-3 | Edges By Identity | Implemented | An edge is sent by `ref` and found by its type's declared identity; each endpoint is a ref to a node of the batch or the node's type and natural key, resolved by core and never minted. An edge type with no identity declaration keeps its explicit `uuid5` id, and is left out with a warning when that id is tombstoned. | `tests/test_boto3_collector_batch.py::TestAddressBatch`, `tests/test_natural_key_refs.py::test_an_endpoint_the_batch_does_not_carry_resolves_to_the_row_on_the_grid`, `::test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs`, `::test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge`. |
+| req-aws-collector-identity-4 | Idempotent Re-Run | Implemented | Re-running collection updates in place; it never duplicates nodes or edges. | `tests/test_natural_key_refs.py::test_a_rerun_keeps_every_id_and_adds_no_edge`. |
+| req-aws-collector-identity-5 | An Incomplete Key Fails The Run | Implemented | A node whose declared key has an absent, null or empty part, or an edge naming a composite-key node the batch does not carry, fails the run with `IDENTITY_INCOMPLETE` before anything is submitted; nothing is minted. | `tests/test_natural_key_refs.py::test_a_node_with_a_hole_in_its_key_fails_the_run_and_writes_nothing`, `tests/test_boto3_collector_batch.py::TestAddressBatch`. |
+| req-aws-collector-identity-6 | A Deleted Resource Returns | Implemented | A resource tombstoned on the grid and collected again is written as a new row under the same natural key; the tombstone is left alone, the batch succeeds, and the edges that named the resource follow the new row. | aws-core-tap#14. `tests/test_natural_key_refs.py::test_a_tombstoned_resource_returns_with_a_new_id_and_the_batch_does_not_wedge`. |
+| req-aws-collector-identity-7 | Completeness Subjects Are Grid Ids | Implemented | A completeness surface's subject is the grid id its parent's ref resolved to in the imported batch; a parent the batch did not carry keeps its ref as the source locator. | `tests/test_natural_key_refs.py::test_a_tombstoned_parent_is_the_new_id_in_its_completeness_surface`, `tests/test_boto3_collector_batch.py::TestResolveSubject`. |
 
 ### Declarative Edge Rules
 ----
@@ -515,7 +548,7 @@ RID: `req-aws-collector-edges`
 Status: `Approved for Development`
 
 Relationships are materialized from declarative edge rules in the manifest entry,
-resolved by deterministic identity. The probe established ~80% of valuable edges
+each endpoint named by natural key. The probe established ~80% of valuable edges
 are expressible this way.
 
 #### Implementation
@@ -526,31 +559,29 @@ An edge rule declares:
 | --- | --- |
 | `value_path` | jsonpath into the item yielding the target's natural key — a scalar **or** a list. A list produces fan-out (one edge per element); this covers the common many-target case (e.g. an instance's network interfaces). |
 | `target_type` | The target `aws_core` entity type. |
-| `key_kind` | `arn` \| `id` \| `name` — declares which identifier space the target's natural key lives in. **Inert in the v0 engine**: it neither transforms nor interprets the extracted value. It is declared intent, consumed only by the backlogged [Edge Identifier Resolution](#edge-identifier-resolution-future-seam) seam. In v0, correctness rests entirely on `value_path` (+ optional `transform`) emitting *exactly* the target's `natural_key` string. |
+| `key_kind` | `arn` \| `id` \| `name` — declares which identifier space the target's natural key lives in. **Inert in the v0 engine**: it neither transforms nor interprets the extracted value. It is declared intent, consumed only by the backlogged [Edge Identifier Resolution](#edge-identifier-resolution-future-seam) seam. In v0, correctness rests entirely on `value_path` (+ optional `transform`) emitting *exactly* the target's `natural_key` value. |
 | `edge_type` | An edge type already declared by `aws_core` (`req-aws-core-edges`). |
 | `direction` | `outbound` (this node → target) or `inbound` (target → this node). |
 
-The engine forms the target `entity_id` by *recomputing* the same `uuid5`
-scheme as [Deterministic Identity](#deterministic-identity) from the value the
-source side extracted, and emits the edge. It does **not** verify the target
-was collected, and it does **not** consult `key_kind`. The honest consequence:
-an edge connects **iff both ends independently derive the byte-identical
-`natural_key` string** — the source side's `value_path`(+`transform`) output
-must equal the target entry's `natural_key`. When they match (ARN→ARN:
-`ASSUMES_ROLE`, `RETRIEVES_CERT_FROM`; transform→ARN: `RETRIEVES_CONTENT_FROM`)
-the edge resolves with no lookup or ordering dependency. When they *cannot*
-match — the source carries only a name/domain and the target's ARN needs
-account/region/suffix the source item lacks, or a cross-resource join — the
-recompute silently produces a `uuid5` no node has: a dangling edge, not an
-error. v0 closes this by the manifest discipline below; the durable fix is the
-backlogged [Edge Identifier Resolution](#edge-identifier-resolution-future-seam)
-seam.
+The engine names the target by its type and the value the source side extracted, and emits the
+edge ([Identity By Natural Key](#identity-by-natural-key)). It does **not** verify the target was
+collected, and it does **not** consult `key_kind`; core resolves the endpoint, against this batch's
+nodes, then the live grid (`req-grid-import-grift-edge-endpoints`). The honest consequence: an edge
+connects **iff the source side's `value_path`(+`transform`) output equals the target's natural
+key**. When they match (ARN→ARN: `ASSUMES_ROLE`, `RETRIEVES_CERT_FROM`; transform→ARN:
+`RETRIEVES_CONTENT_FROM`) the edge resolves with no lookup in the collector and no ordering
+dependency. When they *cannot* match — the source carries only a name/domain and the target's ARN
+needs account/region/suffix the source item lacks, or a cross-resource join — the endpoint names no
+live node: core skips the edge and records a `skip` event, which the run record lists
+(`GRIFT_EDGES_SKIPPED`), so the miss is visible rather than silent. Nothing is ever created for an
+endpoint. v0 closes the gap by the manifest discipline below; the durable fix is the backlogged
+[Edge Identifier Resolution](#edge-identifier-resolution-future-seam) seam.
 
 #### v0 Make-It-Work: Mutually-Available Natural Keys
 
-Because the engine is identity-coincidence (not identity-*resolution*) in v0,
-every edge that must connect for the demo is made to satisfy the
-"both-ends-derive-the-same-string" invariant **by manifest choice alone — no
+Because the engine resolves an endpoint only by its exact natural key in v0
+(not by any other identifier the target carries), every edge that must connect
+for the demo is made to satisfy the "both-ends-derive-the-same-string" invariant **by manifest choice alone — no
 engine change**: pick a `natural_key` for the target that the edge-emitting
 source side already carries verbatim.
 
@@ -567,10 +598,9 @@ ARN-bearing type. Both referrers reach that key through one declared transform,
 Lambda's bare name takes partition, region and account from the Lambda's own
 ARN (its natural key — a Lambda can only log to a group in its own account and
 region). That is a *source-aware* transform: the engine hands it the referring
-node's natural key as well as the value. Re-keying changes every log group's
-`entity_id`; nodes keyed by name on an existing grid are not rewritten or
-retired by the collector (`req-aws-collector-scope-3`) and remain until
-reconciled or purged.
+node's natural key as well as the value. Re-keying makes every log group a new
+row; nodes keyed by name on an existing grid are not rewritten or retired by the
+collector (`req-aws-collector-scope-3`) and remain until reconciled or purged.
 
 This spec defines the edge *mechanism* only. It introduces no new edge *types*;
 edge-type and target-model selection for specific relationships is `aws_core`
@@ -582,16 +612,17 @@ require parsing an embedded IAM/resource policy document are **out of v0 scope**
 and routed to the deferred policy-document resolver (`req-aws-collector-nongoals`).
 
 **Two-phase application.** All nodes are emitted first, then edges in a separate
-pass — nodes, then edges. Because endpoints resolve by deterministic identity,
-the edge pass needs no per-target lookup. An edge whose `target_type` is not a
+pass — nodes, then edges. Because endpoints are named by natural key and core
+resolves them, the edge pass needs no per-target lookup. An edge whose `target_type` is not a
 resource type this collector models/collects (an expected condition under the v0
 fence — e.g. a reference to a not-yet-modeled service) is **dropped with a
 recorded `warn`, never a run failure**; the edge pass is the single chokepoint
 for that check rather than scattering it. An edge to a modeled type whose
 specific instance was not collected this run is a dangling edge governed by
-GRIFT's `dangling_edge_mode`; the AWS collector uses the mode that retains/skips
-rather than fails, so a later run that collects the target resolves it by
-identity.
+GRIFT's `dangling_edge_mode`; the AWS collector uses the mode that skips rather
+than fails: the endpoint resolves to the target's row when an earlier run wrote
+it, and otherwise the edge is skipped and recorded, and a later run that collects
+the target writes it.
 
 #### Acceptance Criteria
 
@@ -599,11 +630,11 @@ identity.
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-edges-1 | Declarative Rules | Approved for Development | Edges are emitted from manifest rules; the engine has no per-relationship code. | |
 | req-aws-collector-edges-2 | Scalar And Fan-Out | Approved for Development | `value_path` supports scalar and list extraction; a list yields one edge per element. | |
-| req-aws-collector-edges-3 | Identity-Resolved | Approved for Development | Edge endpoints resolve by deterministic `uuid5`, independent of collection order or target presence. | |
+| req-aws-collector-edges-3 | Identity-Resolved | Implemented | Edge endpoints are named by natural key and resolved by core against the batch, then the live grid, independent of collection order; an endpoint naming no live node skips the edge with a recorded `skip` event and never creates a node. | `req-grid-import-grift-edge-endpoints`. `tests/test_natural_key_refs.py::test_an_endpoint_that_names_nothing_is_skipped_and_recorded_never_minted`. |
 | req-aws-collector-edges-4 | Existing Edge Types Only | Approved for Development | Edge rules reference edge types already declared by `aws_core`; no new edge types are defined here. | |
 | req-aws-collector-edges-5 | Policy Edges Excluded | Approved for Development | Edges requiring policy-document parsing are not emitted in v0. | Deferred resolver, named seam. |
 | req-aws-collector-edges-6 | Two-Phase, Unmodeled-Safe | Approved for Development | Nodes are emitted before edges; an edge to an unmodeled `target_type` is dropped with a `warn`, never a failure; uncollected modeled targets follow GRIFT dangling-edge mode. | Single chokepoint for the v0-fence gap. |
-| req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no edge resolver: an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by its ARN, and both `WRITES_LOGS` referrers reach it through the `log_group_arn` transform (a Lambda's bare log-group name takes region and account from the Lambda's own ARN, handed to a source-aware transform). `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
+| req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no identifier resolver of its own: core finds an endpoint by its exact natural key only, so an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by its ARN, and both `WRITES_LOGS` referrers reach it through the `log_group_arn` transform (a Lambda's bare log-group name takes region and account from the Lambda's own ARN, handed to a source-aware transform). `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
 
 ### Edge Identifier Resolution (Future Seam)
 ----
@@ -612,18 +643,21 @@ RID: `req-aws-collector-edge-resolver`
 Status: `Backlog`
 
 The durable fix for the fragility `req-aws-collector-edges-7` papers over by
-manifest discipline. v0 resolves edges by *coincidence* — recompute
-`uuid5(target_type, value_from_source)` and hope the string equals what the
-target derived. A source that can only name its target by name/domain while the
-target is ARN-keyed produces a **silent dangling edge**, and `key_kind` — the
-field that exists to express exactly this — is inert.
+manifest discipline. v0 names an edge's target by the exact value the source
+carries, and core finds the target only by that natural key. A source that can
+only name its target by name/domain while the target is ARN-keyed names no live
+node — the edge is skipped and recorded, not resolved — and `key_kind`, the field
+that exists to express exactly this, is inert.
 
-The future design is a pre-`assemble_batch` **resolution pass**, not a new
-identity scheme. `uuid5` stays the *id allocator* (it is what makes re-runs
-idempotent, and GRIFT edges are `entity_id`-keyed regardless — see
-`req-aws-collector-grift-batch`); the resolver is the missing *lookup layer*
-on top of it. Mechanically, with the run's nodes already in memory before batch
-assembly:
+Two parts of the original design are now core's and are no longer this seam's to
+build. Ids are assigned by core, not derived here
+([Identity By Natural Key](#identity-by-natural-key)), so there is no `uuid5`
+allocator to keep under a resolver. And the grid is the resolution index: an
+endpoint named by natural key is resolved against the batch, then the live grid
+(`req-grid-import-grift-edge-endpoints`), so an edge to a node collected in a
+prior run resolves, and a miss is a recorded `skip` event rather than a silent
+dangling edge. What remains is the translation between identifier spaces: with
+the run's nodes in memory before batch assembly,
 
 1. Index the collected nodes by their standard identifiers (ARN, resource id,
    name) per `target_type`.
@@ -631,56 +665,30 @@ assembly:
    the source actually carries — **`key_kind` becomes the live input** that
    selects which identifier space to match in (`arn` \| `id` \| `name`).
 3. Three outcomes:
-   - **(a) resolved** — stamp the resolved node's `entity_id` (still its
-     `uuid5` id; idempotency preserved). Verified-present, not assumed.
-   - **(b) supported `target_type`, not found** — `warn` + drop. No fabricated
-     dangling edge; the miss is observable (rate-limit / permission / scope
-     gap is the operator's to read), replacing today's silent failure.
+   - **(a) resolved** — name the resolved node by its natural key.
+   - **(b) supported `target_type`, not found** — name it as the source does
+     and let core's grid lookup decide; a miss is recorded as a `skip` event.
    - **(c) unsupported `target_type`** — already handled today (`warn` + drop,
      the v0 fence — `req-aws-collector-edges-6`); the resolver subsumes it.
 
-Honest cost, and the reason `uuid5` stays *under* the resolver rather than
-being replaced: an edge to a node collected in a *prior* run but not *this*
-one would `warn`+drop instead of resolving. Acceptable under v0's
-collect-everything-every-run scope; revisit if incremental/partial collection
-ever lands. Converges conceptually with the grid **hotlink** identifier-
-resolution model (a node findable by any of its identifiers); design that
-alignment in-spec first if/when built. Demand-signal-gated, not built;
-the loud-by-construction warnings are the payoff that justifies it over the
-manifest workaround when the signal arrives.
-
-**Grid as the resolution backstop (refinement).** The resolver's index need
-not be limited to *this run's* in-memory node set. The grid is fully
-functional and already holds every previously-collected node with its ARN and
-associated identifiers as standard `BaseModel` fields; the collector is an
-ordinary Python process that can read it. So the authoritative index is the
-**grid itself**, consulted through a *service-layer read* (a gryphon query, or
-a generated search/ORM-backed runner if gryphon lacks the shape — never ad hoc
-per-model ORM iteration; that brute-force fallback is the thing the canonical
-path exists to avoid, not the design). This is exactly the resolution one
-would do anyway absent `uuid5`; `uuid5` is the optimistic accelerator (skip
-the lookup when both ends provably coincide), the grid read is the
-authoritative relief valve for every case where they might not. It
-**dissolves the "honest cost" above**: an edge to a node collected in a prior
-run but not this one now *resolves* against the grid instead of `warn`-
-dropping. The conscious tradeoff to record (it ties to
-[Audit Verifiability](#audit-verifiability)): a resolver that reads grid state
-makes the batch no longer a pure function of the AWS responses + manifest
-alone. Resolution stays a *lookup* (it does not alter what AWS reported, so
-the batch remains a faithful projection); the grid-state dependence becomes
-load-bearing only for **reconciliation/tombstone**, which is inherently a diff
-and shares this same grid-read primitive — see
-the grid-state reconciliation seam (`req-aws-collector-reconcile`) under
+Converges conceptually with the grid **hotlink** identifier-resolution model (a
+node findable by any of its identifiers); design that alignment in-spec first
+if/when built. Demand-signal-gated, not built. A grid read for a *different*
+identifier than the declared natural key (a name, say) would make the batch
+depend on grid state beyond the key lookup core already does; record that
+tradeoff against [Audit Verifiability](#audit-verifiability) when it is built.
+Reconciliation and tombstoning share the grid-read primitive — see the
+grid-state reconciliation seam (`req-aws-collector-reconcile`) under
 [v0 Non-Goals](#v0-non-goals).
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-edge-resolver-1 | Seam Named, Not Built | Backlog | The pre-batch edge-resolution pass (collected-node index keyed by standard identifiers; `key_kind`-driven target lookup; resolve / warn-drop / unsupported-drop) is specified here as the durable replacement for `req-aws-collector-edges-7`'s manifest workaround. Not implemented in v0. | The three-case model. |
-| req-aws-collector-edge-resolver-2 | uuid5 Retained As Allocator | Backlog | The resolver does not replace `uuid5` identity; it adds a lookup layer above it. `uuid5` stays the idempotent id allocator (`req-aws-collector-identity`); GRIFT edges remain `entity_id`-keyed. | Two jobs, decoupled. |
-| req-aws-collector-edge-resolver-3 | Misses Are Observable | Backlog | A supported-type target not found in the run resolves to a recorded `warn` + dropped edge, never a silent dangling edge. | The correctness payoff. |
-| req-aws-collector-edge-resolver-4 | Grid Is The Backstop | Backlog | The resolution index is the grid (via a service-layer read), not only this run's in-memory set; this dissolves the prior-run cost. Reads never use ad hoc per-model ORM iteration. Shares the grid-state-read primitive with `req-aws-collector-reconcile`. | uuid5 = accelerator; grid read = authoritative relief valve. |
+| req-aws-collector-edge-resolver-1 | Seam Named, Not Built | Backlog | The pre-batch identifier-translation pass (collected-node index keyed by standard identifiers; `key_kind`-driven target lookup; resolve / grid-decides / unsupported-drop) is specified here as the durable replacement for `req-aws-collector-edges-7`'s manifest workaround. Not implemented in v0. | The three-case model. |
+| req-aws-collector-edge-resolver-2 | uuid5 Retained As Allocator | Superseded | Superseded by `req-aws-collector-identity`: the collector derives no node id; core assigns them. | The only `uuid5` left is the explicit id of an edge type with no identity declaration. |
+| req-aws-collector-edge-resolver-3 | Misses Are Observable | Implemented | A target that names no live node skips its edge with a recorded `skip` event the run record lists, never a silent dangling edge. | By core: `req-grid-import-grift-edge-endpoints-7`, `-8`. |
+| req-aws-collector-edge-resolver-4 | Grid Is The Backstop | Implemented | The resolution index is the grid: an endpoint named by natural key resolves against the batch, then the live grid, through core's generated search. | By core: `req-grid-import-grift-edge-endpoints-2`. |
 
 ### Fan-Out Hydrate Seam
 ----
@@ -1050,15 +1058,16 @@ edges, submitted through the approved import surface.
   identity, AWS account id, regions swept, manifest version, and per-type
   counts, in a structured `description_json` (mirroring the KSI collector's
   provenance shape, in `aws_core`'s own format).
-- Nodes and edges use the deterministic identities from
-  [Deterministic Identity](#deterministic-identity).
+- Nodes and edges are named by ref and natural key, never by an id the
+  collector derives ([Identity By Natural Key](#identity-by-natural-key)).
 - The document is submitted via `self.submit_grift(...)`; the returned result's
   imported/skipped batch ids and counts inform `self.summary`.
 - No deletion, tombstone, or implied-absence content appears in the batch
   (`req-aws-collector-scope-3`).
-- Dangling-edge handling uses GRIFT's standard mode; the deterministic-identity
-  design means most cross-resource edges resolve even when emitted before their
-  target.
+- Dangling-edge handling uses GRIFT's permissive mode: an endpoint named by
+  natural key resolves to the batch's node or the live grid's row, so most
+  cross-resource edges resolve even when emitted before their target; one that
+  names nothing is skipped and recorded as a `skip` event.
 
 #### Acceptance Criteria
 
@@ -1097,7 +1106,9 @@ are never the same value.
   the two transforms that filter out-of-scope values on purpose (a non-S3 CloudFront origin, an
   AWS-managed policy). A rule whose target type is not modelled is `partial`.
 - **One claim per scope.** All rules of one edge type and direction at one anchor fold into one
-  claim with the worst read. The anchor is named by its entity id. A scope another manifest entry's
+  claim with the worst read. The anchor is named by type and full natural key (`{entity_type,
+  key}`), read from the envelope the batch sends by the same function the batch's node identity is
+  read with (`batch.node_key`), so the anchor and the node are one identity. A scope another manifest entry's
   rules also write into is not claimed. Containment, Organizations, landing-zone and findings edges
   are not claimed: their completeness is the reconcile surfaces' business.
 - **Sent only where accepted.** The claims are carried as the batch's `edge_cases.authority` when
@@ -1207,10 +1218,10 @@ ScoutSuite — patterns only, no code). Mature tools distrust RGTA *as a
 discovery source* (it returns only ever-tagged resources). That failure mode
 **does not bind this collector**: discovery is the per-service enumerate
 path (`req-aws-collector-source`); RGTA only *decorates* already-discovered,
-deterministically-identified nodes. An untagged resource simply gets
-`tags: {}` — the correct answer, not a gap. And because nodes are keyed
-`uuid5(type, natural_key)` where `natural_key` is the ARN for almost all
-types, the RGTA `ResourceARN`→node join is identity-equal — it does *not*
+already-identified nodes. An untagged resource simply gets
+`tags: {}` — the correct answer, not a gap. And because nodes are keyed by
+their natural key, which is the ARN for almost all types, the RGTA
+`ResourceARN`→node join is identity-equal — it does *not*
 reintroduce the `req-aws-collector-edges` ARN↔identity reconciliation
 problem (the decisive reason mature ARN-short-id tools suffered it; we do
 not).

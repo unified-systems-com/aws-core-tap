@@ -62,7 +62,8 @@ from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionEr
 
 from . import findings as findings_mod
 from .containment import Listing as RegionListing
-from .containment import footprint_id, footprint_key, surface_of
+from .containment import footprint_key, footprint_ref, surface_of
+from .edges import edge_envelope
 from .findings import (
     HOLDS_ACCESS_ANALYZER_FINDING,
     HOLDS_GUARDDUTY_FINDING,
@@ -74,7 +75,7 @@ from .findings import (
     RELATION_CONFORMANCE_PACKS,
     FindingsReads,
 )
-from .identity import edge_entity_id, node_entity_id
+from .identity import edge_ref, node_ref
 from .organizations import (
     _DENIED_CODES,
     ACCOUNT,
@@ -398,8 +399,8 @@ class _Reader:
         self.member_accounts = member_accounts
         self.sensitivity = reader_sensitivity(READER) if sensitivity is None else sensitivity
         self.result = LandingZoneRead()
-        self._node_ids: set[str] = set()
-        self._edge_ids: set[str] = set()
+        self._node_refs: set[str] = set()
+        self._edge_refs: set[str] = set()
         #: Services whose tag read was denied: the permission is per action, not per resource.
         self._tags_denied: set[str] = set()
         self._tags_missing = 0
@@ -563,8 +564,8 @@ class _Reader:
 
     def add_node(self, entity_type: str, natural_key: str, name: str, fields: dict[str, Any], region: str) -> bool:
         """Append one node envelope unless it must be withheld; True when kept (or already kept)."""
-        entity_id = str(node_entity_id(entity_type, natural_key))
-        if entity_id in self._node_ids:
+        ref = node_ref(entity_type, natural_key)
+        if ref in self._node_refs:
             return True
         if fields.get("tags", {}) is None:
             self.notice(
@@ -585,11 +586,11 @@ class _Reader:
                 entity_type=entity_type,
             )
             return False
-        self._node_ids.add(entity_id)
+        self._node_refs.add(ref)
         self.result.nodes.append(
             {
                 "entity": {
-                    "entity_id": entity_id,
+                    "ref": ref,
                     "entity_type": entity_type,
                     "name": name[:255] or natural_key[:255],
                     "dimensions": self.dimensions(region),
@@ -600,25 +601,13 @@ class _Reader:
         return True
 
     def add_edge(self, edge_type: str, from_type: str, from_key: str, to_type: str, to_key: str, region: str) -> None:
-        entity_id = str(edge_entity_id(edge_type, from_key, to_key))
-        if entity_id in self._edge_ids:
+        from_ref, to_ref = node_ref(from_type, from_key), node_ref(to_type, to_key)
+        ref = edge_ref(edge_type, from_ref, to_ref)
+        if ref in self._edge_refs:
             return
-        self._edge_ids.add(entity_id)
+        self._edge_refs.add(ref)
         self.result.edges.append(
-            {
-                "entity": {
-                    "entity_id": entity_id,
-                    "entity_type": "edge",
-                    "name": f"{from_key} {edge_type} {to_key}",
-                    "dimensions": self.dimensions(region),
-                },
-                "edge": {
-                    "from_entity_id": str(node_entity_id(from_type, from_key)),
-                    "to_entity_id": str(node_entity_id(to_type, to_key)),
-                    "edge_type": edge_type,
-                    "properties": {},
-                },
-            }
+            edge_envelope(edge_type, from_ref=from_ref, to_ref=to_ref, dimensions=self.dimensions(region))
         )
 
     def hosts(self, edge_type: str, region: str, child_type: str, child_key: str) -> None:
@@ -645,7 +634,7 @@ class _Reader:
             surface_of(
                 relation=relation,
                 edge_type=edge_type,
-                subject=str(footprint_id(self.account_id, region)),
+                subject=footprint_ref(self.account_id, region),
                 facts=self.facts[region],
                 listing=listing,
             )
@@ -656,7 +645,7 @@ class _Reader:
             surface_of(
                 relation=relation,
                 edge_type=edge_type,
-                subject=str(footprint_id(self.account_id, region)),
+                subject=footprint_ref(self.account_id, region),
                 facts=self.facts[region],
                 listing=None,
             )
@@ -672,7 +661,7 @@ class _Reader:
             {
                 "relation": relation,
                 "edge_type": edge_type,
-                "subject": str(footprint_id(self.account_id, region)),
+                "subject": footprint_ref(self.account_id, region),
                 "interval": {"first": now, "last": now},
                 "scope_authorized": False,
                 "enumeration_complete": False,
@@ -700,7 +689,7 @@ class _Reader:
         skipped: int = 0,
     ) -> Listing:
         """A non-footprint parent's surface (``organizations.Listing``), kept for the run."""
-        subject = str(node_entity_id(subject_type, subject_key))
+        subject = node_ref(subject_type, subject_key)
         if read.complete:
             listing = Listing(relation, edge_type, subject, read.first, read.last, True, True, count)
             if skipped:

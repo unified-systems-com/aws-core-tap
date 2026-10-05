@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
-from tap_plugin.aws_core.collectors.boto3_collector.identity import node_entity_id
+from tap_plugin.aws_core.collectors.boto3_collector.identity import node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.projection import (
     ProjectionError,
     project_item,
@@ -94,14 +94,15 @@ class TestProjectItem:
         assert node.fields["name"] is None
         assert node.name == node.natural_key
 
-    def test_identity_deterministic_and_keyed(self):
+    def test_identity_is_a_ref_keyed_on_the_natural_key(self):
+        """req-aws-collector-identity-1: the node is named by ref, never by a minted id."""
         a = project_item(LAMBDA_ENTRY, _lambda_item())
         b = project_item(LAMBDA_ENTRY, _lambda_item())
-        assert a.entity_id == b.entity_id
-        assert a.entity_id == node_entity_id("aws_core__aws_lambda", a.natural_key)
+        assert a.ref == b.ref == node_ref("aws_core__aws_lambda", a.natural_key)
+        assert not hasattr(a, "entity_id")
         other = _lambda_item()
         other["FunctionArn"] = "arn:aws:lambda:us-east-1:1:function:other"
-        assert project_item(LAMBDA_ENTRY, other).entity_id != a.entity_id
+        assert project_item(LAMBDA_ENTRY, other).ref != a.ref
 
     def test_missing_natural_key_raises(self):
         item = _lambda_item()

@@ -31,7 +31,7 @@ from tap_plugin.aws_core.regional import PARENT_ENTITY_TYPE
 
 from .batch import node_envelope
 from .edges import edge_envelope
-from .identity import node_entity_id
+from .identity import node_ref
 from .paths import eval_path
 from .projection import ProjectedNode
 from .regions import (
@@ -51,9 +51,9 @@ def footprint_key(account_id: str, region: str) -> str:
     return f"{account_id}:{region}"
 
 
-def footprint_id(account_id: str, region: str) -> Any:
-    """The deterministic entity id of the (account, region) footprint."""
-    return node_entity_id(PARENT_ENTITY_TYPE, footprint_key(account_id, region))
+def footprint_ref(account_id: str, region: str) -> str:
+    """The batch-local ref of the (account, region) footprint; its grid id is core's to assign."""
+    return node_ref(PARENT_ENTITY_TYPE, footprint_key(account_id, region))
 
 
 def footprint_envelopes(
@@ -62,7 +62,8 @@ def footprint_envelopes(
     """The footprint node and its ``BELONGS_TO_ACCOUNT`` reference edge to the account.
 
     The edge is a reference, not containment (#46: an account declares none). Its target is the
-    account node the run collects in the same batch; the id is deterministic, so it resolves either way.
+    account node the run collects in the same batch, or, when that read failed, the account's row
+    on the grid, found by its natural key.
     """
     key = footprint_key(account_id, region)
     fields = {
@@ -75,7 +76,6 @@ def footprint_envelopes(
     }
     node = ProjectedNode(
         entity_type=PARENT_ENTITY_TYPE,
-        entity_id=footprint_id(account_id, region),
         natural_key=key,
         name=fields["name"],
         fields=fields,
@@ -85,12 +85,7 @@ def footprint_envelopes(
     return [
         node_envelope(node, dimensions, {}, persist_configuration=False),
         edge_envelope(
-            BELONGS_TO_ACCOUNT,
-            from_key=key,
-            from_id=node.entity_id,
-            to_key=account_id,
-            to_id=node_entity_id(ACCOUNT_TYPE, account_id),
-            dimensions=dimensions,
+            BELONGS_TO_ACCOUNT, from_ref=node.ref, to_ref=node_ref(ACCOUNT_TYPE, account_id), dimensions=dimensions
         ),
     ]
 
@@ -120,22 +115,15 @@ def containment_envelopes(
     owner = owner_of(entry, node.raw_item, account_id)
     envelopes = [
         edge_envelope(
-            BELONGS_TO_ACCOUNT,
-            from_key=node.natural_key,
-            from_id=node.entity_id,
-            to_key=owner,
-            to_id=node_entity_id(ACCOUNT_TYPE, owner),
-            dimensions=dimensions,
+            BELONGS_TO_ACCOUNT, from_ref=node.ref, to_ref=node_ref(ACCOUNT_TYPE, owner), dimensions=dimensions
         )
     ]
     if owner == account_id:
         envelopes.append(
             edge_envelope(
                 block["edge_type"],
-                from_key=footprint_key(account_id, region),
-                from_id=footprint_id(account_id, region),
-                to_key=node.natural_key,
-                to_id=node.entity_id,
+                from_ref=footprint_ref(account_id, region),
+                to_ref=node.ref,
                 dimensions=dimensions,
             )
         )

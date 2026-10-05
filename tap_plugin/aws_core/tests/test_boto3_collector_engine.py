@@ -1,7 +1,7 @@
 """Engine-core unit tests for the boto3 collector (boto3-free, no DB).
 
 Covers req-aws-collector-manifest / -field-projection / -identity:
-the restricted path evaluator, deterministic identity, manifest
+the restricted path evaluator, identity by ref, manifest
 load+validate, and the configuration envelope.
 """
 
@@ -22,8 +22,11 @@ from tap_plugin.aws_core.collectors.boto3_collector.envelope import (
 )
 from tap_plugin.aws_core.collectors.boto3_collector.identity import (
     NAMESPACE_AWS_COLLECTOR,
-    edge_entity_id,
-    node_entity_id,
+    IdentityError,
+    edge_ref,
+    node_ref,
+    split_node_ref,
+    undeclared_edge_id,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import (
     ManifestError,
@@ -67,21 +70,34 @@ class TestEvalPath:
 
 
 class TestIdentity:
+    """req-aws-collector-identity: a ref names a source object in one batch; it is never a grid id."""
+
     def test_namespace_is_frozen(self):
         assert NAMESPACE_AWS_COLLECTOR == uuid.uuid5(uuid.NAMESPACE_DNS, "tap.aws_core.boto3_collector")
 
-    def test_node_id_deterministic(self):
-        a = node_entity_id("aws_core__aws_lambda", "arn:x")
-        b = node_entity_id("aws_core__aws_lambda", "arn:x")
-        assert a == b
-        assert node_entity_id("aws_core__aws_lambda", "arn:y") != a
-        assert node_entity_id("aws_core__aws_s3_bucket", "arn:x") != a
+    def test_node_ref_is_type_and_natural_key(self):
+        assert node_ref("aws_core__aws_lambda", "arn:x") == "aws_core__aws_lambda:arn:x"
+        assert node_ref("aws_core__aws_lambda", "arn:y") != node_ref("aws_core__aws_lambda", "arn:x")
+        assert node_ref("aws_core__aws_s3_bucket", "arn:x") != node_ref("aws_core__aws_lambda", "arn:x")
 
-    def test_edge_id_deterministic_and_directional(self):
-        e = edge_entity_id("ASSUMES_ROLE__aws_core", "arn:fn", "arn:role")
-        assert e == edge_entity_id("ASSUMES_ROLE__aws_core", "arn:fn", "arn:role")
-        assert edge_entity_id("ASSUMES_ROLE__aws_core", "arn:role", "arn:fn") != e
-        assert edge_entity_id("WRITES_LOGS__aws_core", "arn:fn", "arn:role") != e
+    def test_split_node_ref_keeps_a_key_that_carries_colons(self):
+        assert split_node_ref("aws_core__aws_lambda:arn:aws:lambda:r:1:function:f") == (
+            "aws_core__aws_lambda",
+            "arn:aws:lambda:r:1:function:f",
+        )
+        with pytest.raises(IdentityError):
+            split_node_ref("no-colon")
+
+    def test_edge_ref_is_directional(self):
+        fn, role = node_ref("aws_core__aws_lambda", "arn:fn"), node_ref("aws_core__aws_iam_role", "arn:role")
+        assert edge_ref("ASSUMES_ROLE__aws_core", fn, role) != edge_ref("ASSUMES_ROLE__aws_core", role, fn)
+        assert edge_ref("WRITES_LOGS__aws_core", fn, role) != edge_ref("ASSUMES_ROLE__aws_core", fn, role)
+
+    def test_undeclared_edge_id_is_the_derivation_existing_rows_carry(self):
+        """An edge type that declares no identity keeps the uuid5 id its rows were written under."""
+        assert undeclared_edge_id("ROUTES_TRAFFIC__aws_core", "Z1", "arn:d") == uuid.uuid5(
+            NAMESPACE_AWS_COLLECTOR, "edge:ROUTES_TRAFFIC__aws_core:Z1->arn:d"
+        )
 
 
 class TestManifest:

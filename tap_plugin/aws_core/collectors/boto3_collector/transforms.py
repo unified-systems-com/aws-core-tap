@@ -4,8 +4,8 @@ Spec: plugins/aws_core/specs/spec-aws-core-collector-v0.md
 (req-aws-collector-edges — derived edge keys).
 
 An edge ``transform`` maps the raw extracted value to the *target's natural
-key* so the edge resolves by deterministic identity with no cross-resource
-lookup. Transforms are pure (value in, key out) and registered here — code is
+key* so the edge names its target by identity with no cross-resource lookup
+(core finds the target's row by that key, ``req-aws-collector-identity``). Transforms are pure (value in, key out) and registered here — code is
 never loaded from manifest data (``req-aws-collector-source-3``).
 
 A transform returns ``None`` when the value is not a valid target of this

@@ -28,8 +28,8 @@ env), NOT the plugin's runtime secret envelopes.
 Add the entry: `entity_type` (`aws_core__aws_<type>`), `service` (boto3 service
 name), `scope` (`regional` | `global`), `source`, `why` (one honest sentence —
 what relationship or risk does collecting this illuminate?), `items_path`,
-`natural_key` (an ARN or the service's canonical id — deterministic identity
-depends on it), `fields` (model field → jsonpath), `edges`, and the three
+`natural_key` (an ARN or the service's canonical id — the node is identified
+by it, and it must be the field the model declares as its `NATURAL_KEY`), `fields` (model field → jsonpath), `edges`, and the three
 declarations below. The schema requires all three, so an entry without them
 fails manifest load.
 

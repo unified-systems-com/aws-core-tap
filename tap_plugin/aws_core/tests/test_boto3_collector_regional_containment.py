@@ -31,14 +31,22 @@ from tap_cares.secrets.models import Secret, SecretRef
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
-from tap_plugin.aws_core.collectors.boto3_collector.containment import footprint_id
-from tap_plugin.aws_core.collectors.boto3_collector.identity import (
-    edge_entity_id,
-    node_entity_id,
-)
+from tap_plugin.aws_core.collectors.boto3_collector.identity import node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import (
     manifest_entries as _entries,
 )
+from tap_plugin.aws_core.tests.grid_keys import edge_between, has_edge, node_id
+
+_FOOTPRINT = "aws_core__aws_account_region"
+
+
+def footprint_id(account_id: str, region: str) -> uuid.UUID:
+    """The footprint row the run wrote, found by its (account_id, region_code) key."""
+    return node_id(_FOOTPRINT, {"account_id": account_id, "region_code": region})
+
+
+def _fp(account_id: str, region: str) -> dict[str, str]:
+    return {"account_id": account_id, "region_code": region}
 
 _ACCOUNT = "111122223333"
 _OTHER_ACCOUNT = "999988887777"
@@ -248,11 +256,10 @@ class TestEnabledRegion:
         from tap_grid.services import get_edge
 
         _run()
-        fp_key = f"{_ACCOUNT}:{_REGION_ENABLED}"
-        edge = get_edge(edge_entity_id(edge_type, fp_key, child_key))
+        edge = get_edge(edge_between(edge_type, _FOOTPRINT, _fp(_ACCOUNT, _REGION_ENABLED), child_type, child_key).entity_id)
         assert edge.edge_type == edge_type
         assert str(edge.from_entity_id) == str(footprint_id(_ACCOUNT, _REGION_ENABLED))
-        assert str(edge.to_entity_id) == str(node_entity_id(child_type, child_key))
+        assert str(edge.to_entity_id) == str(node_id(child_type, child_key))
 
     def test_every_owned_listing_is_reconcilable(self, _stub_aws):
         collector = _run()
@@ -273,18 +280,17 @@ class TestEnabledRegion:
         this account's VPC having been deleted. (Its BELONGS_TO_ACCOUNT edge — the one this run
         DOES emit, ``containment.py::containment_envelopes`` — is not asserted queryable here:
         a single-account collector never collects the foreign owner's own aws_account node, so
-        that edge stays a permissively-skipped dangling edge, same as every one of
-        BELONGS_TO_ACCOUNT's other 52 source types already behaves for a resource this
-        credential cannot claim ownership of; that is GRIFT's existing dangling-edge contract,
-        not something this PR changes.)"""
-        from tap_grid.exceptions import ServiceNotFoundError
-        from tap_grid.services import get_edge, get_node
+        that edge's target key names no live node and core skips it in permissive mode, recording
+        a ``skip`` event of the batch, as for every BELONGS_TO_ACCOUNT source this credential
+        cannot claim ownership of; req-grid-import-grift-edge-endpoints.)"""
+        from tap_grid.services import get_node
 
         collector = _run()
-        shared = get_node(node_entity_id("aws_core__aws_vpc", _SHARED_VPC_ID))
+        shared = get_node(node_id("aws_core__aws_vpc", _SHARED_VPC_ID))
         assert shared.vpc_id == _SHARED_VPC_ID
-        with pytest.raises(ServiceNotFoundError):
-            get_edge(edge_entity_id("HOSTS_VPC__aws_core", f"{_ACCOUNT}:{_REGION_ENABLED}", _SHARED_VPC_ID))
+        assert not has_edge(
+            "HOSTS_VPC__aws_core", _FOOTPRINT, _fp(_ACCOUNT, _REGION_ENABLED), "aws_core__aws_vpc", _SHARED_VPC_ID
+        )
         # The VPC surface's count_observed (both VPCs — this account's own and the shared one)
         # carries a reason explaining why it exceeds the HOSTS_VPC edge count (one).
         surface = _surface(collector, "account_region.vpcs", _REGION_ENABLED)
@@ -299,9 +305,6 @@ class TestEnabledRegion:
         dangling and unqueryable, per GRIFT's own contract)."""
         from tap_plugin.aws_core.collectors.boto3_collector.containment import (
             containment_envelopes,
-        )
-        from tap_plugin.aws_core.collectors.boto3_collector.identity import (
-            node_entity_id,
         )
         from tap_plugin.aws_core.collectors.boto3_collector.projection import (
             project_item,
@@ -321,15 +324,15 @@ class TestEnabledRegion:
         assert len(envelopes) == 1
         edge = envelopes[0]["edge"]
         assert edge["edge_type"] == "BELONGS_TO_ACCOUNT__aws_core"
-        assert edge["from_entity_id"] == str(node.entity_id)
-        assert edge["to_entity_id"] == str(node_entity_id("aws_core__aws_account", _OTHER_ACCOUNT))
+        assert edge["from_ref"] == node.ref
+        assert edge["to_ref"] == node_ref("aws_core__aws_account", _OTHER_ACCOUNT)
 
     def test_own_vpc_belongs_to_this_account(self, _stub_aws):
-        from tap_grid.services import get_edge
-
         _run()
-        owner_edge = get_edge(edge_entity_id("BELONGS_TO_ACCOUNT__aws_core", _VPC_ID, _ACCOUNT))
-        assert str(owner_edge.to_entity_id) == str(node_entity_id("aws_core__aws_account", _ACCOUNT))
+        owner_edge = edge_between(
+            "BELONGS_TO_ACCOUNT__aws_core", "aws_core__aws_vpc", _VPC_ID, "aws_core__aws_account", _ACCOUNT
+        )
+        assert str(owner_edge.to_entity_id) == str(node_id("aws_core__aws_account", _ACCOUNT))
 
 
 @pytest.mark.django_db
@@ -346,13 +349,10 @@ class TestDisabledRegion:
         """The disabled-region gate skips the call entirely — this is the 'never observed-empty a
         region the credential could not read' guarantee, proven by the absence of the edge that a
         (wrongly) executed listing's canned data would have produced."""
-        from tap_grid.exceptions import ServiceNotFoundError
-        from tap_grid.services import get_edge
-
         _run()
-        fp_key = f"{_ACCOUNT}:{_REGION_DISABLED}"
-        with pytest.raises(ServiceNotFoundError):
-            get_edge(edge_entity_id("HOSTS_VPC__aws_core", fp_key, "vpc-shouldnotbelisted"))
+        assert not has_edge(
+            "HOSTS_VPC__aws_core", _FOOTPRINT, _fp(_ACCOUNT, _REGION_DISABLED), "aws_core__aws_vpc", "vpc-shouldnotbelisted"
+        )
 
     def test_every_surface_is_authored_unreadable_not_empty(self, _stub_aws):
         collector = _run()

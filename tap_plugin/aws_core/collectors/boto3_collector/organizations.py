@@ -100,7 +100,8 @@ from tap_plugin.aws_core.policy_types import (
     SERVICE_CONTROL_POLICY as _SCP_TYPE,
 )
 
-from .identity import edge_entity_id, node_entity_id
+from .edges import edge_envelope
+from .identity import node_ref
 from .policy_documents import PolicyDocumentError, parse_statements, parse_tag_rules
 from .tags import normalize_tags
 
@@ -279,9 +280,9 @@ def account_state(account: dict[str, Any]) -> str:
 class Listing:
     """What one parent's child listing established — the raw material of a completeness surface.
 
-    ``subject`` is the parent's grid entity id. Ids here are deterministic ``uuid5`` values the
-    batch carries explicitly, so the id the batch writes IS the id core holds (no batch-local ref
-    to resolve after import, unlike an assigned-identity plugin).
+    ``subject`` is the parent's batch-local ref (``identity.node_ref``). The collector replaces it
+    with the grid id the import resolved that ref to before the surface is recorded
+    (``batch.resolve_subject``): core assigns the ids, so none is known until the batch imports.
     """
 
     relation: str
@@ -348,8 +349,8 @@ class OrganizationTree:
     #: (``req-aws-landing-zone-identity-center-5``).
     member_accounts: list[str] | None = None
 
-    def node_ids(self, entity_type: str) -> set[str]:
-        return {n["entity"]["entity_id"] for n in self.nodes if n["entity"]["entity_type"] == entity_type}
+    def node_refs(self, entity_type: str) -> set[str]:
+        return {n["entity"]["ref"] for n in self.nodes if n["entity"]["entity_type"] == entity_type}
 
 
 def _now() -> datetime:
@@ -365,7 +366,7 @@ def _envelope(entity_type: str, natural_key: str, name: str, fields: dict[str, A
     """
     return {
         "entity": {
-            "entity_id": str(node_entity_id(entity_type, natural_key)),
+            "ref": node_ref(entity_type, natural_key),
             "entity_type": entity_type,
             "name": name,
             "dimensions": dict(dimensions),
@@ -375,20 +376,9 @@ def _envelope(entity_type: str, natural_key: str, name: str, fields: dict[str, A
 
 
 def _edge(edge_type: str, from_type: str, from_key: str, to_type: str, to_key: str, dimensions: dict[str, str]) -> dict[str, Any]:
-    return {
-        "entity": {
-            "entity_id": str(edge_entity_id(edge_type, from_key, to_key)),
-            "entity_type": "edge",
-            "name": f"{from_key} {edge_type} {to_key}",
-            "dimensions": dict(dimensions),
-        },
-        "edge": {
-            "from_entity_id": str(node_entity_id(from_type, from_key)),
-            "to_entity_id": str(node_entity_id(to_type, to_key)),
-            "edge_type": edge_type,
-            "properties": {},
-        },
-    }
+    return edge_envelope(
+        edge_type, from_ref=node_ref(from_type, from_key), to_ref=node_ref(to_type, to_key), dimensions=dimensions
+    )
 
 
 def _schema_problem(entity_type: str, fields: dict[str, Any]) -> str | None:
@@ -516,7 +506,7 @@ class _Reader:
 
         ``count`` overrides the item count when the listing names more than it contains (a policy
         listing names AWS-managed policies no organization contains)."""
-        subject = str(node_entity_id(subject_type, subject_key))
+        subject = node_ref(subject_type, subject_key)
         if read.complete:
             listing = Listing(
                 relation, edge_type, subject, read.first, read.last, True, True, len(read.items) if count is None else count
@@ -723,14 +713,20 @@ class _Reader:
         return self.tree
 
     def _dedupe(self) -> None:
-        """One envelope per entity id: a root-attached policy listed under two roots, say."""
+        """One envelope per identity: a root-attached policy listed under two roots, say.
+
+        A ref is the identity the collector names a thing by (type and natural key for a node;
+        type and both endpoints for an edge), so one ref is one source object. Core fails a batch
+        that names one source object twice (``duplicate_entity_id``, ``duplicate_edge``), and
+        ``batch.address_batch`` checks the whole run again on the declared key values.
+        """
         for attr in ("nodes", "edges"):
             seen: set[str] = set()
             kept = []
             for envelope in getattr(self.tree, attr):
-                entity_id = envelope["entity"]["entity_id"]
-                if entity_id not in seen:
-                    seen.add(entity_id)
+                ref = envelope["entity"]["ref"]
+                if ref not in seen:
+                    seen.add(ref)
                     kept.append(envelope)
             setattr(self.tree, attr, kept)
 

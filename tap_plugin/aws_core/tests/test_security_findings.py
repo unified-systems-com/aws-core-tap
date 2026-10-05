@@ -792,7 +792,7 @@ class TestDeclarations:
         }
         for node in read.nodes:
             for edge in CONTAINMENT_SURFACES.get(node["entity"]["entity_type"], ()):
-                assert (node["entity"]["entity_id"], edge) in recorded, (node["entity"]["entity_type"], edge)
+                assert (node["entity"]["ref"], edge) in recorded, (node["entity"]["entity_type"], edge)
         for region in REGIONS:
             for edge in (HOSTS_CONFIG_RULE, HOSTS_CONFORMANCE_PACK):
                 assert _regional(read, edge, region)
@@ -839,7 +839,7 @@ def test_collector_run_lands_every_new_type(monkeypatch: pytest.MonkeyPatch) -> 
     from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
     from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
     from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
-    from tap_plugin.aws_core.collectors.boto3_collector.identity import node_entity_id
+    from tap_plugin.aws_core.tests.grid_keys import node_id
 
     from tap_cares.collectors.config import CollectorConfig
     from tap_cares.secrets.models import Secret, SecretRef
@@ -871,14 +871,16 @@ def test_collector_run_lands_every_new_type(monkeypatch: pytest.MonkeyPatch) -> 
     assert not [w for w in collector.results["warn"] if w["message_code"] == "LANDING_ZONE_READ_FAILED"]
     for entity_type, key in (
         (GUARDDUTY_FINDING, _gd_arn("gd-high")),
-        (SECURITYHUB_FINDING, securityhub_finding_key(SH_PRODUCT, SH_CONTROL["Id"])),
+        (SECURITYHUB_FINDING, {"product_arn": SH_PRODUCT, "finding_id": SH_CONTROL["Id"]}),
         (STANDARDS_SUBSCRIPTION, FSBP_SUB),
-        (ACCESS_ANALYZER_FINDING, analyzer_finding_key(ANALYZER_ARN, "aa-ext-1")),
+        (ACCESS_ANALYZER_FINDING, {"analyzer_arn": ANALYZER_ARN, "finding_id": "aa-ext-1"}),
         (CONFIG_RULE, RULE_ARN),
         (CONFORMANCE_PACK, PACK_ARN),
     ):
-        assert get_node(node_entity_id(entity_type, key)) is not None, entity_type
-    detector = get_node(node_entity_id(GUARDDUTY_DETECTOR, DETECTOR_KEY))
+        assert get_node(node_id(entity_type, key)) is not None, entity_type
+    detector = get_node(
+        node_id(GUARDDUTY_DETECTOR, {"account_id": MGMT, "region": WEST, "detector_id": DETECTOR_ID})
+    )
     assert detector.active_finding_counts == {"HIGH": 5, "MEDIUM": 2, "LOW": 9}
     filtered = [s for s in collector._surfaces if s.get("filter")]
     assert filtered and all(s["enumeration_complete"] is False and s["filter_control"] is None for s in filtered)

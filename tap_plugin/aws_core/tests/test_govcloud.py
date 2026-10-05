@@ -40,7 +40,6 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     route53_zones_with_alias_targets,
     s3_buckets_hydrated,
 )
-from tap_plugin.aws_core.collectors.boto3_collector.identity import edge_entity_id, node_entity_id
 from tap_plugin.aws_core.collectors.boto3_collector.partition import (
     PARTITION_AWS,
     PARTITION_CN,
@@ -59,6 +58,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.transforms import (
     s3_bucket_arn_from_name,
     s3_bucket_name_from_origin_domain,
 )
+from tap_plugin.aws_core.tests.grid_keys import edge_between, node_id
 
 from tap_cares.collectors.config import CollectorConfig
 from tap_cares.secrets.models import Secret, SecretRef
@@ -784,15 +784,19 @@ class TestCollectorRunInGovCloud:
         ]
 
         # GovCloud ARNs land as natural keys, unchanged.
-        role = get_node(node_entity_id("aws_core__aws_iam_role", GOV_ROLE_ARN))
+        role = get_node(node_id("aws_core__aws_iam_role", GOV_ROLE_ARN))
         assert role.role_arn == GOV_ROLE_ARN
-        fn = get_node(node_entity_id("aws_core__aws_lambda", _GOV_FN))
+        fn = get_node(node_id("aws_core__aws_lambda", _GOV_FN))
         assert fn.function_arn == _GOV_FN and fn.tags == {"Owner": "gov"}
         # The EventBridge rule -> Lambda edge resolves: the Lambda-ARN filter accepts aws-us-gov.
-        edge = get_edge(edge_entity_id("INVOKES_LAMBDA__aws_core", _GOV_RULE, _GOV_FN))
-        assert str(edge.to_entity_id) == str(node_entity_id("aws_core__aws_lambda", _GOV_FN))
+        edge = get_edge(
+            edge_between(
+                "INVOKES_LAMBDA__aws_core", "aws_core__aws_eventbridge_rule", _GOV_RULE, "aws_core__aws_lambda", _GOV_FN
+            ).entity_id
+        )
+        assert str(edge.to_entity_id) == str(node_id("aws_core__aws_lambda", _GOV_FN))
         # The S3 bucket's ARN was minted in the run's partition.
-        bucket = get_node(node_entity_id("aws_core__aws_s3_bucket", _GOV_BUCKET_ARN))
+        bucket = get_node(node_id("aws_core__aws_s3_bucket", _GOV_BUCKET_ARN))
         assert bucket.bucket_arn == _GOV_BUCKET_ARN
 
     def test_anchor_region_invariant_names_the_govcloud_anchor(self, monkeypatch) -> None:

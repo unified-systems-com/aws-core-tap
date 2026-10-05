@@ -11,10 +11,17 @@ from datetime import UTC, datetime
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector.batch import (
     COLLECTION_FORMAT,
+    address_batch,
     assemble_batch,
     node_envelope,
+    resolve_subject,
 )
-from tap_plugin.aws_core.collectors.boto3_collector.identity import node_entity_id
+from tap_plugin.aws_core.collectors.boto3_collector.edges import edge_envelope
+from tap_plugin.aws_core.collectors.boto3_collector.identity import (
+    IdentityError,
+    node_ref,
+    undeclared_edge_id,
+)
 from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectedNode
 
 FIXED_NOW = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
@@ -24,7 +31,6 @@ FIXED_BATCH_ID = "00000000-0000-7000-8000-000000000000"
 def _projected(entity_type, key):
     return ProjectedNode(
         entity_type=entity_type,
-        entity_id=node_entity_id(entity_type, key),
         natural_key=key,
         name=key,
         fields={"name": key, "arn": key},
@@ -41,7 +47,7 @@ class TestNodeEnvelope:
             persist_configuration=True,
         )
         assert env["entity"] == {
-            "entity_id": str(node_entity_id("aws_core__aws_lambda", "arn:fn")),
+            "ref": "aws_core__aws_lambda:arn:fn",
             "entity_type": "aws_core__aws_lambda",
             "name": "arn:fn",
             "dimensions": {"region": "us-east-1"},
@@ -153,3 +159,118 @@ class TestAssembleBatch:
         )
         minted = doc["batches"][0]["batch_entity"]["entity_id"]
         assert minted and minted != FIXED_BATCH_ID  # fresh uuid7 per run
+
+
+LAMBDA = "aws_core__aws_lambda"
+ROLE = "aws_core__aws_iam_role"
+FOOTPRINT = "aws_core__aws_account_region"
+ZONE = "aws_core__aws_route53_zone"
+DIST = "aws_core__aws_cloudfront_distribution"
+
+
+def _node(entity_type, ref_key, **fields):
+    return {
+        "entity": {"ref": node_ref(entity_type, ref_key), "entity_type": entity_type, "name": ref_key, "dimensions": {}},
+        "node": fields,
+    }
+
+
+def _edge(edge_type, from_type, from_key, to_type, to_key):
+    return edge_envelope(
+        edge_type, from_ref=node_ref(from_type, from_key), to_ref=node_ref(to_type, to_key), dimensions={}
+    )
+
+
+@pytest.mark.spec("req-aws-collector-identity-3", "req-aws-collector-identity-5")
+class TestAddressBatch:
+    """req-aws-collector-identity: what the batch sends is named by identity, and only completely."""
+
+    def test_a_node_with_a_hole_in_its_key_fails_rather_than_mints(self):
+        """req-aws-collector-identity-5: core finds nothing on a null key part, so it would create the
+        node again on every run; the collector refuses to send it."""
+        with pytest.raises(IdentityError, match="function_arn"):
+            address_batch([_node(LAMBDA, "arn:fn", function_arn=None)], [])
+        with pytest.raises(IdentityError, match="function_arn"):
+            address_batch([_node(LAMBDA, "arn:fn", function_arn="")], [])
+        with pytest.raises(IdentityError, match="region_code"):
+            address_batch([_node(FOOTPRINT, "1:r", account_id="1")], [])
+
+    def test_endpoints_in_the_batch_are_refs_and_the_rest_are_natural_keys(self):
+        """req-aws-collector-identity-3: a node the batch carries is named by ref; any other by its
+        type and declared natural key, which core resolves against the live grid and never mints."""
+        out = address_batch(
+            [_node(LAMBDA, "arn:fn", function_arn="arn:fn")],
+            [_edge("ASSUMES_ROLE__aws_core", LAMBDA, "arn:fn", ROLE, "arn:role")],
+        )
+        (edge,) = out.edges
+        assert edge["entity"]["ref"] == f"edge:ASSUMES_ROLE__aws_core:{LAMBDA}:arn:fn->{ROLE}:arn:role"
+        assert "entity_id" not in edge["entity"]
+        assert edge["edge"]["from_ref"] == node_ref(LAMBDA, "arn:fn")
+        assert edge["edge"]["to_key"] == {"entity_type": ROLE, "key": {"role_arn": "arn:role"}}
+        assert "to_ref" not in edge["edge"] and "from_key" not in edge["edge"]
+        assert out.key_endpoints == 1
+
+    def test_a_composite_key_node_outside_the_batch_cannot_be_named(self):
+        """A composite key is joined into its ref string and cannot be split back honestly."""
+        with pytest.raises(IdentityError, match="keyed on"):
+            address_batch(
+                [_node(LAMBDA, "arn:fn", function_arn="arn:fn")],
+                [_edge("HOSTS_LAMBDA__aws_core", FOOTPRINT, "1:us-east-1", LAMBDA, "arn:fn")],
+            )
+
+    def test_one_node_per_identity_and_edges_follow_the_kept_one(self):
+        """Two refs describing one source object fail a batch in core (duplicate_entity_id): the
+        repeat is left out, its ref aliased, and an edge naming either is one edge."""
+        out = address_batch(
+            [
+                _node(LAMBDA, "arn:fn", function_arn="arn:fn"),
+                _node(LAMBDA, "arn:fn-alias", function_arn="arn:fn"),
+                _node(ROLE, "arn:role", role_arn="arn:role"),
+            ],
+            [
+                _edge("ASSUMES_ROLE__aws_core", LAMBDA, "arn:fn", ROLE, "arn:role"),
+                _edge("ASSUMES_ROLE__aws_core", LAMBDA, "arn:fn-alias", ROLE, "arn:role"),
+            ],
+        )
+        assert [n["entity"]["ref"] for n in out.nodes] == [node_ref(LAMBDA, "arn:fn"), node_ref(ROLE, "arn:role")]
+        assert out.aliases == {node_ref(LAMBDA, "arn:fn-alias"): node_ref(LAMBDA, "arn:fn")}
+        assert [code for code, _ in out.notices] == ["DUPLICATE_IDENTITY"]
+        assert len(out.edges) == 1
+        assert out.edges[0]["edge"]["from_ref"] == node_ref(LAMBDA, "arn:fn")
+
+    def test_an_edge_type_with_no_identity_keeps_its_explicit_id(self):
+        """ROUTES_TRAFFIC declares no identity (aws-core-tap#64); core would create a ref-addressed
+        edge of it afresh every run, so it keeps the uuid5 id its existing rows carry."""
+        out = address_batch(
+            [_node(ZONE, "Z1", hosted_zone_id="Z1")],
+            [_edge("ROUTES_TRAFFIC__aws_core", ZONE, "Z1", DIST, "arn:dist")],
+        )
+        (edge,) = out.edges
+        assert "ref" not in edge["entity"]
+        assert edge["entity"]["entity_id"] == str(undeclared_edge_id("ROUTES_TRAFFIC__aws_core", "Z1", "arn:dist"))
+        assert edge["edge"]["from_ref"] == node_ref(ZONE, "Z1")
+        assert edge["edge"]["to_key"] == {"entity_type": DIST, "key": {"distribution_arn": "arn:dist"}}
+        assert out.undeclared_edges == 1
+
+    def test_the_input_is_not_mutated(self):
+        edge = _edge("ASSUMES_ROLE__aws_core", LAMBDA, "arn:fn", ROLE, "arn:role")
+        before = {"entity": dict(edge["entity"]), "edge": dict(edge["edge"])}
+        address_batch([_node(LAMBDA, "arn:fn", function_arn="arn:fn")], [edge])
+        assert edge == before
+
+
+@pytest.mark.spec("req-aws-collector-identity-7")
+class TestResolveSubject:
+    """req-aws-collector-identity-7: a completeness subject is the grid id its parent resolved to."""
+
+    def test_a_carried_parent_becomes_its_resolved_id_and_an_alias_follows_the_kept_ref(self):
+        out = address_batch(
+            [_node(LAMBDA, "arn:fn", function_arn="arn:fn"), _node(LAMBDA, "arn:fn2", function_arn="arn:fn")], []
+        )
+        resolved = {node_ref(LAMBDA, "arn:fn"): "0190-id"}
+        assert resolve_subject(node_ref(LAMBDA, "arn:fn"), out, resolved) == "0190-id"
+        assert resolve_subject(node_ref(LAMBDA, "arn:fn2"), out, resolved) == "0190-id"
+
+    def test_a_parent_the_batch_did_not_carry_keeps_its_ref_as_the_locator(self):
+        out = address_batch([], [])
+        assert resolve_subject(node_ref(ROLE, "arn:r"), out, {}) == node_ref(ROLE, "arn:r")

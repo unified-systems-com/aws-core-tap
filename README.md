@@ -61,8 +61,9 @@ summary. Supporting behavior:
   absent in a region — is classified, recorded as a structured warn, and
   skipped; only unrecoverable conditions (bad secret, no region scope,
   unreachable STS) fail the run.
-- **Identity** is deterministic (`uuid5` over type + natural key), so re-runs
-  upsert. **Additive-only** (see the warning above): no deletion, reaping, or
+- **Identity** is the natural key: nodes and edges are sent by ref and
+  natural key, core assigns their ids and finds them again, so re-runs update
+  in place and a resource deleted on the grid returns as a new row. **Additive-only** (see the warning above): no deletion, reaping, or
   implied-absence semantics exist yet (v0 non-goal).
 
 ### Credentials
@@ -339,9 +340,8 @@ currently exist, which goes stale the moment AWS adds one.
   build an ARN from a bare name (`s3_bucket_arn_from_name`,
   `s3_bucket_name_from_origin_domain`) are bound to the run's partition; every
   other transform reads a partition off an ARN it was handed, which already
-  carries the right one. `identity.py`'s `node_entity_id`/`edge_entity_id`
-  hash the *natural key string* (already partition-correct) — nothing there
-  needed to change.
+  carries the right one. Identity is the natural key itself (already
+  partition-correct), so nothing in `identity.py` depends on the partition.
 - **Log groups are keyed by ARN.** A log-group name is unique only within
   one account and region, so `aws_cloudwatch_log_group` is keyed by its ARN
   (without the `:*` suffix); the same name in `us-gov-west-1` and

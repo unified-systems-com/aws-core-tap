@@ -3,10 +3,13 @@
 Spec: plugins/aws_core/specs/spec-aws-core-collector-v0.md
 (req-aws-collector-edges).
 
-Nodes are emitted first, then edges in a separate pass. Because endpoints
-resolve by deterministic identity (:mod:`.identity`), the edge pass needs no
-per-target lookup and an edge may be emitted before its target is collected
-(GRIFT's permissive dangling-edge mode resolves it on a later run).
+Nodes are emitted first, then edges in a separate pass. An endpoint is named by
+node ref (:mod:`.identity`); when the batch is assembled, an endpoint naming a
+node the batch does not carry is rewritten to its type and natural key, which
+core resolves against the live grid and never mints. So the edge pass needs no
+per-target lookup, and an edge to a target not collected this run resolves to
+the row an earlier run wrote, or is skipped and recorded when there is none
+(GRIFT's permissive dangling-edge mode, ``req-grid-import-grift-edge-endpoints``).
 
 Each manifest edge rule declares ``value_path`` (a jsonpath into the item —
 scalar or list; a list fans out one edge per element), ``target_type``,
@@ -27,7 +30,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from .identity import edge_entity_id, node_entity_id
+from .identity import edge_ref, node_ref, split_node_ref
 from .paths import eval_path
 from .projection import ProjectedNode
 
@@ -83,24 +86,29 @@ class TransformRegistry:
 def edge_envelope(
     edge_type: str,
     *,
-    from_key: str,
-    from_id: Any,
-    to_key: str,
-    to_id: Any,
+    from_ref: str,
+    to_ref: str,
     dimensions: dict[str, str],
 ) -> dict[str, Any]:
-    """One GRIFT edge envelope. The single place its shape is written, so the manifest-driven
-    edges and the collector's own structural edges (footprint containment) cannot drift apart."""
+    """One GRIFT edge envelope, addressed by ref with both endpoints named by node ref.
+
+    The single place its shape is written, so the manifest-driven edges and the collector's own
+    structural edges (footprint containment, the Organizations and landing-zone readers) cannot
+    drift apart. Core finds the edge by its type's declared identity (``req-grid-edge-identity``);
+    :func:`.batch.address_batch` rewrites an endpoint the batch carries no node for to a natural key.
+    """
+    from_key = split_node_ref(from_ref)[1]
+    to_key = split_node_ref(to_ref)[1]
     return {
         "entity": {
-            "entity_id": str(edge_entity_id(edge_type, from_key, to_key)),
+            "ref": edge_ref(edge_type, from_ref, to_ref),
             "entity_type": "edge",
             "name": f"{from_key} {edge_type} {to_key}",
-            "dimensions": dimensions,
+            "dimensions": dict(dimensions),
         },
         "edge": {
-            "from_entity_id": str(from_id),
-            "to_entity_id": str(to_id),
+            "from_ref": from_ref,
+            "to_ref": to_ref,
             "edge_type": edge_type,
             "properties": {},
         },
@@ -130,9 +138,9 @@ def _as_value_list(raw: Any) -> list[Any]:
 ACCOUNT_ENTITY_TYPE = "aws_core__aws_account"
 
 
-def account_entity_id(account_id: str) -> Any:
-    """The grid id of the account node the run collected (``aws_account_singleton`` keys it on the id)."""
-    return node_entity_id(ACCOUNT_ENTITY_TYPE, account_id)
+def account_ref(account_id: str) -> str:
+    """The ref of the account node the run collected (``aws_account_singleton`` keys it on the id)."""
+    return node_ref(ACCOUNT_ENTITY_TYPE, account_id)
 
 
 def emit_containment(
@@ -147,24 +155,12 @@ def emit_containment(
     Emitted for every item the listing returned, from the account the credential resolved to (STS
     ``GetCallerIdentity``), never from anything on the item: an item's own account field could name a
     different account (a shared or cross-account reference), and this edge says only that THIS
-    account's listing named THIS item. The edge id is deterministic from (edge type, account, item), so
-    a re-run upserts the same edge rather than adding a second.
+    account's listing named THIS item. A re-run sends the same (type, account, item), which core
+    finds as the same edge (``req-grid-edge-identity``) rather than adding a second.
     """
-    edge_type = containment["edge_type"]
-    return {
-        "entity": {
-            "entity_id": str(edge_entity_id(edge_type, account_id, node.natural_key)),
-            "entity_type": "edge",
-            "name": f"{account_id} {edge_type} {node.natural_key}",
-            "dimensions": dimensions,
-        },
-        "edge": {
-            "from_entity_id": str(account_entity_id(account_id)),
-            "to_entity_id": str(node.entity_id),
-            "edge_type": edge_type,
-            "properties": {},
-        },
-    }
+    return edge_envelope(
+        containment["edge_type"], from_ref=account_ref(account_id), to_ref=node.ref, dimensions=dimensions
+    )
 
 
 def emit_edges(
@@ -219,24 +215,12 @@ def emit_edges(
                 value = transform(raw_value)
             if value is None:
                 continue
-            target_key = str(value)
-            target_id = node_entity_id(target_type, target_key)
+            target_ref = node_ref(target_type, str(value))
             if rule["direction"] == "inbound":
-                from_key, to_key = target_key, node.natural_key
-                from_id, to_id = target_id, node.entity_id
+                from_ref, to_ref = target_ref, node.ref
             else:  # outbound
-                from_key, to_key = node.natural_key, target_key
-                from_id, to_id = node.entity_id, target_id
+                from_ref, to_ref = node.ref, target_ref
 
-            envelopes.append(
-                edge_envelope(
-                    rule["edge_type"],
-                    from_key=from_key,
-                    from_id=from_id,
-                    to_key=to_key,
-                    to_id=to_id,
-                    dimensions=dimensions,
-                )
-            )
+            envelopes.append(edge_envelope(rule["edge_type"], from_ref=from_ref, to_ref=to_ref, dimensions=dimensions))
 
     return EdgeEmission(envelopes=envelopes, warnings=warnings)

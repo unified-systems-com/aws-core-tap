@@ -301,7 +301,8 @@ models; nothing was observed against a live account.
   and every EC2 `ip-a-b-c-d` host name, in a stored title or Security Hub resource id is replaced
   with `[ip]` (`findings.redact_ips`). Each type's declaration is in `reader_sensitivity.json`.
 - **Resource keys.** `CONCERNS_RESOURCE` is emitted by the target's natural key whether or not the
-  target was collected, and resolves by deterministic identity when it is. GuardDuty names an IAM
+  target was collected; core resolves the key to the target's row when one is live, and otherwise
+  skips the edge and records a `skip` event. GuardDuty names an IAM
   user, not its ARN, so the key is built with the default path (inferred); a user under another path
   is left dangling.
 - **GovCloud.** Every call is to a service already in the availability table. Two are not verified

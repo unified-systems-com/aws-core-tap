@@ -303,7 +303,7 @@ def _surfaces(tree: Any, edge_type: str, subject: str | None = None) -> list[Any
 
 
 def _id(node: dict[str, Any]) -> str:
-    return str(node["entity"]["entity_id"])
+    return str(node["entity"]["ref"])
 
 
 # ---------------------------------------------------------------------------
@@ -447,12 +447,12 @@ class TestPolicies:
         full = _one(tree, SERVICE_CONTROL_POLICY, policy_arn=FULL_AWS_ACCESS_ARN)
         deny = _one(tree, SERVICE_CONTROL_POLICY, policy_arn=SCP_DENY_ARN)
         guard = _one(tree, SERVICE_CONTROL_POLICY, policy_arn=SCP_GUARD_ARN)
-        held = {e["edge"]["to_entity_id"] for e in _edges(tree, HOLDS_SERVICE_CONTROL_POLICY)}
+        held = {e["edge"]["to_ref"] for e in _edges(tree, HOLDS_SERVICE_CONTROL_POLICY)}
         assert held == {_id(deny), _id(guard)}, "the second ListPolicies page (Guardrails) was read; FullAWSAccess is no child"
         assert _id(full) not in held
         [surface] = _surfaces(tree, HOLDS_SERVICE_CONTROL_POLICY, _id(org))
         assert surface.complete is True and surface.count == 2
-        attached = {(e["edge"]["from_entity_id"], e["edge"]["to_entity_id"]) for e in _edges(tree, ATTACHED_TO_TARGET)}
+        attached = {(e["edge"]["from_ref"], e["edge"]["to_ref"]) for e in _edges(tree, ATTACHED_TO_TARGET)}
         assert (_id(full), _id(org)) in attached
 
     @pytest.mark.spec("req-aws-core-organizations-completeness-6", "req-aws-collector-pagination-2")
@@ -483,8 +483,8 @@ class TestPolicies:
         tag_policy = _one(tree, ORGANIZATIONS_POLICY, policy_arn=TAG_POLICY_ARN)
         assert tag_policy["node"]["policy_type"] == "TAG_POLICY"
         assert tag_policy["node"]["tags"] == {"owner": "platform"}
-        assert (_id(org), _id(tag_policy)) in {(e["edge"]["from_entity_id"], e["edge"]["to_entity_id"]) for e in _edges(tree, HOLDS_ORGANIZATIONS_POLICY)}
-        assert (_id(tag_policy), _id(org)) in {(e["edge"]["from_entity_id"], e["edge"]["to_entity_id"]) for e in _edges(tree, ATTACHED_TO_TARGET)}
+        assert (_id(org), _id(tag_policy)) in {(e["edge"]["from_ref"], e["edge"]["to_ref"]) for e in _edges(tree, HOLDS_ORGANIZATIONS_POLICY)}
+        assert (_id(tag_policy), _id(org)) in {(e["edge"]["from_ref"], e["edge"]["to_ref"]) for e in _edges(tree, ATTACHED_TO_TARGET)}
         [surface] = _surfaces(tree, HOLDS_ORGANIZATIONS_POLICY)
         assert surface.complete is True and surface.count == 1
 
@@ -541,7 +541,7 @@ class TestStatements:
         assert a["node"]["effect"] == "Deny" and a["node"]["actions"] == ["s3:*"]
         assert a["node"]["positions"] == [0] and a["node"]["occurrences"] == 1
         assert a["node"]["tags"] == {}
-        declared = {e["edge"]["to_entity_id"] for e in _edges(tree, DECLARES_STATEMENT) if e["edge"]["from_entity_id"] == _id(deny)}
+        declared = {e["edge"]["to_ref"] for e in _edges(tree, DECLARES_STATEMENT) if e["edge"]["from_ref"] == _id(deny)}
         assert declared == {_id(n) for n in statements}
         [surface] = _surfaces(tree, DECLARES_STATEMENT, _id(deny))
         assert surface.complete is True and surface.count == 2
@@ -551,7 +551,7 @@ class TestStatements:
         tree = collect_organization(_govcloud_org(), DIMENSIONS)
         full = _one(tree, SERVICE_CONTROL_POLICY, policy_arn=FULL_AWS_ACCESS_ARN)
         [statement] = [n for n in _nodes(tree, POLICY_STATEMENT) if n["node"]["policy_arn"] == FULL_AWS_ACCESS_ARN]
-        assert (_id(full), _id(statement)) in {(e["edge"]["from_entity_id"], e["edge"]["to_entity_id"]) for e in _edges(tree, DECLARES_STATEMENT)}
+        assert (_id(full), _id(statement)) in {(e["edge"]["from_ref"], e["edge"]["to_ref"]) for e in _edges(tree, DECLARES_STATEMENT)}
 
     @pytest.mark.spec("req-aws-core-organizations-completeness-7")
     def test_condition_and_not_action_are_typed(self) -> None:
