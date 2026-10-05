@@ -16,6 +16,9 @@
   "targets": [
     "aws_core__aws_kms_key"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

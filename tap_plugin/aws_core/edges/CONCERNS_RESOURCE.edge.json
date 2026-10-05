@@ -13,6 +13,9 @@
     "aws_core__aws_iam_user",
     "aws_core__aws_iam_role"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

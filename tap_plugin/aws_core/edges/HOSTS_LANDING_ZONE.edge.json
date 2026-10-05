@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_controltower_landing_zone"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

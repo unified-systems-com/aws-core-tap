@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_vpc_endpoint_service"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

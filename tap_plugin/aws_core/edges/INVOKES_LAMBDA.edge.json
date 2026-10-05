@@ -3,6 +3,9 @@
   "name": "Invokes Lambda",
   "description": "A service invokes a Lambda function (e.g. an EventBridge rule targeting a Lambda, or an API Gateway HTTP API's Lambda-proxy integration). Source is open because several service types can invoke a Lambda; the target is the invoked Lambda.",
   "targets": ["aws_core__aws_lambda"],
+  "identity": {
+    "discriminators": []
+  },
   "property_schema": {
     "type": "object",
     "properties": {

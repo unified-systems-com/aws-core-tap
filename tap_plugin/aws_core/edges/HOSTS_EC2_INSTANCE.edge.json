@@ -8,6 +8,9 @@
   "targets": [
     "aws_core__aws_ec2_instance"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }

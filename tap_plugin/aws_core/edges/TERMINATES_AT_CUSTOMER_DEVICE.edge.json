@@ -5,6 +5,9 @@
   "sources": [
     "aws_core__aws_dx_connection"
   ],
+  "identity": {
+    "discriminators": []
+  },
   "default_dimensions": {
     "tap.cloud": "aws"
   }
