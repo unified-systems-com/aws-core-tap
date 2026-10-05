@@ -64,7 +64,7 @@ _SEVERITY = {status: rank for rank, status in enumerate(READ_STATUSES)}
 EDGE_READS = "_edge_reads"
 
 _AWS_MANAGED_POLICY_RE = re.compile(r"^arn:[a-z0-9-]+:iam::aws:policy/")
-_S3_HOST_RE = re.compile(r"\.s3[.-]|\.s3\.|^s3[.-]", re.IGNORECASE)
+_S3_HOST_RE = re.compile(r"(?:^|\.)s3[.-]", re.IGNORECASE)
 
 
 def _not_an_s3_origin(value: Any) -> bool:
