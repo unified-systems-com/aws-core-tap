@@ -266,7 +266,8 @@ _TRUST_DOC = {
 }
 
 
-def _role_item(attached: Any, *, trust: Any = _TRUST_DOC) -> dict[str, Any]:
+def _role_item(attached: Any, *, trust: Any = None) -> dict[str, Any]:
+    trust = _TRUST_DOC if trust is None else trust
     role = {"RoleName": "worker", "Arn": _ROLE_ARN, "AssumeRolePolicyDocument": trust}
     client = _Client(
         {
@@ -367,6 +368,15 @@ class TestRoute53Reads:
 
     def test_complete_and_empty(self):
         assert _reads(_ZONE, _zone_item({"ResourceRecordSets": []}))[_ROUTES] == COMPLETE
+
+    def test_records_that_are_not_cloudfront_aliases_do_not_touch_the_read(self):
+        # Only CloudFront aliases are in ROUTES_TRAFFIC's scope: a TXT record, or an alias to another
+        # service, beside a resolved CloudFront alias leaves the read complete.
+        txt = {"Name": "example.com.", "Type": "TXT", "ResourceRecords": [{"Value": "x"}]}
+        elb = _alias("lb-1.us-east-1.elb.amazonaws.com")
+        item = _zone_item({"ResourceRecordSets": [txt, elb, _alias("d1.cloudfront.net")]})
+        assert item["alias_cloudfront_arns"] == [_CF_ARN]
+        assert _reads(_ZONE, item)[_ROUTES] == COMPLETE
 
     def test_an_alias_to_a_distribution_not_listed_is_partial(self):
         item = _zone_item({"ResourceRecordSets": [_alias("d1.cloudfront.net"), _alias("elsewhere.cloudfront.net")]})
