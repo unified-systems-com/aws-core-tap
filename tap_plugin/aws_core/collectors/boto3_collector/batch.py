@@ -92,6 +92,7 @@ def assemble_batch(
     edge_envelopes: list[dict[str, Any]],
     now: datetime | None = None,
     batch_entity_id: str | None = None,
+    authority: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Assemble the single GRIFT document for one collection run.
 
@@ -105,6 +106,9 @@ def assemble_batch(
         now: Collection timestamp; defaults to ``datetime.now(UTC)``.
         batch_entity_id: Override the per-run batch id (tests); defaults to a
             fresh ``uuid7``.
+        authority: Edge-authority claims (``req-aws-collector-edge-authority``),
+            carried as the batch's ``edge_cases.authority``. ``None`` or empty
+            leaves the section out, which claims nothing.
     """
     moment = (now or datetime.now(UTC)).astimezone(UTC)
     now_iso = moment.isoformat().replace("+00:00", "Z")
@@ -142,6 +146,8 @@ def assemble_batch(
         "nodes": node_envelopes,
         "edges": edge_envelopes,
     }
+    if authority:
+        batch["edge_cases"] = {"authority": authority}
     return {
         "metadata": {"grift_version": _GRIFT_VERSION},
         "_reserved": {},
