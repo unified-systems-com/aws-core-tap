@@ -301,3 +301,28 @@ def test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge() -> None:
     (notice,) = [w for w in again.results["warn"] if w["message_code"] == "UNDECLARED_EDGE_RETIRED"]
     assert str(edge_id) in notice["message"]
     assert live_edges(ROUTES_TRAFFIC, node_id(ZONE, _ZONE_ID), node_id(DIST, _DIST_ARN)) == []
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-identity-3")
+def test_retired_ids_are_asked_of_the_grid_read_service_and_a_missing_id_is_sent(monkeypatch) -> None:
+    """The fixed ids are checked in one ``entity_liveness`` call (tap req-grid-service-read-direct-4),
+    not a direct model read. Only ``tombstoned`` is withheld: on a first run the id is ``missing``, and
+    the edge is sent and created under it."""
+    import tap_grid.services as grid_services
+
+    real = grid_services.entity_liveness
+    asked: list[list[Any]] = []
+    answers: list[dict[uuid.UUID, str]] = []
+
+    def _spy(targets: Any, **kwargs: Any) -> dict[uuid.UUID, str]:
+        asked.append(list(targets))
+        answers.append(real(asked[-1], **kwargs))
+        return answers[-1]
+
+    monkeypatch.setattr(grid_services, "entity_liveness", _spy)
+    assert _run().results["error"] == []
+    expected = _legacy_id(f"edge:{ROUTES_TRAFFIC}:{_ZONE_ID}->{_DIST_ARN}")
+    assert len(asked) == 1
+    assert answers[0][expected] == "missing"
+    assert edge_between(ROUTES_TRAFFIC, ZONE, _ZONE_ID, DIST, _DIST_ARN).entity_id == expected

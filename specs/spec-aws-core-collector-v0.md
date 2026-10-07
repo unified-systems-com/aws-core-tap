@@ -510,7 +510,9 @@ is simply created again. Core owns the ids (`req-grid-entity-natural-key`,
   f"edge:{edge_type}:{from_key}->{to_key}")`, so existing rows are replaced in place. When either
   end was deleted, core ended that edge and its id is tombstoned; re-sending it would fail the batch
   (`entity_tombstoned`), so the run leaves it out with an `UNDECLARED_EDGE_RETIRED` warning. It
-  returns once the type declares its identity.
+  returns once the type declares its identity. The run asks tap's `entity_liveness`
+  (`req-grid-service-read-direct-4`, one read under the collector's own `grid.read`) about every
+  such id: only `tombstoned` is left out; `missing` is the edge's first sight and is sent.
 - Before the batch is assembled, the run checks every node's declared key: a part that is absent,
   null or empty fails the run (`IDENTITY_INCOMPLETE`), because core's search finds nothing on a
   null part and would create the node again every run. It keeps one node per identity (two refs
@@ -535,7 +537,7 @@ holds from before this change keep their `uuid5` ids, because they are found by 
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-identity-1 | Found By Natural Key | Implemented | A node is sent by `ref` with its declared natural-key fields, never with an id the collector derived; core finds its live row or assigns a UUIDv7. The same AWS resource is the same row on every run of one grid. | `tests/test_natural_key_refs.py::test_a_rerun_keeps_every_id_and_adds_no_edge`, `::test_rows_written_under_uuid5_ids_are_found_not_duplicated`. |
 | req-aws-collector-identity-2 | ARN-Preferred Key | Approved for Development | Natural key is the ARN where available, else the stable resource id. `aws_cloudwatch_log_group` is keyed by its ARN without the `:*` suffix (`logGroupArn`), so same-named groups in two regions or accounts are two nodes. | Was keyed by `logGroupName` until tap-plugin-aws-core#60; a group re-keyed then is a new row. |
-| req-aws-collector-identity-3 | Edges By Identity | Implemented | An edge is sent by `ref` and found by its type's declared identity; each endpoint is a ref to a node of the batch or the node's type and natural key, resolved by core and never minted. An edge type with no identity declaration keeps its explicit `uuid5` id, and is left out with a warning when that id is tombstoned. | `tests/test_boto3_collector_batch.py::TestAddressBatch`, `tests/test_natural_key_refs.py::test_an_endpoint_the_batch_does_not_carry_resolves_to_the_row_on_the_grid`, `::test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs`, `::test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge`. |
+| req-aws-collector-identity-3 | Edges By Identity | Implemented | An edge is sent by `ref` and found by its type's declared identity; each endpoint is a ref to a node of the batch or the node's type and natural key, resolved by core and never minted. An edge type with no identity declaration keeps its explicit `uuid5` id, and is left out with a warning when that id is tombstoned. | `tests/test_boto3_collector_batch.py::TestAddressBatch`, `tests/test_natural_key_refs.py::test_an_endpoint_the_batch_does_not_carry_resolves_to_the_row_on_the_grid`, `::test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs`, `::test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge`, `::test_retired_ids_are_asked_of_the_grid_read_service_and_a_missing_id_is_sent`. |
 | req-aws-collector-identity-4 | Idempotent Re-Run | Implemented | Re-running collection updates in place; it never duplicates nodes or edges. | `tests/test_natural_key_refs.py::test_a_rerun_keeps_every_id_and_adds_no_edge`. |
 | req-aws-collector-identity-5 | An Incomplete Key Fails The Run | Implemented | A node whose declared key has an absent, null or empty part, or an edge naming a composite-key node the batch does not carry, fails the run with `IDENTITY_INCOMPLETE` before anything is submitted; nothing is minted. | `tests/test_natural_key_refs.py::test_a_node_with_a_hole_in_its_key_fails_the_run_and_writes_nothing`, `tests/test_boto3_collector_batch.py::TestAddressBatch`. |
 | req-aws-collector-identity-6 | A Deleted Resource Returns | Implemented | A resource tombstoned on the grid and collected again is written as a new row under the same natural key; the tombstone is left alone, the batch succeeds, and the edges that named the resource follow the new row. | aws-core-tap#14. `tests/test_natural_key_refs.py::test_a_tombstoned_resource_returns_with_a_new_id_and_the_batch_does_not_wedge`. |
@@ -1112,8 +1114,9 @@ are never the same value.
   rules also write into is not claimed. Containment, Organizations, landing-zone and findings edges
   are not claimed: their completeness is the reconcile surfaces' business.
 - **Sent only where accepted.** The claims are carried as the batch's `edge_cases.authority` when
-  the running tap's GRIFT schema defines that section; this plugin's tap floor predates it, so on an
-  older tap the claims are judged, logged, and not sent. Either way the run records one
+  the running tap's GRIFT schema defines that section. The plugin's tap floor (`>=0.3.0`) has it, so
+  the check no longer changes what a supported tap receives; on an older tap the claims would be
+  judged, logged, and not sent. Either way the run records one
   `EDGE_AUTHORITY_CLAIMS` entry with the counts by read status and the claims that are not
   `complete`.
 - **Not deletion content.** A claim removes nothing here: tap's first form is a dry-run that records

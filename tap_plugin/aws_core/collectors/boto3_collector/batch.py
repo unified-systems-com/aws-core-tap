@@ -16,8 +16,8 @@ minted: core finds each one's live row by its declared identity, or assigns a UU
 sight. :func:`address_batch` is the last step before assembly: it refuses a node whose declared
 key has a hole, keeps one envelope per identity, and names each edge endpoint the batch carries
 no node for by type and natural key. Only the per-run ``batch_entity`` id is minted here (``uuid7``).
-The one grid read is :func:`withhold_retired_undeclared_edges`, a lookup of fixed edge ids on the
-entity spine; everything else here is pure shaping.
+The one grid read is :func:`withhold_retired_undeclared_edges`, a liveness lookup of fixed edge ids
+through the grid's read service; everything else here is pure shaping.
 """
 
 from __future__ import annotations
@@ -238,17 +238,18 @@ def withhold_retired_undeclared_edges(addressed: AddressedBatch) -> None:
     the edge too, and re-sending a tombstoned id fails the whole batch (``entity_tombstoned``): the
     aws-core-tap#14 wedge, for that one edge. The run leaves it out and says so instead. It cannot
     be written again under that id; it returns once its type declares an identity and is sent by
-    ref (``ROUTES_TRAFFIC``: aws-core-tap#64). One read of the entity spine, by id.
+    ref (``ROUTES_TRAFFIC``: aws-core-tap#64).
+
+    One call to ``tap_grid.services.entity_liveness`` (``req-grid-service-read-direct-4``), under
+    the run's own actor (``grid.read``). Only ``tombstoned`` is withheld. ``missing`` is sent: an
+    id the grid has never held is the edge's first sight, and core creates it under that id.
     """
-    from tap_grid.models import Entity
+    from tap_grid.services import entity_liveness
 
     fixed = [e["entity"]["entity_id"] for e in addressed.edges if "entity_id" in e["entity"]]
     if not fixed:
         return
-    retired = {
-        str(pk)
-        for pk in Entity.objects.filter(pk__in=fixed, deleted_at__isnull=False).values_list("pk", flat=True)
-    }
+    retired = {str(entity_id) for entity_id, state in entity_liveness(fixed).items() if state == "tombstoned"}
     if not retired:
         return
     kept = []
