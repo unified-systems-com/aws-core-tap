@@ -18,7 +18,7 @@ import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
-from tap_plugin.aws_core.collectors.boto3_collector.identity import edge_entity_id, node_entity_id
+from tap_plugin.aws_core.tests.grid_keys import edge_between, node_id
 
 from tap_cares.collectors.config import CollectorConfig
 from tap_cares.secrets.models import Secret, SecretRef
@@ -123,12 +123,14 @@ def test_same_named_log_groups_in_two_regions_both_land(_stub_govcloud) -> None:
     assert duplicates == []
 
     for region in _REGIONS:
-        group = get_node(node_entity_id(_LG, _lg_arn(region)))
+        group = get_node(node_id(_LG, _lg_arn(region)))
         assert group.name == _NAME
         assert group.log_group_arn == _lg_arn(region)
         # Each region's Lambda writes to its own region's group, not the other one.
-        edge = get_edge(edge_entity_id("WRITES_LOGS__aws_core", _fn_arn(region), _lg_arn(region)))
-        assert str(edge.from_entity_id) == str(node_entity_id("aws_core__aws_lambda", _fn_arn(region)))
-        assert str(edge.to_entity_id) == str(node_entity_id(_LG, _lg_arn(region)))
+        edge = get_edge(
+            edge_between("WRITES_LOGS__aws_core", "aws_core__aws_lambda", _fn_arn(region), _LG, _lg_arn(region)).entity_id
+        )
+        assert str(edge.from_entity_id) == str(node_id("aws_core__aws_lambda", _fn_arn(region)))
+        assert str(edge.to_entity_id) == str(node_id(_LG, _lg_arn(region)))
 
-    assert node_entity_id(_LG, _lg_arn(_REGIONS[0])) != node_entity_id(_LG, _lg_arn(_REGIONS[1]))
+    assert node_id(_LG, _lg_arn(_REGIONS[0])) != node_id(_LG, _lg_arn(_REGIONS[1]))

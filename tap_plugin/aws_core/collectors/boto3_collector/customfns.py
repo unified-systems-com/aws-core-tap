@@ -326,7 +326,7 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
     exactly what this ``custom_fn`` seam exists for: it lists CloudFront
     once, builds a ``domain -> ARN`` map, and yields each zone enriched
     with the resolved ``alias_cloudfront_arns`` so ``ROUTES_TRAFFIC``
-    resolves by deterministic identity with no transform (the make-it-work
+    names its target by natural key with no transform (the make-it-work
     natural-key discipline; req-aws-collector-edges-7). The raw
     ``alias_cloudfront_domains`` stay lossless in ``configuration``.
 
@@ -377,9 +377,8 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
             # Dedupe order-preserving: a zone routing to one distribution
             # via BOTH an A and an AAAA alias (the standard IPv4+IPv6
             # setup) yields the domain/ARN twice. Without dedup, edge
-            # fan-out emits two edges with the same deterministic
-            # edge_entity_id -> a duplicate_entity_id that GRIFT rejects
-            # the whole batch over. One CF distribution -> one edge.
+            # fan-out emits the same relationship twice, which GRIFT
+            # rejects the whole batch over. One CF distribution -> one edge.
             yield with_edge_reads(
                 {
                     **zone,
@@ -405,9 +404,9 @@ def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[d
     name falls back to ``AWS Account <id>``.
 
     Yields exactly one item. The account id sits at ``Account`` — the
-    manifest entry's ``natural_key`` — so ``node_entity_id("aws_account",
-    "<id>")`` is deterministic. Any node minted elsewhere with the same id
-    (e.g. a hand-written GRIFT batch) upserts cleanly onto the collector's.
+    manifest entry's ``natural_key`` — and the account node is found by it:
+    an ``aws_account`` row with that ``account_id`` already on the grid (a
+    hand-written GRIFT batch, say) is the collector's row, not a second one.
 
     STS is reached in the run's region and IAM through its partition-global
     endpoint (``iam.us-gov.amazonaws.com`` in GovCloud) — both via the run's

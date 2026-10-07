@@ -45,7 +45,7 @@ one entity (flagged on tap-plugin-aws-core#50's review).** Every node this run w
 an ``AwsAccount`` the Organizations walk discovers under a *management or delegated-administrator*
 credential — is stamped ``dimensions["aws_account"] = <this run's own resolved account>``
 (``collector.py``'s ``org_dimensions``), the observing credential, not necessarily the account the
-row represents. If that same deterministic account id is *also* collected directly, on a separate
+row represents. If that same account (one row, found by its natural key) is *also* collected directly, on a separate
 run, by a credential scoped to that member account itself (the ordinary manifest-driven sweep run
 against it), GRIFT's upsert (``replace_node``) overwrites the row's dimensions with THAT run's
 credential instead. ``_scope_check`` then compares whichever credential is falsifying against

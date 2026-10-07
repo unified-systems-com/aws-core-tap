@@ -13,10 +13,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.edges import (
     TransformRegistry,
     emit_edges,
 )
-from tap_plugin.aws_core.collectors.boto3_collector.identity import (
-    edge_entity_id,
-    node_entity_id,
-)
+from tap_plugin.aws_core.collectors.boto3_collector.identity import edge_ref, node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectedNode
 
 MODELED = {
@@ -31,7 +28,6 @@ DIMS = {"cloud": "aws", "region": "us-east-1"}
 def _node(raw_item):
     return ProjectedNode(
         entity_type="aws_core__aws_lambda",
-        entity_id=node_entity_id("aws_core__aws_lambda", "arn:fn"),
         natural_key="arn:fn",
         name="fn",
         fields={"name": "fn"},
@@ -70,10 +66,12 @@ class TestEmitEdges:
         assert len(result.envelopes) == 2
 
         assumes = next(e for e in result.envelopes if e["edge"]["edge_type"] == "ASSUMES_ROLE__aws_core")
-        assert assumes["edge"]["from_entity_id"] == str(node_entity_id("aws_core__aws_lambda", "arn:fn"))
-        assert assumes["edge"]["to_entity_id"] == str(node_entity_id("aws_core__aws_iam_role", "arn:role"))
+        fn, role = node_ref("aws_core__aws_lambda", "arn:fn"), node_ref("aws_core__aws_iam_role", "arn:role")
+        assert assumes["edge"]["from_ref"] == fn
+        assert assumes["edge"]["to_ref"] == role
         assert assumes["entity"]["entity_type"] == "edge"
-        assert assumes["entity"]["entity_id"] == str(edge_entity_id("ASSUMES_ROLE__aws_core", "arn:fn", "arn:role"))
+        assert assumes["entity"]["ref"] == edge_ref("ASSUMES_ROLE__aws_core", fn, role)
+        assert "entity_id" not in assumes["entity"]
         assert assumes["entity"]["dimensions"] == DIMS
         assert assumes["edge"]["properties"] == {}
 
@@ -92,8 +90,8 @@ class TestEmitEdges:
         node = _node({"Buckets": ["b1", "b2", "b3"]})
         result = emit_edges(node, entry, modeled_types=MODELED, transforms=TransformRegistry(), dimensions=DIMS)
         assert len(result.envelopes) == 3
-        assert {e["edge"]["to_entity_id"] for e in result.envelopes} == {
-            str(node_entity_id("aws_core__aws_s3_bucket", b)) for b in ("b1", "b2", "b3")
+        assert {e["edge"]["to_ref"] for e in result.envelopes} == {
+            node_ref("aws_core__aws_s3_bucket", b) for b in ("b1", "b2", "b3")
         }
 
     def test_inbound_direction_swaps_endpoints(self):
@@ -112,9 +110,10 @@ class TestEmitEdges:
         env = emit_edges(node, entry, modeled_types=MODELED, transforms=TransformRegistry(), dimensions=DIMS).envelopes[
             0
         ]
-        assert env["edge"]["from_entity_id"] == str(node_entity_id("aws_core__aws_iam_role", "arn:role"))
-        assert env["edge"]["to_entity_id"] == str(node_entity_id("aws_core__aws_lambda", "arn:fn"))
-        assert env["entity"]["entity_id"] == str(edge_entity_id("ASSUMES_ROLE__aws_core", "arn:role", "arn:fn"))
+        role, fn = node_ref("aws_core__aws_iam_role", "arn:role"), node_ref("aws_core__aws_lambda", "arn:fn")
+        assert env["edge"]["from_ref"] == role
+        assert env["edge"]["to_ref"] == fn
+        assert env["entity"]["ref"] == edge_ref("ASSUMES_ROLE__aws_core", role, fn)
 
     def test_unmodeled_target_dropped_with_warning(self):
         entry = {
@@ -162,7 +161,7 @@ class TestEmitEdges:
             transforms=reg,
             dimensions=DIMS,
         ).envelopes[0]
-        assert env["edge"]["to_entity_id"] == str(node_entity_id("aws_core__aws_s3_bucket", "mybucket"))
+        assert env["edge"]["to_ref"] == node_ref("aws_core__aws_s3_bucket", "mybucket")
 
     def test_list_value_path_with_transform_applies_per_element(self):
         # Regression (found live, RETRIEVES_CONTENT_FROM = 0 on the real
@@ -203,9 +202,7 @@ class TestEmitEdges:
         result = emit_edges(node, entry, modeled_types=MODELED, transforms=reg, dimensions=DIMS)
         assert result.warnings == []
         assert len(result.envelopes) == 1  # only the S3 origin; None dropped
-        assert result.envelopes[0]["edge"]["to_entity_id"] == str(
-            node_entity_id("aws_core__aws_s3_bucket", "arn:aws:s3:::samsite-prod-1")
-        )
+        assert result.envelopes[0]["edge"]["to_ref"] == node_ref("aws_core__aws_s3_bucket", "arn:aws:s3:::samsite-prod-1")
 
     def test_unregistered_transform_raises(self):
         entry = {

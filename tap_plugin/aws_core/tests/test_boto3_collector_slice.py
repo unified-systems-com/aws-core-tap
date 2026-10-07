@@ -4,7 +4,7 @@ Drives the real Boto3Collector.run() pipeline (credentials -> manifest ->
 source -> projection -> two-phase edges -> one GRIFT batch -> submit_grift)
 with the AWS boundary stubbed by canned ListFunctions + ListRoles
 responses, and asserts the typed nodes and the non-dangling ASSUMES_ROLE
-edge actually landed on the grid by deterministic identity.
+edge actually landed on the grid, found by natural key.
 
 This is the make-it-work proof for the aws_op path; fan-out (S3, Route 53
 custom_fn) and the hydrate seam are the next increment.
@@ -19,11 +19,8 @@ import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
-from tap_plugin.aws_core.collectors.boto3_collector.identity import (
-    edge_entity_id,
-    node_entity_id,
-)
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+from tap_plugin.aws_core.tests.grid_keys import edge_between, node_id
 
 from tap_cares.collectors.config import CollectorConfig
 from tap_cares.secrets.models import Secret, SecretRef
@@ -321,10 +318,10 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert len(ledger_entries) == 1
     assert isinstance(ledger_entries[0]["message_data"]["calls"], list)
 
-    # The Lambda node landed, typed, by deterministic identity. Its manifest
+    # The Lambda node landed, typed, found by its natural key. Its manifest
     # entry has persist_configuration: false, so configuration is empty while
     # every typed field is still projected.
-    fn = get_node(node_entity_id("aws_core__aws_lambda", _FN_ARN))
+    fn = get_node(node_id("aws_core__aws_lambda", _FN_ARN))
     assert fn.name == "sam-handler"
     assert fn.function_arn == _FN_ARN
     assert fn.runtime == "python3.13"
@@ -337,7 +334,7 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert fn.tags == {"Owner": "sam"}
 
     # The IAM role node landed (global-scope entry).
-    role = get_node(node_entity_id("aws_core__aws_iam_role", _ROLE_ARN))
+    role = get_node(node_id("aws_core__aws_iam_role", _ROLE_ARN))
     assert role.name == "sam-exec"
     assert role.role_arn == _ROLE_ARN
     # IAM role tags came via the service side-quest (ListRoleTags, list_kv).
@@ -345,21 +342,27 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
 
     # The ASSUMES_ROLE edge resolved by identity — non-dangling because both
     # endpoints were collected this run (two-phase, identity-resolved).
-    edge = get_edge(edge_entity_id("ASSUMES_ROLE__aws_core", _FN_ARN, _ROLE_ARN))
+    edge = get_edge(
+        edge_between("ASSUMES_ROLE__aws_core", "aws_core__aws_lambda", _FN_ARN, "aws_core__aws_iam_role", _ROLE_ARN).entity_id
+    )
     assert edge.edge_type == "ASSUMES_ROLE__aws_core"
-    assert str(edge.from_entity_id) == str(node_entity_id("aws_core__aws_lambda", _FN_ARN))
-    assert str(edge.to_entity_id) == str(node_entity_id("aws_core__aws_iam_role", _ROLE_ARN))
+    assert str(edge.from_entity_id) == str(node_id("aws_core__aws_lambda", _FN_ARN))
+    assert str(edge.to_entity_id) == str(node_id("aws_core__aws_iam_role", _ROLE_ARN))
 
     # WRITES_LOGS resolves non-dangling (req-aws-collector-edges-7): the log group is keyed by
     # its ARN, and the Lambda's bare LoggingConfig.LogGroup name becomes that same ARN through the
     # source-aware log_group_arn transform (region and account from the Lambda's own ARN).
-    lg = get_node(node_entity_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
+    lg = get_node(node_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
     assert lg.name == _LOG_GROUP
     assert lg.log_group_arn == _LOG_GROUP_ARN
-    log_edge = get_edge(edge_entity_id("WRITES_LOGS__aws_core", _FN_ARN, _LOG_GROUP_ARN))
+    log_edge = get_edge(
+        edge_between(
+            "WRITES_LOGS__aws_core", "aws_core__aws_lambda", _FN_ARN, "aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN
+        ).entity_id
+    )
     assert log_edge.edge_type == "WRITES_LOGS__aws_core"
-    assert str(log_edge.from_entity_id) == str(node_entity_id("aws_core__aws_lambda", _FN_ARN))
-    assert str(log_edge.to_entity_id) == str(node_entity_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
+    assert str(log_edge.from_entity_id) == str(node_id("aws_core__aws_lambda", _FN_ARN))
+    assert str(log_edge.to_entity_id) == str(node_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
 
     # ROUTES_TRAFFIC resolves non-dangling through the route53 custom_fn's
     # CloudFront cross-join: the zone's A-alias domain -> the already-
@@ -367,12 +370,16 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     # custom_fn did the domain->ARN join (req-aws-collector-edges-7). Note
     # the manifest-registered type is aws_route53_zone (model + plugin),
     # which the collector manifest was reconciled to.
-    zone = get_node(node_entity_id("aws_core__aws_route53_zone", _ZONE_ID))
+    zone = get_node(node_id("aws_core__aws_route53_zone", _ZONE_ID))
     assert zone.name == "samsite.unified-systems.com."
-    route_edge = get_edge(edge_entity_id("ROUTES_TRAFFIC__aws_core", _ZONE_ID, _DIST_ARN))
+    route_edge = get_edge(
+        edge_between(
+            "ROUTES_TRAFFIC__aws_core", "aws_core__aws_route53_zone", _ZONE_ID, "aws_core__aws_cloudfront_distribution", _DIST_ARN
+        ).entity_id
+    )
     assert route_edge.edge_type == "ROUTES_TRAFFIC__aws_core"
-    assert str(route_edge.from_entity_id) == str(node_entity_id("aws_core__aws_route53_zone", _ZONE_ID))
-    assert str(route_edge.to_entity_id) == str(node_entity_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+    assert str(route_edge.from_entity_id) == str(node_id("aws_core__aws_route53_zone", _ZONE_ID))
+    assert str(route_edge.to_entity_id) == str(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
 
 
 @pytest.mark.django_db
@@ -436,7 +443,7 @@ def test_unregistered_edge_transform_is_classified_not_fatal(_stub_aws, monkeypa
 
     # The distribution node still landed — it is appended before the edge
     # pass runs, so the skipped edge does not lose the node.
-    dist = get_node(node_entity_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+    dist = get_node(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
     assert dist.distribution_arn == _DIST_ARN
 
 
@@ -501,7 +508,7 @@ def test_s3_bucket_persists_its_configuration_with_posture(_stub_aws):
 
     assert _entry("aws_core__aws_s3_bucket")["persist_configuration"] is True
     _run_collector()
-    bucket = get_node(node_entity_id("aws_core__aws_s3_bucket", _BUCKET_ARN))
+    bucket = get_node(node_id("aws_core__aws_s3_bucket", _BUCKET_ARN))
     config = bucket.configuration
     assert config["BucketArn"] == _BUCKET_ARN
     assert config["_source"]["op"] == "s3_buckets_hydrated"
@@ -556,7 +563,7 @@ def test_credential_canary_is_not_persisted(_stub_aws, monkeypatch, entity_type,
     assert len(submitted) == 1
     assert canary not in submitted[0]
 
-    node = get_node(node_entity_id(entity_type, natural_key))
+    node = get_node(node_id(entity_type, natural_key))
     assert node.configuration == {}
     assert getattr(node, field) == value  # typed projection unaffected
     assert canary not in _row_dump(node)
@@ -573,13 +580,13 @@ def test_flag_is_what_keeps_the_canary_out(_stub_aws, monkeypatch, entity_type, 
     entry = _entry(entity_type)
     monkeypatch.setitem(entry, "persist_configuration", True)
     _run_collector()
-    node = get_node(node_entity_id(entity_type, natural_key))
+    node = get_node(node_id(entity_type, natural_key))
     assert canary in json.dumps(node.configuration)
     assert node.configuration["_source"]["why"] == entry["why"]
 
     monkeypatch.setitem(entry, "persist_configuration", False)
     _run_collector()
-    node = get_node(node_entity_id(entity_type, natural_key))
+    node = get_node(node_id(entity_type, natural_key))
     assert node.configuration == {}
     assert getattr(node, field) == value
 
@@ -593,22 +600,22 @@ def test_promoted_security_facts_land_while_configuration_stays_empty(_stub_aws)
 
     _run_collector()
 
-    fn = get_node(node_entity_id("aws_core__aws_lambda", _FN_ARN))
+    fn = get_node(node_id("aws_core__aws_lambda", _FN_ARN))
     assert fn.vpc_subnet_ids == ["subnet-0aaa1111", "subnet-0bbb2222"]
     assert fn.vpc_security_group_ids == ["sg-0ccc3333"]
-    edge_fn = get_node(node_entity_id("aws_core__aws_lambda", _FN_NO_VPC_ARN))
+    edge_fn = get_node(node_id("aws_core__aws_lambda", _FN_NO_VPC_ARN))
     assert edge_fn.vpc_subnet_ids == []  # not in a VPC
     assert edge_fn.vpc_security_group_ids == []
 
-    dist = get_node(node_entity_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+    dist = get_node(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
     assert dist.origin_access == {"sam-site-s3": "oac", "sam-api": "none"}
 
-    api = get_node(node_entity_id("aws_core__aws_apigateway_http_api", _API_ARN))
+    api = get_node(node_id("aws_core__aws_apigateway_http_api", _API_ARN))
     assert api.route_authorization_types == {"POST /orders": "JWT", "GET /health": "NONE"}
 
     for node in (fn, edge_fn, dist, api):
         assert node.configuration == {}
-    assert get_node(node_entity_id("aws_core__aws_cognito_user_pool", _POOL_ID)).configuration == {}
+    assert get_node(node_id("aws_core__aws_cognito_user_pool", _POOL_ID)).configuration == {}
 
 
 @pytest.mark.django_db
@@ -620,7 +627,7 @@ def test_denied_routes_listing_stores_null_over_an_earlier_map(_stub_aws, monkey
     from tap_grid.services import get_node
 
     _run_collector()
-    api_id = node_entity_id("aws_core__aws_apigateway_http_api", _API_ARN)
+    api_id = node_id("aws_core__aws_apigateway_http_api", _API_ARN)
     assert get_node(api_id).route_authorization_types == {"POST /orders": "JWT", "GET /health": "NONE"}
 
     def _denied(self, **_kw):
@@ -650,7 +657,7 @@ def test_origin_header_presence_lands_and_the_value_never_does(_stub_aws, monkey
     monkeypatch.setattr(Boto3Collector, "submit_grift", _capture)
     _run_collector()
 
-    dist = get_node(node_entity_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+    dist = get_node(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
     assert dist.origin_custom_headers_present == {"sam-site-s3": True, "sam-api": False}
     assert dist.origin_custom_headers_present["sam-api"] is False  # absence, not unobserved
 

@@ -5,7 +5,10 @@ plugin_version = "0.5.0" # x-release-please-version
 # run_four_cases) resolve against — 0.1.6, the release before it, refuses the [falsifiers] key at
 # manifest parse (mirrors tap-plugin-github-core's own floor note for the identical reason,
 # tap-plugin-aws-core#42).
-requires_tap = ">=0.2.1"
+# 0.3.0: the first core release with tap_grid.services.entity_liveness (req-grid-service-read-direct-4),
+# which the collector asks before re-sending a fixed edge id, edge-endpoint keys and declared edge
+# identity (natural-key refs), and the GRIFT edge_cases section (authority claims).
+requires_tap = ">=0.3.0"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."

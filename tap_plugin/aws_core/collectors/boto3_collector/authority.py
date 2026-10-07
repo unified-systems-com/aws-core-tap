@@ -263,25 +263,28 @@ def shared_scopes(entries: Iterable[Mapping[str, Any]]) -> frozenset[tuple[str, 
 
 
 def claims_for(
-    node: ProjectedNode,
+    anchor: Mapping[str, Any],
     reads: Mapping[tuple[str, str], str],
     *,
     unclaimable: frozenset[tuple[str, str, str]],
 ) -> list[dict[str, Any]]:
     """The authority claims for one anchor, in the shape tap's ``GriftAuthorityClaim`` accepts.
 
-    The anchor is named by its entity id, which this batch writes. ``read`` is always present and
-    never defaulted (tap refuses a claim without one).
+    ``anchor`` names the node by type and full natural key (``{entity_type, key}``), built by
+    :func:`.batch.node_anchor` from the envelope the batch sends: the collector mints no id, so
+    the anchor is the same identity core finds the node by. ``read`` is always present and never
+    defaulted (tap refuses a claim without one).
     """
+    entity_type = str(anchor["entity_type"])
     return [
         {
             "edge_type": edge_type,
-            "anchor": {"entity_id": str(node.entity_id)},
+            "anchor": {"entity_type": entity_type, "key": dict(anchor["key"])},
             "direction": direction,
             "read": read,
         }
         for (edge_type, direction), read in sorted(reads.items())
-        if (node.entity_type, edge_type, direction) not in unclaimable
+        if (entity_type, edge_type, direction) not in unclaimable
     ]
 
 

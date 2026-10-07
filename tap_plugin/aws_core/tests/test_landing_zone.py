@@ -18,8 +18,8 @@ from typing import Any
 import pytest
 from botocore.exceptions import ClientError
 from tap_plugin.aws_core.collectors.boto3_collector import partition as partition_mod
-from tap_plugin.aws_core.collectors.boto3_collector.containment import footprint_id
-from tap_plugin.aws_core.collectors.boto3_collector.identity import node_entity_id
+from tap_plugin.aws_core.collectors.boto3_collector.containment import footprint_ref
+from tap_plugin.aws_core.collectors.boto3_collector.identity import node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import (
     ACCESS_ANALYZER,
     ACCOUNT_ASSIGNMENT,
@@ -82,6 +82,7 @@ from tap_plugin.aws_core.falsifiers import (
     SecurityHubHubFalsifier,
 )
 from tap_plugin.aws_core.regional import LANDING_ZONE_CHILDREN
+from tap_plugin.aws_core.tests.grid_keys import node_id
 
 from tap_grid.falsifier_testing import CASE_DROPPED, CASE_FORBIDDEN, CASE_PRESENT, CASE_REIDENTIFIED, run_four_cases
 from tap_grid.falsifiers import (
@@ -598,18 +599,18 @@ def _one(read: LandingZoneRead, entity_type: str) -> dict[str, Any]:
 
 def _edges(read: LandingZoneRead, edge_type: str) -> list[tuple[str, str]]:
     return [
-        (e["edge"]["from_entity_id"], e["edge"]["to_entity_id"])
+        (e["edge"]["from_ref"], e["edge"]["to_ref"])
         for e in read.edges
         if e["edge"]["edge_type"] == edge_type
     ]
 
 
 def _id(entity_type: str, key: str) -> str:
-    return str(node_entity_id(entity_type, key))
+    return node_ref(entity_type, key)
 
 
 def _fp(region: str) -> str:
-    return str(footprint_id(MGMT, region))
+    return footprint_ref(MGMT, region)
 
 
 def _regional(read: LandingZoneRead, edge_type: str, region: str) -> dict[str, Any]:
@@ -1216,7 +1217,7 @@ class TestTripleAndDeclarations:
         checked = 0
         for node in read.nodes:
             for edge in CONTAINMENT_SURFACES.get(node["entity"]["entity_type"], ()):
-                assert (node["entity"]["entity_id"], edge) in recorded, (node["entity"]["entity_type"], edge)
+                assert (node["entity"]["ref"], edge) in recorded, (node["entity"]["entity_type"], edge)
                 checked += 1
         for region in REGIONS:
             for edge in CONTAINMENT_SURFACES[FOOTPRINT]:
@@ -1411,18 +1412,21 @@ def test_collector_run_lands_every_type_and_both_settings(monkeypatch: pytest.Mo
         (ENABLED_BASELINE, BASELINE_CHILD),
         (IDENTITY_CENTER_INSTANCE, INSTANCE_ARN),
         (PERMISSION_SET, PS_ADMIN),
-        (IDENTITY_GROUP, group_key(STORE_ID, GROUP_ADMINS)),
+        (IDENTITY_GROUP, {"identity_store_id": STORE_ID, "group_id": GROUP_ADMINS}),
         (CONFIG_RECORDER, LINKED_RECORDER_ARN),
-        (CONFIG_DELIVERY_CHANNEL, regional_key(MGMT, WEST, "aws-controltower-BaselineConfigDeliveryChannel")),
+        (
+            CONFIG_DELIVERY_CHANNEL,
+            {"account_id": MGMT, "region": WEST, "channel_name": "aws-controltower-BaselineConfigDeliveryChannel"},
+        ),
         (CONFIG_AGGREGATOR, AGGREGATOR_ARN),
-        (GUARDDUTY_DETECTOR, regional_key(MGMT, WEST, DETECTOR_ID)),
+        (GUARDDUTY_DETECTOR, {"account_id": MGMT, "region": WEST, "detector_id": DETECTOR_ID}),
         (SECURITYHUB_HUB, HUB_ARN),
         (ACCESS_ANALYZER, ANALYZER_ARN),
     ):
-        assert get_node(node_entity_id(entity_type, key)) is not None, entity_type
-    footprint = get_node(footprint_id(MGMT, EAST))
+        assert get_node(node_id(entity_type, key)) is not None, entity_type
+    footprint = get_node(node_id("aws_core__aws_account_region", {"account_id": MGMT, "region_code": EAST}))
     assert footprint.ebs_encryption_by_default is False
-    account = get_node(node_entity_id("aws_core__aws_account", MGMT))
+    account = get_node(node_id("aws_core__aws_account", MGMT))
     assert (account.s3_block_public_acls, account.s3_restrict_public_buckets) == (True, False)
     # Not in an organization: the account set is unknown, so no assignment is written.
     assert "IDENTITY_CENTER_ASSIGNMENTS_INCOMPLETE" in [w["message_code"] for w in collector.results["warn"]]

@@ -27,6 +27,8 @@ patch (``req-aws-collector-runtime-3``).
 
 from __future__ import annotations
 
+import json
+from collections.abc import Mapping
 from typing import Any
 
 from botocore.config import Config
@@ -53,12 +55,20 @@ from .authority import (
     merge_claims,
     shared_scopes,
 )
-from .batch import assemble_batch, node_envelope
+from .batch import (
+    address_batch,
+    assemble_batch,
+    envelope_ref,
+    node_anchor,
+    node_envelope,
+    resolve_subject,
+    withhold_retired_undeclared_edges,
+)
 from .containment import (
     Listing,
     containment_envelopes,
     footprint_envelopes,
-    footprint_id,
+    footprint_ref,
     owner_of,
     surface_of,
 )
@@ -78,8 +88,9 @@ from .credentials import (
     resolve_regions,
 )
 from .customfns import build_custom_fn_registry
-from .edges import EdgeError, account_entity_id, emit_containment, emit_edges
+from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .hydrate import hydrate_item
+from .identity import IdentityError
 from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
@@ -131,6 +142,8 @@ _SITE_ORG_READ_FAILED = "a4f0"
 _SITE_LZ_NOTICE = "7e19"
 _SITE_LZ_READ_FAILED = "b3c6"
 _SITE_EDGE_AUTHORITY = "f237"
+_SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
+_SITE_ADDRESSING = "7f5b"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -218,6 +231,11 @@ class Boto3CollectorError(Exception):
     """An unrecoverable collector condition; the run aborts (FAILED)."""
 
 
+def _anchor_name(anchor: Mapping[str, Any]) -> str:
+    """An authority anchor as a hashable lookup key."""
+    return json.dumps(anchor, sort_keys=True, default=str)
+
+
 class Boto3Collector(CollectorBase):
     """AWS resource collector — manifest-driven, single account, no deletes."""
 
@@ -274,11 +292,11 @@ class Boto3Collector(CollectorBase):
         counts = {"complete": 0, "partial": 0, "failed": 0}
         for claim in claims:
             counts[claim["read"]] = counts.get(claim["read"], 0) + 1
-        names = {n["entity"]["entity_id"]: (n["entity"]["entity_type"], n["entity"]["name"]) for n in node_envelopes}
+        names = {_anchor_name(node_anchor(n)): n["entity"]["name"] for n in node_envelopes}
         incomplete = [
             {
-                "entity_type": names.get(claim["anchor"].get("entity_id"), ("", ""))[0],
-                "name": names.get(claim["anchor"].get("entity_id"), ("", ""))[1],
+                "entity_type": claim["anchor"]["entity_type"],
+                "name": names.get(_anchor_name(claim["anchor"]), ""),
                 "edge_type": claim["edge_type"],
                 "direction": claim["direction"],
                 "read": claim["read"],
@@ -439,8 +457,8 @@ class Boto3Collector(CollectorBase):
         edge_envelopes: list[dict[str, Any]] = []
         skipped = 0
         unavailable = 0
-        # Identities already in this batch. A repeated id is a batch-fatal duplicate_entity_id at
-        # import (the whole run's data lost); skip the repeat and say so instead.
+        # Refs already in this batch. Two refs describing one source object are a batch-fatal
+        # duplicate_entity_id at import (the whole run's data lost); skip the repeat and say so instead.
         seen_nodes: set[str] = set()
         seen_edges: set[str] = set()
         # One completeness surface per contained (entry, region) listing, region-scoped containment
@@ -452,7 +470,9 @@ class Boto3Collector(CollectorBase):
         listings: list[tuple[dict[str, Any], ListingWalk]] = []
         #: Edge-authority claims (req-aws-collector-edge-authority): one per (edge type, anchor,
         #: direction) the manifest's edge rules cover at a node this run emitted, with how it was read.
-        claims: list[dict[str, Any]] = []
+        #: Held as (sent node envelope, its per-scope reads) and made into claims once the batch is
+        #: addressed, when every node's key is known to be whole.
+        judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]] = []
         unclaimable = shared_scopes(entries)
 
         # The parent of every regional containment: one footprint per (account, region) in scope,
@@ -465,7 +485,7 @@ class Boto3Collector(CollectorBase):
                 {"cloud": "aws", "aws_account": account_id, "aws_region": region},
             ):
                 bucket = node_envelopes if envelope["entity"]["entity_type"] != "edge" else edge_envelopes
-                (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope["entity"]["entity_id"])
+                (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
                 bucket.append(envelope)
 
         for entry in entries:
@@ -502,7 +522,7 @@ class Boto3Collector(CollectorBase):
                             surface_of(
                                 relation=contained["relation"],
                                 edge_type=contained["edge_type"],
-                                subject=str(footprint_id(account_id, region)),
+                                subject=footprint_ref(account_id, region),
                                 facts=region_facts,
                                 listing=None,
                             )
@@ -535,7 +555,7 @@ class Boto3Collector(CollectorBase):
                         listing.done()
                     for item in items:
                         node = project_item(entry, item)
-                        if str(node.entity_id) in seen_nodes:
+                        if node.ref in seen_nodes:
                             self.record_warn(
                                 _SITE_DUPLICATE_IDENTITY,
                                 "DUPLICATE_IDENTITY",
@@ -546,7 +566,7 @@ class Boto3Collector(CollectorBase):
                             if listing:
                                 listing.processing.append(f"duplicate identity {node.natural_key}")
                             continue
-                        seen_nodes.add(str(node.entity_id))
+                        seen_nodes.add(node.ref)
                         tags, tag_slot, tag_mapping = resolve_node_tags(
                             entry,
                             item,
@@ -599,16 +619,17 @@ class Boto3Collector(CollectorBase):
                             if listing and owner_of(entry, node.raw_item, account_id) != account_id:
                                 listing.not_hosted += 1
                         for envelope in new_edges:
-                            if envelope["entity"]["entity_id"] not in seen_edges:
-                                seen_edges.add(envelope["entity"]["entity_id"])
+                            if envelope_ref(envelope) not in seen_edges:
+                                seen_edges.add(envelope_ref(envelope))
                                 edge_envelopes.append(envelope)
                         # Only once the node's edges are in the batch: a node whose edge pass raised
                         # gets no claim, so no scope is ever claimed over edges that were not sent.
-                        claims.extend(
-                            claims_for(
-                                node,
+                        # The claim is made once the batch is addressed (its anchor is the node's
+                        # checked natural key), from the envelope this node was sent as.
+                        judged.append(
+                            (
+                                node_envelopes[-1],
                                 anchor_reads(node, entry, modeled_types=modeled_types, transforms=transforms),
-                                unclaimable=unclaimable,
                             )
                         )
                         for warning in emission.warnings:
@@ -667,7 +688,7 @@ class Boto3Collector(CollectorBase):
                         surface_of(
                             relation=contained["relation"],
                             edge_type=contained["edge_type"],
-                            subject=str(footprint_id(account_id, region)),
+                            subject=footprint_ref(account_id, region),
                             facts=region_facts,
                             listing=listing,
                         )
@@ -701,13 +722,13 @@ class Boto3Collector(CollectorBase):
                 _SITE_ORG_NOTICE, org_notice.code, org_notice.message, message_data=org_notice.data
             )
         # The account this run is scoped to may itself be a member the tree walk names: the
-        # manifest's `aws_account_singleton` entry above already wrote a node at that same
-        # deterministic id (same entity_type + account_id). A batch cannot carry the same
-        # entity_id twice (req-grid-import-grift), so the richer org-tree node (email, status,
-        # tags, its OU) wins and the plainer singleton envelope is dropped, never the reverse —
-        # the singleton exists so a non-organization account still gets one.
-        existing_ids = {n["entity"]["entity_id"] for n in node_envelopes}
-        org_node_ids = {n["entity"]["entity_id"] for n in org_tree.nodes}
+        # manifest's `aws_account_singleton` entry above already wrote a node under that same ref
+        # (same entity_type + account_id). A batch cannot carry two refs for one source object
+        # (req-grid-import-grift-identity-3), so the richer org-tree node (email, status, tags, its
+        # OU) wins and the plainer singleton envelope is dropped, never the reverse — the singleton
+        # exists so a non-organization account still gets one.
+        existing_ids = {envelope_ref(n) for n in node_envelopes}
+        org_node_ids = {envelope_ref(n) for n in org_tree.nodes}
         overridden = existing_ids & org_node_ids
         if overridden:
             self.record_info(
@@ -717,7 +738,7 @@ class Boto3Collector(CollectorBase):
                 "its richer node from the tree replaces the manifest singleton.",
                 message_data={"count": len(overridden)},
             )
-            node_envelopes = [n for n in node_envelopes if n["entity"]["entity_id"] not in overridden]
+            node_envelopes = [n for n in node_envelopes if envelope_ref(n) not in overridden]
         node_envelopes.extend(org_tree.nodes)
         edge_envelopes.extend(org_tree.edges)
 
@@ -749,25 +770,40 @@ class Boto3Collector(CollectorBase):
             (self.record_warn if lz_notice.level == "warn" else self.record_info)(
                 _SITE_LZ_NOTICE, lz_notice.code, lz_notice.message, message_data=lz_notice.data
             )
-        present = {n["entity"]["entity_id"] for n in node_envelopes}
-        node_envelopes.extend(n for n in landing_zone.nodes if n["entity"]["entity_id"] not in present)
+        present = {envelope_ref(n) for n in node_envelopes}
+        node_envelopes.extend(n for n in landing_zone.nodes if envelope_ref(n) not in present)
         edge_envelopes.extend(landing_zone.edges)
         surfaces.extend(landing_zone.regional_surfaces)
         # The two account settings are typed fields on nodes this run already writes: EBS default
         # encryption on each footprint, the S3 account public-access block on the run's own account
         # node (whichever path wrote it, the manifest singleton or the Organizations tree).
-        by_id = {n["entity"]["entity_id"]: n for n in node_envelopes}
+        by_ref = {envelope_ref(n): n for n in node_envelopes}
         for region, fields in landing_zone.footprint_fields.items():
-            footprint = by_id.get(str(footprint_id(account_id, region)))
+            footprint = by_ref.get(footprint_ref(account_id, region))
             if footprint is not None:
                 footprint["node"].update(fields)
-        own_account = by_id.get(str(account_entity_id(account_id)))
+        own_account = by_ref.get(account_ref(account_id))
         if own_account is not None and landing_zone.account_fields:
             own_account["node"].update(landing_zone.account_fields)
 
-        # --- one GRIFT batch per run (permissive: dangling edges resolve on a
-        # later run by deterministic identity, never fail) ---
-        claims = merge_claims(claims)
+        # --- one GRIFT batch per run, everything named by identity (req-aws-collector-identity) ---
+        # A node whose declared key has a hole would be created afresh on every run, so the run
+        # fails here rather than send it. Permissive dangling mode: an endpoint naming a node no
+        # live row matches skips that edge and core records a skip event, never a failure.
+        try:
+            addressed = address_batch(node_envelopes, edge_envelopes)
+        except IdentityError as exc:
+            self._abort(_SITE_ABORT_IDENTITY_INCOMPLETE, "IDENTITY_INCOMPLETE", str(exc))
+            raise  # unreachable: _abort raises; keeps `addressed` bound for the type checker
+        withhold_retired_undeclared_edges(addressed)
+        for code, message in addressed.notices:
+            self.record_warn(_SITE_ADDRESSING, code, message)
+        node_envelopes, edge_envelopes = addressed.nodes, addressed.edges
+        claims = merge_claims(
+            claim
+            for envelope, reads in judged
+            for claim in claims_for(node_anchor(envelope), reads, unclaimable=unclaimable)
+        )
         authority_emitted = bool(claims) and importer_accepts_edge_cases()
         document = assemble_batch(
             source=_SOURCE,
@@ -786,16 +822,19 @@ class Boto3Collector(CollectorBase):
         # per-collector guard — see req-tap-cares-collector-grift-import-9.
         result = self.submit_grift(document, dangling_edge_mode="permissive")
         # Every listing this run read is recorded against the batch that carries its observations;
-        # `applied` is derived by the recorder from that batch's commit. Region-scoped containment's
-        # (tap-plugin-aws-core#49) subject is the footprint's deterministic grid id, already real
-        # once the batch imported. Account-scoped containment's (tap-plugin-aws-core#43) subject is
-        # the account node's own grid id, which this collector mints itself (identity.py) and which
-        # the batch above wrote: candidate derivation resolves it as a grid entity id and needs the
-        # account itself observed this run before it fans out from it
-        # (tap_grid/candidates.py::_derive_surface). A run that read no contained listing of either
-        # kind says so (a statement with zero surfaces, not no statement).
+        # `applied` is derived by the recorder from that batch's commit. Each surface's subject was
+        # written as the parent's ref (the footprint for region-scoped containment,
+        # tap-plugin-aws-core#49; the account for account-scoped, #43); here it becomes the grid id
+        # core found or assigned for that ref, read from the import result. Candidate derivation
+        # resolves the subject as a grid entity id and needs the parent observed this run before it
+        # fans out from it (tap_grid/candidates.py::_derive_surface). A run that read no contained
+        # listing of either kind says so (a statement with zero surfaces, not no statement).
         collection_batch_id = str(document["batches"][0]["batch_entity"]["entity_id"])
+        resolved_refs: dict[str, str] = {}
+        for imported_batch in result.imported_batches:
+            resolved_refs.update(imported_batch.resolved_refs)
         for surface in surfaces:
+            surface = {**surface, "subject": resolve_subject(surface["subject"], addressed, resolved_refs)}
             self.record_surface(**surface, applied_batches=[collection_batch_id])
         for containment, walk in listings:
             self.record_surface(
@@ -803,7 +842,7 @@ class Boto3Collector(CollectorBase):
                     walk,
                     relation=containment["relation"],
                     edge_type=containment["edge_type"],
-                    subject=str(account_entity_id(account_id)),
+                    subject=resolve_subject(account_ref(account_id), addressed, resolved_refs),
                     applied_batches=[collection_batch_id],
                 )
             )
@@ -816,17 +855,16 @@ class Boto3Collector(CollectorBase):
             message_data={"imported": [str(b.batch_entity_id) for b in result.imported_batches]},
         )
 
-        # Completeness surfaces for the Organizations tree (req-grid-reconcile-evidence): every
-        # `subject` organizations.py recorded is already the deterministic id the batch wrote
-        # (unlike an assigned-identity plugin, aws_core mints its own ids — no batch-local ref to
-        # resolve here), so the surfaces can be authored as soon as the batch that carries their
-        # observations has an id, which `submit_grift` above just produced (a rejected batch
-        # aborts the run before this line is reached — `submit_grift`'s default `on_rejection`).
+        # Completeness surfaces for the Organizations tree and the landing zone
+        # (req-grid-reconcile-evidence): each `subject` was recorded as the parent's ref and becomes
+        # the grid id the import resolved it to, so the surfaces are authored once the batch that
+        # carries their observations has imported, which `submit_grift` above just did (a rejected
+        # batch aborts the run before this line is reached — `submit_grift`'s default `on_rejection`).
         applied_batches = [str(b.batch_entity_id) for b in result.imported_batches]
-        for org_listing in org_tree.listings:
-            self.record_surface(**org_listing.surface(applied_batches))
-        for lz_listing in landing_zone.listings:
-            self.record_surface(**lz_listing.surface(applied_batches))
+        for parent_listing in [*org_tree.listings, *landing_zone.listings]:
+            statement = parent_listing.surface(applied_batches)
+            statement["subject"] = resolve_subject(statement["subject"], addressed, resolved_refs)
+            self.record_surface(**statement)
         if not org_tree.listings and not landing_zone.listings:
             self.declare_no_surfaces()
 

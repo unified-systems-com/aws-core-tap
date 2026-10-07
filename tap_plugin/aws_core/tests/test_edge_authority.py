@@ -33,7 +33,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.authority import (
     with_edge_reads,
     worst,
 )
-from tap_plugin.aws_core.collectors.boto3_collector.batch import assemble_batch
+from tap_plugin.aws_core.collectors.boto3_collector.batch import assemble_batch, node_anchor, node_envelope, node_key
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     apigateway_http_apis_detailed,
@@ -45,7 +45,6 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     s3_buckets_hydrated,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.edges import emit_edges
-from tap_plugin.aws_core.collectors.boto3_collector.identity import node_entity_id
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 from tap_plugin.aws_core.collectors.boto3_collector.transforms import build_transform_registry
@@ -649,19 +648,38 @@ class TestFilteringTransforms:
         assert _reads(_IAM_ROLE, _role_item(odd))[_ATTACHES] == PARTIAL
 
 
+def _anchor(node: Any) -> dict[str, Any]:
+    """The anchor the collector names ``node`` by: its sent envelope's type and full natural key."""
+    return node_anchor(node_envelope(node, {}, persist_configuration=False))
+
+
 class TestClaims:
     def test_claim_shape(self):
         entry = _entry(_EVENTBRIDGE)
         node = project_item(entry, _rule_item(_denied("ListTargetsByRule")))
         reads = anchor_reads(node, entry, modeled_types=_MODELED, transforms=_TRANSFORMS)
-        claims = claims_for(node, reads, unclaimable=frozenset())
+        claims = claims_for(_anchor(node), reads, unclaimable=frozenset())
         assert {
             "edge_type": "INVOKES_LAMBDA__aws_core",
-            "anchor": {"entity_id": str(node.entity_id)},
+            "anchor": {"entity_type": _EVENTBRIDGE, "key": _anchor(node)["key"]},
             "direction": "outbound",
             "read": FAILED,
         } in claims
         assert all(set(c) == {"edge_type", "anchor", "direction", "read"} for c in claims)
+
+    def test_the_anchor_is_the_full_natural_key_the_node_is_sent_with(self):
+        # The anchor is read by the same function address_batch dedupes nodes on, from the payload the
+        # batch sends: every declared key property, each with the value core will search for.
+        from tap_grid.registry import get_model_class
+
+        entry = _entry(_EVENTBRIDGE)
+        node = project_item(entry, _rule_item({"Targets": []}))
+        envelope = node_envelope(node, {}, persist_configuration=False)
+        anchor = node_anchor(envelope)
+        assert anchor == {"entity_type": _EVENTBRIDGE, "key": node_key(envelope)}
+        assert tuple(anchor["key"]) == tuple(get_model_class(_EVENTBRIDGE).NATURAL_KEY)
+        assert all(value not in (None, "") for value in anchor["key"].values())
+        assert "entity_id" not in anchor
 
     def test_a_scope_another_entry_writes_into_is_not_claimed(self):
         entries = [
@@ -671,7 +689,7 @@ class TestClaims:
         assert shared_scopes(entries) == {("b", "T", "inbound"), ("a", "T", "outbound")}
         node = project_item(_entry(_EVENTBRIDGE), _rule_item({"Targets": []}))
         unclaimable = frozenset({(_EVENTBRIDGE, "INVOKES_LAMBDA__aws_core", "outbound")})
-        claims = claims_for(node, {_INVOKES: COMPLETE, _ASSUMES: COMPLETE}, unclaimable=unclaimable)
+        claims = claims_for(_anchor(node), {_INVOKES: COMPLETE, _ASSUMES: COMPLETE}, unclaimable=unclaimable)
         assert [c["edge_type"] for c in claims] == ["ASSUMES_ROLE__aws_core"]
 
     def test_the_manifest_has_no_shared_scope(self):
@@ -680,7 +698,7 @@ class TestClaims:
         assert scopes.isdisjoint(shared_scopes(_ENTRIES))
 
     def test_one_claim_per_scope_with_the_worst_read(self):
-        anchor = {"entity_id": str(uuid.uuid7())}
+        anchor = {"entity_type": _EVENTBRIDGE, "key": {"arn": f"arn:aws:events:us-east-1:{_ACCOUNT}:rule/r"}}
         merged = merge_claims(
             [
                 {"edge_type": "T", "anchor": anchor, "direction": "outbound", "read": COMPLETE},
@@ -693,7 +711,7 @@ class TestClaims:
     def test_batch_carries_the_section_only_when_there_are_claims(self):
         claim = {
             "edge_type": "T",
-            "anchor": {"entity_id": str(uuid.uuid7())},
+            "anchor": {"entity_type": _EVENTBRIDGE, "key": {"arn": f"arn:aws:events:us-east-1:{_ACCOUNT}:rule/r"}},
             "direction": "outbound",
             "read": COMPLETE,
         }
@@ -808,13 +826,13 @@ class TestThroughTheCollector:
         monkeypatch.setattr(Boto3Collector, "submit_grift", _judge_only)
         _run()
         claims = documents[0]["batches"][0]["edge_cases"]["authority"]
-        rule_id = str(node_entity_id(_EVENTBRIDGE, _SLICE_RULE["Arn"]))
-        rule_claims = {
-            (c["edge_type"], c["direction"]): c["read"] for c in claims if c["anchor"]["entity_id"] == rule_id
-        }
+        rule = next(n for n in documents[0]["batches"][0]["nodes"] if n["entity"]["entity_type"] == _EVENTBRIDGE)
+        rule_claims = {(c["edge_type"], c["direction"]): c["read"] for c in claims if c["anchor"] == node_anchor(rule)}
         assert rule_claims[_INVOKES] == FAILED
+        # Every anchor names a node by type and key, never by an id the collector minted.
+        assert all(set(c["anchor"]) == {"entity_type", "key"} for c in claims)
         # One claim per scope across the whole batch.
-        scopes = [(c["edge_type"], c["anchor"]["entity_id"], c["direction"]) for c in claims]
+        scopes = [(c["edge_type"], repr(sorted(c["anchor"].items())), c["direction"]) for c in claims]
         assert len(scopes) == len(set(scopes))
         # Every claim carries a read from the closed set; none is defaulted.
         assert {c["read"] for c in claims} <= {COMPLETE, PARTIAL, FAILED}

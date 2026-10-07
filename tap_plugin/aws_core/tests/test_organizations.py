@@ -213,10 +213,10 @@ class TestCollectOrganizationTree:
         assert policy_node["node"]["aws_managed"] is False
 
         # Containment: org -> top OU, top OU -> nested OU, org -> both accounts.
-        partition_edges = {(e["edge"]["from_entity_id"], e["edge"]["to_entity_id"]) for e in _edges(tree, PARTITIONED_INTO_OU)}
-        assert (org_node["entity"]["entity_id"], _node(tree, ORGANIZATIONAL_UNIT, "ou_id", "ou-ab12-top00001")["entity"]["entity_id"]) in partition_edges
-        enrolls = {e["edge"]["to_entity_id"] for e in _edges(tree, ENROLLS_ACCOUNT)}
-        assert {root_account["entity"]["entity_id"], nested_account["entity"]["entity_id"]} == enrolls
+        partition_edges = {(e["edge"]["from_ref"], e["edge"]["to_ref"]) for e in _edges(tree, PARTITIONED_INTO_OU)}
+        assert (org_node["entity"]["ref"], _node(tree, ORGANIZATIONAL_UNIT, "ou_id", "ou-ab12-top00001")["entity"]["ref"]) in partition_edges
+        enrolls = {e["edge"]["to_ref"] for e in _edges(tree, ENROLLS_ACCOUNT)}
+        assert {root_account["entity"]["ref"], nested_account["entity"]["ref"]} == enrolls
         assert len(_edges(tree, ATTACHED_TO_TARGET)) == 1
         # NESTED_UNDER_PARENT is still emitted (the reference), for both OUs and both accounts.
         assert len(_edges(tree, NESTED_UNDER_PARENT)) == 4
@@ -236,11 +236,11 @@ class TestCollectOrganizationTree:
             "organization.organizations_policies",
             "policy.statements",
         }
-        org_ou_surface = by_relation[("organization.organizational_units", org_node["entity"]["entity_id"])]
+        org_ou_surface = by_relation[("organization.organizational_units", org_node["entity"]["ref"])]
         assert org_ou_surface.complete is True
         assert org_ou_surface.count == 1
         assert org_ou_surface.edge_type == PARTITIONED_INTO_OU
-        membership_surface = by_relation[("organization.accounts", org_node["entity"]["entity_id"])]
+        membership_surface = by_relation[("organization.accounts", org_node["entity"]["ref"])]
         assert membership_surface.count == 2
         assert membership_surface.edge_type == ENROLLS_ACCOUNT
 
@@ -336,7 +336,7 @@ class TestCollectOrganizationTree:
         tree = collect_organization(client, DIMENSIONS)
         node = _node(tree, ACCOUNT, "account_id", "555555555555")
         assert node is not None
-        assert {e["edge"]["to_entity_id"] for e in _edges(tree, ENROLLS_ACCOUNT)} == {node["entity"]["entity_id"]}
+        assert {e["edge"]["to_ref"] for e in _edges(tree, ENROLLS_ACCOUNT)} == {node["entity"]["ref"]}
         assert _edges(tree, NESTED_UNDER_PARENT) == []
         assert any(n.code == "ORG_ACCOUNTS_UNPLACED" for n in tree.notices)
 

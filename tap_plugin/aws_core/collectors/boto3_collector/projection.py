@@ -12,8 +12,8 @@ Each raw item becomes a typed-node projection:
   ``configuration`` envelope (``req-aws-collector-field-projection-3``).
   Whether that envelope is persisted is decided at emit time by the
   manifest entry's ``persist_configuration`` flag;
-- identity is deterministic from ``(entity_type, natural_key)`` so re-runs
-  upsert in place (``req-aws-collector-identity``).
+- identity is the ``(entity_type, natural_key)`` pair: the node is sent by ``ref`` with its
+  declared key fields, and core finds or assigns its grid id (``req-aws-collector-identity``).
 
 No type coercion is performed beyond the engine-level datetime -> ISO 8601 UTC
 rule already applied in :mod:`.envelope`; the model / service-layer validation
@@ -28,10 +28,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
-from uuid import UUID
 
 from .envelope import build_configuration, without_response_metadata
-from .identity import node_entity_id
+from .identity import node_ref
 from .paths import eval_path
 from .tags import normalize_tags
 
@@ -39,8 +38,8 @@ from .tags import normalize_tags
 class ProjectionError(Exception):
     """A raw item could not be projected (its natural key did not resolve).
 
-    Identity-critical: an item with no natural key cannot form a deterministic
-    node id. The runtime integration classifies this per-item (record a warn
+    Identity-critical: an item with no natural key cannot be found again, so it is never sent
+    (core would create it afresh on every run). The runtime integration classifies this per-item (record a warn
     and skip the item) rather than failing the whole run.
     """
 
@@ -55,12 +54,16 @@ class ProjectedNode:
     """
 
     entity_type: str
-    entity_id: UUID
     natural_key: str
     name: str
     fields: dict[str, Any]
     configuration: dict[str, Any]
     raw_item: Any
+
+    @property
+    def ref(self) -> str:
+        """The node's batch-local ref (``req-aws-collector-identity``); never a grid id."""
+        return node_ref(self.entity_type, self.natural_key)
 
 
 def source_op_label(entry: dict[str, Any]) -> str:
@@ -124,7 +127,6 @@ def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
 
     return ProjectedNode(
         entity_type=entry["entity_type"],
-        entity_id=node_entity_id(entry["entity_type"], natural_key),
         natural_key=natural_key,
         name=str(name),
         fields=fields,

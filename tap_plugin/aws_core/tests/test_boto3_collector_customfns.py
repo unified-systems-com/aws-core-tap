@@ -129,8 +129,8 @@ class TestRoute53ZonesWithAliasTargets:
         # Regression (found live): the standard CloudFront setup has BOTH
         # an A and an AAAA alias to the same distribution. Without dedup
         # the domain/ARN appears twice -> two edges with the same
-        # deterministic edge_entity_id -> GRIFT rejects the whole batch
-        # (duplicate_entity_id). One distribution -> one resolved ARN.
+        # the same relationship twice -> GRIFT rejects the whole batch.
+        # One distribution -> one resolved ARN.
         rrs = [
             {
                 "Name": "samsite.unified-systems.com.",
