@@ -6,7 +6,16 @@ Each tile is a number the grid can answer about the AWS estate: accounts, OUs, V
 gateways that are its public front doors, internet-facing load balancers, buckets whose public access
 is not blocked, firewalls, transit gateway attachments, KMS keys, service control policies, and the
 accounts inside each compliance boundary. A panel instance lists the tiles it shows in
-``config.tiles`` (default: all, in catalogue order).
+``config.tiles``; with none listed it shows the dashboard set (``DEFAULT_KEYS``, the first eleven, in
+catalogue order). The later tiles serve the /aws/scps, /aws/security-groups and /aws/network pages and
+the IAM column on /aws, and appear only where an instance names them.
+
+Two security-group tiles read the rules inside each group's raw ``configuration`` (IpPermissions,
+IpPermissionsEgress). Gryphon cannot walk into a JSON array (``req-grid-traversal-lang-filters-jsonpath``
+is Proposed), but its ``=~`` regex reaches the array as Postgres renders it as text, so a group can be
+flagged when ANY of its rules carries ``0.0.0.0/0`` / ``::/0`` or ``IpProtocol: -1``. That is a
+per-group flag, not a per-rule one: it cannot say that the open range and the all-protocol rule are the
+same rule. Per-rule nodes are aws-core-tap#64.
 
 Reads go through Gryphon (``execute_gryphon_raw``, gated on ``grid.read``); folding the envelopes into
 tiles is pure, so the tests need no grid. A tile whose read fails says so in the tile rather than
@@ -19,6 +28,7 @@ it sits under at any depth (NESTED_UNDER_PARENT), is SCOPED_TO_COMPLIANCE_BOUNDA
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -35,10 +45,31 @@ logger = logging.getLogger(__name__)
 NESTED = "NESTED_UNDER_PARENT__aws_core"
 SCOPED = "SCOPED_TO_COMPLIANCE_BOUNDARY__compliance_core"
 ACCOUNT = "aws_core__aws_account"
+SG = "aws_core__aws_security_group"
+SCP = "aws_core__aws_service_control_policy"
+STATEMENT = "aws_core__aws_policy_statement"
+ROLE = "aws_core__aws_iam_role"
+
+#: A rule open to the whole internet, as Postgres prints a rule list as text: the CIDR key and its value
+#: together, so a rule whose Description merely mentions 0.0.0.0/0 is not flagged.
+OPEN_TO_INTERNET_RE = r'"CidrIp(v6)?": "(0\.0\.0\.0/0|::/0)"'
+#: A rule that allows every protocol (and so every port).
+ALL_PROTOCOLS_RE = '"IpProtocol": "-1"'
+#: The statement belongs to a service control policy (its policy ARN names the policy type).
+SCP_ARN_MARK = "/service_control_policy/"
 
 
 def _nodes(etype: str) -> str:
     return f"MATCH (n:{etype}) RETURN n"
+
+
+def gryphon_literal(value: str) -> str:
+    """A Gryphon string literal for ``value`` (ESCAPED_STRING: JSON's quoting)."""
+    return json.dumps(value)
+
+
+def _where(etype: str, predicate: str) -> str:
+    return f"MATCH (n:{etype}) WHERE {predicate} RETURN n"
 
 
 @dataclass(frozen=True)
@@ -86,8 +117,47 @@ CATALOGUE: tuple[TileDef, ...] = (
             "VPC, VPN, Direct Connect, Connect and peering attachments to a transit gateway.",
             _nodes("aws_core__aws_transit_gateway_attachment")),
     TileDef("kms_keys", "KMS keys", "Every KMS key.", _nodes("aws_core__aws_kms_key")),
+    # /aws/scps
+    TileDef("customer_scps", "Customer SCPs", "Service control policies the organization wrote (not AWS-managed).",
+            _where(SCP, "n.data.aws_managed = false")),
+    TileDef("scp_statements", "SCP statements", "Every statement a service control policy declares.",
+            _where(STATEMENT, f"n.data.policy_arn CONTAINS {gryphon_literal(SCP_ARN_MARK)}")),
+    TileDef("scp_deny_statements", "Deny statements", "SCP statements whose effect is Deny: the organization's guardrails.",
+            _where(STATEMENT, f'n.data.effect = "Deny" AND n.data.policy_arn CONTAINS {gryphon_literal(SCP_ARN_MARK)}')),
+    # /aws/security-groups
+    TileDef("security_groups", "Security groups", "Every security group.", _nodes(SG)),
+    TileDef("sg_ingress_open", "Open to the internet (ingress)",
+            "Security groups with at least one inbound rule from 0.0.0.0/0 or ::/0.",
+            _where(SG, f"n.data.configuration.IpPermissions =~ {gryphon_literal(OPEN_TO_INTERNET_RE)}"), attention=True),
+    TileDef("sg_ingress_all_protocols", "All-protocol ingress",
+            "Security groups with at least one inbound rule for every protocol (IpProtocol -1), from any source.",
+            _where(SG, f"n.data.configuration.IpPermissions =~ {gryphon_literal(ALL_PROTOCOLS_RE)}"), attention=True),
+    TileDef("sg_egress_open", "Open to the internet (egress)",
+            "Security groups with at least one outbound rule to 0.0.0.0/0 or ::/0. AWS gives every new group one.",
+            _where(SG, f"n.data.configuration.IpPermissionsEgress =~ {gryphon_literal(OPEN_TO_INTERNET_RE)}")),
+    # /aws/network
+    TileDef("default_vpcs", "Default VPCs", "VPCs AWS created by default (is_default). Public subnets and an internet "
+            "gateway come with them.", _where("aws_core__aws_vpc", "n.data.is_default = true"), attention=True),
+    TileDef("public_subnets", "Public subnets", "Subnets that give instances a public IPv4 address at launch "
+            "(MapPublicIpOnLaunch). Not proof of a route to the internet: route tables are not collected.",
+            _where("aws_core__aws_subnet", "n.data.public = true"), attention=True),
+    # /aws IAM column
+    TileDef("roles_trust_services", "Roles AWS services assume", "IAM roles whose trust policy names an AWS service.",
+            _where(ROLE, 'n.data.trusted_services =~ "[a-z]"')),
+    TileDef("roles_trust_accounts", "Roles other accounts assume", "IAM roles whose trust policy names an AWS account.",
+            _where(ROLE, 'n.data.trusted_account_ids =~ "[0-9]"')),
+    TileDef("roles_trust_anyone", "Roles anyone can assume", "IAM roles whose trust policy names the wildcard principal (*).",
+            _where(ROLE, "n.data.trusts_wildcard_principal = true"), attention=True),
+    TileDef("users_without_mfa", "IAM users without MFA", "IAM users observed with no MFA device. A user whose MFA "
+            "was not read is not counted.", _where("aws_core__aws_iam_user", "n.data.mfa_enabled = false"), attention=True),
 )
 BY_KEY = {t.key: t for t in CATALOGUE}
+#: What an instance with no ``config.tiles`` shows: the /aws dashboard set.
+DEFAULT_KEYS: tuple[str, ...] = (
+    "accounts", "organizational_units", "service_control_policies", "vpcs", "internet_gateways",
+    "internet_facing_load_balancers", "public_buckets", "network_firewalls", "transit_gateways",
+    "transit_gateway_attachments", "kms_keys",
+)
 
 TREE_QUERY = f"MATCH (c)-[:{NESTED}]->(p) RETURN c.entity_id AS child, p.entity_id AS parent"
 BOUNDARY_QUERY = "MATCH (b:compliance_core__compliance_boundary) RETURN b"
@@ -159,7 +229,7 @@ class AwsCountsPanelType:
         from tap_grid.gryphon.executor import execute_gryphon_raw
 
         config = {**cls.config_defaults, **(panel.config or {})}
-        keys = [k for k in (config.get("tiles") or [t.key for t in CATALOGUE]) if k in BY_KEY]
+        keys = [k for k in (config.get("tiles") or DEFAULT_KEYS) if k in BY_KEY]
         tiles: list[dict[str, Any]] = []
         accounts: list[dict[str, Any]] = []
         for key in keys:
