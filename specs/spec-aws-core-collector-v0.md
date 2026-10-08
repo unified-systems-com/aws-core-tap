@@ -99,7 +99,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
 | req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
-| req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
+| req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source, and each Organizations placement and attachment read, was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
 | req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
 | req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
@@ -1107,12 +1107,34 @@ are never the same value.
   transform that returns nothing for a non-empty reference makes a complete read `partial`, except
   the two transforms that filter out-of-scope values on purpose (a non-S3 CloudFront origin, an
   AWS-managed policy). A rule whose target type is not modelled is `partial`.
+- **The Organizations tree's reference edges.** The Organizations reader is not a manifest entry,
+  so it judges its own reads (`collectors/boto3_collector/organizations.py`, "Edge authority";
+  aws-core-tap#88). Two scopes, both outbound from the anchor:
+  - `NESTED_UNDER_PARENT` at every account and OU the run writes. AWS gives each exactly one parent,
+    so the batch's one edge is the whole set when the read that found it is whole. An OU's parent is
+    the `ListOrganizationalUnitsForParent` listing that named it (AWS has no operation that
+    re-parents an OU). An account's is complete only when the whole placement walk was: every OU
+    listing and every `ListAccountsForParent` read to its last page, no OU refused by its model (its
+    accounts were never listed), and the account named under exactly one parent. An errored page
+    anywhere in the walk is `failed` for every account; an account named under no parent or two (a
+    `MoveAccount` between two listings) is `partial`. This is the claim that ends the stale parent
+    edge a `MoveAccount` leaves behind.
+  - `ATTACHED_TO_TARGET` at every customer-managed policy (SCP and every other enabled policy type)
+    the run writes: `ListTargetsForPolicy` read to its last page is the whole set. An errored page
+    is `failed`; a target the reader cannot map to a node is `partial`. An AWS-managed policy, or
+    one whose `AwsManaged` flag is missing, is never claimed: its ARN names no organization, so its
+    one node is shared by every organization in the partition, and tap's scope is every live edge
+    at the anchor whoever wrote it.
 - **One claim per scope.** All rules of one edge type and direction at one anchor fold into one
   claim with the worst read. The anchor is named by type and full natural key (`{entity_type,
   key}`), read from the envelope the batch sends by the same function the batch's node identity is
   read with (`batch.node_key`), so the anchor and the node are one identity. A scope another manifest entry's
-  rules also write into is not claimed. Containment, Organizations, landing-zone and findings edges
-  are not claimed: their completeness is the reconcile surfaces' business.
+  rules also write into is not claimed. Containment edges (the Organizations tree's
+  `PARTITIONED_INTO_OU`, `ENROLLS_ACCOUNT`, `HOLDS_*` and `DECLARES_*` among them), landing-zone and
+  findings edges are not claimed: a contained child never moves to another live parent, and its
+  removal is the reconcile surfaces' business. Nor is `NESTED_UNDER_PARENT` inbound at a parent: a
+  child the model refused is not sent, so a parent's inbound set can be short by a true edge.
+  `DELEGATES_TO_ACCOUNT` is fixed by its delegation's own key and never goes stale.
 - **Sent only where accepted.** The claims are carried as the batch's `edge_cases.authority` when
   the running tap's GRIFT schema defines that section. The plugin's tap floor (`>=0.3.0`) has it, so
   the check no longer changes what a supported tap receives; on an older tap the claims would be
@@ -1132,6 +1154,8 @@ are never the same value.
 | req-aws-collector-edge-authority-4 | Fail Closed | Implemented | A `custom_fn` key an edge rule reads that the reader did not declare is `partial`; an unknown status counts as `failed`; no status is ever defaulted to `complete`. | |
 | req-aws-collector-edge-authority-5 | One Claim Per Scope | Implemented | A batch carries at most one claim per (edge type, anchor, direction), with the worst read of every rule that contributes. | tap fails a batch with two (`duplicate_authority_claim`). |
 | req-aws-collector-edge-authority-6 | Sent Only Where Accepted | Implemented | The `edge_cases` section is written only when the importer's own schema defines it; the run record says whether it was sent. | Drop the check when `requires_tap` reaches a release that has the section. |
+| req-aws-collector-edge-authority-7 | Organizations Placement Is Claimed | Implemented | Every account and OU the Organizations reader writes carries one `NESTED_UNDER_PARENT` outbound claim: `complete` only when the read behind its one parent was whole (an OU: the listing that named it; an account: the whole placement walk, and named under exactly one parent); an errored page is `failed`, an account named under no parent or two is `partial`. | aws-core-tap#88: the stale parent edge a `MoveAccount` leaves. `tests/test_organizations_edge_authority.py::TestPlacement`. |
+| req-aws-collector-edge-authority-8 | Organizations Attachments Are Claimed | Implemented | Every customer-managed Organizations policy the reader writes carries one `ATTACHED_TO_TARGET` outbound claim from its `ListTargetsForPolicy` read: an errored page is `failed`, an unmappable target `partial`; an AWS-managed policy (shared by every organization in the partition) is never claimed. | `tests/test_organizations_edge_authority.py::TestAttachments`. |
 
 ### Audit Verifiability
 ----

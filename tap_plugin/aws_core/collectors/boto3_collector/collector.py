@@ -469,7 +469,8 @@ class Boto3Collector(CollectorBase):
         #: after the batch is submitted (tap-plugin-aws-core#43, req-aws-collector-reconcile).
         listings: list[tuple[dict[str, Any], ListingWalk]] = []
         #: Edge-authority claims (req-aws-collector-edge-authority): one per (edge type, anchor,
-        #: direction) the manifest's edge rules cover at a node this run emitted, with how it was read.
+        #: direction) the manifest's edge rules cover at a node this run emitted, and the Organizations
+        #: tree's reference edges (organizations.py, "Edge authority"), each with how it was read.
         #: Held as (sent node envelope, its per-scope reads) and made into claims once the batch is
         #: addressed, when every node's key is known to be whole.
         judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]] = []
@@ -741,6 +742,13 @@ class Boto3Collector(CollectorBase):
             node_envelopes = [n for n in node_envelopes if envelope_ref(n) not in overridden]
         node_envelopes.extend(org_tree.nodes)
         edge_envelopes.extend(org_tree.edges)
+        # The tree's reference edges are claimed per node as well (req-aws-collector-edge-authority-7,
+        # -8): only nodes the tree wrote, each with the read organizations.py judged for it.
+        judged.extend(
+            (envelope, org_tree.edge_reads[envelope_ref(envelope)])
+            for envelope in org_tree.nodes
+            if envelope_ref(envelope) in org_tree.edge_reads
+        )
 
         # --- Landing-zone governance (aws-core-tap#66, spec-aws-core-landing-zone.md) ---
         # Control Tower, Identity Center and the per-region security services of this run's account:

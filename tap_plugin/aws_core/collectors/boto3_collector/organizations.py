@@ -55,6 +55,28 @@ moves:
 An account's current OU is also recorded on the node (``configuration.ParentId``), because the
 ``NESTED_UNDER_PARENT`` edge alone cannot say which of two edges is the stale one after a move.
 
+Edge authority
+--------------
+The stale edge a move leaves behind is ended by an edge-authority claim
+(``req-aws-collector-edge-authority-7``, ``-8``; aws-core-tap#88): for a reference edge this reader
+reads whole at one node, the run states "these are all of them", and tap proposes removing the rest.
+Two scopes are claimed, each recorded per node in :attr:`OrganizationTree.edge_reads`:
+
+- ``NESTED_UNDER_PARENT`` outbound at every account and OU written. A node has exactly one parent.
+  An OU's parent is the listing that named it (an OU never moves). An account's parent is complete
+  only when the whole placement walk was: every ``ListOrganizationalUnitsForParent``, every
+  ``ListAccountsForParent``, no OU refused (its accounts were never listed), and the account named
+  by exactly one parent. A call that errored is ``failed``; a walk that finished but named the
+  account under no parent or two (a move mid-walk) is ``partial``.
+- ``ATTACHED_TO_TARGET`` outbound at every customer-managed policy written: ``ListTargetsForPolicy``
+  is the whole set. An errored page is ``failed``; a target the reader cannot map is ``partial``.
+  An AWS-managed policy is never claimed: its ARN names no organization, so its one node is shared
+  by every organization in the partition, and a claim from one would propose the others' attachments.
+
+The containment edges (``PARTITIONED_INTO_OU``, ``ENROLLS_ACCOUNT``, the ``HOLDS_*`` and
+``DECLARES_*`` edges) are not claimed: none of them can move to another live parent, and a removed
+child is reconcile's business, through the surfaces above.
+
 Failure discipline
 ------------------
 Nothing here raises for an AWS failure. A denied or failing call degrades to a **listing that says
@@ -100,6 +122,7 @@ from tap_plugin.aws_core.policy_types import (
     SERVICE_CONTROL_POLICY as _SCP_TYPE,
 )
 
+from .authority import COMPLETE, FAILED, PARTIAL, worst
 from .edges import edge_envelope
 from .identity import node_ref
 from .policy_documents import PolicyDocumentError, parse_statements, parse_tag_rules
@@ -155,6 +178,9 @@ PAGINATED_OPERATIONS: tuple[str, ...] = (
     "list_delegated_administrators",
     "list_delegated_services_for_account",
 )
+
+#: The direction of every edge-authority scope this reader claims: from the anchor node.
+OUTBOUND = "outbound"
 
 #: Completeness-surface relation names, in the source's own terms (the spec's
 #: ``repository.secrets`` convention): ``<parent kind>.<what was listed>``.
@@ -348,6 +374,10 @@ class OrganizationTree:
     #: Center assignment surface is complete only over a complete account set
     #: (``req-aws-landing-zone-identity-center-5``).
     member_accounts: list[str] | None = None
+    #: Edge-authority reads (``req-aws-collector-edge-authority-7``, ``-8``): node ref ->
+    #: ``{(edge_type, direction): read}`` for each reference scope this reader enumerated at that
+    #: node. Only nodes this read wrote are judged; the collector turns these into claims.
+    edge_reads: dict[str, dict[tuple[str, str], str]] = field(default_factory=dict)
 
     def node_refs(self, entity_type: str) -> set[str]:
         return {n["entity"]["ref"] for n in self.nodes if n["entity"]["entity_type"] == entity_type}
@@ -622,6 +652,12 @@ class _Reader:
     def add_edge(self, edge_type: str, from_type: str, from_key: str, to_type: str, to_key: str) -> None:
         self.tree.edges.append(_edge(edge_type, from_type, from_key, to_type, to_key, self.dimensions))
 
+    def judge(self, entity_type: str, natural_key: str, edge_type: str, read: str) -> None:
+        """Record how ``edge_type`` outbound was read at one node; a scope judged twice keeps the worst."""
+        scopes = self.tree.edge_reads.setdefault(node_ref(entity_type, natural_key), {})
+        scope = (edge_type, OUTBOUND)
+        scopes[scope] = worst([scopes[scope], read]) if scope in scopes else read
+
     @staticmethod
     def withdraw_if_skipped(listing: Listing, skipped: int) -> None:
         """A listing whose child the model refused did not reach processing whole.
@@ -675,15 +711,26 @@ class _Reader:
         # (the parent's AWS id, its grid entity type, its grid natural key)
         queue: list[tuple[str, str, str]] = [(rid, ORGANIZATION, org_id) for rid in root_ids]
         root_parents = list(queue)
+        # How the walk that finds every parent went, for each account's placement claim: an OU
+        # listing that errored is `failed`; an OU the model refused was never listed for its
+        # accounts, which is `partial`.
+        walk: list[str] = [COMPLETE]
         while queue:
             parent_aws_id, parent_type, parent_key = queue.pop(0)
             relation = RELATION_ORGANIZATION_OUS if parent_type == ORGANIZATION else RELATION_OU_OUS
             read = self.read("list_organizational_units_for_parent", "OrganizationalUnits", ParentId=parent_aws_id)
             listing = self.surface(read, relation, PARTITIONED_INTO_OU, parent_type, parent_key)
+            # An OU's parent is the listing that named it: AWS has no operation that re-parents one.
+            named_by = COMPLETE if read.complete else FAILED
+            walk.append(named_by)
             skipped = 0
             for unit in sorted(read.items, key=lambda u: str(u.get("Id") or "")):
                 ou_id = str(unit.get("Id") or "")
-                if not ou_id or ou_id in seen_ous:
+                if not ou_id:
+                    continue
+                if ou_id in seen_ous:
+                    # Named under a second parent: the walk cannot say which one is its parent.
+                    self.judge(ORGANIZATIONAL_UNIT, ou_id, NESTED_UNDER_PARENT, PARTIAL)
                     continue
                 seen_ous.add(ou_id)
                 name = str(unit.get("Name") or ou_id)
@@ -691,14 +738,16 @@ class _Reader:
                     ORGANIZATIONAL_UNIT, ou_id, name, {"name": name, "ou_id": ou_id, "tags": self.tags_of(ou_id)}
                 ):
                     skipped += 1
+                    walk.append(PARTIAL)
                     continue
                 self.add_edge(PARTITIONED_INTO_OU, parent_type, parent_key, ORGANIZATIONAL_UNIT, ou_id)
                 self.add_edge(NESTED_UNDER_PARENT, ORGANIZATIONAL_UNIT, ou_id, parent_type, parent_key)
+                self.judge(ORGANIZATIONAL_UNIT, ou_id, NESTED_UNDER_PARENT, named_by)
                 queue.append((ou_id, ORGANIZATIONAL_UNIT, ou_id))
             self.withdraw_if_skipped(listing, skipped)
 
         placement_parents = root_parents + [(ou, ORGANIZATIONAL_UNIT, ou) for ou in sorted(seen_ous)]
-        self._read_accounts(org_id, placement_parents)
+        self._read_accounts(org_id, placement_parents, walk=worst(walk))
         self._read_delegations(org_id)
         self._read_service_control_policies(org_id)
         self._read_other_policies(org_id, enabled)
@@ -845,14 +894,19 @@ class _Reader:
             "configuration": configuration,
         }
 
-    def _read_accounts(self, org_id: str, parents: list[tuple[str, str, str]]) -> None:
-        """Membership from ``ListAccounts``; placement from ``ListAccountsForParent`` per parent."""
+    def _read_accounts(self, org_id: str, parents: list[tuple[str, str, str]], *, walk: str = COMPLETE) -> None:
+        """Membership from ``ListAccounts``; placement from ``ListAccountsForParent`` per parent.
+
+        ``walk`` is how the OU walk that produced ``parents`` went; every account's placement read
+        is no better than it (see the module docstring, "Edge authority")."""
         members = self.read("list_accounts", "Accounts")
         membership = self.surface(members, RELATION_ORGANIZATION_ACCOUNTS, ENROLLS_ACCOUNT, ORGANIZATION, org_id)
         if members.complete:
             self.tree.member_accounts = sorted({str(a["Id"]) for a in members.items if a.get("Id")})
         by_id: dict[str, dict[str, Any]] = {str(a["Id"]): a for a in members.items if a.get("Id")}
         placement: dict[str, tuple[str, str, str]] = {}
+        #: Every parent that named each account; more than one is a move seen mid-walk.
+        named_under: dict[str, set[str]] = {}
         placement_complete = True
         for parent_aws_id, parent_type, parent_key in parents:
             # Placement is a reference (NESTED_UNDER_PARENT), not a containment surface: nothing is
@@ -863,7 +917,11 @@ class _Reader:
                 account_id = str(account.get("Id") or "")
                 if account_id:
                     placement[account_id] = (parent_aws_id, parent_type, parent_key)
+                    named_under.setdefault(account_id, set()).add(parent_aws_id)
                     by_id.setdefault(account_id, account)
+        # Every account's placement scope depends on every parent listing: an account a failed
+        # listing did not name may still sit under that parent.
+        placement_read = worst([walk, COMPLETE if placement_complete else FAILED])
 
         skipped = 0
         for account_id in sorted(by_id):
@@ -879,6 +937,8 @@ class _Reader:
             self.add_edge(ENROLLS_ACCOUNT, ORGANIZATION, org_id, ACCOUNT, key)
             if parent is not None:
                 self.add_edge(NESTED_UNDER_PARENT, ACCOUNT, key, parent[1], parent[2])
+            placed_once = len(named_under.get(key, ())) == 1
+            self.judge(ACCOUNT, key, NESTED_UNDER_PARENT, worst([placement_read, COMPLETE if placed_once else PARTIAL]))
         self.withdraw_if_skipped(membership, skipped)
         unplaced = sorted(a for a in by_id if a not in placement)
         if unplaced:
@@ -1037,6 +1097,9 @@ class _Reader:
                 emitted += 1
                 self.add_edge(holds_edge, ORGANIZATION, org_id, entity_type, arn)
             targets = self.read("list_targets_for_policy", "Targets", PolicyId=policy_id)
+            # The attachment read (req-aws-collector-edge-authority-8): an errored page is `failed`,
+            # a target this reader cannot map to a node is `partial`.
+            attachments = [COMPLETE if targets.complete else FAILED]
             for target in targets.items:
                 target_id = str(target.get("TargetId") or "")
                 kind = str(target.get("Type") or "")
@@ -1046,6 +1109,12 @@ class _Reader:
                     self.add_edge(ATTACHED_TO_TARGET, entity_type, arn, ORGANIZATIONAL_UNIT, target_id)
                 elif kind == "ACCOUNT" and target_id:
                     self.add_edge(ATTACHED_TO_TARGET, entity_type, arn, ACCOUNT, target_id)
+                else:
+                    attachments.append(PARTIAL)
+            if customer_managed:
+                # An AWS-managed policy's node is shared by every organization in the partition (its
+                # ARN names none), so no one organization's read is the whole of its attachments.
+                self.judge(entity_type, arn, ATTACHED_TO_TARGET, worst(attachments))
             self._read_body(entity_type, arn, policy_id, name, policy_type)
         return emitted, skipped
 
