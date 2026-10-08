@@ -69,7 +69,7 @@ def test_side_columns_on_the_dashboard_and_network_pages(batch: dict[str, Any]) 
     aws = pages["/aws"]["node"]["layout"]["columns"]
     assert [r["panel-id"] for r in aws["col-1"]["rows"].values()] == ["counts", "estate", "per-ou", "scope"]
     assert [r["panel-id"] for r in aws["col-2-iam"]["rows"].values()] == [
-        "iam", "roles-services", "roles-accounts", "roles-anyone", "roles-other", "users-no-mfa"]
+        "iam", "roles-services", "roles-accounts", "roles-anyone", "roles-federated", "roles-other", "users-no-mfa"]
     net = pages["/aws/network"]["node"]["layout"]["columns"]
     assert [r["panel-id"] for r in net["col-2-exposure"]["rows"].values()] == ["exposure", "default-vpcs", "public-subnets"]
 
@@ -118,3 +118,12 @@ def test_security_group_flag_tables_use_the_tile_patterns(batch: dict[str, Any])
                if n["entity"]["entity_type"] == "search"}
     assert f"IpPermissions =~ {json.dumps(OPEN_TO_INTERNET_RE)}" in queries["aws — Open to the internet"]
     assert f"IpPermissions =~ {json.dumps(ALL_PROTOCOLS_RE)}" in queries["aws — All-protocol inbound rules"]
+
+
+def test_federated_roles_are_not_listed_as_same_account(batch: dict[str, Any]) -> None:
+    """A role trusting a SAML or OIDC provider has its own table; the same-account table excludes it."""
+    queries = {n["entity"]["name"]: "\n".join(n["node"]["definition"]["query"]) for n in batch["nodes"]
+               if n["entity"]["entity_type"] == "search"}
+    federated = 'r.data.configuration.AssumeRolePolicyDocument =~ "\\"Federated\\""'
+    assert f"WHERE {federated}" in queries["aws — Assumed through a federated provider"]
+    assert f"AND NOT {federated}" in queries["aws — Assumed only from this account"]

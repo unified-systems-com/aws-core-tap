@@ -138,7 +138,8 @@ CATALOGUE: tuple[TileDef, ...] = (
     # /aws/network
     TileDef("default_vpcs", "Default VPCs", "VPCs AWS created by default (is_default). Public subnets and an internet "
             "gateway come with them.", _where("aws_core__aws_vpc", "n.data.is_default = true"), attention=True),
-    TileDef("public_subnets", "Public subnets", "Subnets that route to an internet gateway.",
+    TileDef("public_subnets", "Public subnets", "Subnets that give instances a public IPv4 address at launch "
+            "(MapPublicIpOnLaunch). Not proof of a route to the internet: route tables are not collected.",
             _where("aws_core__aws_subnet", "n.data.public = true"), attention=True),
     # /aws IAM column
     TileDef("roles_trust_services", "Roles AWS services assume", "IAM roles whose trust policy names an AWS service.",

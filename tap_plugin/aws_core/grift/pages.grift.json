@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a0fcc2-2cc5-711a-ad89-0d34a3cd87c8",
+        "entity_id": "01a118cb-adb6-7bbe-9bfd-1a4f5a040284",
         "entity_type": "batch",
-        "name": "aws_core pages v0.4.0",
+        "name": "aws_core pages v0.4.1",
         "dimensions": {}
       },
       "batch_node": {
         "source": "tap_plugin.aws_core.grift.pages",
-        "name": "aws_core pages v0.4.0",
-        "description": "aws_core's reusable pages (req-aws-core-page-dashboard, -organization, -network): /aws, a dashboard of count tiles, the estate as one picture and two tables; /aws/organization, the OU tree placed by layout tags, with SCP attachments and account placement; /aws/network, transit gateways, attachments, gateways, firewalls and Direct Connect. Every search reads whatever AWS nodes the grid holds: nothing here names a deployment. The children nest under /aws by URL. The graphs share one layout module (aws-estate.js) and the tiles are the aws-counts panel type. v0.2.0 (George, 2026-09-24): the organization graph draws the OU tree only, laid out by aws-organization.js from the nodes' layout:* tags; its scoped, scp and idp searches are gone (on an existing grid, retire those three search nodes: a batch cannot remove a node). v0.3.0 (George, 2026-09-24): the network graph nests each VPC's subnets in it, one column per availability zone, with its internet gateway beside them and a NAT gateway inside its subnet, from PARTITIONED_INTO_SUBNET, ATTACHED_TO_VPC and RESIDES_IN_SUBNET; a subnets table lists each VPC's subnets with zone and CIDR. v0.3.1: the Subnets search drops ORDER BY, which Gryphon refuses on a single-hop traversal (the table sorts client-side). v0.4.0 (George, highbar Q135, 2026-10-02; aws-core-tap#75): /aws/scps lists every SCP, its statements and attachments, with the Deny statements written out as a rulebook (aws-scp-rulebook); /aws/security-groups lists security groups by VPC with rule counts and flags groups open to the internet or allowing every protocol, read from each group's raw rule lists (per-rule nodes are aws-core-tap#64); /aws/baseline is the security baseline per account and region, each control on, off or unknown (aws-baseline); /aws gains an IAM column and /aws/network an exposure column. The SCP attachments panel is mounted on both /aws/organization and /aws/scps."
+        "name": "aws_core pages v0.4.1",
+        "description": "aws_core's reusable pages (req-aws-core-page-dashboard, -organization, -network): /aws, a dashboard of count tiles, the estate as one picture and two tables; /aws/organization, the OU tree placed by layout tags, with SCP attachments and account placement; /aws/network, transit gateways, attachments, gateways, firewalls and Direct Connect. Every search reads whatever AWS nodes the grid holds: nothing here names a deployment. The children nest under /aws by URL. The graphs share one layout module (aws-estate.js) and the tiles are the aws-counts panel type. v0.2.0 (George, 2026-09-24): the organization graph draws the OU tree only, laid out by aws-organization.js from the nodes' layout:* tags; its scoped, scp and idp searches are gone (on an existing grid, retire those three search nodes: a batch cannot remove a node). v0.3.0 (George, 2026-09-24): the network graph nests each VPC's subnets in it, one column per availability zone, with its internet gateway beside them and a NAT gateway inside its subnet, from PARTITIONED_INTO_SUBNET, ATTACHED_TO_VPC and RESIDES_IN_SUBNET; a subnets table lists each VPC's subnets with zone and CIDR. v0.3.1: the Subnets search drops ORDER BY, which Gryphon refuses on a single-hop traversal (the table sorts client-side). v0.4.0 (George, highbar Q135, 2026-10-02; aws-core-tap#75): /aws/scps lists every SCP, its statements and attachments, with the Deny statements written out as a rulebook (aws-scp-rulebook); /aws/security-groups lists security groups by VPC with rule counts and flags groups open to the internet or allowing every protocol, read from each group's raw rule lists (per-rule nodes are aws-core-tap#64); /aws/baseline is the security baseline per account and region, each control on, off or unknown (aws-baseline); /aws gains an IAM column and /aws/network an exposure column. The SCP attachments panel is mounted on both /aws/organization and /aws/scps. v0.4.1 (aws-core-tap#75, checked against the Gruntwork-built GovCloud organization): /aws gains roles-federated, the roles whose trust policy names a SAML or OIDC provider (Identity Center's /aws-reserved/ roles, GitHub Actions), which roles-other had listed as same-account; the public-subnet and exposure text says what 'public' means (MapPublicIpOnLaunch) and that internet gateways are not collected yet."
       },
       "nodes": [
         {
@@ -386,10 +386,14 @@
                       "height": "auto"
                     },
                     "row-5": {
-                      "panel-id": "roles-other",
+                      "panel-id": "roles-federated",
                       "height": "auto"
                     },
                     "row-6": {
+                      "panel-id": "roles-other",
+                      "height": "auto"
+                    },
+                    "row-7": {
                       "panel-id": "users-no-mfa",
                       "height": "auto"
                     }
@@ -2029,13 +2033,13 @@
           },
           "node": {
             "name": "aws — Assumed only from this account",
-            "description": "IAM roles whose trust policy names no AWS service, no other account and no wildcard: principals in the role's own account (a user or role ARN), or a federated identity provider.",
+            "description": "IAM roles whose trust policy names no AWS service, no other account, no wildcard and no federated identity provider: only principals in the role's own account (a user or role ARN).",
             "search_type": "gryphon",
             "root": "node",
             "definition": {
               "query": [
                 "MATCH (r:aws_core__aws_iam_role)",
-                "WHERE NOT r.data.trusted_services =~ \"[a-z]\" AND NOT r.data.trusted_account_ids =~ \"[0-9]\" AND NOT r.data.trusts_wildcard_principal = true",
+                "WHERE NOT r.data.trusted_services =~ \"[a-z]\" AND NOT r.data.trusted_account_ids =~ \"[0-9]\" AND NOT r.data.trusts_wildcard_principal = true AND NOT r.data.configuration.AssumeRolePolicyDocument =~ \"\\\"Federated\\\"\"",
                 "RETURN r.name AS role, r.data.path AS path"
               ]
             }
@@ -2053,7 +2057,62 @@
           "node": {
             "name": "Assumed only from this account",
             "slug": "aws-iam-roles-other",
-            "description": "IAM roles whose trust policy names no AWS service, no other account and no wildcard: principals in the role's own account (a user or role ARN), or a federated identity provider.",
+            "description": "IAM roles whose trust policy names no AWS service, no other account, no wildcard and no federated identity provider: only principals in the role's own account (a user or role ARN).",
+            "view": "tap_web/panels/table_panel.html",
+            "config": {
+              "default_page_size": 500,
+              "columns": [
+                {
+                  "field": "role",
+                  "title": "Role",
+                  "header_tooltip": "The IAM role.",
+                  "widthGrow": 2
+                },
+                {
+                  "field": "path",
+                  "title": "Path",
+                  "header_tooltip": "The role's IAM path.",
+                  "widthGrow": 1
+                }
+              ],
+              "chrome": "minimal"
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a118c7-3813-76e5-9e57-bc46d2f456e5",
+            "entity_type": "search",
+            "name": "aws — Assumed through a federated provider",
+            "dimensions": {}
+          },
+          "node": {
+            "name": "aws — Assumed through a federated provider",
+            "description": "IAM roles whose trust policy names a federated identity provider (a Principal of type Federated): a SAML provider such as IAM Identity Center's (its roles sit under /aws-reserved/sso.amazonaws.com/), or an OIDC provider such as GitHub Actions. Who can sign in is decided by that provider and the policy's conditions, not by this account. Read as text over the role's raw trust policy.",
+            "search_type": "gryphon",
+            "root": "node",
+            "definition": {
+              "query": [
+                "MATCH (r:aws_core__aws_iam_role)",
+                "WHERE r.data.configuration.AssumeRolePolicyDocument =~ \"\\\"Federated\\\"\"",
+                "RETURN r.name AS role, r.data.path AS path"
+              ]
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a118c7-3813-78a8-91db-bc3e01424ebd",
+            "entity_type": "panel",
+            "name": "Assumed through a federated provider",
+            "dimensions": {
+              "tap.graph": "web"
+            }
+          },
+          "node": {
+            "name": "Assumed through a federated provider",
+            "slug": "aws-iam-roles-federated",
+            "description": "IAM roles whose trust policy names a federated identity provider (a Principal of type Federated): a SAML provider such as IAM Identity Center's (its roles sit under /aws-reserved/sso.amazonaws.com/), or an OIDC provider such as GitHub Actions. Who can sign in is decided by that provider and the policy's conditions, not by this account. Read as text over the role's raw trust policy.",
             "view": "tap_web/panels/table_panel.html",
             "config": {
               "default_page_size": 500,
@@ -2143,7 +2202,7 @@
           "node": {
             "name": "Network exposure counts",
             "slug": "aws-net-exposure",
-            "description": "Count tiles for the exposure column on /aws/network: default VPCs, public subnets and internet gateways.",
+            "description": "Count tiles for the exposure column on /aws/network: default VPCs, subnets that assign a public IP at launch, and internet gateways on the grid (the collector does not list them yet).",
             "view": "aws_core/panels/counts.html",
             "config": {
               "hide_header": true,
@@ -2154,7 +2213,7 @@
                 "internet_gateways"
               ],
               "title": "Exposure",
-              "intro": "What AWS left open by default, and every path to the internet."
+              "intro": "What AWS left open by default. Public subnets are those that assign a public IP at launch; internet gateways are not collected yet, so that tile counts only what is on the grid."
             }
           }
         },
@@ -2228,7 +2287,7 @@
           },
           "node": {
             "name": "aws — Public subnets",
-            "description": "Subnets whose route table sends traffic to an internet gateway (public), in the VPC that PARTITIONED_INTO_SUBNET them.",
+            "description": "Subnets that give instances a public IPv4 address at launch (MapPublicIpOnLaunch, the subnet's public field), in the VPC that PARTITIONED_INTO_SUBNET them. Not proof of a route to the internet: route tables are not collected.",
             "search_type": "gryphon",
             "root": "node",
             "definition": {
@@ -2252,7 +2311,7 @@
           "node": {
             "name": "Public subnets",
             "slug": "aws-public-subnets",
-            "description": "Subnets whose route table sends traffic to an internet gateway (public), in the VPC that PARTITIONED_INTO_SUBNET them.",
+            "description": "Subnets that give instances a public IPv4 address at launch (MapPublicIpOnLaunch, the subnet's public field), in the VPC that PARTITIONED_INTO_SUBNET them. Not proof of a route to the internet: route tables are not collected.",
             "view": "tap_web/panels/table_panel.html",
             "config": {
               "default_page_size": 500,
@@ -3505,6 +3564,40 @@
                 "model": "page",
                 "spec": "page-panels",
                 "value": "roles-other"
+              }
+            }
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a118c7-3813-705c-ad46-65811cfa1951",
+            "entity_type": "edge",
+            "name": "Assumed through a federated provider USES_SEARCH",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a118c7-3813-78a8-91db-bc3e01424ebd",
+            "to_entity_id": "01a118c7-3813-76e5-9e57-bc46d2f456e5",
+            "edge_type": "USES_SEARCH",
+            "properties": {}
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a118c7-3813-7b1f-ba77-2f1122d296e3",
+            "entity_type": "edge",
+            "name": "AWS page USES_PANEL roles-federated",
+            "dimensions": {}
+          },
+          "edge": {
+            "from_entity_id": "01a0d4ae-ea70-7657-868f-f626656b3d63",
+            "to_entity_id": "01a118c7-3813-78a8-91db-bc3e01424ebd",
+            "edge_type": "USES_PANEL",
+            "properties": {
+              "hotlink": {
+                "model": "page",
+                "spec": "page-panels",
+                "value": "roles-federated"
               }
             }
           }

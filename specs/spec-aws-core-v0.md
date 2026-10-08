@@ -1021,7 +1021,8 @@ under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/secur
   with their projections, elevations, layouts and scene searches, standard table and text panels,
   `aws-counts` panels (one per page that shows tiles), one `aws-baseline` and one `aws-scp-rulebook`
   panel. v0.4.0 added the last three pages and the side columns on `/aws` and `/aws/network`
-  (aws-core-tap#75, George, highbar Q135, 2026-10-02).
+  (aws-core-tap#75, George, highbar Q135, 2026-10-02). v0.4.1 split `roles-federated` out of `roles-other` and corrected the public-subnet
+  wording, after the pages were checked against the Gruntwork-built GovCloud organization (aws-core-tap#75).
 - `/aws` (**AWS**): `counts` (aws-counts), `estate` (graph: organisation tree, transit gateways and
   their attachments, VPCs, internet and NAT gateways, network firewalls, the boundaries OUs are scoped
   to), `per-ou` (projection table: accounts directly in each OU), `scope` (projection table: what each
@@ -1029,8 +1030,10 @@ under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/secur
   column's 2fr): `iam` (aws-counts: roles AWS services assume, roles other accounts assume, roles anyone
   can assume, IAM users without MFA), then one table per trust type from the role's trust-policy summary
   fields — `roles-services` (`trusted_services`), `roles-accounts` (`trusted_account_ids`, never the
-  role's own account), `roles-anyone` (`trusts_wildcard_principal`), `roles-other` (none of the three:
-  principals in the role's own account or a federated provider) — and `users-no-mfa` (`mfa_enabled`
+  role's own account), `roles-anyone` (`trusts_wildcard_principal`), `roles-federated` (the raw trust
+  policy names a `Federated` principal: a SAML provider such as IAM Identity Center's, or an OIDC provider
+  such as GitHub Actions; matched as text, as the security-group flags are), `roles-other` (none of the
+  four: only principals in the role's own account) — and `users-no-mfa` (`mfa_enabled`
   false; a user whose MFA was not read is not listed). Side tables use `chrome: minimal` with every row
   loaded: the tiles above them carry the counts.
 - `/aws/organization` (**Organization**): `tree` (graph: organization ⊃ OU ⊃ account and nothing
@@ -1044,7 +1047,10 @@ under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/secur
   public), `igw` (every internet gateway), `dx` (Direct Connect: a text panel that says plainly that
   no connection is on the grid; the table of connections is future work). Beside them (`col-2-exposure`):
   `exposure` (aws-counts: default VPCs, public subnets, internet gateways), `default-vpcs` (each VPC with
-  `is_default`, by the footprint that `HOSTS_VPC` it) and `public-subnets` (each subnet with `public`).
+  `is_default`, by the footprint that `HOSTS_VPC` it) and `public-subnets` (each subnet with `public`,
+  which is `MapPublicIpOnLaunch`: it assigns a public IP at launch, not proof of a route to the internet,
+  since route tables are not collected). The collector has no internet-gateway listing yet, so the
+  internet-gateway tile counts only what is on the grid and the exposure intro says so.
 - `/aws/scps` (**Service control policies**, nav weight 230): main column `counts` (aws-counts: SCPs,
   customer SCPs, SCP statements, Deny statements), `policies` (each SCP: AWS-managed or customer, its
   description and how many targets it is `ATTACHED_TO_TARGET`, counted through Gryphon's one optional
@@ -1168,7 +1174,7 @@ under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/secur
 | req-aws-core-panel-counts-2 | Design Marked | Implemented | A tile whose counted nodes are all dcom=design is marked design. | `tests/test_counts_panel.py` |
 | req-aws-core-panel-counts-3 | Boundary Membership Follows The Tree | Implemented | An account counts inside a boundary when it or an OU above it at any depth is scoped to the boundary. | `tests/test_counts_panel.py` |
 | req-aws-core-panel-counts-4 | Dashboard Set By Default | Implemented | An instance with no `config.tiles` shows the eleven dashboard tiles; every later tile appears only where an instance names it, and narrows in Gryphon. | `tests/test_counts_panel.py` |
-| req-aws-core-page-dashboard-2 | IAM Side Column | Implemented | `/aws` mounts iam, roles-services, roles-accounts, roles-anyone, roles-other and users-no-mfa in a side column beside the existing four. | `tests/test_demo_pages_bundle.py`; rendered on the GovCloud demo grid, 2026-10-02. |
+| req-aws-core-page-dashboard-2 | IAM Side Column | Implemented | `/aws` mounts iam, roles-services, roles-accounts, roles-anyone, roles-federated, roles-other and users-no-mfa in a side column beside the existing four. | `tests/test_demo_pages_bundle.py`; rendered on the GovCloud demo grid, 2026-10-02. |
 | req-aws-core-page-network-5 | Exposure Side Column | Implemented | `/aws/network` mounts exposure, default-vpcs and public-subnets in a side column; the main column is unchanged. | `tests/test_demo_pages_bundle.py`; rendered on the GovCloud demo grid, 2026-10-02. |
 | req-aws-core-page-scps-1 | SCP Page Seeded | Implemented | `/aws/scps` exists, mounts counts, policies, statements, attachments and rulebook, and its attachments slot is the same panel instance as `/aws/organization`'s scp slot. | `tests/test_demo_pages_bundle.py` |
 | req-aws-core-page-security-groups-1 | Firewall Page Seeded | Implemented | `/aws/security-groups` exists and mounts counts, groups, open, all-protocols and reach. | `tests/test_demo_pages_bundle.py` |
