@@ -31,6 +31,14 @@ class EcsTask(BaseModel):
         "task_definition_arn": {"type": "string"},
         "status": {"type": "string"},
         "launch_type": {"type": "string"},
+        # Null is unobserved (req-aws-core-fields-3): ECS omits these until the task has them.
+        "cluster_arn": {"type": ["string", "null"]},
+        "last_status": {"type": ["string", "null"]},
+        "desired_status": {"type": ["string", "null"]},
+        "started_at": {"type": ["string", "null"]},
+        "platform_version": {"type": ["string", "null"]},
+        "group": {"type": ["string", "null"]},
+        "tags": {"type": "object"},
         "configuration": {"type": "object"},
     }
 
@@ -40,6 +48,13 @@ class EcsTask(BaseModel):
         "task_definition_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
         "status": {"validation": "jsonschema", "schema": {"type": "string"}},
         "launch_type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "cluster_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "last_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "desired_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "started_at": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "platform_version": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "group": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["task_arn"]
@@ -49,6 +64,16 @@ class EcsTask(BaseModel):
     task_definition_arn = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(max_length=64, blank=True, default="")
     launch_type = models.CharField(max_length=64, blank=True, default="")
+    # Null is "not reported", distinct from "" (observed empty).
+    cluster_arn = models.CharField(max_length=512, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    last_status = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    desired_status = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    # ISO 8601 UTC, as the envelope renders a datetime; ECS omits it until the task has started.
+    started_at = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not started/read"
+    platform_version = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    # "service:<name>" for a service-launched task; "family:<name>" or "" otherwise.
+    group = models.CharField(max_length=255, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    tags = models.JSONField(default=dict, blank=True)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

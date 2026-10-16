@@ -49,6 +49,7 @@ from tap_plugin.aws_core.models.ebs_volume import EbsVolume
 from tap_plugin.aws_core.models.ec2_instance import Ec2Instance
 from tap_plugin.aws_core.models.ecr_repository import EcrRepository
 from tap_plugin.aws_core.models.ecs_cluster import EcsCluster
+from tap_plugin.aws_core.models.ecs_container import EcsContainer
 from tap_plugin.aws_core.models.ecs_service import EcsService
 from tap_plugin.aws_core.models.ecs_task import EcsTask
 from tap_plugin.aws_core.models.eks_cluster import EksCluster
@@ -135,6 +136,7 @@ __all__ = [
     "Ec2Instance",
     "EcrRepository",
     "EcsCluster",
+    "EcsContainer",
     "EcsService",
     "EcsTask",
     "EksCluster",

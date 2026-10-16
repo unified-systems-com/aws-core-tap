@@ -1454,6 +1454,253 @@
         "relation": "account_region.security_groups",
         "owner_path": "OwnerId"
       }
+    },
+    {
+      "entity_type": "aws_core__aws_ecs_cluster",
+      "service": "ecs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ecs_clusters_described"
+      },
+      "why": "Enumerate ECS clusters — the capacity and control plane that services and tasks run on.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off, with the rest of the ECS family: one shared walk, one review. Typed fields, tags and edges carry what req-aws-collector-ecs needs and nothing is read back from the stored blob. Ruling 2026-10-16 (George, via rampart-pg-support): off.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the ECS API reference output shapes for ListClusters, DescribeClusters, ListServices, DescribeServices, ListTasks and DescribeTasks and custom_fn walk_ecs (ecs.py), 2026-10-16. Walked botocore ecs output shapes for the sensitive trait: only DescribeTasks tasks[].overrides.containerOverrides[].environment is flagged, the other five operations none.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "configuration.executeCommandConfiguration",
+            "category": "other",
+            "reason": "Names a KMS key and log destinations used by ECS Exec; not secret, but a map of where session output goes.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "Per-slot error codes from the walk (AccessDenied, a Describe failure reason); service-composed status text.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "clusterArn",
+      "fields": {
+        "name": "clusterName",
+        "cluster_arn": "clusterArn",
+        "status": "status"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call (include=TAGS); no second fetch."
+      },
+      "edges": []
+    },
+    {
+      "entity_type": "aws_core__aws_ecs_service",
+      "service": "ecs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ecs_services_described"
+      },
+      "why": "Enumerate ECS services — what a cluster keeps running — so a cluster, its services and their tasks join up.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off, with the rest of the ECS family: one shared walk, one review. Typed fields, tags and edges carry what req-aws-collector-ecs needs and nothing is read back from the stored blob. Ruling 2026-10-16 (George, via rampart-pg-support): off.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the ECS API reference output shapes for ListClusters, DescribeClusters, ListServices, DescribeServices, ListTasks and DescribeTasks and custom_fn walk_ecs (ecs.py), 2026-10-16. Walked botocore ecs output shapes for the sensitive trait: only DescribeTasks tasks[].overrides.containerOverrides[].environment is flagged, the other five operations none.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "events[].message",
+            "category": "diagnostic",
+            "reason": "Service-composed event text that can echo resource names and error detail.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "Per-slot error codes from the walk (AccessDenied, a Describe failure reason); service-composed status text.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "serviceArn",
+      "fields": {
+        "name": "serviceName",
+        "service_arn": "serviceArn",
+        "status": "status",
+        "desired_count": "desiredCount",
+        "running_count": "runningCount",
+        "launch_type": "launchType"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call (include=TAGS); no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "clusterArn",
+          "target_type": "aws_core__aws_ecs_cluster",
+          "key_kind": "arn",
+          "edge_type": "RUNS_SERVICE__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ecs_task",
+      "service": "ecs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ecs_tasks_described"
+      },
+      "why": "Enumerate running and pending ECS tasks — the units that actually execute containers — with their cluster, launching service and tags.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeTasks returns overrides.containerOverrides[].environment and .command verbatim, and callers use both to pass secrets to a container. Typed fields, tags and edges carry every fact req-aws-collector-ecs needs; nothing is read back from the stored blob. Ruling 2026-10-16 (George, via rampart-pg-support): off.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the ECS API reference output shapes for ListClusters, DescribeClusters, ListServices, DescribeServices, ListTasks and DescribeTasks and custom_fn walk_ecs (ecs.py), 2026-10-16. Walked botocore ecs output shapes for the sensitive trait: only DescribeTasks tasks[].overrides.containerOverrides[].environment is flagged, the other five operations none.",
+        "locations": [
+          {
+            "path": "overrides.containerOverrides[].environment",
+            "category": "credential",
+            "reason": "Per-run environment variables callers pass to a container; secrets are commonly passed this way.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "overrides.containerOverrides[].command",
+            "category": "credential",
+            "reason": "Per-run command override; arguments can embed tokens or passwords.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "overrides.containerOverrides[].environmentFiles",
+            "category": "other",
+            "reason": "Names S3 objects holding environment variables; the location, not the contents.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "stoppedReason",
+            "category": "diagnostic",
+            "reason": "Service-composed stop text that can echo input.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "containers[].reason",
+            "category": "diagnostic",
+            "reason": "Service-composed container failure text that can echo input.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "Per-slot error codes from the walk (AccessDenied, a Describe failure reason); service-composed status text.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "taskArn",
+      "fields": {
+        "name": "_task_name",
+        "task_arn": "taskArn",
+        "task_definition_arn": "taskDefinitionArn",
+        "status": "lastStatus",
+        "launch_type": "launchType",
+        "cluster_arn": "clusterArn",
+        "last_status": "lastStatus",
+        "desired_status": "desiredStatus",
+        "started_at": "_started_at",
+        "platform_version": "platformVersion",
+        "group": "group"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call (include=TAGS); no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "clusterArn",
+          "target_type": "aws_core__aws_ecs_cluster",
+          "key_kind": "arn",
+          "edge_type": "RUNS_TASK__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_service_arn",
+          "target_type": "aws_core__aws_ecs_service",
+          "key_kind": "arn",
+          "edge_type": "RUNS_TASK__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ecs_container",
+      "service": "ecs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ecs_containers_described"
+      },
+      "why": "Enumerate the containers of running ECS tasks with the image reference and the image digest ECS resolved — the digest names the build that is actually running and is the join key to its SBOM and findings.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off, with the rest of the ECS family. The container item is the container as described and carries no task overrides. Typed fields (image, image_digest) and edges carry everything needed. Ruling 2026-10-16 (George, via rampart-pg-support): off.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the ECS API reference output shapes for ListClusters, DescribeClusters, ListServices, DescribeServices, ListTasks and DescribeTasks and custom_fn walk_ecs (ecs.py), 2026-10-16. Walked botocore ecs output shapes for the sensitive trait: only DescribeTasks tasks[].overrides.containerOverrides[].environment is flagged, the other five operations none.",
+        "locations": [
+          {
+            "path": "reason",
+            "category": "diagnostic",
+            "reason": "Service-composed container failure text that can echo input.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "containerArn",
+      "fields": {
+        "name": "name",
+        "container_arn": "containerArn",
+        "image": "image",
+        "image_digest": "imageDigest",
+        "runtime_id": "runtimeId",
+        "last_status": "lastStatus"
+      },
+      "edges": [
+        {
+          "value_path": "_task_arn",
+          "target_type": "aws_core__aws_ecs_task",
+          "key_kind": "arn",
+          "edge_type": "RUNS_CONTAINER__aws_core",
+          "direction": "inbound"
+        }
+      ]
     }
   ]
 }

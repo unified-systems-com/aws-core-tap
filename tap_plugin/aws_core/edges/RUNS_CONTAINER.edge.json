@@ -1,0 +1,17 @@
+{
+  "slug": "RUNS_CONTAINER__aws_core",
+  "name": "Runs Container",
+  "description": "An ECS task runs a container (task -> container). The container carries the image reference from the task definition and the image digest ECS resolved when it pulled, so 'which build is this task running' is one hop over this edge. The container is identified by its own ARN, which is unique across tasks.",
+  "sources": [
+    "aws_core__aws_ecs_task"
+  ],
+  "targets": [
+    "aws_core__aws_ecs_container"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

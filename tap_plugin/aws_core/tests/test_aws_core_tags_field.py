@@ -74,5 +74,5 @@ class TestCanonicalTagsField:
             return  # extraction is optional (e.g. aws_account is untaggable); the FIELD is not
         assert block["source"] in ("rgta", "field", "service")
         if block["source"] == "field":
-            assert block["shape"] in ("list_kv", "map")
+            assert block["shape"] in ("list_kv", "list_kv_lower", "map")
             assert block["from"], "field-lane tags block needs a source path"

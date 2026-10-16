@@ -1,0 +1,18 @@
+{
+  "slug": "RUNS_TASK__aws_core",
+  "name": "Runs Task",
+  "description": "An ECS cluster or service runs an ECS task (cluster -> task, service -> task). A task launched by a service names it in its group ('service:<name>') and gets an edge from that service as well as from its cluster; a task started directly (run-task, a scheduled task) is attached to its cluster alone. 'Which tasks run for service X' and 'which cluster hosts task Y' are the same edges read in either direction. Only tasks ECS lists as RUNNING or PENDING are collected; a task that stopped keeps its row and its edges, because absence from a later run deletes nothing.",
+  "sources": [
+    "aws_core__aws_ecs_cluster",
+    "aws_core__aws_ecs_service"
+  ],
+  "targets": [
+    "aws_core__aws_ecs_task"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

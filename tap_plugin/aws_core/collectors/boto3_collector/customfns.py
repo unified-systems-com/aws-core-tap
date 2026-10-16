@@ -27,6 +27,7 @@ from typing import Any
 from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads
+from .ecs import shared_walk
 from .envelope import jsonable, without_response_metadata
 from .hydrate import hydrate_item
 from .iam_trust import account_of_iam_arn, summarize_trust_policy
@@ -1124,6 +1125,30 @@ def cloudtrail_trails_described(session: Any, *, client_for: Any) -> Iterator[di
         )
 
 
+def ecs_clusters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """ECS clusters (regional), from the region's shared ECS walk (see :mod:`.ecs`)."""
+    yield from shared_walk(session, client_for).clusters
+
+
+def ecs_services_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """ECS services of every cluster in the region, from the shared ECS walk."""
+    yield from shared_walk(session, client_for).services
+
+
+def ecs_tasks_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Running and pending ECS tasks of every cluster in the region, from the shared ECS walk.
+
+    The walk is the fan-out req-aws-collector-ecs names: ListClusters/DescribeClusters, then per cluster
+    ListServices/DescribeServices and ListTasks/DescribeTasks with tags, each read to its end.
+    """
+    yield from shared_walk(session, client_for).tasks
+
+
+def ecs_containers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """The containers of those tasks, with the image and the digest ECS reports, from the shared ECS walk."""
+    yield from shared_walk(session, client_for).containers
+
+
 # Manifest custom_fn name -> callable.
 _CUSTOM_FNS = {
     "aws_account_singleton": aws_account_singleton,
@@ -1141,6 +1166,10 @@ _CUSTOM_FNS = {
     "kms_keys_described": kms_keys_described,
     "sqs_queues_described": sqs_queues_described,
     "cloudtrail_trails_described": cloudtrail_trails_described,
+    "ecs_clusters_described": ecs_clusters_described,
+    "ecs_services_described": ecs_services_described,
+    "ecs_tasks_described": ecs_tasks_described,
+    "ecs_containers_described": ecs_containers_described,
 }
 
 

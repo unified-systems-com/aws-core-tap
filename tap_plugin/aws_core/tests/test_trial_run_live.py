@@ -132,6 +132,13 @@ _CLOUDTRAIL_DEFERRED = (
     "cloudtrail_trail trial deferred: a trail needs an S3 bucket plus a bucket policy first "
     "(more moving parts and its own teardown ordering); build once the one-call types are habitual."
 )
+_ECS_DEFERRED = (
+    "ecs trial deferred: provisioning a cluster, a task definition and a Fargate task needs write "
+    "credentials and a human-approved cost (a few cents per run, task billed per second, no residue after "
+    "teardown), and none is approved yet (George, 2026-10-16: no write keys until he says). The unit tests "
+    "cover the call shape and the payload against the model schema; the digest-equals-DescribeTasks check "
+    "(req-aws-collector-ecs-13) is NOT OBSERVED against a live task."
+)
 
 _MODEL_BY_ENTITY_TYPE = {
     model.ENTITY_TYPE: model
@@ -310,6 +317,8 @@ TRIAL_SPECS = [
     TrialTypeSpec("apigateway_http_api", "aws_core__aws_apigateway_http_api", _provision_apigateway_http_api),
     TrialTypeSpec("kms_key", "aws_core__aws_kms_key", deferred_reason=_KMS_DEFERRED),
     TrialTypeSpec("cloudtrail_trail", "aws_core__aws_cloudtrail_trail", deferred_reason=_CLOUDTRAIL_DEFERRED),
+    TrialTypeSpec("ecs_task", "aws_core__aws_ecs_task", deferred_reason=_ECS_DEFERRED),
+    TrialTypeSpec("ecs_container", "aws_core__aws_ecs_container", deferred_reason=_ECS_DEFERRED),
 ]
 
 

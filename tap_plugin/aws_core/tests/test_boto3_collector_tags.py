@@ -43,7 +43,7 @@ class TestNormalizeTags:
 
     def test_unknown_shape_raises(self):
         with pytest.raises(TagShapeError, match="list_kv | map"):
-            normalize_tags([], "list_kv_lower")
+            normalize_tags([], "wafv2_wrapped")
 
 
 class TestRgtaJoinArn:

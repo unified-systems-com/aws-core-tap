@@ -94,6 +94,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-reconcile | [Grid-State Reconciliation (Future Seam)](#v0-non-goals) | Backlog | Implied-absence/tombstone via the same grid-read primitive as the resolver; one generic reconcile vs Cartography per-type cleanup |
 | req-aws-collector-hydrate | [Fan-Out Hydrate Seam](#fan-out-hydrate-seam) | Approved for Development | First named seam; per-op error-swallow; S3-style many-call |
 | req-aws-collector-s3-bucket-size | [S3 Bucket Size Metrics](#s3-bucket-size-metrics) | Approved for Development | Aggregate size/count from CloudWatch storage metrics; `size_observed_at` data-currency disclosure |
+| req-aws-collector-ecs | [ECS Clusters, Tasks And Container Images](#ecs-clusters-tasks-and-container-images) | Proposed | Collect ECS clusters, services, tasks and containers; per-container image and image digest as the join key to builds, SBOMs and findings; credential-bearing overrides declared, configuration off |
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
@@ -833,6 +834,92 @@ misleading "0 bytes".
 | req-aws-collector-s3-bucket-size-3 | Currency Disclosed | Approved for Development | `size_observed_at` carries the CloudWatch datapoint's own timestamp; the consumer derives age, the collector never stores it. | Data currency — distinct from FLIP write provenance. |
 | req-aws-collector-s3-bucket-size-4 | Unknown Is Not Zero | Approved for Development | A bucket with no CloudWatch datapoint reports empty/null fields, never a misleading 0. | |
 | req-aws-collector-s3-bucket-size-5 | Non-Fatal | Approved for Development | A denied/failed CloudWatch call leaves the three fields empty/null; the bucket still collects. | Mirrors the hydrate-seam per-op resilience. |
+
+### ECS Clusters, Tasks And Container Images
+----
+RID: `req-aws-collector-ecs`
+
+Status: `Proposed`
+
+The collector gathers ECS clusters, services, tasks and the containers inside each task, and records, per
+container, the image reference and the image digest ECS reports. The digest is the join key to everything
+known about a build: the SBOM published for an image, its attestation, and its vulnerability findings. Until
+it is on the grid, "which build is this running task" has no answer there. Today `aws_ecs_cluster`,
+`aws_ecs_service` and `aws_ecs_task` exist as models but no manifest entry populates them, and
+`aws_ecs_task` has no image or container field (read, 2026-10-15, `models/ecs_task.py`, the 23-entry
+manifest).
+
+#### Implementation
+
+**Calls (one walk, four `custom_fn`s).** The fan-out is made once per run and region by `walk_ecs` (`ecs.py`); `ecs_clusters_described`, `ecs_services_described`, `ecs_tasks_described` and `ecs_containers_described` each take their slice of it, because a manifest entry yields exactly one node type. A multi-call fan-out is what `custom_fn` is for
+([Source Primitive](#source-primitive)). Per swept region: `ListClusters`, then `DescribeClusters`; per cluster
+`ListServices` then `DescribeServices` (at most 10 per call), and `ListTasks` then `DescribeTasks` (at most
+100 per call), the Describe calls with `include=["TAGS"]`. Every paginated call is read to its end
+([Every Paginated Call Read To Its End](#every-paginated-call-read-to-its-end)). A denied or failed
+sub-call degrades that slot to unknown and never fails the run
+([Fan-Out Hydrate Seam](#fan-out-hydrate-seam)).
+
+**Image digest.** `DescribeTasks` returns, per container, `image` (the reference in the task definition,
+which may be a movable tag) and `imageDigest` (what ECS resolved when it pulled). The collector stores both
+verbatim and never resolves a tag itself: it makes no registry call. `imageDigest` is missing when ECS did
+not report one (for example a container that has not yet pulled); that is stored as null, never as an empty
+string (the hybrid nullable-field pattern, `req-aws-core-fields-3`: null is unobserved).
+
+**Types.**
+
+- `aws_ecs_container` (new, aws_core-owned, keyed on `container_arn`): `name`, `image`, `image_digest`,
+  `runtime_id`, `last_status`.
+- `aws_ecs_task` gains `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version` and
+  `group` (the `service:<name>` string ECS sets for a service-launched task).
+- `aws_ecs_cluster`, `aws_ecs_service` and `aws_ecs_task` each gain the mandatory `tags` field. They have none
+  today, and the collector writes `tags` on every node, so adding the entries without it would reject whole
+  batches (the v0.4.0 trap named in the `add-aws-type` skill).
+
+**Edges.** `RUNS_SERVICE` (cluster to service) already exists. New: `RUNS_TASK` (cluster or service to
+task) and `RUNS_CONTAINER` (task to container), declared in the manifest as edge rules
+([Declarative Edge Rules](#declarative-edge-rules)). The service-to-task link is resolved from `group`; where
+`group` is not `service:<name>` the task attaches to its cluster alone.
+
+**Sensitivity.** `DescribeTasks` returns `overrides.containerOverrides[].environment` and `.command`, which
+callers use to pass secrets to a container. These are declared `reviewed_may_contain` with category
+`credential`, and the entry ships with `persist_configuration: false`. Typed fields, tags and edges carry
+every fact this requirement needs, so nothing is read back from the stored blob. Whether to store
+`configuration` is the requester's decision and storing a `credential` location is the owner's
+([the `add-aws-type` skill](../tap_plugin/aws_core/skills/add-aws-type/SKILL.md), step 1).
+
+**Deployed, and the limit of it.** A run lists RUNNING and PENDING tasks. A task that stops disappears from
+the next run, but absence never deletes a node
+([Collector Scope](#collector-scope), `req-aws-collector-scope-3`), so a stopped task's row remains. A consumer
+that needs "deployed now" reads the observation time of the row against the last complete run for its cluster;
+the collector adds no field for it. Stopped-task history, task-definition revisions as nodes, ECS Anywhere
+and EKS are out of scope.
+
+**Read-only permissions added to the collector role:** `ecs:ListClusters`, `ecs:DescribeClusters`,
+`ecs:ListServices`, `ecs:DescribeServices`, `ecs:ListTasks`, `ecs:DescribeTasks`.
+
+**Not specified here (open).** Where the digest-to-build join lives. aws_core and github_core must not import
+each other. The candidates are equality of a digest field read by a Search, or a neutral image node in
+computing_core that both plugins link to. That is a computing_core decision and is not made by this
+requirement.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-ecs-1 | Three Types Collected | Proposed | A run collects `aws_ecs_cluster`, `aws_ecs_service` and `aws_ecs_task` from every swept region through manifest entries backed by `custom_fn`s that share one ECS walk. | Today none has a manifest entry. One entry yields one node type, so the container node has its own entry (`-3`). |
+| req-aws-collector-ecs-2 | Call Shape And Pagination | Proposed | The calls are `ListClusters`/`DescribeClusters`, `ListServices`/`DescribeServices` (10 per call) and `ListTasks`/`DescribeTasks` (100 per call, `include=["TAGS"]`), each read to its end. | `req-aws-collector-pagination-1`. |
+| req-aws-collector-ecs-3 | Container Node | Proposed | Each container in a described task is an `aws_ecs_container` node keyed on `container_arn`, with `name`, `image`, `image_digest`, `runtime_id` and `last_status`. | |
+| req-aws-collector-ecs-4 | Digest Verbatim | Proposed | `image` and `image_digest` are stored as ECS reports them. The collector makes no registry call and never resolves a tag to a digest. | The tag may move; the digest is what ran. |
+| req-aws-collector-ecs-5 | Unreported Is Null | Proposed | A container with no `imageDigest` has `image_digest` null, never an empty string and never copied from the tag. | Grid null convention: null is unobserved. |
+| req-aws-collector-ecs-6 | Task Fields | Proposed | `aws_ecs_task` carries `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version` and `group`. | Additive migration. |
+| req-aws-collector-ecs-7 | Tags Field On All Three | Proposed | The cluster, service and task models each declare `tags` (field, create schema and validation schema) and are listed in the always-on tags guard. | The v0.4.0 reject-the-batch trap. |
+| req-aws-collector-ecs-8 | Edges | Proposed | `RUNS_TASK` (cluster or service to task) and `RUNS_CONTAINER` (task to container) exist, declared as manifest edge rules. A task whose `group` is not `service:<name>` attaches to its cluster only. | `RUNS_SERVICE` is unchanged. |
+| req-aws-collector-ecs-9 | Sensitivity Declared, Configuration Off | Proposed | The entry declares `overrides.containerOverrides[].environment` and `.command` as `reviewed_may_contain` credential locations with `persist_configuration: false`, and a planted canary at each location never reaches the GRIFT document or the stored row. | Requester decides storing; owner decides a credential location. |
+| req-aws-collector-ecs-10 | Denial Degrades, Never Cleans | Proposed | An `AccessDenied` on any ECS sub-call leaves the fields that call supplies null and records a warning. The task or container is still collected, and the denial is distinguishable from an empty result. | Mirrors `req-aws-collector-hydrate-2`. |
+| req-aws-collector-ecs-11 | Absence Is Not Deletion | Proposed | A task absent from a later run is not deleted or modified, and the collector adds no "currently running" flag. | `req-aws-collector-scope-3`; reconcile stays Backlog. |
+| req-aws-collector-ecs-12 | Read-Only Permissions | Proposed | The collector's permission list adds exactly the six `ecs:List*`/`ecs:Describe*` actions named above and no write action. | The repo's only action list is the trial policy's read section (`handoff/trial-provisioner-policy.json`); the cross-account handoff grants AWS-managed `SecurityAudit`, which already covers these reads. |
+| req-aws-collector-ecs-13 | Live Trial Before Release | Proposed | The change passes the `add-aws-type` trial run against a real cluster and Fargate task (or carries a named `deferred_reason`) and a collected container's digest is shown equal to the digest `DescribeTasks` returns for it. | Needs a human to approve what is provisioned. |
+| req-aws-collector-ecs-14 | Digest Join Not Made Here | Proposed | This requirement adds no import of github_core or computing_core types and no digest-matching logic. | The join home is an open computing_core question. |
 
 ### Credential Resolution
 ----

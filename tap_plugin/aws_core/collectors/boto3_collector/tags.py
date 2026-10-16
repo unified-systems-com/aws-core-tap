@@ -13,10 +13,11 @@ v0 shapes (``req-aws-collector-tags-8``), fenced to all of Sam's 8:
 
 - ``list_kv`` — a list of ``{"Key": k, "Value": v}`` structs (the RGTA
   shape, and every per-service side-quest in scope).
+- ``list_kv_lower`` — a list of ``{"key": k, "value": v}`` structs (ECS).
 - ``map`` — already a string→string object.
 
-The ECS lowercase-``key``/``value``, CloudTrail nested, and WAFv2 wrapped
-shapes are real but out of scope — named for a future enum extension.
+The CloudTrail nested and WAFv2 wrapped shapes are real but out of scope — named for a future
+enum extension.
 """
 
 from __future__ import annotations
@@ -44,11 +45,20 @@ def normalize_tags(raw: Any, shape: str) -> dict[str, str]:
             if isinstance(element, dict) and "Key" in element:
                 out[str(element["Key"])] = str(element.get("Value", ""))
         return out
+    if shape == "list_kv_lower":
+        # ECS (and a few other services) spell the struct {"key": k, "value": v}.
+        if not isinstance(raw, list):
+            return {}
+        lowered: dict[str, str] = {}
+        for element in raw:
+            if isinstance(element, dict) and "key" in element:
+                lowered[str(element["key"])] = str(element.get("value", ""))
+        return lowered
     if shape == "map":
         if not isinstance(raw, dict):
             return {}
         return {str(k): str(v) for k, v in raw.items()}
-    raise TagShapeError(f"unsupported tag shape {shape!r} (v0: list_kv | map)")
+    raise TagShapeError(f"unsupported tag shape {shape!r} (list_kv | list_kv_lower | map)")
 
 
 def tags_block(entry: dict[str, Any]) -> dict[str, Any] | None:

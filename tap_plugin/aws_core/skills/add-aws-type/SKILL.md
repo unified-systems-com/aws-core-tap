@@ -123,12 +123,12 @@ pick the right lane per AWS's tagging surface for the service):**
 | Strategy | When | Manifest shape |
 |---|---|---|
 | `rgta` | The resource type is covered by Resource Groups Tagging API and the item carries a joinable ARN | `"tags": {"source": "rgta", "join": {...}}` — tags land via the per-run RGTA sweep, joined by ARN (e.g. `lambda`) |
-| service side-quest | RGTA excludes the type (e.g. IAM roles) but the service has a tag-list op | `"tags": {"source": "service", "op": ..., "params": ..., "path": ..., "shape": "list_kv"\|"map"}` — runs through the hydrate seam, so denials surface as `HYDRATE_GAP`, and normalizes via `normalize_tags` |
+| service side-quest | RGTA excludes the type (e.g. IAM roles) but the service has a tag-list op | `"tags": {"source": "service", "op": ..., "params": ..., "path": ..., "shape": "list_kv"\|"list_kv_lower"\|"map"}` — runs through the hydrate seam, so denials surface as `HYDRATE_GAP`, and normalizes via `normalize_tags` |
 | projected field | A `custom_fn` already fetched tags while assembling the item | `"tags": "<path>"` inside `fields` (e.g. `"_tags"` for sqs, `"UserPoolTags"` for cognito) |
 
 All three converge on ONE canonical `tags` field: a flat `{str: str}` map,
-`{}` when untagged (a normal fact, never an omission). New wire shapes (ECS
-lowercase kv, WAFv2 wrapped) extend the `normalize_tags` enum — never a
+`{}` when untagged (a normal fact, never an omission). New wire shapes (WAFv2 wrapped; ECS lowercase kv is `list_kv_lower`)
+extend the `normalize_tags` enum — never a
 per-service loop.
 
 ## Step 2 — Model (`models/<type>.py`)

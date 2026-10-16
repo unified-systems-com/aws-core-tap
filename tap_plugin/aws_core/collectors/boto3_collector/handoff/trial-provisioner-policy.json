@@ -45,6 +45,12 @@
         "cognito-idp:ListUserPools",
         "cognito-idp:DescribeUserPool",
         "apigateway:GET",
+        "ecs:ListClusters",
+        "ecs:DescribeClusters",
+        "ecs:ListServices",
+        "ecs:DescribeServices",
+        "ecs:ListTasks",
+        "ecs:DescribeTasks",
         "tag:GetResources"
       ],
       "Resource": "*"

@@ -20,7 +20,7 @@ from tap_plugin.aws_core.collectors.boto3_collector import collector as collecto
 from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
-from tap_plugin.aws_core.tests.grid_keys import edge_between, node_id
+from tap_plugin.aws_core.tests.grid_keys import edge_between, find_node_id, node_id
 
 from tap_cares.collectors.config import CollectorConfig
 from tap_cares.secrets.models import Secret, SecretRef
@@ -46,6 +46,15 @@ _API_ARN = f"arn:aws:apigateway:::/apis/{_API_ID}"  # canned clients carry no re
 _POOL_ID = "us-east-1_Slice0001"
 _BUCKET_ARN = f"arn:aws:s3:::{_BUCKET}"
 _FN_NO_VPC_ARN = f"arn:aws:lambda:us-east-1:{_ACCOUNT}:function:sam-edge"
+_ECS_CLUSTER = f"arn:aws:ecs:us-east-1:{_ACCOUNT}:cluster/slice"
+_ECS_SERVICE = f"arn:aws:ecs:us-east-1:{_ACCOUNT}:service/slice/web"
+_ECS_TASK = f"arn:aws:ecs:us-east-1:{_ACCOUNT}:task/slice/aaaa1111"
+_ECS_CONTAINER = f"arn:aws:ecs:us-east-1:{_ACCOUNT}:container/slice/aaaa1111/c1"
+_ECS_DIGEST = "sha256:" + "cd" * 32
+# Planted at overrides.containerOverrides[].environment / .command: both are declared credential locations
+# of the ECS task entry (persist_configuration: false), so neither may persist anywhere.
+_ECS_ENV_CANARY = "canary-ecs-env-token-3e8b"
+_ECS_CMD_CANARY = "canary-ecs-command-arg-62d0"
 
 _CANNED = {
     "list_functions": {
@@ -225,6 +234,60 @@ _CANNED = {
                 "ExternalId": _COGNITO_CANARY,
             },
         }
+    },
+    "list_clusters": {"clusterArns": [_ECS_CLUSTER]},
+    "describe_clusters": {
+        "clusters": [{"clusterArn": _ECS_CLUSTER, "clusterName": "slice", "status": "ACTIVE", "tags": []}]
+    },
+    "list_services": {"serviceArns": [_ECS_SERVICE]},
+    "describe_services": {
+        "services": [
+            {
+                "serviceArn": _ECS_SERVICE,
+                "serviceName": "web",
+                "clusterArn": _ECS_CLUSTER,
+                "status": "ACTIVE",
+                "desiredCount": 1,
+                "runningCount": 1,
+                "launchType": "FARGATE",
+                "tags": [{"key": "team", "value": "core"}],
+            }
+        ]
+    },
+    "list_tasks": {"taskArns": [_ECS_TASK]},
+    "describe_tasks": {
+        "tasks": [
+            {
+                "taskArn": _ECS_TASK,
+                "clusterArn": _ECS_CLUSTER,
+                "lastStatus": "RUNNING",
+                "desiredStatus": "RUNNING",
+                "launchType": "FARGATE",
+                "platformVersion": "1.4.0",
+                "group": "service:web",
+                "tags": [{"key": "team", "value": "core"}],
+                "containers": [
+                    {
+                        "containerArn": _ECS_CONTAINER,
+                        "name": "app",
+                        "image": "registry.example/app:latest",
+                        "imageDigest": _ECS_DIGEST,
+                        "runtimeId": "rt-1",
+                        "lastStatus": "RUNNING",
+                    }
+                ],
+                "overrides": {
+                    "containerOverrides": [
+                        {
+                            "name": "app",
+                            "environment": [{"name": "TOKEN", "value": _ECS_ENV_CANARY}],
+                            "command": ["run", _ECS_CMD_CANARY],
+                        }
+                    ]
+                },
+            }
+        ],
+        "failures": [],
     },
     # IAM role tags — service side-quest (RGTA excludes IAM roles).
     "list_role_tags": {"Tags": [{"Key": "Owner", "Value": "sam-aydlette"}, {"Key": "Env", "Value": "prod"}]},
@@ -528,8 +591,10 @@ _OFF_CASES = [
     ("aws_core__aws_cloudfront_distribution", _DIST_ARN, _CF_CANARY, "domain_name", _CF_DOMAIN),
     ("aws_core__aws_apigateway_http_api", _API_ARN, _APIGW_CANARY, "api_id", _API_ID),
     ("aws_core__aws_cognito_user_pool", _POOL_ID, _COGNITO_CANARY, "mfa_configuration", "OFF"),
+    ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_ENV_CANARY, "last_status", "RUNNING"),
+    ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_CMD_CANARY, "last_status", "RUNNING"),
 ]
-_OFF_IDS = [case[0] for case in _OFF_CASES]
+_OFF_IDS = [f"{case[0]}-{case[2]}" for case in _OFF_CASES]
 
 
 def _row_dump(node) -> str:
@@ -667,3 +732,60 @@ def test_origin_header_presence_lands_and_the_value_never_does(_stub_aws, monkey
         assert secret not in submitted[0]
         assert secret not in _row_dump(dist)
     assert dist.history.exists()
+
+
+@pytest.mark.django_db
+def test_ecs_tree_lands_with_the_digest_and_its_edges(_stub_aws):
+    """req-aws-collector-ecs-3, -4, -6, -7, -8: one run imports the cluster, service, task and container
+    through core's GRIFT validation (so the tags trap would reject the batch here), with the digest verbatim
+    and the RUNS_* edges wired."""
+    from tap_grid.services import get_node
+
+    _run_collector()
+    container = get_node(node_id("aws_core__aws_ecs_container", _ECS_CONTAINER))
+    assert container.image == "registry.example/app:latest"
+    assert container.image_digest == _ECS_DIGEST
+    assert container.configuration == {}
+    task = get_node(node_id("aws_core__aws_ecs_task", _ECS_TASK))
+    assert (task.cluster_arn, task.group, task.platform_version) == (_ECS_CLUSTER, "service:web", "1.4.0")
+    assert task.tags == {"team": "core"}
+    assert task.started_at is None  # canned task has no startedAt: unobserved, not ""
+    assert get_node(node_id("aws_core__aws_ecs_service", _ECS_SERVICE)).tags == {"team": "core"}
+    cluster, service = "aws_core__aws_ecs_cluster", "aws_core__aws_ecs_service"
+    edge_between("RUNS_SERVICE__aws_core", cluster, _ECS_CLUSTER, service, _ECS_SERVICE)
+    edge_between("RUNS_TASK__aws_core", cluster, _ECS_CLUSTER, "aws_core__aws_ecs_task", _ECS_TASK)
+    edge_between("RUNS_TASK__aws_core", service, _ECS_SERVICE, "aws_core__aws_ecs_task", _ECS_TASK)
+    edge_between(
+        "RUNS_CONTAINER__aws_core", "aws_core__aws_ecs_task", _ECS_TASK, "aws_core__aws_ecs_container", _ECS_CONTAINER
+    )
+
+
+@pytest.mark.django_db
+def test_ecs_describe_denied_still_imports_the_nodes_with_a_gap(_stub_aws, monkeypatch):
+    """req-aws-collector-ecs-10: with every Describe denied, the cluster, service and task still pass core's
+    GRIFT validation from their listed ARNs (nulls for what was not read), each denial is a HYDRATE_GAP
+    warning, and no container is invented."""
+    from botocore.exceptions import ClientError
+    from tap_grid.services import get_node
+
+    def _denied(self, **_kw):
+        raise ClientError({"Error": {"Code": "AccessDeniedException"}}, "Describe")
+
+    for op in ("describe_clusters", "describe_services", "describe_tasks"):
+        monkeypatch.setattr(_CannedClient, op, _denied, raising=False)
+    collector = Boto3Collector(CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7()))
+    collector.run()
+    assert collector.results["error"] == []
+
+    cluster = get_node(node_id("aws_core__aws_ecs_cluster", _ECS_CLUSTER))
+    service = get_node(node_id("aws_core__aws_ecs_service", _ECS_SERVICE))
+    task = get_node(node_id("aws_core__aws_ecs_task", _ECS_TASK))
+    assert (cluster.name, service.name, task.name) == ("slice", "web", "aaaa1111")
+    assert task.last_status is None and task.group is None  # not read: null, never ""
+    gaps = [w for w in collector.results["warn"] if w["message_code"] == "HYDRATE_GAP"]
+    assert {g["message_data"]["entity_type"] for g in gaps} >= {
+        "aws_core__aws_ecs_cluster",
+        "aws_core__aws_ecs_service",
+        "aws_core__aws_ecs_task",
+    }
+    assert find_node_id("aws_core__aws_ecs_container", _ECS_CONTAINER) is None

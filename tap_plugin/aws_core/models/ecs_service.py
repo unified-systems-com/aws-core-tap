@@ -33,6 +33,7 @@ class EcsService(BaseModel):
         "desired_count": {"type": ["integer", "null"]},
         "running_count": {"type": ["integer", "null"]},
         "launch_type": {"type": "string"},
+        "tags": {"type": "object"},
         "configuration": {"type": "object"},
     }
 
@@ -43,6 +44,7 @@ class EcsService(BaseModel):
         "desired_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "running_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "launch_type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
@@ -53,6 +55,7 @@ class EcsService(BaseModel):
     desired_count = models.IntegerField(blank=True, null=True)
     running_count = models.IntegerField(blank=True, null=True)
     launch_type = models.CharField(max_length=64, blank=True, default="")
+    tags = models.JSONField(default=dict, blank=True)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

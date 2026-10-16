@@ -39,7 +39,14 @@ from botocore.exceptions import ClientError
 #: ``Marker``; S3's ``ListBuckets`` echoes ``ContinuationToken`` only when more buckets remain; the
 #: rest are the names other AWS list operations use, so a future entry on another service is judged
 #: by the same rule rather than silently trusted.
-_CONTINUATION_KEYS: tuple[str, ...] = ("Marker", "NextMarker", "NextToken", "NextContinuationToken", "ContinuationToken")
+_CONTINUATION_KEYS: tuple[str, ...] = (
+    "Marker",
+    "NextMarker",
+    "NextToken",
+    "nextToken",
+    "NextContinuationToken",
+    "ContinuationToken",
+)
 
 #: Error codes for "this credential may not ask", which is not the same as "the answer was empty".
 _DENIED_CODES = frozenset({"AccessDenied", "AccessDeniedException", "UnauthorizedOperation", "AuthFailure", "Forbidden"})
