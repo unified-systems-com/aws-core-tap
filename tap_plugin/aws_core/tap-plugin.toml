@@ -1,5 +1,5 @@
 manifest_version = "0"
-plugin_version = "v0.7.0" # x-release-please-version
+plugin_version = "v0.8.0" # x-release-please-version
 # 0.2.1 (2026-09-22): the first core release the [falsifiers] table + tap_grid.falsifiers /
 # tap_grid.falsifier_testing (Candidate, Expected, Falsifier, Probe, Verdict, verdict_from_probe,
 # run_four_cases) resolve against — 0.1.6, the release before it, refuses the [falsifiers] key at
