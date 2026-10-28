@@ -7,7 +7,7 @@ whole is covered, because "the whole" has no list. This specification gives it o
 ledger** is a generated, committed file that names every AWS service and resource type in scope and
 gives each exactly one state: modeled and collected, modeled only, not yet classified, or excluded
 with a written reason. The aim is then falsifiable: the work is done when no in-scope row is
-unclassified.
+unclassified, with `not-enumerable` rows counted and reported beside the coverage figure so it never reads as complete while they remain.
 
 The ledger's denominator comes from machine-readable AWS sources (botocore's bundled service models,
 and the CloudFormation resource type schemas), never from a person's recollection of what AWS offers.
@@ -54,8 +54,9 @@ Status: `Proposed`
 
 The ledger's service list is the set of services in the botocore data bundled with the pinned
 `boto3`. As of botocore 1.43.121 that is 435 service models, of which 397 have `List*` or `Describe*`
-operations. A service with no list or describe operation cannot enumerate resources and is recorded as
-`excluded` with that reason, not omitted.
+operations. A service with no list or describe operation is not thereby proven to hold no nodes: it may expose its
+resources through differently named operations or only through a CloudFormation schema. It is recorded as
+`not-enumerable` with that reason, never as `excluded` and never omitted.
 
 Resource types within a service are taken from the CloudFormation resource type schemas where the
 service has them (each carries a primary identifier and a `tagging` block), and otherwise from the
@@ -90,7 +91,8 @@ Each row is in exactly one state:
 | State | Meaning | Required to be in it |
 | --- | --- | --- |
 | `unclassified` | Named by the denominator, not yet judged | Nothing; the aim is zero of these in scope |
-| `excluded` | Judged not to be a node | A written reason: attribute of a named node, transient, metric, policy fragment, or no list operation |
+| `excluded` | Judged not to be a node | A written reason: attribute of a named node, transient, metric or policy fragment |
+| `not-enumerable` | May be a node, but no in-scope source enumerates it | The sources searched and what each lacked; reported separately from coverage and revisited when the sources change |
 | `modeled` | A model exists, no manifest entry | The model name |
 | `collected-unverified` | A manifest entry exists, built from botocore only | The entry, the shape-conformance test passing, and the tag evidence below |
 | `collected-verified` | A live trial has run | The trial run recorded under `add-aws-type` step 5 |
