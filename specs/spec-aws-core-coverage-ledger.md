@@ -104,18 +104,22 @@ RID: `req-aws-core-ledger-tags`
 
 Status: `Proposed`
 
-Every row that is `modeled` or later records a `tags` treatment: `inline` (tags arrive in the
-list or describe output), `side-call` (a separate operation reads them), `rgta` (the Resource Groups
-Tagging API sweep), `organizations` (the Organizations lane), or `none`.
+Every row that is `modeled` or later records two things. The `tags` treatment is one of `inline` (tags
+arrive in the list or describe output), `side-call` (a separate operation reads them), `rgta` (the
+Resource Groups Tagging API sweep), `organizations` (the Organizations lane), or `none`. The
+`tag_evidence` status is `confirmed` or `not-found`, kept apart from the treatment so the treatment
+enum stays closed.
 
-A row may be `none` only when untaggability is confirmed as fact. Confirmation requires a citation
-recorded in the row from at least one of: the CloudFormation resource schema's `tagging.taggable`
-being `false`, the service's botocore model having no tag operation and no tag member on the
-resource's shapes, or the service's own documentation stating the resource cannot be tagged. When the
-sources disagree, the row stays unresolved and the disagreement is written down.
+A row may carry the treatment `none` only when untaggability is confirmed as fact by a **positive**
+source, recorded in the row with a citation: the CloudFormation resource schema's `tagging.taggable`
+being `false`, or the service's own documentation stating the resource cannot be tagged. The
+service's botocore model having no tag operation and no tag member on the resource's shapes is
+corroboration and never sufficient alone, because the absence of a model entry does not show that AWS
+rejects tags (the Resource Groups Tagging API or a newer operation may carry them). When the sources
+disagree, the row stays unresolved and the disagreement is written down.
 
-"I could not find the tags" is not `none`. It is the state `tags: not-found`, and a row in it cannot
-be `collected-unverified` or later. The order of search, stopping at the first confirmed answer:
+"I could not find the tags" is not `none`. It is `tag_evidence: not-found`, and a row in it cannot be
+`collected-unverified` or later. The order of search, stopping at the first confirmed answer:
 
 1. The CloudFormation resource schema: `tagging.taggable` and `tagProperty` name whether and where.
 2. The botocore model: shapes with a tag-list or tag-map member on the describe output, and any
