@@ -27,6 +27,22 @@
     "AWS::IAM::AccessKey": {
       "state": "excluded",
       "reason": "An access key has no ARN and is a credential: the id is an identifier under its user and the secret is returned only at creation. Key age and status are properties of the user, to be added to aws_iam_user under their own type work, not a node."
+    },
+    "AWS::SecretsManager::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A resource policy has no ARN of its own: it is the policy document attached to a secret and is identified by that secret's ARN. It is content of the secret, not a resource. aws_secrets_manager_secret does not capture the document today."
+    },
+    "AWS::SecretsManager::RotationSchedule": {
+      "state": "excluded",
+      "reason": "A rotation schedule has no ARN of its own: it is the rotation configuration of one secret. Whether rotation is on is already a typed field of aws_secrets_manager_secret (rotation_enabled); the rotation function and schedule are not captured today."
+    },
+    "AWS::SecretsManager::SecretTargetAttachment": {
+      "state": "excluded",
+      "reason": "A secret target attachment has no identity or ARN of its own: it links a secret to the database or cluster it holds credentials for. It is a relationship between two nodes and becomes an edge once the target is modelled."
+    },
+    "AWS::CloudTrail::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A CloudTrail resource policy has no list operation and no ARN of its own: it is the policy document of a channel, event data store or dashboard, identified by that resource's ARN. It is content of its resource, not a resource."
     }
   },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
@@ -365,7 +381,8 @@
     },
     "aws_core__aws_kms_key": {
       "cfn": [
-        "AWS::KMS::Key"
+        "AWS::KMS::Key",
+        "AWS::KMS::ReplicaKey"
       ]
     },
     "aws_core__aws_lambda": {
