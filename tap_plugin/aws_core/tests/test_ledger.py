@@ -10,6 +10,8 @@ import copy
 import dataclasses
 import json
 import tomllib
+import urllib.error
+import urllib.request
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -20,7 +22,7 @@ import pytest
 from tap_plugin.aws_core.ledger import __main__ as cli
 from tap_plugin.aws_core.ledger import sources
 from tap_plugin.aws_core.ledger.build import STATES, Inputs, LedgerError, build_ledger, render
-from tap_plugin.aws_core.ledger.sources import BotoService, SourceError, load_cfn_bundle
+from tap_plugin.aws_core.ledger.sources import BotoService, SameHostRedirect, SourceError, confine, load_cfn_bundle
 
 PACKAGE = Path(cli.PACKAGE)
 
@@ -112,7 +114,9 @@ def test_a_model_with_no_resource_type_is_listed_with_its_reason(tmp_path: Path)
 @pytest.mark.spec("req-aws-core-ledger-denominator")
 def test_the_same_inputs_build_the_same_bytes(tmp_path: Path) -> None:
     inputs = _inputs(tmp_path)
-    assert render(build_ledger(inputs)) == render(build_ledger(inputs))
+    first = render(build_ledger(inputs))
+    second = render(build_ledger(inputs))
+    assert first == second
 
 
 @pytest.mark.spec("req-aws-core-ledger-tags")
@@ -245,7 +249,7 @@ def test_a_built_ledger_validates_against_its_schema(tmp_path: Path) -> None:
     jsonschema.Draft202012Validator(schema).validate(json.loads(render(build_ledger(_inputs(tmp_path)))))
 
 
-# -- the committed files ------------------------------------------------------------------------------------
+# -- the committed decisions --------------------------------------------------------------------------------
 
 
 def test_the_committed_decisions_validate_and_cover_every_model() -> None:
@@ -256,17 +260,31 @@ def test_the_committed_decisions_validate_and_cover_every_model() -> None:
     assert {e["entity_type"] for e in entries} <= models
 
 
-@pytest.mark.spec("req-aws-core-ledger-states")
-def test_the_committed_ledger_is_valid_and_consistent_with_the_manifest() -> None:
-    ledger = json.loads(cli.LEDGER_PATH.read_text())
-    schema = json.loads((PACKAGE / "aws_coverage_ledger.schema.json").read_text())
-    jsonschema.Draft202012Validator(schema).validate(ledger)
-    names = [row["type_name"] for row in ledger["rows"]]
-    assert names == sorted(names) and len(names) == len(set(names))
-    manifest = {e["entity_type"] for e in json.loads(cli.MANIFEST_PATH.read_text())["entries"]}
-    collected = {e for row in ledger["rows"] if row["state"] == "collected-unverified" for e in row["entity_types"]}
-    assert collected <= manifest
-    unmapped = {m["entity_type"] for m in ledger["unmapped_models"]}
-    modelled = {e for row in ledger["rows"] for e in row["entity_types"]}
-    assert modelled.isdisjoint(unmapped)
-    assert modelled | unmapped == set(cli.load_decisions()["type_map"])
+# -- paths and the one address -------------------------------------------------------------------------------
+
+
+def test_a_path_argument_is_confined_to_the_working_or_temporary_directory(tmp_path: Path) -> None:
+    assert confine(tmp_path / "bundle") == (tmp_path / "bundle").resolve()
+    with pytest.raises(SourceError, match="outside the working directory"):
+        confine("/etc/passwd")
+    with pytest.raises(SourceError, match="outside the working directory"):
+        confine(tmp_path.joinpath(*[".."] * 12, "etc", "passwd"))
+
+
+def test_a_symbolic_link_out_of_the_allowed_places_is_refused(tmp_path: Path) -> None:
+    link = tmp_path / "escape"
+    link.symlink_to("/etc")
+    with pytest.raises(SourceError, match="outside the working directory"):
+        confine(link / "passwd")
+    with pytest.raises(SourceError, match="outside the working directory"):
+        load_cfn_bundle(link)
+
+
+def test_the_download_follows_a_redirect_only_to_the_same_https_host() -> None:
+    handler = SameHostRedirect()
+    request = urllib.request.Request("https://schema.example.test/bundle.zip")
+    kept = handler.redirect_request(request, None, 302, "Found", {}, "https://schema.example.test/other.zip")
+    assert kept is not None and kept.full_url == "https://schema.example.test/other.zip"
+    for refused in ("https://elsewhere.example.test/bundle.zip", "http://schema.example.test/bundle.zip"):
+        with pytest.raises(urllib.error.URLError, match="refused a redirect"):
+            handler.redirect_request(request, None, 302, "Found", {}, refused)

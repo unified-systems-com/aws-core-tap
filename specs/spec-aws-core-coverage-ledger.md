@@ -228,8 +228,8 @@ catalog skill.
 
 The generator is `tap_plugin/aws_core/ledger/` and needs no Django and no network except `fetch`:
 
-- `python -m tap_plugin.aws_core.ledger fetch --dest DIR` downloads AWS's public CloudFormation schema bundle with the standard library, over https, refusing a body over 64 MiB, and prints its sha256.
-- `build --cfn DIR_OR_ZIP [--out FILE]` joins the derived **facts** (`sources.py`: the bundle, botocore's service models, botocore's bundled endpoint data) with the reviewed **decisions** (`decisions.json`: `service_map`, `type_map`, `classification`) and writes `aws_coverage_ledger.json`, byte-stable for the same inputs, one row per line. Both JSON files have a JSON Schema in the same directory and are validated at load.
+- `python -m tap_plugin.aws_core.ledger fetch --dest DIR` downloads AWS's public CloudFormation schema bundle with the standard library, over https from one host (a redirect to any other host or to plain http is refused), refusing a body over 64 MiB, and prints its sha256. Every path argument is resolved, symbolic links and `..` included, and refused unless it lies inside the working directory or the temporary directory.
+- `build --cfn DIR_OR_ZIP [--out FILE]` joins the derived **facts** (`sources.py`: the bundle, botocore's service models, botocore's bundled endpoint data) with the reviewed **decisions** (`decisions.json`: `service_map`, `type_map`, `classification`) and writes `aws_coverage_ledger.json`, byte-stable for the same inputs, one row per line. The generated file is about 1 MiB, so it lands in its own pull request after the generator; a reviewer regenerates it from the recorded bundle hash and compares bytes. Both JSON files have a JSON Schema in the same directory and are validated at load.
 - `check --cfn DIR_OR_ZIP` exits 1 when the committed ledger differs from what the bundle builds; it is what the drift job (`req-aws-core-ledger-drift`) will run.
 - The bundle is untrusted data, read as JSON only: a member that tries to leave the archive is ignored, one over 8 MiB is refused, and nothing in it is imported or executed.
 

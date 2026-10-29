@@ -5,17 +5,16 @@
     python -m tap_plugin.aws_core.ledger check --cfn DIR_OR_ZIP
 
 ``build`` and ``check`` are offline. Only ``fetch`` touches the network, with the standard library, over
-https, to one fixed address, and refuses a body over a fixed size.
+https, to one fixed host (a redirect to any other is refused), and refuses a body over a fixed size. Every path
+argument is resolved and confined to the working directory or the temporary directory.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 import tomllib
-import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -71,21 +70,12 @@ def build_text(cfn_path: Path) -> str:
 
 
 def fetch(dest: Path) -> int:
-    dest.mkdir(parents=True, exist_ok=True)
-    target = dest / "CloudformationSchema.zip"
-    request = urllib.request.Request(sources.BUNDLE_URL, headers={"User-Agent": "aws-core-tap-ledger"})
-    digest = hashlib.sha256()
-    size = 0
-    with urllib.request.urlopen(request, timeout=60) as response, target.open("wb") as out:  # noqa: S310 - fixed https URL
-        while chunk := response.read(1 << 20):
-            size += len(chunk)
-            if size > sources.MAX_BUNDLE_BYTES:
-                target.unlink()
-                print(f"refused: body over {sources.MAX_BUNDLE_BYTES} bytes", file=sys.stderr)
-                return 2
-            digest.update(chunk)
-            out.write(chunk)
-    print(f"{target} {size} bytes sha256 {digest.hexdigest()}")
+    try:
+        target, size, sha256 = sources.download_bundle(dest)
+    except (sources.SourceError, OSError) as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 2
+    print(f"{target} {size} bytes sha256 {sha256}")
     return 0
 
 
@@ -109,10 +99,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     summary = json.loads(text)["summary"]
     if args.command == "build":
-        args.out.write_text(text)
-        print(f"wrote {args.out}")
+        out = sources.confine(args.out, PACKAGE)
+        out.write_text(text)
+        print(f"wrote {out}")
         print(json.dumps(summary, indent=1))
         return 0
+    if not LEDGER_PATH.exists():
+        print("no committed ledger; run `build` and commit the result", file=sys.stderr)
+        return 1
     if LEDGER_PATH.read_text() == text:
         print("ledger is current")
         return 0

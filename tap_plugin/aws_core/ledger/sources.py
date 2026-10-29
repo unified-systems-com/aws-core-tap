@@ -11,7 +11,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +33,57 @@ _TYPE_NAME = re.compile(r"^[A-Za-z0-9]+::[A-Za-z0-9]+::[A-Za-z0-9]+(::[A-Za-z0-9
 
 class SourceError(Exception):
     """A source could not be read, or read as something other than what the ledger accepts."""
+
+
+def confine(path: Path | str, *extra_roots: Path | str) -> Path:
+    """The real path of ``path``, refused unless it lies inside the working directory, the temporary directory or
+    one of ``extra_roots``.
+
+    A command-line argument names a file the ledger will read or write, so it is resolved (symbolic links and
+    ``..`` included) and checked against a short list of places before anything opens it.
+    """
+    real = os.path.realpath(path)
+    for root in (Path.cwd(), tempfile.gettempdir(), *extra_roots):
+        base = os.path.realpath(root)
+        if real == base or real.startswith(base + os.sep):
+            return Path(real)
+    raise SourceError(f"{path} is outside the working directory and the temporary directory")
+
+
+class SameHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Follow a redirect only to https on the host the request started at, so a fixed address stays fixed."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+        target = urllib.parse.urlsplit(newurl)
+        origin = urllib.parse.urlsplit(req.full_url)
+        if target.scheme != "https" or target.netloc != origin.netloc:
+            raise urllib.error.URLError(f"refused a redirect from {origin.netloc} to {newurl}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def download_bundle(dest: Path) -> tuple[Path, int, str]:
+    """Fetch the public schema bundle into ``dest``: https, one host, a size cap; returns path, bytes, sha256."""
+    dest = confine(dest)
+    dest.mkdir(parents=True, exist_ok=True)
+    target = dest / "CloudformationSchema.zip"
+    origin = urllib.parse.urlsplit(BUNDLE_URL)
+    if origin.scheme != "https":
+        raise SourceError("the bundle address is not https")
+    opener = urllib.request.build_opener(SameHostRedirect)
+    request = urllib.request.Request(BUNDLE_URL, headers={"User-Agent": "aws-core-tap-ledger"})
+    digest = hashlib.sha256()
+    size = 0
+    with opener.open(request, timeout=60) as response, target.open("wb") as out:
+        if urllib.parse.urlsplit(response.geturl()).netloc != origin.netloc:
+            raise SourceError(f"the bundle came from {response.geturl()}, not {origin.netloc}")
+        while chunk := response.read(1 << 20):
+            size += len(chunk)
+            if size > MAX_BUNDLE_BYTES:
+                target.unlink()
+                raise SourceError(f"the bundle is over {MAX_BUNDLE_BYTES} bytes")
+            digest.update(chunk)
+            out.write(chunk)
+    return target, size, digest.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -92,7 +148,7 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
     The hash is of the zip's bytes, or, for a directory, of its sorted member names and contents. The two forms
     of one bundle therefore hash differently; the ledger records the hash it was built from, not a bundle id.
     """
-    path = Path(path)
+    path = confine(path)
     members: list[tuple[str, bytes]] = []
     digest = hashlib.sha256()
     if path.is_dir():
