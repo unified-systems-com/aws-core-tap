@@ -231,7 +231,7 @@ def resolve_node_tags(
     return tags, slot, mapping
 
 
-class Unreadable:
+class _Unreadable:
     """A stand-in EC2 client whose only call raises: what `read_region_facts` sees when the client
     itself could not be built, so that path yields the same all-unknown answer as a refused call."""
 
@@ -275,7 +275,7 @@ class Boto3Collector(CollectorBase):
             client = session.client("ec2", region_name=regions[0], config=Config(retries={"mode": "standard"}))
             facts, error = read_region_facts(client, regions)
         except (BotoCoreError, ValueError) as exc:
-            facts = read_region_facts(Unreadable(exc), regions)[0]
+            facts = read_region_facts(_Unreadable(exc), regions)[0]
             error = f"ec2 client unavailable: {type(exc).__name__}"
         if error:
             self.record_warn(
