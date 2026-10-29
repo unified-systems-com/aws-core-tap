@@ -408,7 +408,65 @@ def test_a_taggable_that_is_not_a_boolean_is_refused_not_coerced(tmp_path: Path,
         folder = tmp_path / f"b{index}"
         folder.mkdir()
         (folder / "a.json").write_text(json.dumps(document))
-        if bad is None and index == 1:
-            continue  # a top-level `taggable: null` is the same as the key being absent
         with pytest.raises(SourceError, match="not a boolean"):
             load_cfn_bundle(folder)
+
+
+class _FakeResponse:
+    """What an opener returns: a context manager with the final address and a body to read."""
+
+    def __init__(self, url: str, body: bytes) -> None:
+        self._url, self._body = url, body
+
+    def __enter__(self) -> "_FakeResponse":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def geturl(self) -> str:
+        return self._url
+
+    def read(self, size: int = -1) -> bytes:
+        chunk, self._body = self._body[:size], self._body[size:]
+        return chunk
+
+
+class _Opener:
+    def __init__(self, on_open: Any, response: _FakeResponse) -> None:
+        self._on_open, self._response = on_open, response
+
+    def open(self, request: Any, timeout: float = 0) -> _FakeResponse:
+        self._on_open()
+        return self._response
+
+
+def test_a_link_planted_at_the_target_during_the_download_is_replaced_not_written_through(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The target was checked before the request; something may create a link there while the body arrives.
+    outside = tmp_path / "victim.txt"
+    outside.write_text("untouched")
+    dest = tmp_path / "dl"
+    target = dest / "CloudformationSchema.zip"
+    origin = f"https://{sources.BUNDLE_URL.split('/')[2]}/CloudformationSchema.zip"
+
+    def plant() -> None:
+        target.symlink_to(outside)
+
+    monkeypatch.setattr(
+        urllib.request, "build_opener", lambda *_: _Opener(plant, _FakeResponse(origin, b"zip-bytes"))
+    )
+    path, size, _ = sources.download_bundle(dest)
+    assert outside.read_text() == "untouched"
+    assert path == target and not path.is_symlink() and path.read_bytes() == b"zip-bytes" and size == 9
+    assert [p.name for p in dest.iterdir()] == ["CloudformationSchema.zip"]
+
+
+def test_a_failed_download_leaves_no_partial_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    dest = tmp_path / "dl"
+    elsewhere = _FakeResponse("https://elsewhere.example.test/x.zip", b"data")
+    monkeypatch.setattr(urllib.request, "build_opener", lambda *_: _Opener(lambda: None, elsewhere))
+    with pytest.raises(SourceError, match="not "):
+        sources.download_bundle(dest)
+    assert list(dest.iterdir()) == []

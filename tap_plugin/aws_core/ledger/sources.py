@@ -64,7 +64,12 @@ class SameHostRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def download_bundle(dest: Path) -> tuple[Path, int, str]:
-    """Fetch the public schema bundle into ``dest``: https, one host, a size cap; returns path, bytes, sha256."""
+    """Fetch the public schema bundle into ``dest``: https, one host, a size cap; returns path, bytes, sha256.
+
+    The bytes go to a temporary file the process created itself, inside ``dest``, and the final name is replaced
+    only after the whole body has arrived. A link planted at the final name between the check and the write is
+    therefore replaced, never written through.
+    """
     dest = confine(dest)
     dest.mkdir(parents=True, exist_ok=True)
     target = confine(dest / "CloudformationSchema.zip")
@@ -75,16 +80,21 @@ def download_bundle(dest: Path) -> tuple[Path, int, str]:
     request = urllib.request.Request(BUNDLE_URL, headers={"User-Agent": "aws-core-tap-ledger"})
     digest = hashlib.sha256()
     size = 0
-    with opener.open(request, timeout=60) as response, target.open("wb") as out:
-        if urllib.parse.urlsplit(response.geturl()).netloc != origin.netloc:
-            raise SourceError(f"the bundle came from {response.geturl()}, not {origin.netloc}")
-        while chunk := response.read(1 << 20):
-            size += len(chunk)
-            if size > MAX_BUNDLE_BYTES:
-                target.unlink()
-                raise SourceError(f"the bundle is over {MAX_BUNDLE_BYTES} bytes")
-            digest.update(chunk)
-            out.write(chunk)
+    descriptor, temporary = tempfile.mkstemp(prefix=".bundle-", suffix=".part", dir=dest)
+    try:
+        with opener.open(request, timeout=60) as response, os.fdopen(descriptor, "wb") as out:
+            if urllib.parse.urlsplit(response.geturl()).netloc != origin.netloc:
+                raise SourceError(f"the bundle came from {response.geturl()}, not {origin.netloc}")
+            while chunk := response.read(1 << 20):
+                size += len(chunk)
+                if size > MAX_BUNDLE_BYTES:
+                    raise SourceError(f"the bundle is over {MAX_BUNDLE_BYTES} bytes")
+                digest.update(chunk)
+                out.write(chunk)
+        os.replace(temporary, target)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
     return target, size, digest.hexdigest()
 
 
@@ -136,10 +146,9 @@ def _parse_type(document: Any, member: str) -> CfnType | None:
             raise SourceError(f"{member}: tagging.taggable is {taggable!r}, not a boolean")
         tag_property = tagging.get("tagProperty")
     else:
-        top = document.get("taggable")
-        if top is not None and not isinstance(top, bool):
-            raise SourceError(f"{member}: taggable is {top!r}, not a boolean")
-        taggable = top
+        if "taggable" in document and not isinstance(document["taggable"], bool):
+            raise SourceError(f"{member}: taggable is {document['taggable']!r}, not a boolean")
+        taggable = document.get("taggable")
         tag_property = None
     identifier = document.get("primaryIdentifier") or []
     handlers = document.get("handlers") or {}
