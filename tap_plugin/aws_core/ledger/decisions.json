@@ -1,32 +1,472 @@
 {
   "classification": {
+    "AWS::ARCZonalShift::AutoshiftObserverNotificationStatus": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, Region, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::ARCZonalShift::ZonalAutoshiftConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by ResourceIdentifier, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::AmazonMQ::ConfigurationAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ApiGateway::Account": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::ApiGateway::BasePathMapping": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by DomainName, BasePath, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ApiGateway::Method": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by RestApiId, ResourceId, HttpMethod, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::ApiGatewayV2::ApiMapping": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ApiMappingId, DomainName, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ApiGatewayV2::Route": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by ApiId, RouteId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::AppStream::ApplicationEntitlementAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by StackName, EntitlementName, ApplicationIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::AppStream::ApplicationFleetAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by FleetName, ApplicationArn, with no identity or ARN of its own: the identifier is made of the ARN or name of the two resources it links. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::AppStream::StackFleetAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by FleetName, StackName, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::AppStream::StackUserAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by StackName, UserName, AuthenticationType, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Bedrock::KnowledgeBasePolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by KnowledgeBaseId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::CertificateManager::Account": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::CloudFormation::CustomResource": {
+      "state": "excluded",
+      "reason": "A CloudFormation orchestration construct that runs a custom provisioning step; no AWS resource of its own stands behind it, and its identifier is a CloudFormation-generated id."
+    },
+    "AWS::CloudFormation::WaitCondition": {
+      "state": "excluded",
+      "reason": "A CloudFormation orchestration construct that pauses a stack until a signal arrives; no AWS resource of its own stands behind it, and its identifier is a CloudFormation-generated id."
+    },
+    "AWS::CloudFormation::WaitConditionHandle": {
+      "state": "excluded",
+      "reason": "A CloudFormation orchestration construct that issues the signal URL for a wait condition; no AWS resource of its own stands behind it, and its identifier is a CloudFormation-generated id."
+    },
+    "AWS::CloudTrail::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A CloudTrail resource policy has no list operation and no ARN of its own: it is the policy document of a channel, event data store or dashboard, identified by that resource's ARN. It is content of its resource, not a resource."
+    },
+    "AWS::CodeStarConnections::SyncConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by ResourceName, SyncType, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::Cognito::IdentityPoolPrincipalTag": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by IdentityPoolId, IdentityProviderName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::Cognito::IdentityPoolRoleAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Cognito::LogDeliveryConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::Cognito::UserPoolRegionalConfigurationAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by UserPoolId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Cognito::UserPoolRiskConfigurationAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by UserPoolId, ClientId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Cognito::UserPoolUICustomizationAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by UserPoolId, ClientId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Cognito::UserPoolUserToGroupAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by UserPoolId, GroupName, Username, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Config::RemediationConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by ConfigRuleName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::DataZone::EnvironmentBlueprintConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by DomainId, EnvironmentBlueprintId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::DataZone::ProjectMembership": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by DomainIdentifier, MemberIdentifier, MemberIdentifierType, ProjectIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::DirectConnect::DirectConnectGatewayAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AssociationId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::ClientVpnAuthorizationRule": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::ClientVpnRoute": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::ClientVpnTargetNetworkAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::EIPAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::GatewayRouteTableAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by GatewayId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::IpPoolRouteTableAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AssociationId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::LocalGatewayRoute": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by DestinationCidrBlock, LocalGatewayRouteTableId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::NetworkAclEntry": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::NetworkInterfaceAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AttachmentId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::NetworkInterfacePermission": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::EC2::Route": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by RouteTableId, CidrBlock, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::RouteServerAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by RouteServerId, VpcId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::SecurityGroupVpcAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by GroupId, VpcId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::SubnetNetworkAclAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AssociationId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::SubnetRouteTableAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::TransitGatewayMeteringPolicyEntry": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by TransitGatewayMeteringPolicyId, PolicyRuleNumber, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::TransitGatewayMulticastDomainAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by TransitGatewayMulticastDomainId, TransitGatewayAttachmentId, SubnetId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::TransitGatewayPolicyTableAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by TransitGatewayPolicyTableId, TransitGatewayAttachmentId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::TransitGatewayPolicyTableEntry": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by TransitGatewayPolicyTableId, PolicyRuleNumber, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::TransitGatewayRoute": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by TransitGatewayRouteTableId, DestinationCidrBlock, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::TransitGatewayRouteTableAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by TransitGatewayRouteTableId, TransitGatewayAttachmentId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::VPCBlockPublicAccessOptions": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::EC2::VPCDHCPOptionsAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by DhcpOptionsId, VpcId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::VPCGatewayAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AttachmentType, VpcId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::VPNConnectionRoute": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by DestinationCidrBlock, VpnConnectionId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::EC2::VPNGatewayRoutePropagation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EC2::VolumeAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by VolumeId, InstanceId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ECR::PullThroughCacheRule": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by EcrRepositoryPrefix, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::ECR::RegistryPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by RegistryId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::ECR::RegistryScanningConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by RegistryId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::ECR::ReplicationConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by RegistryId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::ECR::SigningConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by RegistryId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::ECS::PrimaryTaskSet": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Cluster, Service, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::EMR::StudioSessionMapping": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by StudioId, IdentityType, IdentityName, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ElastiCache::SecurityGroupIngress": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::ElasticLoadBalancingV2::ListenerCertificate": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::EventSchemas::RegistryPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Events::EventBusPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by EventBusName, StatementId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Glue::DataCatalogEncryptionSettings": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by CatalogId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::IAM::AccessKey": {
+      "state": "excluded",
+      "reason": "An access key has no ARN and is a credential: the id is an identifier under its user and the secret is returned only at creation. Key age and status are properties of the user, to be added to aws_iam_user under their own type work, not a node."
+    },
     "AWS::IAM::GroupPolicy": {
       "state": "excluded",
       "reason": "An inline group policy has no ARN of its own: it is identified by the group and a policy name, and exists only as part of the group. Its document is content of the group, not a resource."
-    },
-    "AWS::IAM::RolePolicy": {
-      "state": "excluded",
-      "reason": "An inline role policy has no ARN of its own: it is identified by the role and a policy name, and exists only as part of the role. Its document is content of the role, not a resource."
-    },
-    "AWS::IAM::UserPolicy": {
-      "state": "excluded",
-      "reason": "An inline user policy has no ARN of its own: it is identified by the user and a policy name, and exists only as part of the user. Its document is content of the user, not a resource."
     },
     "AWS::IAM::Policy": {
       "state": "excluded",
       "reason": "This CloudFormation type creates inline policies on users, groups and roles and has no ARN or list operation of its own; the standalone policy resource is AWS::IAM::ManagedPolicy. An inline policy's document is content of its principal, not a resource."
     },
+    "AWS::IAM::RolePolicy": {
+      "state": "excluded",
+      "reason": "An inline role policy has no ARN of its own: it is identified by the role and a policy name, and exists only as part of the role. Its document is content of the role, not a resource."
+    },
     "AWS::IAM::ServiceLinkedRole": {
       "state": "excluded",
       "reason": "A service-linked role is an ordinary IAM role that a service creates, and ListRoles returns it among the others; aws_iam_role already covers it, so it is not a separate type."
+    },
+    "AWS::IAM::UserPolicy": {
+      "state": "excluded",
+      "reason": "An inline user policy has no ARN of its own: it is identified by the user and a policy name, and exists only as part of the user. Its document is content of the user, not a resource."
     },
     "AWS::IAM::UserToGroupAddition": {
       "state": "excluded",
       "reason": "A membership of users in a group, with no identity or ARN of its own. It is a relationship between two nodes and becomes an edge once the group is modelled."
     },
-    "AWS::IAM::AccessKey": {
+    "AWS::IdentityStore::GroupMembership": {
       "state": "excluded",
-      "reason": "An access key has no ARN and is a credential: the id is an identifier under its user and the secret is returned only at creation. Key age and status are properties of the user, to be added to aws_iam_user under their own type work, not a node."
+      "reason": "A link between resources, identified by MembershipId, IdentityStoreId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::IoT::AccountAuditConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::IoT::EncryptionConfiguration": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::IoT::PolicyPrincipalAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by PolicyName, Principal, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::IoT::ThingPrincipalAttachment": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ThingName, Principal, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::KinesisAnalytics::ApplicationOutput": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::KinesisAnalytics::ApplicationReferenceDataSource": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::KinesisAnalyticsV2::ApplicationCloudWatchLoggingOption": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::KinesisAnalyticsV2::ApplicationOutput": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::KinesisAnalyticsV2::ApplicationReferenceDataSource": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::LakeFormation::DataLakeSettings": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::LakeFormation::Permissions": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::LakeFormation::TagAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ResourceIdentifier, TagsIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Lambda::LayerVersionPermission": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Lambda::Permission": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by FunctionName, Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Lex::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Logs::AccountPolicy": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, PolicyType, PolicyName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::Logs::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by PolicyName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Logs::StorageTierPolicy": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::NetworkManager::LinkAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by GlobalNetworkId, DeviceId, LinkId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Pinpoint::ApplicationSettings": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::Pinpoint::EventStream": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::PinpointEmail::ConfigurationSetEventDestination": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::QBusiness::Permission": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by ApplicationId, StatementId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::RDS::DBSecurityGroupIngress": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::Redshift::ClusterSecurityGroupIngress": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::ResourceExplorer2::DefaultViewAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AssociatedAwsPrincipal, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Route53::RecordSetGroup": {
+      "state": "excluded",
+      "reason": "A CloudFormation convenience that creates several record sets in one step; the records are the resources and the group has no identity in Route 53."
+    },
+    "AWS::Route53Profiles::ProfileResourceAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Route53Resolver::ResolverRuleAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ResolverRuleAssociationId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::S3::BucketPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Bucket, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::S3::MultiRegionAccessPointPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by MrapName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::S3ObjectLambda::AccessPointPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by ObjectLambdaAccessPoint, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::S3Outposts::BucketPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Bucket, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::SES::ReceiptRule": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by RuleName, RuleSetName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::SES::VdmAttributes": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by VdmAttributesResourceId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::SNS::TopicPolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::SQS::QueueInlinePolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Queue, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::SQS::QueuePolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::SSM::MaintenanceWindowTarget": {
+      "state": "excluded",
+      "reason": "A route, rule or entry that lives inside another resource, identified by WindowId, WindowTargetId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
     },
     "AWS::SecretsManager::ResourcePolicy": {
       "state": "excluded",
@@ -40,9 +480,37 @@
       "state": "excluded",
       "reason": "A secret target attachment has no identity or ARN of its own: it links a secret to the database or cluster it holds credentials for. It is a relationship between two nodes and becomes an edge once the target is modelled."
     },
-    "AWS::CloudTrail::ResourcePolicy": {
+    "AWS::SecurityHub::OrganizationConfiguration": {
       "state": "excluded",
-      "reason": "A CloudTrail resource policy has no list operation and no ARN of its own: it is the policy document of a channel, event data store or dashboard, identified by that resource's ARN. It is content of its resource, not a resource."
+      "reason": "A setting or sub-configuration of an account, a region or another resource, identified by OrganizationConfigurationIdentifier, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::SecurityHub::PolicyAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by AssociationIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ServiceCatalog::PortfolioProductAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by PortfolioId, ProductId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ServiceCatalog::ServiceActionAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ProductId, ProvisioningArtifactId, ServiceActionId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ServiceCatalog::TagOptionAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by TagOptionId, ResourceId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::Signer::ProfilePermission": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by StatementId, ProfileName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::WAFRegional::WebACLAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::XRay::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A policy document or permission statement attached to another resource, identified by PolicyName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
     }
   },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",

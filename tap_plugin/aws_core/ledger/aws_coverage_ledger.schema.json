@@ -37,6 +37,7 @@
         "tier_unknown_unclassified",
         "tags_not_found",
         "modeled_not_in_scope_tier",
+        "excluded_taggable",
         "botocore_services",
         "botocore_only_services",
         "botocore_only_in_scope_unclassified",
@@ -82,6 +83,13 @@
           "minimum": 0
         },
         "modeled_not_in_scope_tier": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excluded_taggable": {
+          "description": "Types excluded as non-resources that the CloudFormation schema nonetheless marks taggable. A type with tags is usually a resource with an ARN, so each one is listed for a human to confirm that its tag property tags something else.",
           "type": "array",
           "items": {
             "type": "string"

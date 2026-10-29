@@ -291,6 +291,9 @@ def _summary(rows: list[dict[str, Any]], service_rows: list[dict[str, Any]], bot
         "in_scope_unclassified": type_unclassified,
         "tier_unknown_unclassified": sum(1 for r in rows if r["tier"] == "unknown" and r["state"] == "unclassified"),
         "tags_not_found": sum(1 for r in rows if r["tags"]["evidence"] == "not-found"),
+        "excluded_taggable": sorted(
+            r["type_name"] for r in rows if r["state"] == "excluded" and r["tags"]["taggable"] is True
+        ),
         "modeled_not_in_scope_tier": sorted(
             r["type_name"] for r in rows if r["state"] in ("modeled", "collected-unverified") and r["tier"] != "both"
         ),
