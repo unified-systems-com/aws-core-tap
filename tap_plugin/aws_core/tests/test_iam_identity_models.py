@@ -13,12 +13,14 @@ review (``add-aws-type``, step 1), which arrive with the manifest entries. For t
 from __future__ import annotations
 
 import pytest
+from tap_grid.models import BaseModel
 from tap_plugin.aws_core.models.iam_group import IamGroup
 from tap_plugin.aws_core.models.iam_instance_profile import IamInstanceProfile
 from tap_plugin.aws_core.models.iam_saml_provider import IamSamlProvider
 from tap_plugin.aws_core.models.iam_server_certificate import IamServerCertificate
 from tap_plugin.aws_core.models.iam_virtual_mfa_device import IamVirtualMfaDevice
 
+BASE_FIELDS = {f.name for f in BaseModel._meta.get_fields()}
 MODELS = [IamGroup, IamInstanceProfile, IamSamlProvider, IamServerCertificate, IamVirtualMfaDevice]
 KEYS = {
     IamGroup: "group_arn",
@@ -39,8 +41,10 @@ class TestIamIdentityModels:
             assert field in model.FIELD_CRUD_SCHEMA and field in model.FIELD_VALIDATION_SCHEMA
 
     def test_every_model_field_is_in_both_schemas(self, model):
-        declared = {f.name for f in model._meta.get_fields() if f.concrete and not f.primary_key and f.name in model.FIELD_CRUD_SCHEMA}
-        assert declared == set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
+        # Start from the model's own concrete fields (not from the schema), minus the key and what BaseModel supplies,
+        # so a field left out of both schemas is caught.
+        own = {f.name for f in model._meta.get_fields() if f.concrete and not f.primary_key} - BASE_FIELDS
+        assert own == set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
 
     def test_the_natural_key_is_the_arn_or_serial(self, model):
         assert model.NATURAL_KEY == (KEYS[model],)
