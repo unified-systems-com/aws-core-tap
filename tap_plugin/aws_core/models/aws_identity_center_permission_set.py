@@ -44,7 +44,7 @@ class AwsIdentityCenterPermissionSet(BaseModel):
         "created_at": {"type": "string"},
         # AWS-managed policy ARNs attached to the permission set; null when the listing did not finish.
         "managed_policy_arns": {"type": ["array", "null"], "items": {"type": "string"}},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -62,7 +62,7 @@ class AwsIdentityCenterPermissionSet(BaseModel):
     created_at = models.CharField(max_length=40, blank=True, default="")
     managed_policy_arns = models.JSONField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: sso-admin:ListTagsForResource (`Tags`, list_kv).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_identity_center_permission_set"

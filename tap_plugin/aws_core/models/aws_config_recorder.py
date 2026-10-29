@@ -48,7 +48,7 @@ class AwsConfigRecorder(BaseModel):
         "role_arn": {"type": "string"},
         "all_supported": {"type": ["boolean", "null"]},
         "include_global_resource_types": {"type": ["boolean", "null"]},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -68,7 +68,7 @@ class AwsConfigRecorder(BaseModel):
     all_supported = models.BooleanField(null=True, blank=True, default=None)
     include_global_resource_types = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_config_recorder"

@@ -43,7 +43,7 @@ class AwsConfigConformancePack(BaseModel):
         "last_update_requested_at": {"type": "string"},
         # COMPLIANT, NON_COMPLIANT or INSUFFICIENT_DATA, verbatim; null when unread.
         "compliance_status": {"type": ["string", "null"]},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -61,7 +61,7 @@ class AwsConfigConformancePack(BaseModel):
     last_update_requested_at = models.CharField(max_length=40, blank=True, default="")
     compliance_status = models.CharField(max_length=32, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_config_conformance_pack"

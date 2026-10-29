@@ -43,7 +43,7 @@ class VpcEndpointService(BaseModel):
         "acceptance_required": {"type": ["boolean", "null"]},
         "private_dns_name": {"type": "string"},
         "region": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -61,7 +61,7 @@ class VpcEndpointService(BaseModel):
     private_dns_name = models.CharField(max_length=255, blank=True, default="")
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the configuration's Tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_vpc_endpoint_service"

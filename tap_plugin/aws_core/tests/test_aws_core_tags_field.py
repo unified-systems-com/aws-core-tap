@@ -35,20 +35,19 @@ def _collected_model(entry):
 
 @pytest.mark.parametrize("entry", _MANIFEST_ENTRIES, ids=lambda e: e["entity_type"])
 class TestCanonicalTagsField:
-    def test_field_exists_defaults_empty_dict(self, entry):
+    def test_field_exists_nullable_and_starts_unset(self, entry):
         model = _collected_model(entry)
         field = model._meta.get_field("tags")
         assert field.get_internal_type() == "JSONField"
-        assert field.default is dict  # uniform empty-map default
+        # null means "not read"; {} means "read, untagged" (aws-core-tap#111, migration 0021).
+        assert field.null is True and field.default is None
         assert field.blank is True
 
     def test_declared_in_both_schemas(self, entry):
         model = _collected_model(entry)
-        assert model.FIELD_CRUD_SCHEMA["tags"] == {"type": "object"}
-        assert model.FIELD_VALIDATION_SCHEMA["tags"] == {
-            "validation": "jsonschema",
-            "schema": {"type": "object"},
-        }
+        assert model.FIELD_CRUD_SCHEMA["tags"]["type"] == ["object", "null"]
+        validation = model.FIELD_VALIDATION_SCHEMA["tags"]
+        assert validation["validation"] == "jsonschema" and validation["schema"]["type"] == ["object", "null"]
 
     def test_uniform_name_across_family(self, entry):
         # The query-by-convention contract: same attribute name everywhere.

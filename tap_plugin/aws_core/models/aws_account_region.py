@@ -124,7 +124,7 @@ class AwsAccountRegion(BaseModel):
         "opt_in_status": {"type": "string"},
         "status": {"type": "string"},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
         # This account's EBS encryption-by-default setting in this region (ec2:GetEbsEncryptionByDefault,
         # GetEbsDefaultKmsKeyId; req-aws-landing-zone-security-services). Null when the read was denied
         # or failed, or the region was not read; false is AWS's own answer, stored as returned.
@@ -140,7 +140,7 @@ class AwsAccountRegion(BaseModel):
         "opt_in_status": {"validation": "jsonschema", "schema": {"type": "string"}},
         "status": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "ebs_encryption_by_default": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "ebs_default_kms_key_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
     }
@@ -161,7 +161,7 @@ class AwsAccountRegion(BaseModel):
     # listing count as an observation (see the collector's region gate).
     status = models.CharField(max_length=16, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
     ebs_encryption_by_default = models.BooleanField(null=True, blank=True, default=None)
     ebs_default_kms_key_id = models.CharField(max_length=2048, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", distinct from ""
 

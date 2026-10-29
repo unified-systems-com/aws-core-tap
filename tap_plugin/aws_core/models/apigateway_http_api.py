@@ -37,7 +37,7 @@ class ApiGatewayHttpApi(BaseModel):
         "api_endpoint": {"type": "string"},
         "protocol_type": {"type": "string"},
         "route_authorization_types": {"type": ["object", "null"], "additionalProperties": {"type": "string", "minLength": 1}},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
 
@@ -48,7 +48,7 @@ class ApiGatewayHttpApi(BaseModel):
         "api_endpoint": {"validation": "jsonschema", "schema": {"type": "string"}},
         "protocol_type": {"validation": "jsonschema", "schema": {"type": "string"}},
         "route_authorization_types": {"validation": "jsonschema", "schema": {"type": ["object", "null"], "additionalProperties": {"type": "string", "minLength": 1}}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
@@ -64,7 +64,7 @@ class ApiGatewayHttpApi(BaseModel):
     # configuration is not stored (integrations carry credentials), and without
     # it which routes are open would be lost.
     route_authorization_types = models.JSONField(null=True, blank=True, default=None)
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

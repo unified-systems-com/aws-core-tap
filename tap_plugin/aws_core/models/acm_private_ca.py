@@ -52,7 +52,7 @@ class AcmPrivateCa(BaseModel):
         "status": {"type": "string", "enum": ["", *STATUSES]},
         "usage_mode": {"type": "string", "enum": ["", *USAGE_MODES]},
         "subject_common_name": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -70,7 +70,7 @@ class AcmPrivateCa(BaseModel):
     usage_mode = models.CharField(max_length=32, blank=True, default="")
     subject_common_name = models.CharField(max_length=64, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: acm-pca:ListTags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_acm_private_ca"

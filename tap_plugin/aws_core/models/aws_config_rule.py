@@ -54,7 +54,7 @@ class AwsConfigRule(BaseModel):
         "compliance_type": {"type": ["string", "null"]},
         "non_compliant_resource_count": {"type": ["integer", "null"]},
         "non_compliant_count_capped": {"type": ["boolean", "null"]},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -77,7 +77,7 @@ class AwsConfigRule(BaseModel):
     non_compliant_resource_count = models.IntegerField(null=True, blank=True, default=None)
     non_compliant_count_capped = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_config_rule"

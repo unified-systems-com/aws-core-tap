@@ -46,7 +46,7 @@ class AwsControlTowerEnabledControl(BaseModel):
         "parent_identifier": {"type": "string"},
         "status": {"type": "string"},
         "drift_status": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -63,7 +63,7 @@ class AwsControlTowerEnabledControl(BaseModel):
     status = models.CharField(max_length=32, blank=True, default="")
     drift_status = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str}. Source: controltower:ListTagsForResource (`tags` map).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_controltower_enabled_control"

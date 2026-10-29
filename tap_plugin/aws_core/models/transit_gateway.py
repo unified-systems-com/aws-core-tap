@@ -54,7 +54,7 @@ class TransitGateway(BaseModel):
         "auto_accept_shared_attachments": {"type": ["boolean", "null"]},
         "default_route_table_association": {"type": ["boolean", "null"]},
         "default_route_table_propagation": {"type": ["boolean", "null"]},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -76,7 +76,7 @@ class TransitGateway(BaseModel):
     default_route_table_association = models.BooleanField(null=True, blank=True, default=None)
     default_route_table_propagation = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeTransitGateways Tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_transit_gateway"

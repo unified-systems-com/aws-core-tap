@@ -35,7 +35,7 @@ class CognitoUserPool(BaseModel):
         "pool_arn": {"type": "string"},
         "domain": {"type": "string"},
         "mfa_configuration": {"type": "string"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
 
@@ -45,7 +45,7 @@ class CognitoUserPool(BaseModel):
         "pool_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
         "domain": {"validation": "jsonschema", "schema": {"type": "string"}},
         "mfa_configuration": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
@@ -55,7 +55,7 @@ class CognitoUserPool(BaseModel):
     pool_arn = models.CharField(max_length=512, blank=True, default="")
     domain = models.CharField(max_length=255, blank=True, default="")
     mfa_configuration = models.CharField(max_length=32, blank=True, default="")
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

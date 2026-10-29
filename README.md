@@ -405,10 +405,10 @@ currently exist, which goes stale the moment AWS adds one.
   node whose `service`-lane call was denied or failed, and a KMS key, SQS
   queue or CloudTrail trail whose own tag call failed. The importer's
   keep-absent upsert (core >= 0.3.1) leaves the stored tags as they were. Only
-  a successful read of an untagged resource sends `tags = {}`. A resource
-  first seen on such a run is stored with the model's default `{}`, which says
-  "untagged" when the truth is "unknown" (a nullable `tags` would fix that and
-  is not decided). Organizations and landing-zone readers hold the same rule
+  a successful read of an untagged resource sends `tags = {}`. `tags` is nullable and starts null, as the grid convention has
+  it: `null` is "not read", `{}` is "read, no tags". A resource first seen on
+  an unread run keeps `null`. Rows stored before migration 0021 keep the `{}`
+  they were written with. Organizations and landing-zone readers hold the same rule
   by withholding the node. Whether `GetResources` works in `us-gov-east-1` has
   not been run here. With `use_fips_endpoint: true` the
   sweep is sent to a `tagging-fips.<region>` host, which AWS does not list

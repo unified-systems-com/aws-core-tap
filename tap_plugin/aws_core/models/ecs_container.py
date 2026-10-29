@@ -37,7 +37,7 @@ class EcsContainer(BaseModel):
         "image_digest": {"type": ["string", "null"]},
         "runtime_id": {"type": ["string", "null"]},
         "last_status": {"type": ["string", "null"]},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
 
@@ -48,7 +48,7 @@ class EcsContainer(BaseModel):
         "image_digest": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "runtime_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "last_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
@@ -59,7 +59,7 @@ class EcsContainer(BaseModel):
     image_digest = models.CharField(max_length=256, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not reported"
     runtime_id = models.CharField(max_length=256, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
     last_status = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

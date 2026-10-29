@@ -52,7 +52,7 @@ class CodepipelinePipeline(BaseModel):
         "pipeline_type": {"type": "string", "enum": ["", *PIPELINE_TYPES]},
         "execution_mode": {"type": "string", "enum": ["", *EXECUTION_MODES]},
         "region": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -71,7 +71,7 @@ class CodepipelinePipeline(BaseModel):
     execution_mode = models.CharField(max_length=16, blank=True, default="")
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: ListTagsForResource.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_codepipeline_pipeline"

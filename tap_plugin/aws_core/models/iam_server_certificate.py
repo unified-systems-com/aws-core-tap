@@ -35,7 +35,7 @@ class IamServerCertificate(BaseModel):
         "expiration": {"type": ["string", "null"]},
         "upload_date": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -46,7 +46,7 @@ class IamServerCertificate(BaseModel):
         "expiration": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "upload_date": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -60,7 +60,7 @@ class IamServerCertificate(BaseModel):
     # ISO 8601 UTC time the certificate was uploaded; NULL = not observed.
     upload_date = models.CharField(max_length=512, blank=True, null=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_iam_server_certificate"

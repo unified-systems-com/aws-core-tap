@@ -112,7 +112,7 @@ class AwsPolicyStatement(BaseModel):
         },
         "occurrences": {"type": ["integer", "null"], "minimum": 1},
         "content_sha256": {"type": "string", "pattern": "^([0-9a-f]{64})?$"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -139,7 +139,7 @@ class AwsPolicyStatement(BaseModel):
     occurrences = models.IntegerField(null=True, blank=True, default=None)
     content_sha256 = models.CharField(max_length=64, blank=True, default="")
     # Canonical {str: str} (req-aws-core-fields-4). A statement is not an AWS resource: always {}.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_policy_statement"

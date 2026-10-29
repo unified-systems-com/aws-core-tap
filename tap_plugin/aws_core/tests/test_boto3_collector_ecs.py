@@ -430,8 +430,8 @@ def test_emitted_payload_satisfies_the_model_create_schema(entity_type):
 def test_models_declare_tags_in_both_schemas(entity_type):
     """req-aws-collector-ecs-7 (the always-on guard in test_aws_core_tags_field.py derives from the manifest)."""
     model = _MODELS[entity_type]
-    assert model.FIELD_CRUD_SCHEMA["tags"] == {"type": "object"}
-    assert model.FIELD_VALIDATION_SCHEMA["tags"]["schema"] == {"type": "object"}
+    assert model.FIELD_CRUD_SCHEMA["tags"] == {"type": ["object", "null"]}
+    assert model.FIELD_VALIDATION_SCHEMA["tags"]["schema"] == {"type": ["object", "null"]}
 
 
 def test_ecs_tags_normalize_from_the_lowercase_wire_shape():

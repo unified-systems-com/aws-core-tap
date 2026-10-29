@@ -43,7 +43,7 @@ class AwsSecurityHubStandardsSubscription(BaseModel):
         "status": {"type": "string"},
         "status_reason": {"type": "string"},
         "controls_updatable": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -60,7 +60,7 @@ class AwsSecurityHubStandardsSubscription(BaseModel):
     status_reason = models.CharField(max_length=64, blank=True, default="")
     controls_updatable = models.CharField(max_length=32, blank=True, default="")
     # AWS cannot tag a standards subscription: always {} (tag_lanes.json, lane `none`).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_securityhub_standards_subscription"

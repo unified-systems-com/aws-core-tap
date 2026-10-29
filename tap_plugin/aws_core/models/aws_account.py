@@ -83,7 +83,7 @@ class AwsAccount(BaseModel):
         "email": {"type": "string"},
         "status": {"type": "string"},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
         # The account-level S3 Block Public Access settings (s3control:GetPublicAccessBlock, read once
         # per account in the partition's home region; req-aws-landing-zone-security-services). All
         # four false when AWS reports no configuration; null when the read was denied or failed, or
@@ -100,7 +100,7 @@ class AwsAccount(BaseModel):
         "email": {"validation": "jsonschema", "schema": {"type": "string"}},
         "status": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "s3_block_public_acls": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "s3_ignore_public_acls": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "s3_block_public_policy": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
@@ -117,7 +117,7 @@ class AwsAccount(BaseModel):
     email = models.EmailField(blank=True, default="")
     status = models.CharField(max_length=64, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
     s3_block_public_acls = models.BooleanField(null=True, blank=True, default=None)
     s3_ignore_public_acls = models.BooleanField(null=True, blank=True, default=None)
     s3_block_public_policy = models.BooleanField(null=True, blank=True, default=None)

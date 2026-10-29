@@ -72,7 +72,7 @@ class AwsOrganizationsPolicy(BaseModel):
         "policy_type": {"type": "string", "enum": ["", *OTHER_POLICY_TYPES]},
         "description": {"type": "string"},
         "aws_managed": {"type": ["boolean", "null"]},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -90,7 +90,7 @@ class AwsOrganizationsPolicy(BaseModel):
     aws_managed = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: organizations:ListTagsForResource
     # (the Organizations lane), for customer-managed policies; an AWS-managed policy cannot be tagged.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_organizations_policy"
