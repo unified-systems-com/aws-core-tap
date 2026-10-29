@@ -4,13 +4,30 @@
   "description": "The reviewed decisions the ledger joins with its derived facts (specs/spec-aws-core-coverage-ledger.md). Every entry carries a reason a later reader can check.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["description", "service_map", "type_map", "classification"],
+  "required": [
+    "description",
+    "service_map",
+    "type_map",
+    "classification",
+    "service_classification"
+  ],
   "properties": {
-    "description": { "type": "string", "minLength": 1 },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
     "service_map": {
       "description": "A CloudFormation service name to the botocore services it means, where the names do not say.",
       "type": "object",
-      "additionalProperties": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uniqueItems": true
+      }
     },
     "type_map": {
       "description": "Each aws_core entity type to the CloudFormation type(s) it models, or the reason it has none.",
@@ -18,10 +35,22 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["cfn"],
+        "required": [
+          "cfn"
+        ],
         "properties": {
-          "cfn": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9]+::[A-Za-z0-9]+::[A-Za-z0-9:]+$" }, "uniqueItems": true },
-          "reason": { "type": "string", "minLength": 10 }
+          "cfn": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9]+::[A-Za-z0-9]+::[A-Za-z0-9:]+$"
+            },
+            "uniqueItems": true
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10
+          }
         }
       }
     },
@@ -31,10 +60,45 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["state", "reason"],
+        "required": [
+          "state",
+          "reason"
+        ],
         "properties": {
-          "state": { "enum": ["excluded", "not-enumerable"] },
-          "reason": { "type": "string", "minLength": 10 }
+          "state": {
+            "enum": [
+              "excluded",
+              "not-enumerable"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10
+          }
+        }
+      }
+    },
+    "service_classification": {
+      "description": "A botocore service with no CloudFormation type, to excluded (no resources to model) or not-enumerable, with the written reason. A service with CloudFormation types is classified through those rows.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "reason"
+        ],
+        "properties": {
+          "state": {
+            "enum": [
+              "excluded",
+              "not-enumerable"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 10
+          }
         }
       }
     }

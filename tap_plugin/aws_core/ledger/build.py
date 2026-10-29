@@ -56,6 +56,14 @@ def _boto_services_for(service: str, inputs: Inputs) -> list[str]:
     return sorted(exact if len(exact) == 1 else candidates)
 
 
+def _matched_boto_services(inputs: Inputs) -> frozenset[str]:
+    """Every botocore service some CloudFormation service resolves to."""
+    names: set[str] = set()
+    for service in {c.service for c in inputs.cfn.values()}:
+        names.update(_boto_services_for(service, inputs))
+    return frozenset(names)
+
+
 def _available(boto_names: list[str], partition: str, inputs: Inputs) -> bool | None:
     """Whether botocore's endpoint data gives the service an endpoint in the partition; None when it does not say."""
     prefixes = [inputs.boto[name].endpoint_prefix for name in boto_names]
@@ -78,7 +86,10 @@ def _validate_decisions(inputs: Inputs) -> dict[str, list[str]]:
     """Cross-check the decisions against the facts; return CloudFormation type -> entity types."""
     decisions = inputs.decisions
     problems: list[str] = []
+    cfn_services = {c.service for c in inputs.cfn.values()}
     for service, names in decisions.get("service_map", {}).items():
+        if service not in cfn_services:
+            problems.append(f"service_map: the bundle has no CloudFormation service {service!r}")
         problems += [f"service_map {service}: botocore has no service {n!r}" for n in names if n not in inputs.boto]
     type_map: dict[str, Any] = decisions.get("type_map", {})
     problems += [f"type_map: {e} has no model" for e in type_map if e not in inputs.models]
@@ -98,6 +109,12 @@ def _validate_decisions(inputs: Inputs) -> dict[str, list[str]]:
         if cfn_name in by_type:
             problems.append(f"classification: {cfn_name} is also modelled as {by_type[cfn_name]}")
     problems += [f"manifest: {e} has no model" for e in inputs.manifest if e not in inputs.models]
+    matched = _matched_boto_services(inputs)
+    for name in decisions.get("service_classification", {}):
+        if name not in inputs.boto:
+            problems.append(f"service_classification: botocore has no service {name!r}")
+        elif name in matched:
+            problems.append(f"service_classification: {name!r} has CloudFormation types; classify those rows instead")
     if problems:
         raise LedgerError("\n".join(problems))
     return by_type
@@ -175,6 +192,25 @@ def build_ledger(inputs: Inputs) -> dict[str, Any]:
                 "tags": _tags(cfn, entities, inputs),
             }
         )
+    matched = _matched_boto_services(inputs)
+    service_decisions: dict[str, Any] = inputs.decisions.get("service_classification", {})
+    service_rows: list[dict[str, Any]] = []
+    for name in sorted(set(inputs.boto) - matched):
+        svc = inputs.boto[name]
+        commercial = _available([name], "aws", inputs)
+        govcloud = _available([name], "aws-us-gov", inputs)
+        decided = service_decisions.get(name)
+        service_rows.append(
+            {
+                "service": name,
+                "endpoint_prefix": svc.endpoint_prefix,
+                "state": decided["state"] if decided else "unclassified",
+                "reason": decided["reason"] if decided else None,
+                "tier": _tier(commercial, govcloud),
+                "partitions": {"aws": commercial, "aws-us-gov": govcloud},
+                "enumerable_by_botocore": svc.has_enumerator,
+            }
+        )
     unmapped = [
         {"entity_type": entity, "reason": entry["reason"]}
         for entity, entry in sorted(inputs.decisions.get("type_map", {}).items())
@@ -189,22 +225,30 @@ def build_ledger(inputs: Inputs) -> dict[str, Any]:
         ),
         "botocore_version": inputs.botocore_version,
         "cfn_bundle_sha256": inputs.cfn_sha256,
-        "summary": _summary(rows),
+        "summary": _summary(rows, service_rows, len(inputs.boto)),
         "unmapped_models": unmapped,
+        "service_rows": service_rows,
         "rows": rows,
     }
 
 
-def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _summary(rows: list[dict[str, Any]], service_rows: list[dict[str, Any]], boto_total: int) -> dict[str, Any]:
     by_state = Counter(r["state"] for r in rows)
     in_scope = [r for r in rows if r["tier"] == "both"]
+    in_scope_services = [r for r in service_rows if r["tier"] == "both"]
+    type_unclassified = sum(1 for r in in_scope if r["state"] == "unclassified")
+    service_unclassified = sum(1 for r in in_scope_services if r["state"] == "unclassified")
     return {
+        "botocore_services": boto_total,
+        "botocore_only_services": len(service_rows),
+        "botocore_only_in_scope_unclassified": service_unclassified,
+        "in_scope_unclassified_all": type_unclassified + service_unclassified,
         "types": len(rows),
         "services": len({r["service"] for r in rows}),
         "by_state": {s: by_state.get(s, 0) for s in STATES},
         "by_tier": dict(sorted(Counter(r["tier"] for r in rows).items())),
         "in_scope_types": len(in_scope),
-        "in_scope_unclassified": sum(1 for r in in_scope if r["state"] == "unclassified"),
+        "in_scope_unclassified": type_unclassified,
         "tier_unknown_unclassified": sum(1 for r in rows if r["tier"] == "unknown" and r["state"] == "unclassified"),
         "tags_not_found": sum(1 for r in rows if r["tags"]["evidence"] == "not-found"),
         "modeled_not_in_scope_tier": sorted(
@@ -215,6 +259,10 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def render(ledger: dict[str, Any]) -> str:
     """The ledger as text: header keys sorted, one row per line, so a diff names the row that moved."""
-    head = json.dumps({k: ledger[k] for k in sorted(ledger) if k != "rows"}, indent=1, sort_keys=True, ensure_ascii=False)
-    rows = ",\n".join("  " + json.dumps(r, sort_keys=True, ensure_ascii=False) for r in ledger["rows"])
-    return head[:-2] + ',\n "rows": [\n' + rows + "\n ]\n}\n"
+    listed = ("service_rows", "rows")
+    head = json.dumps({k: ledger[k] for k in sorted(ledger) if k not in listed}, indent=1, sort_keys=True, ensure_ascii=False)
+    out = head[:-2]
+    for key in listed:
+        body = ",\n".join("  " + json.dumps(r, sort_keys=True, ensure_ascii=False) for r in ledger[key])
+        out += f',\n "{key}": [\n{body}\n ]'
+    return out + "\n}\n"

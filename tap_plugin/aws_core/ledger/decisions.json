@@ -1,6 +1,7 @@
 {
   "classification": {},
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
+  "service_classification": {},
   "service_map": {
     "AmazonMQ": [
       "mq"

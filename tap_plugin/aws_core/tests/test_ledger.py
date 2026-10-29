@@ -50,6 +50,8 @@ BOTO = {
     "pinpoint": BotoService("pinpoint", "pinpoint", True),
     "govless": BotoService("govless", "govless", False),
     # The name, the endpoint prefix and the CloudFormation service all differ; only the service id says it.
+    # A botocore service no CloudFormation service resolves to: it still gets a row (the spec's denominator).
+    "orphan": BotoService("orphan", "orphan", True),
     "elbv2": BotoService("elbv2", "elasticloadbalancing", True, aliases=frozenset({"elasticloadbalancingv2"})),
 }
 
@@ -69,10 +71,10 @@ def _inputs(tmp_path: Path, **overrides: Any) -> Inputs:
         "botocore_version": "1.0.0",
         "boto": BOTO,
         "partitions": {
-            "aws": frozenset({"ec2", "sqs", "pinpoint", "govless", "elasticloadbalancing"}),
-            "aws-us-gov": frozenset({"ec2", "sqs", "elasticloadbalancing"}),
+            "aws": frozenset({"ec2", "sqs", "pinpoint", "govless", "elasticloadbalancing", "orphan"}),
+            "aws-us-gov": frozenset({"ec2", "sqs", "elasticloadbalancing", "orphan"}),
         },
-        "named_prefixes": frozenset({"ec2", "sqs", "pinpoint", "govless", "elasticloadbalancing"}),
+        "named_prefixes": frozenset({"ec2", "sqs", "pinpoint", "govless", "elasticloadbalancing", "orphan"}),
         "decisions": {
             "service_map": {},
             "type_map": {
@@ -83,6 +85,7 @@ def _inputs(tmp_path: Path, **overrides: Any) -> Inputs:
             "classification": {
                 "AWS::SQS::QueuePolicy": {"state": "excluded", "reason": "A policy document on the queue, not a node."}
             },
+            "service_classification": {},
         },
         "models": frozenset({"aws_core__aws_vpc", "aws_core__aws_sqs_queue", "aws_core__aws_az"}),
         "manifest": {"aws_core__aws_sqs_queue": {"entity_type": "aws_core__aws_sqs_queue", "tags": {"source": "service"}}},
@@ -181,6 +184,15 @@ def test_the_summary_counts_what_the_rows_say(tmp_path: Path) -> None:
         (lambda d: d["service_map"].__setitem__("EC2", ["not-a-botocore-service"]), "no service 'not-a-botocore-service'"),
         (lambda d: d["type_map"].__setitem__("aws_core__aws_az", {"cfn": []}), "no CloudFormation type and no reason"),
         (lambda d: d["type_map"].__setitem__("aws_core__ghost", {"cfn": ["AWS::EC2::VPC"]}), "has no model"),
+        (lambda d: d["service_map"].__setitem__("Typo", ["ec2"]), "no CloudFormation service 'Typo'"),
+        (
+            lambda d: d["service_classification"].__setitem__("sqs", {"state": "excluded", "reason": "Has CloudFormation types."}),
+            "has CloudFormation types",
+        ),
+        (
+            lambda d: d["service_classification"].__setitem__("nope", {"state": "excluded", "reason": "Not a botocore service."}),
+            "botocore has no service 'nope'",
+        ),
     ],
 )
 def test_decisions_that_disagree_with_the_facts_are_refused(tmp_path: Path, mutate: Any, message: str) -> None:
@@ -366,3 +378,37 @@ def test_a_zip_member_is_read_with_a_bound_not_trusted_for_its_declared_size(
     monkeypatch.setattr(sources, "MAX_MEMBER_BYTES", 300)
     with pytest.raises(SourceError, match="over the size limit"):
         load_cfn_bundle(archive)
+
+
+@pytest.mark.spec("req-aws-core-ledger-denominator")
+def test_a_botocore_service_with_no_cloudformation_type_still_gets_a_row(tmp_path: Path) -> None:
+    # The denominator is botocore's service list; a service CloudFormation never mentions is recorded, not omitted.
+    inputs = _inputs(tmp_path)
+    ledger = build_ledger(inputs)
+    assert [r["service"] for r in ledger["service_rows"]] == ["orphan"]
+    orphan = ledger["service_rows"][0]
+    assert (orphan["state"], orphan["tier"], orphan["reason"]) == ("unclassified", "both", None)
+    summary = ledger["summary"]
+    assert summary["botocore_services"] == len(BOTO)
+    assert summary["botocore_only_services"] == 1 and summary["botocore_only_in_scope_unclassified"] == 1
+    assert summary["in_scope_unclassified_all"] == summary["in_scope_unclassified"] + 1
+    decided = copy.deepcopy(inputs.decisions)
+    decided["service_classification"]["orphan"] = {"state": "excluded", "reason": "A data-plane API with no resources."}
+    row = build_ledger(dataclasses.replace(inputs, decisions=decided))["service_rows"][0]
+    assert (row["state"], row["reason"]) == ("excluded", "A data-plane API with no resources.")
+
+
+@pytest.mark.spec("req-aws-core-ledger-tags")
+@pytest.mark.parametrize("bad", [0, 1, "false", "true", None, []])
+def test_a_taggable_that_is_not_a_boolean_is_refused_not_coerced(tmp_path: Path, bad: Any) -> None:
+    # bool("false") is True and bool(0) is False: coercing would turn a malformed bundle into tag evidence.
+    for index, document in enumerate(
+        (_schema("AWS::EC2::VPC", tagging={"taggable": bad}), _schema("AWS::EC2::VPC", taggable=bad))
+    ):
+        folder = tmp_path / f"b{index}"
+        folder.mkdir()
+        (folder / "a.json").write_text(json.dumps(document))
+        if bad is None and index == 1:
+            continue  # a top-level `taggable: null` is the same as the key being absent
+        with pytest.raises(SourceError, match="not a boolean"):
+            load_cfn_bundle(folder)

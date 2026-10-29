@@ -233,6 +233,9 @@ The generator is `tap_plugin/aws_core/ledger/` and needs no Django and no networ
 - `check --cfn DIR_OR_ZIP` exits 1 when the committed ledger differs from what the bundle builds; it is what the drift job (`req-aws-core-ledger-drift`) will run.
 - The bundle is untrusted data, read as JSON only: a member that tries to leave the archive is ignored, one over 8 MiB is refused, a bundle whose members add up to over 256 MiB or number over 10,000 is refused, and nothing in it is imported or executed. The download target is resolved and confined too, so a symbolic link left at its name cannot redirect the write.
 
+- A botocore service that no CloudFormation service resolves to is not omitted: it gets a row in `service_rows` (the ledger's list of services with no CloudFormation type), `unclassified` until `decisions.json` `service_classification` says `excluded` (no resources to model, such as a data-plane API) or `not-enumerable`, with a reason. The summary reports `in_scope_unclassified_all`, the CloudFormation types and these services together, as the number the aim drives to zero.
+- A bundle is refused rather than coerced when `tagging.taggable` (or the deprecated top-level `taggable`) is present and is not a JSON boolean; `decisions.json` is refused when a `service_map` key names a CloudFormation service the bundle does not have.
+
 What is derived and what is approximate, stated so a reader does not take a field for more than it is:
 
 - `tier` and `partitions` come from botocore's bundled `endpoints.json`. A service newer than that data, or resolved by an endpoint rule set, is named in no partition and is recorded `unknown`, never "unavailable". `both` means botocore gives an endpoint in the commercial and the GovCloud partition; it is the in-scope tier (`req-aws-core-ledger-scope`).

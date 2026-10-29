@@ -128,11 +128,18 @@ def _parse_type(document: Any, member: str) -> CfnType | None:
     tagging = document.get("tagging")
     has_block = isinstance(tagging, dict)
     if has_block:
-        taggable: bool | None = bool(tagging.get("taggable", True))
+        # tagging.taggable defaults to true when the block omits it (CloudFormation's own contract). A value that is
+        # present and not a JSON boolean is a malformed bundle, refused: coercing it would turn 0 or "false" into
+        # authoritative tag evidence.
+        taggable = tagging.get("taggable", True)
+        if not isinstance(taggable, bool):
+            raise SourceError(f"{member}: tagging.taggable is {taggable!r}, not a boolean")
         tag_property = tagging.get("tagProperty")
     else:
         top = document.get("taggable")
-        taggable = top if isinstance(top, bool) else None
+        if top is not None and not isinstance(top, bool):
+            raise SourceError(f"{member}: taggable is {top!r}, not a boolean")
+        taggable = top
         tag_property = None
     identifier = document.get("primaryIdentifier") or []
     handlers = document.get("handlers") or {}
