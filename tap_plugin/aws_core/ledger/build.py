@@ -122,12 +122,14 @@ def _validate_decisions(inputs: Inputs) -> dict[str, list[str]]:
 
 def _tags(cfn: CfnType, entities: list[str], inputs: Inputs) -> dict[str, Any]:
     """The tag treatment and its evidence, from the schema and, where a manifest entry exists, from the entry."""
-    treatment: str | None = None
+    found: dict[str, str] = {}
     for entity in entities:
         source = ((inputs.manifest.get(entity) or {}).get("tags") or {}).get("source")
         if source in TREATMENT_OF_SOURCE:
-            treatment = TREATMENT_OF_SOURCE[source]
-            break
+            found[entity] = TREATMENT_OF_SOURCE[source]
+    if len(set(found.values())) > 1:
+        raise LedgerError(f"{cfn.type_name}: its entities disagree on tag treatment: {dict(sorted(found.items()))}")
+    treatment = next(iter(found.values()), None)
     if treatment == "none" and cfn.taggable is True:
         raise LedgerError(
             f"{cfn.type_name}: a manifest entry says it has no tags, but the CloudFormation schema says it is taggable"

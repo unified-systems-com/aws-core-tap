@@ -480,6 +480,20 @@ def test_a_manifest_that_says_no_tags_for_a_taggable_type_is_a_contradiction(tmp
         build_ledger(dataclasses.replace(inputs, manifest=manifest))
 
 
+@pytest.mark.spec("req-aws-core-ledger-tags")
+def test_entities_of_one_type_that_disagree_on_tag_treatment_are_refused(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    decisions = json.loads(json.dumps(inputs.decisions))
+    decisions["type_map"]["aws_core__aws_sqs_queue_alt"] = {"cfn": ["AWS::SQS::Queue"]}
+    manifest = {
+        "aws_core__aws_sqs_queue": {"tags": {"source": "service"}},
+        "aws_core__aws_sqs_queue_alt": {"tags": {"source": "rgta"}},
+    }
+    models = inputs.models | {"aws_core__aws_sqs_queue_alt"}
+    with pytest.raises(LedgerError, match="disagree on tag treatment"):
+        build_ledger(dataclasses.replace(inputs, decisions=decisions, manifest=manifest, models=models))
+
+
 @pytest.mark.parametrize(
     ("fields", "message"),
     [
