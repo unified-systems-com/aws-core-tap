@@ -101,6 +101,27 @@
           }
         }
       }
+    },
+    "tag_findings": {
+      "description": "A CloudFormation type to a tag finding that settles what the schema leaves open or gets wrong: whether the type has tags, with the citation that shows it. A finding is the only way a type's tags are confirmed beyond the CloudFormation schema, and the only way a `not-found` or `conflict` row is settled. The citation names a service operation or a documentation page, not a search.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "taggable",
+          "citation"
+        ],
+        "properties": {
+          "taggable": {
+            "type": "boolean"
+          },
+          "citation": {
+            "type": "string",
+            "minLength": 20
+          }
+        }
+      }
     }
   }
 }

@@ -1,5 +1,34 @@
 {
-  "classification": {},
+  "classification": {
+    "AWS::IAM::GroupPolicy": {
+      "state": "excluded",
+      "reason": "An inline group policy has no ARN of its own: it is identified by the group and a policy name, and exists only as part of the group. Its document is content of the group, not a resource."
+    },
+    "AWS::IAM::RolePolicy": {
+      "state": "excluded",
+      "reason": "An inline role policy has no ARN of its own: it is identified by the role and a policy name, and exists only as part of the role. Its document is content of the role, not a resource."
+    },
+    "AWS::IAM::UserPolicy": {
+      "state": "excluded",
+      "reason": "An inline user policy has no ARN of its own: it is identified by the user and a policy name, and exists only as part of the user. Its document is content of the user, not a resource."
+    },
+    "AWS::IAM::Policy": {
+      "state": "excluded",
+      "reason": "This CloudFormation type creates inline policies on users, groups and roles and has no ARN or list operation of its own; the standalone policy resource is AWS::IAM::ManagedPolicy. An inline policy's document is content of its principal, not a resource."
+    },
+    "AWS::IAM::ServiceLinkedRole": {
+      "state": "excluded",
+      "reason": "A service-linked role is an ordinary IAM role that a service creates, and ListRoles returns it among the others; aws_iam_role already covers it, so it is not a separate type."
+    },
+    "AWS::IAM::UserToGroupAddition": {
+      "state": "excluded",
+      "reason": "A membership of users in a group, with no identity or ARN of its own. It is a relationship between two nodes and becomes an edge once the group is modelled."
+    },
+    "AWS::IAM::AccessKey": {
+      "state": "excluded",
+      "reason": "An access key has no ARN and is a credential: the id is an identifier under its user and the secret is returned only at creation. Key age and status are properties of the user, to be added to aws_iam_user under their own type work, not a node."
+    }
+  },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
   "service_classification": {},
   "service_map": {
@@ -464,6 +493,16 @@
       "cfn": [
         "AWS::EC2::VPCEndpointService"
       ]
+    }
+  },
+  "tag_findings": {
+    "AWS::IAM::ManagedPolicy": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 service model iam defines TagPolicy, UntagPolicy and ListPolicyTags, so a customer managed policy has tags; the manifest collects them with ListPolicyTags"
+    },
+    "AWS::IAM::VirtualMFADevice": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
     }
   }
 }

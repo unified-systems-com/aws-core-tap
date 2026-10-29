@@ -605,3 +605,35 @@ def test_the_committed_ledger_agrees_with_the_manifest() -> None:
     assert collected - in_ledger <= unmapped | {
         entity for r in _committed()["rows"] for entity in r["entity_types"] if not r["state"].startswith("collected")
     }
+
+
+@pytest.mark.spec("req-aws-core-ledger-tags")
+def test_a_tag_finding_settles_a_conflict_and_a_not_found_with_its_citation(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    cfn = dict(inputs.cfn)
+    cfn["AWS::EC2::VPC"] = dataclasses.replace(cfn["AWS::EC2::VPC"], taggable=False)
+    cite = "botocore iam defines TagPolicy and ListPolicyTags, so the type has tags"
+    decisions = json.loads(json.dumps(inputs.decisions))
+    decisions["tag_findings"] = {"AWS::EC2::VPC": {"taggable": True, "citation": cite}}
+    manifest = {"aws_core__aws_vpc": {"tags": {"source": "service"}}}
+    tags = _rows(dataclasses.replace(inputs, cfn=cfn, decisions=decisions, manifest=manifest))["AWS::EC2::VPC"]["tags"]
+    assert (tags["treatment"], tags["evidence"], tags["taggable"]) == ("side-call", "confirmed", True)
+    assert tags["citation"].startswith(cite) and "overrides the CloudFormation schema" in tags["citation"]
+
+
+@pytest.mark.spec("req-aws-core-ledger-tags")
+def test_a_tag_finding_that_contradicts_the_manifest_or_names_no_type_is_refused(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    cite = "botocore has no Tag or ListTags operation for this type at all"
+    for finding, manifest, message in (
+        ({"taggable": False, "citation": cite}, {"aws_core__aws_sqs_queue": {"tags": {"source": "service"}}}, "manifest collects them"),
+        ({"taggable": True, "citation": cite}, {"aws_core__aws_sqs_queue": {"tags": {"source": "none"}}}, "manifest says it has none"),
+    ):
+        decisions = json.loads(json.dumps(inputs.decisions))
+        decisions["tag_findings"] = {"AWS::SQS::Queue": finding}
+        with pytest.raises(LedgerError, match=message):
+            build_ledger(dataclasses.replace(inputs, decisions=decisions, manifest=manifest))
+    decisions = json.loads(json.dumps(inputs.decisions))
+    decisions["tag_findings"] = {"AWS::No::Such": {"taggable": True, "citation": cite}}
+    with pytest.raises(LedgerError, match="the bundle has no type AWS::No::Such"):
+        build_ledger(dataclasses.replace(inputs, decisions=decisions))
