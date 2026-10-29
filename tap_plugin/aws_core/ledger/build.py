@@ -128,6 +128,10 @@ def _tags(cfn: CfnType, entities: list[str], inputs: Inputs) -> dict[str, Any]:
         if source in TREATMENT_OF_SOURCE:
             treatment = TREATMENT_OF_SOURCE[source]
             break
+    if treatment == "none" and cfn.taggable is True:
+        raise LedgerError(
+            f"{cfn.type_name}: a manifest entry says it has no tags, but the CloudFormation schema says it is taggable"
+        )
     if cfn.taggable is False:
         return {
             "treatment": "none",

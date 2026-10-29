@@ -470,3 +470,38 @@ def test_a_failed_download_leaves_no_partial_file(tmp_path: Path, monkeypatch: p
     with pytest.raises(SourceError, match="not "):
         sources.download_bundle(dest)
     assert list(dest.iterdir()) == []
+
+
+@pytest.mark.spec("req-aws-core-ledger-tags")
+def test_a_manifest_that_says_no_tags_for_a_taggable_type_is_a_contradiction(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    manifest = {"aws_core__aws_sqs_queue": {"entity_type": "aws_core__aws_sqs_queue", "tags": {"source": "none"}}}
+    with pytest.raises(LedgerError, match="says it has no tags, but the CloudFormation schema says it is taggable"):
+        build_ledger(dataclasses.replace(inputs, manifest=manifest))
+
+
+@pytest.mark.parametrize(
+    ("fields", "message"),
+    [
+        ({"primaryIdentifier": "/properties/Id"}, "primaryIdentifier is not a list of strings"),
+        ({"primaryIdentifier": [1, 2]}, "primaryIdentifier is not a list of strings"),
+        ({"handlers": "list"}, "handlers is not an object"),
+        ({"handlers": ["list"]}, "handlers is not an object"),
+    ],
+)
+def test_a_malformed_identifier_or_handlers_is_refused_not_coerced(
+    tmp_path: Path, fields: dict[str, Any], message: str
+) -> None:
+    (tmp_path / "a.json").write_text(json.dumps({**_schema("AWS::EC2::VPC"), **fields}))
+    with pytest.raises(SourceError, match=message):
+        load_cfn_bundle(tmp_path)
+
+
+def test_a_zip_over_the_archive_size_is_refused_before_it_is_read(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    archive = tmp_path / "big.zip"
+    with zipfile.ZipFile(archive, "w") as z:
+        z.writestr("a.json", json.dumps(_schema("AWS::EC2::VPC")))
+    monkeypatch.setattr(sources, "MAX_BUNDLE_BYTES", 50)
+    monkeypatch.setattr(Path, "read_bytes", lambda self: pytest.fail("read the whole archive before checking its size"))
+    with pytest.raises(SourceError, match="is over 50 bytes"):
+        load_cfn_bundle(archive)

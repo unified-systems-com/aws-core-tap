@@ -150,12 +150,16 @@ def _parse_type(document: Any, member: str) -> CfnType | None:
             raise SourceError(f"{member}: taggable is {document['taggable']!r}, not a boolean")
         taggable = document.get("taggable")
         tag_property = None
-    identifier = document.get("primaryIdentifier") or []
-    handlers = document.get("handlers") or {}
+    identifier = document.get("primaryIdentifier", [])
+    if not isinstance(identifier, list) or not all(isinstance(p, str) for p in identifier):
+        raise SourceError(f"{member}: primaryIdentifier is not a list of strings")
+    handlers = document.get("handlers", {})
+    if not isinstance(handlers, dict):
+        raise SourceError(f"{member}: handlers is not an object")
     return CfnType(
         type_name=type_name,
         service=type_name.split("::")[1],
-        primary_identifier=tuple(str(p) for p in identifier),
+        primary_identifier=tuple(identifier),
         has_list_handler="list" in handlers,
         taggable=taggable,
         tag_property=tag_property if isinstance(tag_property, str) else None,
@@ -188,10 +192,11 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
             members.append((file.name, raw))
             digest.update(file.name.encode() + b"\0" + raw)
     elif path.is_file():
-        raw_zip = path.read_bytes()
-        if len(raw_zip) > MAX_BUNDLE_BYTES:
+        if path.stat().st_size > MAX_BUNDLE_BYTES:
             raise SourceError(f"{path.name} is over {MAX_BUNDLE_BYTES} bytes")
-        digest.update(raw_zip)
+        with path.open("rb") as handle:
+            while block := handle.read(1 << 20):
+                digest.update(block)
         with zipfile.ZipFile(path) as archive:
             infos = archive.infolist()
             if len(infos) > MAX_MEMBERS:
