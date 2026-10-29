@@ -398,17 +398,19 @@ currently exist, which goes stale the moment AWS adds one.
   CloudFront) and the run will see connection failures rather than a clean
   skip, until that service is added to `partition.py`'s
   `_UNAVAILABLE_SERVICES` table.
-- **A failed tag sweep still overwrites stored tags.** When the RGTA
+- **A failed tag read leaves stored tags alone.** When the RGTA
   (`GetResources`) sweep fails in a region, the run warns
-  `RGTA_SWEEP_SKIPPED` and every tag-swept node there (Lambda, EventBridge,
-  log groups, ACM, DynamoDB, S3) is written with
-  `tags = {}`, replacing whatever an earlier run stored. A KMS key, SQS queue
-  or CloudTrail trail whose own tag call fails is written the same way. GRIFT
-  import replaces every field of an existing node and has no way to say "leave
-  this field as it is", so the fix waits on a core decision
-  (tap-plugin-aws-core#60). Until then, read `RGTA_SWEEP_SKIPPED` as "tags in
-  that region are wrong this run". Whether `GetResources` works in
-  `us-gov-east-1` has not been run here. With `use_fips_endpoint: true` the
+  `RGTA_SWEEP_SKIPPED` and the tag-swept nodes there (Lambda, EventBridge,
+  log groups, ACM, DynamoDB, S3) are sent without a `tags` field; so are a
+  node whose `service`-lane call was denied or failed, and a KMS key, SQS
+  queue or CloudTrail trail whose own tag call failed. The importer's
+  keep-absent upsert (core >= 0.3.1) leaves the stored tags as they were. Only
+  a successful read of an untagged resource sends `tags = {}`. A resource
+  first seen on such a run is stored with the model's default `{}`, which says
+  "untagged" when the truth is "unknown" (a nullable `tags` would fix that and
+  is not decided). Organizations and landing-zone readers hold the same rule
+  by withholding the node. Whether `GetResources` works in `us-gov-east-1` has
+  not been run here. With `use_fips_endpoint: true` the
   sweep is sent to a `tagging-fips.<region>` host, which AWS does not list
   for GovCloud, so expect the sweep to fail.
 - **`aws_organization.partition` is read, never assumed.** The

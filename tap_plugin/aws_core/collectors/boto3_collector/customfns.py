@@ -1025,6 +1025,7 @@ def kms_keys_described(session: Any, *, client_for: Any) -> Iterator[dict[str, A
             except BotoCoreError, ClientError:
                 meta = {"KeyId": key_id, "Arn": key.get("KeyArn")}
             tags: dict[str, str] = {}
+            tags_unread = False
             try:
                 for tpage in _pages(client, "list_resource_tags", KeyId=key_id):
                     for tag in tpage.get("Tags", []):
@@ -1032,10 +1033,16 @@ def kms_keys_described(session: Any, *, client_for: Any) -> Iterator[dict[str, A
                         if tag_key is not None:
                             tags[tag_key] = tag.get("TagValue") or ""
             except BotoCoreError, ClientError:
-                tags = {}
+                tags, tags_unread = {}, True
             alias_names = aliases_by_key.get(key_id, [])
             display = alias_names[0].removeprefix("alias/") if alias_names else key_id
-            yield {**meta, "_aliases": alias_names, "_tags": tags, "_display_name": display}
+            yield {
+                **meta,
+                "_aliases": alias_names,
+                "_tags": tags,
+                "_tags_unread": tags_unread,
+                "_display_name": display,
+            }
 
 
 def sqs_queues_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -1061,10 +1068,11 @@ def sqs_queues_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
             if not attrs.get("QueueArn"):
                 continue
             tags: dict[str, str] = {}
+            tags_unread = False
             try:
                 tags = without_response_metadata(client.list_queue_tags(QueueUrl=url)).get("Tags") or {}
             except BotoCoreError, ClientError:
-                tags = {}
+                tags_unread = True
             # KmsMasterKeyId is GetQueueAttributes(All)'s own answer; a queue whose attributes did
             # not answer is not yielded at all, so no claim is made for it (authority.py).
             yield with_edge_reads(
@@ -1073,6 +1081,7 @@ def sqs_queues_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
                     "QueueUrl": url,
                     "_queue_name": attrs["QueueArn"].rsplit(":", 1)[-1],
                     "_tags": tags,
+                    "_tags_unread": tags_unread,
                 },
                 {"KmsMasterKeyId": COMPLETE},
             )
@@ -1104,6 +1113,7 @@ def cloudtrail_trails_described(session: Any, *, client_for: Any) -> Iterator[di
         except BotoCoreError, ClientError:
             status = {}
         tags: dict[str, str] = {}
+        tags_unread = False
         try:
             for tpage in _pages(client, "list_tags", ResourceIdList=[arn]):
                 for tag_set in tpage.get("ResourceTagList", []):
@@ -1112,7 +1122,7 @@ def cloudtrail_trails_described(session: Any, *, client_for: Any) -> Iterator[di
                         if tag_key is not None:
                             tags[tag_key] = tag.get("Value") or ""
         except BotoCoreError, ClientError:
-            tags = {}
+            tags, tags_unread = {}, True
         # The three edge rules read DescribeTrails' own record of the trail (authority.py).
         yield with_edge_reads(
             {
@@ -1120,6 +1130,7 @@ def cloudtrail_trails_described(session: Any, *, client_for: Any) -> Iterator[di
                 "_status": status,
                 "_is_logging": bool(status.get("IsLogging")),
                 "_tags": tags,
+                "_tags_unread": tags_unread,
             },
             {"S3BucketName": COMPLETE, "CloudWatchLogsLogGroupArn": COMPLETE, "KmsKeyId": COMPLETE},
         )

@@ -789,3 +789,50 @@ def test_ecs_describe_denied_still_imports_the_nodes_with_a_gap(_stub_aws, monke
         "aws_core__aws_ecs_task",
     }
     assert find_node_id("aws_core__aws_ecs_container", _ECS_CONTAINER) is None
+
+
+def _collect_once() -> Boto3Collector:
+    collector = Boto3Collector(
+        CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7())
+    )
+    collector.run()
+    return collector
+
+
+@pytest.mark.django_db
+def test_a_failed_tag_read_leaves_stored_tags_and_an_empty_read_clears_them(_stub_aws, monkeypatch):
+    """aws-core-tap#111 on core >= 0.3.1 (keep-absent upsert, tap#1128).
+
+    Run 1 stores tags through both lanes (RGTA for the Lambda, ListRoleTags for the role). Run 2 has
+    the RGTA sweep refused and ListRoleTags denied: both tag sets must survive the upsert. Run 3
+    answers an empty tag set for both: that is a real answer and clears them.
+    """
+    from botocore.exceptions import ClientError
+
+    from tap_grid.services import get_node
+
+    _collect_once()
+    lam, role = node_id("aws_core__aws_lambda", _FN_ARN), node_id("aws_core__aws_iam_role", _ROLE_ARN)
+    assert get_node(lam).tags == {"Owner": "sam"}
+    assert get_node(role).tags == {"Owner": "sam-aydlette", "Env": "prod"}
+
+    def denied_sweep(self, **_kw):
+        raise ClientError({"Error": {"Code": "AccessDeniedException"}}, "GetResources")
+
+    def denied_role_tags(self, **_kw):
+        raise ClientError({"Error": {"Code": "AccessDenied"}}, "ListRoleTags")
+
+    with monkeypatch.context() as m:
+        m.setattr(_RgtaPaginator, "paginate", denied_sweep)
+        m.setattr(_CannedClient, "list_role_tags", denied_role_tags, raising=False)
+        second = _collect_once()
+    assert any(w["message_code"] == "RGTA_SWEEP_SKIPPED" for w in second.results["warn"])
+    assert get_node(lam).tags == {"Owner": "sam"}
+    assert get_node(role).tags == {"Owner": "sam-aydlette", "Env": "prod"}
+
+    with monkeypatch.context() as m:
+        m.setitem(_CANNED, "_rgta_pages", [{"ResourceTagMappingList": []}])
+        m.setitem(_CANNED, "list_role_tags", {"Tags": []})
+        _collect_once()
+    assert get_node(lam).tags == {}
+    assert get_node(role).tags == {}
