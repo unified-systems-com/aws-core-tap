@@ -41,6 +41,7 @@ BUNDLE = {
     "aws-pinpoint-app.json": _schema("AWS::Pinpoint::App"),
     "aws-newsvc-thing.json": _schema("AWS::NewSvc::Thing", taggable=True),
     "aws-govless-thing.json": _schema("AWS::GovLess::Thing", tagging={"taggable": True}),
+    "aws-elbv2-loadbalancer.json": _schema("AWS::ElasticLoadBalancingV2::LoadBalancer", tagging={"taggable": True}),
 }
 
 BOTO = {
@@ -48,6 +49,8 @@ BOTO = {
     "sqs": BotoService("sqs", "sqs", True),
     "pinpoint": BotoService("pinpoint", "pinpoint", True),
     "govless": BotoService("govless", "govless", False),
+    # The name, the endpoint prefix and the CloudFormation service all differ; only the service id says it.
+    "elbv2": BotoService("elbv2", "elasticloadbalancing", True, aliases=frozenset({"elasticloadbalancingv2"})),
 }
 
 
@@ -66,10 +69,10 @@ def _inputs(tmp_path: Path, **overrides: Any) -> Inputs:
         "botocore_version": "1.0.0",
         "boto": BOTO,
         "partitions": {
-            "aws": frozenset({"ec2", "sqs", "pinpoint", "govless"}),
-            "aws-us-gov": frozenset({"ec2", "sqs"}),
+            "aws": frozenset({"ec2", "sqs", "pinpoint", "govless", "elasticloadbalancing"}),
+            "aws-us-gov": frozenset({"ec2", "sqs", "elasticloadbalancing"}),
         },
-        "named_prefixes": frozenset({"ec2", "sqs", "pinpoint", "govless"}),
+        "named_prefixes": frozenset({"ec2", "sqs", "pinpoint", "govless", "elasticloadbalancing"}),
         "decisions": {
             "service_map": {},
             "type_map": {
@@ -238,7 +241,7 @@ def test_a_bundle_that_is_not_one_is_refused(tmp_path: Path, monkeypatch: pytest
     big.mkdir()
     (big / "a.json").write_text(json.dumps(_schema("AWS::EC2::VPC")))
     monkeypatch.setattr(sources, "MAX_MEMBER_BYTES", 10)
-    with pytest.raises(SourceError, match="is over 10 bytes"):
+    with pytest.raises(SourceError, match="over the size limit"):
         load_cfn_bundle(big)
 
 
@@ -288,3 +291,58 @@ def test_the_download_follows_a_redirect_only_to_the_same_https_host() -> None:
     for refused in ("https://elsewhere.example.test/bundle.zip", "http://schema.example.test/bundle.zip"):
         with pytest.raises(urllib.error.URLError, match="refused a redirect"):
             handler.redirect_request(request, None, 302, "Found", {}, refused)
+
+
+@pytest.mark.spec("req-aws-core-ledger-denominator")
+def test_a_service_is_found_by_any_of_its_botocore_names(tmp_path: Path) -> None:
+    # Codex on PR 113: ElasticLoadBalancingV2 is botocore's elbv2 with endpoint prefix elasticloadbalancing.
+    row = _rows(_inputs(tmp_path))["AWS::ElasticLoadBalancingV2::LoadBalancer"]
+    assert row["botocore_services"] == ["elbv2"]
+    assert row["tier"] == "both"
+
+
+@pytest.mark.spec("req-aws-core-ledger-scope")
+def test_a_modeled_type_outside_the_in_scope_tier_is_named_in_the_summary(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    decisions = copy.deepcopy(inputs.decisions)
+    decisions["type_map"]["aws_core__aws_pinpoint_app"] = {"cfn": ["AWS::Pinpoint::App"]}
+    swapped = dataclasses.replace(
+        inputs, decisions=decisions, models=inputs.models | {"aws_core__aws_pinpoint_app"}
+    )
+    assert build_ledger(swapped)["summary"]["modeled_not_in_scope_tier"] == ["AWS::Pinpoint::App"]
+    assert build_ledger(inputs)["summary"]["modeled_not_in_scope_tier"] == []
+
+
+def test_a_bundle_over_the_total_size_is_refused_whatever_its_members_weigh(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Grok and Codex on PR 113: many valid members could add up to far more than the archive's own size.
+    monkeypatch.setattr(sources, "MAX_TOTAL_BYTES", 300)
+    archive = tmp_path / "many.zip"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
+        for index in range(6):
+            z.writestr(f"t{index}.json", json.dumps(_schema(f"AWS::EC2::Thing{index}")))
+    with pytest.raises(SourceError, match="over the size limit"):
+        load_cfn_bundle(archive)
+    directory = tmp_path / "many"
+    directory.mkdir()
+    for index in range(6):
+        (directory / f"t{index}.json").write_text(json.dumps(_schema(f"AWS::EC2::Thing{index}")))
+    with pytest.raises(SourceError, match="over the size limit"):
+        load_cfn_bundle(directory)
+
+
+def test_a_directory_with_too_many_members_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sources, "MAX_MEMBERS", 2)
+    for index in range(3):
+        (tmp_path / f"t{index}.json").write_text(json.dumps(_schema(f"AWS::EC2::Thing{index}")))
+    with pytest.raises(SourceError, match="more than 2 members"):
+        load_cfn_bundle(tmp_path)
+
+
+def test_the_download_will_not_write_through_a_symbolic_link_left_at_its_target(tmp_path: Path) -> None:
+    # Codex on PR 113: confining the directory is not enough if the file name in it is a link elsewhere.
+    outside = tmp_path / ".." / ".." / ".." / ".." / ".." / ".." / "etc" / "hosts"
+    (tmp_path / "CloudformationSchema.zip").symlink_to(outside.resolve())
+    with pytest.raises(SourceError, match="outside the working directory"):
+        sources.download_bundle(tmp_path)

@@ -12,7 +12,7 @@
     "summary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["types", "services", "by_state", "by_tier", "in_scope_types", "in_scope_unclassified", "tier_unknown_unclassified", "tags_not_found"],
+      "required": ["types", "services", "by_state", "by_tier", "in_scope_types", "in_scope_unclassified", "tier_unknown_unclassified", "tags_not_found", "modeled_not_in_scope_tier"],
       "properties": {
         "types": { "type": "integer", "minimum": 0 },
         "services": { "type": "integer", "minimum": 0 },
@@ -21,7 +21,8 @@
         "in_scope_types": { "type": "integer", "minimum": 0 },
         "in_scope_unclassified": { "type": "integer", "minimum": 0 },
         "tier_unknown_unclassified": { "type": "integer", "minimum": 0 },
-        "tags_not_found": { "type": "integer", "minimum": 0 }
+        "tags_not_found": { "type": "integer", "minimum": 0 },
+        "modeled_not_in_scope_tier": { "type": "array", "items": { "type": "string" } }
       }
     },
     "unmapped_models": {

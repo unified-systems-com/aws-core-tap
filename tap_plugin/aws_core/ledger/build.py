@@ -50,7 +50,7 @@ def _boto_services_for(service: str, inputs: Inputs) -> list[str]:
     wanted = normalise(service)
     candidates: set[str] = set()
     for name, svc in inputs.boto.items():
-        if wanted in {normalise(name), normalise(svc.endpoint_prefix)}:
+        if wanted in {normalise(name), normalise(svc.endpoint_prefix), *svc.aliases}:
             candidates.add(name)
     exact = [name for name in candidates if normalise(name) == wanted]
     return sorted(exact if len(exact) == 1 else candidates)
@@ -207,6 +207,9 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "in_scope_unclassified": sum(1 for r in in_scope if r["state"] == "unclassified"),
         "tier_unknown_unclassified": sum(1 for r in rows if r["tier"] == "unknown" and r["state"] == "unclassified"),
         "tags_not_found": sum(1 for r in rows if r["tags"]["evidence"] == "not-found"),
+        "modeled_not_in_scope_tier": sorted(
+            r["type_name"] for r in rows if r["state"] in ("modeled", "collected-unverified") and r["tier"] != "both"
+        ),
     }
 
 

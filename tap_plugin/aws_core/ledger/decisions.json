@@ -12,6 +12,9 @@
       "cognito-idp",
       "cognito-identity"
     ],
+    "ElasticLoadBalancingV2": [
+      "elbv2"
+    ],
     "Elasticsearch": [
       "es"
     ],

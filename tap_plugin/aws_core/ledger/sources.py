@@ -27,6 +27,8 @@ BUNDLE_URL = "https://schema.cloudformation.us-east-1.amazonaws.com/Cloudformati
 MAX_BUNDLE_BYTES = 64 * 1024 * 1024
 MAX_MEMBER_BYTES = 8 * 1024 * 1024
 MAX_MEMBERS = 10_000
+#: The most decompressed bytes a bundle may add up to, whatever its members' sizes; a real bundle is about 40 MiB.
+MAX_TOTAL_BYTES = 256 * 1024 * 1024
 
 _TYPE_NAME = re.compile(r"^[A-Za-z0-9]+::[A-Za-z0-9]+::[A-Za-z0-9]+(::[A-Za-z0-9]+)*$")
 
@@ -65,7 +67,7 @@ def download_bundle(dest: Path) -> tuple[Path, int, str]:
     """Fetch the public schema bundle into ``dest``: https, one host, a size cap; returns path, bytes, sha256."""
     dest = confine(dest)
     dest.mkdir(parents=True, exist_ok=True)
-    target = dest / "CloudformationSchema.zip"
+    target = confine(dest / "CloudformationSchema.zip")
     origin = urllib.parse.urlsplit(BUNDLE_URL)
     if origin.scheme != "https":
         raise SourceError("the bundle address is not https")
@@ -107,6 +109,9 @@ class BotoService:
     endpoint_prefix: str
     #: Whether the service model has any ``List*`` or ``Describe*`` operation.
     has_enumerator: bool
+    #: Other names the model carries (``serviceId``, ``signingName``, ``serviceAbbreviation``), normalised, so a
+    #: CloudFormation service whose name matches one of them is found (``Elastic Load Balancing v2`` is ``elbv2``).
+    aliases: frozenset[str] = frozenset()
 
 
 def normalise(name: str) -> str:
@@ -151,11 +156,16 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
     path = confine(path)
     members: list[tuple[str, bytes]] = []
     digest = hashlib.sha256()
+    total = 0
     if path.is_dir():
-        for file in sorted(path.glob("*.json")):
+        files = sorted(path.glob("*.json"))
+        if len(files) > MAX_MEMBERS:
+            raise SourceError(f"{path.name} has more than {MAX_MEMBERS} members")
+        for file in files:
             raw = file.read_bytes()
-            if len(raw) > MAX_MEMBER_BYTES:
-                raise SourceError(f"{file.name} is over {MAX_MEMBER_BYTES} bytes")
+            total += len(raw)
+            if len(raw) > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
+                raise SourceError(f"{file.name} is over the size limit ({MAX_MEMBER_BYTES} a member, {MAX_TOTAL_BYTES} in all)")
             members.append((file.name, raw))
             digest.update(file.name.encode() + b"\0" + raw)
     elif path.is_file():
@@ -171,8 +181,9 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
                 name = info.filename
                 if not name.endswith(".json") or name.startswith("/") or ".." in Path(name).parts:
                     continue
-                if info.file_size > MAX_MEMBER_BYTES:
-                    raise SourceError(f"{name} is over {MAX_MEMBER_BYTES} bytes")
+                total += info.file_size
+                if info.file_size > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
+                    raise SourceError(f"{name} is over the size limit ({MAX_MEMBER_BYTES} a member, {MAX_TOTAL_BYTES} in all)")
                 members.append((name, archive.read(info)))
     else:
         raise SourceError(f"{path} is neither a zip nor a directory")
@@ -207,7 +218,13 @@ def botocore_services() -> dict[str, BotoService]:
     for name in session.get_available_services():
         model = session.get_service_model(name)
         has_enumerator = any(op.startswith(("List", "Describe")) for op in model.operation_names)
-        services[name] = BotoService(name=name, endpoint_prefix=model.endpoint_prefix, has_enumerator=has_enumerator)
+        metadata = model.metadata
+        aliases = frozenset(
+            normalise(str(metadata[key])) for key in ("serviceId", "signingName", "serviceAbbreviation") if metadata.get(key)
+        )
+        services[name] = BotoService(
+            name=name, endpoint_prefix=model.endpoint_prefix, has_enumerator=has_enumerator, aliases=aliases
+        )
     return services
 
 
