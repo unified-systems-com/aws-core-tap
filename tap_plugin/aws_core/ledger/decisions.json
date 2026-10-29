@@ -1,0 +1,465 @@
+{
+  "classification": {},
+  "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
+  "service_map": {
+    "AmazonMQ": [
+      "mq"
+    ],
+    "CertificateManager": [
+      "acm"
+    ],
+    "Cognito": [
+      "cognito-idp",
+      "cognito-identity"
+    ],
+    "Elasticsearch": [
+      "es"
+    ],
+    "EventSchemas": [
+      "schemas"
+    ],
+    "HealthImaging": [
+      "medical-imaging"
+    ],
+    "InspectorV2": [
+      "inspector2"
+    ],
+    "IoTCoreDeviceAdvisor": [
+      "iotdeviceadvisor"
+    ],
+    "KinesisFirehose": [
+      "firehose"
+    ],
+    "MSK": [
+      "kafka"
+    ],
+    "Macie": [
+      "macie2"
+    ],
+    "OpenSearchService": [
+      "opensearch"
+    ],
+    "Route53RecoveryControl": [
+      "route53-recovery-control-config"
+    ],
+    "S3ObjectLambda": [
+      "s3control"
+    ]
+  },
+  "type_map": {
+    "aws_core__aws_access_analyzer": {
+      "cfn": [
+        "AWS::AccessAnalyzer::Analyzer"
+      ]
+    },
+    "aws_core__aws_access_analyzer_finding": {
+      "cfn": [],
+      "reason": "A finding the analyzer reports; CloudFormation has no resource type for findings."
+    },
+    "aws_core__aws_account": {
+      "cfn": [],
+      "reason": "Synthesized from STS GetCallerIdentity; AWS::Organizations::Account is a different resource (a member account of an organization)."
+    },
+    "aws_core__aws_account_region": {
+      "cfn": [],
+      "reason": "The (account, region) footprint the collector derives for containment; not an AWS resource."
+    },
+    "aws_core__aws_acm_certificate": {
+      "cfn": [
+        "AWS::CertificateManager::Certificate"
+      ]
+    },
+    "aws_core__aws_acm_private_ca": {
+      "cfn": [
+        "AWS::ACMPCA::CertificateAuthority"
+      ]
+    },
+    "aws_core__aws_alb": {
+      "cfn": [
+        "AWS::ElasticLoadBalancingV2::LoadBalancer"
+      ]
+    },
+    "aws_core__aws_apigateway_http_api": {
+      "cfn": [
+        "AWS::ApiGatewayV2::Api"
+      ]
+    },
+    "aws_core__aws_az": {
+      "cfn": [],
+      "reason": "Reference data kept by the catalog refresh skill; availability zones are not a CloudFormation resource."
+    },
+    "aws_core__aws_bedrock_model": {
+      "cfn": [],
+      "reason": "AWS-owned foundation models; no CloudFormation resource type."
+    },
+    "aws_core__aws_cloudfront_distribution": {
+      "cfn": [
+        "AWS::CloudFront::Distribution"
+      ]
+    },
+    "aws_core__aws_cloudtrail_trail": {
+      "cfn": [
+        "AWS::CloudTrail::Trail"
+      ]
+    },
+    "aws_core__aws_cloudwatch_log_group": {
+      "cfn": [
+        "AWS::Logs::LogGroup"
+      ]
+    },
+    "aws_core__aws_codebuild_project": {
+      "cfn": [
+        "AWS::CodeBuild::Project"
+      ]
+    },
+    "aws_core__aws_codepipeline_pipeline": {
+      "cfn": [
+        "AWS::CodePipeline::Pipeline"
+      ]
+    },
+    "aws_core__aws_cognito_user_pool": {
+      "cfn": [
+        "AWS::Cognito::UserPool"
+      ]
+    },
+    "aws_core__aws_config_aggregator": {
+      "cfn": [
+        "AWS::Config::ConfigurationAggregator"
+      ]
+    },
+    "aws_core__aws_config_conformance_pack": {
+      "cfn": [
+        "AWS::Config::ConformancePack"
+      ]
+    },
+    "aws_core__aws_config_delivery_channel": {
+      "cfn": [
+        "AWS::Config::DeliveryChannel"
+      ]
+    },
+    "aws_core__aws_config_recorder": {
+      "cfn": [
+        "AWS::Config::ConfigurationRecorder"
+      ]
+    },
+    "aws_core__aws_config_rule": {
+      "cfn": [
+        "AWS::Config::ConfigRule"
+      ]
+    },
+    "aws_core__aws_controltower_enabled_baseline": {
+      "cfn": [
+        "AWS::ControlTower::EnabledBaseline"
+      ]
+    },
+    "aws_core__aws_controltower_enabled_control": {
+      "cfn": [
+        "AWS::ControlTower::EnabledControl"
+      ]
+    },
+    "aws_core__aws_controltower_landing_zone": {
+      "cfn": [
+        "AWS::ControlTower::LandingZone"
+      ]
+    },
+    "aws_core__aws_delegated_administration": {
+      "cfn": [],
+      "reason": "A (member account, service principal) registration, not a resource."
+    },
+    "aws_core__aws_dx_connection": {
+      "cfn": [
+        "AWS::DirectConnect::Connection"
+      ]
+    },
+    "aws_core__aws_dx_gateway": {
+      "cfn": [
+        "AWS::DirectConnect::DirectConnectGateway"
+      ]
+    },
+    "aws_core__aws_dx_virtual_interface": {
+      "cfn": [
+        "AWS::DirectConnect::PrivateVirtualInterface",
+        "AWS::DirectConnect::PublicVirtualInterface",
+        "AWS::DirectConnect::TransitVirtualInterface"
+      ]
+    },
+    "aws_core__aws_dynamodb_table": {
+      "cfn": [
+        "AWS::DynamoDB::Table"
+      ]
+    },
+    "aws_core__aws_ebs_volume": {
+      "cfn": [
+        "AWS::EC2::Volume"
+      ]
+    },
+    "aws_core__aws_ec2_instance": {
+      "cfn": [
+        "AWS::EC2::Instance"
+      ]
+    },
+    "aws_core__aws_ecr_repository": {
+      "cfn": [
+        "AWS::ECR::Repository"
+      ]
+    },
+    "aws_core__aws_ecs_cluster": {
+      "cfn": [
+        "AWS::ECS::Cluster"
+      ]
+    },
+    "aws_core__aws_ecs_container": {
+      "cfn": [],
+      "reason": "A container inside a running task: an embedded detail with no CloudFormation resource."
+    },
+    "aws_core__aws_ecs_service": {
+      "cfn": [
+        "AWS::ECS::Service"
+      ]
+    },
+    "aws_core__aws_ecs_task": {
+      "cfn": [],
+      "reason": "A running task is a transient execution artifact; AWS::ECS::TaskDefinition is a different resource."
+    },
+    "aws_core__aws_eks_cluster": {
+      "cfn": [
+        "AWS::EKS::Cluster"
+      ]
+    },
+    "aws_core__aws_elastic_ip": {
+      "cfn": [
+        "AWS::EC2::EIP"
+      ]
+    },
+    "aws_core__aws_elasticache_cluster": {
+      "cfn": [
+        "AWS::ElastiCache::CacheCluster"
+      ]
+    },
+    "aws_core__aws_elasticsearch_domain": {
+      "cfn": [
+        "AWS::Elasticsearch::Domain"
+      ]
+    },
+    "aws_core__aws_elb": {
+      "cfn": [
+        "AWS::ElasticLoadBalancing::LoadBalancer"
+      ]
+    },
+    "aws_core__aws_eventbridge_rule": {
+      "cfn": [
+        "AWS::Events::Rule"
+      ]
+    },
+    "aws_core__aws_guardduty_detector": {
+      "cfn": [
+        "AWS::GuardDuty::Detector"
+      ]
+    },
+    "aws_core__aws_guardduty_finding": {
+      "cfn": [],
+      "reason": "A finding GuardDuty reports; no CloudFormation resource type."
+    },
+    "aws_core__aws_iam_oidc_provider": {
+      "cfn": [
+        "AWS::IAM::OIDCProvider"
+      ]
+    },
+    "aws_core__aws_iam_policy": {
+      "cfn": [
+        "AWS::IAM::ManagedPolicy"
+      ]
+    },
+    "aws_core__aws_iam_role": {
+      "cfn": [
+        "AWS::IAM::Role"
+      ]
+    },
+    "aws_core__aws_iam_user": {
+      "cfn": [
+        "AWS::IAM::User"
+      ]
+    },
+    "aws_core__aws_identity_center_account_assignment": {
+      "cfn": [
+        "AWS::SSO::Assignment"
+      ]
+    },
+    "aws_core__aws_identity_center_group": {
+      "cfn": [
+        "AWS::IdentityStore::Group"
+      ]
+    },
+    "aws_core__aws_identity_center_instance": {
+      "cfn": [
+        "AWS::SSO::Instance"
+      ]
+    },
+    "aws_core__aws_identity_center_permission_set": {
+      "cfn": [
+        "AWS::SSO::PermissionSet"
+      ]
+    },
+    "aws_core__aws_internet_gateway": {
+      "cfn": [
+        "AWS::EC2::InternetGateway"
+      ]
+    },
+    "aws_core__aws_kms_key": {
+      "cfn": [
+        "AWS::KMS::Key"
+      ]
+    },
+    "aws_core__aws_lambda": {
+      "cfn": [
+        "AWS::Lambda::Function"
+      ]
+    },
+    "aws_core__aws_nat_gateway": {
+      "cfn": [
+        "AWS::EC2::NatGateway"
+      ]
+    },
+    "aws_core__aws_network_acl": {
+      "cfn": [
+        "AWS::EC2::NetworkAcl"
+      ]
+    },
+    "aws_core__aws_network_firewall": {
+      "cfn": [
+        "AWS::NetworkFirewall::Firewall"
+      ]
+    },
+    "aws_core__aws_organization": {
+      "cfn": [
+        "AWS::Organizations::Organization"
+      ]
+    },
+    "aws_core__aws_organizational_unit": {
+      "cfn": [
+        "AWS::Organizations::OrganizationalUnit"
+      ]
+    },
+    "aws_core__aws_organizations_policy": {
+      "cfn": [
+        "AWS::Organizations::Policy"
+      ]
+    },
+    "aws_core__aws_policy_statement": {
+      "cfn": [],
+      "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
+    },
+    "aws_core__aws_rds_instance": {
+      "cfn": [
+        "AWS::RDS::DBInstance"
+      ]
+    },
+    "aws_core__aws_region": {
+      "cfn": [],
+      "reason": "Reference data kept by the catalog refresh skill; regions are not a CloudFormation resource."
+    },
+    "aws_core__aws_route53_resolver_firewall_rule_group": {
+      "cfn": [
+        "AWS::Route53Resolver::FirewallRuleGroup"
+      ]
+    },
+    "aws_core__aws_route53_zone": {
+      "cfn": [
+        "AWS::Route53::HostedZone"
+      ]
+    },
+    "aws_core__aws_route_table": {
+      "cfn": [
+        "AWS::EC2::RouteTable"
+      ]
+    },
+    "aws_core__aws_s3_bucket": {
+      "cfn": [
+        "AWS::S3::Bucket"
+      ]
+    },
+    "aws_core__aws_sagemaker_endpoint": {
+      "cfn": [
+        "AWS::SageMaker::Endpoint"
+      ]
+    },
+    "aws_core__aws_secrets_manager_secret": {
+      "cfn": [
+        "AWS::SecretsManager::Secret"
+      ]
+    },
+    "aws_core__aws_security_group": {
+      "cfn": [
+        "AWS::EC2::SecurityGroup"
+      ]
+    },
+    "aws_core__aws_securityhub_finding": {
+      "cfn": [],
+      "reason": "A finding Security Hub reports; no CloudFormation resource type."
+    },
+    "aws_core__aws_securityhub_hub": {
+      "cfn": [
+        "AWS::SecurityHub::Hub"
+      ]
+    },
+    "aws_core__aws_securityhub_standards_subscription": {
+      "cfn": [
+        "AWS::SecurityHub::Standard"
+      ]
+    },
+    "aws_core__aws_service_control_policy": {
+      "cfn": [
+        "AWS::Organizations::Policy"
+      ]
+    },
+    "aws_core__aws_sqs_queue": {
+      "cfn": [
+        "AWS::SQS::Queue"
+      ]
+    },
+    "aws_core__aws_ssm_parameter": {
+      "cfn": [
+        "AWS::SSM::Parameter"
+      ]
+    },
+    "aws_core__aws_subnet": {
+      "cfn": [
+        "AWS::EC2::Subnet"
+      ]
+    },
+    "aws_core__aws_tag_policy_rule": {
+      "cfn": [],
+      "reason": "One key's entry in a tag policy document, not an AWS resource; only the policy can be tagged."
+    },
+    "aws_core__aws_target_group": {
+      "cfn": [
+        "AWS::ElasticLoadBalancingV2::TargetGroup"
+      ]
+    },
+    "aws_core__aws_transit_gateway": {
+      "cfn": [
+        "AWS::EC2::TransitGateway"
+      ]
+    },
+    "aws_core__aws_transit_gateway_attachment": {
+      "cfn": [
+        "AWS::EC2::TransitGatewayAttachment"
+      ]
+    },
+    "aws_core__aws_vpc": {
+      "cfn": [
+        "AWS::EC2::VPC"
+      ]
+    },
+    "aws_core__aws_vpc_endpoint": {
+      "cfn": [
+        "AWS::EC2::VPCEndpoint"
+      ]
+    },
+    "aws_core__aws_vpc_endpoint_service": {
+      "cfn": [
+        "AWS::EC2::VPCEndpointService"
+      ]
+    }
+  }
+}

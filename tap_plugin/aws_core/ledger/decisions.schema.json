@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AWS coverage ledger decisions",
+  "description": "The reviewed decisions the ledger joins with its derived facts (specs/spec-aws-core-coverage-ledger.md). Every entry carries a reason a later reader can check.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["description", "service_map", "type_map", "classification"],
+  "properties": {
+    "description": { "type": "string", "minLength": 1 },
+    "service_map": {
+      "description": "A CloudFormation service name to the botocore services it means, where the names do not say.",
+      "type": "object",
+      "additionalProperties": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+    },
+    "type_map": {
+      "description": "Each aws_core entity type to the CloudFormation type(s) it models, or the reason it has none.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["cfn"],
+        "properties": {
+          "cfn": { "type": "array", "items": { "type": "string", "pattern": "^[A-Za-z0-9]+::[A-Za-z0-9]+::[A-Za-z0-9:]+$" }, "uniqueItems": true },
+          "reason": { "type": "string", "minLength": 10 }
+        }
+      }
+    },
+    "classification": {
+      "description": "A CloudFormation type to excluded (not a node) or not-enumerable (may be a node, no in-scope source enumerates it), with the written reason.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["state", "reason"],
+        "properties": {
+          "state": { "enum": ["excluded", "not-enumerable"] },
+          "reason": { "type": "string", "minLength": 10 }
+        }
+      }
+    }
+  }
+}

@@ -37,9 +37,9 @@ safe handling of a failed tag read.
 
 | RID | Name | Status | Notes |
 | --- | --- | :---: | --- |
-| req-aws-core-ledger-denominator | [Denominator](#denominator) | Proposed | Which sources define the rows |
-| req-aws-core-ledger-scope | [Scope](#scope) | Proposed | Commercial and GovCloud services, security first |
-| req-aws-core-ledger-states | [Row States](#row-states) | Proposed | The states a row may be in and what each requires |
+| req-aws-core-ledger-denominator | [Denominator](#denominator) | Implemented | Which sources define the rows |
+| req-aws-core-ledger-scope | [Scope](#scope) | Implemented | Commercial and GovCloud services, security first |
+| req-aws-core-ledger-states | [Row States](#row-states) | Implemented | The states a row may be in and what each requires |
 | req-aws-core-ledger-tags | [Tag Evidence](#tag-evidence) | Proposed | When tags may be dropped, and how they are found |
 | req-aws-core-ledger-tag-shapes | [Tag Shapes](#tag-shapes) | Proposed | Every wire shape of tags is handled, not just three |
 | req-aws-core-ledger-tranches | [Tranches](#tranches) | Proposed | Build order and the loop each tranche follows |
@@ -50,7 +50,7 @@ safe handling of a failed tag read.
 ----
 RID: `req-aws-core-ledger-denominator`
 
-Status: `Proposed`
+Status: `Implemented`
 
 The ledger's service list is the set of services in the botocore data bundled with the pinned
 `boto3`. As of botocore 1.43.121 that is 435 service models, of which 397 have `List*` or `Describe*`
@@ -69,7 +69,7 @@ same ledger byte for byte, so a diff means AWS changed or the pin moved.
 ----
 RID: `req-aws-core-ledger-scope`
 
-Status: `Proposed`
+Status: `Implemented`
 
 In scope are services offered in both the commercial (`aws`) and GovCloud (`aws-us-gov`) partitions,
 ordered by security and compliance relevance first (ruled 2026-10-28, maintainer). A service offered in
@@ -84,7 +84,7 @@ GovCloud lacks, so the run records a named skip instead of a connection failure.
 ----
 RID: `req-aws-core-ledger-states`
 
-Status: `Proposed`
+Status: `Implemented`
 
 Each row is in exactly one state:
 
@@ -223,3 +223,19 @@ The botocore pin moves through the existing Renovate update; the drift job runs 
 bump that adds services reports them before merge. This supersedes the "nightly refresh" placeholder
 `req-aws-catalog-future-ci` for the service surface; regions and availability zones stay with the
 catalog skill.
+
+## Implementation
+
+The generator is `tap_plugin/aws_core/ledger/` and needs no Django and no network except `fetch`:
+
+- `python -m tap_plugin.aws_core.ledger fetch --dest DIR` downloads AWS's public CloudFormation schema bundle with the standard library, over https, refusing a body over 64 MiB, and prints its sha256.
+- `build --cfn DIR_OR_ZIP [--out FILE]` joins the derived **facts** (`sources.py`: the bundle, botocore's service models, botocore's bundled endpoint data) with the reviewed **decisions** (`decisions.json`: `service_map`, `type_map`, `classification`) and writes `aws_coverage_ledger.json`, byte-stable for the same inputs, one row per line. Both JSON files have a JSON Schema in the same directory and are validated at load.
+- `check --cfn DIR_OR_ZIP` exits 1 when the committed ledger differs from what the bundle builds; it is what the drift job (`req-aws-core-ledger-drift`) will run.
+- The bundle is untrusted data, read as JSON only: a member that tries to leave the archive is ignored, one over 8 MiB is refused, and nothing in it is imported or executed.
+
+What is derived and what is approximate, stated so a reader does not take a field for more than it is:
+
+- `tier` and `partitions` come from botocore's bundled `endpoints.json`. A service newer than that data, or resolved by an endpoint rule set, is named in no partition and is recorded `unknown`, never "unavailable". `both` means botocore gives an endpoint in the commercial and the GovCloud partition; it is the in-scope tier (`req-aws-core-ledger-scope`).
+- A CloudFormation service reaches a botocore service by normalised name, or by `service_map` where the name does not say. A service with no match has no `botocore_services` and an `unknown` tier.
+- `tags` records what the CloudFormation schema says (`taggable`, `tagProperty`) with the citation, and the treatment the manifest entry uses where one exists. A schema with no tagging block, and no top-level `taggable`, is `evidence: not-found`. Choosing a lane for a taggable type, and finding evidence for a `not-found` one, are the per-type work of `req-aws-core-ledger-tags`.
+- Nothing is classified by the generator. A type is `modeled` or `collected-unverified` only because `type_map` and the manifest say so, and `excluded` or `not-enumerable` only because `classification` says so; everything else is `unclassified`.
