@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AWS coverage ledger",
+  "description": "The generated ledger (specs/spec-aws-core-coverage-ledger.md): one row per CloudFormation resource type.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "description",
+    "botocore_version",
+    "cfn_bundle_sha256",
+    "summary",
+    "unmapped_models",
+    "service_rows",
+    "rows"
+  ],
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "botocore_version": {
+      "type": "string"
+    },
+    "cfn_bundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "types",
+        "services",
+        "by_state",
+        "by_tier",
+        "in_scope_types",
+        "in_scope_unclassified",
+        "tier_unknown_unclassified",
+        "tags_not_found",
+        "modeled_not_in_scope_tier",
+        "botocore_services",
+        "botocore_only_services",
+        "botocore_only_in_scope_unclassified",
+        "in_scope_unclassified_all"
+      ],
+      "properties": {
+        "types": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "services": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_state": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "by_tier": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "in_scope_types": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "in_scope_unclassified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tier_unknown_unclassified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tags_not_found": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modeled_not_in_scope_tier": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "botocore_services": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "botocore_only_services": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "botocore_only_in_scope_unclassified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "in_scope_unclassified_all": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "unmapped_models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_type",
+          "reason"
+        ],
+        "properties": {
+          "entity_type": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type_name",
+          "service",
+          "state",
+          "reason",
+          "entity_types",
+          "tier",
+          "partitions",
+          "botocore_services",
+          "enumerable_by_botocore",
+          "cfn",
+          "tags"
+        ],
+        "properties": {
+          "type_name": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "unclassified",
+              "excluded",
+              "not-enumerable",
+              "modeled",
+              "collected-unverified",
+              "collected-verified"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entity_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tier": {
+            "enum": [
+              "both",
+              "commercial-only",
+              "govcloud-only",
+              "neither",
+              "unknown"
+            ]
+          },
+          "partitions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "aws",
+              "aws-us-gov"
+            ],
+            "properties": {
+              "aws": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "aws-us-gov": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "botocore_services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enumerable_by_botocore": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "cfn": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "primary_identifier",
+              "has_list_handler",
+              "has_tagging_block"
+            ],
+            "properties": {
+              "primary_identifier": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "has_list_handler": {
+                "type": "boolean"
+              },
+              "has_tagging_block": {
+                "type": "boolean"
+              }
+            }
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "treatment",
+              "evidence",
+              "taggable",
+              "tag_property",
+              "citation"
+            ],
+            "properties": {
+              "treatment": {
+                "enum": [
+                  "inline",
+                  "side-call",
+                  "rgta",
+                  "organizations",
+                  "none",
+                  null
+                ]
+              },
+              "evidence": {
+                "enum": [
+                  "confirmed",
+                  "not-found",
+                  "conflict"
+                ]
+              },
+              "taggable": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "tag_property": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "citation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "service_rows": {
+      "description": "Every botocore service no CloudFormation service resolves to: a service with no CloudFormation type is recorded, not omitted (req-aws-core-ledger-denominator).",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service",
+          "endpoint_prefix",
+          "state",
+          "reason",
+          "tier",
+          "partitions",
+          "enumerable_by_botocore"
+        ],
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "endpoint_prefix": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "unclassified",
+              "excluded",
+              "not-enumerable",
+              "modeled",
+              "collected-unverified",
+              "collected-verified"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tier": {
+            "enum": [
+              "both",
+              "commercial-only",
+              "govcloud-only",
+              "neither",
+              "unknown"
+            ]
+          },
+          "partitions": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "aws",
+              "aws-us-gov"
+            ],
+            "properties": {
+              "aws": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "aws-us-gov": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          },
+          "enumerable_by_botocore": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

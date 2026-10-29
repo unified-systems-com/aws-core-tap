@@ -223,3 +223,24 @@ The botocore pin moves through the existing Renovate update; the drift job runs 
 bump that adds services reports them before merge. This supersedes the "nightly refresh" placeholder
 `req-aws-catalog-future-ci` for the service surface; regions and availability zones stay with the
 catalog skill.
+
+## Implementation
+
+The generator is `tap_plugin/aws_core/ledger/` and needs no Django and no network except `fetch`:
+
+- `python -m tap_plugin.aws_core.ledger fetch --dest DIR` downloads AWS's public CloudFormation schema bundle with the standard library, over https from one host (a redirect to any other host or to plain http is refused), refusing a body over 64 MiB, and prints its sha256. Every path argument is resolved, symbolic links and `..` included, and refused unless it lies inside the working directory or the temporary directory.
+- `build --cfn DIR_OR_ZIP [--out FILE]` joins the derived **facts** (`sources.py`: the bundle, botocore's service models, botocore's bundled endpoint data) with the reviewed **decisions** (`decisions.json`: `service_map`, `type_map`, `classification`) and writes `aws_coverage_ledger.json`, byte-stable for the same inputs, one row per line. The generated file is about 1 MiB, so it lands in its own pull request after the generator; a reviewer regenerates it from the recorded bundle hash and compares bytes. Both JSON files have a JSON Schema in the same directory and are validated at load.
+- `check --cfn DIR_OR_ZIP` exits 1 when the committed ledger differs from what the bundle builds; it is what the drift job (`req-aws-core-ledger-drift`) will run.
+- The bundle is untrusted data, read as JSON only: a member that tries to leave the archive is ignored, one over 8 MiB is refused, a bundle whose members add up to over 256 MiB or number over 10,000 is refused, and nothing in it is imported or executed. The download target is resolved and confined too, so a symbolic link left at its name cannot redirect the write.
+
+- A botocore service that no CloudFormation service resolves to is not omitted: it gets a row in `service_rows` (the ledger's list of services with no CloudFormation type), `unclassified` until `decisions.json` `service_classification` says `excluded` (no resources to model, such as a data-plane API) or `not-enumerable`, with a reason. The summary reports `in_scope_unclassified_all`, the CloudFormation types and these services together, as the number the aim drives to zero.
+- A CloudFormation type that maps to several entities must get one tag treatment from their manifest entries; entries that disagree stop the build.
+- A type the schema calls not taggable but whose manifest entry collects tags is not dropped and not refused: its row keeps the collector's treatment with `evidence: conflict`, and the conflict is resolved against the service's own documentation before any tag is dropped. A mapped botocore service the endpoint data does not name makes availability `unknown`, never unavailable.
+- A bundle is refused rather than coerced when `tagging.taggable` (or the deprecated top-level `taggable`) is present and is not a JSON boolean; `decisions.json` is refused when a `service_map` key names a CloudFormation service the bundle does not have.
+
+What is derived and what is approximate, stated so a reader does not take a field for more than it is:
+
+- `tier` and `partitions` come from botocore's bundled `endpoints.json`. A service newer than that data, or resolved by an endpoint rule set, is named in no partition and is recorded `unknown`, never "unavailable". `both` means botocore gives an endpoint in the commercial and the GovCloud partition; it is the in-scope tier (`req-aws-core-ledger-scope`).
+- A CloudFormation service reaches a botocore service by normalised service name, endpoint prefix, `serviceId`, `signingName` or `serviceAbbreviation`, or by `service_map` where none of those says (`ElasticLoadBalancingV2` is `elbv2`). The summary lists any modelled type whose service is not in the in-scope tier, so a mapping gap or a partition difference (CloudFront is commercial-only) is visible. A service with no match has no `botocore_services` and an `unknown` tier.
+- `tags` records what the CloudFormation schema says (`taggable`, `tagProperty`) with the citation, and the treatment the manifest entry uses where one exists. A schema with no tagging block, and no top-level `taggable`, is `evidence: not-found`. Choosing a lane for a taggable type, and finding evidence for a `not-found` one, are the per-type work of `req-aws-core-ledger-tags`.
+- Nothing is classified by the generator. A type is `modeled` or `collected-unverified` only because `type_map` and the manifest say so, and `excluded` or `not-enumerable` only because `classification` says so; everything else is `unclassified`.
