@@ -26,8 +26,8 @@ def _fp(fid: str, region: str, ebs: Any = None) -> dict[str, Any]:
     return {"footprint": fid, "account_id": "111111111111", "region": region, "ebs": ebs, "ebs_key": None}
 
 
-def _acct(fid: str, value: Any) -> dict[str, Any]:
-    return {"footprint": fid, "account": "acct-1", "account_name": "prod", **dict.fromkeys(FLAGS, value)}
+def _acct(account_id: str, value: Any) -> dict[str, Any]:
+    return {"account_id": account_id, "account": "acct-1", "account_name": "prod", **dict.fromkeys(FLAGS, value)}
 
 
 def _state(matrix: dict[str, Any], row: int, key: str) -> str:
@@ -77,7 +77,7 @@ def test_a_cycle_in_the_tree_terminates() -> None:
 
 def test_the_matrix_has_one_row_per_footprint_and_a_column_per_control() -> None:
     m = fold_baseline([_fp("f2", "us-gov-west-1", ebs=False), _fp("f1", "us-gov-east-1", ebs=True)],
-                      [_acct("f1", True), _acct("f2", True)],
+                      [_acct("111111111111", True), _acct("f2", True)],
                       {s.key: [] for s in SERVICES}, [], [])
     assert [r["region"] for r in m["rows"]] == ["us-gov-east-1", "us-gov-west-1"]
     assert [c["key"] for c in m["rows"][0]["cells"]] == [k for k, _ in COLUMNS]
@@ -90,7 +90,7 @@ def test_the_matrix_has_one_row_per_footprint_and_a_column_per_control() -> None
 def test_a_failed_read_marks_its_column_failed_not_off() -> None:
     services: dict[str, Any] = {s.key: [] for s in SERVICES}
     services["guardduty"] = None
-    m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("f1", False)], services, None, [], account_failed=True)
+    m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("111111111111", False)], services, None, [], account_failed=True)
     assert _state(m, 0, "guardduty") == "failed"
     assert _state(m, 0, "s3_pab") == "failed"
     assert _state(m, 0, "control_tower") == "failed"
@@ -111,7 +111,7 @@ def test_design_nodes_do_not_turn_a_control_on() -> None:
     assert service_cell(BY_KEY["securityhub"], [{**design, "value": "arn"}])["state"] == "unknown"
     assert service_cell(BY_KEY["guardduty"], [design, {"value": "DISABLED"}])["state"] == "off"
     planned = [{"target": "acct-1", "name": "b", "status": "SUCCEEDED", "dims": {"dcom": "design"}}]
-    m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("f1", True)], {s.key: [] for s in SERVICES}, [], planned)
+    m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("111111111111", True)], {s.key: [] for s in SERVICES}, [], planned)
     assert _state(m, 0, "control_tower") == "unknown"
 
 
@@ -119,10 +119,23 @@ def test_design_footprints_and_accounts_are_never_observed_off() -> None:
     design = {"dcom": "design"}
     fps = [{**_fp("f-design", "us-gov-east-1", ebs=False), "dims": design, "account_id": "222222222222"},
            _fp("f-real", "us-gov-west-1", ebs=None)]
-    accts = [{**_acct("f-design", False), "dims": design},
-             {**_acct("f-real", False), "account": "acct-design", "dims": design}]
+    accts = [{**_acct("222222222222", False), "dims": design},
+             {**_acct("111111111111", False), "account": "acct-design", "dims": design}]
     m = fold_baseline(fps, accts, {s.key: [] for s in SERVICES}, [], [])
     assert [r["region"] for r in m["rows"]] == ["us-gov-west-1"]
     assert m["accounts"] == 1 and m["cells_off"] == 0
     assert _state(m, 0, "s3_pab") == "unknown"
     assert _state(m, 0, "control_tower") == "unknown"
+
+
+def test_every_region_of_an_account_reads_the_same_account_node() -> None:
+    # The account is joined by its account_id, not by an edge: two footprints of one account share one row.
+    fps = [_fp("f1", "us-gov-east-1"), _fp("f2", "us-gov-west-1")]
+    m = fold_baseline(fps, [_acct("111111111111", True)], {s.key: [] for s in SERVICES}, [], [])
+    assert (_state(m, 0, "s3_pab"), _state(m, 1, "s3_pab")) == ("on", "on")
+    assert [r["account_name"] for r in m["rows"]] == ["prod", "prod"]
+
+
+def test_an_account_node_for_another_account_is_not_joined() -> None:
+    m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("999999999999", False)], {s.key: [] for s in SERVICES}, [], [])
+    assert _state(m, 0, "s3_pab") == "unknown"

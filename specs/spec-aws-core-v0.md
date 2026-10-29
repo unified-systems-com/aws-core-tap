@@ -35,6 +35,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-identity-center | [IAM Identity Center](#iam-identity-center) | Implemented | Identity Center instance design vocabulary and its open edge to an external identity provider |
 | req-aws-core-transit-gateway | [Transit Gateway](#transit-gateway) | Implemented | Transit gateway and attachment design vocabulary; attachment, VPC and peering edges |
 | req-aws-core-placement | [Resource Placement](#resource-placement) | Implemented | Account, VPC and subnet placement edges; a VPC contains its subnets |
+| req-aws-core-account-dimension | [Account Membership Is A Dimension](#account-membership-is-a-dimension) | Implemented | A resource's account is the `aws_account` dimension; `BELONGS_TO_ACCOUNT` is written only for a different owner (aws-core-tap#81) |
 | req-aws-core-direct-connect | [Direct Connect](#direct-connect) | Implemented | Connection, DX gateway and virtual interface design vocabulary; the TGW association reuses the attachment |
 | req-aws-core-privatelink | [PrivateLink](#privatelink) | Implemented | Endpoint service and VPC endpoint design vocabulary |
 | req-aws-core-dns-firewall | [Route 53 Resolver DNS Firewall](#route-53-resolver-dns-firewall) | Implemented | Rule group with typed domain-list summary; VPC association edge |
@@ -1080,7 +1081,7 @@ under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/secur
   `static/aws_core/css/posture.css`): one row per `aws_account_region` footprint, one column per
   control, each on, off or unknown with the reason in the cell's title. EBS default encryption is the
   footprint's `ebs_encryption_by_default`. The S3 public-access block is the four flags on the account
-  the footprint `BELONGS_TO_ACCOUNT` (on when all four are on, off when any is off). Config recorder,
+  node whose `account_id` is the footprint's (on when all four are on, off when any is off). Config recorder,
   GuardDuty, Security Hub and Access Analyzer are the nodes the footprint `HOSTS_*`: on when one is
   recording / `ENABLED` / present / `ACTIVE`, off when one exists and none is. Control Tower is on when
   an enabled baseline with status `SUCCEEDED` `APPLIES_TO_TARGET` the account or an OU above it
@@ -1192,7 +1193,8 @@ under `/highbar`). `/aws/organization`, `/aws/network`, `/aws/scps`, `/aws/secur
 
 #### Future
 
-- Nest VPCs in their accounts on the network graph from `BELONGS_TO_ACCOUNT` (`req-aws-core-placement`).
+- Nest VPCs in their accounts on the network graph from the `aws_account` dimension, as the estate projection
+  does (`req-aws-core-account-dimension`).
 - Replace the dx text panel with a table of connections, virtual interfaces and Direct Connect
   gateways (`req-aws-core-direct-connect`) once a grid holds one.
 - Per-rule security-group flags once rules are nodes (aws-core-tap#64): the open range, ports and
@@ -1211,10 +1213,11 @@ a networked resource sits in, so a page can nest account → VPC → subnet → 
 
 #### Implementation
 
-- `BELONGS_TO_ACCOUNT` (resource → `aws_account`): ownership, one relationship over every
-  account-owned aws_core type. The sources are listed, so a new type is added on purpose. Excluded:
-  region, AZ, the account itself, the Organizations types (their placement is
-  `NESTED_UNDER_PARENT`) and Bedrock foundation models, which AWS owns.
+- `BELONGS_TO_ACCOUNT` (resource → `aws_account`): ownership by an account **other than the one the run
+  collects in** (`req-aws-core-account-dimension`). A resource the collecting account owns carries that
+  account as its `aws_account` dimension and has no edge. The sources are listed, so a type that can be
+  owned from elsewhere is added on purpose. Excluded: region, AZ, the account itself, the Organizations
+  types (their placement is `NESTED_UNDER_PARENT`) and Bedrock foundation models, which AWS owns.
 - `RESIDES_IN_VPC` (security group, network ACL, route table, target group, VPC endpoint → VPC):
   VPC-wide resources that are not placed in a subnet. A gateway-type VPC endpoint has no subnet.
 - `PARTITIONED_INTO_SUBNET` (VPC → subnet): the one containment edge.
@@ -1245,7 +1248,7 @@ a networked resource sits in, so a page can nest account → VPC → subnet → 
 - **How a collector derives them later** (no collector change in this PR; collector changes are
   additive and separate): from the raw item, not from typed fields, which these resource models
   mostly do not carry. `BELONGS_TO_ACCOUNT` comes from the item's owner field (`OwnerId`,
-  `OwnerAccountId`, `ownerAccount`), falling back to the run's account. `RESIDES_IN_VPC` comes from
+  `OwnerAccountId`, `ownerAccount`), and is written only when that owner is not the run's account. `RESIDES_IN_VPC` comes from
   `VpcId`. `PARTITIONED_INTO_SUBNET` comes from the subnet's `VpcId`. `RESIDES_IN_SUBNET` comes from
   `SubnetId` or each entry of the item's subnet list. `ATTACHED_TO_VPC` comes from
   `Attachments[].VpcId`. `RESIDES_IN_AZ` comes from the subnet's `AvailabilityZone`.
@@ -1255,11 +1258,39 @@ a networked resource sits in, so a page can nest account → VPC → subnet → 
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-core-placement-1 | Account Ownership Edge | Implemented | `BELONGS_TO_ACCOUNT` declares every account-owned aws_core type as a source and `aws_account` as its target, and excludes region, AZ, account, the Organizations types and Bedrock models. | |
+| req-aws-core-placement-1 | Account Ownership Edge | Implemented | `BELONGS_TO_ACCOUNT` declares every account-owned aws_core type as a source and `aws_account` as its target, and excludes region, AZ, account, the Organizations types and Bedrock models. The edge is written only for an owner other than the collecting account (`req-aws-core-account-dimension-2`). | |
 | req-aws-core-placement-2 | VPC And Subnet Placement | Implemented | `RESIDES_IN_VPC`, `RESIDES_IN_SUBNET` and `ATTACHED_TO_VPC` declare the pairs above and no others; a subnet-placed resource is not a `RESIDES_IN_VPC` source. | |
 | req-aws-core-placement-3 | VPC Contains Its Subnets | Implemented | `Vpc.CONTAINMENT_EDGES == ("PARTITIONED_INTO_SUBNET__aws_core",)`; a contained cascade from a VPC retires its subnets and leaves a security group that `RESIDES_IN_VPC` live. | Cascade test skips on a core without `cascade`. |
 | req-aws-core-placement-4 | Owner Not Duplicated | Implemented | The network-plane types added with these edges carry no `owner_account_id`; ownership is the edge. | The transit gateway types keep the AWS-reported owner field from `req-aws-core-transit-gateway`. |
 | req-aws-core-placement-5 | Subnet Zone Edge | Implemented | `RESIDES_IN_AZ` declares `aws_subnet` as its only source and `aws_az` as its only target; no model lists it in `CONTAINMENT_EDGES`, so a contained cascade from a VPC retires its subnets and leaves their zones live. | Exactly-one per subnet is stated, not enforced (unified-systems-com/tap#794). |
+
+### Account Membership Is A Dimension
+----
+RID: `req-aws-core-account-dimension`
+
+Status: `Implemented`
+
+Which account a resource is in is recorded **once**, as the `aws_account` dimension the collector stamps on every node and edge it writes (`collector.py`, the run's account id). It is not also written as an edge from every resource to the account, because an edge from every resource makes the account node a hub that hides the structure that matters (VPC to subnet to instance, role to policy) and grows with every resource collected (aws-core-tap#81, ruled 2026-10-28). The project's own description of a dimension is a concept used to stand in for a super node that is not worth drawing edges to everywhere.
+
+#### Implementation
+
+- **Same account: dimension only.** A resource the collecting account owns carries `aws_account = <that account>` and no `BELONGS_TO_ACCOUNT` edge. A footprint (`aws_account_region`) is always the collecting account's, so it carries none either; its account is its `account_id` field and the dimension.
+- **Different owner: the edge, because the dimension would be wrong.** A resource observed from an account that does not own it (shared in through AWS RAM) gets `BELONGS_TO_ACCOUNT` to its real owner, read from its owner field (`owner_path`, `req-aws-core-regional-containment-5`). There the dimension records who observed it, not who owns it.
+- **Reading the owner.** A reader takes a resource's owner from its `BELONGS_TO_ACCOUNT` target when it has one, otherwise from its `aws_account` dimension.
+- **The account node keeps its own structure.** Its attributes, its place in the organization (`NESTED_UNDER_PARENT`, `ENROLLS_ACCOUNT`) and its footprints are real graph structure and stay edges.
+- **A type collected from now on** adds no account edge. A manifest `edges` rule never writes `BELONGS_TO_ACCOUNT`; a `containment` block does, through `containment.py`, and only for a different owner.
+- **Not done here: existing edges.** Grids already hold same-account `BELONGS_TO_ACCOUNT` edges. They are not removed by this change; retiring them is a separate issue that removes them by identity (ruled 2026-10-28). The dimension key is still the bare `aws_account`; renaming it is aws-core-tap#16.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-account-dimension-1 | The Dimension Is The Membership | Implemented | A collected resource carries `aws_account` set to the collecting account in its dimensions. | `tests/test_boto3_collector_regional_containment.py::TestEnabledRegion::test_own_vpc_has_no_account_edge_and_carries_the_account_dimension` |
+| req-aws-core-account-dimension-2 | The Edge Only For A Different Owner | Implemented | `containment_envelopes` writes `BELONGS_TO_ACCOUNT` only when `owner_of` differs from the collecting account; for the same account it writes the footprint's `HOSTS_*` edge and no account edge. | The shared-VPC test in the same file covers the other branch. |
+| req-aws-core-account-dimension-3 | The Footprint Carries No Account Edge | Implemented | `footprint_envelopes` returns the footprint node alone. | `test_footprint_has_no_edge_to_its_account` |
+| req-aws-core-account-dimension-4 | No Manifest Rule Writes The Edge | Implemented | No manifest entry's `edges` rule has `BELONGS_TO_ACCOUNT` as its `edge_type`. | `tests/test_account_dimension.py` |
+| req-aws-core-account-dimension-5 | The Baseline Panel Joins By Account Id | Implemented | The baseline panel matches a footprint to its account node by `account_id`, not by an edge. | `tests/test_baseline_panel.py` |
+| req-aws-core-account-dimension-6 | Existing Same-Account Edges Retire By Identity | Proposed | The same-account `BELONGS_TO_ACCOUNT` edges already on a grid are removed by identity in a separate change. | aws-core-tap#109; not part of this requirement's code. |
 
 ### Direct Connect
 ----
@@ -1595,7 +1626,7 @@ core's `tap_grid.falsifiers` / `tap_grid.falsifier_testing`.
     sharing and `TAP_CASCADE_MAX_CLOSURE` fan-out for `BELONGS_TO_ACCOUNT` specifically. A
     blanket account-level cascade over all 52 `BELONGS_TO_ACCOUNT` source types would
     contradict that already-documented design, not fix a gap.
-  - Retiring an account therefore ends its resources' `BELONGS_TO_ACCOUNT` edges (the
+  - Retiring an account therefore ends the `BELONGS_TO_ACCOUNT` edges that point at it (only a resource owned by this account and observed from another has one, `req-aws-core-account-dimension`) (the
     tombstone endpoint rule) and leaves the resources themselves live; each resource type's
     own truth is a question for that type's own falsifier (the sibling PRs' work), never a
     blanket account-level cascade.
@@ -1756,8 +1787,8 @@ rest can extend.
   deliberately not `AwsAccount` (`req-aws-core-reconcile-falsifiers-4`'s ruling stands: one
   account-wide fan-out would exceed the cascade cap and conflate independently-succeeding or
   -failing regional listings). Identity is `(account_id, region_code)`
-  (`req-grid-entity-natural-key`). `BELONGS_TO_ACCOUNT` (footprint -> account) is a reference,
-  not containment, matching every other source of that edge.
+  (`req-grid-entity-natural-key`). The footprint carries no edge to its account (`req-aws-core-account-dimension-3`): its account is the
+  `account_id` field and the `aws_account` dimension.
 - **One `HOSTS_*` containment edge per contained child type**
   (`tap_plugin/aws_core/regional.py`'s `REGIONAL_CHILDREN` table is the single place the shape is
   written down; `tests/test_regional_containment.py` checks every other source of truth — the
@@ -1847,7 +1878,7 @@ rest can extend.
 | --- | --- | :---: | --- | --- |
 | req-aws-core-reconcile-containment-1 | Five Account-Owned Edge Types | Implemented | `OWNS_IAM_ROLE__aws_core`, `OWNS_IAM_USER__aws_core`, `OWNS_IAM_POLICY__aws_core`, `OWNS_OIDC_PROVIDER__aws_core`, `OWNS_BUCKET__aws_core` declared, each `aws_core__aws_account` → the owned type, on `AwsAccount.OUTBOUND_EDGES`/`CONTAINMENT_EDGES`. | |
 | req-aws-core-reconcile-containment-2 | Collector Emits Containment + Records Completeness | Implemented | The five listings are driven through `ListingWalk`; the collector emits the account → item edge per item and records a completeness surface per listing after batch submission, `enumeration_complete` derived from the walk, never asserted. | |
-| req-aws-core-reconcile-containment-3 | BELONGS_TO_ACCOUNT Unreversed | Implemented | `BELONGS_TO_ACCOUNT` stays a resource → account reference for every type; only the five new edges are containment. | |
+| req-aws-core-reconcile-containment-3 | BELONGS_TO_ACCOUNT Unreversed | Implemented | `BELONGS_TO_ACCOUNT` stays a resource → account reference, written only for a different owner (`req-aws-core-account-dimension`); only the five new edges are containment. | |
 | req-aws-core-reconcile-containment-4 | IAM Immutable Ids | Implemented | `IamRole.role_id`, `IamUser.user_id`, `IamPolicy.policy_id` are collected and stored, closing `aws-core-tap#41`'s flagged same-path-recreation gap. | |
 | req-aws-core-reconcile-containment-5 | Trust Policy Summary | Implemented | `summarize_trust_policy` derives `trusted_account_ids` / `trusted_services` / `trusts_wildcard_principal` from a role's `AssumeRolePolicyDocument`, partition-aware; feeds `TRUSTS_ACCOUNT__aws_core`. | |
 | req-aws-core-reconcile-containment-6 | Fifth Falsifier | Implemented | `IamOidcProviderFalsifier` registered in `[falsifiers]`; the other four this containment activates are `aws-core-tap#41`'s, not duplicated. | |
@@ -2035,8 +2066,8 @@ RID: `req-aws-core-account-footprint`
 Status: `Proposed`
 
 Close the break in the containment chain at account → footprint. Today
-`aws_account_region` has no containing parent and no falsifier. Its edge to the account,
-`BELONGS_TO_ACCOUNT`, is a reference (`collectors/boto3_collector/containment.py:59-66`). So
+`aws_account_region` has no containing parent and no falsifier. Its link to the account is the
+`account_id` field and the `aws_account` dimension, not an edge (`req-aws-core-account-dimension-3`). So
 organization → account → {VPC, subnet, instance, SG} is not a chain, and a footprint, once written,
 is never retired.
 
@@ -2254,7 +2285,7 @@ so they are not listed.
 | `FORWARDS_VPC_DNS` | resolver-rule association → VPC | `ListResolverRuleAssociations` → `ResolverRuleAssociations[].VPCId` | ends with its source | — |
 | `ASSOCIATES_RESOLVER_RULE` | resolver-rule association → rule | `ResolverRuleAssociations[].ResolverRuleId` | ends with its source | — |
 | `FORWARDS_THROUGH_ENDPOINT` | resolver rule → outbound endpoint | `ListResolverRules` → `ResolverRules[].ResolverEndpointId` | **last seen** | `UpdateResolverRule` |
-| `BELONGS_TO_ACCOUNT` | each new regional type → owner account | the entry's `owner_path` (`req-aws-core-regional-containment-5`) | ends with its source (an owner does not change) | — |
+| `BELONGS_TO_ACCOUNT` | a regional type → its owner account, only when that is not the collecting account | the entry's `owner_path` (`req-aws-core-regional-containment-5`) | ends with its source (an owner does not change) | — |
 | `APPLIES_TO_TARGET` | enabled control / baseline → OU / account | `ListEnabledControls` → `enabledControls[].targetIdentifier`; `ListEnabledBaselines` → `enabledBaselines[].targetIdentifier` | ends with its source (`UpdateEnabledControl` and `UpdateEnabledBaseline` take no target) | — |
 | `GRANTS_PERMISSION_SET`, `GRANTS_ACCESS_TO_ACCOUNT`, `GRANTED_TO_GROUP` | assignment → permission set / account / group | `ListAccountAssignments` → `AccountAssignments[].PermissionSetArn`, `.AccountId`, `.PrincipalId` | ends with its source (all three are in the key) | — |
 | `REPORTS_TO_ADMINISTRATOR` | GuardDuty detector / Security Hub hub → account | `GetAdministratorAccount` → `Administrator.AccountId` | **last seen** | `DisassociateFromAdministratorAccount` |

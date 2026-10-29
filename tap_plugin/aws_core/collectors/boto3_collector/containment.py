@@ -13,6 +13,11 @@ What the collector adds to a run for every manifest entry that declares ``contai
    in a region the credential was positively able to read; anything less says why and, because the
    recorder derives ``reconcilable`` from these, licenses nothing.
 
+Account membership is the ``aws_account`` dimension every node carries, not an edge. ``BELONGS_TO_ACCOUNT``
+is written only when a resource's real owner differs from the account the run collects in (a resource
+shared in through AWS RAM), because there the dimension records who observed it, not who owns it
+(``req-aws-core-account-dimension``, aws-core-tap#81).
+
 The ownership rule is the part that keeps the RAM case honest. ``ec2:DescribeVpcs`` (and subnets, route
 tables, ...) also lists resources *shared into* the account by another. Such a resource is observed and
 attributed to its real owner, but it is not hosted by this account's footprint: were it, the owner
@@ -59,11 +64,8 @@ def footprint_ref(account_id: str, region: str) -> str:
 def footprint_envelopes(
     account_id: str, region: str, facts: RegionFacts, dimensions: dict[str, str]
 ) -> list[dict[str, Any]]:
-    """The footprint node and its ``BELONGS_TO_ACCOUNT`` reference edge to the account.
-
-    The edge is a reference, not containment (#46: an account declares none). Its target is the
-    account node the run collects in the same batch, or, when that read failed, the account's row
-    on the grid, found by its natural key.
+    """The footprint node. It carries no edge to its account: the account is the collecting account, named by its
+    ``account_id`` field and the ``aws_account`` dimension (``req-aws-core-account-dimension``, aws-core-tap#81).
     """
     key = footprint_key(account_id, region)
     fields = {
@@ -82,12 +84,7 @@ def footprint_envelopes(
         configuration={},
         raw_item={},
     )
-    return [
-        node_envelope(node, dimensions, {}, persist_configuration=False),
-        edge_envelope(
-            BELONGS_TO_ACCOUNT, from_ref=node.ref, to_ref=node_ref(ACCOUNT_TYPE, account_id), dimensions=dimensions
-        ),
-    ]
+    return [node_envelope(node, dimensions, {}, persist_configuration=False)]
 
 
 def owner_of(entry: dict[str, Any], item: Any, account_id: str) -> str:
@@ -108,17 +105,20 @@ def containment_envelopes(
 ) -> list[dict[str, Any]]:
     """The structural edges for one listed resource of a ``containment`` entry.
 
-    Always ``BELONGS_TO_ACCOUNT`` to the resource's real owner. ``HOSTS_*`` from the footprint only when
-    that owner is this account — see the module docstring.
+    ``HOSTS_*`` from the footprint when the owner is this account. ``BELONGS_TO_ACCOUNT`` only when the owner is
+    another account: the resource's own account is the dimension, and the edge is kept for the one case where the
+    dimension would say the wrong thing — see the module docstring.
     """
     block = entry["containment"]
     owner = owner_of(entry, node.raw_item, account_id)
-    envelopes = [
-        edge_envelope(
-            BELONGS_TO_ACCOUNT, from_ref=node.ref, to_ref=node_ref(ACCOUNT_TYPE, owner), dimensions=dimensions
+    envelopes: list[dict[str, Any]] = []
+    if owner != account_id:
+        envelopes.append(
+            edge_envelope(
+                BELONGS_TO_ACCOUNT, from_ref=node.ref, to_ref=node_ref(ACCOUNT_TYPE, owner), dimensions=dimensions
+            )
         )
-    ]
-    if owner == account_id:
+    else:
         envelopes.append(
             edge_envelope(
                 block["edge_type"],

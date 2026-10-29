@@ -33,6 +33,11 @@ by it, and it must be the field the model declares as its `NATURAL_KEY`), `field
 declarations below. The schema requires all three, so an entry without them
 fails manifest load.
 
+**Account membership is a dimension, not an edge** (`req-aws-core-account-dimension`, aws-core-tap#81). The collector already
+stamps the collecting account as the `aws_account` dimension on every node, so a new entry adds no account edge and never puts
+`BELONGS_TO_ACCOUNT` in its `edges` rules. A type that can be owned from another account (shared through AWS RAM) declares a
+`containment` block with an `owner_path`; `containment.py` then writes `BELONGS_TO_ACCOUNT` only when the owner differs.
+
 **`sensitivity` — where the raw response may carry sensitive values**
 (`req-aws-collector-manifest-6`). Do this for every call the entry makes (the
 enumerate op, every `hydrate` op, every call inside the `custom_fn`):
