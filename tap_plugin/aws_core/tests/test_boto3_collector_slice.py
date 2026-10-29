@@ -791,7 +791,7 @@ def test_ecs_describe_denied_still_imports_the_nodes_with_a_gap(_stub_aws, monke
     assert find_node_id("aws_core__aws_ecs_container", _ECS_CONTAINER) is None
 
 
-def _run_collector() -> Boto3Collector:
+def _collect_once() -> Boto3Collector:
     collector = Boto3Collector(
         CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7())
     )
@@ -811,7 +811,7 @@ def test_a_failed_tag_read_leaves_stored_tags_and_an_empty_read_clears_them(_stu
 
     from tap_grid.services import get_node
 
-    _run_collector()
+    _collect_once()
     lam, role = node_id("aws_core__aws_lambda", _FN_ARN), node_id("aws_core__aws_iam_role", _ROLE_ARN)
     assert get_node(lam).tags == {"Owner": "sam"}
     assert get_node(role).tags == {"Owner": "sam-aydlette", "Env": "prod"}
@@ -825,7 +825,7 @@ def test_a_failed_tag_read_leaves_stored_tags_and_an_empty_read_clears_them(_stu
     with monkeypatch.context() as m:
         m.setattr(_RgtaPaginator, "paginate", denied_sweep)
         m.setattr(_CannedClient, "list_role_tags", denied_role_tags, raising=False)
-        second = _run_collector()
+        second = _collect_once()
     assert any(w["message_code"] == "RGTA_SWEEP_SKIPPED" for w in second.results["warn"])
     assert get_node(lam).tags == {"Owner": "sam"}
     assert get_node(role).tags == {"Owner": "sam-aydlette", "Env": "prod"}
@@ -833,6 +833,6 @@ def test_a_failed_tag_read_leaves_stored_tags_and_an_empty_read_clears_them(_stu
     with monkeypatch.context() as m:
         m.setitem(_CANNED, "_rgta_pages", [{"ResourceTagMappingList": []}])
         m.setitem(_CANNED, "list_role_tags", {"Tags": []})
-        _run_collector()
+        _collect_once()
     assert get_node(lam).tags == {}
     assert get_node(role).tags == {}
