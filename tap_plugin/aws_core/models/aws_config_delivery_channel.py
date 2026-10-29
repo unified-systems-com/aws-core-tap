@@ -48,7 +48,7 @@ class AwsConfigDeliveryChannel(BaseModel):
         "sns_topic_arn": {"type": "string"},
         # configSnapshotDeliveryProperties.deliveryFrequency, verbatim.
         "delivery_frequency": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -67,7 +67,7 @@ class AwsConfigDeliveryChannel(BaseModel):
     sns_topic_arn = models.CharField(max_length=2048, blank=True, default="")
     delivery_frequency = models.CharField(max_length=32, blank=True, default="")
     # Canonical {str: str}. AWS cannot tag a delivery channel: always {}.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_config_delivery_channel"

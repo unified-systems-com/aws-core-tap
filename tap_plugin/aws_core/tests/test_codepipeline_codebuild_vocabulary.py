@@ -82,7 +82,10 @@ class TestDeclarations:
 
     @pytest.mark.parametrize(("model", "_key", "_good", "_bad"), TYPES)
     def test_tags_are_a_flat_string_map(self, model, _key, _good, _bad) -> None:
-        assert model.FIELD_CRUD_SCHEMA["tags"] == {"type": "object", "additionalProperties": {"type": "string"}}
+        assert model.FIELD_CRUD_SCHEMA["tags"] == {
+            "type": ["object", "null"],
+            "additionalProperties": {"type": "string"},
+        }
 
     def test_no_environment_variable_or_buildspec_field(self) -> None:
         # Environment variables and the buildspec can carry secrets and nothing here needs them.

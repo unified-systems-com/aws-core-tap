@@ -836,3 +836,23 @@ def test_a_failed_tag_read_leaves_stored_tags_and_an_empty_read_clears_them(_stu
         _collect_once()
     assert get_node(lam).tags == {}
     assert get_node(role).tags == {}
+
+
+@pytest.mark.django_db
+def test_a_node_first_seen_on_an_unread_run_has_null_tags_not_an_empty_map(_stub_aws, monkeypatch):
+    """`tags` is nullable and starts null (migration 0021): "not read" is not "read, untagged"."""
+    from botocore.exceptions import ClientError
+
+    from tap_grid.services import get_node
+
+    def denied_sweep(self, **_kw):
+        raise ClientError({"Error": {"Code": "AccessDeniedException"}}, "GetResources")
+
+    def denied_role_tags(self, **_kw):
+        raise ClientError({"Error": {"Code": "AccessDenied"}}, "ListRoleTags")
+
+    monkeypatch.setattr(_RgtaPaginator, "paginate", denied_sweep)
+    monkeypatch.setattr(_CannedClient, "list_role_tags", denied_role_tags, raising=False)
+    _collect_once()
+    assert get_node(node_id("aws_core__aws_lambda", _FN_ARN)).tags is None
+    assert get_node(node_id("aws_core__aws_iam_role", _ROLE_ARN)).tags is None

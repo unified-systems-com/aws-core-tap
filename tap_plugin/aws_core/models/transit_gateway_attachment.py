@@ -59,7 +59,7 @@ class TransitGatewayAttachment(BaseModel):
         "attachment_id": {"type": "string", "pattern": "^(tgw-attach-[0-9a-f]{8,17})?$"},
         "resource_type": {"type": "string", "enum": ["", *RESOURCE_TYPES]},
         "resource_owner_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -74,7 +74,7 @@ class TransitGatewayAttachment(BaseModel):
     resource_type = models.CharField(max_length=32, blank=True, default="")
     resource_owner_account_id = models.CharField(max_length=12, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeTransitGatewayAttachments Tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_transit_gateway_attachment"

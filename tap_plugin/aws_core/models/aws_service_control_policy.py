@@ -66,7 +66,7 @@ class AwsServiceControlPolicy(BaseModel):
         "policy_id": {"type": "string", "pattern": "^(p-[0-9a-zA-Z_]{8,128})?$"},
         "description": {"type": "string"},
         "aws_managed": {"type": ["boolean", "null"]},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -84,7 +84,7 @@ class AwsServiceControlPolicy(BaseModel):
     # PolicySummary.AwsManaged; null when not observed, so a designed policy is not asserted customer-managed.
     aws_managed = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: organizations:ListTagsForResource.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_service_control_policy"

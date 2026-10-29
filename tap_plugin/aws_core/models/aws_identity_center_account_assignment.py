@@ -60,7 +60,7 @@ class AwsIdentityCenterAccountAssignment(BaseModel):
         # AWS's PrincipalType: USER or GROUP (kept verbatim).
         "principal_type": {"type": "string"},
         "principal_id": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -76,7 +76,7 @@ class AwsIdentityCenterAccountAssignment(BaseModel):
     principal_type = models.CharField(max_length=16, blank=True, default="")
     principal_id = models.CharField(max_length=64, blank=True, default="")
     # Canonical {str: str}. AWS cannot tag an assignment: always {}.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_identity_center_account_assignment"

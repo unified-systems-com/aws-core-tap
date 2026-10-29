@@ -61,7 +61,7 @@ class AwsControlTowerLandingZone(BaseModel):
         "drift_status": {"type": "string"},
         # The manifest's governedRegions; null when GetLandingZone did not return a readable manifest.
         "governed_regions": {"type": ["array", "null"], "items": {"type": "string"}},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -79,7 +79,7 @@ class AwsControlTowerLandingZone(BaseModel):
     drift_status = models.CharField(max_length=32, blank=True, default="")
     governed_regions = models.JSONField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: controltower:ListTagsForResource (`tags` map).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_controltower_landing_zone"

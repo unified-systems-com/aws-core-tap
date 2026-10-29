@@ -46,7 +46,7 @@ class Vpc(BaseModel):
         "state": {"type": "string"},
         "is_default": {"type": "boolean"},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -56,7 +56,7 @@ class Vpc(BaseModel):
         "state": {"validation": "jsonschema", "schema": {"type": "string"}},
         "is_default": {"validation": "jsonschema", "schema": {"type": "boolean"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     # vpc_id is NOT required at create: a designed vpc (dcom=design) exists before AWS mints it.
     # Blank (the field default) means not observed. A collected vpc always carries it.
@@ -69,7 +69,7 @@ class Vpc(BaseModel):
     is_default = models.BooleanField(default=False)
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_vpc"

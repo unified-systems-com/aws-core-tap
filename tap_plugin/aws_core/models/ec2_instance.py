@@ -35,7 +35,7 @@ class Ec2Instance(BaseModel):
         "public_ip": {"type": ["string", "null"]},
         "ami_id": {"type": "string"},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -47,7 +47,7 @@ class Ec2Instance(BaseModel):
         "public_ip": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "ami_id": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     # Nothing is required at create. A designed instance (dcom=design) exists before AWS mints its
     # instance_id; a collected one can be untagged, so it may have no name. Blank means not observed.
@@ -62,7 +62,7 @@ class Ec2Instance(BaseModel):
     ami_id = models.CharField(max_length=64, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_ec2_instance"

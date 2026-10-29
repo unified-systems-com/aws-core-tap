@@ -45,7 +45,7 @@ class DxVirtualInterface(BaseModel):
         "vlan": {"type": ["integer", "null"], "minimum": 1, "maximum": 4094},
         "customer_asn": {"type": ["integer", "null"], "minimum": 1, "maximum": 4294967294},
         "region": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -63,7 +63,7 @@ class DxVirtualInterface(BaseModel):
     customer_asn = models.BigIntegerField(null=True, blank=True, default=None)
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeVirtualInterfaces tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_dx_virtual_interface"

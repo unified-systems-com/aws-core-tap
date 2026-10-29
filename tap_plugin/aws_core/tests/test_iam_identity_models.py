@@ -37,7 +37,8 @@ CREDENTIAL_WORDS = ("seed", "qrcode", "qr_code", "private_key", "certificate_bod
 class TestIamIdentityModels:
     def test_the_canonical_fields_are_declared_in_both_schemas(self, model):
         for field in ("tags", "configuration"):
-            assert model._meta.get_field(field).default is dict
+            default = model._meta.get_field(field).default
+            assert default is (None if field == "tags" else dict)  # tags: null = not read
             assert field in model.FIELD_CRUD_SCHEMA and field in model.FIELD_VALIDATION_SCHEMA
 
     def test_every_model_field_is_in_both_schemas(self, model):

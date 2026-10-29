@@ -36,7 +36,7 @@ class LambdaFunction(BaseModel):
         "vpc_subnet_ids": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
         "vpc_security_group_ids": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -49,7 +49,7 @@ class LambdaFunction(BaseModel):
         "vpc_subnet_ids": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}}},
         "vpc_security_group_ids": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -68,7 +68,7 @@ class LambdaFunction(BaseModel):
     vpc_subnet_ids = models.JSONField(null=True, blank=True, default=None)
     vpc_security_group_ids = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_lambda"

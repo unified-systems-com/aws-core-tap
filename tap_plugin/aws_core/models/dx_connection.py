@@ -44,7 +44,7 @@ class DxConnection(BaseModel):
         "bandwidth": {"type": "string", "pattern": "^([0-9]+(Mbps|Gbps))?$"},
         "is_hosted": {"type": ["boolean", "null"]},
         "region": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -63,7 +63,7 @@ class DxConnection(BaseModel):
     is_hosted = models.BooleanField(null=True, blank=True, default=None)
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeConnections tags.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_dx_connection"

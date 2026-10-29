@@ -30,7 +30,7 @@ class EcsCluster(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "cluster_arn": {"type": "string"},
         "status": {"type": "string"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
 
@@ -38,7 +38,7 @@ class EcsCluster(BaseModel):
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "cluster_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
         "status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
@@ -46,7 +46,7 @@ class EcsCluster(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     cluster_arn = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(max_length=64, blank=True, default="")
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

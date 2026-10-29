@@ -41,7 +41,7 @@ class AwsConfigAggregator(BaseModel):
         "all_aws_regions": {"type": ["boolean", "null"]},
         "aws_regions": {"type": "array", "items": {"type": "string"}},
         "role_arn": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -59,7 +59,7 @@ class AwsConfigAggregator(BaseModel):
     aws_regions = models.JSONField(default=list, blank=True)
     role_arn = models.CharField(max_length=2048, blank=True, default="")
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_config_aggregator"

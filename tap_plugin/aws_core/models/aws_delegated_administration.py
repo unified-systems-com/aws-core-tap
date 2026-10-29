@@ -52,7 +52,7 @@ class AwsDelegatedAdministration(BaseModel):
         "service_principal": {"type": "string", "maxLength": 128},
         # DelegatedService.DelegationEnabledDate as ISO 8601 UTC; "" when not observed.
         "delegation_enabled_at": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -67,7 +67,7 @@ class AwsDelegatedAdministration(BaseModel):
     service_principal = models.CharField(max_length=128, blank=True, default="")
     delegation_enabled_at = models.CharField(max_length=40, blank=True, default="")
     # Canonical {str: str} (req-aws-core-fields-4). AWS cannot tag a delegation: always {}.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_delegated_administration"

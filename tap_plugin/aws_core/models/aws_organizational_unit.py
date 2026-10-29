@@ -55,7 +55,7 @@ class AwsOrganizationalUnit(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "ou_id": {"type": "string", "pattern": "^(ou-[0-9a-z]{4,32}-[a-z0-9]{8,32})?$"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -67,7 +67,7 @@ class AwsOrganizationalUnit(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     ou_id = models.CharField(max_length=80, blank=True, default="", db_index=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: organizations:ListTagsForResource.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_organizational_unit"

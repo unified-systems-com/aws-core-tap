@@ -36,7 +36,7 @@ class IamPolicy(BaseModel):
         "attachment_count": {"type": ["integer", "null"]},
         "is_attachable": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
-        "tags": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -49,7 +49,7 @@ class IamPolicy(BaseModel):
         "attachment_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "is_attachable": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -65,7 +65,7 @@ class IamPolicy(BaseModel):
     attachment_count = models.IntegerField(blank=True, null=True, default=None)
     is_attachable = models.BooleanField(blank=True, null=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_iam_policy"

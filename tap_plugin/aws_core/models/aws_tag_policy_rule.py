@@ -64,7 +64,7 @@ class AwsTagPolicyRule(BaseModel):
             "description": "Every inheritance operator the rule uses anywhere in its body, sorted.",
             "items": {"type": "string", "pattern": "^@@", "description": "One operator, such as @@assign."},
         },
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -81,7 +81,7 @@ class AwsTagPolicyRule(BaseModel):
     enforced_for = models.JSONField(null=True, blank=True, default=None)
     inheritance_operators = models.JSONField(null=True, blank=True, default=None)
     # Canonical {str: str} (req-aws-core-fields-4). A rule is not an AWS resource: always {}.
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_tag_policy_rule"

@@ -67,7 +67,7 @@ class AwsAccessAnalyzerFinding(BaseModel):
         "created_at": {"type": "string"},
         "updated_at": {"type": "string"},
         "analyzed_at": {"type": "string"},
-        "tags": {"type": "object", "additionalProperties": {"type": "string"}},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -93,7 +93,7 @@ class AwsAccessAnalyzerFinding(BaseModel):
     updated_at = models.CharField(max_length=40, blank=True, default="")
     analyzed_at = models.CharField(max_length=40, blank=True, default="")
     # AWS cannot tag a finding: always {} (tag_lanes.json, lane `none`).
-    tags = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_access_analyzer_finding"
