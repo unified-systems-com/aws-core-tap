@@ -102,7 +102,10 @@ def node_envelope(
     no path that emits a node without that decision having been made.
     """
     payload: dict[str, Any] = {**node.fields}
-    if not isinstance(tags, Unread):
+    if isinstance(tags, Unread):
+        # Whatever a projector put under `tags` is not a read: the resolver is the only source.
+        payload.pop("tags", None)
+    else:
         payload["tags"] = tags or {}
     payload["configuration"] = persisted_configuration(node, persist_configuration=persist_configuration)
     return {

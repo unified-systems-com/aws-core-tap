@@ -37,6 +37,11 @@ class TestEnvelope:
     def test_unread_omits_the_tags_field(self):
         assert "tags" not in node_envelope(_node(), {}, UNREAD, persist_configuration=False)["node"]
 
+    def test_unread_drops_a_tags_value_a_projector_left_in_the_fields(self):
+        node = _node()
+        node.fields["tags"] = {"stale": "value"}
+        assert "tags" not in node_envelope(node, {}, UNREAD, persist_configuration=False)["node"]
+
     def test_an_empty_read_still_sends_an_explicit_empty_map(self):
         assert node_envelope(_node(), {}, {}, persist_configuration=False)["node"]["tags"] == {}
 
