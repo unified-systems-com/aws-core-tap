@@ -16,7 +16,7 @@ import json
 import sys
 import tomllib
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import jsonschema
 
@@ -40,9 +40,8 @@ def _load_validated(path: Path, schema_path: Path) -> Any:
 
 
 def load_decisions() -> dict[str, Any]:
-    decisions = _load_validated(DECISIONS_PATH, PACKAGE / "decisions.schema.json")
-    assert isinstance(decisions, dict)
-    return decisions
+    # The schema's top level is an object, so a validated document is a dict.
+    return cast("dict[str, Any]", _load_validated(DECISIONS_PATH, PACKAGE / "decisions.schema.json"))
 
 
 def gather_inputs(cfn_path: Path) -> Inputs:
