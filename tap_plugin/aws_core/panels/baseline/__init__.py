@@ -53,7 +53,7 @@ FOOTPRINTS_QUERY = (
     "f.dimensions AS dims"
 )
 ACCOUNTS_QUERY = (
-    f"MATCH (a:aws_core__aws_account) "
+    "MATCH (a:aws_core__aws_account) "
     "RETURN a.entity_id AS account, a.data.account_id AS account_id, a.name AS account_name, "
     "a.data.s3_block_public_acls AS block_public_acls, a.data.s3_ignore_public_acls AS ignore_public_acls, "
     "a.data.s3_block_public_policy AS block_public_policy, a.data.s3_restrict_public_buckets AS restrict_public_buckets, "
