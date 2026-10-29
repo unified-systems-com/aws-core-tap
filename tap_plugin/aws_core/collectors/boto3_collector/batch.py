@@ -66,10 +66,23 @@ def persisted_configuration(node: ProjectedNode, *, persist_configuration: bool)
     return {}
 
 
+class Unread:
+    """The type of :data:`UNREAD`."""
+
+    def __repr__(self) -> str:
+        return "UNREAD"
+
+
+#: A tag read that failed, was refused, or was skipped: distinct from ``{}``, which is a successful
+#: read of an untagged resource. :func:`node_envelope` leaves ``tags`` out for it, and the importer's
+#: keep-absent replace (tap#1128, core >= 0.3.1) then leaves the stored tags alone.
+UNREAD = Unread()
+
+
 def node_envelope(
     node: ProjectedNode,
     dimensions: dict[str, str],
-    tags: dict[str, str] | None = None,
+    tags: dict[str, str] | None | Unread = None,
     *,
     persist_configuration: bool,
 ) -> dict[str, Any]:
@@ -77,13 +90,21 @@ def node_envelope(
 
     The ``node`` payload is the projected typed fields, the canonical
     ``tags`` map (``req-aws-collector-tags``; ``{}`` when untagged — the
-    correct answer, never omitted), and ``configuration`` as decided by
+    correct answer), and ``configuration`` as decided by
     :func:`persisted_configuration`; the service layer validates it on import.
+
+    ``tags`` is omitted only for :data:`UNREAD`: a read that did not answer says nothing about the
+    tags, and omission leaves the stored ones in place. A resource first seen on such a run is stored
+    with the model's default ``{}``.
 
     ``persist_configuration`` is keyword-only and has no default: the caller
     passes the manifest entry's ``persist_configuration`` flag, so there is
     no path that emits a node without that decision having been made.
     """
+    payload: dict[str, Any] = {**node.fields}
+    if not isinstance(tags, Unread):
+        payload["tags"] = tags or {}
+    payload["configuration"] = persisted_configuration(node, persist_configuration=persist_configuration)
     return {
         "entity": {
             "ref": node.ref,
@@ -91,11 +112,7 @@ def node_envelope(
             "name": node.name,
             "dimensions": dimensions,
         },
-        "node": {
-            **node.fields,
-            "tags": tags or {},
-            "configuration": persisted_configuration(node, persist_configuration=persist_configuration),
-        },
+        "node": payload,
     }
 
 

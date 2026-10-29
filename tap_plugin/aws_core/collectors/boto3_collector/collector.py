@@ -56,6 +56,8 @@ from .authority import (
     shared_scopes,
 )
 from .batch import (
+    UNREAD,
+    Unread,
     address_batch,
     assemble_batch,
     envelope_ref,
@@ -164,22 +166,28 @@ def resolve_node_tags(
     *,
     rgta_map: dict[str, dict[str, str]],
     client_for: Any,
-) -> tuple[dict[str, str], dict[str, Any] | None, dict[str, Any] | None]:
+    rgta_unread: bool = False,
+) -> tuple[dict[str, str] | Unread, dict[str, Any] | None, dict[str, Any] | None]:
     """Resolve one node's canonical tags (``req-aws-collector-tags``).
 
-    Returns ``(tags, hydrate_slot, hydrate_mapping)``:
+    Returns ``(tags, hydrate_slot, hydrate_mapping)``. ``tags`` is :data:`UNREAD` when the read did
+    not answer (the node envelope then omits ``tags`` and the stored ones stay); ``{}`` is only ever
+    a successful read of an untagged resource.
 
     - ``rgta`` source — join by ARN against the per-run RGTA map;
-      ``{}`` if untagged (correct, not a gap). No raw slot (RGTA's
+      ``{}`` if untagged (correct, not a gap). ``rgta_unread`` (the sweep of the item's region
+      failed, so an absent ARN proves nothing) gives UNREAD. No raw slot (RGTA's
       ``list_kv``↔``map`` is information-preserving).
     - ``field`` source — the enumeration itself already carried the tags
       (an inline response field, or a ``_``-prefixed slot a custom fn
       hydrated); normalize straight off the item. The cheapest lane: zero
-      extra API calls. No raw slot (normalization is shape-preserving).
+      extra API calls. No raw slot (normalization is shape-preserving). An item carrying
+      ``_tags_unread`` (a custom fn whose own tag call failed) gives UNREAD.
     - ``service`` side-quest — the tag op run through the hydrate template
       (so ``ok|absent|denied|error`` status + raw land in ``_hydrate``,
       and a ``denied``/``error`` is surfaced as ``HYDRATE_GAP`` by the
-      existing run scan); the slot's data is normalized to ``{str:str}``.
+      existing run scan); the slot's data is normalized to ``{str:str}``. ``denied`` and ``error``
+      give UNREAD; ``absent`` and ``ok`` are answers.
     - no ``tags`` block, or ``{"source": "none", ...}`` (AWS cannot tag the
       type, ``req-aws-collector-tags-12``) — ``({}, None, None)``.
 
@@ -192,8 +200,12 @@ def resolve_node_tags(
     if not block or block["source"] == "none":
         return {}, None, None
     if block["source"] == "rgta":
+        if rgta_unread:
+            return UNREAD, None, None
         return rgta_map.get(rgta_join_arn(entry, item) or "", {}), None, None
     if block["source"] == "field":
+        if isinstance(item, Mapping) and item.get("_tags_unread"):
+            return UNREAD, None, None
         return normalize_tags(eval_path(item, block["from"]), block["shape"]), None, None
 
     call_kwargs: dict[str, Any] = {}
@@ -210,13 +222,16 @@ def resolve_node_tags(
     )
     slot = env["_hydrate"]["tags"]
     mapping = env["_hydrate_mapping"]["tags"]
+    status = slot.get("status")
+    if status in ("denied", "error"):
+        return UNREAD, slot, mapping
     tags: dict[str, str] = {}
-    if slot.get("status") == "ok":
+    if status == "ok":
         tags = normalize_tags(eval_path(slot.get("data"), block["path"]), block["shape"])
     return tags, slot, mapping
 
 
-class _Unreadable:
+class Unreadable:
     """A stand-in EC2 client whose only call raises: what `read_region_facts` sees when the client
     itself could not be built, so that path yields the same all-unknown answer as a refused call."""
 
@@ -260,7 +275,7 @@ class Boto3Collector(CollectorBase):
             client = session.client("ec2", region_name=regions[0], config=Config(retries={"mode": "standard"}))
             facts, error = read_region_facts(client, regions)
         except (BotoCoreError, ValueError) as exc:
-            facts = read_region_facts(_Unreadable(exc), regions)[0]
+            facts = read_region_facts(Unreadable(exc), regions)[0]
             error = f"ec2 client unavailable: {type(exc).__name__}"
         if error:
             self.record_warn(
@@ -433,6 +448,7 @@ class Boto3Collector(CollectorBase):
         facts = self._read_region_facts(session, regions)
         rgta_filters = rgta_resource_type_filters(entries)
         rgta_map: dict[str, dict[str, str]] = {}
+        rgta_failed: set[str] = set()
         for region in regions:
             try:
                 rgta_map.update(
@@ -446,6 +462,7 @@ class Boto3Collector(CollectorBase):
                     )
                 )
             except (BotoCoreError, ClientError) as exc:
+                rgta_failed.add(region)
                 self.record_warn(
                     _SITE_RGTA_SKIPPED,
                     "RGTA_SWEEP_SKIPPED",
@@ -573,6 +590,7 @@ class Boto3Collector(CollectorBase):
                             item,
                             rgta_map=rgta_map,
                             client_for=client_factory(session, region),
+                            rgta_unread=(region if entry["scope"] == "regional" else home_region) in rgta_failed,
                         )
                         if tag_slot is not None:
                             node.configuration.setdefault("_hydrate", {})["tags"] = tag_slot
