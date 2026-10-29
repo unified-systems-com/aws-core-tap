@@ -105,6 +105,9 @@ def _validate_decisions(inputs: Inputs) -> dict[str, list[str]]:
             by_type.setdefault(cfn_name, []).append(entity)
         if not entry.get("cfn") and not entry.get("reason"):
             problems.append(f"type_map {entity}: no CloudFormation type and no reason")
+    for cfn_name in decisions.get("tag_findings", {}):
+        if cfn_name not in inputs.cfn:
+            problems.append(f"tag_findings: the bundle has no type {cfn_name}")
     classification: dict[str, Any] = decisions.get("classification", {})
     for cfn_name in classification:
         if cfn_name not in inputs.cfn:
@@ -133,10 +136,25 @@ def _tags(cfn: CfnType, entities: list[str], inputs: Inputs) -> dict[str, Any]:
     if len(set(found.values())) > 1:
         raise LedgerError(f"{cfn.type_name}: its entities disagree on tag treatment: {dict(sorted(found.items()))}")
     treatment = next(iter(found.values()), None)
-    if treatment == "none" and cfn.taggable is True:
+    if treatment == "none" and cfn.taggable is True and cfn.type_name not in inputs.decisions.get("tag_findings", {}):
         raise LedgerError(
             f"{cfn.type_name}: a manifest entry says it has no tags, but the CloudFormation schema says it is taggable"
         )
+    finding = inputs.decisions.get("tag_findings", {}).get(cfn.type_name)
+    if finding is not None:
+        if finding["taggable"] is False and treatment not in (None, "none"):
+            raise LedgerError(f"{cfn.type_name}: a tag finding says it has no tags, but the manifest collects them")
+        if finding["taggable"] is True and treatment == "none":
+            raise LedgerError(f"{cfn.type_name}: a tag finding says it has tags, but the manifest says it has none")
+        overrides = cfn.taggable is not None and cfn.taggable != finding["taggable"]
+        return {
+            "treatment": "none" if finding["taggable"] is False else treatment,
+            "evidence": "confirmed",
+            "taggable": finding["taggable"],
+            "tag_property": cfn.tag_property if finding["taggable"] else None,
+            "citation": finding["citation"]
+            + (f" (overrides the CloudFormation schema, which says taggable is {str(cfn.taggable).lower()})" if overrides else ""),
+        }
     if cfn.taggable is False and treatment not in (None, "none"):
         # The schema is a positive source for "none", but the collector reads tags through a real API call. Neither
         # wins silently: the row keeps the collector's treatment and says the two sources disagree.
