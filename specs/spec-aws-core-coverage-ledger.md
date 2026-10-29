@@ -235,6 +235,7 @@ The generator is `tap_plugin/aws_core/ledger/` and needs no Django and no networ
 
 - A botocore service that no CloudFormation service resolves to is not omitted: it gets a row in `service_rows` (the ledger's list of services with no CloudFormation type), `unclassified` until `decisions.json` `service_classification` says `excluded` (no resources to model, such as a data-plane API) or `not-enumerable`, with a reason. The summary reports `in_scope_unclassified_all`, the CloudFormation types and these services together, as the number the aim drives to zero.
 - A CloudFormation type that maps to several entities must get one tag treatment from their manifest entries; entries that disagree stop the build.
+- A type the schema calls not taggable but whose manifest entry collects tags is not dropped and not refused: its row keeps the collector's treatment with `evidence: conflict`, and the conflict is resolved against the service's own documentation before any tag is dropped. A mapped botocore service the endpoint data does not name makes availability `unknown`, never unavailable.
 - A bundle is refused rather than coerced when `tagging.taggable` (or the deprecated top-level `taggable`) is present and is not a JSON boolean; `decisions.json` is refused when a `service_map` key names a CloudFormation service the bundle does not have.
 
 What is derived and what is approximate, stated so a reader does not take a field for more than it is:

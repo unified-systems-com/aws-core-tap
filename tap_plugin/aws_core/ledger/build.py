@@ -67,9 +67,12 @@ def _matched_boto_services(inputs: Inputs) -> frozenset[str]:
 def _available(boto_names: list[str], partition: str, inputs: Inputs) -> bool | None:
     """Whether botocore's endpoint data gives the service an endpoint in the partition; None when it does not say."""
     prefixes = [inputs.boto[name].endpoint_prefix for name in boto_names]
-    if not prefixes or not any(prefix in inputs.named_prefixes for prefix in prefixes):
-        return None
-    return any(prefix in inputs.partitions.get(partition, frozenset()) for prefix in prefixes)
+    if any(prefix in inputs.partitions.get(partition, frozenset()) for prefix in prefixes):
+        return True
+    # Absent from the partition is a definite no only when every mapped service is one the endpoint data names.
+    if prefixes and all(prefix in inputs.named_prefixes for prefix in prefixes):
+        return False
+    return None
 
 
 def _tier(commercial: bool | None, govcloud: bool | None) -> str:
@@ -134,6 +137,19 @@ def _tags(cfn: CfnType, entities: list[str], inputs: Inputs) -> dict[str, Any]:
         raise LedgerError(
             f"{cfn.type_name}: a manifest entry says it has no tags, but the CloudFormation schema says it is taggable"
         )
+    if cfn.taggable is False and treatment not in (None, "none"):
+        # The schema is a positive source for "none", but the collector reads tags through a real API call. Neither
+        # wins silently: the row keeps the collector's treatment and says the two sources disagree.
+        return {
+            "treatment": treatment,
+            "evidence": "conflict",
+            "taggable": False,
+            "tag_property": None,
+            "citation": (
+                f"CloudFormation schema: tagging.taggable is false, but the manifest collects tags ({treatment}); "
+                "resolve against the service's own documentation before any tag is dropped"
+            ),
+        }
     if cfn.taggable is False:
         return {
             "treatment": "none",

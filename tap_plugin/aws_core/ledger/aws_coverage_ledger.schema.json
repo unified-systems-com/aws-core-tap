@@ -261,7 +261,8 @@
               "evidence": {
                 "enum": [
                   "confirmed",
-                  "not-found"
+                  "not-found",
+                  "conflict"
                 ]
               },
               "taggable": {

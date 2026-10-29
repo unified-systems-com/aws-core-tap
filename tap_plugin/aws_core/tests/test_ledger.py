@@ -21,7 +21,7 @@ import pytest
 
 from tap_plugin.aws_core.ledger import __main__ as cli
 from tap_plugin.aws_core.ledger import sources
-from tap_plugin.aws_core.ledger.build import STATES, Inputs, LedgerError, build_ledger, render
+from tap_plugin.aws_core.ledger.build import STATES, Inputs, LedgerError, _available, build_ledger, render
 from tap_plugin.aws_core.ledger.sources import BotoService, SameHostRedirect, SourceError, confine, load_cfn_bundle
 
 PACKAGE = Path(cli.PACKAGE)
@@ -478,6 +478,29 @@ def test_a_manifest_that_says_no_tags_for_a_taggable_type_is_a_contradiction(tmp
     manifest = {"aws_core__aws_sqs_queue": {"entity_type": "aws_core__aws_sqs_queue", "tags": {"source": "none"}}}
     with pytest.raises(LedgerError, match="says it has no tags, but the CloudFormation schema says it is taggable"):
         build_ledger(dataclasses.replace(inputs, manifest=manifest))
+
+
+@pytest.mark.spec("req-aws-core-ledger-tags")
+def test_a_manifest_that_collects_tags_for_an_untaggable_type_is_a_recorded_conflict(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    manifest = {"aws_core__aws_vpc": {"tags": {"source": "service"}}}
+    cfn = dict(inputs.cfn)
+    cfn["AWS::EC2::VPC"] = dataclasses.replace(cfn["AWS::EC2::VPC"], taggable=False)
+    tags = _rows(dataclasses.replace(inputs, cfn=cfn, manifest=manifest))["AWS::EC2::VPC"]["tags"]
+    assert (tags["treatment"], tags["evidence"], tags["taggable"]) == ("side-call", "conflict", False)
+    assert "manifest collects tags" in tags["citation"]
+
+
+@pytest.mark.spec("req-aws-core-ledger-scope")
+def test_a_known_absence_beside_an_unnamed_service_is_unknown_not_unavailable(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    boto = dict(inputs.boto)
+    boto["ec2b"] = dataclasses.replace(boto["ec2"], endpoint_prefix="ec2b")
+    gov = {**inputs.partitions, "aws-us-gov": frozenset()}
+    probe = dataclasses.replace(inputs, boto=boto, partitions=gov)
+    assert _available(["ec2"], "aws-us-gov", probe) is False
+    assert _available(["ec2", "ec2b"], "aws-us-gov", probe) is None
+    assert _available(["ec2b"], "aws-us-gov", probe) is None
 
 
 @pytest.mark.spec("req-aws-core-ledger-tags")
