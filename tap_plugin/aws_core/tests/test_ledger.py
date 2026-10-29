@@ -295,7 +295,7 @@ def test_the_download_follows_a_redirect_only_to_the_same_https_host() -> None:
 
 @pytest.mark.spec("req-aws-core-ledger-denominator")
 def test_a_service_is_found_by_any_of_its_botocore_names(tmp_path: Path) -> None:
-    # Codex on PR 113: ElasticLoadBalancingV2 is botocore's elbv2 with endpoint prefix elasticloadbalancing.
+    # ElasticLoadBalancingV2 is botocore's elbv2 with endpoint prefix elasticloadbalancing: neither normalises to it.
     row = _rows(_inputs(tmp_path))["AWS::ElasticLoadBalancingV2::LoadBalancer"]
     assert row["botocore_services"] == ["elbv2"]
     assert row["tier"] == "both"
@@ -316,7 +316,7 @@ def test_a_modeled_type_outside_the_in_scope_tier_is_named_in_the_summary(tmp_pa
 def test_a_bundle_over_the_total_size_is_refused_whatever_its_members_weigh(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Grok and Codex on PR 113: many valid members could add up to far more than the archive's own size.
+    # Many individually valid members can add up to far more than the archive's own size.
     monkeypatch.setattr(sources, "MAX_TOTAL_BYTES", 300)
     archive = tmp_path / "many.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
@@ -341,8 +341,28 @@ def test_a_directory_with_too_many_members_is_refused(tmp_path: Path, monkeypatc
 
 
 def test_the_download_will_not_write_through_a_symbolic_link_left_at_its_target(tmp_path: Path) -> None:
-    # Codex on PR 113: confining the directory is not enough if the file name in it is a link elsewhere.
+    # Confining the directory is not enough if the file name in it is a link elsewhere.
     outside = tmp_path / ".." / ".." / ".." / ".." / ".." / ".." / "etc" / "hosts"
     (tmp_path / "CloudformationSchema.zip").symlink_to(outside.resolve())
     with pytest.raises(SourceError, match="outside the working directory"):
         sources.download_bundle(tmp_path)
+
+
+def test_a_directory_member_that_is_a_symbolic_link_is_refused_not_followed(tmp_path: Path) -> None:
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "aws-ec2-vpc.json").write_text(json.dumps(BUNDLE["aws-ec2-vpc.json"]))
+    (bundle / "evil.json").symlink_to("/etc/hosts")
+    with pytest.raises(SourceError, match="is a symbolic link"):
+        load_cfn_bundle(bundle)
+
+
+def test_a_zip_member_is_read_with_a_bound_not_trusted_for_its_declared_size(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive = tmp_path / "big.zip"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("aws-ec2-vpc.json", json.dumps(BUNDLE["aws-ec2-vpc.json"]) + " " * 400)
+    monkeypatch.setattr(sources, "MAX_MEMBER_BYTES", 300)
+    with pytest.raises(SourceError, match="over the size limit"):
+        load_cfn_bundle(archive)

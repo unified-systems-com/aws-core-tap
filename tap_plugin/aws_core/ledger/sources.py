@@ -162,10 +162,13 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
         if len(files) > MAX_MEMBERS:
             raise SourceError(f"{path.name} has more than {MAX_MEMBERS} members")
         for file in files:
-            raw = file.read_bytes()
-            total += len(raw)
-            if len(raw) > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
+            if file.is_symlink():
+                raise SourceError(f"{file.name} is a symbolic link; a bundle directory holds files only")
+            size = file.stat().st_size
+            total += size
+            if size > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
                 raise SourceError(f"{file.name} is over the size limit ({MAX_MEMBER_BYTES} a member, {MAX_TOTAL_BYTES} in all)")
+            raw = file.read_bytes()
             members.append((file.name, raw))
             digest.update(file.name.encode() + b"\0" + raw)
     elif path.is_file():
@@ -181,10 +184,14 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
                 name = info.filename
                 if not name.endswith(".json") or name.startswith("/") or ".." in Path(name).parts:
                     continue
-                total += info.file_size
-                if info.file_size > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
+                # The header's size is the archive's claim, so the read itself is bounded and the real byte
+                # count is what adds up.
+                with archive.open(info) as member:
+                    raw = member.read(MAX_MEMBER_BYTES + 1)
+                total += len(raw)
+                if len(raw) > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
                     raise SourceError(f"{name} is over the size limit ({MAX_MEMBER_BYTES} a member, {MAX_TOTAL_BYTES} in all)")
-                members.append((name, archive.read(info)))
+                members.append((name, raw))
     else:
         raise SourceError(f"{path} is neither a zip nor a directory")
     types: dict[str, CfnType] = {}
