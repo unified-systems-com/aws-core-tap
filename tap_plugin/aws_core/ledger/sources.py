@@ -18,6 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -201,29 +202,32 @@ def load_cfn_bundle(path: Path) -> tuple[dict[str, CfnType], str]:
         with path.open("rb") as handle:
             while block := handle.read(1 << 20):
                 digest.update(block)
-        with zipfile.ZipFile(path) as archive:
-            infos = archive.infolist()
-            if len(infos) > MAX_MEMBERS:
-                raise SourceError(f"{path.name} has more than {MAX_MEMBERS} members")
-            for info in sorted(infos, key=lambda i: i.filename):
-                name = info.filename
-                if not name.endswith(".json") or name.startswith("/") or ".." in Path(name).parts:
-                    continue
-                # The header's size is the archive's claim, so the read itself is bounded and the real byte
-                # count is what adds up.
-                with archive.open(info) as member:
-                    raw = member.read(MAX_MEMBER_BYTES + 1)
-                total += len(raw)
-                if len(raw) > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
-                    raise SourceError(f"{name} is over the size limit ({MAX_MEMBER_BYTES} a member, {MAX_TOTAL_BYTES} in all)")
-                members.append((name, raw))
+        try:
+            with zipfile.ZipFile(path) as archive:
+                infos = archive.infolist()
+                if len(infos) > MAX_MEMBERS:
+                    raise SourceError(f"{path.name} has more than {MAX_MEMBERS} members")
+                for info in sorted(infos, key=lambda i: i.filename):
+                    name = info.filename
+                    if not name.endswith(".json") or name.startswith("/") or ".." in Path(name).parts:
+                        continue
+                    # The header's size is the archive's claim, so the read itself is bounded and the real byte
+                    # count is what adds up.
+                    with archive.open(info) as member:
+                        raw = member.read(MAX_MEMBER_BYTES + 1)
+                    total += len(raw)
+                    if len(raw) > MAX_MEMBER_BYTES or total > MAX_TOTAL_BYTES:
+                        raise SourceError(f"{name} is over the size limit ({MAX_MEMBER_BYTES} a member, {MAX_TOTAL_BYTES} in all)")
+                    members.append((name, raw))
+        except (zipfile.BadZipFile, zlib.error, RuntimeError, EOFError, NotImplementedError) as exc:
+            raise SourceError(f"{path.name} is not a readable zip: {exc}") from exc
     else:
         raise SourceError(f"{path} is neither a zip nor a directory")
     types: dict[str, CfnType] = {}
     for name, raw in members:
         try:
             parsed = _parse_type(json.loads(raw), name)
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise SourceError(f"{name} is not JSON: {exc}") from exc
         if parsed is None:
             continue

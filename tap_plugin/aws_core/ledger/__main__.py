@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
         return fetch(args.dest)
     try:
         text = build_text(args.cfn)
-    except (LedgerError, sources.SourceError) as exc:
+    except (LedgerError, sources.SourceError, OSError) as exc:
         print(f"ledger refused:\n{exc}", file=sys.stderr)
         return 2
     summary = json.loads(text)["summary"]
