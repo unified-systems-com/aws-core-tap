@@ -37,9 +37,9 @@ safe handling of a failed tag read.
 
 | RID | Name | Status | Notes |
 | --- | --- | :---: | --- |
-| req-aws-core-ledger-denominator | [Denominator](#denominator) | Proposed | Which sources define the rows |
-| req-aws-core-ledger-scope | [Scope](#scope) | Proposed | Commercial and GovCloud services, security first |
-| req-aws-core-ledger-states | [Row States](#row-states) | Proposed | The states a row may be in and what each requires |
+| req-aws-core-ledger-denominator | [Denominator](#denominator) | Implemented | Which sources define the rows |
+| req-aws-core-ledger-scope | [Scope](#scope) | Implemented | Commercial and GovCloud services, security first |
+| req-aws-core-ledger-states | [Row States](#row-states) | Implemented | The states a row may be in and what each requires |
 | req-aws-core-ledger-tags | [Tag Evidence](#tag-evidence) | Proposed | When tags may be dropped, and how they are found |
 | req-aws-core-ledger-tag-shapes | [Tag Shapes](#tag-shapes) | Proposed | Every wire shape of tags is handled, not just three |
 | req-aws-core-ledger-tranches | [Tranches](#tranches) | Proposed | Build order and the loop each tranche follows |
@@ -50,7 +50,7 @@ safe handling of a failed tag read.
 ----
 RID: `req-aws-core-ledger-denominator`
 
-Status: `Proposed`
+Status: `Implemented`
 
 The ledger's service list is the set of services in the botocore data bundled with the pinned
 `boto3`. As of botocore 1.43.121 that is 435 service models, of which 397 have `List*` or `Describe*`
@@ -69,7 +69,7 @@ same ledger byte for byte, so a diff means AWS changed or the pin moved.
 ----
 RID: `req-aws-core-ledger-scope`
 
-Status: `Proposed`
+Status: `Implemented`
 
 In scope are services offered in both the commercial (`aws`) and GovCloud (`aws-us-gov`) partitions,
 ordered by security and compliance relevance first (ruled 2026-10-28, maintainer). A service offered in
@@ -84,7 +84,7 @@ GovCloud lacks, so the run records a named skip instead of a connection failure.
 ----
 RID: `req-aws-core-ledger-states`
 
-Status: `Proposed`
+Status: `Implemented`
 
 Each row is in exactly one state:
 
@@ -229,7 +229,7 @@ catalog skill.
 The generator is `tap_plugin/aws_core/ledger/` and needs no Django and no network except `fetch`:
 
 - `python -m tap_plugin.aws_core.ledger fetch --dest DIR` downloads AWS's public CloudFormation schema bundle with the standard library, over https from one host (a redirect to any other host or to plain http is refused), refusing a body over 64 MiB, and prints its sha256. Every path argument is resolved, symbolic links and `..` included, and refused unless it lies inside the working directory or the temporary directory.
-- `build --cfn DIR_OR_ZIP [--out FILE]` joins the derived **facts** (`sources.py`: the bundle, botocore's service models, botocore's bundled endpoint data) with the reviewed **decisions** (`decisions.json`: `service_map`, `type_map`, `classification`) and writes `aws_coverage_ledger.json`, byte-stable for the same inputs, one row per line. The generated file is about 1 MiB, so it lands in its own pull request after the generator; a reviewer regenerates it from the recorded bundle hash and compares bytes. Both JSON files have a JSON Schema in the same directory and are validated at load.
+- `build --cfn DIR_OR_ZIP [--out FILE]` joins the derived **facts** (`sources.py`: the bundle, botocore's service models, botocore's bundled endpoint data) with the reviewed **decisions** (`decisions.json`: `service_map`, `type_map`, `classification`) and writes `aws_coverage_ledger.json`, byte-stable for the same inputs, one row per line. The generated file is about 1 MiB and is committed as `aws_coverage_ledger.json` with the bundle's sha256 inside it; a reviewer fetches the bundle (`fetch --dest DIR`), confirms the hash, runs `check --cfn`, and compares bytes. Both JSON files have a JSON Schema in the same directory and are validated at load.
 - `check --cfn DIR_OR_ZIP` exits 1 when the committed ledger differs from what the bundle builds; it is what the drift job (`req-aws-core-ledger-drift`) will run.
 - The bundle is untrusted data, read as JSON only: a member that tries to leave the archive is ignored, one over 8 MiB is refused, a bundle whose members add up to over 256 MiB or number over 10,000 is refused, and nothing in it is imported or executed. The download target is resolved and confined too, so a symbolic link left at its name cannot redirect the write.
 

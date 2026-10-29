@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import jsonschema
 import pytest
@@ -560,3 +560,48 @@ def test_malformed_tagging_metadata_is_refused_not_read_as_no_evidence(
     (tmp_path / "a.json").write_text(json.dumps({**_schema("AWS::EC2::VPC"), **fields}))
     with pytest.raises(SourceError, match=message):
         load_cfn_bundle(tmp_path)
+
+
+@pytest.mark.parametrize("content", [b"x", b"PK\x03\x04 truncated"])
+def test_a_corrupt_zip_is_a_refusal_not_a_traceback(tmp_path: Path, content: bytes) -> None:
+    bad = tmp_path / "bad.zip"
+    bad.write_bytes(content)
+    with pytest.raises(SourceError, match="not a readable zip"):
+        load_cfn_bundle(bad)
+
+
+def test_a_member_that_is_not_utf8_is_a_refusal(tmp_path: Path) -> None:
+    (tmp_path / "a.json").write_bytes(b"\xff\xfe\x00")
+    with pytest.raises(SourceError, match="is not JSON"):
+        load_cfn_bundle(tmp_path)
+
+
+def _committed() -> dict[str, Any]:
+    return cast("dict[str, Any]", json.loads(cli.LEDGER_PATH.read_text()))
+
+
+@pytest.mark.spec("req-aws-core-ledger-states")
+def test_the_committed_ledger_matches_its_schema_and_its_own_summary() -> None:
+    ledger = _committed()
+    schema = json.loads((cli.PACKAGE / "aws_coverage_ledger.schema.json").read_text())
+    jsonschema.Draft202012Validator(schema).validate(ledger)
+    rows = ledger["rows"]
+    assert ledger["summary"]["types"] == len(rows)
+    for state, count in ledger["summary"]["by_state"].items():
+        assert count == sum(1 for r in rows if r["state"] == state), state
+    assert len({r["type_name"] for r in rows}) == len(rows)
+
+
+@pytest.mark.spec("req-aws-core-ledger-states")
+def test_the_committed_ledger_agrees_with_the_manifest() -> None:
+    entries = json.loads(cli.MANIFEST_PATH.read_text())["entries"]
+    collected = {e["entity_type"] for e in entries}
+    in_ledger = {
+        entity for r in _committed()["rows"] if r["state"].startswith("collected") for entity in r["entity_types"]
+    }
+    # Every manifest entry that maps to a CloudFormation type is a collected row, and no collected row lacks one.
+    assert in_ledger <= collected
+    unmapped = {u["entity_type"] for u in _committed()["unmapped_models"]}
+    assert collected - in_ledger <= unmapped | {
+        entity for r in _committed()["rows"] for entity in r["entity_types"] if not r["state"].startswith("collected")
+    }
