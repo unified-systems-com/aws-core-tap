@@ -637,3 +637,14 @@ def test_a_tag_finding_that_contradicts_the_manifest_or_names_no_type_is_refused
     decisions["tag_findings"] = {"AWS::No::Such": {"taggable": True, "citation": cite}}
     with pytest.raises(LedgerError, match="the bundle has no type AWS::No::Such"):
         build_ledger(dataclasses.replace(inputs, decisions=decisions))
+
+
+@pytest.mark.spec("req-aws-core-ledger-states")
+def test_an_excluded_type_the_schema_marks_taggable_is_listed_for_a_human(tmp_path: Path) -> None:
+    inputs = _inputs(tmp_path)
+    ledger = build_ledger(inputs)
+    assert ledger["summary"]["excluded_taggable"] == []
+    cfn = dict(inputs.cfn)
+    cfn["AWS::SQS::QueuePolicy"] = dataclasses.replace(cfn["AWS::SQS::QueuePolicy"], taggable=True)
+    ledger = build_ledger(dataclasses.replace(inputs, cfn=cfn))
+    assert ledger["summary"]["excluded_taggable"] == ["AWS::SQS::QueuePolicy"]

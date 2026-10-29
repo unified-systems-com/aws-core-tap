@@ -36,6 +36,10 @@
       "state": "excluded",
       "reason": "A link between resources, identified by StackName, EntitlementName, ApplicationIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
+    "AWS::AppStream::ApplicationFleetAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by FleetName, ApplicationArn, with no identity or ARN of its own: the identifier is made of the ARN or name of the two resources it links. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
     "AWS::AppStream::StackFleetAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by FleetName, StackName, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
@@ -144,10 +148,6 @@
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by DestinationCidrBlock, LocalGatewayRouteTableId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
     },
-    "AWS::EC2::LocalGatewayRouteTableVPCAssociation": {
-      "state": "excluded",
-      "reason": "A link between resources, identified by LocalGatewayRouteTableVpcAssociationId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
-    },
     "AWS::EC2::NetworkAclEntry": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
@@ -179,10 +179,6 @@
     "AWS::EC2::SubnetRouteTableAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
-    },
-    "AWS::EC2::TrafficMirrorFilterRule": {
-      "state": "excluded",
-      "reason": "A route, rule or entry that lives inside another resource, identified by TrafficMirrorFilterRuleId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
     },
     "AWS::EC2::TransitGatewayMeteringPolicyEntry": {
       "state": "excluded",
@@ -419,10 +415,6 @@
     "AWS::Route53::RecordSetGroup": {
       "state": "excluded",
       "reason": "A CloudFormation convenience that creates several record sets in one step; the records are the resources and the group has no identity in Route 53."
-    },
-    "AWS::Route53Profiles::ProfileAssociation": {
-      "state": "excluded",
-      "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
     "AWS::Route53Profiles::ProfileResourceAssociation": {
       "state": "excluded",
