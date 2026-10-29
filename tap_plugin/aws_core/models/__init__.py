@@ -58,10 +58,15 @@ from tap_plugin.aws_core.models.elasticache_cluster import ElasticacheCluster
 from tap_plugin.aws_core.models.elasticsearch_domain import ElasticsearchDomain
 from tap_plugin.aws_core.models.elb import Elb
 from tap_plugin.aws_core.models.eventbridge_rule import EventbridgeRule
+from tap_plugin.aws_core.models.iam_group import IamGroup
+from tap_plugin.aws_core.models.iam_instance_profile import IamInstanceProfile
 from tap_plugin.aws_core.models.iam_oidc_provider import IamOidcProvider
 from tap_plugin.aws_core.models.iam_policy import IamPolicy
 from tap_plugin.aws_core.models.iam_role import IamRole
+from tap_plugin.aws_core.models.iam_saml_provider import IamSamlProvider
+from tap_plugin.aws_core.models.iam_server_certificate import IamServerCertificate
 from tap_plugin.aws_core.models.iam_user import IamUser
+from tap_plugin.aws_core.models.iam_virtual_mfa_device import IamVirtualMfaDevice
 from tap_plugin.aws_core.models.internet_gateway import InternetGateway
 from tap_plugin.aws_core.models.kms_key import KmsKey
 from tap_plugin.aws_core.models.lambda_function import LambdaFunction
@@ -145,10 +150,15 @@ __all__ = [
     "ElasticsearchDomain",
     "Elb",
     "EventbridgeRule",
+    "IamGroup",
+    "IamInstanceProfile",
     "IamOidcProvider",
     "IamPolicy",
     "IamRole",
+    "IamSamlProvider",
+    "IamServerCertificate",
     "IamUser",
+    "IamVirtualMfaDevice",
     "InternetGateway",
     "KmsKey",
     "LambdaFunction",

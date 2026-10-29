@@ -293,6 +293,16 @@
       "cfn": [],
       "reason": "A finding GuardDuty reports; no CloudFormation resource type."
     },
+    "aws_core__aws_iam_group": {
+      "cfn": [
+        "AWS::IAM::Group"
+      ]
+    },
+    "aws_core__aws_iam_instance_profile": {
+      "cfn": [
+        "AWS::IAM::InstanceProfile"
+      ]
+    },
     "aws_core__aws_iam_oidc_provider": {
       "cfn": [
         "AWS::IAM::OIDCProvider"
@@ -308,9 +318,24 @@
         "AWS::IAM::Role"
       ]
     },
+    "aws_core__aws_iam_saml_provider": {
+      "cfn": [
+        "AWS::IAM::SAMLProvider"
+      ]
+    },
+    "aws_core__aws_iam_server_certificate": {
+      "cfn": [
+        "AWS::IAM::ServerCertificate"
+      ]
+    },
     "aws_core__aws_iam_user": {
       "cfn": [
         "AWS::IAM::User"
+      ]
+    },
+    "aws_core__aws_iam_virtual_mfa_device": {
+      "cfn": [
+        "AWS::IAM::VirtualMFADevice"
       ]
     },
     "aws_core__aws_identity_center_account_assignment": {
