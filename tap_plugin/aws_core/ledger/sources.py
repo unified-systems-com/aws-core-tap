@@ -135,8 +135,10 @@ def _parse_type(document: Any, member: str) -> CfnType | None:
     type_name = document["typeName"]
     if not isinstance(type_name, str) or not _TYPE_NAME.match(type_name):
         raise SourceError(f"{member}: typeName {type_name!r} is not a CloudFormation type name")
+    if "tagging" in document and not isinstance(document["tagging"], dict):
+        raise SourceError(f"{member}: tagging is not an object")
     tagging = document.get("tagging")
-    has_block = isinstance(tagging, dict)
+    has_block = tagging is not None
     if has_block:
         # tagging.taggable defaults to true when the block omits it (CloudFormation's own contract). A value that is
         # present and not a JSON boolean is a malformed bundle, refused: coercing it would turn 0 or "false" into
@@ -145,6 +147,8 @@ def _parse_type(document: Any, member: str) -> CfnType | None:
         if not isinstance(taggable, bool):
             raise SourceError(f"{member}: tagging.taggable is {taggable!r}, not a boolean")
         tag_property = tagging.get("tagProperty")
+        if tag_property is not None and not isinstance(tag_property, str):
+            raise SourceError(f"{member}: tagging.tagProperty is not a string")
     else:
         if "taggable" in document and not isinstance(document["taggable"], bool):
             raise SourceError(f"{member}: taggable is {document['taggable']!r}, not a boolean")
@@ -162,7 +166,7 @@ def _parse_type(document: Any, member: str) -> CfnType | None:
         primary_identifier=tuple(identifier),
         has_list_handler="list" in handlers,
         taggable=taggable,
-        tag_property=tag_property if isinstance(tag_property, str) else None,
+        tag_property=tag_property,
         has_tagging_block=has_block,
     )
 

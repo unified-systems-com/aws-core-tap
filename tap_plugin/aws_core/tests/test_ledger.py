@@ -505,3 +505,21 @@ def test_a_zip_over_the_archive_size_is_refused_before_it_is_read(tmp_path: Path
     monkeypatch.setattr(Path, "read_bytes", lambda self: pytest.fail("read the whole archive before checking its size"))
     with pytest.raises(SourceError, match="is over 50 bytes"):
         load_cfn_bundle(archive)
+
+
+@pytest.mark.parametrize(
+    ("fields", "message"),
+    [
+        ({"tagging": "taggable"}, "tagging is not an object"),
+        ({"tagging": None}, "tagging is not an object"),
+        ({"tagging": ["taggable"]}, "tagging is not an object"),
+        ({"tagging": {"taggable": True, "tagProperty": 7}}, "tagProperty is not a string"),
+        ({"tagging": {"taggable": True, "tagProperty": ["/properties/Tags"]}}, "tagProperty is not a string"),
+    ],
+)
+def test_malformed_tagging_metadata_is_refused_not_read_as_no_evidence(
+    tmp_path: Path, fields: dict[str, Any], message: str
+) -> None:
+    (tmp_path / "a.json").write_text(json.dumps({**_schema("AWS::EC2::VPC"), **fields}))
+    with pytest.raises(SourceError, match=message):
+        load_cfn_bundle(tmp_path)
