@@ -2,7 +2,12 @@
 
 They are modelled ahead of their collector entries (req-aws-core-ledger-tranches, tranche 1), so what is pinned
 here is the shape of the model itself: the canonical ``tags`` and ``configuration`` fields every node payload
-carries, an ARN-or-serial natural key, and the absence of any field that could hold a credential.
+carries, an ARN-or-serial natural key, and the absence of any *typed* field that could hold a credential.
+
+``configuration`` is an open JSON object on every collected model, these included, so the schema cannot keep a
+credential out of it. What does is the collector entry's ``persist_configuration`` flag and its sensitivity
+review (``add-aws-type``, step 1), which arrive with the manifest entries. For the virtual MFA device
+(``Base32StringSeed`` and ``QRCodePNG`` are botocore-sensitive) the flag will be off.
 """
 
 from __future__ import annotations
@@ -22,8 +27,8 @@ KEYS = {
     IamServerCertificate: "certificate_arn",
     IamVirtualMfaDevice: "serial_number",
 }
-# Names AWS gives the values that enrol or prove a credential; none may ever be a model field.
-CREDENTIAL_WORDS = ("seed", "qrcode", "qr_code", "private_key", "certificate_body", "certificate_chain", "secret", "password")
+# Names AWS gives the values that enrol or prove a credential; none may ever be a typed model field.
+CREDENTIAL_WORDS = ("seed", "qrcode", "qr_code", "private_key", "certificate_body", "certificate_chain", "secret", "password", "credential", "pem", "key_material", "otp")
 
 
 @pytest.mark.parametrize("model", MODELS, ids=lambda m: m.__name__)
@@ -41,7 +46,7 @@ class TestIamIdentityModels:
         assert model.NATURAL_KEY == (KEYS[model],)
         assert KEYS[model] in model.FIELD_CRUD_SCHEMA
 
-    def test_no_field_can_hold_a_credential(self, model):
+    def test_no_typed_field_is_named_for_a_credential(self, model):
         names = {f.name for f in model._meta.get_fields()}
         assert not [n for n in names if any(word in n for word in CREDENTIAL_WORDS)]
 
