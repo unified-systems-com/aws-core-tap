@@ -7,7 +7,7 @@ One row per account and region (an ``aws_account_region`` footprint), one column
 **on**, **off** or **unknown**:
 
 - EBS default encryption: the footprint's ``ebs_encryption_by_default`` (true / false / null).
-- S3 account public-access block: the four flags on the footprint's account (BELONGS_TO_ACCOUNT); on when
+- S3 account public-access block: the four flags on the footprint's account (the account node whose account_id is the footprint's); on when
   all four are true, off when any is false, otherwise unknown. One account setting, so every region row of
   an account shows the same value.
 - Config recorder, GuardDuty, Security Hub, Access Analyzer: the node the footprint HOSTS_*; on when one
@@ -53,8 +53,8 @@ FOOTPRINTS_QUERY = (
     "f.dimensions AS dims"
 )
 ACCOUNTS_QUERY = (
-    f"MATCH (f:{FOOTPRINT})-[:BELONGS_TO_ACCOUNT__aws_core]->(a:aws_core__aws_account) "
-    "RETURN f.entity_id AS footprint, a.entity_id AS account, a.name AS account_name, "
+    f"MATCH (a:aws_core__aws_account) "
+    "RETURN a.entity_id AS account, a.data.account_id AS account_id, a.name AS account_name, "
     "a.data.s3_block_public_acls AS block_public_acls, a.data.s3_ignore_public_acls AS ignore_public_acls, "
     "a.data.s3_block_public_policy AS block_public_policy, a.data.s3_restrict_public_buckets AS restrict_public_buckets, "
     "a.dimensions AS dims"
@@ -146,7 +146,7 @@ def ebs_cell(value: Any, key_id: Any = None) -> dict[str, str]:
 
 def s3_pab_cell(flags: dict[str, Any] | None) -> dict[str, str]:
     if flags is None:
-        return _cell(UNKNOWN, "No account node is linked to this footprint (BELONGS_TO_ACCOUNT).")
+        return _cell(UNKNOWN, "No account node on the grid carries this footprint's account id.")
     values = [flags.get(f) for f in PAB_FLAGS]
     detail = ", ".join(f"{f.replace('_', ' ')}: {'not read' if v is None else str(v).lower()}"
                        for f, v in zip(PAB_FLAGS, values, strict=True))
@@ -207,7 +207,9 @@ def fold_baseline(footprints: list[dict[str, Any]], accounts: list[dict[str, Any
     # drawn as AWS's answer. Design footprints get no row; a design account leaves S3 and Control Tower
     # unknown on the observed footprint it is linked to.
     footprints = _observed(footprints)
-    by_fp_account = {r["footprint"]: r for r in _observed(accounts) if r.get("footprint")}
+    # A footprint belongs to the account it was collected in, which is the account node's own account_id
+    # (account membership is a dimension and a field, not an edge: aws-core-tap#81).
+    by_account_id = {r["account_id"]: r for r in _observed(accounts) if r.get("account_id")}
     parent = {r["child"]: r["parent"] for r in (tree or []) if r.get("child") and r.get("parent")}
     covering: dict[str, list[dict[str, Any]]] = {}
     for b in _observed(baselines or []):
@@ -222,7 +224,7 @@ def fold_baseline(footprints: list[dict[str, Any]], accounts: list[dict[str, Any
     out_rows = []
     for fp in sorted(footprints, key=lambda r: (str(r.get("account_id") or ""), str(r.get("region") or ""))):
         fid = fp.get("footprint")
-        acct = by_fp_account.get(fid)
+        acct = by_account_id.get(fp.get("account_id"))
         cells: dict[str, dict[str, str]] = {"ebs": ebs_cell(fp.get("ebs"), fp.get("ebs_key"))}
         cells["s3_pab"] = failed if account_failed else s3_pab_cell(
             None if acct is None else {f: acct.get(f) for f in PAB_FLAGS})
