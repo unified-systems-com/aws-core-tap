@@ -15,7 +15,7 @@ the one type ``validate_plugin``'s falsifier-coverage check already marks reconc
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 from unittest.mock import MagicMock
 
 import pytest
@@ -27,8 +27,12 @@ from tap_plugin.aws_core.falsifiers import (
     NOT_FOUND_DETAIL,
     AccountFalsifier,
     Ec2InstanceFalsifier,
+    IamGroupFalsifier,
+    IamInstanceProfileFalsifier,
     IamPolicyFalsifier,
     IamRoleFalsifier,
+    IamSamlProviderFalsifier,
+    IamServerCertificateFalsifier,
     IamUserFalsifier,
     S3BucketFalsifier,
     SecurityGroupFalsifier,
@@ -76,6 +80,10 @@ S3_BUCKET = "aws_core__aws_s3_bucket"
 IAM_ROLE = "aws_core__aws_iam_role"
 IAM_USER = "aws_core__aws_iam_user"
 IAM_POLICY = "aws_core__aws_iam_policy"
+IAM_GROUP = "aws_core__aws_iam_group"
+IAM_INSTANCE_PROFILE = "aws_core__aws_iam_instance_profile"
+IAM_SAML_PROVIDER = "aws_core__aws_iam_saml_provider"
+IAM_SERVER_CERTIFICATE = "aws_core__aws_iam_server_certificate"
 ACCOUNT_ID = "111122223333"
 OTHER_ACCOUNT_ID = "999988887777"
 REGION = "us-east-1"
@@ -377,6 +385,12 @@ class TestFalsifierManifestWiring:
             # reconcilable by the same containment, but their falsifiers are aws-core-tap#41's,
             # registered there rather than duplicated here.
             OIDC_PROVIDER: "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier",
+            # The four other account-scoped IAM listings. A virtual MFA device is collected but has no
+            # containment edge and no Get operation, so it has no falsifier.
+            IAM_GROUP: "tap_plugin.aws_core.falsifiers.IamGroupFalsifier",
+            IAM_INSTANCE_PROFILE: "tap_plugin.aws_core.falsifiers.IamInstanceProfileFalsifier",
+            IAM_SAML_PROVIDER: "tap_plugin.aws_core.falsifiers.IamSamlProviderFalsifier",
+            IAM_SERVER_CERTIFICATE: "tap_plugin.aws_core.falsifiers.IamServerCertificateFalsifier",
             # aws-core-tap#65 (Organizations completeness): the organization's delegations and
             # customer-managed policies, a policy's statements and a tag policy's rules.
             "aws_core__aws_delegated_administration": "tap_plugin.aws_core.falsifiers.DelegatedAdministrationFalsifier",
@@ -439,6 +453,10 @@ class TestFalsifierManifestWiring:
             "IamRoleFalsifier",
             "IamUserFalsifier",
             "IamPolicyFalsifier",
+            "IamGroupFalsifier",
+            "IamInstanceProfileFalsifier",
+            "IamSamlProviderFalsifier",
+            "IamServerCertificateFalsifier",
         ):
             cls = import_string(f"tap_plugin.aws_core.falsifiers.{name}")
             assert isinstance(cls, type) and issubclass(cls, Falsifier)
@@ -485,7 +503,7 @@ class TestAccountAndOrganizationDeclareNoContainment:
     containment makes reconcilable. This class is a regression guard against silently reversing
     any of these decisions, not a live behavior test."""
 
-    def test_aws_account_declares_containment_for_its_five_exclusive_types(self) -> None:
+    def test_aws_account_declares_containment_for_its_nine_exclusive_types(self) -> None:
         # aws-core-tap#43 supersedes tap-plugin-aws-core#42's empty declaration for exactly
         # these five account-EXCLUSIVE types; BELONGS_TO_ACCOUNT stays an unreversed reference
         # for every other of AwsAccount's ~52 owned types.
@@ -494,6 +512,10 @@ class TestAccountAndOrganizationDeclareNoContainment:
             "OWNS_IAM_USER__aws_core",
             "OWNS_IAM_POLICY__aws_core",
             "OWNS_OIDC_PROVIDER__aws_core",
+            "OWNS_IAM_GROUP__aws_core",
+            "OWNS_IAM_INSTANCE_PROFILE__aws_core",
+            "OWNS_SAML_PROVIDER__aws_core",
+            "OWNS_SERVER_CERTIFICATE__aws_core",
             "OWNS_BUCKET__aws_core",
         )
 
@@ -1196,6 +1218,133 @@ class TestIamUserFalsifier:
         [verdict] = falsifier.batch_falsify([candidate], _context())
         assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
         assert unsupported(verdict) is None
+
+
+@pytest.mark.django_db
+class TestIamAccountListedFalsifiers:
+    """The four IAM types an account's own listing contains: a group, an instance profile, a SAML
+    provider and a server certificate. Each is asked about by its own ``Get`` call."""
+
+    CASES: ClassVar[list[dict[str, Any]]] = [
+        {
+            "type": IAM_GROUP,
+            "cls": IamGroupFalsifier,
+            "arn_field": "group_arn",
+            "arn": "group/{name}",
+            "call": "get_group",
+            "kwargs": lambda name, arn: {"GroupName": name, "MaxItems": 1},
+            "answer": lambda name, arn: {"Group": {"Arn": arn, "GroupName": name}},
+        },
+        {
+            "type": IAM_INSTANCE_PROFILE,
+            "cls": IamInstanceProfileFalsifier,
+            "arn_field": "instance_profile_arn",
+            "arn": "instance-profile/{name}",
+            "call": "get_instance_profile",
+            "kwargs": lambda name, arn: {"InstanceProfileName": name},
+            "answer": lambda name, arn: {"InstanceProfile": {"Arn": arn, "InstanceProfileName": name}},
+        },
+        {
+            "type": IAM_SERVER_CERTIFICATE,
+            "cls": IamServerCertificateFalsifier,
+            "arn_field": "certificate_arn",
+            "arn": "server-certificate/{name}",
+            "call": "get_server_certificate",
+            "kwargs": lambda name, arn: {"ServerCertificateName": name},
+            "answer": lambda name, arn: {
+                "ServerCertificate": {
+                    "ServerCertificateMetadata": {"Arn": arn, "ServerCertificateName": name},
+                    "CertificateBody": "-----BEGIN CERTIFICATE-----",
+                }
+            },
+        },
+        {
+            "type": IAM_SAML_PROVIDER,
+            "cls": IamSamlProviderFalsifier,
+            "arn_field": "provider_arn",
+            "arn": "saml-provider/{name}",
+            "call": "get_saml_provider",
+            "kwargs": lambda name, arn: {"SAMLProviderArn": arn},
+            "answer": lambda name, arn: {"SAMLProviderUUID": "u-1"},
+        },
+    ]
+
+    @staticmethod
+    def _candidate(case: dict[str, Any], name: str, arn: str, *, account_id: str = ACCOUNT_ID) -> Candidate:
+        uid = _dimensioned(case["type"], {"name": name, case["arn_field"]: arn}, account_id=account_id)
+        return _iam_candidate(uid, case["type"])
+
+    @staticmethod
+    def _arn(case: dict[str, Any], name: str, *, account: str = ACCOUNT_ID) -> str:
+        return f"arn:aws:iam::{account}:" + case["arn"].format(name=name)
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_present_and_asked_about_by_the_right_key(self, case: dict[str, Any]) -> None:
+        arn = self._arn(case, "kept")
+        client = MagicMock()
+        getattr(client, case["call"]).return_value = case["answer"]("kept", arn)
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([self._candidate(case, "kept", arn)], _context())
+        assert verdict.verdict == PRESENT_AT_PROBE
+        assert unsupported(verdict) is None
+        getattr(client, case["call"]).assert_called_once_with(**case["kwargs"]("kept", arn))
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_no_such_entity_is_dropped(self, case: dict[str, Any]) -> None:
+        arn = self._arn(case, "gone")
+        client = MagicMock()
+        getattr(client, case["call"]).side_effect = _client_error("NoSuchEntity", case["call"])
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([self._candidate(case, "gone", arn)], _context())
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_access_denied_is_forbidden_not_gone(self, case: dict[str, Any]) -> None:
+        arn = self._arn(case, "locked")
+        client = MagicMock()
+        getattr(client, case["call"]).side_effect = _client_error("AccessDenied", case["call"])
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([self._candidate(case, "locked", arn)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "forbidden")
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_another_accounts_credential_refuses_before_any_probe(self, case: dict[str, Any]) -> None:
+        arn = self._arn(case, "kept")
+        client = MagicMock()
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=OTHER_ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([self._candidate(case, "kept", arn)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        getattr(client, case["call"]).assert_not_called()
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_a_row_without_an_arn_is_not_answered(self, case: dict[str, Any]) -> None:
+        uid = _dimensioned(case["type"], {"name": "legacy"})
+        client = MagicMock()
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([_iam_candidate(uid, case["type"])], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        getattr(client, case["call"]).assert_not_called()
+
+    @pytest.mark.parametrize("case", [c for c in CASES if c["type"] != IAM_SAML_PROVIDER], ids=lambda c: c["type"])
+    def test_a_name_that_disagrees_with_its_own_arn_refuses_before_any_probe(self, case: dict[str, Any]) -> None:
+        client = MagicMock()
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        candidate = self._candidate(case, "wrong-name", self._arn(case, "actual-name"))
+        [verdict] = falsifier.batch_falsify([candidate], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "does not match the resource name" in verdict.note
+        getattr(client, case["call"]).assert_not_called()
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_a_govcloud_arn_reaches_the_govcloud_endpoint(self, case: dict[str, Any]) -> None:
+        arn = "arn:aws-us-gov:iam::" + ACCOUNT_ID + ":" + case["arn"].format(name="kept")
+        client = MagicMock()
+        getattr(client, case["call"]).return_value = case["answer"]("kept", arn)
+        session = _mock_session("iam", client)
+        falsifier = case["cls"](session=session, account_id=ACCOUNT_ID)
+        falsifier.batch_falsify([self._candidate(case, "kept", arn)], _context())
+        regions = {call.kwargs.get("region_name") for call in session.client.call_args_list}
+        assert regions == {"us-gov-west-1"}
 
 
 @pytest.mark.django_db

@@ -1701,6 +1701,288 @@
           "direction": "inbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_group",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_groups_listed"
+      },
+      "why": "Enumerate IAM groups — the unit through which most human access to an account is granted. ListGroups is the account's complete inventory of them (walk checked, count compared with GetAccountSummary); each group is read again for the managed policies attached to it.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.iam_groups",
+        "edge_type": "OWNS_IAM_GROUP__aws_core",
+        "why": "An IAM group exists in exactly one account and is never shared; ListGroups returns every group of the account, and read to its end is the complete list of them. A group it stops naming is a question for the group's falsifier (GetGroup), not a deletion."
+      },
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore iam ListGroups and ListAttachedGroupPolicies output shapes (Path, GroupName, GroupId, Arn, CreateDate; PolicyName, PolicyArn) and custom_fn iam_groups_listed, 2026-10-29. No member carries botocore's sensitive trait; group membership is not requested."
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "GroupName",
+        "group_arn": "Arn",
+        "path": "Path",
+        "group_id": "GroupId",
+        "attached_policy_arns": "_attached_policy_arns"
+      },
+      "hydrate": [
+        {
+          "key": "attached_policies",
+          "op": "ListAttachedGroupPolicies",
+          "why": "Managed policies attached directly to the group — what its members are granted."
+        }
+      ],
+      "tags": {
+        "source": "none",
+        "why": "AWS has no tagging operation for an IAM group: the iam service model defines Tag and Untag operations for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates, and none for groups (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_attached_policy_arns",
+          "target_type": "aws_core__aws_iam_policy",
+          "key_kind": "arn",
+          "edge_type": "ATTACHES_POLICY__aws_core",
+          "direction": "outbound",
+          "transform": "customer_managed_policy_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_instance_profile",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_instance_profiles_listed"
+      },
+      "why": "Enumerate IAM instance profiles — the container that hands an IAM role to an EC2 instance, so the link between a compute workload and the permissions it runs with. ListInstanceProfiles is the account's complete inventory of them (walk checked, count compared with GetAccountSummary) and names each profile's roles.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.iam_instance_profiles",
+        "edge_type": "OWNS_IAM_INSTANCE_PROFILE__aws_core",
+        "why": "An IAM instance profile exists in exactly one account and is never shared; ListInstanceProfiles returns every instance profile of the account, and read to its end is the complete list of them. A instance profile it stops naming is a question for the instance profile's falsifier (GetInstanceProfile), not a deletion."
+      },
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListInstanceProfiles and ListInstanceProfileTags output shapes and custom_fn iam_instance_profiles_listed, 2026-10-29. No member carries botocore's sensitive trait. The embedded role is cut to its name and ARN before it leaves the reader, so the role's trust policy is not in the envelope.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "IAM returns the tag set in this slot. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "InstanceProfileName",
+        "instance_profile_arn": "Arn",
+        "path": "Path",
+        "instance_profile_id": "InstanceProfileId",
+        "role_arns": "_role_arns"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListInstanceProfileTags",
+        "params": {
+          "InstanceProfileName": {
+            "from": "InstanceProfileName"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — RGTA excludes IAM resources; per-service side-quest."
+      },
+      "edges": [
+        {
+          "value_path": "_role_arns",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "CONTAINS_ROLE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_saml_provider",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_saml_providers_described"
+      },
+      "why": "Enumerate IAM SAML identity providers — the federated human identity sources that can sign in to roles of this account. ListSAMLProviders returns every provider of the account in one response; each is read again for its validity window and tags.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.saml_providers",
+        "edge_type": "OWNS_SAML_PROVIDER__aws_core",
+        "why": "An IAM SAML provider exists in exactly one account and is never shared; ListSAMLProviders returns every SAML provider of the account, and read to its end is the complete list of them. A SAML provider it stops naming is a question for the SAML provider's falsifier (GetSAMLProvider), not a deletion."
+      },
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the encryption mode and key list the typed fields do not; the metadata document is removed by the reader and no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam GetSAMLProvider output shape (SAMLProviderUUID, SAMLMetadataDocument, CreateDate, ValidUntil, Tags, AssertionEncryptionMode, PrivateKeyList) and custom_fn iam_saml_providers_described, 2026-10-29. PrivateKeyList names key ids and timestamps only, never key material. SAMLMetadataDocument, the identity provider's own configuration, is removed by the reader and never stored.",
+        "locations": [
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "GetSAMLProvider returns tags inline. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ProviderArn",
+      "fields": {
+        "name": "_name",
+        "provider_arn": "ProviderArn",
+        "valid_until": "_valid_until",
+        "created_at": "_created_at"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "list_kv",
+        "why": "GetSAMLProvider returns the provider's tags inline; no extra call."
+      },
+      "edges": []
+    },
+    {
+      "entity_type": "aws_core__aws_iam_server_certificate",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_server_certificates_listed"
+      },
+      "why": "Enumerate certificates uploaded to IAM — legacy load balancer and CloudFront certificates that nothing renews, so the ones that expire unnoticed. ListServerCertificates is the account's complete inventory of them (walk checked, count compared with GetAccountSummary) with the expiry date of each.",
+      "containment": {
+        "parent": "account",
+        "relation": "account.iam_server_certificates",
+        "edge_type": "OWNS_SERVER_CERTIFICATE__aws_core",
+        "why": "An IAM server certificate exists in exactly one account and is never shared; ListServerCertificates returns every server certificate of the account, and read to its end is the complete list of them. A server certificate it stops naming is a question for the server certificate's falsifier (GetServerCertificate), not a deletion."
+      },
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListServerCertificates and ListServerCertificateTags output shapes and custom_fn iam_server_certificates_listed, 2026-10-29. Only the metadata list is requested: GetServerCertificate, which returns the certificate body and chain, is never called, and the private key is never retrievable from IAM.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "IAM returns the tag set in this slot. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "ServerCertificateName",
+        "certificate_arn": "Arn",
+        "path": "Path",
+        "certificate_id": "ServerCertificateId",
+        "expiration": "_expiration",
+        "upload_date": "_upload_date"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListServerCertificateTags",
+        "params": {
+          "ServerCertificateName": {
+            "from": "ServerCertificateName"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — RGTA excludes IAM resources; per-service side-quest."
+      },
+      "edges": []
+    },
+    {
+      "entity_type": "aws_core__aws_iam_virtual_mfa_device",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_virtual_mfa_devices_listed"
+      },
+      "why": "Enumerate virtual MFA devices — which users have a second factor and which devices were created and never enabled. ListVirtualMFADevices lists assigned and unassigned devices; the device's seed and QR code are removed by the reader.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: ListVirtualMFADevices declares Base32StringSeed and QRCodePNG, the secret that enrols the device and the image that encodes it, and botocore marks both sensitive. The reader removes them, but the envelope also carries the whole User record, so nothing is stored; the typed fields, tags and the user edge are derived from the in-memory item and are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListVirtualMFADevices and ListMFADeviceTags output shapes and custom_fn iam_virtual_mfa_devices_listed, 2026-10-29. AWS returns the seed and QR code only when a device is created, so a list response is not expected to carry them; they are declared because the shape does.",
+        "locations": [
+          {
+            "path": "VirtualMFADevices[].Base32StringSeed",
+            "category": "credential",
+            "reason": "The base32 seed that enrols a virtual MFA device: anyone holding it can generate the device's codes.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "VirtualMFADevices[].QRCodePNG",
+            "category": "credential",
+            "reason": "A PNG QR code that encodes the device's seed.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "User.UserName",
+            "category": "personal_data",
+            "reason": "The name of the user a device is enabled for is often a person's username or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "SerialNumber",
+            "category": "personal_data",
+            "reason": "A virtual MFA device serial is an ARN that embeds the device name, which is often a user name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "IAM returns the tag set in this slot. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "SerialNumber",
+      "fields": {
+        "name": "_name",
+        "serial_number": "SerialNumber",
+        "user_arn": "_user_arn",
+        "enable_date": "_enable_date"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListMFADeviceTags",
+        "params": {
+          "SerialNumber": {
+            "from": "SerialNumber"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — RGTA excludes IAM resources; per-service side-quest."
+      },
+      "edges": [
+        {
+          "value_path": "_user_arn",
+          "target_type": "aws_core__aws_iam_user",
+          "key_kind": "arn",
+          "edge_type": "AUTHENTICATES_USER__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }

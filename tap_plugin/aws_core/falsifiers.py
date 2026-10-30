@@ -1765,6 +1765,154 @@ class IamOidcProviderFalsifier(_AwsFalsifier):
         return verdict_from_probe(candidate, expected, probe)
 
 
+class _IamAccountListedFalsifier(_IamFalsifier):
+    """Shared shape for the IAM types an account's own listing contains and a ``Get`` call can judge:
+    a group, an instance profile, a SAML provider and a server certificate.
+
+    The ARN is the identity, and the grid's stored ``name`` is bound to the resource name inside it
+    before any call is made (the ``IamUserFalsifier`` discipline): ``GetGroup`` and its kin take only a
+    bare name, never the ARN, so nothing else guarantees the two independently stored fields still agree.
+    A SAML provider is looked up by its ARN, so it needs no such binding. The client is addressed through
+    the ARN's own partition, never a hardcoded region, so a GovCloud row reaches the GovCloud endpoint.
+
+    Subclasses name the row field that holds the ARN (``arn_field``), say whether the call takes the name
+    (``by_name``), make the call (``_call``) and read the answer (``_probe_of``).
+    """
+
+    arn_field: str = ""
+    by_name: bool = True
+    noun: str = "IAM entity"
+
+    def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        name = str(getattr(row, "name", "") or "")
+        arn = str(getattr(row, self.arn_field, "") or "")
+        if not arn or (self.by_name and not name):
+            return _undetermined(candidate, "scope_unknown", f"the grid holds no name or ARN for this {self.noun}")
+        expected_account = _dimensions_of(row).get("aws_account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        if self.by_name and _arn_resource_name(arn) != name:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored name ({name!r}) does not match the resource name in its own ARN ({arn!r}); "
+                "querying by name would ask about a different object than the one this ARN claims to be",
+            )
+        expected = Expected(source_id=arn, owner=None, name=name or None)
+        client = session.client("iam", region_name=iam_endpoint_region(arn))
+        return self._probe_call(candidate, expected, lambda: self._call(client, name, arn))
+
+
+class IamGroupFalsifier(_IamAccountListedFalsifier):
+    """``iam:GetGroup(GroupName=name, MaxItems=1)``; ``NoSuchEntity`` -> gone. ``MaxItems=1`` keeps the
+    answer to the group itself: its member list is never read.
+
+    Can answer ``REIDENTIFIED`` for a delete+recreate under a DIFFERENT path, same name: ``GetGroup``
+    looks up by ``GroupName`` alone, and group names are unique per account across every path.
+    """
+
+    arn_field = "group_arn"
+    noun = "IAM group"
+
+    def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
+        return client.get_group(GroupName=name, MaxItems=1)  # type: ignore[no-any-return]
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        group = result.get("Group") or {}
+        return Probe(
+            status="found",
+            source_id=str(group.get("Arn") or "") or None,
+            name=str(group.get("GroupName") or "") or None,
+            created_at=_created_at(group),
+            detail="get_group 200",
+        )
+
+
+class IamInstanceProfileFalsifier(_IamAccountListedFalsifier):
+    """``iam:GetInstanceProfile(InstanceProfileName=name)``; ``NoSuchEntity`` -> gone.
+
+    Can answer ``REIDENTIFIED`` for a delete+recreate under a DIFFERENT path, same name, for the reason
+    ``IamGroupFalsifier`` gives.
+    """
+
+    arn_field = "instance_profile_arn"
+    noun = "IAM instance profile"
+
+    def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
+        return client.get_instance_profile(InstanceProfileName=name)  # type: ignore[no-any-return]
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        profile = result.get("InstanceProfile") or {}
+        return Probe(
+            status="found",
+            source_id=str(profile.get("Arn") or "") or None,
+            name=str(profile.get("InstanceProfileName") or "") or None,
+            created_at=_created_at(profile),
+            detail="get_instance_profile 200",
+        )
+
+
+class IamSamlProviderFalsifier(_IamAccountListedFalsifier):
+    """``iam:GetSAMLProvider(SAMLProviderArn=arn)``; ``NoSuchEntity`` -> gone.
+
+    Looked up BY the full ARN, so a "found" response is definitionally about the requested object and the
+    probe can never answer ``REIDENTIFIED`` (the reasoning ``IamOidcProviderFalsifier`` gives). The
+    response carries the provider's metadata document, which is read by boto3 and dropped here: only the
+    dates are used.
+    """
+
+    arn_field = "provider_arn"
+    by_name = False
+    noun = "IAM SAML provider"
+
+    def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
+        # The response does not echo the ARN; the request was made by it, so it is the answer's identity.
+        return {**client.get_saml_provider(SAMLProviderArn=arn), "Arn": arn}
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        arn = str(result.get("Arn") or "")
+        return Probe(
+            status="found",
+            source_id=arn or None,
+            name=arn.rsplit("/", 1)[-1] or None,
+            created_at=_created_at(result),
+            detail="get_saml_provider 200",
+        )
+
+
+class IamServerCertificateFalsifier(_IamAccountListedFalsifier):
+    """``iam:GetServerCertificate(ServerCertificateName=name)``; ``NoSuchEntity`` -> gone.
+
+    The response carries the certificate body and chain; the probe reads only the metadata block (ARN,
+    name, upload date) and nothing of the body is kept. Can answer ``REIDENTIFIED`` for a delete+recreate
+    under a DIFFERENT path, same name, for the reason ``IamGroupFalsifier`` gives.
+    """
+
+    arn_field = "certificate_arn"
+    noun = "IAM server certificate"
+
+    def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
+        return client.get_server_certificate(ServerCertificateName=name)  # type: ignore[no-any-return]
+
+    def _probe_of(self, result: dict[str, Any]) -> Probe:
+        meta = (result.get("ServerCertificate") or {}).get("ServerCertificateMetadata") or {}
+        uploaded = meta.get("UploadDate")
+        return Probe(
+            status="found",
+            source_id=str(meta.get("Arn") or "") or None,
+            name=str(meta.get("ServerCertificateName") or "") or None,
+            created_at=uploaded if isinstance(uploaded, datetime) else None,
+            detail="get_server_certificate 200",
+        )
+
+
 # ---------------------------------------------------------------------------
 # Landing zone (aws-core-tap#66, spec-aws-core-landing-zone.md): Control Tower, Identity Center and
 # the per-region security services. Registered, not armed: reconcile authority stays off, so none of
@@ -2482,9 +2630,13 @@ __all__ = [
     "PermissionSetFalsifier",
     "SecurityHubHubFalsifier",
     "Ec2InstanceFalsifier",
+    "IamGroupFalsifier",
+    "IamInstanceProfileFalsifier",
     "IamOidcProviderFalsifier",
     "IamPolicyFalsifier",
     "IamRoleFalsifier",
+    "IamSamlProviderFalsifier",
+    "IamServerCertificateFalsifier",
     "IamUserFalsifier",
     "OrganizationalUnitFalsifier",
     "S3BucketFalsifier",

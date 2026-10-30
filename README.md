@@ -100,6 +100,11 @@ collector will not populate it.
 | Lambda | functions | ASSUMES_ROLE, WRITES_LOGS |
 | IAM | roles | FEDERATES_INTO_ROLE |
 | IAM | OIDC providers | — |
+| IAM | groups | ATTACHES_POLICY |
+| IAM | instance profiles | CONTAINS_ROLE |
+| IAM | SAML providers | — |
+| IAM | server certificates | — |
+| IAM | virtual MFA devices (nothing of the seed or QR code is read or stored) | AUTHENTICATES_USER |
 | EventBridge | rules (with targets) | ASSUMES_ROLE, INVOKES_LAMBDA |
 | CloudWatch Logs | log groups | ENCRYPTED_WITH_KEY |
 | ACM | certificates | — |

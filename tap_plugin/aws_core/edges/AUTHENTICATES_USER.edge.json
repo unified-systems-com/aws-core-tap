@@ -1,0 +1,17 @@
+{
+  "slug": "AUTHENTICATES_USER__aws_core",
+  "name": "Authenticates User",
+  "description": "A virtual MFA device is enabled for an IAM user (device -> user): the user's second factor, as ListVirtualMFADevices reports it in the device's User. A device nobody has enabled has no such edge. A reference, not containment; emitted whether or not the user was collected: it resolves by deterministic identity (the user ARN) when it is.",
+  "sources": [
+    "aws_core__aws_iam_virtual_mfa_device"
+  ],
+  "targets": [
+    "aws_core__aws_iam_user"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

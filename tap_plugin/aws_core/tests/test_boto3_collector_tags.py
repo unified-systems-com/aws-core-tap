@@ -77,6 +77,9 @@ class TestManifestTagsBlock:
             "aws_core__aws_cloudfront_distribution",
             "aws_core__aws_route53_zone",
             "aws_core__aws_iam_oidc_provider",
+            "aws_core__aws_iam_instance_profile",
+            "aws_core__aws_iam_server_certificate",
+            "aws_core__aws_iam_virtual_mfa_device",
         }
         # The field lane (v0.4.1): the enumeration itself carried the tags —
         # inline response fields or custom-fn-hydrated `_` slots. Zero extra
@@ -89,6 +92,7 @@ class TestManifestTagsBlock:
             "aws_core__aws_sqs_queue",
             "aws_core__aws_cloudtrail_trail",
             "aws_core__aws_secrets_manager_secret",
+            "aws_core__aws_iam_saml_provider",
         }
         for t in rgta:
             assert tags_block(by_type[t])["source"] == "rgta"

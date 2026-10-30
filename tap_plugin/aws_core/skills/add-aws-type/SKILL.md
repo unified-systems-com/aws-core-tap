@@ -132,7 +132,7 @@ pick the right lane per AWS's tagging surface for the service):**
 | projected field | A `custom_fn` already fetched tags while assembling the item | `"tags": "<path>"` inside `fields` (e.g. `"_tags"` for sqs, `"UserPoolTags"` for cognito) |
 
 All three converge on ONE canonical `tags` field: a flat `{str: str}` map,
-`{}` when untagged (a normal fact, never an omission). New wire shapes (WAFv2 wrapped; ECS lowercase kv is `list_kv_lower`)
+`{}` when untagged (a normal fact), and omitted when the read did not answer (the stored value is kept). New wire shapes (WAFv2 wrapped; ECS lowercase kv is `list_kv_lower`)
 extend the `normalize_tags` enum — never a
 per-service loop.
 
@@ -145,16 +145,16 @@ subclass, `ENTITY_TYPE = "aws_core__aws_<type>"` (== `db_table`), `ENTITY_NAME`,
 `get_name`, `__str__`.
 
 **THE TRAP (v0.4.0, named):** the collector emits `tags` on EVERY node
-unconditionally — `batch.node_envelope` writes `"tags": tags or {}`, contract
-"never omitted". A model without a `tags` field is therefore rejected wholesale
+unless the tag read did not answer — `batch.node_envelope` writes `"tags": tags or {}`
+for a read and omits the key for an unread set (`UNREAD`). A model without a `tags` field is therefore rejected wholesale
 at GRIFT import: core validates the payload against the model's create schema
 with `additionalProperties: false`, so the undeclared `tags` key fails the whole
 batch. `SecretsManagerSecret` shipped exactly this way in v0.4.0 and broke
 collection for any account with ≥1 secret. **Every collected model MUST declare:**
 
-- field: `tags = models.JSONField(default=dict, blank=True)`
-- `FIELD_CRUD_SCHEMA`: `"tags": {"type": "object"}`
-- `FIELD_VALIDATION_SCHEMA`: `"tags": {"validation": "jsonschema", "schema": {"type": "object"}}`
+- field: `tags = models.JSONField(null=True, blank=True, default=None)` (`null` = not read, `{}` = read and untagged)
+- `FIELD_CRUD_SCHEMA`: `"tags": {"type": ["object", "null"]}`
+- `FIELD_VALIDATION_SCHEMA`: `"tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}}`
 - membership in `tests/test_aws_core_tags_field.py::_COLLECTED_MODELS` (the
   always-on guard for exactly this).
 

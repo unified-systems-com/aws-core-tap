@@ -1010,6 +1010,18 @@
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagPolicy, UntagPolicy and ListPolicyTags, so a customer managed policy has tags; the manifest collects them with ListPolicyTags"
     },
+    "AWS::IAM::InstanceProfile": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 service model iam defines TagInstanceProfile, UntagInstanceProfile and ListInstanceProfileTags, so an instance profile has tags; the CloudFormation schema is silent"
+    },
+    "AWS::IAM::SAMLProvider": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 service model iam defines TagSAMLProvider, UntagSAMLProvider and ListSAMLProviderTags, and GetSAMLProvider returns Tags, so a SAML provider has tags; the manifest reads them from GetSAMLProvider"
+    },
+    "AWS::IAM::ServerCertificate": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 service model iam defines TagServerCertificate, UntagServerCertificate and ListServerCertificateTags, so a server certificate has tags; the manifest collects them with ListServerCertificateTags"
+    },
     "AWS::IAM::VirtualMFADevice": {
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
