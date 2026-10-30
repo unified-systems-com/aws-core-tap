@@ -33,6 +33,7 @@ class EksCluster(BaseModel):
         "kubernetes_version": {"type": "string"},
         "endpoint": {"type": "string"},
         "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -42,6 +43,7 @@ class EksCluster(BaseModel):
         "kubernetes_version": {"validation": "jsonschema", "schema": {"type": "string"}},
         "endpoint": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -51,6 +53,7 @@ class EksCluster(BaseModel):
     kubernetes_version = models.CharField(max_length=32, blank=True, default="")
     endpoint = models.CharField(max_length=512, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_eks_cluster"

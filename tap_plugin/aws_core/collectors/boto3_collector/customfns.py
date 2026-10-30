@@ -41,7 +41,7 @@ from .partition import (
     partition_of_region,
     service_unavailable_reason,
 )
-from .source import CustomFnRegistry, iter_listing
+from .source import CustomFnRegistry, SourceError, iter_listing
 
 
 def _hydrate_ops(entity_type: str) -> list[dict[str, str]]:
@@ -1080,6 +1080,91 @@ def elbv2_target_groups_described(session: Any, *, client_for: Any) -> Iterator[
         yield {**group, "_tags": tags.get(arn, {}), "_tags_unread": arn not in tags}
 
 
+def _undescribed(kind: str, names: list[str]) -> SourceError:
+    """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
+    be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
+    description that failed is a loud gap in the run and never a quietly smaller inventory."""
+    return SourceError(f"{len(names)} {kind} could not be described and are missing from this run: {', '.join(names)}")
+
+
+def eks_clusters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EKS clusters (regional): ``ListClusters`` names them and ``DescribeCluster`` describes each.
+
+    ``DescribeCluster`` carries the tags (a plain map) and the VPC configuration, including whether the API
+    endpoint is public. A cluster that is listed but cannot be described has no ARN to key it by, so it is
+    left out of the batch, and the reader raises once it has yielded the rest (:func:`_undescribed`).
+    """
+    client = client_for("eks")
+    failed: list[str] = []
+    for page in _pages(client, "list_clusters"):
+        for name in page.get("clusters", []):
+            try:
+                cluster = without_response_metadata(client.describe_cluster(name=name)).get("cluster")
+            except BotoCoreError, ClientError:
+                failed.append(name)
+                continue
+            if isinstance(cluster, dict) and cluster.get("arn"):
+                # The description answered, so the subnet list in it is the whole list.
+                yield with_edge_reads(cluster, {"resourcesVpcConfig": COMPLETE})
+            else:
+                failed.append(name)
+    if failed:
+        raise _undescribed("EKS clusters", failed)
+
+
+def elasticsearch_domains_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Elasticsearch Service domains (regional): ``ListDomainNames`` names them and
+    ``DescribeElasticsearchDomain`` returns each ``DomainStatus``.
+
+    A domain that is listed but cannot be described is left out of the batch (it has no ARN to key it by).
+    The domain's tags are read by the Resource Groups Tagging API sweep.
+    """
+    client = client_for("es")
+    names = [d["DomainName"] for d in without_response_metadata(client.list_domain_names()).get("DomainNames", [])]
+    failed: list[str] = []
+    for name in names:
+        try:
+            status = without_response_metadata(client.describe_elasticsearch_domain(DomainName=name)).get("DomainStatus")
+        except BotoCoreError, ClientError:
+            failed.append(name)
+            continue
+        if isinstance(status, dict) and status.get("ARN"):
+            yield with_edge_reads(status, {"VPCOptions": COMPLETE})
+        else:
+            failed.append(name)
+    if failed:
+        raise _undescribed("Elasticsearch domains", failed)
+
+
+def network_firewalls_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Network Firewall firewalls (regional): ``ListFirewalls`` names them and ``DescribeFirewall``
+    describes each. The firewall's tags ride inline in the description; its status is
+    ``FirewallStatus.Status`` (``_status``). A firewall that is listed but cannot be described is left out.
+    """
+    client = client_for("network-firewall")
+    failed: list[str] = []
+    for page in _pages(client, "list_firewalls"):
+        for entry in page.get("Firewalls", []):
+            arn = entry.get("FirewallArn")
+            if not arn:
+                continue
+            try:
+                described = without_response_metadata(client.describe_firewall(FirewallArn=arn))
+            except BotoCoreError, ClientError:
+                failed.append(arn)
+                continue
+            firewall = described.get("Firewall")
+            if isinstance(firewall, dict) and firewall.get("FirewallArn"):
+                yield with_edge_reads(
+                    {**firewall, "_status": (described.get("FirewallStatus") or {}).get("Status")},
+                    {"SubnetMappings": COMPLETE},
+                )
+            else:
+                failed.append(arn)
+    if failed:
+        raise _undescribed("Network Firewall firewalls", failed)
+
+
 # An API Gateway v2 Lambda-proxy IntegrationUri embeds the function's invoke
 # path: .../functions/<function-arn>/invocations. Capture the embedded ARN.
 _LAMBDA_INTEGRATION_URI_RE = re.compile(rf"/functions/(arn:{PARTITION_RE}:lambda:[^/]+)/invocations$")
@@ -1419,6 +1504,9 @@ _CUSTOM_FNS = {
     "dynamodb_tables_described": dynamodb_tables_described,
     "eventbridge_rules_with_targets": eventbridge_rules_with_targets,
     "iam_oidc_providers_described": iam_oidc_providers_described,
+    "eks_clusters_described": eks_clusters_described,
+    "elasticsearch_domains_described": elasticsearch_domains_described,
+    "network_firewalls_described": network_firewalls_described,
     "elbv2_albs_described": elbv2_albs_described,
     "elb_family_described": elb_family_described,
     "elbv2_target_groups_described": elbv2_target_groups_described,
