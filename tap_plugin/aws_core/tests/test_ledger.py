@@ -597,6 +597,10 @@ def test_the_committed_ledger_agrees_with_the_manifest() -> None:
     entries = json.loads(cli.MANIFEST_PATH.read_text())["entries"]
     # A custom reader's types have no manifest entry and are declared in tag_lanes.json instead.
     readers = json.loads(cli.TAG_LANES_PATH.read_text())["lanes"]
+    # The ledger counts a lane row as collection evidence only because each reader's own test asserts its lane
+    # types are a subset of what the reader emits (test_organizations_completeness, test_security_findings). A
+    # third reader must add that test before it may add lane rows.
+    assert {row["reader"] for row in readers} == {"organizations", "landing_zone"}
     collected = {e["entity_type"] for e in entries} | {row["entity_type"] for row in readers}
     in_ledger = {
         entity for r in _committed()["rows"] if r["state"].startswith("collected") for entity in r["entity_types"]
