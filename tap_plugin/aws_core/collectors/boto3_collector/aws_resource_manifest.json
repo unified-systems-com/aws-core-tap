@@ -2368,8 +2368,14 @@
       "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore elbv2 DescribeLoadBalancers, elb DescribeLoadBalancers and both DescribeTags output shapes and custom_fn elb_family_described, 2026-10-29; no sensitive-flagged member. A Classic listener names its certificate by ARN, never its body.",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers, elb DescribeLoadBalancers and both DescribeTags output shapes and custom_fn elb_family_described, 2026-10-29; no sensitive-flagged member. A Classic DescribeLoadBalancers item carries its listeners, so they are stored with the configuration: ports, protocols and the certificate's ARN, never its body or key.",
         "locations": [
+          {
+            "path": "ListenerDescriptions[].Listener.SSLCertificateId",
+            "category": "other",
+            "reason": "A Classic listener names its server certificate by ARN (an IAM or ACM certificate). A reference to a certificate, not the certificate or its key.",
+            "evidence": "reviewer_judgement"
+          },
           {
             "path": "_tags",
             "category": "customer_content",

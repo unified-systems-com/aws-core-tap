@@ -100,6 +100,19 @@ class TestApplicationLoadBalancers:
         assert items["lb21"]["_tags"] == {"k": "v"} and items["lb21"]["_tags_unread"] is False
         assert items["lb24"]["_tags"] == {} and items["lb24"]["_tags_unread"] is False
 
+    def test_a_successful_answer_that_leaves_an_id_out_reads_it_as_unread(self) -> None:
+        class _Partial(_Client):
+            def describe_tags(self, **kwargs: Any) -> Any:
+                answer = super().describe_tags(**kwargs)
+                answer["TagDescriptions"] = answer["TagDescriptions"][:1]
+                return answer
+
+        lbs = [_lb("app", "a"), _lb("app", "b")]
+        v2 = _Partial({"lbs": {"LoadBalancers": lbs}}, tags={_arn("app", "a"): {"k": "v"}})
+        items = {i["LoadBalancerName"]: i for i in _run(elbv2_albs_described, elbv2=v2)}
+        assert (items["a"]["_tags"], items["a"]["_tags_unread"]) == ({"k": "v"}, False)
+        assert (items["b"]["_tags"], items["b"]["_tags_unread"]) == ({}, True)
+
     def test_no_load_balancers_makes_no_tag_call(self) -> None:
         v2 = _v2()
         assert _run(elbv2_albs_described, elbv2=v2) == []

@@ -991,8 +991,9 @@ def _elb_tags(client: Any, id_param: str, id_key: str, ids: list[str]) -> dict[s
 
     ``id_param``/``id_key`` are the request parameter and the response key that carry the id
     (``ResourceArns``/``ResourceArn`` for ELBv2, ``LoadBalancerNames``/``LoadBalancerName`` for Classic).
-    An id whose batch did not answer is left out of the result: absent is 'not read', and ``{}`` is 'read,
-    untagged'. A call that answers without naming an id it was asked about reads that id as untagged.
+    An id is in the result only when an answer named it: absent is 'not read', and ``{}`` is 'read, untagged'.
+    A batch that failed, and an id a successful answer left out (a load balancer deleted mid-run), are both
+    'not read', so neither clears the stored tags.
     """
     tags: dict[str, dict[str, str]] = {}
     for start in range(0, len(ids), _ELB_TAG_BATCH):
@@ -1001,10 +1002,9 @@ def _elb_tags(client: Any, id_param: str, id_key: str, ids: list[str]) -> dict[s
             answer = without_response_metadata(client.describe_tags(**{id_param: batch}))
         except BotoCoreError, ClientError:
             continue
-        tags.update({i: {} for i in batch})
         for description in answer.get("TagDescriptions", []):
             ident = description.get(id_key)
-            if ident in tags:
+            if ident in batch:
                 tags[ident] = {t["Key"]: t.get("Value") or "" for t in description.get("Tags", []) if "Key" in t}
     return tags
 
