@@ -13,7 +13,7 @@ class ApsWorkspace(BaseModel):
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_aps_workspace"
     ENTITY_NAME: ClassVar[str] = "AWS APS Workspace"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS APS Workspace."
-    ENTITY_ICON: ClassVar[str] = "aws-amp"
+    ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("workspace_arn",)

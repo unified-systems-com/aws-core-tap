@@ -13,7 +13,7 @@ class BatchJobQueue(BaseModel):
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_batch_job_queue"
     ENTITY_NAME: ClassVar[str] = "AWS Batch Job Queue"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Batch Job Queue."
-    ENTITY_ICON: ClassVar[str] = "aws-batch"
+    ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (jobQueueArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("job_queue_arn",)

@@ -13,7 +13,7 @@ class BatchConsumableResource(BaseModel):
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_batch_consumable_resource"
     ENTITY_NAME: ClassVar[str] = "AWS Batch Consumable Resource"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Batch Consumable Resource."
-    ENTITY_ICON: ClassVar[str] = "aws-batch"
+    ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (consumableResourceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("consumable_resource_arn",)
