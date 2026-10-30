@@ -671,6 +671,16 @@
         "AWS::ApiGatewayV2::VpcLink"
       ]
     },
+    "aws_core__aws_aps_scraper": {
+      "cfn": [
+        "AWS::APS::Scraper"
+      ]
+    },
+    "aws_core__aws_aps_workspace": {
+      "cfn": [
+        "AWS::APS::Workspace"
+      ]
+    },
     "aws_core__aws_az": {
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; availability zones are not a CloudFormation resource."
@@ -693,6 +703,31 @@
     "aws_core__aws_backup_vault": {
       "cfn": [
         "AWS::Backup::BackupVault"
+      ]
+    },
+    "aws_core__aws_batch_compute_environment": {
+      "cfn": [
+        "AWS::Batch::ComputeEnvironment"
+      ]
+    },
+    "aws_core__aws_batch_consumable_resource": {
+      "cfn": [
+        "AWS::Batch::ConsumableResource"
+      ]
+    },
+    "aws_core__aws_batch_job_queue": {
+      "cfn": [
+        "AWS::Batch::JobQueue"
+      ]
+    },
+    "aws_core__aws_batch_scheduling_policy": {
+      "cfn": [
+        "AWS::Batch::SchedulingPolicy"
+      ]
+    },
+    "aws_core__aws_batch_service_environment": {
+      "cfn": [
+        "AWS::Batch::ServiceEnvironment"
       ]
     },
     "aws_core__aws_bedrock_model": {

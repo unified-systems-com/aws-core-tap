@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="80px" height="80px" viewBox="0 0 80 80" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Generic AWS resource</title>
+    <rect x="0" y="0" width="80" height="80" fill="#232F3E"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round">
+        <path d="M40 18 L60 29 L60 51 L40 62 L20 51 L20 29 Z"/>
+        <path d="M20 29 L40 40 L60 29"/>
+        <path d="M40 40 L40 62"/>
+    </g>
+</svg>
