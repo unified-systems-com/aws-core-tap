@@ -67,8 +67,49 @@ _CB_CANARY = "canary-codebuild-env-token-51ce"
 _CB_ARN = f"arn:aws:codebuild:us-east-1:{_ACCOUNT}:project/slice-build"
 _CP_CANARY = "canary-codepipeline-action-secret-8d24"
 _CP_ARN = f"arn:aws:codepipeline:us-east-1:{_ACCOUNT}:slice-pipe"
+# Planted as a byte-match search string (a shared-secret header value) in a web ACL and a rule group.
+_WAF_CANARY = "canary-waf-origin-verify-2f77"
+_WAF_ACL_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/webacl/slice-acl/acl-1"
+_WAF_GROUP_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/rulegroup/slice-group/grp-1"
+_WAF_REGEX_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/regexpatternset/slice-regex/rx-1"
 
 _CANNED = {
+    "list_web_acls": {"WebACLs": [{"Name": "slice-acl", "Id": "acl-1", "ARN": _WAF_ACL_ARN}]},
+    "get_web_acl": {
+        "WebACL": {
+            "Name": "slice-acl",
+            "Id": "acl-1",
+            "ARN": _WAF_ACL_ARN,
+            "DefaultAction": {"Block": {}},
+            "Capacity": 10,
+            "Rules": [
+                {
+                    "Name": "origin-verify",
+                    "Priority": 0,
+                    "Statement": {"ByteMatchStatement": {"SearchString": _WAF_CANARY, "PositionalConstraint": "EXACTLY"}},
+                }
+            ],
+        }
+    },
+    "list_regex_pattern_sets": {"RegexPatternSets": [{"Name": "slice-regex", "Id": "rx-1", "ARN": _WAF_REGEX_ARN}]},
+    "get_regex_pattern_set": {
+        "RegexPatternSet": {
+            "Name": "slice-regex",
+            "Id": "rx-1",
+            "ARN": _WAF_REGEX_ARN,
+            "RegularExpressionList": [{"RegexString": _WAF_CANARY}, {"RegexString": "other"}],
+        }
+    },
+    "list_rule_groups": {"RuleGroups": [{"Name": "slice-group", "Id": "grp-1", "ARN": _WAF_GROUP_ARN}]},
+    "get_rule_group": {
+        "RuleGroup": {
+            "Name": "slice-group",
+            "Id": "grp-1",
+            "ARN": _WAF_GROUP_ARN,
+            "Capacity": 20,
+            "Rules": [{"Name": "origin-verify", "Statement": {"ByteMatchStatement": {"SearchString": _WAF_CANARY}}}],
+        }
+    },
     "list_projects": {"projects": ["slice-build"]},
     "batch_get_projects": {
         "projects": [
@@ -683,6 +724,9 @@ _OFF_CASES = [
     ("aws_core__aws_dx_virtual_interface", _DX_VIF, _DX_CANARY, "vlan", 101),
     ("aws_core__aws_codebuild_project", _CB_ARN, _CB_CANARY, "compute_type", "BUILD_GENERAL1_SMALL"),
     ("aws_core__aws_codepipeline_pipeline", _CP_ARN, _CP_CANARY, "execution_mode", "QUEUED"),
+    ("aws_core__aws_wafv2_web_acl", _WAF_ACL_ARN, _WAF_CANARY, "default_action", "BLOCK"),
+    ("aws_core__aws_wafv2_rule_group", _WAF_GROUP_ARN, _WAF_CANARY, "capacity", 20),
+    ("aws_core__aws_wafv2_regex_pattern_set", _WAF_REGEX_ARN, _WAF_CANARY, "pattern_count", 2),
 ]
 _OFF_IDS = [f"{case[0]}-{case[2]}" for case in _OFF_CASES]
 

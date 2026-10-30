@@ -859,9 +859,34 @@
         "AWS::GuardDuty::Detector"
       ]
     },
+    "aws_core__aws_guardduty_filter": {
+      "cfn": [
+        "AWS::GuardDuty::Filter"
+      ]
+    },
     "aws_core__aws_guardduty_finding": {
       "cfn": [],
       "reason": "A finding GuardDuty reports; no CloudFormation resource type."
+    },
+    "aws_core__aws_guardduty_ip_set": {
+      "cfn": [
+        "AWS::GuardDuty::IPSet"
+      ]
+    },
+    "aws_core__aws_guardduty_member": {
+      "cfn": [
+        "AWS::GuardDuty::Member"
+      ]
+    },
+    "aws_core__aws_guardduty_publishing_destination": {
+      "cfn": [
+        "AWS::GuardDuty::PublishingDestination"
+      ]
+    },
+    "aws_core__aws_guardduty_threat_intel_set": {
+      "cfn": [
+        "AWS::GuardDuty::ThreatIntelSet"
+      ]
     },
     "aws_core__aws_iam_group": {
       "cfn": [
@@ -1042,6 +1067,11 @@
         "AWS::EC2::RouteTable"
       ]
     },
+    "aws_core__aws_s3_access_point": {
+      "cfn": [
+        "AWS::S3::AccessPoint"
+      ]
+    },
     "aws_core__aws_s3_bucket": {
       "cfn": [
         "AWS::S3::Bucket"
@@ -1138,6 +1168,26 @@
     "aws_core__aws_vpc_endpoint_service": {
       "cfn": [
         "AWS::EC2::VPCEndpointService"
+      ]
+    },
+    "aws_core__aws_wafv2_ip_set": {
+      "cfn": [
+        "AWS::WAFv2::IPSet"
+      ]
+    },
+    "aws_core__aws_wafv2_regex_pattern_set": {
+      "cfn": [
+        "AWS::WAFv2::RegexPatternSet"
+      ]
+    },
+    "aws_core__aws_wafv2_rule_group": {
+      "cfn": [
+        "AWS::WAFv2::RuleGroup"
+      ]
+    },
+    "aws_core__aws_wafv2_web_acl": {
+      "cfn": [
+        "AWS::WAFv2::WebACL"
       ]
     }
   },

@@ -1491,17 +1491,18 @@ def access_analyzer_archive_rules_described(session: Any, *, client_for: Any) ->
 _CONTINUATION = "NextToken"
 
 
-def _token_pages(client: Any, method: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
-    """Pages of a list call that has a continuation key but no botocore paginator (EventBridge's list
-    calls): call, then call again with what the answer returned under that key, until it returns none."""
+def _token_pages(client: Any, method: str, continue_on: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
+    """Pages of a list call that has a continuation key (``continue_on``) but no botocore paginator
+    (EventBridge's and WAFv2's list calls): call, then call again with what the answer returned under that
+    key, until it returns none."""
     if client.can_paginate(method):
         yield from _pages(client, method, **kwargs)
         return
     after: str | None = None
     while True:
-        page = without_response_metadata(getattr(client, method)(**kwargs, **({_CONTINUATION: after} if after else {})))
+        page = without_response_metadata(getattr(client, method)(**kwargs, **({continue_on: after} if after else {})))
         yield page
-        after = page.get(_CONTINUATION)
+        after = page.get(continue_on)
         if not after:
             return
 
@@ -1565,7 +1566,7 @@ def sns_subscriptions_listed(session: Any, *, client_for: Any) -> Iterator[dict[
 
 def _eventbridge_items(client_for: Any, method: str, list_key: str) -> Iterator[dict[str, Any]]:
     client = client_for("events")
-    for page in _token_pages(client, method):
+    for page in _token_pages(client, method, _CONTINUATION):
         yield from page.get(list_key, [])
 
 
@@ -1669,6 +1670,215 @@ def lambda_event_source_mappings_described(session: Any, *, client_for: Any) -> 
                 arn = f"{':'.join(function.split(':')[:5])}:event-source-mapping:{uuid_}"
             if arn:
                 yield {**mapping, "_arn": arn}
+
+
+def _account_id(client_for: Any) -> str:
+    """The calling account's id (``sts:GetCallerIdentity``), for ARNs and keys the service does not return."""
+    return str(without_response_metadata(client_for("sts").get_caller_identity()).get("Account") or "")
+
+
+def _guardduty_detector_ids(client: Any) -> list[str]:
+    return [str(d) for page in _pages(client, "list_detectors") for d in page.get("DetectorIds", []) if d]
+
+
+def _guardduty_children(
+    client_for: Any, list_method: str, list_key: str, get_method: str, id_param: str, kind: str, *, ident: str
+) -> Iterator[dict[str, Any]]:
+    """The detector-scoped objects of each GuardDuty detector: the list call names them (by id or name), the
+    get call describes each, and every item carries ``_key`` (``<detector>/<kind>/<id>``) and
+    ``_detector_key`` (the detector node's key, ``<account>:<region>:<detector>``). Something listed but not
+    described is a gap (:func:`_undescribed`)."""
+    client = client_for("guardduty")
+    account, region = _account_id(client_for), _client_region(client)
+    failed: list[str] = []
+    for detector in _guardduty_detector_ids(client):
+        for page in _pages(client, list_method, DetectorId=detector):
+            for name in page.get(list_key, []):
+                try:
+                    described = without_response_metadata(getattr(client, get_method)(DetectorId=detector, **{id_param: name}))
+                except BotoCoreError, ClientError:
+                    failed.append(f"{detector}/{kind}/{name}")
+                    continue
+                yield with_edge_reads(
+                    {
+                        **described,
+                        "DetectorId": detector,
+                        ident: name,
+                        "_key": f"{detector}/{kind}/{name}",
+                        "_detector_key": f"{account}:{region}:{detector}",
+                    },
+                    {"_detector_key": COMPLETE},
+                )
+    if failed:
+        raise _undescribed(f"GuardDuty {kind}s", failed)
+
+
+def guardduty_filters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate GuardDuty filters (regional): suppression rules that archive matching findings."""
+    yield from _guardduty_children(client_for, "list_filters", "FilterNames", "get_filter", "FilterName", "filter", ident="FilterName")
+
+
+def guardduty_ip_sets_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate GuardDuty trusted IP lists (regional): addresses GuardDuty will not report on."""
+    yield from _guardduty_children(client_for, "list_ip_sets", "IpSetIds", "get_ip_set", "IpSetId", "ipset", ident="IpSetId")
+
+
+def guardduty_threat_intel_sets_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate GuardDuty threat intelligence sets (regional): addresses GuardDuty reports on."""
+    yield from _guardduty_children(client_for, "list_threat_intel_sets", "ThreatIntelSetIds", "get_threat_intel_set", "ThreatIntelSetId", "threatintelset", ident="ThreatIntelSetId")
+
+
+def guardduty_publishing_destinations_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate GuardDuty publishing destinations (regional): where findings are exported to (S3, with a key)."""
+    client = client_for("guardduty")
+    account, region = _account_id(client_for), _client_region(client)
+    failed: list[str] = []
+    for detector in _guardduty_detector_ids(client):
+        for page in _token_pages(client, "list_publishing_destinations", "NextToken", DetectorId=detector):
+            for entry in page.get("Destinations", []):
+                dest_id = entry.get("DestinationId")
+                if not dest_id:
+                    continue
+                try:
+                    described = without_response_metadata(client.describe_publishing_destination(DetectorId=detector, DestinationId=dest_id))
+                except BotoCoreError, ClientError:
+                    failed.append(f"{detector}/destination/{dest_id}")
+                    continue
+                yield with_edge_reads(
+                    {
+                        **described,
+                        "DetectorId": detector,
+                        "_key": f"{detector}/destination/{dest_id}",
+                        "_detector_key": f"{account}:{region}:{detector}",
+                    },
+                    {"_detector_key": COMPLETE, "DestinationProperties": COMPLETE},
+                )
+    if failed:
+        raise _undescribed("GuardDuty publishing destinations", failed)
+
+
+def guardduty_members_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the member accounts of each GuardDuty detector (regional). ``ListMembers`` returns the member's
+    email address, which botocore marks sensitive; the reader drops it."""
+    client = client_for("guardduty")
+    account, region = _account_id(client_for), _client_region(client)
+    for detector in _guardduty_detector_ids(client):
+        for page in _pages(client, "list_members", DetectorId=detector, OnlyAssociated="false"):
+            for member in page.get("Members", []):
+                member_account = member.get("AccountId")
+                if member_account:
+                    yield with_edge_reads(
+                        {
+                            **{k: v for k, v in member.items() if k != "Email"},
+                            "ParentDetectorId": detector,
+                            "_key": f"{detector}/member/{member_account}",
+                            "_detector_key": f"{account}:{region}:{detector}",
+                        },
+                        {"_detector_key": COMPLETE},
+                    )
+
+
+# WAFv2's list calls have a marker and no paginator, and a scope: REGIONAL in every region, CLOUDFRONT only
+# through the partition's home region (us-east-1) and only where CloudFront exists.
+def _wafv2_scopes(client: Any) -> list[str]:
+    region = _client_region(client)
+    partition = partition_of_region(region)
+    scopes = ["REGIONAL"]
+    if partition == PARTITION_AWS and region == home_region(partition):
+        scopes.append("CLOUDFRONT")
+    return scopes
+
+
+def _wafv2_objects(client_for: Any, list_method: str, list_key: str, get_method: str, get_key: str) -> Iterator[dict[str, Any]]:
+    """The WAFv2 objects of each scope: the list call names them, the get call describes each, and
+    ``ListTagsForResource`` reads its tags. The item is the description with ``Scope``, ``_arn`` and the tags
+    added. Something listed but not described is a gap (:func:`_undescribed`); a failed tag read leaves the
+    tags unread."""
+    client = client_for("wafv2")
+    failed: list[str] = []
+    for scope in _wafv2_scopes(client):
+        for page in _token_pages(client, list_method, "NextMarker", Scope=scope):
+            for entry in page.get(list_key, []):
+                name, ident, arn = entry.get("Name"), entry.get("Id"), entry.get("ARN")
+                if not (name and ident and arn):
+                    continue
+                try:
+                    described = without_response_metadata(getattr(client, get_method)(Name=name, Scope=scope, Id=ident))
+                except BotoCoreError, ClientError:
+                    failed.append(str(arn))
+                    continue
+                tags: dict[str, str] = {}
+                tags_unread = False
+                try:
+                    for tag_page in _token_pages(client, "list_tags_for_resource", "NextMarker", ResourceARN=arn):
+                        tag_list = (tag_page.get("TagInfoForResource") or {}).get("TagList", [])
+                        tags.update({t["Key"]: t.get("Value") or "" for t in tag_list if "Key" in t})
+                except BotoCoreError, ClientError:
+                    tags, tags_unread = {}, True
+                yield {**(described.get(get_key) or {}), "Scope": scope, "_arn": arn, "_tags": tags, "_tags_unread": tags_unread}
+    if failed:
+        raise _undescribed(f"WAFv2 {get_key} objects", failed)
+
+
+def wafv2_web_acls_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate WAFv2 web ACLs. ``_default_action`` is ``ALLOW`` or ``BLOCK`` and ``_rule_count`` the number
+    of rules (``None`` when the description names no rules list)."""
+    for acl in _wafv2_objects(client_for, "list_web_acls", "WebACLs", "get_web_acl", "WebACL"):
+        action = acl.get("DefaultAction") or {}
+        rules = acl.get("Rules")
+        yield {**acl, "_default_action": "ALLOW" if "Allow" in action else "BLOCK" if "Block" in action else None, "_rule_count": len(rules) if isinstance(rules, list) else None}
+
+
+def wafv2_rule_groups_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate WAFv2 rule groups."""
+    for group in _wafv2_objects(client_for, "list_rule_groups", "RuleGroups", "get_rule_group", "RuleGroup"):
+        rules = group.get("Rules")
+        yield {**group, "_rule_count": len(rules) if isinstance(rules, list) else None}
+
+
+def wafv2_ip_sets_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate WAFv2 IP sets. ``_address_count`` is how many addresses the set holds."""
+    for ip_set in _wafv2_objects(client_for, "list_ip_sets", "IPSets", "get_ip_set", "IPSet"):
+        addresses = ip_set.get("Addresses")
+        yield {**ip_set, "_address_count": len(addresses) if isinstance(addresses, list) else None}
+
+
+def wafv2_regex_pattern_sets_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate WAFv2 regex pattern sets. ``_pattern_count`` is how many patterns the set holds."""
+    for pattern_set in _wafv2_objects(client_for, "list_regex_pattern_sets", "RegexPatternSets", "get_regex_pattern_set", "RegexPatternSet"):
+        patterns = pattern_set.get("RegularExpressionList")
+        yield {**pattern_set, "_pattern_count": len(patterns) if isinstance(patterns, list) else None}
+
+
+def s3_access_points_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate S3 access points (regional): ``ListAccessPoints`` (S3 Control, by account id) and
+    ``GetAccessPointPolicyStatus`` for whether each is public. ``_account_id`` rides with the item for the tag
+    read, which S3 Control takes by account and ARN. A status that cannot be read leaves ``_is_public`` ``None``."""
+    client = client_for("s3control")
+    account = _account_id(client_for)
+    for page in _token_pages(client, "list_access_points", "NextToken", AccountId=account):
+        for access_point in page.get("AccessPointList", []):
+            name = access_point.get("Name")
+            if not name:
+                continue
+            is_public: bool | None = None
+            try:
+                status = without_response_metadata(client.get_access_point_policy_status(AccountId=account, Name=name))
+                public = (status.get("PolicyStatus") or {}).get("IsPublic")
+                is_public = public if isinstance(public, bool) else None
+            except BotoCoreError, ClientError:
+                is_public = None
+            bucket = access_point.get("Bucket")
+            yield with_edge_reads(
+                {
+                    **access_point,
+                    "_account_id": account,
+                    "_is_public": is_public,
+                    "_vpc_id": (access_point.get("VpcConfiguration") or {}).get("VpcId"),
+                    "_bucket_arn": build_arn(partition_of_region(_client_region(client)), "s3", "", "", bucket) if bucket else None,
+                },
+                {"_bucket_arn": COMPLETE},
+            )
 
 
 def _undescribed(kind: str, names: list[str]) -> SourceError:
@@ -2098,6 +2308,16 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "guardduty_filters_described": guardduty_filters_described,
+    "guardduty_ip_sets_described": guardduty_ip_sets_described,
+    "guardduty_threat_intel_sets_described": guardduty_threat_intel_sets_described,
+    "guardduty_publishing_destinations_described": guardduty_publishing_destinations_described,
+    "guardduty_members_described": guardduty_members_described,
+    "wafv2_web_acls_described": wafv2_web_acls_described,
+    "wafv2_rule_groups_described": wafv2_rule_groups_described,
+    "wafv2_ip_sets_described": wafv2_ip_sets_described,
+    "wafv2_regex_pattern_sets_described": wafv2_regex_pattern_sets_described,
+    "s3_access_points_described": s3_access_points_described,
     "sns_topics_described": sns_topics_described,
     "sns_subscriptions_listed": sns_subscriptions_listed,
     "eventbridge_event_buses_described": eventbridge_event_buses_described,
