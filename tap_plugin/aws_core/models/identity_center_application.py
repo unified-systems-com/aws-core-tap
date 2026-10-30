@@ -45,7 +45,7 @@ class IdentityCenterApplication(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    application_arn = models.CharField(max_length=512, blank=True, default="")
+    application_arn = models.CharField(max_length=2048, blank=True, default="")
     # The Identity Center instance the application is registered in. NULL = not observed.
     instance_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
     # The application provider (the SaaS or custom application type). NULL = not observed.

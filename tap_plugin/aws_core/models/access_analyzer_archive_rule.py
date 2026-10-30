@@ -47,9 +47,9 @@ class AccessAnalyzerArchiveRule(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    rule_arn = models.CharField(max_length=512, blank=True, default="")
+    rule_arn = models.CharField(max_length=2048, blank=True, default="")
     # The analyzer the rule belongs to.
-    analyzer_arn = models.CharField(max_length=512, blank=True, default="")
+    analyzer_arn = models.CharField(max_length=2048, blank=True, default="")
     # The rule's name.
     rule_name = models.CharField(max_length=512, blank=True, default="")
     # The criteria a finding must match to be archived (operator-authored; may name resources and accounts). NULL = not observed.

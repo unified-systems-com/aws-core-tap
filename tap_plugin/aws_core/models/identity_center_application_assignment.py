@@ -45,9 +45,9 @@ class IdentityCenterApplicationAssignment(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    assignment_key = models.CharField(max_length=512, blank=True, default="")
+    assignment_key = models.CharField(max_length=2048, blank=True, default="")
     # The application the principal is assigned to.
-    application_arn = models.CharField(max_length=512, blank=True, default="")
+    application_arn = models.CharField(max_length=2048, blank=True, default="")
     # USER or GROUP. NULL = not observed.
     principal_type = models.CharField(max_length=512, blank=True, null=True, default=None)
     # The user or group id in the identity store. NULL = not observed.
