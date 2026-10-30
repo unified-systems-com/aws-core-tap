@@ -720,6 +720,102 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'serviceEnvironmentArn': 'arn:aws:batch:us-east-1:123456789012:batch_service_environment/gen-1', 'serviceEnvironmentName': 'gen-1', 'tags': {'owner': 'net-team'}},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_sagemaker_ai_workload_config": (
+        {'AIWorkloadConfigArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_ai_workload_config/gen-1', 'AIWorkloadConfigName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_algorithm": (
+        {'AlgorithmArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_algorithm/gen-1', 'AlgorithmName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_cluster": (
+        {'ClusterArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_cluster/gen-1', 'ClusterName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_cluster_scheduler_config": (
+        {'ClusterSchedulerConfigArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_cluster_scheduler_config/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_code_repository": (
+        {'CodeRepositoryArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_code_repository/gen-1', 'CodeRepositoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_compute_quota": (
+        {'ComputeQuotaArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_compute_quota/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_endpoint_config": (
+        {'EndpointConfigArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_endpoint_config/gen-1', 'EndpointConfigName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_hub": (
+        {'HubArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_hub/gen-1', 'HubName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_human_task_ui": (
+        {'HumanTaskUiArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_human_task_ui/gen-1', 'HumanTaskUiName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_image": (
+        {'ImageArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_image/gen-1', 'DisplayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_inference_component": (
+        {'InferenceComponentArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_inference_component/gen-1', 'InferenceComponentName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_mlflow_app": (
+        {'Arn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_mlflow_app/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model": (
+        {'ModelArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_model/gen-1', 'ModelName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model_package": (
+        {'ModelPackageArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_model_package/gen-1', 'ModelPackageName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model_package_group": (
+        {'ModelPackageGroupArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_model_package_group/gen-1', 'ModelPackageGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_monitoring_schedule": (
+        {'MonitoringScheduleArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_monitoring_schedule/gen-1', 'MonitoringScheduleName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_notebook_instance": (
+        {'NotebookInstanceArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_notebook_instance/gen-1', 'NotebookInstanceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_notebook_instance_lifecycle_config": (
+        {'NotebookInstanceLifecycleConfigArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_notebook_instance_lifecycle_config/gen-1', 'NotebookInstanceLifecycleConfigName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_partner_app": (
+        {'Arn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_partner_app/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_processing_job": (
+        {'ProcessingJobArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_processing_job/gen-1', 'ProcessingJobName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_project": (
+        {'ProjectArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_project/gen-1', 'ProjectName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_trial_component": (
+        {'TrialComponentArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_trial_component/gen-1', 'TrialComponentName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_workforce": (
+        {'WorkforceArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_workforce/gen-1', 'WorkforceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_workteam": (
+        {'WorkteamArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_workteam/gen-1', 'WorkteamName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

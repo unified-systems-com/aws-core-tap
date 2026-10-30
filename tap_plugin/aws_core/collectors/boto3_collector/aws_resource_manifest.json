@@ -7532,6 +7532,990 @@
         "shape": "map",
         "why": "The list answer carries the tags inline; no extra call."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_ai_workload_config",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAIWorkloadConfigs"
+      },
+      "why": "Enumerate SageMaker AI Workload Config objects with ListAIWorkloadConfigs — an inventory of the account's ai workload configs and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAIWorkloadConfigs response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListAIWorkloadConfigs item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AIWorkloadConfigs[]",
+      "natural_key": "AIWorkloadConfigArn",
+      "fields": {
+        "name": "AIWorkloadConfigName",
+        "aiworkload_config_arn": "AIWorkloadConfigArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "AIWorkloadConfigArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_algorithm",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAlgorithms"
+      },
+      "why": "Enumerate SageMaker Algorithm objects with ListAlgorithms — an inventory of the account's algorithms and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAlgorithms response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListAlgorithms item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AlgorithmSummaryList[]",
+      "natural_key": "AlgorithmArn",
+      "fields": {
+        "name": "AlgorithmName",
+        "algorithm_arn": "AlgorithmArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "AlgorithmArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_cluster",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListClusters"
+      },
+      "why": "Enumerate SageMaker Cluster objects with ListClusters — an inventory of the account's clusters and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListClusters response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListClusters item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ClusterSummaries[]",
+      "natural_key": "ClusterArn",
+      "fields": {
+        "name": "ClusterName",
+        "cluster_arn": "ClusterArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ClusterArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_cluster_scheduler_config",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListClusterSchedulerConfigs"
+      },
+      "why": "Enumerate SageMaker Cluster Scheduler Config objects with ListClusterSchedulerConfigs — an inventory of the account's cluster scheduler configs and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListClusterSchedulerConfigs response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListClusterSchedulerConfigs item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ClusterSchedulerConfigSummaries[]",
+      "natural_key": "ClusterSchedulerConfigArn",
+      "fields": {
+        "name": "Name",
+        "cluster_scheduler_config_arn": "ClusterSchedulerConfigArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ClusterSchedulerConfigArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_code_repository",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListCodeRepositories"
+      },
+      "why": "Enumerate SageMaker Code Repository objects with ListCodeRepositories — an inventory of the account's code repositorys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListCodeRepositories response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListCodeRepositories item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "CodeRepositorySummaryList[]",
+      "natural_key": "CodeRepositoryArn",
+      "fields": {
+        "name": "CodeRepositoryName",
+        "code_repository_arn": "CodeRepositoryArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "CodeRepositoryArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_compute_quota",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListComputeQuotas"
+      },
+      "why": "Enumerate SageMaker Compute Quota objects with ListComputeQuotas — an inventory of the account's compute quotas and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListComputeQuotas response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListComputeQuotas item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ComputeQuotaSummaries[]",
+      "natural_key": "ComputeQuotaArn",
+      "fields": {
+        "name": "Name",
+        "compute_quota_arn": "ComputeQuotaArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ComputeQuotaArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_endpoint_config",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListEndpointConfigs"
+      },
+      "why": "Enumerate SageMaker Endpoint Config objects with ListEndpointConfigs — an inventory of the account's endpoint configs and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListEndpointConfigs response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListEndpointConfigs item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "EndpointConfigs[]",
+      "natural_key": "EndpointConfigArn",
+      "fields": {
+        "name": "EndpointConfigName",
+        "endpoint_config_arn": "EndpointConfigArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "EndpointConfigArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_hub",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListHubs"
+      },
+      "why": "Enumerate SageMaker Hub objects with ListHubs — an inventory of the account's hubs and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListHubs response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListHubs item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "HubSummaries[]",
+      "natural_key": "HubArn",
+      "fields": {
+        "name": "HubName",
+        "hub_arn": "HubArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "HubArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_human_task_ui",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListHumanTaskUis"
+      },
+      "why": "Enumerate SageMaker Human Task Ui objects with ListHumanTaskUis — an inventory of the account's human task uis and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListHumanTaskUis response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListHumanTaskUis item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "HumanTaskUiSummaries[]",
+      "natural_key": "HumanTaskUiArn",
+      "fields": {
+        "name": "HumanTaskUiName",
+        "human_task_ui_arn": "HumanTaskUiArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "HumanTaskUiArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_image",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListImages"
+      },
+      "why": "Enumerate SageMaker Image objects with ListImages — an inventory of the account's images and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListImages response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListImages item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Images[]",
+      "natural_key": "ImageArn",
+      "fields": {
+        "name": "DisplayName",
+        "image_arn": "ImageArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ImageArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_inference_component",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListInferenceComponents"
+      },
+      "why": "Enumerate SageMaker Inference Component objects with ListInferenceComponents — an inventory of the account's inference components and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListInferenceComponents response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListInferenceComponents item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "InferenceComponents[]",
+      "natural_key": "InferenceComponentArn",
+      "fields": {
+        "name": "InferenceComponentName",
+        "inference_component_arn": "InferenceComponentArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "InferenceComponentArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_mlflow_app",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListMlflowApps"
+      },
+      "why": "Enumerate SageMaker Mlflow App objects with ListMlflowApps — an inventory of the account's mlflow apps and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListMlflowApps response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListMlflowApps item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Summaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "mlflow_app_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_model",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListModels"
+      },
+      "why": "Enumerate SageMaker Model objects with ListModels — an inventory of the account's models and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListModels response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModels item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Models[]",
+      "natural_key": "ModelArn",
+      "fields": {
+        "name": "ModelName",
+        "model_arn": "ModelArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ModelArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_model_package",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListModelPackages"
+      },
+      "why": "Enumerate SageMaker Model Package objects with ListModelPackages — an inventory of the account's model packages and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListModelPackages response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModelPackages item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ModelPackageSummaryList[]",
+      "natural_key": "ModelPackageArn",
+      "fields": {
+        "name": "ModelPackageName",
+        "model_package_arn": "ModelPackageArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ModelPackageArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_model_package_group",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListModelPackageGroups"
+      },
+      "why": "Enumerate SageMaker Model Package Group objects with ListModelPackageGroups — an inventory of the account's model package groups and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListModelPackageGroups response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModelPackageGroups item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ModelPackageGroupSummaryList[]",
+      "natural_key": "ModelPackageGroupArn",
+      "fields": {
+        "name": "ModelPackageGroupName",
+        "model_package_group_arn": "ModelPackageGroupArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ModelPackageGroupArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_monitoring_schedule",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListMonitoringSchedules"
+      },
+      "why": "Enumerate SageMaker Monitoring Schedule objects with ListMonitoringSchedules — an inventory of the account's monitoring schedules and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListMonitoringSchedules response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListMonitoringSchedules item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "MonitoringScheduleSummaries[]",
+      "natural_key": "MonitoringScheduleArn",
+      "fields": {
+        "name": "MonitoringScheduleName",
+        "monitoring_schedule_arn": "MonitoringScheduleArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "MonitoringScheduleArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_notebook_instance",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListNotebookInstances"
+      },
+      "why": "Enumerate SageMaker Notebook Instance objects with ListNotebookInstances — an inventory of the account's notebook instances and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListNotebookInstances response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListNotebookInstances item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "NotebookInstances[]",
+      "natural_key": "NotebookInstanceArn",
+      "fields": {
+        "name": "NotebookInstanceName",
+        "notebook_instance_arn": "NotebookInstanceArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "NotebookInstanceArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_notebook_instance_lifecycle_config",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListNotebookInstanceLifecycleConfigs"
+      },
+      "why": "Enumerate SageMaker Notebook Instance Lifecycle Config objects with ListNotebookInstanceLifecycleConfigs — an inventory of the account's notebook instance lifecycle configs and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListNotebookInstanceLifecycleConfigs response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListNotebookInstanceLifecycleConfigs item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "NotebookInstanceLifecycleConfigs[]",
+      "natural_key": "NotebookInstanceLifecycleConfigArn",
+      "fields": {
+        "name": "NotebookInstanceLifecycleConfigName",
+        "notebook_instance_lifecycle_config_arn": "NotebookInstanceLifecycleConfigArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "NotebookInstanceLifecycleConfigArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_partner_app",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPartnerApps"
+      },
+      "why": "Enumerate SageMaker Partner App objects with ListPartnerApps — an inventory of the account's partner apps and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPartnerApps response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListPartnerApps item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Summaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "partner_app_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_processing_job",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListProcessingJobs"
+      },
+      "why": "Enumerate SageMaker Processing Job objects with ListProcessingJobs — an inventory of the account's processing jobs and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListProcessingJobs response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListProcessingJobs item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ProcessingJobSummaries[]",
+      "natural_key": "ProcessingJobArn",
+      "fields": {
+        "name": "ProcessingJobName",
+        "processing_job_arn": "ProcessingJobArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ProcessingJobArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_project",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListProjects"
+      },
+      "why": "Enumerate SageMaker Project objects with ListProjects — an inventory of the account's projects and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListProjects response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListProjects item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ProjectSummaryList[]",
+      "natural_key": "ProjectArn",
+      "fields": {
+        "name": "ProjectName",
+        "project_arn": "ProjectArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "ProjectArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_trial_component",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListTrialComponents"
+      },
+      "why": "Enumerate SageMaker Trial Component objects with ListTrialComponents — an inventory of the account's trial components and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListTrialComponents response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListTrialComponents item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "TrialComponentSummaries[]",
+      "natural_key": "TrialComponentArn",
+      "fields": {
+        "name": "TrialComponentName",
+        "trial_component_arn": "TrialComponentArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "TrialComponentArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_workforce",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListWorkforces"
+      },
+      "why": "Enumerate SageMaker Workforce objects with ListWorkforces — an inventory of the account's workforces and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListWorkforces response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListWorkforces item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Workforces[]",
+      "natural_key": "WorkforceArn",
+      "fields": {
+        "name": "WorkforceName",
+        "workforce_arn": "WorkforceArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "WorkforceArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_workteam",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListWorkteams"
+      },
+      "why": "Enumerate SageMaker Workteam objects with ListWorkteams — an inventory of the account's workteams and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListWorkteams response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListWorkteams item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Workteams[]",
+      "natural_key": "WorkteamArn",
+      "fields": {
+        "name": "WorkteamName",
+        "workteam_arn": "WorkteamArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ResourceArn": {
+            "from": "WorkteamArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
     }
   ]
 }
