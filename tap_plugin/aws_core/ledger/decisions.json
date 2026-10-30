@@ -622,6 +622,16 @@
         "AWS::ElasticLoadBalancingV2::LoadBalancer"
       ]
     },
+    "aws_core__aws_amazonmq_broker": {
+      "cfn": [
+        "AWS::AmazonMQ::Broker"
+      ]
+    },
+    "aws_core__aws_amazonmq_configuration": {
+      "cfn": [
+        "AWS::AmazonMQ::Configuration"
+      ]
+    },
     "aws_core__aws_apigateway_api_key": {
       "cfn": [
         "AWS::ApiGateway::ApiKey"
@@ -676,14 +686,39 @@
         "AWS::ApiGatewayV2::PortalProduct"
       ]
     },
+    "aws_core__aws_appconfig_extension": {
+      "cfn": [
+        "AWS::AppConfig::Extension"
+      ]
+    },
     "aws_core__aws_appstream_app_block": {
       "cfn": [
         "AWS::AppStream::AppBlock"
       ]
     },
+    "aws_core__aws_appstream_app_block_builder": {
+      "cfn": [
+        "AWS::AppStream::AppBlockBuilder"
+      ]
+    },
     "aws_core__aws_appstream_application": {
       "cfn": [
         "AWS::AppStream::Application"
+      ]
+    },
+    "aws_core__aws_appstream_fleet": {
+      "cfn": [
+        "AWS::AppStream::Fleet"
+      ]
+    },
+    "aws_core__aws_appstream_image_builder": {
+      "cfn": [
+        "AWS::AppStream::ImageBuilder"
+      ]
+    },
+    "aws_core__aws_appstream_stack": {
+      "cfn": [
+        "AWS::AppStream::Stack"
       ]
     },
     "aws_core__aws_aps_scraper": {
@@ -694,6 +729,11 @@
     "aws_core__aws_aps_workspace": {
       "cfn": [
         "AWS::APS::Workspace"
+      ]
+    },
+    "aws_core__aws_autoscaling_auto_scaling_group": {
+      "cfn": [
+        "AWS::AutoScaling::AutoScalingGroup"
       ]
     },
     "aws_core__aws_az": {
@@ -720,6 +760,16 @@
         "AWS::Backup::ReportPlan"
       ]
     },
+    "aws_core__aws_backup_restore_testing_plan": {
+      "cfn": [
+        "AWS::Backup::RestoreTestingPlan"
+      ]
+    },
+    "aws_core__aws_backup_tiering_configuration": {
+      "cfn": [
+        "AWS::Backup::TieringConfiguration"
+      ]
+    },
     "aws_core__aws_backup_vault": {
       "cfn": [
         "AWS::Backup::BackupVault"
@@ -740,6 +790,11 @@
         "AWS::Batch::ConsumableResource"
       ]
     },
+    "aws_core__aws_batch_job_definition": {
+      "cfn": [
+        "AWS::Batch::JobDefinition"
+      ]
+    },
     "aws_core__aws_batch_job_queue": {
       "cfn": [
         "AWS::Batch::JobQueue"
@@ -758,6 +813,11 @@
     "aws_core__aws_bedrock_automated_reasoning_policy": {
       "cfn": [
         "AWS::Bedrock::AutomatedReasoningPolicy"
+      ]
+    },
+    "aws_core__aws_bedrock_guardrail": {
+      "cfn": [
+        "AWS::Bedrock::Guardrail"
       ]
     },
     "aws_core__aws_bedrock_model": {
@@ -799,6 +859,11 @@
         "AWS::CloudWatch::Alarm"
       ]
     },
+    "aws_core__aws_cloudwatch_alarm_mute_rule": {
+      "cfn": [
+        "AWS::CloudWatch::AlarmMuteRule"
+      ]
+    },
     "aws_core__aws_cloudwatch_composite_alarm": {
       "cfn": [
         "AWS::CloudWatch::CompositeAlarm"
@@ -827,6 +892,11 @@
     "aws_core__aws_codepipeline_pipeline": {
       "cfn": [
         "AWS::CodePipeline::Pipeline"
+      ]
+    },
+    "aws_core__aws_codepipeline_webhook": {
+      "cfn": [
+        "AWS::CodePipeline::Webhook"
       ]
     },
     "aws_core__aws_codestarconnections_connection": {
@@ -872,6 +942,21 @@
     "aws_core__aws_cognito_user_pool_resource_server": {
       "cfn": [
         "AWS::Cognito::UserPoolResourceServer"
+      ]
+    },
+    "aws_core__aws_comprehend_document_classifier": {
+      "cfn": [
+        "AWS::Comprehend::DocumentClassifier"
+      ]
+    },
+    "aws_core__aws_comprehend_entity_recognizer": {
+      "cfn": [
+        "AWS::Comprehend::EntityRecognizer"
+      ]
+    },
+    "aws_core__aws_comprehend_flywheel": {
+      "cfn": [
+        "AWS::Comprehend::Flywheel"
       ]
     },
     "aws_core__aws_config_aggregation_authorization": {
@@ -929,6 +1014,11 @@
         "AWS::Connect::Instance"
       ]
     },
+    "aws_core__aws_connect_traffic_distribution_group": {
+      "cfn": [
+        "AWS::Connect::TrafficDistributionGroup"
+      ]
+    },
     "aws_core__aws_controltower_enabled_baseline": {
       "cfn": [
         "AWS::ControlTower::EnabledBaseline"
@@ -954,6 +1044,16 @@
         "AWS::DataSync::Task"
       ]
     },
+    "aws_core__aws_datazone_domain": {
+      "cfn": [
+        "AWS::DataZone::Domain"
+      ]
+    },
+    "aws_core__aws_dax_cluster": {
+      "cfn": [
+        "AWS::DAX::Cluster"
+      ]
+    },
     "aws_core__aws_delegated_administration": {
       "cfn": [],
       "reason": "A (member account, service principal) registration, not a resource."
@@ -963,9 +1063,29 @@
         "AWS::Detective::Graph"
       ]
     },
+    "aws_core__aws_docdb_db_cluster_parameter_group": {
+      "cfn": [
+        "AWS::DocDB::DBClusterParameterGroup"
+      ]
+    },
+    "aws_core__aws_docdb_db_subnet_group": {
+      "cfn": [
+        "AWS::DocDB::DBSubnetGroup"
+      ]
+    },
+    "aws_core__aws_docdb_event_subscription": {
+      "cfn": [
+        "AWS::DocDB::EventSubscription"
+      ]
+    },
     "aws_core__aws_drs_launch_configuration_template": {
       "cfn": [
         "AWS::DRS::LaunchConfigurationTemplate"
+      ]
+    },
+    "aws_core__aws_drs_recovery_plan": {
+      "cfn": [
+        "AWS::DRS::RecoveryPlan"
       ]
     },
     "aws_core__aws_drs_replication_configuration_template": {
@@ -1005,9 +1125,24 @@
         "AWS::EC2::Volume"
       ]
     },
+    "aws_core__aws_ec2_capacity_reservation": {
+      "cfn": [
+        "AWS::EC2::CapacityReservation"
+      ]
+    },
+    "aws_core__aws_ec2_capacity_reservation_fleet": {
+      "cfn": [
+        "AWS::EC2::CapacityReservationFleet"
+      ]
+    },
     "aws_core__aws_ec2_instance": {
       "cfn": [
         "AWS::EC2::Instance"
+      ]
+    },
+    "aws_core__aws_ec2_instance_connect_endpoint": {
+      "cfn": [
+        "AWS::EC2::InstanceConnectEndpoint"
       ]
     },
     "aws_core__aws_ec2_ipam_external_resource_verification_token": {
@@ -1020,9 +1155,49 @@
         "AWS::EC2::IpamInternetRegistryAssociation"
       ]
     },
+    "aws_core__aws_ec2_local_gateway_route_table": {
+      "cfn": [
+        "AWS::EC2::LocalGatewayRouteTable"
+      ]
+    },
+    "aws_core__aws_ec2_local_gateway_virtual_interface": {
+      "cfn": [
+        "AWS::EC2::LocalGatewayVirtualInterface"
+      ]
+    },
+    "aws_core__aws_ec2_local_gateway_virtual_interface_group": {
+      "cfn": [
+        "AWS::EC2::LocalGatewayVirtualInterfaceGroup"
+      ]
+    },
+    "aws_core__aws_ec2_network_insights_access_scope": {
+      "cfn": [
+        "AWS::EC2::NetworkInsightsAccessScope"
+      ]
+    },
+    "aws_core__aws_ec2_network_insights_path": {
+      "cfn": [
+        "AWS::EC2::NetworkInsightsPath"
+      ]
+    },
+    "aws_core__aws_ec2_placement_group": {
+      "cfn": [
+        "AWS::EC2::PlacementGroup"
+      ]
+    },
     "aws_core__aws_ec2_secondary_network": {
       "cfn": [
         "AWS::EC2::SecondaryNetwork"
+      ]
+    },
+    "aws_core__aws_ec2_transit_gateway_multicast_domain": {
+      "cfn": [
+        "AWS::EC2::TransitGatewayMulticastDomain"
+      ]
+    },
+    "aws_core__aws_ec2_verified_access_group": {
+      "cfn": [
+        "AWS::EC2::VerifiedAccessGroup"
       ]
     },
     "aws_core__aws_ecr_repository": {

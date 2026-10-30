@@ -1156,6 +1156,146 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'arn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_amazonmq_broker": (
+        {'BrokerArn': 'arn:aws:mq:us-east-1:123456789012:res/gen-1', 'BrokerName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_amazonmq_configuration": (
+        {'Arn': 'arn:aws:mq:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_extension": (
+        {'Arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appstream_app_block_builder": (
+        {'Arn': 'arn:aws:appstream:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appstream_fleet": (
+        {'Arn': 'arn:aws:appstream:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appstream_image_builder": (
+        {'Arn': 'arn:aws:appstream:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appstream_stack": (
+        {'Arn': 'arn:aws:appstream:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_autoscaling_auto_scaling_group": (
+        {'AutoScalingGroupARN': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'AutoScalingGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_backup_restore_testing_plan": (
+        {'RestoreTestingPlanArn': 'arn:aws:backup:us-east-1:123456789012:res/gen-1', 'RestoreTestingPlanName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_backup_tiering_configuration": (
+        {'TieringConfigurationArn': 'arn:aws:backup:us-east-1:123456789012:res/gen-1', 'TieringConfigurationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_batch_job_definition": (
+        {'jobDefinitionArn': 'arn:aws:batch:us-east-1:123456789012:res/gen-1', 'jobDefinitionName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_guardrail": (
+        {'arn': 'arn:aws:bedrock:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_cloudwatch_alarm_mute_rule": (
+        {'AlarmMuteRuleArn': 'arn:aws:cloudwatch:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_codepipeline_webhook": (
+        {'arn': 'arn:aws:codepipeline:us-east-1:123456789012:res/gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_comprehend_document_classifier": (
+        {'DocumentClassifierArn': 'arn:aws:comprehend:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_comprehend_entity_recognizer": (
+        {'EntityRecognizerArn': 'arn:aws:comprehend:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_comprehend_flywheel": (
+        {'FlywheelArn': 'arn:aws:comprehend:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_traffic_distribution_group": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dax_cluster": (
+        {'ClusterArn': 'arn:aws:dax:us-east-1:123456789012:res/gen-1', 'ClusterName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_drs_recovery_plan": (
+        {'recoveryPlanArn': 'arn:aws:drs:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_datazone_domain": (
+        {'arn': 'arn:aws:datazone:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_docdb_db_cluster_parameter_group": (
+        {'DBClusterParameterGroupArn': 'arn:aws:docdb:us-east-1:123456789012:res/gen-1', 'DBClusterParameterGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_docdb_db_subnet_group": (
+        {'DBSubnetGroupArn': 'arn:aws:docdb:us-east-1:123456789012:res/gen-1', 'DBSubnetGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_docdb_event_subscription": (
+        {'EventSubscriptionArn': 'arn:aws:docdb:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ec2_capacity_reservation": (
+        {'CapacityReservationArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_capacity_reservation_fleet": (
+        {'CapacityReservationFleetArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_instance_connect_endpoint": (
+        {'InstanceConnectEndpointArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_local_gateway_route_table": (
+        {'LocalGatewayRouteTableArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_local_gateway_virtual_interface": (
+        {'LocalGatewayVirtualInterfaceArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_local_gateway_virtual_interface_group": (
+        {'LocalGatewayVirtualInterfaceGroupArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_network_insights_access_scope": (
+        {'NetworkInsightsAccessScopeArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_network_insights_path": (
+        {'NetworkInsightsPathArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_placement_group": (
+        {'GroupArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_multicast_domain": (
+        {'TransitGatewayMulticastDomainArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_verified_access_group": (
+        {'VerifiedAccessGroupArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
