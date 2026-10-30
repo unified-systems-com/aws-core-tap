@@ -394,3 +394,85 @@ class TestConfigOrganizationReaders:
         )
         [item] = _run(config_organization_rules_described, "config", client)
         assert item["_last_update_time"] == "2026-10-01T00:00:00Z"
+
+
+class TestIdentityCenter:
+    INSTANCE = {"InstanceArn": "arn:aws:sso:::instance/ssoins-1", "IdentityStoreId": "d-1"}
+
+    def _clients(self, **canned: Any) -> Any:
+        sso = _Client(list_instances={"Instances": [self.INSTANCE]}, **{k: v for k, v in canned.items() if k.startswith("list_app")})
+        store = _Client(**{k: v for k, v in canned.items() if k == "list_users"})
+        return lambda service: {"sso-admin": sso, "identitystore": store}[service]
+
+    def test_only_the_identifying_names_leave_the_user_reader(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import identity_center_users_described
+
+        profile = {
+            "UserId": "u-1",
+            "UserName": "alice@example.com",
+            "DisplayName": "Alice",
+            "Emails": [{"Value": "alice@example.com"}],
+            "PhoneNumbers": [{"Value": "+1 555 0100"}],
+            "Addresses": [{"Locality": "Springfield"}],
+            "Title": "SRE",
+        }
+        [user] = list(identity_center_users_described(None, client_for=self._clients(list_users={"Users": [profile]})))
+        assert set(user) == {"IdentityStoreId", "UserId", "UserName", "DisplayName", "_key"}
+        assert user["_key"] == "d-1:u-1"
+        assert "555" not in str(user) and "Springfield" not in str(user)
+
+    def test_an_identity_store_that_cannot_be_listed_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import identity_center_users_described
+
+        client_for = self._clients(list_users=_denied("ListUsers"))
+        with pytest.raises(SourceError) as gap:
+            list(identity_center_users_described(None, client_for=client_for))
+        assert "d-1" in str(gap.value)
+
+    def test_applications_and_their_assignments(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
+            identity_center_application_assignments_described,
+            identity_center_applications_described,
+        )
+
+        app = "arn:aws:sso::1:application/ssoins-1/apl-1"
+        client_for = self._clients(
+            list_applications={"Applications": [{"ApplicationArn": app, "InstanceArn": self.INSTANCE["InstanceArn"], "Name": "wiki"}]},
+            list_application_assignments={"ApplicationAssignments": [{"ApplicationArn": app, "PrincipalType": "USER", "PrincipalId": "u-1"}, {"ApplicationArn": app}]},
+        )
+        assert [a["Name"] for a in identity_center_applications_described(None, client_for=client_for)] == ["wiki"]
+        [assignment] = list(identity_center_application_assignments_described(None, client_for=client_for))
+        assert assignment["_key"] == f"{app}|USER|u-1"
+
+    def test_an_application_whose_assignments_cannot_be_listed_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import identity_center_application_assignments_described
+
+        app = "arn:aws:sso::1:application/ssoins-1/apl-1"
+        client_for = self._clients(list_applications={"Applications": [{"ApplicationArn": app}]}, list_application_assignments=_denied("ListApplicationAssignments"))
+        with pytest.raises(SourceError) as gap:
+            list(identity_center_application_assignments_described(None, client_for=client_for))
+        assert app in str(gap.value)
+
+
+class TestAccessAnalyzerArchiveRules:
+    ANALYZER = "arn:aws:access-analyzer:us-east-1:1:analyzer/acct"
+
+    def test_a_rule_is_keyed_by_its_analyzer_and_name(self) -> None:
+        from datetime import UTC, datetime
+
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import access_analyzer_archive_rules_described
+
+        client = _Client(
+            list_analyzers={"analyzers": [{"name": "acct", "arn": self.ANALYZER}]},
+            list_archive_rules={"archiveRules": [{"ruleName": "r1", "filter": {"a": {"eq": ["b"]}}, "updatedAt": datetime(2026, 10, 1, tzinfo=UTC)}]},
+        )
+        [rule] = _run(access_analyzer_archive_rules_described, "accessanalyzer", client)
+        assert rule["_arn"] == f"{self.ANALYZER}/archive-rule/r1"
+        assert (rule["_analyzer_arn"], rule["_updated_at"]) == (self.ANALYZER, "2026-10-01T00:00:00Z")
+
+    def test_an_analyzer_whose_rules_cannot_be_listed_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import access_analyzer_archive_rules_described
+
+        client = _Client(list_analyzers={"analyzers": [{"name": "acct", "arn": self.ANALYZER}]}, list_archive_rules=_denied("ListArchiveRules"))
+        yielded, gap = _run_to_the_gap(access_analyzer_archive_rules_described, "accessanalyzer", client)
+        assert yielded == [] and self.ANALYZER in gap

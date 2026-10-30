@@ -1,0 +1,17 @@
+{
+  "slug": "ARCHIVES_ANALYZER_FINDINGS__aws_core",
+  "name": "Archives Analyzer Findings",
+  "description": "An IAM Access Analyzer archive rule archives the findings of one analyzer that match its filter (rule -> analyzer). The rule has no ARN in the API and is keyed by the analyzer's ARN and its name. A reference, not containment. Emitted whether or not the analyzer was collected: it resolves by deterministic identity (the analyzer ARN) when it is.",
+  "sources": [
+    "aws_core__aws_access_analyzer_archive_rule"
+  ],
+  "targets": [
+    "aws_core__aws_access_analyzer"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

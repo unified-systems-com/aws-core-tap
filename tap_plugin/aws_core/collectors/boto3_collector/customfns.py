@@ -1374,6 +1374,118 @@ def config_organization_conformance_packs_described(session: Any, *, client_for:
     )
 
 
+def _identity_center_instances(client_for: Any) -> list[dict[str, Any]]:
+    """The Identity Center instances visible in this region (``ListInstances``). A denial is raised: an
+    unreadable instance list must not read as 'no instances'."""
+    client = client_for("sso-admin")
+    return [i for page in _pages(client, "list_instances") for i in page.get("Instances", []) if i.get("InstanceArn")]
+
+
+def identity_center_users_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the users of each Identity Center instance's identity store (regional).
+
+    ``ListUsers`` returns a full personal profile (emails, phone numbers, addresses, ...) and botocore marks
+    every member of it sensitive. Only the identifying names are kept: the item holds the ids, ``UserName``
+    and ``DisplayName``, and nothing else leaves the reader. ``_key`` is ``identity_store_id:user_id``, the
+    form the group node uses. An identity store that cannot be listed is a gap (:func:`_undescribed`).
+    """
+    client = client_for("identitystore")
+    failed: list[str] = []
+    seen: set[str] = set()
+    for instance in _identity_center_instances(client_for):
+        store = instance.get("IdentityStoreId")
+        if not store or store in seen:
+            continue
+        seen.add(store)
+        try:
+            for page in _pages(client, "list_users", IdentityStoreId=store):
+                for user in page.get("Users", []):
+                    user_id = user.get("UserId")
+                    if user_id:
+                        yield {
+                            "IdentityStoreId": store,
+                            "UserId": user_id,
+                            "UserName": user.get("UserName"),
+                            "DisplayName": user.get("DisplayName"),
+                            "_key": f"{store}:{user_id}",
+                        }
+        except BotoCoreError, ClientError:
+            failed.append(str(store))
+    if failed:
+        raise _undescribed("identity stores", failed)
+
+
+def _identity_center_applications(client_for: Any) -> Iterator[dict[str, Any]]:
+    client = client_for("sso-admin")
+    seen: set[str] = set()
+    for instance in _identity_center_instances(client_for):
+        for page in _pages(client, "list_applications", InstanceArn=instance["InstanceArn"]):
+            for application in page.get("Applications", []):
+                arn = application.get("ApplicationArn")
+                if arn and arn not in seen:
+                    seen.add(arn)
+                    yield application
+
+
+def identity_center_applications_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Identity Center applications of each instance (regional); tags are read by the manifest's
+    tag lane (``ListTagsForResource`` takes the instance and the application)."""
+    yield from _identity_center_applications(client_for)
+
+
+def identity_center_application_assignments_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the users and groups assigned to each Identity Center application (regional).
+
+    An assignment has no ARN, so ``_key`` is ``application_arn|principal_type|principal_id``. An application
+    whose assignments cannot be listed is a gap (:func:`_undescribed`).
+    """
+    client = client_for("sso-admin")
+    failed: list[str] = []
+    for application in _identity_center_applications(client_for):
+        arn = str(application["ApplicationArn"])
+        try:
+            for page in _pages(client, "list_application_assignments", ApplicationArn=arn):
+                for assignment in page.get("ApplicationAssignments", []):
+                    kind, principal = assignment.get("PrincipalType"), assignment.get("PrincipalId")
+                    if kind and principal:
+                        yield {**assignment, "_key": f"{arn}|{kind}|{principal}"}
+        except BotoCoreError, ClientError:
+            failed.append(arn)
+    if failed:
+        raise _undescribed("applications whose assignments", failed)
+
+
+def access_analyzer_archive_rules_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the archive rules of each IAM Access Analyzer analyzer (regional).
+
+    A rule has no ARN in the API, so ``_arn`` is the analyzer's ARN plus ``/archive-rule/`` and the rule name
+    (the form the Service Authorization Reference gives). An analyzer whose rules cannot be listed is a gap
+    (:func:`_undescribed`).
+    """
+    client = client_for("accessanalyzer")
+    failed: list[str] = []
+    for analyzers in _pages(client, "list_analyzers"):
+        for analyzer in analyzers.get("analyzers", []):
+            name, analyzer_arn = analyzer.get("name"), analyzer.get("arn")
+            if not name or not analyzer_arn:
+                continue
+            try:
+                for page in _pages(client, "list_archive_rules", analyzerName=name):
+                    for rule in page.get("archiveRules", []):
+                        if rule.get("ruleName"):
+                            updated = rule.get("updatedAt")
+                            yield {
+                                **rule,
+                                "_analyzer_arn": analyzer_arn,
+                                "_arn": f"{analyzer_arn}/archive-rule/{rule['ruleName']}",
+                                "_updated_at": jsonable(updated) if updated else None,
+                            }
+            except BotoCoreError, ClientError:
+                failed.append(str(analyzer_arn))
+    if failed:
+        raise _undescribed("analyzers whose archive rules", failed)
+
+
 def _undescribed(kind: str, names: list[str]) -> SourceError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
     be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
@@ -1801,6 +1913,10 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "identity_center_users_described": identity_center_users_described,
+    "identity_center_applications_described": identity_center_applications_described,
+    "identity_center_application_assignments_described": identity_center_application_assignments_described,
+    "access_analyzer_archive_rules_described": access_analyzer_archive_rules_described,
     "cloudtrail_event_data_stores_described": cloudtrail_event_data_stores_described,
     "cloudtrail_channels_described": cloudtrail_channels_described,
     "cloudtrail_dashboards_described": cloudtrail_dashboards_described,

@@ -98,8 +98,18 @@ from tap_plugin.aws_core.models.config_aggregation_authorization import ConfigAg
 from tap_plugin.aws_core.models.config_organization_rule import ConfigOrganizationRule
 from tap_plugin.aws_core.models.config_organization_conformance_pack import ConfigOrganizationConformancePack
 from tap_plugin.aws_core.models.config_stored_query import ConfigStoredQuery
+from tap_plugin.aws_core.models.identity_center_user import IdentityCenterUser
+from tap_plugin.aws_core.models.identity_center_application import IdentityCenterApplication
+from tap_plugin.aws_core.models.identity_center_application_assignment import IdentityCenterApplicationAssignment
+from tap_plugin.aws_core.models.access_analyzer_archive_rule import AccessAnalyzerArchiveRule
+from tap_plugin.aws_core.models.config_connector import ConfigConnector
 
 __all__ = [
+    "ConfigConnector",
+    "AccessAnalyzerArchiveRule",
+    "IdentityCenterApplicationAssignment",
+    "IdentityCenterApplication",
+    "IdentityCenterUser",
     "ConfigStoredQuery",
     "ConfigOrganizationConformancePack",
     "ConfigOrganizationRule",

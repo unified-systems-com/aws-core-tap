@@ -1,0 +1,17 @@
+{
+  "slug": "GRANTS_APPLICATION_ACCESS__aws_core",
+  "name": "Grants Application Access",
+  "description": "An IAM Identity Center application assignment gives one user or group access to one application (assignment -> application): the application ARN in the assignment. The assignment has no ARN of its own and is keyed by the application, the principal type and the principal id. A reference, not containment. Emitted whether or not the application was collected: it resolves by deterministic identity (the application ARN) when it is.",
+  "sources": [
+    "aws_core__aws_identity_center_application_assignment"
+  ],
+  "targets": [
+    "aws_core__aws_identity_center_application"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

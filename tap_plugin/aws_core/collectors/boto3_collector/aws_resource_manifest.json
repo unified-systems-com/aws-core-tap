@@ -3708,6 +3708,233 @@
         "shape": "list_kv",
         "why": "Resource tags — ListTagsForResource by the resource's ARN; the listing carries none."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_user",
+      "service": "identitystore",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "identity_center_users_described"
+      },
+      "why": "Enumerate Identity Center users — the people and service identities that can be given access to accounts and applications, which any access review starts from.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the user's identifying names are personal data (botocore marks UserName and DisplayName sensitive) and are already typed fields; storing the configuration envelope as well would only copy them. The reader drops every other profile attribute before the item is built.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore identitystore ListUsers output shape and custom_fn identity_center_users_described, 2026-10-29. botocore marks 35 members of a user sensitive (every profile attribute). The reader keeps only UserName and DisplayName; emails, phone numbers, addresses, photos and the rest never leave it.",
+        "locations": [
+          {
+            "path": "UserName",
+            "category": "personal_data",
+            "reason": "The user name; often a person's email address.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "DisplayName",
+            "category": "personal_data",
+            "reason": "The person's display name.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "DisplayName",
+        "user_key": "_key",
+        "identity_store_id": "IdentityStoreId",
+        "user_id": "UserId",
+        "user_name": "UserName",
+        "display_name": "DisplayName"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::IdentityStore::User says tagging.taggable is false, and the identitystore service defines no tag operations (botocore 1.43.121)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_application",
+      "service": "sso-admin",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "identity_center_applications_described"
+      },
+      "why": "Enumerate Identity Center applications — the SaaS and custom applications people sign in to through Identity Center.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore sso-admin ListApplications and ListTagsForResource output shapes and custom_fn identity_center_applications_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description of the application.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ApplicationArn",
+      "fields": {
+        "name": "Name",
+        "application_arn": "ApplicationArn",
+        "instance_arn": "InstanceArn",
+        "provider_arn": "ApplicationProviderArn",
+        "status": "Status"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "InstanceArn": {
+            "from": "InstanceArn"
+          },
+          "ResourceArn": {
+            "from": "ApplicationArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource takes the instance and the application ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_identity_center_application_assignment",
+      "service": "sso-admin",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "identity_center_application_assignments_described"
+      },
+      "why": "Enumerate Identity Center application assignments — which users and groups can sign in to which application.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore sso-admin ListApplicationAssignments output shape and custom_fn identity_center_application_assignments_described, 2026-10-29; no sensitive-flagged member. The principal is an opaque id in the identity store, not a name."
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "assignment_key": "_key",
+        "application_arn": "ApplicationArn",
+        "principal_type": "PrincipalType",
+        "principal_id": "PrincipalId"
+      },
+      "tags": {
+        "source": "none",
+        "why": "AWS has no tagging operation for an application assignment: it is a (application, principal) pair, not a resource."
+      },
+      "edges": [
+        {
+          "value_path": "ApplicationArn",
+          "target_type": "aws_core__aws_identity_center_application",
+          "key_kind": "arn",
+          "edge_type": "GRANTS_APPLICATION_ACCESS__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_access_analyzer_archive_rule",
+      "service": "accessanalyzer",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "access_analyzer_archive_rules_described"
+      },
+      "why": "Enumerate Access Analyzer archive rules — findings that match a rule are archived automatically, so a rule decides which exposure never reaches a reviewer.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore accessanalyzer ListAnalyzers and ListArchiveRules output shapes and custom_fn access_analyzer_archive_rules_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "filter",
+            "category": "customer_content",
+            "reason": "Operator-authored match criteria; they can name resources, principals and accounts.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "ruleName",
+        "rule_arn": "_arn",
+        "analyzer_arn": "_analyzer_arn",
+        "rule_name": "ruleName",
+        "filter": "filter",
+        "updated_at": "_updated_at"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::AccessAnalyzer::ArchiveRule says tagging.taggable is false, and the access-analyzer tag operations take an analyzer ARN, not a rule (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_analyzer_arn",
+          "target_type": "aws_core__aws_access_analyzer",
+          "key_kind": "arn",
+          "edge_type": "ARCHIVES_ANALYZER_FINDINGS__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_config_connector",
+      "service": "config",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListConnectors"
+      },
+      "why": "Enumerate Config connectors — standing links from AWS Config to a tenant in another cloud.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore config ListConnectors and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member. GetConnector, which returns the other cloud's client identifier, is not called.",
+        "locations": [
+          {
+            "path": "tenantIdentifier",
+            "category": "other",
+            "reason": "The other cloud's tenant id: an identifier, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ConnectorSummaries[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "connector_arn": "arn",
+        "provider": "provider",
+        "tenant_identifier": "tenantIdentifier"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the connector's ARN; the listing carries none."
+      }
     }
   ]
 }

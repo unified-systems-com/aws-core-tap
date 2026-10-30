@@ -382,6 +382,49 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {"QueryId": "q-1", "QueryArn": f"arn:aws:config:us-east-1:{ACCOUNT}:stored-query/open-sgs/q-1", "QueryName": "open-sgs"},
         {"name": "open-sgs", "query_id": "q-1"},
     ),
+    "aws_core__aws_identity_center_user": (
+        {
+            "IdentityStoreId": "d-1234567890",
+            "UserId": "90671a2b-1111-2222-3333-444455556666",
+            "UserName": "alice@example.com",
+            "DisplayName": "Alice Example",
+            "_key": "d-1234567890:90671a2b-1111-2222-3333-444455556666",
+        },
+        {"identity_store_id": "d-1234567890", "user_id": "90671a2b-1111-2222-3333-444455556666", "user_name": "alice@example.com", "display_name": "Alice Example"},
+    ),
+    "aws_core__aws_identity_center_application": (
+        {
+            "ApplicationArn": "arn:aws:sso::123456789012:application/ssoins-1/apl-1",
+            "InstanceArn": "arn:aws:sso:::instance/ssoins-1",
+            "ApplicationProviderArn": "arn:aws:sso::aws:applicationProvider/custom",
+            "Name": "wiki",
+            "Status": "ENABLED",
+        },
+        {"name": "wiki", "status": "ENABLED", "instance_arn": "arn:aws:sso:::instance/ssoins-1"},
+    ),
+    "aws_core__aws_identity_center_application_assignment": (
+        {
+            "ApplicationArn": "arn:aws:sso::123456789012:application/ssoins-1/apl-1",
+            "PrincipalType": "GROUP",
+            "PrincipalId": "g-1",
+            "_key": "arn:aws:sso::123456789012:application/ssoins-1/apl-1|GROUP|g-1",
+        },
+        {"principal_type": "GROUP", "principal_id": "g-1"},
+    ),
+    "aws_core__aws_access_analyzer_archive_rule": (
+        {
+            "ruleName": "ignore-known",
+            "filter": {"resourceType": {"eq": ["AWS::S3::Bucket"]}},
+            "_analyzer_arn": f"arn:aws:access-analyzer:us-east-1:{ACCOUNT}:analyzer/acct",
+            "_arn": f"arn:aws:access-analyzer:us-east-1:{ACCOUNT}:analyzer/acct/archive-rule/ignore-known",
+            "_updated_at": "2026-10-01T00:00:00Z",
+        },
+        {"name": "ignore-known", "rule_name": "ignore-known", "filter": {"resourceType": {"eq": ["AWS::S3::Bucket"]}}},
+    ),
+    "aws_core__aws_config_connector": (
+        {"arn": f"arn:aws:config:us-east-1:{ACCOUNT}:connector/c1", "name": "azure-prod", "provider": "AZURE", "tenantIdentifier": "tenant-1"},
+        {"name": "azure-prod", "provider": "AZURE", "tenant_identifier": "tenant-1"},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
