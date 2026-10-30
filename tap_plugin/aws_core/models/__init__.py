@@ -103,8 +103,28 @@ from tap_plugin.aws_core.models.identity_center_application import IdentityCente
 from tap_plugin.aws_core.models.identity_center_application_assignment import IdentityCenterApplicationAssignment
 from tap_plugin.aws_core.models.access_analyzer_archive_rule import AccessAnalyzerArchiveRule
 from tap_plugin.aws_core.models.config_connector import ConfigConnector
+from tap_plugin.aws_core.models.sns_topic import SnsTopic
+from tap_plugin.aws_core.models.sns_subscription import SnsSubscription
+from tap_plugin.aws_core.models.eventbridge_event_bus import EventbridgeEventBus
+from tap_plugin.aws_core.models.eventbridge_archive import EventbridgeArchive
+from tap_plugin.aws_core.models.eventbridge_connection import EventbridgeConnection
+from tap_plugin.aws_core.models.eventbridge_api_destination import EventbridgeApiDestination
+from tap_plugin.aws_core.models.lambda_function_url import LambdaFunctionUrl
+from tap_plugin.aws_core.models.lambda_layer_version import LambdaLayerVersion
+from tap_plugin.aws_core.models.lambda_code_signing_config import LambdaCodeSigningConfig
+from tap_plugin.aws_core.models.lambda_event_source_mapping import LambdaEventSourceMapping
 
 __all__ = [
+    "LambdaEventSourceMapping",
+    "LambdaCodeSigningConfig",
+    "LambdaLayerVersion",
+    "LambdaFunctionUrl",
+    "EventbridgeApiDestination",
+    "EventbridgeConnection",
+    "EventbridgeArchive",
+    "EventbridgeEventBus",
+    "SnsSubscription",
+    "SnsTopic",
     "ConfigConnector",
     "AccessAnalyzerArchiveRule",
     "IdentityCenterApplicationAssignment",

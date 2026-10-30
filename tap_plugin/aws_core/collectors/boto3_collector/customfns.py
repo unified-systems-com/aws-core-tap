@@ -1486,6 +1486,173 @@ def access_analyzer_archive_rules_described(session: Any, *, client_for: Any) ->
         raise _undescribed("analyzers whose archive rules", failed)
 
 
+def _token_pages(client: Any, method: str, token_key: str = "NextToken", **kwargs: Any) -> Iterator[dict[str, Any]]:
+    """Pages of a list call that has a continuation token but no botocore paginator (EventBridge's list
+    calls): call, then call again with the token the answer returned, until it returns none."""
+    if client.can_paginate(method):
+        yield from _pages(client, method, **kwargs)
+        return
+    token: str | None = None
+    while True:
+        page = without_response_metadata(getattr(client, method)(**kwargs, **({token_key: token} if token else {})))
+        yield page
+        token = page.get(token_key)
+        if not token:
+            return
+
+
+def sns_topics_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate SNS topics (regional): ``GetTopicAttributes`` for the attributes and ``ListTagsForResource``
+    for the tags, one call each per topic. ``_attributes`` is the attribute map (all strings, as SNS returns
+    them); the ``_`` siblings are the typed readings of it. A topic whose attributes cannot be read is a gap
+    (:func:`_undescribed`); a failed tag read leaves its tags unread."""
+    client = client_for("sns")
+    failed: list[str] = []
+    for page in _pages(client, "list_topics"):
+        for entry in page.get("Topics", []):
+            arn = entry.get("TopicArn")
+            if not arn:
+                continue
+            try:
+                attributes = without_response_metadata(client.get_topic_attributes(TopicArn=arn)).get("Attributes") or {}
+            except BotoCoreError, ClientError:
+                failed.append(str(arn))
+                continue
+            tags: dict[str, str] = {}
+            tags_unread = False
+            try:
+                answer = without_response_metadata(client.list_tags_for_resource(ResourceArn=arn))
+                tags = {t["Key"]: t.get("Value") or "" for t in answer.get("Tags", []) if "Key" in t}
+            except BotoCoreError, ClientError:
+                tags_unread = True
+
+            def count(key: str, attrs: dict[str, str] = attributes) -> int | None:
+                value = attrs.get(key)
+                return int(value) if isinstance(value, str) and value.isdigit() else None
+
+            yield {
+                "TopicArn": arn,
+                "_name": str(arn).rsplit(":", 1)[-1],
+                "Attributes": attributes,
+                "_kms_master_key_id": attributes.get("KmsMasterKeyId") or None,
+                "_fifo_topic": None if "FifoTopic" not in attributes else attributes["FifoTopic"] == "true",
+                "_subscriptions_confirmed": count("SubscriptionsConfirmed"),
+                "_subscriptions_pending": count("SubscriptionsPending"),
+                "_tags": tags,
+                "_tags_unread": tags_unread,
+            }
+    if failed:
+        raise _undescribed("SNS topics", failed)
+
+
+def sns_subscriptions_listed(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate SNS subscriptions (regional). A subscription still awaiting confirmation (or deleted) is
+    reported with the literal ``PendingConfirmation``/``Deleted`` in place of its ARN, which is not an
+    identity, so it is not collected. The endpoint (an email address, a phone number, or a URL that can carry
+    credentials) is dropped here and never leaves the reader."""
+    client = client_for("sns")
+    for page in _pages(client, "list_subscriptions"):
+        for sub in page.get("Subscriptions", []):
+            arn = sub.get("SubscriptionArn")
+            if arn and arn.startswith("arn:"):
+                yield {k: v for k, v in sub.items() if k != "Endpoint"}
+
+
+def _eventbridge_items(client_for: Any, method: str, list_key: str) -> Iterator[dict[str, Any]]:
+    client = client_for("events")
+    for page in _token_pages(client, method):
+        yield from page.get(list_key, [])
+
+
+def eventbridge_event_buses_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EventBridge event buses (regional), the default bus included."""
+    yield from _eventbridge_items(client_for, "list_event_buses", "EventBuses")
+
+
+def eventbridge_archives_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EventBridge archives (regional). ``ListArchives`` carries no ARN, so ``_arn`` is built from
+    the source event bus's ARN (same partition, region and account): ``arn:...:archive/<name>``."""
+    for archive in _eventbridge_items(client_for, "list_archives", "Archives"):
+        source, name = str(archive.get("EventSourceArn") or ""), archive.get("ArchiveName")
+        if name and source.count(":") >= 5:
+            yield {**archive, "_arn": f"{source.rsplit(':', 1)[0]}:archive/{name}"}
+
+
+def eventbridge_connections_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EventBridge connections (regional): the stored credentials an API destination calls with.
+    ``ListConnections`` returns their state and authorization type and never the credentials."""
+    yield from _eventbridge_items(client_for, "list_connections", "Connections")
+
+
+def eventbridge_api_destinations_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EventBridge API destinations (regional)."""
+    yield from _eventbridge_items(client_for, "list_api_destinations", "ApiDestinations")
+
+
+def lambda_function_urls_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Lambda function URLs (regional): ``ListFunctionUrlConfigs`` for each function. A URL with
+    ``AuthType: NONE`` is open to the internet. A function whose URLs cannot be listed is a gap
+    (:func:`_undescribed`)."""
+    client = client_for("lambda")
+    failed: list[str] = []
+    for page in _pages(client, "list_functions"):
+        for function in page.get("Functions", []):
+            name = function.get("FunctionName")
+            if not name:
+                continue
+            try:
+                for urls in _pages(client, "list_function_url_configs", FunctionName=name):
+                    for config in urls.get("FunctionUrlConfigs", []):
+                        if config.get("FunctionUrl"):
+                            yield {**config, "_allow_origins": (config.get("Cors") or {}).get("AllowOrigins")}
+            except BotoCoreError, ClientError:
+                failed.append(str(name))
+    if failed:
+        raise _undescribed("Lambda functions whose URLs", failed)
+
+
+def lambda_layer_versions_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's Lambda layer versions (regional): every version of each layer, not only the
+    latest. A layer whose versions cannot be listed is a gap (:func:`_undescribed`)."""
+    client = client_for("lambda")
+    failed: list[str] = []
+    for page in _pages(client, "list_layers"):
+        for layer in page.get("Layers", []):
+            arn = layer.get("LayerArn")
+            if not arn:
+                continue
+            try:
+                for versions in _pages(client, "list_layer_versions", LayerName=arn):
+                    for version in versions.get("LayerVersions", []):
+                        if version.get("LayerVersionArn"):
+                            yield {**version, "_layer_arn": arn, "_layer_name": layer.get("LayerName")}
+            except BotoCoreError, ClientError:
+                failed.append(str(arn))
+    if failed:
+        raise _undescribed("Lambda layers whose versions", failed)
+
+
+def lambda_code_signing_configs_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Lambda code signing configurations (regional)."""
+    client = client_for("lambda")
+    for page in _pages(client, "list_code_signing_configs"):
+        yield from page.get("CodeSigningConfigs", [])
+
+
+def lambda_event_source_mappings_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Lambda event source mappings (regional). ``_arn`` is the mapping's ARN, built from the
+    function's ARN and the mapping UUID when the answer carries none."""
+    client = client_for("lambda")
+    for page in _pages(client, "list_event_source_mappings"):
+        for mapping in page.get("EventSourceMappings", []):
+            uuid_, function = mapping.get("UUID"), str(mapping.get("FunctionArn") or "")
+            arn = mapping.get("EventSourceMappingArn")
+            if not arn and uuid_ and function.count(":") >= 6:
+                arn = f"{':'.join(function.split(':')[:5])}:event-source-mapping:{uuid_}"
+            if arn:
+                yield {**mapping, "_arn": arn}
+
+
 def _undescribed(kind: str, names: list[str]) -> SourceError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
     be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
@@ -1913,6 +2080,16 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "sns_topics_described": sns_topics_described,
+    "sns_subscriptions_listed": sns_subscriptions_listed,
+    "eventbridge_event_buses_described": eventbridge_event_buses_described,
+    "eventbridge_archives_described": eventbridge_archives_described,
+    "eventbridge_connections_described": eventbridge_connections_described,
+    "eventbridge_api_destinations_described": eventbridge_api_destinations_described,
+    "lambda_function_urls_described": lambda_function_urls_described,
+    "lambda_layer_versions_described": lambda_layer_versions_described,
+    "lambda_code_signing_configs_described": lambda_code_signing_configs_described,
+    "lambda_event_source_mappings_described": lambda_event_source_mappings_described,
     "identity_center_users_described": identity_center_users_described,
     "identity_center_applications_described": identity_center_applications_described,
     "identity_center_application_assignments_described": identity_center_application_assignments_described,

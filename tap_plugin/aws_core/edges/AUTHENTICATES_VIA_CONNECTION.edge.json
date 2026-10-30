@@ -1,0 +1,17 @@
+{
+  "slug": "AUTHENTICATES_VIA_CONNECTION__aws_core",
+  "name": "Authenticates Via Connection",
+  "description": "An EventBridge API destination calls its endpoint with the credentials stored in a connection (API destination -> connection): the destination's ConnectionArn. A reference, not containment. Emitted whether or not the connection was collected: it resolves by deterministic identity (the connection ARN) when it is.",
+  "sources": [
+    "aws_core__aws_eventbridge_api_destination"
+  ],
+  "targets": [
+    "aws_core__aws_eventbridge_connection"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

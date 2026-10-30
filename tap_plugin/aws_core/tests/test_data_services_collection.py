@@ -476,3 +476,106 @@ class TestAccessAnalyzerArchiveRules:
         client = _Client(list_analyzers={"analyzers": [{"name": "acct", "arn": self.ANALYZER}]}, list_archive_rules=_denied("ListArchiveRules"))
         yielded, gap = _run_to_the_gap(access_analyzer_archive_rules_described, "accessanalyzer", client)
         assert yielded == [] and self.ANALYZER in gap
+
+
+class TestSns:
+    ARN = "arn:aws:sns:us-east-1:1:alerts"
+
+    def test_a_topic_carries_its_typed_attributes_and_tags(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import sns_topics_described
+
+        client = _Client(
+            list_topics={"Topics": [{"TopicArn": self.ARN}]},
+            get_topic_attributes={"Attributes": {"KmsMasterKeyId": "alias/aws/sns", "FifoTopic": "true", "SubscriptionsConfirmed": "3", "SubscriptionsPending": "x"}},
+            list_tags_for_resource={"Tags": [{"Key": "team", "Value": "sec"}]},
+        )
+        [topic] = _run(sns_topics_described, "sns", client)
+        assert topic["_name"] == "alerts" and topic["_kms_master_key_id"] == "alias/aws/sns" and topic["_fifo_topic"] is True
+        assert (topic["_subscriptions_confirmed"], topic["_subscriptions_pending"]) == (3, None)
+        assert (topic["_tags"], topic["_tags_unread"]) == ({"team": "sec"}, False)
+
+    def test_a_denied_tag_read_is_unread_and_unreadable_attributes_are_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import sns_topics_described
+
+        client = _Client(list_topics={"Topics": [{"TopicArn": self.ARN}]}, get_topic_attributes={"Attributes": {}}, list_tags_for_resource=_denied("ListTagsForResource"))
+        [topic] = _run(sns_topics_described, "sns", client)
+        assert (topic["_tags"], topic["_tags_unread"], topic["_fifo_topic"]) == ({}, True, None)
+        blocked = _Client(list_topics={"Topics": [{"TopicArn": self.ARN}]}, get_topic_attributes=_denied("GetTopicAttributes"))
+        yielded, gap = _run_to_the_gap(sns_topics_described, "sns", blocked)
+        assert yielded == [] and self.ARN in gap
+
+    def test_the_endpoint_never_leaves_and_unconfirmed_subscriptions_are_not_collected(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import sns_subscriptions_listed
+
+        client = _Client(
+            list_subscriptions={
+                "Subscriptions": [
+                    {"SubscriptionArn": self.ARN + ":1111", "TopicArn": self.ARN, "Protocol": "email", "Owner": "1", "Endpoint": "alice@example.com"},
+                    {"SubscriptionArn": "PendingConfirmation", "TopicArn": self.ARN, "Protocol": "https", "Endpoint": "https://u:p@host"},
+                ]
+            }
+        )
+        [sub] = _run(sns_subscriptions_listed, "sns", client)
+        assert "Endpoint" not in sub and "alice@example.com" not in str(sub) and sub["Protocol"] == "email"
+
+
+class TestEventBridge:
+    def test_a_listing_with_a_token_and_no_paginator_is_followed_to_its_end(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import eventbridge_event_buses_described
+
+        seen: list[dict[str, Any]] = []
+
+        def list_event_buses(**kwargs: Any) -> Any:
+            seen.append(kwargs)
+            if "NextToken" not in kwargs:
+                return {"EventBuses": [{"Name": "a", "Arn": "arn:a"}], "NextToken": "t1"}
+            return {"EventBuses": [{"Name": "b", "Arn": "arn:b"}]}
+
+        buses = _run(eventbridge_event_buses_described, "events", _Client(list_event_buses=list_event_buses))
+        assert [b["Name"] for b in buses] == ["a", "b"] and seen[1] == {"NextToken": "t1"}
+
+    def test_an_archive_arn_is_built_from_its_bus_arn(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import eventbridge_archives_described
+
+        client = _Client(list_archives={"Archives": [{"ArchiveName": "all", "EventSourceArn": "arn:aws-us-gov:events:us-gov-west-1:1:event-bus/default"}, {"ArchiveName": "odd", "EventSourceArn": "nope"}]})
+        [archive] = _run(eventbridge_archives_described, "events", client)
+        assert archive["_arn"] == "arn:aws-us-gov:events:us-gov-west-1:1:archive/all"
+
+
+class TestLambdaSecurityTypes:
+    def test_function_urls_are_listed_per_function_and_a_failed_function_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import lambda_function_urls_described
+
+        def urls(FunctionName: str) -> Any:
+            if FunctionName == "bad":
+                return _denied("ListFunctionUrlConfigs")
+            return {"FunctionUrlConfigs": [{"FunctionUrl": f"https://{FunctionName}.lambda-url.r.on.aws/", "FunctionArn": f"arn:{FunctionName}", "AuthType": "NONE", "Cors": {"AllowOrigins": ["*"]}}]}
+
+        client = _Client(list_functions={"Functions": [{"FunctionName": "ok"}, {"FunctionName": "bad"}]}, list_function_url_configs=urls)
+        yielded, gap = _run_to_the_gap(lambda_function_urls_described, "lambda", client)
+        assert [u["_allow_origins"] for u in yielded] == [["*"]] and "bad" in gap
+
+    def test_every_layer_version_is_taken_not_only_the_latest(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import lambda_layer_versions_described
+
+        client = _Client(
+            list_layers={"Layers": [{"LayerName": "deps", "LayerArn": "arn:aws:lambda:r:1:layer:deps"}]},
+            list_layer_versions={"LayerVersions": [{"LayerVersionArn": "arn:aws:lambda:r:1:layer:deps:1", "Version": 1}, {"LayerVersionArn": "arn:aws:lambda:r:1:layer:deps:2", "Version": 2}]},
+        )
+        versions = _run(lambda_layer_versions_described, "lambda", client)
+        assert [v["Version"] for v in versions] == [1, 2] and versions[0]["_layer_name"] == "deps"
+
+    def test_a_mapping_without_an_arn_gets_one_built_from_its_function(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import lambda_event_source_mappings_described
+
+        client = _Client(
+            list_event_source_mappings={
+                "EventSourceMappings": [
+                    {"UUID": "u-1", "FunctionArn": "arn:aws:lambda:us-east-1:1:function:fn:live"},
+                    {"UUID": "u-2", "FunctionArn": "arn:aws:lambda:us-east-1:1:function:fn", "EventSourceMappingArn": "arn:aws:lambda:us-east-1:1:event-source-mapping:u-2"},
+                ]
+            }
+        )
+        built, given = _run(lambda_event_source_mappings_described, "lambda", client)
+        assert built["_arn"] == "arn:aws:lambda:us-east-1:1:event-source-mapping:u-1"
+        assert given["_arn"] == "arn:aws:lambda:us-east-1:1:event-source-mapping:u-2"
