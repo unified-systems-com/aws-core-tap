@@ -11429,7 +11429,7 @@
       "items_path": "items[]",
       "natural_key": "arn",
       "fields": {
-        "launch_configuration_template_arn": "arn"
+        "drs_launch_configuration_template_arn": "arn"
       },
       "tags": {
         "source": "field",
@@ -11469,7 +11469,7 @@
       "items_path": "items[]",
       "natural_key": "arn",
       "fields": {
-        "replication_configuration_template_arn": "arn"
+        "drs_replication_configuration_template_arn": "arn"
       },
       "tags": {
         "source": "field",
@@ -11661,7 +11661,7 @@
       "natural_key": "arn",
       "fields": {
         "name": "name",
-        "connector_arn": "arn"
+        "mgn_connector_arn": "arn"
       },
       "tags": {
         "source": "field",
@@ -11695,7 +11695,7 @@
       "items_path": "items[]",
       "natural_key": "arn",
       "fields": {
-        "launch_configuration_template_arn": "arn"
+        "mgn_launch_configuration_template_arn": "arn"
       },
       "tags": {
         "source": "field",
@@ -11776,7 +11776,7 @@
       "items_path": "items[]",
       "natural_key": "arn",
       "fields": {
-        "replication_configuration_template_arn": "arn"
+        "mgn_replication_configuration_template_arn": "arn"
       },
       "tags": {
         "source": "field",

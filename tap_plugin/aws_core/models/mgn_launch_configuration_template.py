@@ -16,7 +16,7 @@ class MgnLaunchConfigurationTemplate(BaseModel):
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
-    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("launch_configuration_template_arn",)
+    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("mgn_launch_configuration_template_arn",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -28,7 +28,7 @@ class MgnLaunchConfigurationTemplate(BaseModel):
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
-        "launch_configuration_template_arn": {"type": "string"},
+        "mgn_launch_configuration_template_arn": {"type": "string"},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -39,7 +39,7 @@ class MgnLaunchConfigurationTemplate(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = []
 
     name = models.CharField(max_length=255, blank=True, default="")
-    launch_configuration_template_arn = models.CharField(max_length=2048, blank=True, default="")
+    mgn_launch_configuration_template_arn = models.CharField(max_length=2048, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 
@@ -47,7 +47,7 @@ class MgnLaunchConfigurationTemplate(BaseModel):
         db_table = "aws_core__aws_mgn_launch_configuration_template"
 
     def get_name(self) -> str:
-        return self.name or self.launch_configuration_template_arn
+        return self.name or self.mgn_launch_configuration_template_arn
 
     def __str__(self) -> str:
         return self.get_name()
