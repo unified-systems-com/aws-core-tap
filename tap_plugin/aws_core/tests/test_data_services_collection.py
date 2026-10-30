@@ -733,16 +733,32 @@ class TestListeners:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import elbv2_listeners_described
 
         nlb = "arn:aws:elasticloadbalancing:us-east-1:1:loadbalancer/net/tcp/def"
-        listeners = {self.LB: {"ListenerArn": "arn:l1", "LoadBalancerArn": self.LB, "Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a"}], "DefaultActions": [{"Type": "forward"}]}, nlb: {"ListenerArn": "arn:l2", "LoadBalancerArn": nlb}}
+        listeners = {self.LB: {"ListenerArn": "arn:l1", "LoadBalancerArn": self.LB, "Protocol": "HTTPS", "Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a"}], "DefaultActions": [{"Type": "forward"}]}, nlb: {"ListenerArn": "arn:l2", "LoadBalancerArn": nlb}}
         client = _Client(
             describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}, {"LoadBalancerArn": nlb, "Type": "network"}]},
             describe_listeners=lambda LoadBalancerArn: {"Listeners": [listeners[LoadBalancerArn]]},
+            describe_listener_certificates={"Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a", "IsDefault": True}, {"CertificateArn": "arn:aws:acm:r:1:certificate/sni", "IsDefault": False}]},
             describe_tags={"TagDescriptions": [{"ResourceArn": "arn:l1", "Tags": [{"Key": "k", "Value": "v"}]}, {"ResourceArn": "arn:l2", "Tags": []}]},
         )
         alb_listener, nlb_listener = _run(elbv2_listeners_described, "elbv2", client)
         assert alb_listener["_alb_arn"] == self.LB and nlb_listener["_alb_arn"] is None
-        assert alb_listener["_certificate_arns"] == ["arn:aws:acm:r:1:certificate/a"] and alb_listener["_action_types"] == ["forward"]
+        assert alb_listener["_certificate_arns"] == ["arn:aws:acm:r:1:certificate/a", "arn:aws:acm:r:1:certificate/sni"]
+        assert alb_listener["_action_types"] == ["forward"]
         assert alb_listener["_tags"] == {"k": "v"}
+
+    def test_unreadable_extra_certificates_make_the_certificate_read_partial_not_complete(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.authority import PARTIAL
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import elbv2_listeners_described
+
+        client = _Client(
+            describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}]},
+            describe_listeners={"Listeners": [{"ListenerArn": "arn:l1", "LoadBalancerArn": self.LB, "Protocol": "HTTPS", "Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a"}]}]},
+            describe_listener_certificates=_denied("DescribeListenerCertificates"),
+            describe_tags={"TagDescriptions": []},
+        )
+        [listener] = _run(elbv2_listeners_described, "elbv2", client)
+        assert listener["_certificate_arns"] == ["arn:aws:acm:r:1:certificate/a"]
+        assert listener[EDGE_READS]["_certificate_arns"] == PARTIAL
 
     def test_a_load_balancer_whose_listeners_cannot_be_listed_is_a_loud_gap(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import elbv2_listeners_described
@@ -763,7 +779,7 @@ class TestBackup:
             list_backup_vaults={"BackupVaultList": [{"BackupVaultArn": "arn:aws:backup:us-east-1:1:backup-vault:prod", "BackupVaultName": "prod"}]},
         )
         [plan] = _run(backup_plans_described, "backup", client)
-        assert plan["_rule_count"] == 3
+        assert plan["_rule_count"] == 3 and len(plan["BackupPlan"]["Rules"]) == 3
         assert plan["_target_vault_arns"] == ["arn:aws:backup:us-east-1:1:backup-vault:dr", "arn:aws:backup:us-east-1:1:backup-vault:prod"]
         [vault] = _run(backup_vaults_described, "backup", client)
         assert (vault["_tags"], vault["_tags_unread"]) == ({"owner": "x"}, False)

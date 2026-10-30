@@ -5234,6 +5234,12 @@
         "basis": "Read botocore backup plan listing and ListTags output shapes and custom_fn backup_plans_described, 2026-10-29. botocore marks the ListTags tag map sensitive; its values go only to the canonical tags field.",
         "locations": [
           {
+            "path": "BackupPlan.Rules[].RecoveryPointTags",
+            "category": "customer_content",
+            "reason": "Operator-set tags applied to the recovery points a rule creates: arbitrary strings AWS does not constrain.",
+            "evidence": "reviewer_judgement"
+          },
+          {
             "path": "_tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",

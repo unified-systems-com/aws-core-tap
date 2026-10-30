@@ -1940,16 +1940,25 @@ def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict
     for listener in listeners:
         arn = str(listener["ListenerArn"])
         actions = listener.get("DefaultActions") or []
+        # DescribeListeners names the default certificate only; the others (SNI) are DescribeListenerCertificates'.
+        certificates = {str(c["CertificateArn"]) for c in listener.get("Certificates", []) if c.get("CertificateArn")}
+        certificates_read = COMPLETE
+        if listener.get("Protocol") in ("HTTPS", "TLS"):
+            try:
+                for cert_page in _pages(client, "describe_listener_certificates", ListenerArn=arn):
+                    certificates.update(str(c["CertificateArn"]) for c in cert_page.get("Certificates", []) if c.get("CertificateArn"))
+            except BotoCoreError, ClientError:
+                certificates_read = PARTIAL
         yield with_edge_reads(
             {
                 **listener,
-                "_certificate_arns": sorted(str(c["CertificateArn"]) for c in listener.get("Certificates", []) if c.get("CertificateArn")),
+                "_certificate_arns": sorted(certificates),
                 "_action_types": [a.get("Type") for a in actions if a.get("Type")],
                 "_alb_arn": listener.get("LoadBalancerArn") if listener.get("_lb_type") == "application" else None,
                 "_tags": tags.get(arn, {}),
                 "_tags_unread": arn not in tags,
             },
-            {"_certificate_arns": COMPLETE, "_alb_arn": COMPLETE},
+            {"_certificate_arns": certificates_read, "_alb_arn": COMPLETE},
         )
     if failed:
         raise _undescribed("load balancers whose listeners", failed)
@@ -1977,8 +1986,8 @@ def backup_vaults_described(session: Any, *, client_for: Any) -> Iterator[dict[s
 
 def backup_plans_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate AWS Backup plans (regional): ``ListBackupPlans`` names them, ``GetBackupPlan`` reads the rules.
-    ``_rule_count`` is the number of rules and ``_target_vault_arns`` the vaults the rules write to, built from
-    the plan's own ARN (same partition, region and account). A plan that cannot be read is a gap
+    ``BackupPlan`` is the plan's detail (rules, schedules, lifecycle), ``_rule_count`` the number of rules and
+    ``_target_vault_arns`` the vaults the rules write to, built from the plan's own ARN (same partition, region and account). A plan that cannot be read is a gap
     (:func:`_undescribed`)."""
     client = client_for("backup")
     failed: list[str] = []
@@ -1988,15 +1997,16 @@ def backup_plans_described(session: Any, *, client_for: Any) -> Iterator[dict[st
             if not (arn and plan_id):
                 continue
             try:
-                rules = (without_response_metadata(client.get_backup_plan(BackupPlanId=plan_id)).get("BackupPlan") or {}).get("Rules")
+                detail = without_response_metadata(client.get_backup_plan(BackupPlanId=plan_id)).get("BackupPlan") or {}
             except BotoCoreError, ClientError:
                 failed.append(str(arn))
                 continue
+            rules = detail.get("Rules")
             prefix = ":".join(str(arn).split(":")[:5])
             vaults = sorted({f"{prefix}:backup-vault:{r['TargetBackupVaultName']}" for r in rules or [] if r.get("TargetBackupVaultName")})
             tags, unread = _backup_tags(client, arn)
             yield with_edge_reads(
-                {**plan, "_rule_count": len(rules) if isinstance(rules, list) else None, "_target_vault_arns": vaults, "_tags": tags, "_tags_unread": unread},
+                {**plan, "BackupPlan": detail, "_rule_count": len(rules) if isinstance(rules, list) else None, "_target_vault_arns": vaults, "_tags": tags, "_tags_unread": unread},
                 {"_target_vault_arns": COMPLETE if isinstance(rules, list) else PARTIAL},
             )
     if failed:
@@ -2063,7 +2073,7 @@ def cognito_user_pool_clients_described(session: Any, *, client_for: Any) -> Ite
                     if not client_id:
                         continue
                     detail = without_response_metadata(client.describe_user_pool_client(UserPoolId=pool, ClientId=client_id)).get("UserPoolClient") or {}
-                    yield {**detail, "_key": f"{pool}:{client_id}", "_has_secret": bool(detail.get("ClientSecret"))}
+                    yield {**detail, "UserPoolId": pool, "_key": f"{pool}:{client_id}", "_has_secret": bool(detail.get("ClientSecret"))}
         except BotoCoreError, ClientError:
             failed.append(str(pool))
     if failed:
@@ -2084,7 +2094,7 @@ def cognito_identity_providers_described(session: Any, *, client_for: Any) -> It
                     if not name:
                         continue
                     detail = without_response_metadata(client.describe_identity_provider(UserPoolId=pool, ProviderName=name)).get("IdentityProvider") or {}
-                    yield {**detail, "_key": f"{pool}:{name}"}
+                    yield {**detail, "UserPoolId": pool, "_key": f"{pool}:{name}"}
         except BotoCoreError, ClientError:
             failed.append(str(pool))
     if failed:
@@ -2102,7 +2112,7 @@ def cognito_user_pool_groups_described(session: Any, *, client_for: Any) -> Iter
             for page in _pages(client, "list_groups", UserPoolId=pool, Limit=60):
                 for group in page.get("Groups", []):
                     if group.get("GroupName"):
-                        yield with_edge_reads({**group, "_key": f"{pool}:{group['GroupName']}"}, {"RoleArn": COMPLETE})
+                        yield with_edge_reads({**group, "UserPoolId": pool, "_key": f"{pool}:{group['GroupName']}"}, {"RoleArn": COMPLETE})
         except BotoCoreError, ClientError:
             failed.append(str(pool))
     if failed:
@@ -2119,7 +2129,7 @@ def cognito_user_pool_resource_servers_described(session: Any, *, client_for: An
             for page in _pages(client, "list_resource_servers", UserPoolId=pool, MaxResults=50):
                 for server in page.get("ResourceServers", []):
                     if server.get("Identifier"):
-                        yield {**server, "_key": f"{pool}:{server['Identifier']}"}
+                        yield {**server, "UserPoolId": pool, "_key": f"{pool}:{server['Identifier']}"}
         except BotoCoreError, ClientError:
             failed.append(str(pool))
     if failed:

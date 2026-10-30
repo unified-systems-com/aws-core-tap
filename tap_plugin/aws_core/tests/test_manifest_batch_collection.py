@@ -635,7 +635,15 @@ class TestBatchTypes:
             assert all(eval_path(item, p["from"]) for p in tags["params"].values() if "from" in p), tags
             return
         assert tags["source"] == "field"
-        assert tags["from"] and tags["shape"] in ("list_kv", "list_kv_lower", "map")
+        assert (tags["from"], tags["shape"]) in (
+            ("Tags[]", "list_kv"),
+            ("TagList", "list_kv"),
+            ("tags[]", "list_kv_lower"),
+            ("_tags", "map"),
+            ("tags", "map"),
+            ("Tags", "map"),
+            ("IdentityPoolTags", "map"),
+        )
 
     def test_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]
