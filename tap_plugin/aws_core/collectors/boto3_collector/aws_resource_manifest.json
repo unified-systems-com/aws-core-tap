@@ -1983,6 +1983,331 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_elastic_ip",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeAddresses"
+      },
+      "why": "Enumerate Elastic IP addresses — the account's fixed public addresses; one that is allocated and unassociated is an address that can be reassigned or leaked.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeAddresses output shape (Addresses), 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Addresses[]",
+      "natural_key": "AllocationId",
+      "name_tag": "Name",
+      "fields": {
+        "allocation_id": "AllocationId",
+        "public_ip": "PublicIp",
+        "association_id": "AssociationId"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_internet_gateway",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeInternetGateways"
+      },
+      "why": "Enumerate internet gateways — the only door between a VPC and the public internet, so the first thing a reachability question needs.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeInternetGateways output shape (InternetGateways), 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "InternetGateways[]",
+      "natural_key": "InternetGatewayId",
+      "name_tag": "Name",
+      "fields": {
+        "igw_id": "InternetGatewayId"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "Attachments[].VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_VPC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_nat_gateway",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeNatGateways"
+      },
+      "why": "Enumerate NAT gateways — the outbound path for private subnets, and a public address of its own when its connectivity is public.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeNatGateways output shape (NatGateways), 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "NatGateways[]",
+      "natural_key": "NatGatewayId",
+      "name_tag": "Name",
+      "fields": {
+        "nat_gateway_id": "NatGatewayId",
+        "state": "State",
+        "connectivity_type": "ConnectivityType"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "SubnetId",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_network_acl",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeNetworkAcls"
+      },
+      "why": "Enumerate network ACLs — the stateless subnet-level filter whose rules a security group review does not cover.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeNetworkAcls output shape (NetworkAcls), 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "NetworkAcls[]",
+      "natural_key": "NetworkAclId",
+      "name_tag": "Name",
+      "fields": {
+        "network_acl_id": "NetworkAclId",
+        "is_default": "IsDefault"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_route_table",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeRouteTables"
+      },
+      "why": "Enumerate route tables — where a subnet's traffic actually goes (an internet gateway route is what makes a subnet public).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeRouteTables output shape (RouteTables), 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "RouteTables[]",
+      "natural_key": "RouteTableId",
+      "name_tag": "Name",
+      "fields": {
+        "route_table_id": "RouteTableId"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ebs_volume",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeVolumes"
+      },
+      "why": "Enumerate EBS volumes — block storage whose encryption and key are a compliance fact, and an unattached volume is data nobody is watching.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeVolumes output shape (Volumes), 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Volumes[]",
+      "natural_key": "VolumeId",
+      "name_tag": "Name",
+      "fields": {
+        "volume_id": "VolumeId",
+        "volume_type": "VolumeType",
+        "size_gb": "Size",
+        "state": "State",
+        "encrypted": "Encrypted"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "KmsKeyId",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_vpc_endpoint",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeVpcEndpoints"
+      },
+      "why": "Enumerate VPC endpoints — the private paths from a VPC to AWS services and PrivateLink services, and the endpoint policy that limits what crosses them.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeVpcEndpoints output shape (VpcEndpoints), 2026-10-29; no sensitive-flagged member. The endpoint policy is a policy document the operator wrote.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "PolicyDocument",
+            "category": "access_policy",
+            "reason": "The endpoint policy: a map of which principals may use the endpoint for which actions. Not secret.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "VpcEndpoints[]",
+      "natural_key": "VpcEndpointId",
+      "name_tag": "Name",
+      "fields": {
+        "vpc_endpoint_id": "VpcEndpointId",
+        "endpoint_type": "VpcEndpointType",
+        "service_name": "ServiceName",
+        "private_dns_enabled": "PrivateDnsEnabled"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "SubnetIds[]",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }

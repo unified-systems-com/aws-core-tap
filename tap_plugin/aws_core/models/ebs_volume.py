@@ -36,6 +36,7 @@ class EbsVolume(BaseModel):
         "state": {"type": "string"},
         "encrypted": {"type": "boolean"},
         "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -46,6 +47,7 @@ class EbsVolume(BaseModel):
         "state": {"validation": "jsonschema", "schema": {"type": "string"}},
         "encrypted": {"validation": "jsonschema", "schema": {"type": "boolean"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     # Nothing is required at create. A designed volume (dcom=design) exists before AWS mints its
     # volume_id; a collected one can be untagged, so it may have no name. Blank means not observed.
@@ -58,6 +60,7 @@ class EbsVolume(BaseModel):
     state = models.CharField(max_length=32, blank=True, default="")
     encrypted = models.BooleanField(default=False)
     configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_ebs_volume"
