@@ -2371,60 +2371,66 @@ def _apigw_items(client: Any, method: str, key: str, **kwargs: Any) -> Iterator[
         yield from page.get(key, [])
 
 
+def _apigw_resources(
+    client_for: Any, service: str, method: str, key: str, id_field: str, resource: str, **kwargs: Any
+) -> Iterator[dict[str, Any]]:
+    """The items of an API Gateway list call that has an id and no ARN of its own: each gets ``_arn``, built
+    from ``/<resource>/<id>``."""
+    client = client_for(service)
+    for item in _apigw_items(client, method, key, **kwargs):
+        if item.get(id_field):
+            yield {**item, "_arn": _apigw_arn(client, f"/{resource}/{item[id_field]}")}
+
+
+def _apigw_api_children(
+    client_for: Any, service: str, child: str, label: str, *, name_field: str, path: str, derive: Any = None
+) -> Iterator[dict[str, Any]]:
+    """The stages or authorizers of every REST API (``service`` ``apigateway``) or HTTP/WebSocket API
+    (``apigatewayv2``): the child call takes an API, so each is asked in turn. Each item gets ``_arn`` (the
+    API's ARN plus ``/<path>/<name>``) and ``_api_arn``; ``derive`` may add more keys, which are declared
+    ``complete`` edge reads. An API whose children cannot be read is a gap (:func:`_undescribed`)."""
+    rest = service == "apigateway"
+    client = client_for(service)
+    failed: list[str] = []
+    apis = "get_rest_apis" if rest else "get_apis"
+    for api in _apigw_items(client, apis, "items" if rest else "Items"):
+        api_id = api.get("id" if rest else "ApiId")
+        if not api_id:
+            continue
+        try:
+            children = list(_apigw_items(client, child, "item" if rest and child == "get_stages" else ("items" if rest else "Items"), **{"restApiId" if rest else "ApiId": api_id}))
+        except BotoCoreError, ClientError:
+            failed.append(str(api_id))
+            continue
+        api_arn = _apigw_arn(client, f"/{'restapis' if rest else 'apis'}/{api_id}")
+        for item in children:
+            if item.get(name_field):
+                extra = derive(item) if derive else {}
+                yield with_edge_reads(
+                    {**item, "_arn": f"{api_arn}/{path}/{item[name_field]}", "_api_arn": api_arn, **extra},
+                    {k: COMPLETE for k in ("_api_arn", *extra)},
+                )
+    if failed:
+        raise _undescribed(label, failed)
+
+
 def apigateway_rest_apis_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate API Gateway REST APIs (regional). ``_arn`` is built from the API id; tags ride inline."""
-    client = client_for("apigateway")
-    for api in _apigw_items(client, "get_rest_apis", "items"):
-        if api.get("id"):
-            yield {**api, "_arn": _apigw_arn(client, f"/restapis/{api['id']}")}
+    yield from _apigw_resources(client_for, "apigateway", "get_rest_apis", "items", "id", "restapis")
 
 
 def apigateway_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the stages of each REST API (regional): ``GetStages`` takes an API, so each is asked in turn.
-    A stage's variables can hold secrets, which is why the entry stores nothing. ``_web_acl_arn`` is the WAF
-    web ACL protecting the stage. An API whose stages cannot be read is a gap (:func:`_undescribed`)."""
-    client = client_for("apigateway")
-    failed: list[str] = []
-    for api in _apigw_items(client, "get_rest_apis", "items"):
-        api_id = api.get("id")
-        if not api_id:
-            continue
-        try:
-            stages = without_response_metadata(client.get_stages(restApiId=api_id)).get("item", [])
-        except BotoCoreError, ClientError:
-            failed.append(str(api_id))
-            continue
-        api_arn = _apigw_arn(client, f"/restapis/{api_id}")
-        for stage in stages:
-            if stage.get("stageName"):
-                yield with_edge_reads(
-                    {**stage, "_arn": f"{api_arn}/stages/{stage['stageName']}", "_api_arn": api_arn, "_web_acl_arn": stage.get("webAclArn")},
-                    {"_api_arn": COMPLETE, "_web_acl_arn": COMPLETE},
-                )
-    if failed:
-        raise _undescribed("REST APIs whose stages", failed)
+    """Enumerate the stages of each REST API (regional). A stage's variables can hold secrets, which is why the
+    entry stores nothing. ``_web_acl_arn`` is the WAF web ACL protecting the stage."""
+    yield from _apigw_api_children(
+        client_for, "apigateway", "get_stages", "REST APIs whose stages", name_field="stageName", path="stages",
+        derive=lambda stage: {"_web_acl_arn": stage.get("webAclArn")},
+    )
 
 
 def apigateway_authorizers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the authorizers of each REST API (regional). An API whose authorizers cannot be read is a gap
-    (:func:`_undescribed`)."""
-    client = client_for("apigateway")
-    failed: list[str] = []
-    for api in _apigw_items(client, "get_rest_apis", "items"):
-        api_id = api.get("id")
-        if not api_id:
-            continue
-        try:
-            authorizers = list(_apigw_items(client, "get_authorizers", "items", restApiId=api_id))
-        except BotoCoreError, ClientError:
-            failed.append(str(api_id))
-            continue
-        api_arn = _apigw_arn(client, f"/restapis/{api_id}")
-        for authorizer in authorizers:
-            if authorizer.get("id"):
-                yield with_edge_reads({**authorizer, "_arn": f"{api_arn}/authorizers/{authorizer['id']}", "_api_arn": api_arn}, {"_api_arn": COMPLETE})
-    if failed:
-        raise _undescribed("REST APIs whose authorizers", failed)
+    """Enumerate the authorizers of each REST API (regional)."""
+    yield from _apigw_api_children(client_for, "apigateway", "get_authorizers", "REST APIs whose authorizers", name_field="id", path="authorizers")
 
 
 def apigateway_domain_names_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -2439,84 +2445,37 @@ def apigateway_domain_names_described(session: Any, *, client_for: Any) -> Itera
 
 def apigateway_usage_plans_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate API Gateway usage plans (regional)."""
-    client = client_for("apigateway")
-    for plan in _apigw_items(client, "get_usage_plans", "items"):
-        if plan.get("id"):
-            yield {**plan, "_arn": _apigw_arn(client, f"/usageplans/{plan['id']}")}
+    yield from _apigw_resources(client_for, "apigateway", "get_usage_plans", "items", "id", "usageplans")
 
 
 def apigateway_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate API Gateway REST VPC links (regional): the private path from an API to a Network Load Balancer."""
-    client = client_for("apigateway")
-    for link in _apigw_items(client, "get_vpc_links", "items"):
-        if link.get("id"):
-            yield {**link, "_arn": _apigw_arn(client, f"/vpclinks/{link['id']}")}
+    yield from _apigw_resources(client_for, "apigateway", "get_vpc_links", "items", "id", "vpclinks")
 
 
 def apigateway_api_keys_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate API Gateway API keys (regional). The key values are never requested (``includeValues`` is left
     false) and a ``value`` that comes back anyway is removed here."""
-    client = client_for("apigateway")
-    for key in _apigw_items(client, "get_api_keys", "items", includeValues=False):
-        if key.get("id"):
-            yield {**{k: v for k, v in key.items() if k != "value"}, "_arn": _apigw_arn(client, f"/apikeys/{key['id']}")}
+    for key in _apigw_resources(client_for, "apigateway", "get_api_keys", "items", "id", "apikeys", includeValues=False):
+        yield {k: v for k, v in key.items() if k != "value"}
 
 
 def apigateway_client_certificates_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate API Gateway client certificates (regional): the certificates API Gateway presents to backends."""
-    client = client_for("apigateway")
-    for cert in _apigw_items(client, "get_client_certificates", "items"):
-        if cert.get("clientCertificateId"):
-            expires = cert.get("expirationDate")
-            yield {
-                **cert,
-                "_arn": _apigw_arn(client, f"/clientcertificates/{cert['clientCertificateId']}"),
-                "_expiration": jsonable(expires) if expires else None,
-            }
-
-
-def _apigwv2_apis(client: Any) -> Iterator[dict[str, Any]]:
-    yield from (a for a in _apigw_items(client, "get_apis", "Items") if a.get("ApiId"))
+    """Enumerate API Gateway client certificates (regional): the certificates API Gateway presents to backends.
+    ``_expiration`` is the expiry as ISO 8601 UTC."""
+    for cert in _apigw_resources(client_for, "apigateway", "get_client_certificates", "items", "clientCertificateId", "clientcertificates"):
+        expires = cert.get("expirationDate")
+        yield {**cert, "_expiration": jsonable(expires) if expires else None}
 
 
 def apigatewayv2_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the stages of each HTTP and WebSocket API (regional). An API whose stages cannot be read is a gap
-    (:func:`_undescribed`)."""
-    client = client_for("apigatewayv2")
-    failed: list[str] = []
-    for api in _apigwv2_apis(client):
-        api_id = api["ApiId"]
-        try:
-            stages = list(_apigw_items(client, "get_stages", "Items", ApiId=api_id))
-        except BotoCoreError, ClientError:
-            failed.append(str(api_id))
-            continue
-        api_arn = _apigw_arn(client, f"/apis/{api_id}")
-        for stage in stages:
-            if stage.get("StageName"):
-                yield with_edge_reads({**stage, "_arn": f"{api_arn}/stages/{stage['StageName']}", "_api_arn": api_arn}, {"_api_arn": COMPLETE})
-    if failed:
-        raise _undescribed("HTTP and WebSocket APIs whose stages", failed)
+    """Enumerate the stages of each HTTP and WebSocket API (regional)."""
+    yield from _apigw_api_children(client_for, "apigatewayv2", "get_stages", "HTTP and WebSocket APIs whose stages", name_field="StageName", path="stages")
 
 
 def apigatewayv2_authorizers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the authorizers of each HTTP and WebSocket API (regional). An API whose authorizers cannot be
-    read is a gap (:func:`_undescribed`)."""
-    client = client_for("apigatewayv2")
-    failed: list[str] = []
-    for api in _apigwv2_apis(client):
-        api_id = api["ApiId"]
-        try:
-            authorizers = list(_apigw_items(client, "get_authorizers", "Items", ApiId=api_id))
-        except BotoCoreError, ClientError:
-            failed.append(str(api_id))
-            continue
-        api_arn = _apigw_arn(client, f"/apis/{api_id}")
-        for authorizer in authorizers:
-            if authorizer.get("AuthorizerId"):
-                yield with_edge_reads({**authorizer, "_arn": f"{api_arn}/authorizers/{authorizer['AuthorizerId']}", "_api_arn": api_arn}, {"_api_arn": COMPLETE})
-    if failed:
-        raise _undescribed("HTTP and WebSocket APIs whose authorizers", failed)
+    """Enumerate the authorizers of each HTTP and WebSocket API (regional)."""
+    yield from _apigw_api_children(client_for, "apigatewayv2", "get_authorizers", "HTTP and WebSocket APIs whose authorizers", name_field="AuthorizerId", path="authorizers")
 
 
 def apigatewayv2_domain_names_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
