@@ -8984,6 +8984,7 @@
       "items_path": "IpamExternalResourceVerificationTokens[]",
       "natural_key": "IpamExternalResourceVerificationTokenArn",
       "fields": {
+        "name": "TokenName",
         "ipam_external_resource_verification_token_arn": "IpamExternalResourceVerificationTokenArn"
       },
       "tags": {
@@ -9870,6 +9871,7 @@
       "items_path": "anomalyDetectors[]",
       "natural_key": "anomalyDetectorArn",
       "fields": {
+        "name": "detectorName",
         "log_anomaly_detector_arn": "anomalyDetectorArn"
       },
       "tags": {
@@ -10970,6 +10972,7 @@
       "items_path": "profiles[]",
       "natural_key": "arn",
       "fields": {
+        "name": "profileName",
         "signing_profile_arn": "arn"
       },
       "tags": {
@@ -11044,6 +11047,7 @@
       "items_path": "PoolInfos[]",
       "natural_key": "PoolARN",
       "fields": {
+        "name": "PoolName",
         "tape_pool_arn": "PoolARN"
       },
       "tags": {

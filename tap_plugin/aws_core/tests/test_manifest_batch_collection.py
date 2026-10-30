@@ -861,8 +861,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_ec2_ipam_external_resource_verification_token": (
-        {'IpamExternalResource' 'VerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ipam-token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {},
+        {'TokenName': 'gen-1', 'IpamExternalResource' 'VerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ipam-token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_ipam_internet_registry_association": (
         {'IpamInternetRegistryAssociationArn': 'arn:aws:ec2:us-east-1:123456789012:ec2_ipam_internet_registry_association/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
@@ -953,8 +953,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_logs_log_anomaly_detector": (
-        {'anomalyDetectorArn': 'arn:aws:logs:us-east-1:123456789012:logs_log_anomaly_detector/gen-1'},
-        {},
+        {'detectorName': 'gen-1', 'anomalyDetectorArn': 'arn:aws:logs:us-east-1:123456789012:logs_log_anomaly_detector/gen-1'},
+        {'name': 'gen-1'},
     ),
     "aws_core__aws_logs_scheduled_query": (
         {'scheduledQueryArn': 'arn:aws:logs:us-east-1:123456789012:logs_scheduled_query/gen-1', 'name': 'gen-1'},
@@ -1065,16 +1065,16 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_signer_signing_profile": (
-        {'arn': 'arn:aws:signer:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
-        {},
+        {'profileName': 'gen-1', 'arn': 'arn:aws:signer:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
     ),
     "aws_core__aws_storagegateway_tape": (
         {'TapeARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
         {},
     ),
     "aws_core__aws_storagegateway_tape_pool": (
-        {'PoolARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
-        {},
+        {'PoolName': 'gen-1', 'PoolARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
+        {'name': 'gen-1'},
     ),
     "aws_core__aws_storagegateway_volume": (
         {'VolumeARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
