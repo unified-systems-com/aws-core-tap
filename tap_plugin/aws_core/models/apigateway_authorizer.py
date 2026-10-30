@@ -1,4 +1,4 @@
-"""API Gateway Authorizer — an authorizer of an Amazon API Gateway REST API."""
+"""API Gateway Authorizer — an authorizer of an Amazon API Gateway REST, HTTP or WebSocket API."""
 
 from typing import Any, ClassVar
 
@@ -8,11 +8,11 @@ from tap_grid.models import BaseModel
 
 
 class ApigatewayAuthorizer(BaseModel):
-    """An API Gateway REST API authorizer: the Lambda function or Cognito user pools that decide whether a caller may invoke the API."""
+    """An API Gateway authorizer: the Lambda function, Cognito user pools or JWT issuer that decide whether a caller may invoke the API."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_apigateway_authorizer"
     ENTITY_NAME: ClassVar[str] = "API Gateway Authorizer"
-    ENTITY_DESCRIPTION: ClassVar[str] = "An authorizer of an Amazon API Gateway REST API."
+    ENTITY_DESCRIPTION: ClassVar[str] = "An authorizer of an Amazon API Gateway REST, HTTP or WebSocket API."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The authorizer's ARN (the API's ARN plus /authorizers/<id>).
@@ -29,8 +29,10 @@ class ApigatewayAuthorizer(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "authorizer_arn": {"type": "string"},
+        "api_kind": {"type": ["string", "null"]},
         "authorizer_type": {"type": ["string", "null"]},
-        "identity_source": {"type": ["string", "null"]},
+        "identity_source": {"type": ["array", "null"]},
+        "jwt_issuer": {"type": ["string", "null"]},
         "result_ttl_seconds": {"type": ["integer", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
@@ -43,10 +45,14 @@ class ApigatewayAuthorizer(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     authorizer_arn = models.CharField(max_length=2048, blank=True, default="")
-    # TOKEN, REQUEST or COGNITO_USER_POOLS. NULL = not observed.
+    # rest for a REST API, http for an HTTP or WebSocket API. NULL = not observed.
+    api_kind = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    # TOKEN, REQUEST or COGNITO_USER_POOLS (REST); JWT or REQUEST (HTTP/WebSocket). NULL = not observed.
     authorizer_type = models.CharField(max_length=2048, blank=True, null=True, default=None)
     # Where the caller's identity is read from. NULL = not observed.
-    identity_source = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    identity_source = models.JSONField(null=True, blank=True, default=None)
+    # The issuer a JWT authorizer trusts (HTTP/WebSocket). NULL = not a JWT authorizer, or not observed.
+    jwt_issuer = models.CharField(max_length=2048, blank=True, null=True, default=None)
     # How long a decision is cached. NULL = not set, or not observed.
     result_ttl_seconds = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

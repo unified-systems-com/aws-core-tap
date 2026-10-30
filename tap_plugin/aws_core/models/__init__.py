@@ -152,30 +152,22 @@ from tap_plugin.aws_core.models.securityhub_automation_rule import SecurityhubAu
 from tap_plugin.aws_core.models.securityhub_finding_aggregator import SecurityhubFindingAggregator
 from tap_plugin.aws_core.models.securityhub_insight import SecurityhubInsight
 from tap_plugin.aws_core.models.apigateway_rest_api import ApigatewayRestApi
+from tap_plugin.aws_core.models.apigateway_usage_plan import ApigatewayUsagePlan
+from tap_plugin.aws_core.models.apigateway_api_key import ApigatewayApiKey
+from tap_plugin.aws_core.models.apigateway_client_certificate import ApigatewayClientCertificate
 from tap_plugin.aws_core.models.apigateway_stage import ApigatewayStage
 from tap_plugin.aws_core.models.apigateway_authorizer import ApigatewayAuthorizer
 from tap_plugin.aws_core.models.apigateway_domain_name import ApigatewayDomainName
-from tap_plugin.aws_core.models.apigateway_usage_plan import ApigatewayUsagePlan
 from tap_plugin.aws_core.models.apigateway_vpc_link import ApigatewayVpcLink
-from tap_plugin.aws_core.models.apigateway_api_key import ApigatewayApiKey
-from tap_plugin.aws_core.models.apigateway_client_certificate import ApigatewayClientCertificate
-from tap_plugin.aws_core.models.apigatewayv2_stage import Apigatewayv2Stage
-from tap_plugin.aws_core.models.apigatewayv2_authorizer import Apigatewayv2Authorizer
-from tap_plugin.aws_core.models.apigatewayv2_domain_name import Apigatewayv2DomainName
-from tap_plugin.aws_core.models.apigatewayv2_vpc_link import Apigatewayv2VpcLink
 
 __all__ = [
-    "Apigatewayv2VpcLink",
-    "Apigatewayv2DomainName",
-    "Apigatewayv2Authorizer",
-    "Apigatewayv2Stage",
-    "ApigatewayClientCertificate",
-    "ApigatewayApiKey",
     "ApigatewayVpcLink",
-    "ApigatewayUsagePlan",
     "ApigatewayDomainName",
     "ApigatewayAuthorizer",
     "ApigatewayStage",
+    "ApigatewayClientCertificate",
+    "ApigatewayApiKey",
+    "ApigatewayUsagePlan",
     "ApigatewayRestApi",
     "SecurityhubInsight",
     "SecurityhubFindingAggregator",

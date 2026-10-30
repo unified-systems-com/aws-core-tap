@@ -942,20 +942,30 @@ class TestApiGateway:
 
         return _Gw(**canned)
 
-    def test_a_stage_names_its_api_arn_and_web_acl_and_an_unreadable_api_is_a_loud_gap(self) -> None:
+    def _both(self, rest: Any, http: Any) -> Any:
+        return lambda service: {"apigateway": rest, "apigatewayv2": http}[service]
+
+    def test_stages_of_both_services_are_one_shape_told_apart_by_kind(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_stages_described
 
-        def get_stages(restApiId: str) -> Any:
-            if restApiId == "bad":
-                return _denied("GetStages")
-            return {"item": [{"stageName": "prod", "webAclArn": "arn:aws:wafv2:r:1:regional/webacl/a/i"}]}
+        rest = self._client("us-gov-west-1", get_rest_apis={"items": [{"id": "r1"}]}, get_stages={"item": [{"stageName": "prod", "webAclArn": "arn:acl", "tracingEnabled": True, "tags": {"k": "v"}}]})
+        http = self._client("us-gov-west-1", get_apis={"Items": [{"ApiId": "h1"}]}, get_stages={"Items": [{"StageName": "$default", "AutoDeploy": True, "Tags": {"k": "w"}}]})
+        r, h = list(apigateway_stages_described(None, client_for=self._both(rest, http)))
+        assert (r["_api_kind"], r["_arn"], r["_rest_api_arn"], r["_http_api_arn"]) == ("rest", "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/r1/stages/prod", "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/r1", None)
+        assert (r["_web_acl_arn"], r["_tracing_enabled"], r["_tags"]) == ("arn:acl", True, {"k": "v"})
+        assert (h["_api_kind"], h["_http_api_arn"], h["_rest_api_arn"], h["_auto_deploy"], h["_tags"]) == ("http", "arn:aws-us-gov:apigateway:us-gov-west-1::/apis/h1", None, True, {"k": "w"})
 
-        client = self._client("us-gov-west-1", get_rest_apis={"items": [{"id": "ok"}, {"id": "bad"}]}, get_stages=get_stages)
-        yielded, gap = _run_to_the_gap(apigateway_stages_described, "apigateway", client)
-        [stage] = yielded
-        assert stage["_arn"] == "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/ok/stages/prod"
-        assert stage["_api_arn"] == "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/ok" and stage["_web_acl_arn"].startswith("arn:aws:wafv2")
-        assert "bad" in gap
+    def test_a_gap_in_one_service_does_not_hide_the_other_and_both_are_reported(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_stages_described
+
+        rest = self._client(get_rest_apis={"items": [{"id": "bad"}]}, get_stages=_denied("GetStages"))
+        http = self._client(get_apis={"Items": [{"ApiId": "h1"}, {"ApiId": "h2"}]}, get_stages=lambda ApiId: {"Items": [{"StageName": "s"}]} if ApiId == "h1" else _denied("GetStages"))
+        yielded: list[dict[str, Any]] = []
+        with pytest.raises(SourceError) as gap:
+            for item in apigateway_stages_described(None, client_for=self._both(rest, http)):
+                yielded.append(item)
+        assert [i["_api_kind"] for i in yielded] == ["http"]
+        assert "bad" in str(gap.value) and "h2" in str(gap.value)
 
     def test_the_key_value_is_never_asked_for_and_is_removed_if_it_comes_back(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_api_keys_described
@@ -970,35 +980,29 @@ class TestApiGateway:
         assert asked == [{"includeValues": False}]
         assert "value" not in key and "SECRET-KEY-VALUE" not in str(key) and key["_arn"].endswith("/apikeys/k1")
 
-    def test_domains_choose_the_regional_certificate_and_v2_domains_gather_theirs(self) -> None:
-        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_domain_names_described, apigatewayv2_domain_names_described
+    def test_domain_names_of_both_services_list_their_certificates_and_policies(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_domain_names_described
 
-        v1 = self._client(get_domain_names={"items": [{"domainName": "a", "domainNameArn": "arn:a", "regionalCertificateArn": "arn:reg", "certificateArn": "arn:edge"}, {"domainName": "b", "domainNameArn": "arn:b", "certificateArn": "arn:edge"}]})
-        a, b = _run(apigateway_domain_names_described, "apigateway", v1)
-        assert (a["_certificate_arn"], b["_certificate_arn"]) == ("arn:reg", "arn:edge")
-        v2 = self._client(get_domain_names={"Items": [{"DomainName": "c", "DomainNameArn": "arn:c", "DomainNameConfigurations": [{"CertificateArn": "arn:x", "SecurityPolicy": "TLS_1_2"}, {"CertificateArn": "arn:x", "SecurityPolicy": "TLS_1_0"}]}]})
-        [c] = _run(apigatewayv2_domain_names_described, "apigatewayv2", v2)
-        assert c["_certificate_arns"] == ["arn:x"] and c["_security_policies"] == ["TLS_1_0", "TLS_1_2"]
+        rest = self._client(get_domain_names={"items": [{"domainName": "a", "domainNameArn": "arn:a", "regionalCertificateArn": "arn:reg", "certificateArn": "arn:edge", "securityPolicy": "TLS_1_2"}, {"domainName": "b", "domainNameArn": "arn:b", "certificateArn": "arn:edge"}]})
+        http = self._client(get_domain_names={"Items": [{"DomainName": "c", "DomainNameArn": "arn:c", "DomainNameConfigurations": [{"CertificateArn": "arn:x", "SecurityPolicy": "TLS_1_2", "EndpointType": "REGIONAL"}, {"CertificateArn": "arn:x", "SecurityPolicy": "TLS_1_0"}]}]})
+        a, b, c = list(apigateway_domain_names_described(None, client_for=self._both(rest, http)))
+        assert (a["_certificate_arns"], b["_certificate_arns"], a["_security_policies"], b["_security_policies"]) == (["arn:reg"], ["arn:edge"], ["TLS_1_2"], [])
+        assert (c["_api_kind"], c["_certificate_arns"], c["_security_policies"], c["_endpoint_types"]) == ("http", ["arn:x"], ["TLS_1_0", "TLS_1_2"], ["REGIONAL"])
 
-    def test_http_api_children_are_read_per_api_and_vpc_links_follow_their_token(self) -> None:
-        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigatewayv2_authorizers_described, apigatewayv2_stages_described, apigatewayv2_vpc_links_described
+    def test_authorizers_and_vpc_links_are_normalised_across_services(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_authorizers_described, apigateway_vpc_links_described
 
-        client = self._client(
-            get_apis={"Items": [{"ApiId": "h1"}]},
-            get_stages={"Items": [{"StageName": "$default"}]},
-            get_authorizers={"Items": [{"AuthorizerId": "z1", "Name": "jwt"}]},
-        )
-        [stage] = _run(apigatewayv2_stages_described, "apigatewayv2", client)
-        [authorizer] = _run(apigatewayv2_authorizers_described, "apigatewayv2", client)
-        assert stage["_arn"] == "arn:aws:apigateway:us-east-1::/apis/h1/stages/$default" and authorizer["_arn"].endswith("/apis/h1/authorizers/z1")
+        rest = self._client(get_rest_apis={"items": [{"id": "r1"}]}, get_authorizers={"items": [{"id": "a1", "name": "tok", "type": "TOKEN", "identitySource": "method.request.header.A, method.request.header.B"}]}, get_vpc_links={"items": [{"id": "v1", "name": "nlb", "status": "AVAILABLE", "targetArns": ["arn:nlb"]}]})
 
         def get_vpc_links(**kwargs: Any) -> Any:
-            if "NextToken" not in kwargs:
-                return {"Items": [{"VpcLinkId": "a"}], "NextToken": "t"}
-            return {"Items": [{"VpcLinkId": "b"}]}
+            return {"Items": [{"VpcLinkId": "v2", "Name": "subnets", "VpcLinkStatus": "AVAILABLE", "SubnetIds": ["subnet-1"]}], **({} if "NextToken" in kwargs else {"NextToken": "t"})} if "NextToken" in kwargs else {"Items": [{"VpcLinkId": "v3", "Name": "first"}], "NextToken": "t"}
 
-        links = _run(apigatewayv2_vpc_links_described, "apigatewayv2", self._client(get_vpc_links=get_vpc_links))
-        assert [item["VpcLinkId"] for item in links] == ["a", "b"]
+        http = self._client(get_apis={"Items": [{"ApiId": "h1"}]}, get_authorizers={"Items": [{"AuthorizerId": "z1", "Name": "jwt", "AuthorizerType": "JWT", "JwtConfiguration": {"Issuer": "https://idp"}}]}, get_vpc_links=get_vpc_links)
+        a_rest, a_http = list(apigateway_authorizers_described(None, client_for=self._both(rest, http)))
+        assert a_rest["_identity_source"] == ["method.request.header.A", "method.request.header.B"] and a_http["_jwt_issuer"] == "https://idp"
+        links = list(apigateway_vpc_links_described(None, client_for=self._both(rest, http)))
+        assert [(link["_api_kind"], link["_name"]) for link in links] == [("rest", "nlb"), ("http", "first"), ("http", "subnets")]
+        assert links[0]["_target_arns"] == ["arn:nlb"] and links[2]["_subnet_ids"] == ["subnet-1"]
 
     def test_a_client_certificate_expiry_is_json_safe(self) -> None:
         from datetime import UTC, datetime

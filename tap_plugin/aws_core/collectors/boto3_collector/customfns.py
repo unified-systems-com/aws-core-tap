@@ -2419,38 +2419,140 @@ def apigateway_rest_apis_described(session: Any, *, client_for: Any) -> Iterator
     yield from _apigw_resources(client_for, "apigateway", "get_rest_apis", "items", "id", "restapis")
 
 
-def apigateway_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the stages of each REST API (regional). A stage's variables can hold secrets, which is why the
-    entry stores nothing. ``_web_acl_arn`` is the WAF web ACL protecting the stage."""
-    yield from _apigw_api_children(
-        client_for, "apigateway", "get_stages", "REST APIs whose stages", name_field="stageName", path="stages",
-        derive=lambda stage: {"_web_acl_arn": stage.get("webAclArn")},
+def _drain_all(*parts: Iterator[dict[str, Any]]) -> Iterator[dict[str, Any]]:
+    """Yield every part in turn. A part that ends in a loud gap (:class:`SourceError`) does not stop the next
+    one; the gaps are raised together once every part has been read."""
+    gaps: list[str] = []
+    for part in parts:
+        try:
+            yield from part
+        except SourceError as exc:
+            gaps.append(str(exc))
+    if gaps:
+        raise SourceError("; ".join(gaps))
+
+
+def _api_kind_item(item: dict[str, Any], kind: str, **normalised: Any) -> dict[str, Any]:
+    """An API Gateway child item with the keys the manifest reads, whichever API it came from: ``_api_kind``
+    (``rest`` or ``http``), ``_rest_api_arn`` / ``_http_api_arn`` (the API's ARN under the one that applies,
+    ``None`` under the other), and the normalised keys the caller passes. REST and HTTP/WebSocket APIs are two
+    services with differently spelled answers for one concept."""
+    api_arn = item.get("_api_arn")
+    return with_edge_reads(
+        {**item, "_api_kind": kind, "_rest_api_arn": api_arn if kind == "rest" else None, "_http_api_arn": api_arn if kind == "http" else None, **normalised},
+        {"_rest_api_arn": COMPLETE, "_http_api_arn": COMPLETE, **{k: COMPLETE for k in normalised if k.endswith("_arn")}},
     )
 
 
+def apigateway_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the stages of every REST API and every HTTP/WebSocket API (regional). A stage's variables can
+    hold secrets, which is why the entry stores nothing. ``_web_acl_arn`` is the WAF web ACL protecting a REST
+    stage. REST and HTTP stages are told apart by ``_api_kind``."""
+
+    def rest() -> Iterator[dict[str, Any]]:
+        for stage in _apigw_api_children(client_for, "apigateway", "get_stages", "REST APIs whose stages", name_field="stageName", path="stages"):
+            yield _api_kind_item(
+                stage, "rest", _name=stage["stageName"], _tags=stage.get("tags") or {}, _web_acl_arn=stage.get("webAclArn"),
+                _deployment_id=stage.get("deploymentId"), _client_certificate_id=stage.get("clientCertificateId"),
+                _access_log_destination_arn=(stage.get("accessLogSettings") or {}).get("destinationArn"),
+                _cache_cluster_enabled=stage.get("cacheClusterEnabled"), _tracing_enabled=stage.get("tracingEnabled"), _auto_deploy=None,
+            )
+
+    def http() -> Iterator[dict[str, Any]]:
+        for stage in _apigw_api_children(client_for, "apigatewayv2", "get_stages", "HTTP and WebSocket APIs whose stages", name_field="StageName", path="stages"):
+            yield _api_kind_item(
+                stage, "http", _name=stage["StageName"], _tags=stage.get("Tags") or {}, _web_acl_arn=None,
+                _deployment_id=stage.get("DeploymentId"), _client_certificate_id=stage.get("ClientCertificateId"),
+                _access_log_destination_arn=(stage.get("AccessLogSettings") or {}).get("DestinationArn"),
+                _cache_cluster_enabled=None, _tracing_enabled=None, _auto_deploy=stage.get("AutoDeploy"),
+            )
+
+    yield from _drain_all(rest(), http())
+
+
 def apigateway_authorizers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the authorizers of each REST API (regional)."""
-    yield from _apigw_api_children(client_for, "apigateway", "get_authorizers", "REST APIs whose authorizers", name_field="id", path="authorizers")
+    """Enumerate the authorizers of every REST API and every HTTP/WebSocket API (regional). ``_identity_source``
+    is a list for both (REST spells it as one comma-separated string)."""
+
+    def rest() -> Iterator[dict[str, Any]]:
+        for auth in _apigw_api_children(client_for, "apigateway", "get_authorizers", "REST APIs whose authorizers", name_field="id", path="authorizers"):
+            source = auth.get("identitySource")
+            yield _api_kind_item(
+                auth, "rest", _name=auth.get("name"), _type=auth.get("type"), _identity_source=[p.strip() for p in str(source).split(",")] if source else None,
+                _result_ttl_seconds=auth.get("authorizerResultTtlInSeconds"), _jwt_issuer=None,
+            )
+
+    def http() -> Iterator[dict[str, Any]]:
+        for auth in _apigw_api_children(client_for, "apigatewayv2", "get_authorizers", "HTTP and WebSocket APIs whose authorizers", name_field="AuthorizerId", path="authorizers"):
+            yield _api_kind_item(
+                auth, "http", _name=auth.get("Name"), _type=auth.get("AuthorizerType"), _identity_source=auth.get("IdentitySource"),
+                _result_ttl_seconds=auth.get("AuthorizerResultTtlInSeconds"), _jwt_issuer=(auth.get("JwtConfiguration") or {}).get("Issuer"),
+            )
+
+    yield from _drain_all(rest(), http())
 
 
 def apigateway_domain_names_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate API Gateway REST custom domain names (regional), with the certificate each presents
-    (``_certificate_arn``: the regional certificate, else the edge-optimized one)."""
-    client = client_for("apigateway")
-    for domain in _apigw_items(client, "get_domain_names", "items"):
-        if domain.get("domainNameArn"):
-            cert = domain.get("regionalCertificateArn") or domain.get("certificateArn")
-            yield with_edge_reads({**domain, "_certificate_arn": cert}, {"_certificate_arn": COMPLETE})
+    """Enumerate custom domain names of REST APIs and of HTTP/WebSocket APIs (regional). ``_certificate_arns``
+    are the certificates presented and ``_security_policies`` their TLS policies, as lists for both."""
+
+    def rest() -> Iterator[dict[str, Any]]:
+        client = client_for("apigateway")
+        for domain in _apigw_items(client, "get_domain_names", "items"):
+            if domain.get("domainNameArn"):
+                certs = {c for c in (domain.get("regionalCertificateArn") or domain.get("certificateArn"),) if c}
+                yield with_edge_reads(
+                    {**domain, "_api_kind": "rest", "_arn": domain["domainNameArn"], "_name": domain.get("domainName"), "_tags": domain.get("tags") or {},
+                     "_certificate_arns": sorted(certs), "_security_policies": [domain["securityPolicy"]] if domain.get("securityPolicy") else [],
+                     "_endpoint_types": (domain.get("endpointConfiguration") or {}).get("types"),
+                     "_truststore_uri": (domain.get("mutualTlsAuthentication") or {}).get("truststoreUri")},
+                    {"_certificate_arns": COMPLETE},
+                )
+
+    def http() -> Iterator[dict[str, Any]]:
+        client = client_for("apigatewayv2")
+        for domain in _apigw_items(client, "get_domain_names", "Items"):
+            if domain.get("DomainNameArn"):
+                configs = domain.get("DomainNameConfigurations") or []
+                yield with_edge_reads(
+                    {**domain, "_api_kind": "http", "_arn": domain["DomainNameArn"], "_name": domain.get("DomainName"), "_tags": domain.get("Tags") or {},
+                     "_certificate_arns": sorted({str(c["CertificateArn"]) for c in configs if c.get("CertificateArn")}),
+                     "_security_policies": sorted({str(c["SecurityPolicy"]) for c in configs if c.get("SecurityPolicy")}),
+                     "_endpoint_types": sorted({str(c["EndpointType"]) for c in configs if c.get("EndpointType")}),
+                     "_truststore_uri": (domain.get("MutualTlsAuthentication") or {}).get("TruststoreUri")},
+                    {"_certificate_arns": COMPLETE},
+                )
+
+    yield from _drain_all(rest(), http())
+
+
+def apigateway_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate VPC links of REST APIs (to Network Load Balancers) and of HTTP APIs (to subnets and security
+    groups) (regional). ``_arn`` is built from the link id."""
+
+    def rest() -> Iterator[dict[str, Any]]:
+        for link in _apigw_resources(client_for, "apigateway", "get_vpc_links", "items", "id", "vpclinks"):
+            yield {**link, "_api_kind": "rest", "_name": link.get("name"), "_tags": link.get("tags") or {}, "_status": link.get("status"),
+                   "_target_arns": link.get("targetArns"), "_subnet_ids": None, "_security_group_ids": None}
+
+    def http() -> Iterator[dict[str, Any]]:
+        client = client_for("apigatewayv2")
+        for page in _token_pages(client, "get_vpc_links", _CONTINUATION):
+            for link in page.get("Items", []):
+                if link.get("VpcLinkId"):
+                    yield with_edge_reads(
+                        {**link, "_arn": _apigw_arn(client, f"/vpclinks/{link['VpcLinkId']}"), "_api_kind": "http", "_name": link.get("Name"),
+                         "_tags": link.get("Tags") or {}, "_status": link.get("VpcLinkStatus"), "_target_arns": None,
+                         "_subnet_ids": link.get("SubnetIds"), "_security_group_ids": link.get("SecurityGroupIds")},
+                        {"_subnet_ids": COMPLETE},
+                    )
+
+    yield from _drain_all(rest(), http())
 
 
 def apigateway_usage_plans_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate API Gateway usage plans (regional)."""
     yield from _apigw_resources(client_for, "apigateway", "get_usage_plans", "items", "id", "usageplans")
-
-
-def apigateway_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate API Gateway REST VPC links (regional): the private path from an API to a Network Load Balancer."""
-    yield from _apigw_resources(client_for, "apigateway", "get_vpc_links", "items", "id", "vpclinks")
 
 
 def apigateway_api_keys_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -2466,43 +2568,6 @@ def apigateway_client_certificates_described(session: Any, *, client_for: Any) -
     for cert in _apigw_resources(client_for, "apigateway", "get_client_certificates", "items", "clientCertificateId", "clientcertificates"):
         expires = cert.get("expirationDate")
         yield {**cert, "_expiration": jsonable(expires) if expires else None}
-
-
-def apigatewayv2_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the stages of each HTTP and WebSocket API (regional)."""
-    yield from _apigw_api_children(client_for, "apigatewayv2", "get_stages", "HTTP and WebSocket APIs whose stages", name_field="StageName", path="stages")
-
-
-def apigatewayv2_authorizers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate the authorizers of each HTTP and WebSocket API (regional)."""
-    yield from _apigw_api_children(client_for, "apigatewayv2", "get_authorizers", "HTTP and WebSocket APIs whose authorizers", name_field="AuthorizerId", path="authorizers")
-
-
-def apigatewayv2_domain_names_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate HTTP and WebSocket API custom domain names (regional). ``_certificate_arns`` are the certificates
-    its configurations present and ``_security_policies`` their TLS policies."""
-    client = client_for("apigatewayv2")
-    for domain in _apigw_items(client, "get_domain_names", "Items"):
-        if domain.get("DomainNameArn"):
-            configs = domain.get("DomainNameConfigurations") or []
-            yield with_edge_reads(
-                {
-                    **domain,
-                    "_certificate_arns": sorted({str(c["CertificateArn"]) for c in configs if c.get("CertificateArn")}),
-                    "_security_policies": sorted({str(c["SecurityPolicy"]) for c in configs if c.get("SecurityPolicy")}),
-                },
-                {"_certificate_arns": COMPLETE},
-            )
-
-
-def apigatewayv2_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate HTTP API VPC links (regional): the private path from an API to resources in a VPC.
-    ``GetVpcLinks`` has a continuation token and no paginator. ``_arn`` is built from the link id."""
-    client = client_for("apigatewayv2")
-    for page in _token_pages(client, "get_vpc_links", _CONTINUATION):
-        for link in page.get("Items", []):
-            if link.get("VpcLinkId"):
-                yield {**link, "_arn": _apigw_arn(client, f"/vpclinks/{link['VpcLinkId']}")}
 
 
 def _undescribed(kind: str, names: list[str]) -> SourceError:
@@ -2940,10 +3005,6 @@ _CUSTOM_FNS = {
     "apigateway_vpc_links_described": apigateway_vpc_links_described,
     "apigateway_api_keys_described": apigateway_api_keys_described,
     "apigateway_client_certificates_described": apigateway_client_certificates_described,
-    "apigatewayv2_stages_described": apigatewayv2_stages_described,
-    "apigatewayv2_authorizers_described": apigatewayv2_authorizers_described,
-    "apigatewayv2_domain_names_described": apigatewayv2_domain_names_described,
-    "apigatewayv2_vpc_links_described": apigatewayv2_vpc_links_described,
     "cloudwatch_alarms_described": cloudwatch_alarms_described,
     "cloudwatch_composite_alarms_described": cloudwatch_composite_alarms_described,
     "cloudwatch_dashboards_described": cloudwatch_dashboards_described,

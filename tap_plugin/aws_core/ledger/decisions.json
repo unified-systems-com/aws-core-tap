@@ -629,7 +629,8 @@
     },
     "aws_core__aws_apigateway_authorizer": {
       "cfn": [
-        "AWS::ApiGateway::Authorizer"
+        "AWS::ApiGateway::Authorizer",
+        "AWS::ApiGatewayV2::Authorizer"
       ]
     },
     "aws_core__aws_apigateway_client_certificate": {
@@ -639,7 +640,8 @@
     },
     "aws_core__aws_apigateway_domain_name": {
       "cfn": [
-        "AWS::ApiGateway::DomainName"
+        "AWS::ApiGateway::DomainName",
+        "AWS::ApiGatewayV2::DomainName"
       ]
     },
     "aws_core__aws_apigateway_http_api": {
@@ -654,7 +656,8 @@
     },
     "aws_core__aws_apigateway_stage": {
       "cfn": [
-        "AWS::ApiGateway::Stage"
+        "AWS::ApiGateway::Stage",
+        "AWS::ApiGatewayV2::Stage"
       ]
     },
     "aws_core__aws_apigateway_usage_plan": {
@@ -664,26 +667,7 @@
     },
     "aws_core__aws_apigateway_vpc_link": {
       "cfn": [
-        "AWS::ApiGateway::VpcLink"
-      ]
-    },
-    "aws_core__aws_apigatewayv2_authorizer": {
-      "cfn": [
-        "AWS::ApiGatewayV2::Authorizer"
-      ]
-    },
-    "aws_core__aws_apigatewayv2_domain_name": {
-      "cfn": [
-        "AWS::ApiGatewayV2::DomainName"
-      ]
-    },
-    "aws_core__aws_apigatewayv2_stage": {
-      "cfn": [
-        "AWS::ApiGatewayV2::Stage"
-      ]
-    },
-    "aws_core__aws_apigatewayv2_vpc_link": {
-      "cfn": [
+        "AWS::ApiGateway::VpcLink",
         "AWS::ApiGatewayV2::VpcLink"
       ]
     },

@@ -764,7 +764,7 @@ _OFF_CASES = [
     ("aws_core__aws_wafv2_regex_pattern_set", _WAF_REGEX_ARN, _WAF_CANARY, "pattern_count", 2),
     ("aws_core__aws_elb_listener", _LISTENER_ARN, _LISTENER_CANARY, "port", 443),
     ("aws_core__aws_apigateway_stage", _REST_STAGE_ARN, _STAGE_CANARY, "tracing_enabled", True),
-    ("aws_core__aws_apigatewayv2_stage", _HTTP_STAGE_ARN, _STAGE_CANARY, "auto_deploy", True),
+    ("aws_core__aws_apigateway_stage", _HTTP_STAGE_ARN, _STAGE_CANARY, "auto_deploy", True),
     ("aws_core__aws_cognito_user_pool_client", f"{_POOL_ID}:clientabc", _CLIENT_CANARY, "has_secret", True),
     ("aws_core__aws_cognito_identity_provider", f"{_POOL_ID}:corp", _IDP_CANARY, "provider_type", "OIDC"),
 ]
