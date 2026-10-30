@@ -620,6 +620,54 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'InsightArn': 'arn:aws:securityhub:us-east-1:123456789012:insight/123456789012/custom/abc', 'Name': 'open-critical', 'GroupByAttribute': 'ResourceId', 'Filters': {}},
         {'name': 'open-critical', 'group_by_attribute': 'ResourceId'},
     ),
+    "aws_core__aws_apigateway_rest_api": (
+        {'id': 'abc123', 'name': 'orders', '_arn': 'arn:aws:apigateway:us-east-1::/restapis/abc123', 'endpointConfiguration': {'types': ['REGIONAL']}, 'apiKeySource': 'HEADER', 'disableExecuteApiEndpoint': False, 'securityPolicy': 'TLS_1_2', 'tags': {'owner': 'net-team'}},
+        {'name': 'orders', 'rest_api_id': 'abc123', 'endpoint_types': ['REGIONAL'], 'security_policy': 'TLS_1_2'},
+    ),
+    "aws_core__aws_apigateway_stage": (
+        {'stageName': 'prod', 'deploymentId': 'd1', 'cacheClusterEnabled': False, 'tracingEnabled': True, 'webAclArn': 'arn:aws:wafv2:us-east-1:123456789012:regional/webacl/edge/i-1', 'accessLogSettings': {'destinationArn': 'arn:aws:logs:us-east-1:123456789012:log-group:access'}, 'variables': {'k': 'never-stored'}, 'tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/restapis/abc123/stages/prod', '_api_arn': 'arn:aws:apigateway:us-east-1::/restapis/abc123', '_web_acl_arn': 'arn:aws:wafv2:us-east-1:123456789012:regional/webacl/edge/i-1'},
+        {'name': 'prod', 'stage_name': 'prod', 'tracing_enabled': True, 'cache_cluster_enabled': False, 'deployment_id': 'd1'},
+    ),
+    "aws_core__aws_apigateway_authorizer": (
+        {'id': 'a1', 'name': 'jwt', 'type': 'TOKEN', 'identitySource': 'method.request.header.Authorization', 'authorizerResultTtlInSeconds': 300, '_arn': 'arn:aws:apigateway:us-east-1::/restapis/abc123/authorizers/a1', '_api_arn': 'arn:aws:apigateway:us-east-1::/restapis/abc123'},
+        {'name': 'jwt', 'authorizer_type': 'TOKEN', 'result_ttl_seconds': 300},
+    ),
+    "aws_core__aws_apigateway_domain_name": (
+        {'domainName': 'api.example.com', 'domainNameArn': 'arn:aws:apigateway:us-east-1::/domainnames/api.example.com', 'securityPolicy': 'TLS_1_2', 'endpointConfiguration': {'types': ['REGIONAL']}, 'regionalCertificateArn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc', '_certificate_arn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc', 'tags': {'owner': 'net-team'}},
+        {'name': 'api.example.com', 'security_policy': 'TLS_1_2', 'endpoint_types': ['REGIONAL']},
+    ),
+    "aws_core__aws_apigateway_usage_plan": (
+        {'id': 'u1', 'name': 'partner', 'quota': {'limit': 10000, 'period': 'DAY'}, 'throttle': {'rateLimit': 50.0, 'burstLimit': 100}, 'tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/usageplans/u1'},
+        {'name': 'partner', 'quota_limit': 10000, 'quota_period': 'DAY', 'throttle_rate_limit': 50.0, 'throttle_burst_limit': 100},
+    ),
+    "aws_core__aws_apigateway_vpc_link": (
+        {'id': 'v1', 'name': 'private', 'status': 'AVAILABLE', 'targetArns': ['arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/net/n/abc'], 'tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/vpclinks/v1'},
+        {'name': 'private', 'status': 'AVAILABLE'},
+    ),
+    "aws_core__aws_apigateway_api_key": (
+        {'id': 'k1', 'name': 'partner-key', 'enabled': True, 'stageKeys': ['abc123/prod'], 'tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/apikeys/k1'},
+        {'name': 'partner-key', 'enabled': True, 'stage_keys': ['abc123/prod']},
+    ),
+    "aws_core__aws_apigateway_client_certificate": (
+        {'clientCertificateId': 'cc1', 'pemEncodedCertificate': '-----BEGIN CERTIFICATE-----', 'expirationDate': 'x', '_expiration': '2027-10-01T00:00:00Z', 'tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/clientcertificates/cc1'},
+        {'client_certificate_id': 'cc1', 'expiration': '2027-10-01T00:00:00Z'},
+    ),
+    "aws_core__aws_apigatewayv2_stage": (
+        {'StageName': '$default', 'AutoDeploy': True, 'StageVariables': {'k': 'never-stored'}, 'AccessLogSettings': {'DestinationArn': 'arn:aws:logs:us-east-1:123456789012:log-group:access'}, 'Tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/apis/h1/stages/$default', '_api_arn': 'arn:aws:apigateway:us-east-1::/apis/h1'},
+        {'name': '$default', 'auto_deploy': True, 'stage_name': '$default'},
+    ),
+    "aws_core__aws_apigatewayv2_authorizer": (
+        {'AuthorizerId': 'z1', 'Name': 'jwt', 'AuthorizerType': 'JWT', 'IdentitySource': ['$request.header.Authorization'], 'JwtConfiguration': {'Issuer': 'https://idp.example.com', 'Audience': ['api']}, '_arn': 'arn:aws:apigateway:us-east-1::/apis/h1/authorizers/z1', '_api_arn': 'arn:aws:apigateway:us-east-1::/apis/h1'},
+        {'name': 'jwt', 'authorizer_type': 'JWT', 'jwt_issuer': 'https://idp.example.com'},
+    ),
+    "aws_core__aws_apigatewayv2_domain_name": (
+        {'DomainName': 'api2.example.com', 'DomainNameArn': 'arn:aws:apigateway:us-east-1::/domainnames/api2.example.com', 'DomainNameConfigurations': [{'CertificateArn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc', 'SecurityPolicy': 'TLS_1_2'}], '_certificate_arns': ['arn:aws:acm:us-east-1:123456789012:certificate/abc'], '_security_policies': ['TLS_1_2'], 'Tags': {'owner': 'net-team'}},
+        {'name': 'api2.example.com', 'security_policies': ['TLS_1_2']},
+    ),
+    "aws_core__aws_apigatewayv2_vpc_link": (
+        {'VpcLinkId': 'vl1', 'Name': 'to-vpc', 'VpcLinkStatus': 'AVAILABLE', 'SubnetIds': ['subnet-0a1'], 'SecurityGroupIds': ['sg-0a1'], 'Tags': {'owner': 'net-team'}, '_arn': 'arn:aws:apigateway:us-east-1::/vpclinks/vl1'},
+        {'name': 'to-vpc', 'status': 'AVAILABLE', 'subnet_ids': ['subnet-0a1']},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

@@ -933,3 +933,78 @@ class TestObservability:
         unprocessed = _Client(list_automation_rules={"AutomationRulesMetadata": [{"RuleArn": "arn:r1"}, {"RuleArn": "arn:r2"}]}, batch_get_automation_rules={"Rules": [{"RuleArn": "arn:r1", "Criteria": {}}]}, list_tags_for_resource={"Tags": {}})
         yielded, gap = _run_to_the_gap(securityhub_automation_rules_described, "securityhub", unprocessed)
         assert len(yielded) == 2 and "arn:r2" in gap and "arn:r1" not in gap
+
+
+class TestApiGateway:
+    def _client(self, region: str = "us-east-1", **canned: Any) -> Any:
+        class _Gw(_Client):
+            meta = type("Meta", (), {"region_name": region})()
+
+        return _Gw(**canned)
+
+    def test_a_stage_names_its_api_arn_and_web_acl_and_an_unreadable_api_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_stages_described
+
+        def get_stages(restApiId: str) -> Any:
+            if restApiId == "bad":
+                return _denied("GetStages")
+            return {"item": [{"stageName": "prod", "webAclArn": "arn:aws:wafv2:r:1:regional/webacl/a/i"}]}
+
+        client = self._client("us-gov-west-1", get_rest_apis={"items": [{"id": "ok"}, {"id": "bad"}]}, get_stages=get_stages)
+        yielded, gap = _run_to_the_gap(apigateway_stages_described, "apigateway", client)
+        [stage] = yielded
+        assert stage["_arn"] == "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/ok/stages/prod"
+        assert stage["_api_arn"] == "arn:aws-us-gov:apigateway:us-gov-west-1::/restapis/ok" and stage["_web_acl_arn"].startswith("arn:aws:wafv2")
+        assert "bad" in gap
+
+    def test_the_key_value_is_never_asked_for_and_is_removed_if_it_comes_back(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_api_keys_described
+
+        asked: list[dict[str, Any]] = []
+
+        def get_api_keys(**kwargs: Any) -> Any:
+            asked.append(kwargs)
+            return {"items": [{"id": "k1", "name": "partner", "value": "SECRET-KEY-VALUE", "enabled": True}]}
+
+        [key] = _run(apigateway_api_keys_described, "apigateway", self._client(get_api_keys=get_api_keys))
+        assert asked == [{"includeValues": False}]
+        assert "value" not in key and "SECRET-KEY-VALUE" not in str(key) and key["_arn"].endswith("/apikeys/k1")
+
+    def test_domains_choose_the_regional_certificate_and_v2_domains_gather_theirs(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_domain_names_described, apigatewayv2_domain_names_described
+
+        v1 = self._client(get_domain_names={"items": [{"domainName": "a", "domainNameArn": "arn:a", "regionalCertificateArn": "arn:reg", "certificateArn": "arn:edge"}, {"domainName": "b", "domainNameArn": "arn:b", "certificateArn": "arn:edge"}]})
+        a, b = _run(apigateway_domain_names_described, "apigateway", v1)
+        assert (a["_certificate_arn"], b["_certificate_arn"]) == ("arn:reg", "arn:edge")
+        v2 = self._client(get_domain_names={"Items": [{"DomainName": "c", "DomainNameArn": "arn:c", "DomainNameConfigurations": [{"CertificateArn": "arn:x", "SecurityPolicy": "TLS_1_2"}, {"CertificateArn": "arn:x", "SecurityPolicy": "TLS_1_0"}]}]})
+        [c] = _run(apigatewayv2_domain_names_described, "apigatewayv2", v2)
+        assert c["_certificate_arns"] == ["arn:x"] and c["_security_policies"] == ["TLS_1_0", "TLS_1_2"]
+
+    def test_http_api_children_are_read_per_api_and_vpc_links_follow_their_token(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigatewayv2_authorizers_described, apigatewayv2_stages_described, apigatewayv2_vpc_links_described
+
+        client = self._client(
+            get_apis={"Items": [{"ApiId": "h1"}]},
+            get_stages={"Items": [{"StageName": "$default"}]},
+            get_authorizers={"Items": [{"AuthorizerId": "z1", "Name": "jwt"}]},
+        )
+        [stage] = _run(apigatewayv2_stages_described, "apigatewayv2", client)
+        [authorizer] = _run(apigatewayv2_authorizers_described, "apigatewayv2", client)
+        assert stage["_arn"] == "arn:aws:apigateway:us-east-1::/apis/h1/stages/$default" and authorizer["_arn"].endswith("/apis/h1/authorizers/z1")
+
+        def get_vpc_links(**kwargs: Any) -> Any:
+            if "NextToken" not in kwargs:
+                return {"Items": [{"VpcLinkId": "a"}], "NextToken": "t"}
+            return {"Items": [{"VpcLinkId": "b"}]}
+
+        links = _run(apigatewayv2_vpc_links_described, "apigatewayv2", self._client(get_vpc_links=get_vpc_links))
+        assert [item["VpcLinkId"] for item in links] == ["a", "b"]
+
+    def test_a_client_certificate_expiry_is_json_safe(self) -> None:
+        from datetime import UTC, datetime
+
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_client_certificates_described
+
+        client = self._client(get_client_certificates={"items": [{"clientCertificateId": "cc1", "expirationDate": datetime(2027, 10, 1, tzinfo=UTC)}]})
+        [cert] = _run(apigateway_client_certificates_described, "apigateway", client)
+        assert cert["_expiration"] == "2027-10-01T00:00:00Z"

@@ -6283,6 +6283,607 @@
         "source": "none",
         "why": "The CloudFormation schema for AWS::SecurityHub::Insight says tagging.taggable is false, and the Security Hub tag operations take a hub, hub v2 or automation rule ARN, not this type (botocore 1.43.121)."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_rest_api",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_rest_apis_described"
+      },
+      "why": "Enumerate API Gateway REST APIs — the HTTP fronts of the account, with the endpoint type, resource policy and TLS settings that decide who can reach each.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetRestApis output shape and custom_fn apigateway_rest_apis_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "policy",
+            "category": "access_policy",
+            "reason": "The API's resource policy: a map of who may invoke it. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "rest_api_arn": "_arn",
+        "rest_api_id": "id",
+        "endpoint_types": "endpointConfiguration.types",
+        "api_key_source": "apiKeySource",
+        "disable_execute_api_endpoint": "disableExecuteApiEndpoint",
+        "security_policy": "securityPolicy"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_stage",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_stages_described"
+      },
+      "why": "Enumerate REST API stages — the deployed endpoints, and whether each has logging, tracing, a client certificate and a web ACL.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: GetStages returns variables, a free-form key/value map that integrations read and that routinely holds API keys and endpoints. Identity, deployment, cache, tracing, WAF web ACL, client certificate, access log destination, tags and the API and web ACL edges are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetStages output shape and custom_fn apigateway_stages_described, 2026-10-29; no sensitive-flagged member. variables is a free-form map.",
+        "locations": [
+          {
+            "path": "variables",
+            "category": "credential",
+            "reason": "Stage variables: free-form key/value pairs that integrations and mapping templates read; they routinely hold API keys and endpoints. botocore does not mark them sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "stageName",
+        "stage_arn": "_arn",
+        "stage_name": "stageName",
+        "deployment_id": "deploymentId",
+        "cache_cluster_enabled": "cacheClusterEnabled",
+        "tracing_enabled": "tracingEnabled",
+        "web_acl_arn": "_web_acl_arn",
+        "client_certificate_id": "clientCertificateId",
+        "access_log_destination_arn": "accessLogSettings.destinationArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_api_arn",
+          "target_type": "aws_core__aws_apigateway_rest_api",
+          "key_kind": "arn",
+          "edge_type": "DEPLOYS_API__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_web_acl_arn",
+          "target_type": "aws_core__aws_wafv2_web_acl",
+          "key_kind": "arn",
+          "edge_type": "PROTECTED_BY_WEB_ACL__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_authorizer",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_authorizers_described"
+      },
+      "why": "Enumerate REST API authorizers — who decides whether a caller is allowed in, and how long that decision is cached.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetAuthorizers output shape and custom_fn apigateway_authorizers_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "authorizerUri",
+            "category": "other",
+            "reason": "The Lambda function the authorizer invokes: a location, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "authorizerCredentials",
+            "category": "other",
+            "reason": "The ARN of the role API Gateway assumes to invoke the authorizer: a reference, not a credential.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "authorizer_arn": "_arn",
+        "authorizer_type": "type",
+        "identity_source": "identitySource",
+        "result_ttl_seconds": "authorizerResultTtlInSeconds"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::ApiGateway::Authorizer says tagging.taggable is false, and the API Gateway tag operations take an API, stage, domain name, key, usage plan or VPC link ARN, not this type (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_api_arn",
+          "target_type": "aws_core__aws_apigateway_rest_api",
+          "key_kind": "arn",
+          "edge_type": "AUTHORIZES_API__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_domain_name",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_domain_names_described"
+      },
+      "why": "Enumerate API Gateway custom domain names — the hostnames APIs are served on, and the minimum TLS version and certificate behind each.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetDomainNames output shape and custom_fn apigateway_domain_names_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "policy",
+            "category": "access_policy",
+            "reason": "The domain's access policy. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "domainNameArn",
+      "fields": {
+        "name": "domainName",
+        "domain_name_arn": "domainNameArn",
+        "security_policy": "securityPolicy",
+        "endpoint_types": "endpointConfiguration.types",
+        "certificate_arn": "_certificate_arn",
+        "mutual_tls_truststore_uri": "mutualTlsAuthentication.truststoreUri"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_certificate_arn",
+          "target_type": "aws_core__aws_acm_certificate",
+          "key_kind": "arn",
+          "edge_type": "PRESENTS_CERTIFICATE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_usage_plan",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_usage_plans_described"
+      },
+      "why": "Enumerate API Gateway usage plans — the throttling and quota limits that bound what an API key can do.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetUsagePlans output shape and custom_fn apigateway_usage_plans_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "usage_plan_arn": "_arn",
+        "quota_limit": "quota.limit",
+        "quota_period": "quota.period",
+        "throttle_rate_limit": "throttle.rateLimit",
+        "throttle_burst_limit": "throttle.burstLimit"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_vpc_link",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_vpc_links_described"
+      },
+      "why": "Enumerate API Gateway REST VPC links — the private paths from APIs into a VPC, and the load balancers they target.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetVpcLinks output shape and custom_fn apigateway_vpc_links_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "statusMessage",
+            "category": "diagnostic",
+            "reason": "A service-composed status message.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "vpc_link_arn": "_arn",
+        "status": "status",
+        "target_arns": "targetArns"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_api_key",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_api_keys_described"
+      },
+      "why": "Enumerate API Gateway API keys — the identifiers callers present to usage plans, and which are enabled.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetApiKeys output shape and custom_fn apigateway_api_keys_described, 2026-10-29. The key value is returned only when includeValues is true; the reader never sets it and removes a value that comes back anyway.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "api_key_arn": "_arn",
+        "enabled": "enabled",
+        "customer_id": "customerId",
+        "stage_keys": "stageKeys"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_client_certificate",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigateway_client_certificates_described"
+      },
+      "why": "Enumerate API Gateway client certificates — what stages present to backends, and when each expires.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigateway GetClientCertificates output shape and custom_fn apigateway_client_certificates_described, 2026-10-29; no sensitive-flagged member. The PEM is the public certificate, never a key.",
+        "locations": [
+          {
+            "path": "pemEncodedCertificate",
+            "category": "other",
+            "reason": "The PEM-encoded public certificate: not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "client_certificate_arn": "_arn",
+        "client_certificate_id": "clientCertificateId",
+        "expiration": "_expiration"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_apigatewayv2_stage",
+      "service": "apigatewayv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigatewayv2_stages_described"
+      },
+      "why": "Enumerate HTTP and WebSocket API stages — the deployed endpoints, whether each auto-deploys, and where access logs go.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: GetStages returns StageVariables, a free-form key/value map that routinely holds API keys and endpoints. Identity, auto-deploy, access log destination, client certificate, tags and the API edge are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigatewayv2 GetApis and GetStages output shapes and custom_fn apigatewayv2_stages_described, 2026-10-29; no sensitive-flagged member. StageVariables is a free-form map.",
+        "locations": [
+          {
+            "path": "StageVariables",
+            "category": "credential",
+            "reason": "Stage variables: free-form key/value pairs that integrations read; they routinely hold API keys and endpoints. botocore does not mark them sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "StageName",
+        "stage_arn": "_arn",
+        "stage_name": "StageName",
+        "auto_deploy": "AutoDeploy",
+        "access_log_destination_arn": "AccessLogSettings.DestinationArn",
+        "client_certificate_id": "ClientCertificateId"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_api_arn",
+          "target_type": "aws_core__aws_apigateway_http_api",
+          "key_kind": "arn",
+          "edge_type": "DEPLOYS_API__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_apigatewayv2_authorizer",
+      "service": "apigatewayv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigatewayv2_authorizers_described"
+      },
+      "why": "Enumerate HTTP and WebSocket API authorizers — who decides whether a caller is allowed in (a JWT issuer or a Lambda function).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigatewayv2 GetAuthorizers output shape and custom_fn apigatewayv2_authorizers_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "AuthorizerUri",
+            "category": "other",
+            "reason": "The Lambda function the authorizer invokes: a location, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "JwtConfiguration.Audience",
+            "category": "other",
+            "reason": "The audiences a JWT must name: identifiers, not credentials.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "authorizer_arn": "_arn",
+        "authorizer_type": "AuthorizerType",
+        "identity_source": "IdentitySource",
+        "jwt_issuer": "JwtConfiguration.Issuer",
+        "result_ttl_seconds": "AuthorizerResultTtlInSeconds"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::ApiGatewayV2::Authorizer says tagging.taggable is false, and the API Gateway tag operations take an API, stage, domain name, key, usage plan or VPC link ARN, not this type (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_api_arn",
+          "target_type": "aws_core__aws_apigateway_http_api",
+          "key_kind": "arn",
+          "edge_type": "AUTHORIZES_API__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_apigatewayv2_domain_name",
+      "service": "apigatewayv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigatewayv2_domain_names_described"
+      },
+      "why": "Enumerate HTTP and WebSocket API custom domain names — the hostnames served, the minimum TLS version and the certificates presented.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigatewayv2 GetDomainNames output shape and custom_fn apigatewayv2_domain_names_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "DomainNameArn",
+      "fields": {
+        "name": "DomainName",
+        "domain_name_arn": "DomainNameArn",
+        "security_policies": "_security_policies",
+        "certificate_arns": "_certificate_arns",
+        "mutual_tls_truststore_uri": "MutualTlsAuthentication.TruststoreUri"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_certificate_arns",
+          "target_type": "aws_core__aws_acm_certificate",
+          "key_kind": "arn",
+          "edge_type": "PRESENTS_CERTIFICATE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_apigatewayv2_vpc_link",
+      "service": "apigatewayv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "apigatewayv2_vpc_links_described"
+      },
+      "why": "Enumerate HTTP API VPC links — the private paths from APIs into a VPC, and the subnets and security groups they run in.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore apigatewayv2 GetVpcLinks output shape and custom_fn apigatewayv2_vpc_links_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "VpcLinkStatusMessage",
+            "category": "diagnostic",
+            "reason": "A service-composed status message.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "vpc_link_arn": "_arn",
+        "status": "VpcLinkStatus",
+        "subnet_ids": "SubnetIds",
+        "security_group_ids": "SecurityGroupIds"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "SubnetIds[]",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }

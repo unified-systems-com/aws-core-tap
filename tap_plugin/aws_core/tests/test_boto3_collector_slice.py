@@ -77,6 +77,10 @@ _LISTENER_CANARY = "canary-listener-oidc-secret-6a10"
 _CLIENT_CANARY = "canary-cognito-client-secret-d4e2"
 _IDP_CANARY = "canary-cognito-idp-client-secret-91fb"
 _LB_ARN = f"arn:aws:elasticloadbalancing:us-east-1:{_ACCOUNT}:loadbalancer/app/slice-lb/abc"
+# Planted in a stage-variable value of a REST stage and of an HTTP stage: both are declared credential locations.
+_STAGE_CANARY = "canary-apigw-stage-var-7b52"
+_REST_STAGE_ARN = "arn:aws:apigateway:::/restapis/rest1/stages/prod"  # canned clients carry no region
+_HTTP_STAGE_ARN = f"arn:aws:apigateway:::/apis/{_API_ID}/stages/prod"
 _LISTENER_ARN = f"arn:aws:elasticloadbalancing:us-east-1:{_ACCOUNT}:listener/app/slice-lb/abc/def"
 
 _CANNED = {
@@ -338,6 +342,11 @@ _CANNED = {
     # API Gateway v2 HTTP API with a static header mapping carrying a key.
     # get_stages / get_authorizers fall through to {} (no items).
     "get_apis": {"Items": [{"ApiId": _API_ID, "Name": "sam-api", "ProtocolType": "HTTP"}]},
+    "get_rest_apis": {"items": [{"id": "rest1", "name": "slice-rest"}]},
+    "get_stages": {
+        "item": [{"stageName": "prod", "deploymentId": "d1", "tracingEnabled": True, "variables": {"token": _STAGE_CANARY}}],
+        "Items": [{"StageName": "prod", "AutoDeploy": True, "StageVariables": {"token": _STAGE_CANARY}}],
+    },
     "get_routes": {
         "Items": [
             {"RouteId": "r1", "RouteKey": "POST /orders", "AuthorizationType": "JWT", "AuthorizerId": "a1"},
@@ -754,6 +763,8 @@ _OFF_CASES = [
     ("aws_core__aws_wafv2_rule_group", _WAF_GROUP_ARN, _WAF_CANARY, "capacity", 20),
     ("aws_core__aws_wafv2_regex_pattern_set", _WAF_REGEX_ARN, _WAF_CANARY, "pattern_count", 2),
     ("aws_core__aws_elb_listener", _LISTENER_ARN, _LISTENER_CANARY, "port", 443),
+    ("aws_core__aws_apigateway_stage", _REST_STAGE_ARN, _STAGE_CANARY, "tracing_enabled", True),
+    ("aws_core__aws_apigatewayv2_stage", _HTTP_STAGE_ARN, _STAGE_CANARY, "auto_deploy", True),
     ("aws_core__aws_cognito_user_pool_client", f"{_POOL_ID}:clientabc", _CLIENT_CANARY, "has_secret", True),
     ("aws_core__aws_cognito_identity_provider", f"{_POOL_ID}:corp", _IDP_CANARY, "provider_type", "OIDC"),
 ]

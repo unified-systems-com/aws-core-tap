@@ -2360,6 +2360,192 @@ def securityhub_insights_described(session: Any, *, client_for: Any) -> Iterator
     yield from (i for i in _securityhub_items(client_for, "get_insights", "Insights") if i.get("InsightArn"))
 
 
+def _apigw_arn(client: Any, resource: str) -> str:
+    """``arn:<partition>:apigateway:<region>::<resource>`` for the client's own region."""
+    region = _client_region(client)
+    return build_arn(partition_of_region(region), "apigateway", region, "", resource)
+
+
+def _apigw_items(client: Any, method: str, key: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
+    for page in _pages(client, method, **kwargs):
+        yield from page.get(key, [])
+
+
+def apigateway_rest_apis_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate API Gateway REST APIs (regional). ``_arn`` is built from the API id; tags ride inline."""
+    client = client_for("apigateway")
+    for api in _apigw_items(client, "get_rest_apis", "items"):
+        if api.get("id"):
+            yield {**api, "_arn": _apigw_arn(client, f"/restapis/{api['id']}")}
+
+
+def apigateway_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the stages of each REST API (regional): ``GetStages`` takes an API, so each is asked in turn.
+    A stage's variables can hold secrets, which is why the entry stores nothing. ``_web_acl_arn`` is the WAF
+    web ACL protecting the stage. An API whose stages cannot be read is a gap (:func:`_undescribed`)."""
+    client = client_for("apigateway")
+    failed: list[str] = []
+    for api in _apigw_items(client, "get_rest_apis", "items"):
+        api_id = api.get("id")
+        if not api_id:
+            continue
+        try:
+            stages = without_response_metadata(client.get_stages(restApiId=api_id)).get("item", [])
+        except BotoCoreError, ClientError:
+            failed.append(str(api_id))
+            continue
+        api_arn = _apigw_arn(client, f"/restapis/{api_id}")
+        for stage in stages:
+            if stage.get("stageName"):
+                yield with_edge_reads(
+                    {**stage, "_arn": f"{api_arn}/stages/{stage['stageName']}", "_api_arn": api_arn, "_web_acl_arn": stage.get("webAclArn")},
+                    {"_api_arn": COMPLETE, "_web_acl_arn": COMPLETE},
+                )
+    if failed:
+        raise _undescribed("REST APIs whose stages", failed)
+
+
+def apigateway_authorizers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the authorizers of each REST API (regional). An API whose authorizers cannot be read is a gap
+    (:func:`_undescribed`)."""
+    client = client_for("apigateway")
+    failed: list[str] = []
+    for api in _apigw_items(client, "get_rest_apis", "items"):
+        api_id = api.get("id")
+        if not api_id:
+            continue
+        try:
+            authorizers = list(_apigw_items(client, "get_authorizers", "items", restApiId=api_id))
+        except BotoCoreError, ClientError:
+            failed.append(str(api_id))
+            continue
+        api_arn = _apigw_arn(client, f"/restapis/{api_id}")
+        for authorizer in authorizers:
+            if authorizer.get("id"):
+                yield with_edge_reads({**authorizer, "_arn": f"{api_arn}/authorizers/{authorizer['id']}", "_api_arn": api_arn}, {"_api_arn": COMPLETE})
+    if failed:
+        raise _undescribed("REST APIs whose authorizers", failed)
+
+
+def apigateway_domain_names_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate API Gateway REST custom domain names (regional), with the certificate each presents
+    (``_certificate_arn``: the regional certificate, else the edge-optimized one)."""
+    client = client_for("apigateway")
+    for domain in _apigw_items(client, "get_domain_names", "items"):
+        if domain.get("domainNameArn"):
+            cert = domain.get("regionalCertificateArn") or domain.get("certificateArn")
+            yield with_edge_reads({**domain, "_certificate_arn": cert}, {"_certificate_arn": COMPLETE})
+
+
+def apigateway_usage_plans_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate API Gateway usage plans (regional)."""
+    client = client_for("apigateway")
+    for plan in _apigw_items(client, "get_usage_plans", "items"):
+        if plan.get("id"):
+            yield {**plan, "_arn": _apigw_arn(client, f"/usageplans/{plan['id']}")}
+
+
+def apigateway_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate API Gateway REST VPC links (regional): the private path from an API to a Network Load Balancer."""
+    client = client_for("apigateway")
+    for link in _apigw_items(client, "get_vpc_links", "items"):
+        if link.get("id"):
+            yield {**link, "_arn": _apigw_arn(client, f"/vpclinks/{link['id']}")}
+
+
+def apigateway_api_keys_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate API Gateway API keys (regional). The key values are never requested (``includeValues`` is left
+    false) and a ``value`` that comes back anyway is removed here."""
+    client = client_for("apigateway")
+    for key in _apigw_items(client, "get_api_keys", "items", includeValues=False):
+        if key.get("id"):
+            yield {**{k: v for k, v in key.items() if k != "value"}, "_arn": _apigw_arn(client, f"/apikeys/{key['id']}")}
+
+
+def apigateway_client_certificates_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate API Gateway client certificates (regional): the certificates API Gateway presents to backends."""
+    client = client_for("apigateway")
+    for cert in _apigw_items(client, "get_client_certificates", "items"):
+        if cert.get("clientCertificateId"):
+            expires = cert.get("expirationDate")
+            yield {
+                **cert,
+                "_arn": _apigw_arn(client, f"/clientcertificates/{cert['clientCertificateId']}"),
+                "_expiration": jsonable(expires) if expires else None,
+            }
+
+
+def _apigwv2_apis(client: Any) -> Iterator[dict[str, Any]]:
+    yield from (a for a in _apigw_items(client, "get_apis", "Items") if a.get("ApiId"))
+
+
+def apigatewayv2_stages_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the stages of each HTTP and WebSocket API (regional). An API whose stages cannot be read is a gap
+    (:func:`_undescribed`)."""
+    client = client_for("apigatewayv2")
+    failed: list[str] = []
+    for api in _apigwv2_apis(client):
+        api_id = api["ApiId"]
+        try:
+            stages = list(_apigw_items(client, "get_stages", "Items", ApiId=api_id))
+        except BotoCoreError, ClientError:
+            failed.append(str(api_id))
+            continue
+        api_arn = _apigw_arn(client, f"/apis/{api_id}")
+        for stage in stages:
+            if stage.get("StageName"):
+                yield with_edge_reads({**stage, "_arn": f"{api_arn}/stages/{stage['StageName']}", "_api_arn": api_arn}, {"_api_arn": COMPLETE})
+    if failed:
+        raise _undescribed("HTTP and WebSocket APIs whose stages", failed)
+
+
+def apigatewayv2_authorizers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the authorizers of each HTTP and WebSocket API (regional). An API whose authorizers cannot be
+    read is a gap (:func:`_undescribed`)."""
+    client = client_for("apigatewayv2")
+    failed: list[str] = []
+    for api in _apigwv2_apis(client):
+        api_id = api["ApiId"]
+        try:
+            authorizers = list(_apigw_items(client, "get_authorizers", "Items", ApiId=api_id))
+        except BotoCoreError, ClientError:
+            failed.append(str(api_id))
+            continue
+        api_arn = _apigw_arn(client, f"/apis/{api_id}")
+        for authorizer in authorizers:
+            if authorizer.get("AuthorizerId"):
+                yield with_edge_reads({**authorizer, "_arn": f"{api_arn}/authorizers/{authorizer['AuthorizerId']}", "_api_arn": api_arn}, {"_api_arn": COMPLETE})
+    if failed:
+        raise _undescribed("HTTP and WebSocket APIs whose authorizers", failed)
+
+
+def apigatewayv2_domain_names_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate HTTP and WebSocket API custom domain names (regional). ``_certificate_arns`` are the certificates
+    its configurations present and ``_security_policies`` their TLS policies."""
+    client = client_for("apigatewayv2")
+    for domain in _apigw_items(client, "get_domain_names", "Items"):
+        if domain.get("DomainNameArn"):
+            configs = domain.get("DomainNameConfigurations") or []
+            yield with_edge_reads(
+                {
+                    **domain,
+                    "_certificate_arns": sorted({str(c["CertificateArn"]) for c in configs if c.get("CertificateArn")}),
+                    "_security_policies": sorted({str(c["SecurityPolicy"]) for c in configs if c.get("SecurityPolicy")}),
+                },
+                {"_certificate_arns": COMPLETE},
+            )
+
+
+def apigatewayv2_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate HTTP API VPC links (regional): the private path from an API to resources in a VPC.
+    ``GetVpcLinks`` has a continuation token and no paginator. ``_arn`` is built from the link id."""
+    client = client_for("apigatewayv2")
+    for page in _token_pages(client, "get_vpc_links", _CONTINUATION):
+        for link in page.get("Items", []):
+            if link.get("VpcLinkId"):
+                yield {**link, "_arn": _apigw_arn(client, f"/vpclinks/{link['VpcLinkId']}")}
+
+
 def _undescribed(kind: str, names: list[str]) -> SourceError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
     be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
@@ -2787,6 +2973,18 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "apigateway_rest_apis_described": apigateway_rest_apis_described,
+    "apigateway_stages_described": apigateway_stages_described,
+    "apigateway_authorizers_described": apigateway_authorizers_described,
+    "apigateway_domain_names_described": apigateway_domain_names_described,
+    "apigateway_usage_plans_described": apigateway_usage_plans_described,
+    "apigateway_vpc_links_described": apigateway_vpc_links_described,
+    "apigateway_api_keys_described": apigateway_api_keys_described,
+    "apigateway_client_certificates_described": apigateway_client_certificates_described,
+    "apigatewayv2_stages_described": apigatewayv2_stages_described,
+    "apigatewayv2_authorizers_described": apigatewayv2_authorizers_described,
+    "apigatewayv2_domain_names_described": apigatewayv2_domain_names_described,
+    "apigatewayv2_vpc_links_described": apigatewayv2_vpc_links_described,
     "cloudwatch_alarms_described": cloudwatch_alarms_described,
     "cloudwatch_composite_alarms_described": cloudwatch_composite_alarms_described,
     "cloudwatch_dashboards_described": cloudwatch_dashboards_described,

@@ -1,0 +1,17 @@
+{
+  "slug": "PROTECTED_BY_WEB_ACL__aws_core",
+  "name": "Protected By Web ACL",
+  "description": "An API Gateway stage is protected by an AWS WAF web ACL (stage -> web ACL): the stage's webAclArn. A reference, not containment. Emitted whether or not the web ACL was collected: it resolves by deterministic identity (the ARN) when it is.",
+  "sources": [
+    "aws_core__aws_apigateway_stage"
+  ],
+  "targets": [
+    "aws_core__aws_wafv2_web_acl"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
