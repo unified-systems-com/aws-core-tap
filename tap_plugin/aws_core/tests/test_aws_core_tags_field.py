@@ -71,7 +71,9 @@ class TestCanonicalTagsField:
         block = entry.get("tags")
         if block is None:
             return  # extraction is optional (e.g. aws_account is untaggable); the FIELD is not
-        assert block["source"] in ("rgta", "field", "service")
+        assert block["source"] in ("rgta", "field", "service", "none")
+        if block["source"] == "none":
+            assert block["why"], "an untaggable type must say why AWS has no tag operation for it"
         if block["source"] == "field":
             assert block["shape"] in ("list_kv", "list_kv_lower", "map")
             assert block["from"], "field-lane tags block needs a source path"

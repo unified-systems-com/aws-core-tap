@@ -59,6 +59,16 @@ class AwsAccount(BaseModel):
         {"nodes": [{"type": "aws_core__aws_iam_user"}], "edges": [{"type": "OWNS_IAM_USER__aws_core"}]},
         {"nodes": [{"type": "aws_core__aws_iam_policy"}], "edges": [{"type": "OWNS_IAM_POLICY__aws_core"}]},
         {"nodes": [{"type": "aws_core__aws_iam_oidc_provider"}], "edges": [{"type": "OWNS_OIDC_PROVIDER__aws_core"}]},
+        {"nodes": [{"type": "aws_core__aws_iam_group"}], "edges": [{"type": "OWNS_IAM_GROUP__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_iam_instance_profile"}],
+            "edges": [{"type": "OWNS_IAM_INSTANCE_PROFILE__aws_core"}],
+        },
+        {"nodes": [{"type": "aws_core__aws_iam_saml_provider"}], "edges": [{"type": "OWNS_SAML_PROVIDER__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_iam_server_certificate"}],
+            "edges": [{"type": "OWNS_SERVER_CERTIFICATE__aws_core"}],
+        },
         {"nodes": [{"type": "aws_core__aws_s3_bucket"}], "edges": [{"type": "OWNS_BUCKET__aws_core"}]},
     ]
     CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
@@ -66,6 +76,10 @@ class AwsAccount(BaseModel):
         "OWNS_IAM_USER__aws_core",
         "OWNS_IAM_POLICY__aws_core",
         "OWNS_OIDC_PROVIDER__aws_core",
+        "OWNS_IAM_GROUP__aws_core",
+        "OWNS_IAM_INSTANCE_PROFILE__aws_core",
+        "OWNS_SAML_PROVIDER__aws_core",
+        "OWNS_SERVER_CERTIFICATE__aws_core",
         "OWNS_BUCKET__aws_core",
     )
 

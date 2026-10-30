@@ -150,6 +150,12 @@ OWNS_IAM_ROLE__aws_core = "edges/OWNS_IAM_ROLE.edge.json"
 OWNS_IAM_USER__aws_core = "edges/OWNS_IAM_USER.edge.json"
 OWNS_IAM_POLICY__aws_core = "edges/OWNS_IAM_POLICY.edge.json"
 OWNS_OIDC_PROVIDER__aws_core = "edges/OWNS_OIDC_PROVIDER.edge.json"
+OWNS_IAM_GROUP__aws_core = "edges/OWNS_IAM_GROUP.edge.json"
+OWNS_IAM_INSTANCE_PROFILE__aws_core = "edges/OWNS_IAM_INSTANCE_PROFILE.edge.json"
+OWNS_SAML_PROVIDER__aws_core = "edges/OWNS_SAML_PROVIDER.edge.json"
+OWNS_SERVER_CERTIFICATE__aws_core = "edges/OWNS_SERVER_CERTIFICATE.edge.json"
+CONTAINS_ROLE__aws_core = "edges/CONTAINS_ROLE.edge.json"
+AUTHENTICATES_USER__aws_core = "edges/AUTHENTICATES_USER.edge.json"
 OWNS_BUCKET__aws_core = "edges/OWNS_BUCKET.edge.json"
 TRUSTS_ACCOUNT__aws_core = "edges/TRUSTS_ACCOUNT.edge.json"
 ATTACHES_POLICY__aws_core = "edges/ATTACHES_POLICY.edge.json"
@@ -225,6 +231,13 @@ aws_core__aws_iam_policy = "tap_plugin.aws_core.falsifiers.IamPolicyFalsifier"
 # Account-scoped containment (aws-core-tap#43): OWNS_OIDC_PROVIDER__aws_core makes an IAM OIDC
 # provider reconcilable.
 aws_core__aws_iam_oidc_provider = "tap_plugin.aws_core.falsifiers.IamOidcProviderFalsifier"
+# The other account-scoped IAM listings (OWNS_IAM_GROUP, OWNS_IAM_INSTANCE_PROFILE, OWNS_SAML_PROVIDER,
+# OWNS_SERVER_CERTIFICATE) make their types reconcilable, each judged by a Get call. The virtual MFA
+# device has no Get operation and no containment edge, so it has no falsifier.
+aws_core__aws_iam_group = "tap_plugin.aws_core.falsifiers.IamGroupFalsifier"
+aws_core__aws_iam_instance_profile = "tap_plugin.aws_core.falsifiers.IamInstanceProfileFalsifier"
+aws_core__aws_iam_saml_provider = "tap_plugin.aws_core.falsifiers.IamSamlProviderFalsifier"
+aws_core__aws_iam_server_certificate = "tap_plugin.aws_core.falsifiers.IamServerCertificateFalsifier"
 # Organizations completeness (aws-core-tap#65, req-aws-core-organizations-completeness): the
 # organization contains its delegations (HOLDS_DELEGATION) and its customer-managed policies
 # (HOLDS_SERVICE_CONTROL_POLICY, HOLDS_ORGANIZATIONS_POLICY); a policy contains its statements

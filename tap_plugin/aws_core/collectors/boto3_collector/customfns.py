@@ -830,6 +830,158 @@ def iam_oidc_providers_described(
         yield {**details, "ProviderArn": arn}
 
 
+def iam_groups_listed(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's IAM groups (global) and list the managed policies attached to each.
+
+    The same shape as :func:`iam_users_described`: list to the end, take the ``GetAccountSummary``
+    control, then fan out (``ListAttachedGroupPolicies``). A group's members are users and are read
+    from the user side, not here. IAM has no group tag operation, so there is no tag read.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    groups = list(iter_listing(client, "list_groups", "Groups[]", walk))
+    walk.count_reported = _account_summary_count(client, "Groups")
+    hydrate_ops = _hydrate_ops("aws_core__aws_iam_group")
+    for group in groups:
+        name = group.get("GroupName")
+        if not name:
+            walk.drop("a listed group carries no GroupName")
+            continue
+        envelope = hydrate_item(client, group, hydrate_ops, call_kwargs={"GroupName": name})
+        envelope["_attached_policy_arns"] = _attached_policy_arns(_hydrated_slot(envelope, "attached_policies"))
+        yield with_edge_reads(envelope, {"_attached_policy_arns": _attached_policies_read(envelope)})
+
+
+def iam_instance_profiles_listed(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's IAM instance profiles (global), each with the roles it holds.
+
+    ``ListInstanceProfiles`` embeds every role of a profile, so there is no fan-out for them. The embedded
+    role is cut to its name and ARN: the rest of it (the trust policy above all) is the role's own node's
+    to carry, not this profile's. ``_role_arns`` is the profile's own answer, and is ``None`` only when the
+    response carries no ``Roles`` list at all.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    profiles = list(iter_listing(client, "list_instance_profiles", "InstanceProfiles[]", walk))
+    walk.count_reported = _account_summary_count(client, "InstanceProfiles")
+    for profile in profiles:
+        if not profile.get("InstanceProfileName"):
+            walk.drop("a listed instance profile carries no InstanceProfileName")
+            continue
+        roles = profile.get("Roles")
+        known = isinstance(roles, list)
+        slim = [{"RoleName": r.get("RoleName"), "Arn": r.get("Arn")} for r in roles or []]
+        yield with_edge_reads(
+            {
+                **profile,
+                "Roles": slim,
+                "_role_arns": sorted(str(r["Arn"]) for r in slim if r["Arn"]) if known else None,
+            },
+            {"_role_arns": COMPLETE if known else PARTIAL},
+        )
+
+
+def iam_saml_providers_described(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate IAM SAML identity providers (global) and describe each.
+
+    The same shape as :func:`iam_oidc_providers_described`: ``ListSAMLProviders`` is one unpaginated
+    call, and ``GetSAMLProvider`` supplies the dates and the inline tags. The metadata document the
+    response carries is the identity provider's own configuration, large and not a field of the node, so
+    it is dropped here rather than stored. A provider that is listed but cannot be described is dropped
+    from the batch, and that clears ``walk.admitted``.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    listing = without_response_metadata(client.list_saml_providers())
+    entries = listing.get("SAMLProviderList", [])
+    if page_says_more(listing):
+        walk.stopped_short(len(entries), "the response reports a continuation")
+    else:
+        walk.reached_end(len(entries))
+    for entry in entries:
+        arn = entry.get("Arn")
+        if not arn:
+            walk.drop("a listed SAML provider carries no Arn")
+            continue
+        try:
+            details = without_response_metadata(client.get_saml_provider(SAMLProviderArn=arn))
+        except BotoCoreError, ClientError:
+            walk.drop(f"{arn} was listed but GetSAMLProvider did not answer")
+            continue
+        details.pop("SAMLMetadataDocument", None)
+        valid_until = details.get("ValidUntil")
+        created = details.get("CreateDate")
+        yield {
+            **details,
+            "ProviderArn": arn,
+            "_name": arn.rsplit("/", 1)[-1],
+            "_valid_until": jsonable(valid_until) if valid_until else "",
+            "_created_at": jsonable(created) if created else "",
+        }
+
+
+def iam_server_certificates_listed(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's IAM server certificates (global), metadata only.
+
+    ``ListServerCertificates`` returns the name, path, id, ARN and the upload and expiry dates. The
+    certificate body and chain come from ``GetServerCertificate``, which is never called.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    certificates = list(iter_listing(client, "list_server_certificates", "ServerCertificateMetadataList[]", walk))
+    walk.count_reported = _account_summary_count(client, "ServerCertificates")
+    for certificate in certificates:
+        if not certificate.get("ServerCertificateName"):
+            walk.drop("a listed server certificate carries no ServerCertificateName")
+            continue
+        expiration = certificate.get("Expiration")
+        uploaded = certificate.get("UploadDate")
+        yield {
+            **certificate,
+            "_expiration": jsonable(expiration) if expiration else "",
+            "_upload_date": jsonable(uploaded) if uploaded else "",
+        }
+
+
+def iam_virtual_mfa_devices_listed(
+    session: Any, *, client_for: Any = None, walk: ListingWalk | None = None
+) -> Iterator[dict[str, Any]]:
+    """Enumerate the account's virtual MFA devices (global), assigned or not.
+
+    The seed and the QR code that enrol a device are the device's credentials: AWS returns them only when
+    the device is created, and this reader removes them from every item whether or not a response carries
+    them. ``_user_arn`` is ``""`` for a device nobody has enabled. Hardware tokens are not virtual devices
+    and are not listed by this call, so ``GetAccountSummary``'s ``MFADevices`` is not a control for this
+    listing and none is taken.
+    """
+    walk = walk if walk is not None else ListingWalk()
+    client = _iam_client(session, client_for)
+    for device in iter_listing(client, "list_virtual_mfa_devices", "VirtualMFADevices[]", walk):
+        serial = device.get("SerialNumber")
+        if not serial:
+            walk.drop("a listed virtual MFA device carries no SerialNumber")
+            continue
+        safe = {k: v for k, v in device.items() if k not in ("Base32StringSeed", "QRCodePNG")}
+        enabled = device.get("EnableDate")
+        yield with_edge_reads(
+            {
+                **safe,
+                "_name": str(serial).rsplit("/", 1)[-1],
+                "_user_arn": str((device.get("User") or {}).get("Arn") or ""),
+                "_enable_date": jsonable(enabled) if enabled else "",
+            },
+            {"_user_arn": COMPLETE},
+        )
+
+
 # An API Gateway v2 Lambda-proxy IntegrationUri embeds the function's invoke
 # path: .../functions/<function-arn>/invocations. Capture the embedded ARN.
 _LAMBDA_INTEGRATION_URI_RE = re.compile(rf"/functions/(arn:{PARTITION_RE}:lambda:[^/]+)/invocations$")
@@ -1169,6 +1321,11 @@ _CUSTOM_FNS = {
     "dynamodb_tables_described": dynamodb_tables_described,
     "eventbridge_rules_with_targets": eventbridge_rules_with_targets,
     "iam_oidc_providers_described": iam_oidc_providers_described,
+    "iam_groups_listed": iam_groups_listed,
+    "iam_instance_profiles_listed": iam_instance_profiles_listed,
+    "iam_saml_providers_described": iam_saml_providers_described,
+    "iam_server_certificates_listed": iam_server_certificates_listed,
+    "iam_virtual_mfa_devices_listed": iam_virtual_mfa_devices_listed,
     "apigateway_http_apis_detailed": apigateway_http_apis_detailed,
     "cognito_user_pools_described": cognito_user_pools_described,
     "iam_roles_described": iam_roles_described,

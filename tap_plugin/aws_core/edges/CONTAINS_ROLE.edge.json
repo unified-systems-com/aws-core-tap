@@ -1,0 +1,17 @@
+{
+  "slug": "CONTAINS_ROLE__aws_core",
+  "name": "Contains Role",
+  "description": "An IAM instance profile contains the IAM role it passes to an EC2 instance (instance profile -> role), as ListInstanceProfiles reports it in the profile's Roles. A profile holds at most one role. A reference, not containment: the role exists, with its own trust policy and permissions, whether or not a profile holds it. Emitted whether or not the role was collected: it resolves by deterministic identity (the role ARN) when it is.",
+  "sources": [
+    "aws_core__aws_iam_instance_profile"
+  ],
+  "targets": [
+    "aws_core__aws_iam_role"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
