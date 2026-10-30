@@ -816,6 +816,150 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'WorkteamArn': 'arn:aws:sagemaker:us-east-1:123456789012:sagemaker_workteam/gen-1', 'WorkteamName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_apigatewayv2_portal_product": (
+        {'PortalProductArn': 'arn:aws:apigatewayv2:us-east-1:123456789012:apigatewayv2_portal_product/gen-1', 'DisplayName': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appstream_app_block": (
+        {'Arn': 'arn:aws:appstream:us-east-1:123456789012:appstream_app_block/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appstream_application": (
+        {'Arn': 'arn:aws:appstream:us-east-1:123456789012:appstream_application/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_backup_report_plan": (
+        {'ReportPlanArn': 'arn:aws:backup:us-east-1:123456789012:backup_report_plan/gen-1', 'ReportPlanName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_backupgateway_hypervisor": (
+        {'HypervisorArn': 'arn:aws:backup-gateway:us-east-1:123456789012:backupgateway_hypervisor/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_certificatemanager_acme_endpoint": (
+        {'AcmeEndpointArn': 'arn:aws:acm:us-east-1:123456789012:certificatemanager_acme_endpoint/gen-1'},
+        {},
+    ),
+    "aws_core__aws_codestarconnections_connection": (
+        {'ConnectionArn': 'arn:aws:codestar-connections:us-east-1:123456789012:codestarconnections_connection/gen-1', 'ConnectionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_codestarconnections_repository_link": (
+        {'RepositoryLinkArn': 'arn:aws:codestar-connections:us-east-1:123456789012:codestarconnections_repository_link/gen-1'},
+        {},
+    ),
+    "aws_core__aws_datasync_agent": (
+        {'AgentArn': 'arn:aws:datasync:us-east-1:123456789012:datasync_agent/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_datasync_task": (
+        {'TaskArn': 'arn:aws:datasync:us-east-1:123456789012:datasync_task/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_detective_graph": (
+        {'Arn': 'arn:aws:detective:us-east-1:123456789012:detective_graph/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ec2_ipam_external_resource_verification_token": (
+        {'IpamExternalResourceVerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ec2_ipam_external_resource_verification_token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_ipam_internet_registry_association": (
+        {'IpamInternetRegistryAssociationArn': 'arn:aws:ec2:us-east-1:123456789012:ec2_ipam_internet_registry_association/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ec2_secondary_network": (
+        {'SecondaryNetworkArn': 'arn:aws:ec2:us-east-1:123456789012:ec2_secondary_network/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ecs_daemon": (
+        {'daemonArn': 'arn:aws:ecs:us-east-1:123456789012:ecs_daemon/gen-1'},
+        {},
+    ),
+    "aws_core__aws_emrcontainers_security_configuration": (
+        {'arn': 'arn:aws:emr-containers:us-east-1:123456789012:emrcontainers_security_configuration/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_serverless_cache_snapshot": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:elasticache_serverless_cache_snapshot/gen-1', 'ServerlessCacheSnapshotName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_snapshot": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:elasticache_snapshot/gen-1', 'SnapshotName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_eventschemas_discoverer": (
+        {'DiscovererArn': 'arn:aws:schemas:us-east-1:123456789012:eventschemas_discoverer/gen-1', 'Tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_eventschemas_registry": (
+        {'RegistryArn': 'arn:aws:schemas:us-east-1:123456789012:eventschemas_registry/gen-1', 'RegistryName': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fsx_file_cache": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:fsx_file_cache/gen-1'},
+        {},
+    ),
+    "aws_core__aws_inspectorv2_connector": (
+        {'connectorArn': 'arn:aws:inspector2:us-east-1:123456789012:inspectorv2_connector/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_inspectorv2_filter": (
+        {'arn': 'arn:aws:inspector2:us-east-1:123456789012:inspectorv2_filter/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_ota_update": (
+        {'otaUpdateArn': 'arn:aws:iot:us-east-1:123456789012:iot_ota_update/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iot_topic_rule_destination": (
+        {'arn': 'arn:aws:iot:us-east-1:123456789012:iot_topic_rule_destination/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iotsecuretunneling_tunnel": (
+        {'tunnelArn': 'arn:aws:iotsecuretunneling:us-east-1:123456789012:iotsecuretunneling_tunnel/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iotsitewise_application": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:iotsitewise_application/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kafkaconnect_connector": (
+        {'connectorArn': 'arn:aws:kafkaconnect:us-east-1:123456789012:kafkaconnect_connector/gen-1', 'connectorName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kafkaconnect_custom_plugin": (
+        {'customPluginArn': 'arn:aws:kafkaconnect:us-east-1:123456789012:kafkaconnect_custom_plugin/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kafkaconnect_worker_configuration": (
+        {'workerConfigurationArn': 'arn:aws:kafkaconnect:us-east-1:123456789012:kafkaconnect_worker_configuration/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesis_channel": (
+        {'ChannelARN': 'arn:aws:kinesis:us-east-1:123456789012:kinesis_channel/gen-1', 'ChannelName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_licensemanager_license": (
+        {'LicenseArn': 'arn:aws:license-manager:us-east-1:123456789012:licensemanager_license/gen-1', 'LicenseName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_licensemanager_license_asset_group": (
+        {'LicenseAssetGroupArn': 'arn:aws:license-manager:us-east-1:123456789012:licensemanager_license_asset_group/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_licensemanager_license_configuration": (
+        {'LicenseConfigurationArn': 'arn:aws:license-manager:us-east-1:123456789012:licensemanager_license_configuration/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_logs_log_anomaly_detector": (
+        {'anomalyDetectorArn': 'arn:aws:logs:us-east-1:123456789012:logs_log_anomaly_detector/gen-1'},
+        {},
+    ),
+    "aws_core__aws_logs_scheduled_query": (
+        {'scheduledQueryArn': 'arn:aws:logs:us-east-1:123456789012:logs_scheduled_query/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
