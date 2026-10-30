@@ -37,6 +37,9 @@ def t(slug: str) -> str:
 
 
 # (model, natural-key field, a well-formed AWS id, a malformed one)
+# Network-plane types the collector collects and whose models hold the collector's configuration envelope.
+CONFIGURATION_REVIEWED = {"aws_core__aws_vpc_endpoint"}
+
 TYPES = [
     (DxConnection, "connection_id", "dxcon-fg5678gh", "dxlag-fg5678gh"),
     (DxGateway, "direct_connect_gateway_id", "5f294f92-bafb-4011-916d-9b0bb4a1b2c3", "dxgw-123"),
@@ -106,11 +109,17 @@ class TestDeclarations:
         fields = {f.name for f in model._meta.get_fields()}
         # "No blob" holds while no source fills one. A type the boto3 collector collects always receives its
         # configuration envelope (batch.node_envelope), so its model must declare the field or the batch is
-        # rejected at import; the manifest entry decides what is stored in it.
-        if model.ENTITY_TYPE in {e["entity_type"] for e in manifest_entries()}:
+        # rejected at import. Which collected types may hold one is a decision, listed in
+        # CONFIGURATION_REVIEWED: adding a manifest entry for another network-plane type fails here until
+        # that type is added to it on purpose.
+        if model.ENTITY_TYPE in CONFIGURATION_REVIEWED:
             assert "configuration" in fields
         else:
             assert "configuration" not in fields
+            assert model.ENTITY_TYPE not in {e["entity_type"] for e in manifest_entries()}, (
+                f"{model.ENTITY_TYPE} is collected, so its model must declare configuration: "
+                "decide it and add the type to CONFIGURATION_REVIEWED"
+            )
         assert "owner_account_id" not in fields
         assert set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
 
