@@ -271,8 +271,36 @@ from tap_plugin.aws_core.models.transfer_server import TransferServer
 from tap_plugin.aws_core.models.transfer_web_app import TransferWebApp
 from tap_plugin.aws_core.models.translate_parallel_data import TranslateParallelData
 from tap_plugin.aws_core.models.translate_terminology import TranslateTerminology
+from tap_plugin.aws_core.models.bedrock_automated_reasoning_policy import BedrockAutomatedReasoningPolicy
+from tap_plugin.aws_core.models.connect_instance import ConnectInstance
+from tap_plugin.aws_core.models.drs_launch_configuration_template import DrsLaunchConfigurationTemplate
+from tap_plugin.aws_core.models.drs_replication_configuration_template import DrsReplicationConfigurationTemplate
+from tap_plugin.aws_core.models.drs_source_network import DrsSourceNetwork
+from tap_plugin.aws_core.models.emrcontainers_job_template import EmrcontainersJobTemplate
+from tap_plugin.aws_core.models.fsx_backup import FsxBackup
+from tap_plugin.aws_core.models.mgn_connector import MgnConnector
+from tap_plugin.aws_core.models.mgn_launch_configuration_template import MgnLaunchConfigurationTemplate
+from tap_plugin.aws_core.models.mgn_network_migration_definition import MgnNetworkMigrationDefinition
+from tap_plugin.aws_core.models.mgn_replication_configuration_template import MgnReplicationConfigurationTemplate
+from tap_plugin.aws_core.models.mgn_wave import MgnWave
+from tap_plugin.aws_core.models.resiliencehub_resiliency_policy import ResiliencehubResiliencyPolicy
+from tap_plugin.aws_core.models.wellarchitected_agent_profile import WellarchitectedAgentProfile
 
 __all__ = [
+    "WellarchitectedAgentProfile",
+    "ResiliencehubResiliencyPolicy",
+    "MgnWave",
+    "MgnReplicationConfigurationTemplate",
+    "MgnNetworkMigrationDefinition",
+    "MgnLaunchConfigurationTemplate",
+    "MgnConnector",
+    "FsxBackup",
+    "EmrcontainersJobTemplate",
+    "DrsSourceNetwork",
+    "DrsReplicationConfigurationTemplate",
+    "DrsLaunchConfigurationTemplate",
+    "ConnectInstance",
+    "BedrockAutomatedReasoningPolicy",
     "TranslateTerminology",
     "TranslateParallelData",
     "TransferWebApp",

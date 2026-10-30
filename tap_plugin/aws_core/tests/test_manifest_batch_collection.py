@@ -1100,6 +1100,62 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:translate:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_bedrock_automated_reasoning_policy": (
+        {'policyArn': 'arn:aws:bedrock:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_instance": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_drs_launch_configuration_template": (
+        {'arn': 'arn:aws:drs:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_drs_replication_configuration_template": (
+        {'arn': 'arn:aws:drs:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_drs_source_network": (
+        {'arn': 'arn:aws:drs:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_emrcontainers_job_template": (
+        {'arn': 'arn:aws:emr-containers:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fsx_backup": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_mgn_connector": (
+        {'arn': 'arn:aws:mgn:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_mgn_launch_configuration_template": (
+        {'arn': 'arn:aws:mgn:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_mgn_network_migration_definition": (
+        {'arn': 'arn:aws:mgn:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_mgn_replication_configuration_template": (
+        {'arn': 'arn:aws:mgn:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_mgn_wave": (
+        {'arn': 'arn:aws:mgn:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehub_resiliency_policy": (
+        {'policyArn': 'arn:aws:resiliencehub:us-east-1:123456789012:res/gen-1', 'policyName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_agent_profile": (
+        {'arn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

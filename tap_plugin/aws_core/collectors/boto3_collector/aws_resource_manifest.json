@@ -11305,6 +11305,608 @@
         "shape": "list_kv",
         "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_bedrock_automated_reasoning_policy",
+      "service": "bedrock",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAutomatedReasoningPolicies"
+      },
+      "why": "Enumerate Bedrock Automated Reasoning Policy objects with ListAutomatedReasoningPolicies — an inventory of the account's automated reasoning policys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAutomatedReasoningPolicies response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks name, description sensitive in the bedrock ListAutomatedReasoningPolicies item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "name",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "automatedReasoningPolicySummaries[]",
+      "natural_key": "policyArn",
+      "fields": {
+        "automated_reasoning_policy_arn": "policyArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceARN": {
+            "from": "policyArn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_connect_instance",
+      "service": "connect",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListInstances"
+      },
+      "why": "Enumerate Connect Instance objects with ListInstances — an inventory of the account's instances and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListInstances response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks InstanceAlias sensitive in the connect ListInstances item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "InstanceAlias",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "InstanceSummaryList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "instance_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_drs_launch_configuration_template",
+      "service": "drs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeLaunchConfigurationTemplates"
+      },
+      "why": "Enumerate DRS Launch Configuration Template objects with DescribeLaunchConfigurationTemplates — an inventory of the account's launch configuration templates and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeLaunchConfigurationTemplates response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags sensitive in the drs DescribeLaunchConfigurationTemplates item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "drs_launch_configuration_template_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_drs_replication_configuration_template",
+      "service": "drs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeReplicationConfigurationTemplates"
+      },
+      "why": "Enumerate DRS Replication Configuration Template objects with DescribeReplicationConfigurationTemplates — an inventory of the account's replication configuration templates and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeReplicationConfigurationTemplates response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks stagingAreaTags, tags sensitive in the drs DescribeReplicationConfigurationTemplates item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "stagingAreaTags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "drs_replication_configuration_template_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_drs_source_network",
+      "service": "drs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeSourceNetworks"
+      },
+      "why": "Enumerate DRS Source Network objects with DescribeSourceNetworks — an inventory of the account's source networks and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeSourceNetworks response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags, replicationStatusDetails, cfnStackName sensitive in the drs DescribeSourceNetworks item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "replicationStatusDetails",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "cfnStackName",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "source_network_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_emrcontainers_job_template",
+      "service": "emr-containers",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListJobTemplates"
+      },
+      "why": "Enumerate EMRContainers Job Template objects with ListJobTemplates — an inventory of the account's job templates and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListJobTemplates response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks jobTemplateData.configurationOverrides.applicationConfiguration[].properties, jobTemplateData.jobDriver.sparkSubmitJobDriver.entryPoint, jobTemplateData.jobDriver.sparkSubmitJobDriver.sparkSubmitParameters, jobTemplateData.jobDriver.sparkSqlJobDriver.entryPoint, jobTemplateData.jobDriver.sparkSqlJobDriver.sparkSqlParameters sensitive in the emr-containers ListJobTemplates item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "jobTemplateData.configurationOverrides.applicationConfiguration[].properties",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "jobTemplateData.jobDriver.sparkSubmitJobDriver.entryPoint",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "jobTemplateData.jobDriver.sparkSubmitJobDriver.sparkSubmitParameters",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "jobTemplateData.jobDriver.sparkSqlJobDriver.entryPoint",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "jobTemplateData.jobDriver.sparkSqlJobDriver.sparkSqlParameters",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "templates[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "job_template_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_fsx_backup",
+      "service": "fsx",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeBackups"
+      },
+      "why": "Enumerate FSx Backup objects with DescribeBackups — an inventory of the account's backups and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeBackups returns credential members (FileSystem, Volume) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks FileSystem.OntapConfiguration.FsxAdminPassword, Volume.AdministrativeActions[].TargetFileSystemValues.OntapConfiguration.FsxAdminPassword sensitive in the fsx DescribeBackups item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "FileSystem.OntapConfiguration.FsxAdminPassword",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Volume.AdministrativeActions[].TargetFileSystemValues.OntapConfiguration.FsxAdminPassword",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Backups[]",
+      "natural_key": "ResourceARN",
+      "fields": {
+        "backup_arn": "ResourceARN"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_mgn_connector",
+      "service": "mgn",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListConnectors"
+      },
+      "why": "Enumerate MGN Connector objects with ListConnectors — an inventory of the account's connectors and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListConnectors response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags sensitive in the mgn ListConnectors item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "mgn_connector_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_mgn_launch_configuration_template",
+      "service": "mgn",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeLaunchConfigurationTemplates"
+      },
+      "why": "Enumerate MGN Launch Configuration Template objects with DescribeLaunchConfigurationTemplates — an inventory of the account's launch configuration templates and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeLaunchConfigurationTemplates response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags sensitive in the mgn DescribeLaunchConfigurationTemplates item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "mgn_launch_configuration_template_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_mgn_network_migration_definition",
+      "service": "mgn",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListNetworkMigrationDefinitions"
+      },
+      "why": "Enumerate MGN Network Migration Definition objects with ListNetworkMigrationDefinitions — an inventory of the account's network migration definitions and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListNetworkMigrationDefinitions response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags, scopeTags sensitive in the mgn ListNetworkMigrationDefinitions item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "scopeTags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "network_migration_definition_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_mgn_replication_configuration_template",
+      "service": "mgn",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeReplicationConfigurationTemplates"
+      },
+      "why": "Enumerate MGN Replication Configuration Template objects with DescribeReplicationConfigurationTemplates — an inventory of the account's replication configuration templates and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeReplicationConfigurationTemplates response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks stagingAreaTags, tags sensitive in the mgn DescribeReplicationConfigurationTemplates item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "stagingAreaTags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "mgn_replication_configuration_template_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_mgn_wave",
+      "service": "mgn",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListWaves"
+      },
+      "why": "Enumerate MGN Wave objects with ListWaves — an inventory of the account's waves and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListWaves response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags sensitive in the mgn ListWaves item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "wave_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_resiliencehub_resiliency_policy",
+      "service": "resiliencehub",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListResiliencyPolicies"
+      },
+      "why": "Enumerate ResilienceHub Resiliency Policy objects with ListResiliencyPolicies — an inventory of the account's resiliency policys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListResiliencyPolicies response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags sensitive in the resiliencehub ListResiliencyPolicies item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "resiliencyPolicies[]",
+      "natural_key": "policyArn",
+      "fields": {
+        "name": "policyName",
+        "resiliency_policy_arn": "policyArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_wellarchitected_agent_profile",
+      "service": "wellarchitected",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAgentProfiles"
+      },
+      "why": "Enumerate WellArchitected Agent Profile objects with ListAgentProfiles — an inventory of the account's agent profiles and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAgentProfiles response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks displayName, description, businessOverview sensitive in the wellarchitected ListAgentProfiles item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "displayName",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "businessOverview",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "agent_profile_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags[]",
+        "shape": "list_kv_lower",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
     }
   ]
 }
