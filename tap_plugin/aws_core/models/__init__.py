@@ -285,8 +285,78 @@ from tap_plugin.aws_core.models.mgn_replication_configuration_template import Mg
 from tap_plugin.aws_core.models.mgn_wave import MgnWave
 from tap_plugin.aws_core.models.resiliencehub_resiliency_policy import ResiliencehubResiliencyPolicy
 from tap_plugin.aws_core.models.wellarchitected_agent_profile import WellarchitectedAgentProfile
+from tap_plugin.aws_core.models.amazonmq_broker import AmazonmqBroker
+from tap_plugin.aws_core.models.amazonmq_configuration import AmazonmqConfiguration
+from tap_plugin.aws_core.models.appconfig_extension import AppconfigExtension
+from tap_plugin.aws_core.models.appstream_app_block_builder import AppstreamAppBlockBuilder
+from tap_plugin.aws_core.models.appstream_fleet import AppstreamFleet
+from tap_plugin.aws_core.models.appstream_image_builder import AppstreamImageBuilder
+from tap_plugin.aws_core.models.appstream_stack import AppstreamStack
+from tap_plugin.aws_core.models.autoscaling_auto_scaling_group import AutoscalingAutoScalingGroup
+from tap_plugin.aws_core.models.backup_restore_testing_plan import BackupRestoreTestingPlan
+from tap_plugin.aws_core.models.backup_tiering_configuration import BackupTieringConfiguration
+from tap_plugin.aws_core.models.batch_job_definition import BatchJobDefinition
+from tap_plugin.aws_core.models.bedrock_guardrail import BedrockGuardrail
+from tap_plugin.aws_core.models.cloudwatch_alarm_mute_rule import CloudwatchAlarmMuteRule
+from tap_plugin.aws_core.models.codepipeline_webhook import CodepipelineWebhook
+from tap_plugin.aws_core.models.comprehend_document_classifier import ComprehendDocumentClassifier
+from tap_plugin.aws_core.models.comprehend_entity_recognizer import ComprehendEntityRecognizer
+from tap_plugin.aws_core.models.comprehend_flywheel import ComprehendFlywheel
+from tap_plugin.aws_core.models.connect_traffic_distribution_group import ConnectTrafficDistributionGroup
+from tap_plugin.aws_core.models.dax_cluster import DaxCluster
+from tap_plugin.aws_core.models.drs_recovery_plan import DrsRecoveryPlan
+from tap_plugin.aws_core.models.datazone_domain import DatazoneDomain
+from tap_plugin.aws_core.models.docdb_db_cluster_parameter_group import DocdbDbClusterParameterGroup
+from tap_plugin.aws_core.models.docdb_db_subnet_group import DocdbDbSubnetGroup
+from tap_plugin.aws_core.models.docdb_event_subscription import DocdbEventSubscription
+from tap_plugin.aws_core.models.ec2_capacity_reservation import Ec2CapacityReservation
+from tap_plugin.aws_core.models.ec2_capacity_reservation_fleet import Ec2CapacityReservationFleet
+from tap_plugin.aws_core.models.ec2_instance_connect_endpoint import Ec2InstanceConnectEndpoint
+from tap_plugin.aws_core.models.ec2_local_gateway_route_table import Ec2LocalGatewayRouteTable
+from tap_plugin.aws_core.models.ec2_local_gateway_virtual_interface import Ec2LocalGatewayVirtualInterface
+from tap_plugin.aws_core.models.ec2_local_gateway_virtual_interface_group import Ec2LocalGatewayVirtualInterfaceGroup
+from tap_plugin.aws_core.models.ec2_network_insights_access_scope import Ec2NetworkInsightsAccessScope
+from tap_plugin.aws_core.models.ec2_network_insights_path import Ec2NetworkInsightsPath
+from tap_plugin.aws_core.models.ec2_placement_group import Ec2PlacementGroup
+from tap_plugin.aws_core.models.ec2_transit_gateway_multicast_domain import Ec2TransitGatewayMulticastDomain
+from tap_plugin.aws_core.models.ec2_verified_access_group import Ec2VerifiedAccessGroup
 
 __all__ = [
+    "Ec2VerifiedAccessGroup",
+    "Ec2TransitGatewayMulticastDomain",
+    "Ec2PlacementGroup",
+    "Ec2NetworkInsightsPath",
+    "Ec2NetworkInsightsAccessScope",
+    "Ec2LocalGatewayVirtualInterfaceGroup",
+    "Ec2LocalGatewayVirtualInterface",
+    "Ec2LocalGatewayRouteTable",
+    "Ec2InstanceConnectEndpoint",
+    "Ec2CapacityReservationFleet",
+    "Ec2CapacityReservation",
+    "DocdbEventSubscription",
+    "DocdbDbSubnetGroup",
+    "DocdbDbClusterParameterGroup",
+    "DatazoneDomain",
+    "DrsRecoveryPlan",
+    "DaxCluster",
+    "ConnectTrafficDistributionGroup",
+    "ComprehendFlywheel",
+    "ComprehendEntityRecognizer",
+    "ComprehendDocumentClassifier",
+    "CodepipelineWebhook",
+    "CloudwatchAlarmMuteRule",
+    "BedrockGuardrail",
+    "BatchJobDefinition",
+    "BackupTieringConfiguration",
+    "BackupRestoreTestingPlan",
+    "AutoscalingAutoScalingGroup",
+    "AppstreamStack",
+    "AppstreamImageBuilder",
+    "AppstreamFleet",
+    "AppstreamAppBlockBuilder",
+    "AppconfigExtension",
+    "AmazonmqConfiguration",
+    "AmazonmqBroker",
     "WellarchitectedAgentProfile",
     "ResiliencehubResiliencyPolicy",
     "MgnWave",
