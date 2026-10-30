@@ -1,0 +1,17 @@
+{
+  "slug": "ALIASES_KEY__aws_core",
+  "name": "Aliases Key",
+  "description": "A KMS alias points at one KMS key (alias -> key): the alias's TargetKeyId, built into the key's ARN from the alias's own partition, region and account. An alias that is repointed changes which key every policy and application using the alias reaches; the edge records the current target. A reference, not containment. Emitted whether or not the key was collected: it resolves by deterministic identity (the key ARN) when it is.",
+  "sources": [
+    "aws_core__aws_kms_alias"
+  ],
+  "targets": [
+    "aws_core__aws_kms_key"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

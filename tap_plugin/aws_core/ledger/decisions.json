@@ -1,5 +1,17 @@
 {
   "classification": {
+    "AWS::ACMPCA::Certificate": {
+      "state": "not-enumerable",
+      "reason": "AWS Private CA has no operation that lists the certificates it has issued: GetCertificate reads one by ARN, and the only inventory is the audit report (CreateCertificateAuthorityAuditReport), an export to S3. botocore 1.43.121 acm-pca defines ListCertificateAuthorities, ListPermissions and ListTags and no certificate listing, so an issued certificate cannot be found by enumeration."
+    },
+    "AWS::ACMPCA::CertificateAuthorityActivation": {
+      "state": "excluded",
+      "reason": "The activation of a certificate authority (its signed certificate installed), identified by the CA's ARN with no ARN of its own. It is a state of AWS::ACMPCA::CertificateAuthority, which aws_acm_private_ca carries as its status."
+    },
+    "AWS::ACMPCA::Permission": {
+      "state": "excluded",
+      "reason": "A grant of CA permissions to an AWS service principal, identified by the CA's ARN and the principal with no ARN of its own: a link between a CA and a principal. ListPermissions reads it; it is an edge candidate once principals are modeled, not a resource."
+    },
     "AWS::ARCZonalShift::AutoshiftObserverNotificationStatus": {
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, Region, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
@@ -384,6 +396,10 @@
       "state": "excluded",
       "reason": "A link between resources, identified by GlobalNetworkId, DeviceId, LinkId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
+    "AWS::Organizations::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "The resource policy of the organization (who may delegate policy management), identified by Id: a policy document attached to another resource, the organization. DescribeResourcePolicy reads it; aws_organization is the node it belongs to."
+    },
     "AWS::Pinpoint::ApplicationSettings": {
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
@@ -467,6 +483,10 @@
     "AWS::SSM::MaintenanceWindowTarget": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by WindowId, WindowTargetId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::SSO::InstanceAccessControlAttributeConfiguration": {
+      "state": "excluded",
+      "reason": "The attributes-for-access-control setting of an Identity Center instance, identified by the instance's ARN with no ARN of its own: a setting of AWS::SSO::Instance, not a resource."
     },
     "AWS::SecretsManager::ResourcePolicy": {
       "state": "excluded",
@@ -574,8 +594,9 @@
       "reason": "A finding the analyzer reports; CloudFormation has no resource type for findings."
     },
     "aws_core__aws_account": {
-      "cfn": [],
-      "reason": "Synthesized from STS GetCallerIdentity; AWS::Organizations::Account is a different resource (a member account of an organization)."
+      "cfn": [
+        "AWS::Organizations::Account"
+      ]
     },
     "aws_core__aws_account_region": {
       "cfn": [],
@@ -614,6 +635,21 @@
         "AWS::CloudFront::Distribution"
       ]
     },
+    "aws_core__aws_cloudtrail_channel": {
+      "cfn": [
+        "AWS::CloudTrail::Channel"
+      ]
+    },
+    "aws_core__aws_cloudtrail_dashboard": {
+      "cfn": [
+        "AWS::CloudTrail::Dashboard"
+      ]
+    },
+    "aws_core__aws_cloudtrail_event_data_store": {
+      "cfn": [
+        "AWS::CloudTrail::EventDataStore"
+      ]
+    },
     "aws_core__aws_cloudtrail_trail": {
       "cfn": [
         "AWS::CloudTrail::Trail"
@@ -639,6 +675,11 @@
         "AWS::Cognito::UserPool"
       ]
     },
+    "aws_core__aws_config_aggregation_authorization": {
+      "cfn": [
+        "AWS::Config::AggregationAuthorization"
+      ]
+    },
     "aws_core__aws_config_aggregator": {
       "cfn": [
         "AWS::Config::ConfigurationAggregator"
@@ -654,6 +695,16 @@
         "AWS::Config::DeliveryChannel"
       ]
     },
+    "aws_core__aws_config_organization_conformance_pack": {
+      "cfn": [
+        "AWS::Config::OrganizationConformancePack"
+      ]
+    },
+    "aws_core__aws_config_organization_rule": {
+      "cfn": [
+        "AWS::Config::OrganizationConfigRule"
+      ]
+    },
     "aws_core__aws_config_recorder": {
       "cfn": [
         "AWS::Config::ConfigurationRecorder"
@@ -662,6 +713,11 @@
     "aws_core__aws_config_rule": {
       "cfn": [
         "AWS::Config::ConfigRule"
+      ]
+    },
+    "aws_core__aws_config_stored_query": {
+      "cfn": [
+        "AWS::Config::StoredQuery"
       ]
     },
     "aws_core__aws_controltower_enabled_baseline": {
@@ -847,6 +903,11 @@
         "AWS::EC2::InternetGateway"
       ]
     },
+    "aws_core__aws_kms_alias": {
+      "cfn": [
+        "AWS::KMS::Alias"
+      ]
+    },
     "aws_core__aws_kms_key": {
       "cfn": [
         "AWS::KMS::Key",
@@ -1006,13 +1067,13 @@
     }
   },
   "tag_findings": {
-    "AWS::IAM::ManagedPolicy": {
-      "taggable": true,
-      "citation": "botocore 1.43.121 service model iam defines TagPolicy, UntagPolicy and ListPolicyTags, so a customer managed policy has tags; the manifest collects them with ListPolicyTags"
-    },
     "AWS::IAM::InstanceProfile": {
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagInstanceProfile, UntagInstanceProfile and ListInstanceProfileTags, so an instance profile has tags; the CloudFormation schema is silent"
+    },
+    "AWS::IAM::ManagedPolicy": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 service model iam defines TagPolicy, UntagPolicy and ListPolicyTags, so a customer managed policy has tags; the manifest collects them with ListPolicyTags"
     },
     "AWS::IAM::SAMLProvider": {
       "taggable": true,

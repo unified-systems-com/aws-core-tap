@@ -320,6 +320,68 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         },
         {"name": "release", "stage_names": ["Source", "Build"], "pipeline_type": "V2", "execution_mode": "QUEUED"},
     ),
+    "aws_core__aws_kms_alias": (
+        {
+            "AliasName": "alias/app",
+            "AliasArn": f"arn:aws:kms:us-east-1:{ACCOUNT}:alias/app",
+            "TargetKeyId": "1234abcd-12ab-34cd-56ef-1234567890ab",
+            "_target_key_arn": KEY_ARN,
+        },
+        {"name": "alias/app", "alias_name": "alias/app", "target_key_id": "1234abcd-12ab-34cd-56ef-1234567890ab"},
+    ),
+    "aws_core__aws_cloudtrail_event_data_store": (
+        {
+            "EventDataStoreArn": f"arn:aws:cloudtrail:us-east-1:{ACCOUNT}:eventdatastore/abc",
+            "Name": "audit",
+            "_name": "audit",
+            "Status": "ENABLED",
+            "MultiRegionEnabled": True,
+            "OrganizationEnabled": False,
+            "RetentionPeriod": 2557,
+            "TerminationProtectionEnabled": True,
+            "_tags": {"owner": "net-team"},
+        },
+        {"name": "audit", "status": "ENABLED", "multi_region_enabled": True, "retention_period_days": 2557, "termination_protection_enabled": True},
+    ),
+    "aws_core__aws_cloudtrail_channel": (
+        {"ChannelArn": f"arn:aws:cloudtrail:us-east-1:{ACCOUNT}:channel/abc", "Name": "partner", "_name": "partner", "_tags": {"owner": "net-team"}},
+        {"name": "partner"},
+    ),
+    "aws_core__aws_cloudtrail_dashboard": (
+        {"DashboardArn": f"arn:aws:cloudtrail:us-east-1:{ACCOUNT}:dashboard/abc", "Type": "CUSTOM", "_name": "abc", "_tags": {"owner": "net-team"}},
+        {"dashboard_type": "CUSTOM"},
+    ),
+    "aws_core__aws_config_aggregation_authorization": (
+        {
+            "AggregationAuthorizationArn": f"arn:aws:config:us-east-1:{ACCOUNT}:aggregation-authorization/999988887777/us-east-1",
+            "AuthorizedAccountId": "999988887777",
+            "AuthorizedAwsRegion": "us-east-1",
+        },
+        {"authorized_account_id": "999988887777", "authorized_region": "us-east-1"},
+    ),
+    "aws_core__aws_config_organization_rule": (
+        {
+            "OrganizationConfigRuleName": "org-s3-public",
+            "OrganizationConfigRuleArn": f"arn:aws:config:us-east-1:{ACCOUNT}:organization-config-rule/org-s3-public-abc",
+            "ExcludedAccounts": ["999988887777"],
+            "_last_update_time": "2026-10-01T00:00:00Z",
+        },
+        {"name": "org-s3-public", "excluded_accounts": ["999988887777"], "last_update_time": "2026-10-01T00:00:00Z"},
+    ),
+    "aws_core__aws_config_organization_conformance_pack": (
+        {
+            "OrganizationConformancePackName": "org-pack",
+            "OrganizationConformancePackArn": f"arn:aws:config:us-east-1:{ACCOUNT}:organization-conformance-pack/org-pack-abc",
+            "ExcludedAccounts": [],
+            "DeliveryS3Bucket": "awsconfigconforms-org",
+            "_last_update_time": "2026-10-01T00:00:00Z",
+        },
+        {"name": "org-pack", "excluded_accounts": [], "delivery_s3_bucket": "awsconfigconforms-org"},
+    ),
+    "aws_core__aws_config_stored_query": (
+        {"QueryId": "q-1", "QueryArn": f"arn:aws:config:us-east-1:{ACCOUNT}:stored-query/open-sgs/q-1", "QueryName": "open-sgs"},
+        {"name": "open-sgs", "query_id": "q-1"},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -370,10 +432,16 @@ class TestBatchTypes:
         )["node"]
         schema = _create_verb_schema(_model(entity_type))
         jsonschema.validate(_prepare_null_payload(payload, schema), schema)
-        assert payload["tags"].get("owner") == "net-team"
+        if entry["tags"]["source"] == "none":
+            assert payload["tags"] == {}  # AWS has no tag operation for the type: observed, untagged
+        else:
+            assert payload["tags"].get("owner") == "net-team"
 
     def test_the_tags_are_read_by_a_declared_lane(self, entity_type: str) -> None:
         tags = _entry(entity_type)["tags"]
+        if tags["source"] == "none":
+            assert tags["why"]
+            return
         if tags["source"] == "rgta":
             # Joined by ARN from the region's one sweep; the item must carry the ARN it is joined on.
             item, _ = CASES[entity_type]
@@ -418,6 +486,8 @@ class TestBatchTypes:
 def _read_tags(entry: dict[str, Any], item: dict[str, Any]) -> dict[str, str]:
     """The tags the entry's lane would resolve for ``item``: the item's own, or the sweep's map for an rgta lane."""
     block = entry["tags"]
+    if block["source"] == "none":
+        return {}
     if block["source"] in ("rgta", "service"):
         return {"owner": "net-team"}
     return normalize_tags(eval_path(item, block["from"]), block["shape"])

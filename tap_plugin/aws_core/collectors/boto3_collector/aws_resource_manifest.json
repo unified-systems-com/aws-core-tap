@@ -3368,6 +3368,346 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_kms_alias",
+      "service": "kms",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "kms_aliases_described"
+      },
+      "why": "Enumerate KMS aliases — the names policies and applications use to reach a key, so a repointed alias silently changes which key they use.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore kms ListAliases output shape and custom_fn kms_aliases_described, 2026-10-29; no sensitive-flagged member."
+      },
+      "items_path": "[]",
+      "natural_key": "AliasArn",
+      "fields": {
+        "name": "AliasName",
+        "alias_arn": "AliasArn",
+        "alias_name": "AliasName",
+        "target_key_id": "TargetKeyId"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::KMS::Alias says tagging.taggable is false, and the KMS tag operations (TagResource, ListResourceTags) address a key by KeyId, never an alias (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_target_key_arn",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ALIASES_KEY__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cloudtrail_event_data_store",
+      "service": "cloudtrail",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudtrail_event_data_stores_described"
+      },
+      "why": "Enumerate CloudTrail Lake event data stores — where audit events are kept and queried; retention and termination protection decide how far back an investigation can look.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudtrail ListEventDataStores and ListTags output shapes and custom_fn cloudtrail_event_data_stores_described, 2026-10-29; no sensitive-flagged member. GetEventDataStore (event selectors, KMS key) is not requested.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AdvancedEventSelectors",
+            "category": "customer_content",
+            "reason": "Operator-authored event selectors; field selectors can embed resource names and ARNs.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "EventDataStoreArn",
+      "fields": {
+        "name": "_name",
+        "event_data_store_arn": "EventDataStoreArn",
+        "status": "Status",
+        "multi_region_enabled": "MultiRegionEnabled",
+        "organization_enabled": "OrganizationEnabled",
+        "retention_period_days": "RetentionPeriod",
+        "termination_protection_enabled": "TerminationProtectionEnabled"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTags (20 ARNs to a call) into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_cloudtrail_channel",
+      "service": "cloudtrail",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudtrail_channels_described"
+      },
+      "why": "Enumerate CloudTrail Lake channels — the intakes that bring events from outside AWS into an event data store.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudtrail ListChannels and ListTags output shapes and custom_fn cloudtrail_channels_described, 2026-10-29; no sensitive-flagged member. GetChannel (the source and destinations) is not requested.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ChannelArn",
+      "fields": {
+        "name": "_name",
+        "channel_arn": "ChannelArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTags (20 ARNs to a call) into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_cloudtrail_dashboard",
+      "service": "cloudtrail",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudtrail_dashboards_described"
+      },
+      "why": "Enumerate CloudTrail Lake dashboards — saved queries over event data stores that refresh on a schedule.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudtrail ListDashboards and ListTags output shapes and custom_fn cloudtrail_dashboards_described, 2026-10-29; no sensitive-flagged member. GetDashboard (widgets and query statements) is not requested.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "DashboardArn",
+      "fields": {
+        "name": "_name",
+        "dashboard_arn": "DashboardArn",
+        "dashboard_type": "Type"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTags (20 ARNs to a call) into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_aggregation_authorization",
+      "service": "config",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeAggregationAuthorizations"
+      },
+      "why": "Enumerate Config aggregation authorizations — each one lets another account read this account's Config configuration and compliance data.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore config DescribeAggregationAuthorizations and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AggregationAuthorizations[]",
+      "natural_key": "AggregationAuthorizationArn",
+      "fields": {
+        "authorization_arn": "AggregationAuthorizationArn",
+        "authorized_account_id": "AuthorizedAccountId",
+        "authorized_region": "AuthorizedAwsRegion"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "AggregationAuthorizationArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the resource's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_organization_rule",
+      "service": "config",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "config_organization_rules_described"
+      },
+      "why": "Enumerate Config organization rules — compliance rules pushed to every member account, and the accounts they skip.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore config DescribeOrganizationConfigRules output shape and custom_fn config_organization_rules_described, 2026-10-29; no sensitive-flagged member. A custom rule's Lambda ARN and input parameters ride in the metadata, stored with the configuration.",
+        "locations": [
+          {
+            "path": "OrganizationCustomRuleMetadata.InputParameters",
+            "category": "customer_content",
+            "reason": "Operator-authored rule parameters (JSON): can embed any other category.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "OrganizationManagedRuleMetadata.InputParameters",
+            "category": "customer_content",
+            "reason": "Operator-authored rule parameters (JSON): can embed any other category.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "OrganizationCustomRuleMetadata.Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "OrganizationConfigRuleArn",
+      "fields": {
+        "name": "OrganizationConfigRuleName",
+        "rule_arn": "OrganizationConfigRuleArn",
+        "excluded_accounts": "ExcludedAccounts",
+        "last_update_time": "_last_update_time"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Config::OrganizationConfigRule says tagging.taggable is false, and the Config tag operations do not accept an organization rule ARN (botocore 1.43.121 config TagResource)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_organization_conformance_pack",
+      "service": "config",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "config_organization_conformance_packs_described"
+      },
+      "why": "Enumerate Config organization conformance packs — bundles of rules and remediations pushed to every member account, and the accounts they skip.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore config DescribeOrganizationConformancePacks and ListTagsForResource output shapes and custom_fn config_organization_conformance_packs_described, 2026-10-29; no sensitive-flagged member. The pack's template body is not returned by this call.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ConformancePackInputParameters[].ParameterValue",
+            "category": "customer_content",
+            "reason": "Operator-authored template parameter values: arbitrary strings that can embed any other category.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "OrganizationConformancePackArn",
+      "fields": {
+        "name": "OrganizationConformancePackName",
+        "pack_arn": "OrganizationConformancePackArn",
+        "excluded_accounts": "ExcludedAccounts",
+        "delivery_s3_bucket": "DeliveryS3Bucket",
+        "last_update_time": "_last_update_time"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "OrganizationConformancePackArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the resource's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_config_stored_query",
+      "service": "config",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListStoredQueries"
+      },
+      "why": "Enumerate Config stored queries — saved advanced queries over the account's resource inventory.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore config ListStoredQueries and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member. GetStoredQuery (the query expression) is not requested.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description of the query.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "StoredQueryMetadata[]",
+      "natural_key": "QueryArn",
+      "fields": {
+        "name": "QueryName",
+        "query_arn": "QueryArn",
+        "query_id": "QueryId"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "QueryArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the resource's ARN; the listing carries none."
+      }
     }
   ]
 }

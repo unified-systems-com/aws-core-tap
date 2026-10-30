@@ -292,3 +292,105 @@ class TestCodePipeline:
         client = _Client(list_pipelines={"pipelines": [{"name": "release"}]}, get_pipeline=_denied("GetPipeline"))
         yielded, gap = _run_to_the_gap(codepipeline_pipelines_described, "codepipeline", client)
         assert yielded == [] and "release" in gap
+
+
+class TestKmsAliases:
+    def test_the_target_key_arn_is_built_from_the_alias_arn(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import kms_aliases_described
+
+        client = _Client(
+            list_aliases={
+                "Aliases": [
+                    {"AliasName": "alias/app", "AliasArn": "arn:aws-us-gov:kms:us-gov-west-1:1:alias/app", "TargetKeyId": "k-1"},
+                    {"AliasName": "alias/orphan", "AliasArn": "arn:aws:kms:us-east-1:1:alias/orphan"},
+                ]
+            }
+        )
+        app, orphan = _run(kms_aliases_described, "kms", client)
+        assert app["_target_key_arn"] == "arn:aws-us-gov:kms:us-gov-west-1:1:key/k-1"
+        assert orphan["_target_key_arn"] is None
+        assert app[EDGE_READS] == {"_target_key_arn": COMPLETE}
+
+
+class TestCloudTrailLake:
+    ARN = "arn:aws:cloudtrail:us-east-1:1:eventdatastore/abc"
+
+    def test_tags_come_from_list_tags_by_arn_in_batches(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import cloudtrail_event_data_stores_described
+
+        seen: list[list[str]] = []
+
+        def list_tags(ResourceIdList: list[str]) -> Any:
+            seen.append(ResourceIdList)
+            return {"ResourceTagList": [{"ResourceId": self.ARN, "TagsList": [{"Key": "team", "Value": "sec"}]}]}
+
+        client = _Client(
+            list_event_data_stores={"EventDataStores": [{"EventDataStoreArn": self.ARN, "Name": "audit"}]},
+            list_tags=list_tags,
+        )
+        [item] = _run(cloudtrail_event_data_stores_described, "cloudtrail", client)
+        assert (item["_name"], item["_tags"], item["_tags_unread"]) == ("audit", {"team": "sec"}, False)
+        assert seen == [[self.ARN]]
+
+    def test_a_denied_tag_read_is_unread_and_the_name_falls_back_to_the_arn_tail(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import cloudtrail_dashboards_described
+
+        arn = "arn:aws:cloudtrail:us-east-1:1:dashboard/dash-1"
+        client = _Client(list_dashboards={"Dashboards": [{"DashboardArn": arn, "Type": "CUSTOM"}]}, list_tags=_denied("ListTags"))
+        [item] = _run(cloudtrail_dashboards_described, "cloudtrail", client)
+        assert (item["_name"], item["_tags"], item["_tags_unread"]) == ("dash-1", {}, True)
+
+
+class TestConfigOrganizationReaders:
+    def _denied_org(self) -> ClientError:
+        return ClientError({"Error": {"Code": "OrganizationAccessDeniedException", "Message": "not the admin"}}, "DescribeOrganizationConfigRules")
+
+    def test_outside_the_organization_admin_account_there_is_nothing_to_list_and_no_error(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
+            config_organization_conformance_packs_described,
+            config_organization_rules_described,
+        )
+
+        assert _run(config_organization_rules_described, "config", _Client(describe_organization_config_rules=self._denied_org())) == []
+        assert _run(config_organization_conformance_packs_described, "config", _Client(describe_organization_conformance_packs=self._denied_org())) == []
+
+    def test_any_other_failure_is_not_swallowed(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import config_organization_rules_described
+
+        with pytest.raises(ClientError):
+            _run(config_organization_rules_described, "config", _Client(describe_organization_config_rules=_denied("DescribeOrganizationConfigRules")))
+
+    def test_a_not_the_admin_error_after_a_page_was_yielded_is_a_failure_not_an_empty_end(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import config_organization_rules_described
+
+        class _TwoPages(_Client):
+            def can_paginate(self, method: str) -> bool:
+                return True
+
+            def get_paginator(self, method: str) -> Any:
+                outer = self
+
+                class _Paginator:
+                    def paginate(self, **_: Any) -> Any:
+                        yield {"OrganizationConfigRules": [{"OrganizationConfigRuleName": "r", "OrganizationConfigRuleArn": "arn"}]}
+                        raise outer._canned["error"]
+
+                return _Paginator()
+
+        with pytest.raises(ClientError):
+            _run(config_organization_rules_described, "config", _TwoPages(error=self._denied_org()))
+
+    def test_rules_carry_a_json_safe_update_time(self) -> None:
+        from datetime import UTC, datetime
+
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import config_organization_rules_described
+
+        client = _Client(
+            describe_organization_config_rules={
+                "OrganizationConfigRules": [
+                    {"OrganizationConfigRuleName": "r", "OrganizationConfigRuleArn": "arn:aws:config:r:1:organization-config-rule/r", "LastUpdateTime": datetime(2026, 10, 1, tzinfo=UTC)}
+                ]
+            }
+        )
+        [item] = _run(config_organization_rules_described, "config", client)
+        assert item["_last_update_time"] == "2026-10-01T00:00:00Z"
