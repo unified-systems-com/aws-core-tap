@@ -779,6 +779,9 @@ class TestDeclarations:
         read = collect(with_findings())
         emitted = {n["entity"]["entity_type"] for n in read.nodes}
         assert set(_NEW_TYPES) <= emitted
+        # A lane row is evidence that the reader collects the type (the coverage ledger counts it so), so a
+        # row for a type this reader never emits is a defect.
+        assert {r["entity_type"] for r in lanes} <= emitted
         declared = reader_sensitivity(READER)
         for entity_type in _NEW_TYPES:
             assert [r["entity_type"] for r in lanes].count(entity_type) == 1, entity_type
