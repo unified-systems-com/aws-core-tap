@@ -671,6 +671,21 @@
         "AWS::ApiGatewayV2::VpcLink"
       ]
     },
+    "aws_core__aws_apigatewayv2_portal_product": {
+      "cfn": [
+        "AWS::ApiGatewayV2::PortalProduct"
+      ]
+    },
+    "aws_core__aws_appstream_app_block": {
+      "cfn": [
+        "AWS::AppStream::AppBlock"
+      ]
+    },
+    "aws_core__aws_appstream_application": {
+      "cfn": [
+        "AWS::AppStream::Application"
+      ]
+    },
     "aws_core__aws_aps_scraper": {
       "cfn": [
         "AWS::APS::Scraper"
@@ -700,9 +715,19 @@
         "AWS::Backup::BackupPlan"
       ]
     },
+    "aws_core__aws_backup_report_plan": {
+      "cfn": [
+        "AWS::Backup::ReportPlan"
+      ]
+    },
     "aws_core__aws_backup_vault": {
       "cfn": [
         "AWS::Backup::BackupVault"
+      ]
+    },
+    "aws_core__aws_backupgateway_hypervisor": {
+      "cfn": [
+        "AWS::BackupGateway::Hypervisor"
       ]
     },
     "aws_core__aws_batch_compute_environment": {
@@ -733,6 +758,11 @@
     "aws_core__aws_bedrock_model": {
       "cfn": [],
       "reason": "AWS-owned foundation models; no CloudFormation resource type."
+    },
+    "aws_core__aws_certificatemanager_acme_endpoint": {
+      "cfn": [
+        "AWS::CertificateManager::AcmeEndpoint"
+      ]
     },
     "aws_core__aws_cloudfront_distribution": {
       "cfn": [
@@ -792,6 +822,16 @@
     "aws_core__aws_codepipeline_pipeline": {
       "cfn": [
         "AWS::CodePipeline::Pipeline"
+      ]
+    },
+    "aws_core__aws_codestarconnections_connection": {
+      "cfn": [
+        "AWS::CodeStarConnections::Connection"
+      ]
+    },
+    "aws_core__aws_codestarconnections_repository_link": {
+      "cfn": [
+        "AWS::CodeStarConnections::RepositoryLink"
       ]
     },
     "aws_core__aws_cognito_identity_pool": {
@@ -894,9 +934,24 @@
         "AWS::ControlTower::LandingZone"
       ]
     },
+    "aws_core__aws_datasync_agent": {
+      "cfn": [
+        "AWS::DataSync::Agent"
+      ]
+    },
+    "aws_core__aws_datasync_task": {
+      "cfn": [
+        "AWS::DataSync::Task"
+      ]
+    },
     "aws_core__aws_delegated_administration": {
       "cfn": [],
       "reason": "A (member account, service principal) registration, not a resource."
+    },
+    "aws_core__aws_detective_graph": {
+      "cfn": [
+        "AWS::Detective::Graph"
+      ]
     },
     "aws_core__aws_dx_connection": {
       "cfn": [
@@ -930,6 +985,21 @@
         "AWS::EC2::Instance"
       ]
     },
+    "aws_core__aws_ec2_ipam_external_resource_verification_token": {
+      "cfn": [
+        "AWS::EC2::IpamExternalResourceVerificationToken"
+      ]
+    },
+    "aws_core__aws_ec2_ipam_internet_registry_association": {
+      "cfn": [
+        "AWS::EC2::IpamInternetRegistryAssociation"
+      ]
+    },
+    "aws_core__aws_ec2_secondary_network": {
+      "cfn": [
+        "AWS::EC2::SecondaryNetwork"
+      ]
+    },
     "aws_core__aws_ecr_repository": {
       "cfn": [
         "AWS::ECR::Repository"
@@ -943,6 +1013,11 @@
     "aws_core__aws_ecs_container": {
       "cfn": [],
       "reason": "A container inside a running task: an embedded detail with no CloudFormation resource."
+    },
+    "aws_core__aws_ecs_daemon": {
+      "cfn": [
+        "AWS::ECS::Daemon"
+      ]
     },
     "aws_core__aws_ecs_service": {
       "cfn": [
@@ -983,6 +1058,16 @@
         "AWS::ElastiCache::CacheCluster"
       ]
     },
+    "aws_core__aws_elasticache_serverless_cache_snapshot": {
+      "cfn": [
+        "AWS::ElastiCache::ServerlessCacheSnapshot"
+      ]
+    },
+    "aws_core__aws_elasticache_snapshot": {
+      "cfn": [
+        "AWS::ElastiCache::Snapshot"
+      ]
+    },
     "aws_core__aws_elasticsearch_domain": {
       "cfn": [
         "AWS::Elasticsearch::Domain"
@@ -996,6 +1081,11 @@
     "aws_core__aws_elb_listener": {
       "cfn": [
         "AWS::ElasticLoadBalancingV2::Listener"
+      ]
+    },
+    "aws_core__aws_emrcontainers_security_configuration": {
+      "cfn": [
+        "AWS::EMRContainers::SecurityConfiguration"
       ]
     },
     "aws_core__aws_eventbridge_api_destination": {
@@ -1021,6 +1111,21 @@
     "aws_core__aws_eventbridge_rule": {
       "cfn": [
         "AWS::Events::Rule"
+      ]
+    },
+    "aws_core__aws_eventschemas_discoverer": {
+      "cfn": [
+        "AWS::EventSchemas::Discoverer"
+      ]
+    },
+    "aws_core__aws_eventschemas_registry": {
+      "cfn": [
+        "AWS::EventSchemas::Registry"
+      ]
+    },
+    "aws_core__aws_fsx_file_cache": {
+      "cfn": [
+        "AWS::FSx::FileCache"
       ]
     },
     "aws_core__aws_guardduty_detector": {
@@ -1137,9 +1242,59 @@
         "AWS::IdentityStore::User"
       ]
     },
+    "aws_core__aws_inspectorv2_connector": {
+      "cfn": [
+        "AWS::InspectorV2::Connector"
+      ]
+    },
+    "aws_core__aws_inspectorv2_filter": {
+      "cfn": [
+        "AWS::InspectorV2::Filter"
+      ]
+    },
     "aws_core__aws_internet_gateway": {
       "cfn": [
         "AWS::EC2::InternetGateway"
+      ]
+    },
+    "aws_core__aws_iot_ota_update": {
+      "cfn": [
+        "AWS::IoT::OTAUpdate"
+      ]
+    },
+    "aws_core__aws_iot_topic_rule_destination": {
+      "cfn": [
+        "AWS::IoT::TopicRuleDestination"
+      ]
+    },
+    "aws_core__aws_iotsecuretunneling_tunnel": {
+      "cfn": [
+        "AWS::IoTSecureTunneling::Tunnel"
+      ]
+    },
+    "aws_core__aws_iotsitewise_application": {
+      "cfn": [
+        "AWS::IoTSiteWise::Application"
+      ]
+    },
+    "aws_core__aws_kafkaconnect_connector": {
+      "cfn": [
+        "AWS::KafkaConnect::Connector"
+      ]
+    },
+    "aws_core__aws_kafkaconnect_custom_plugin": {
+      "cfn": [
+        "AWS::KafkaConnect::CustomPlugin"
+      ]
+    },
+    "aws_core__aws_kafkaconnect_worker_configuration": {
+      "cfn": [
+        "AWS::KafkaConnect::WorkerConfiguration"
+      ]
+    },
+    "aws_core__aws_kinesis_channel": {
+      "cfn": [
+        "AWS::Kinesis::Channel"
       ]
     },
     "aws_core__aws_kms_alias": {
@@ -1178,6 +1333,21 @@
         "AWS::Lambda::LayerVersion"
       ]
     },
+    "aws_core__aws_licensemanager_license": {
+      "cfn": [
+        "AWS::LicenseManager::License"
+      ]
+    },
+    "aws_core__aws_licensemanager_license_asset_group": {
+      "cfn": [
+        "AWS::LicenseManager::LicenseAssetGroup"
+      ]
+    },
+    "aws_core__aws_licensemanager_license_configuration": {
+      "cfn": [
+        "AWS::LicenseManager::LicenseConfiguration"
+      ]
+    },
     "aws_core__aws_logs_delivery": {
       "cfn": [
         "AWS::Logs::Delivery"
@@ -1198,9 +1368,19 @@
         "AWS::Logs::Destination"
       ]
     },
+    "aws_core__aws_logs_log_anomaly_detector": {
+      "cfn": [
+        "AWS::Logs::LogAnomalyDetector"
+      ]
+    },
     "aws_core__aws_logs_metric_filter": {
       "cfn": [
         "AWS::Logs::MetricFilter"
+      ]
+    },
+    "aws_core__aws_logs_scheduled_query": {
+      "cfn": [
+        "AWS::Logs::ScheduledQuery"
       ]
     },
     "aws_core__aws_logs_subscription_filter": {

@@ -200,8 +200,80 @@ from tap_plugin.aws_core.models.sagemaker_project import SagemakerProject
 from tap_plugin.aws_core.models.sagemaker_trial_component import SagemakerTrialComponent
 from tap_plugin.aws_core.models.sagemaker_workforce import SagemakerWorkforce
 from tap_plugin.aws_core.models.sagemaker_workteam import SagemakerWorkteam
+from tap_plugin.aws_core.models.apigatewayv2_portal_product import Apigatewayv2PortalProduct
+from tap_plugin.aws_core.models.appstream_app_block import AppstreamAppBlock
+from tap_plugin.aws_core.models.appstream_application import AppstreamApplication
+from tap_plugin.aws_core.models.backup_report_plan import BackupReportPlan
+from tap_plugin.aws_core.models.backupgateway_hypervisor import BackupgatewayHypervisor
+from tap_plugin.aws_core.models.certificatemanager_acme_endpoint import CertificatemanagerAcmeEndpoint
+from tap_plugin.aws_core.models.codestarconnections_connection import CodestarconnectionsConnection
+from tap_plugin.aws_core.models.codestarconnections_repository_link import CodestarconnectionsRepositoryLink
+from tap_plugin.aws_core.models.datasync_agent import DatasyncAgent
+from tap_plugin.aws_core.models.datasync_task import DatasyncTask
+from tap_plugin.aws_core.models.detective_graph import DetectiveGraph
+from tap_plugin.aws_core.models.ec2_ipam_external_resource_verification_token import Ec2IpamExternalResourceVerificationToken
+from tap_plugin.aws_core.models.ec2_ipam_internet_registry_association import Ec2IpamInternetRegistryAssociation
+from tap_plugin.aws_core.models.ec2_secondary_network import Ec2SecondaryNetwork
+from tap_plugin.aws_core.models.ecs_daemon import EcsDaemon
+from tap_plugin.aws_core.models.emrcontainers_security_configuration import EmrcontainersSecurityConfiguration
+from tap_plugin.aws_core.models.elasticache_serverless_cache_snapshot import ElasticacheServerlessCacheSnapshot
+from tap_plugin.aws_core.models.elasticache_snapshot import ElasticacheSnapshot
+from tap_plugin.aws_core.models.eventschemas_discoverer import EventschemasDiscoverer
+from tap_plugin.aws_core.models.eventschemas_registry import EventschemasRegistry
+from tap_plugin.aws_core.models.fsx_file_cache import FsxFileCache
+from tap_plugin.aws_core.models.inspectorv2_connector import Inspectorv2Connector
+from tap_plugin.aws_core.models.inspectorv2_filter import Inspectorv2Filter
+from tap_plugin.aws_core.models.iot_ota_update import IotOtaUpdate
+from tap_plugin.aws_core.models.iot_topic_rule_destination import IotTopicRuleDestination
+from tap_plugin.aws_core.models.iotsecuretunneling_tunnel import IotsecuretunnelingTunnel
+from tap_plugin.aws_core.models.iotsitewise_application import IotsitewiseApplication
+from tap_plugin.aws_core.models.kafkaconnect_connector import KafkaconnectConnector
+from tap_plugin.aws_core.models.kafkaconnect_custom_plugin import KafkaconnectCustomPlugin
+from tap_plugin.aws_core.models.kafkaconnect_worker_configuration import KafkaconnectWorkerConfiguration
+from tap_plugin.aws_core.models.kinesis_channel import KinesisChannel
+from tap_plugin.aws_core.models.licensemanager_license import LicensemanagerLicense
+from tap_plugin.aws_core.models.licensemanager_license_asset_group import LicensemanagerLicenseAssetGroup
+from tap_plugin.aws_core.models.licensemanager_license_configuration import LicensemanagerLicenseConfiguration
+from tap_plugin.aws_core.models.logs_log_anomaly_detector import LogsLogAnomalyDetector
+from tap_plugin.aws_core.models.logs_scheduled_query import LogsScheduledQuery
 
 __all__ = [
+    "LogsScheduledQuery",
+    "LogsLogAnomalyDetector",
+    "LicensemanagerLicenseConfiguration",
+    "LicensemanagerLicenseAssetGroup",
+    "LicensemanagerLicense",
+    "KinesisChannel",
+    "KafkaconnectWorkerConfiguration",
+    "KafkaconnectCustomPlugin",
+    "KafkaconnectConnector",
+    "IotsitewiseApplication",
+    "IotsecuretunnelingTunnel",
+    "IotTopicRuleDestination",
+    "IotOtaUpdate",
+    "Inspectorv2Filter",
+    "Inspectorv2Connector",
+    "FsxFileCache",
+    "EventschemasRegistry",
+    "EventschemasDiscoverer",
+    "ElasticacheSnapshot",
+    "ElasticacheServerlessCacheSnapshot",
+    "EmrcontainersSecurityConfiguration",
+    "EcsDaemon",
+    "Ec2SecondaryNetwork",
+    "Ec2IpamInternetRegistryAssociation",
+    "Ec2IpamExternalResourceVerificationToken",
+    "DetectiveGraph",
+    "DatasyncTask",
+    "DatasyncAgent",
+    "CodestarconnectionsRepositoryLink",
+    "CodestarconnectionsConnection",
+    "CertificatemanagerAcmeEndpoint",
+    "BackupgatewayHypervisor",
+    "BackupReportPlan",
+    "AppstreamApplication",
+    "AppstreamAppBlock",
+    "Apigatewayv2PortalProduct",
     "SagemakerWorkteam",
     "SagemakerWorkforce",
     "SagemakerTrialComponent",
