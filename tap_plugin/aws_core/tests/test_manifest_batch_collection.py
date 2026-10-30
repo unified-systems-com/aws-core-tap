@@ -861,7 +861,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_ec2_ipam_external_resource_verification_token": (
-        {'IpamExternalResourceVerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ec2_ipam_external_resource_verification_token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'IpamExternalResourceVerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ipam-token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
         {},
     ),
     "aws_core__aws_ec2_ipam_internet_registry_association": (
