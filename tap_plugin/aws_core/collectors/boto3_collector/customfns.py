@@ -2160,6 +2160,206 @@ def cognito_user_pool_domains_described(session: Any, *, client_for: Any) -> Ite
         raise _undescribed("Cognito user pool domains", failed)
 
 
+def _sns_topic_arns(*action_lists: Any) -> list[str]:
+    """The SNS topic ARNs among CloudWatch alarm actions (which can also be Lambda, Auto Scaling and SSM ARNs)."""
+    return sorted({a for actions in action_lists for a in actions or [] if re.match(rf"^arn:{PARTITION_RE}:sns:", str(a))})
+
+
+def cloudwatch_alarms_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch metric alarms (regional). ``_sns_topic_arns`` are the SNS topics in the alarm's
+    actions: where the alarm sends people to look."""
+    client = client_for("cloudwatch")
+    for page in _pages(client, "describe_alarms", AlarmTypes=["MetricAlarm"]):
+        for alarm in page.get("MetricAlarms", []):
+            if alarm.get("AlarmArn"):
+                topics = _sns_topic_arns(alarm.get("AlarmActions"), alarm.get("OKActions"), alarm.get("InsufficientDataActions"))
+                yield with_edge_reads({**alarm, "_sns_topic_arns": topics}, {"_sns_topic_arns": COMPLETE})
+
+
+def cloudwatch_composite_alarms_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch composite alarms (regional), with the SNS topics in their actions."""
+    client = client_for("cloudwatch")
+    for page in _pages(client, "describe_alarms", AlarmTypes=["CompositeAlarm"]):
+        for alarm in page.get("CompositeAlarms", []):
+            if alarm.get("AlarmArn"):
+                topics = _sns_topic_arns(alarm.get("AlarmActions"), alarm.get("OKActions"), alarm.get("InsufficientDataActions"))
+                yield with_edge_reads({**alarm, "_sns_topic_arns": topics}, {"_sns_topic_arns": COMPLETE})
+
+
+def cloudwatch_dashboards_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch dashboards (regional). The dashboard body (GetDashboard) is not requested."""
+    client = client_for("cloudwatch")
+    for page in _pages(client, "list_dashboards"):
+        yield from (d for d in page.get("DashboardEntries", []) if d.get("DashboardArn"))
+
+
+def cloudwatch_metric_streams_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch metric streams (regional): the Firehose delivery of metrics to a destination."""
+    client = client_for("cloudwatch")
+    for page in _token_pages(client, "list_metric_streams", _CONTINUATION):
+        yield from (e for e in page.get("Entries", []) if e.get("Arn"))
+
+
+def _log_group_arn(partition: str, region: str, account: str, name: str) -> str:
+    return build_arn(partition, "logs", region, account, f"log-group:{name}")
+
+
+def logs_metric_filters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch Logs metric filters (regional), every log group's at once. ``_key`` is
+    ``<log group>:<filter>`` and ``_log_group_arn`` the log group's ARN (the form the log group node is keyed
+    by). The first metric transformation's name and namespace are ``_metric_name`` and ``_metric_namespace``."""
+    client = client_for("logs")
+    region = _client_region(client)
+    partition, account = partition_of_region(region), _account_id(client_for)
+    for page in _pages(client, "describe_metric_filters"):
+        for item in page.get("metricFilters", []):
+            group, name = item.get("logGroupName"), item.get("filterName")
+            if not (group and name):
+                continue
+            first = (item.get("metricTransformations") or [{}])[0]
+            yield with_edge_reads(
+                {
+                    **item,
+                    "_key": f"{group}:{name}",
+                    "_log_group_arn": _log_group_arn(partition, region, account, group),
+                    "_metric_name": first.get("metricName"),
+                    "_metric_namespace": first.get("metricNamespace"),
+                },
+                {"_log_group_arn": COMPLETE},
+            )
+
+
+def logs_subscription_filters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch Logs subscription filters (regional): ``DescribeSubscriptionFilters`` takes a log
+    group, so each group is asked in turn. A subscription filter sends a log group's events to a destination
+    (a Kinesis stream, a Lambda function, another account's destination). A group whose filters cannot be
+    listed is a gap (:func:`_undescribed`)."""
+    client = client_for("logs")
+    region = _client_region(client)
+    partition, account = partition_of_region(region), _account_id(client_for)
+    failed: list[str] = []
+    for groups in _pages(client, "describe_log_groups"):
+        for group in groups.get("logGroups", []):
+            name = group.get("logGroupName")
+            if not name:
+                continue
+            try:
+                for page in _pages(client, "describe_subscription_filters", logGroupName=name):
+                    for item in page.get("subscriptionFilters", []):
+                        if item.get("filterName"):
+                            yield with_edge_reads(
+                                {**item, "_key": f"{name}:{item['filterName']}", "_log_group_arn": _log_group_arn(partition, region, account, name)},
+                                {"_log_group_arn": COMPLETE, "roleArn": COMPLETE},
+                            )
+            except BotoCoreError, ClientError:
+                failed.append(str(name))
+    if failed:
+        raise _undescribed("log groups whose subscription filters", failed)
+
+
+def logs_destinations_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudWatch Logs destinations (regional): the cross-account receivers of subscription filters,
+    each with an access policy naming who may send to it. Tags are read by ARN (``ListTagsForResource``)."""
+    client = client_for("logs")
+    for page in _pages(client, "describe_destinations"):
+        for destination in page.get("destinations", []):
+            arn = destination.get("arn")
+            if not arn:
+                continue
+            tags: dict[str, str] = {}
+            unread = False
+            try:
+                tags = dict(without_response_metadata(client.list_tags_for_resource(resourceArn=arn)).get("tags") or {})
+            except BotoCoreError, ClientError:
+                unread = True
+            yield {**destination, "_tags": tags, "_tags_unread": unread}
+
+
+# SecurityHub answers InvalidAccessException when the account has not enabled it in the region: there is
+# nothing to list, which is not an error.
+_SECURITYHUB_NOT_ENABLED = frozenset({"InvalidAccessException"})
+
+
+def _securityhub_items(client_for: Any, method: str, list_key: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
+    client = client_for("securityhub")
+    answered = False
+    try:
+        for page in _token_pages(client, method, _CONTINUATION, **kwargs):
+            answered = True
+            yield from page.get(list_key, [])
+    except ClientError as exc:
+        # 'Not enabled' is an answer to the first call; after any page has come back the same code means the
+        # listing was cut short, which must not read as a complete one.
+        if answered or error_code(exc) not in _SECURITYHUB_NOT_ENABLED:
+            raise
+
+
+def _securityhub_tags(client: Any, arn: str) -> tuple[dict[str, str], bool]:
+    try:
+        return dict(without_response_metadata(client.list_tags_for_resource(ResourceArn=arn)).get("Tags") or {}), False
+    except BotoCoreError, ClientError:
+        return {}, True
+
+
+def securityhub_action_targets_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Security Hub custom action targets (regional). Empty, without error, where Security Hub is not enabled."""
+    yield from (t for t in _securityhub_items(client_for, "describe_action_targets", "ActionTargets") if t.get("ActionTargetArn"))
+
+
+def securityhub_automation_rules_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Security Hub automation rules (regional): rules that rewrite or suppress findings as they
+    arrive. ``ListAutomationRules`` names them; ``BatchGetAutomationRules`` (100 ARNs to a call) adds the
+    criteria and actions as ``Criteria`` and ``Actions``. A rule the batch read did not return (a denied batch,
+    or a rule left unprocessed) is still yielded, and then the reader raises (:func:`_undescribed`), so a rule
+    whose suppression logic was not read is a loud gap. Tags are read by ARN. Empty, without error, where
+    Security Hub is not enabled."""
+    client = client_for("securityhub")
+    rules = [r for r in _securityhub_items(client_for, "list_automation_rules", "AutomationRulesMetadata") if r.get("RuleArn")]
+    detail: dict[str, dict[str, Any]] = {}
+    for start in range(0, len(rules), 100):
+        batch = [str(r["RuleArn"]) for r in rules[start : start + 100]]
+        try:
+            answer = without_response_metadata(client.batch_get_automation_rules(AutomationRulesArns=batch))
+            detail.update({r["RuleArn"]: r for r in answer.get("Rules", []) if r.get("RuleArn")})
+        except BotoCoreError, ClientError:
+            continue
+    missing: list[str] = []
+    for rule in rules:
+        arn = str(rule["RuleArn"])
+        tags, unread = _securityhub_tags(client, arn)
+        extra = detail.get(arn)
+        if extra is None:
+            missing.append(arn)
+            extra = {}
+        yield {**rule, "Criteria": extra.get("Criteria"), "Actions": extra.get("Actions"), "_tags": tags, "_tags_unread": unread}
+    if missing:
+        raise _undescribed("Security Hub automation rules whose criteria and actions", missing)
+
+
+def securityhub_finding_aggregators_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Security Hub finding aggregators (regional): the cross-region aggregation of findings.
+    ``GetFindingAggregator`` adds the linking mode and regions. An aggregator that cannot be described is a
+    gap (:func:`_undescribed`). Empty, without error, where Security Hub is not enabled."""
+    client = client_for("securityhub")
+    failed: list[str] = []
+    for entry in _securityhub_items(client_for, "list_finding_aggregators", "FindingAggregators"):
+        arn = entry.get("FindingAggregatorArn")
+        if not arn:
+            continue
+        try:
+            yield without_response_metadata(client.get_finding_aggregator(FindingAggregatorArn=arn))
+        except BotoCoreError, ClientError:
+            failed.append(str(arn))
+    if failed:
+        raise _undescribed("Security Hub finding aggregators", failed)
+
+
+def securityhub_insights_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Security Hub insights (regional): saved finding queries. Empty, without error, where Security
+    Hub is not enabled."""
+    yield from (i for i in _securityhub_items(client_for, "get_insights", "Insights") if i.get("InsightArn"))
+
+
 def _undescribed(kind: str, names: list[str]) -> SourceError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
     be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
@@ -2587,6 +2787,17 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "cloudwatch_alarms_described": cloudwatch_alarms_described,
+    "cloudwatch_composite_alarms_described": cloudwatch_composite_alarms_described,
+    "cloudwatch_dashboards_described": cloudwatch_dashboards_described,
+    "cloudwatch_metric_streams_described": cloudwatch_metric_streams_described,
+    "logs_metric_filters_described": logs_metric_filters_described,
+    "logs_subscription_filters_described": logs_subscription_filters_described,
+    "logs_destinations_described": logs_destinations_described,
+    "securityhub_action_targets_described": securityhub_action_targets_described,
+    "securityhub_automation_rules_described": securityhub_automation_rules_described,
+    "securityhub_finding_aggregators_described": securityhub_finding_aggregators_described,
+    "securityhub_insights_described": securityhub_insights_described,
     "efs_access_points_described": efs_access_points_described,
     "efs_mount_targets_described": efs_mount_targets_described,
     "elbv2_listeners_described": elbv2_listeners_described,

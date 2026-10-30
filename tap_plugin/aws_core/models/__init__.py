@@ -137,8 +137,36 @@ from tap_plugin.aws_core.models.cognito_identity_provider import CognitoIdentity
 from tap_plugin.aws_core.models.cognito_user_pool_group import CognitoUserPoolGroup
 from tap_plugin.aws_core.models.cognito_user_pool_resource_server import CognitoUserPoolResourceServer
 from tap_plugin.aws_core.models.cognito_user_pool_domain import CognitoUserPoolDomain
+from tap_plugin.aws_core.models.cloudwatch_alarm import CloudwatchAlarm
+from tap_plugin.aws_core.models.cloudwatch_composite_alarm import CloudwatchCompositeAlarm
+from tap_plugin.aws_core.models.cloudwatch_dashboard import CloudwatchDashboard
+from tap_plugin.aws_core.models.cloudwatch_metric_stream import CloudwatchMetricStream
+from tap_plugin.aws_core.models.logs_metric_filter import LogsMetricFilter
+from tap_plugin.aws_core.models.logs_subscription_filter import LogsSubscriptionFilter
+from tap_plugin.aws_core.models.logs_destination import LogsDestination
+from tap_plugin.aws_core.models.logs_delivery_source import LogsDeliverySource
+from tap_plugin.aws_core.models.logs_delivery_destination import LogsDeliveryDestination
+from tap_plugin.aws_core.models.logs_delivery import LogsDelivery
+from tap_plugin.aws_core.models.securityhub_action_target import SecurityhubActionTarget
+from tap_plugin.aws_core.models.securityhub_automation_rule import SecurityhubAutomationRule
+from tap_plugin.aws_core.models.securityhub_finding_aggregator import SecurityhubFindingAggregator
+from tap_plugin.aws_core.models.securityhub_insight import SecurityhubInsight
 
 __all__ = [
+    "SecurityhubInsight",
+    "SecurityhubFindingAggregator",
+    "SecurityhubAutomationRule",
+    "SecurityhubActionTarget",
+    "LogsDelivery",
+    "LogsDeliveryDestination",
+    "LogsDeliverySource",
+    "LogsDestination",
+    "LogsSubscriptionFilter",
+    "LogsMetricFilter",
+    "CloudwatchMetricStream",
+    "CloudwatchDashboard",
+    "CloudwatchCompositeAlarm",
+    "CloudwatchAlarm",
     "CognitoUserPoolDomain",
     "CognitoUserPoolResourceServer",
     "CognitoUserPoolGroup",

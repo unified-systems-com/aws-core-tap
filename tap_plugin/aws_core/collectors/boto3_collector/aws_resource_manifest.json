@@ -5645,6 +5645,644 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_cloudwatch_alarm",
+      "service": "cloudwatch",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudwatch_alarms_described"
+      },
+      "why": "Enumerate CloudWatch metric alarms — the detective controls (and their notification targets) that frameworks such as CIS require, and whether each is enabled.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudwatch DescribeAlarms and ListTagsForResource output shapes and custom_fn cloudwatch_alarms_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "AlarmDescription",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "StateReasonData",
+            "category": "diagnostic",
+            "reason": "A service-composed JSON recording the datapoints behind the last state change.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "AlarmArn",
+      "fields": {
+        "name": "AlarmName",
+        "alarm_arn": "AlarmArn",
+        "state_value": "StateValue",
+        "actions_enabled": "ActionsEnabled",
+        "metric_name": "MetricName",
+        "namespace": "Namespace",
+        "comparison_operator": "ComparisonOperator",
+        "threshold": "Threshold"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "AlarmArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "_sns_topic_arns",
+          "target_type": "aws_core__aws_sns_topic",
+          "key_kind": "arn",
+          "edge_type": "NOTIFIES_TOPIC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cloudwatch_composite_alarm",
+      "service": "cloudwatch",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudwatch_composite_alarms_described"
+      },
+      "why": "Enumerate CloudWatch composite alarms — rules over other alarms that decide which of them actually page someone.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudwatch DescribeAlarms and ListTagsForResource output shapes and custom_fn cloudwatch_composite_alarms_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "AlarmDescription",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "AlarmArn",
+      "fields": {
+        "name": "AlarmName",
+        "alarm_arn": "AlarmArn",
+        "state_value": "StateValue",
+        "actions_enabled": "ActionsEnabled",
+        "alarm_rule": "AlarmRule"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "AlarmArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "_sns_topic_arns",
+          "target_type": "aws_core__aws_sns_topic",
+          "key_kind": "arn",
+          "edge_type": "NOTIFIES_TOPIC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cloudwatch_dashboard",
+      "service": "cloudwatch",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudwatch_dashboards_described"
+      },
+      "why": "Enumerate CloudWatch dashboards — the saved operational views of the account.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudwatch ListDashboards and ListTagsForResource output shapes and custom_fn cloudwatch_dashboards_described, 2026-10-29; no sensitive-flagged member. The dashboard body (GetDashboard) is not requested.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "DashboardArn",
+      "fields": {
+        "name": "DashboardName",
+        "dashboard_arn": "DashboardArn",
+        "size": "Size"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "DashboardArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_cloudwatch_metric_stream",
+      "service": "cloudwatch",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cloudwatch_metric_streams_described"
+      },
+      "why": "Enumerate CloudWatch metric streams — continuous exports of metrics to a Firehose delivery stream, which is a path for operational data to leave the account.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cloudwatch ListMetricStreams and ListTagsForResource output shapes and custom_fn cloudwatch_metric_streams_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "FirehoseArn",
+            "category": "other",
+            "reason": "The delivery stream metrics are exported to: a location, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "stream_arn": "Arn",
+        "firehose_arn": "FirehoseArn",
+        "state": "State",
+        "output_format": "OutputFormat"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_logs_metric_filter",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "logs_metric_filters_described"
+      },
+      "why": "Enumerate CloudWatch Logs metric filters — the pattern-to-metric rules behind log-based detective controls, which only work if the pattern is right.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore logs DescribeMetricFilters output shape and custom_fn logs_metric_filters_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "filterPattern",
+            "category": "customer_content",
+            "reason": "An operator-authored filter pattern; it can embed values to match.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "filterName",
+        "filter_key": "_key",
+        "log_group_name": "logGroupName",
+        "filter_pattern": "filterPattern",
+        "metric_name": "_metric_name",
+        "metric_namespace": "_metric_namespace"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Logs::MetricFilter says tagging.taggable is false, and the CloudWatch Logs tag operations take a log group, destination or delivery object ARN, not this type (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_log_group_arn",
+          "target_type": "aws_core__aws_cloudwatch_log_group",
+          "key_kind": "arn",
+          "edge_type": "FILTERS_LOG_GROUP__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_logs_subscription_filter",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "logs_subscription_filters_described"
+      },
+      "why": "Enumerate CloudWatch Logs subscription filters — where log events are streamed to, including other accounts' destinations.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore logs DescribeLogGroups and DescribeSubscriptionFilters output shapes and custom_fn logs_subscription_filters_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "destinationArn",
+            "category": "other",
+            "reason": "The destination the events are streamed to: a location, possibly in another account, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "filterPattern",
+            "category": "customer_content",
+            "reason": "An operator-authored filter pattern; it can embed values to match.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "filterName",
+        "filter_key": "_key",
+        "log_group_name": "logGroupName",
+        "destination_arn": "destinationArn",
+        "role_arn": "roleArn",
+        "distribution": "distribution"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Logs::SubscriptionFilter says tagging.taggable is false, and the CloudWatch Logs tag operations take a log group, destination or delivery object ARN, not this type (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_log_group_arn",
+          "target_type": "aws_core__aws_cloudwatch_log_group",
+          "key_kind": "arn",
+          "edge_type": "FILTERS_LOG_GROUP__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "roleArn",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_logs_destination",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "logs_destinations_described"
+      },
+      "why": "Enumerate CloudWatch Logs destinations — the cross-account log receivers, and the access policy that says which accounts may send to them.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore logs DescribeDestinations and ListTagsForResource output shapes and custom_fn logs_destinations_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "accessPolicy",
+            "category": "access_policy",
+            "reason": "The destination's access policy: which accounts may send log events to it. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "destinationName",
+        "destination_arn": "arn",
+        "target_arn": "targetArn",
+        "role_arn": "roleArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the destination ARN into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "roleArn",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_logs_delivery_source",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDeliverySources"
+      },
+      "why": "Enumerate CloudWatch Logs delivery sources — AWS resources that vend logs into the delivery pipeline, so which of them are logged at all.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore logs DescribeDeliverySources output shape, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "deliverySources[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "source_arn": "arn",
+        "service": "service",
+        "log_type": "logType",
+        "resource_arns": "resourceArns"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Describe answer carries the tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_logs_delivery_destination",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDeliveryDestinations"
+      },
+      "why": "Enumerate CloudWatch Logs delivery destinations — where vended logs are written to.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore logs DescribeDeliveryDestinations output shape, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "deliveryDestinations[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "destination_arn": "arn",
+        "destination_type": "deliveryDestinationType",
+        "output_format": "outputFormat",
+        "destination_resource_arn": "deliveryDestinationConfiguration.destinationResourceArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Describe answer carries the tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_logs_delivery",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDeliveries"
+      },
+      "why": "Enumerate CloudWatch Logs deliveries — the links that actually send a vended log from its source to its destination.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore logs DescribeDeliveries output shape, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "deliveries[]",
+      "natural_key": "arn",
+      "fields": {
+        "delivery_arn": "arn",
+        "delivery_id": "id",
+        "source_name": "deliverySourceName",
+        "destination_arn": "deliveryDestinationArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The Describe answer carries the tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_action_target",
+      "service": "securityhub",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "securityhub_action_targets_described"
+      },
+      "why": "Enumerate Security Hub custom actions — the hooks that send findings to EventBridge and from there to response tooling.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore securityhub DescribeActionTargets output shape and custom_fn securityhub_action_targets_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ActionTargetArn",
+      "fields": {
+        "name": "Name",
+        "action_target_arn": "ActionTargetArn"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::SecurityHub::ActionTarget says tagging.taggable is false, and the Security Hub tag operations take a hub, hub v2 or automation rule ARN, not this type (botocore 1.43.121)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_automation_rule",
+      "service": "securityhub",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "securityhub_automation_rules_described"
+      },
+      "why": "Enumerate Security Hub automation rules — rules that rewrite, re-rate or suppress findings as they arrive, and so decide what a reviewer sees.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore securityhub ListAutomationRules, BatchGetAutomationRules and ListTagsForResource output shapes and custom_fn securityhub_automation_rules_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Criteria",
+            "category": "customer_content",
+            "reason": "Operator-authored match criteria; they can name accounts, resources and products.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Actions",
+            "category": "customer_content",
+            "reason": "Operator-authored actions (note text, severity and workflow changes).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "RuleArn",
+      "fields": {
+        "name": "RuleName",
+        "rule_arn": "RuleArn",
+        "rule_status": "RuleStatus",
+        "rule_order": "RuleOrder",
+        "is_terminal": "IsTerminal"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads the tags into _tags (a plain map); the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_finding_aggregator",
+      "service": "securityhub",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "securityhub_finding_aggregators_described"
+      },
+      "why": "Enumerate Security Hub finding aggregators — the cross-region aggregation, and which regions it covers.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore securityhub ListFindingAggregators and GetFindingAggregator output shapes and custom_fn securityhub_finding_aggregators_described, 2026-10-29; no sensitive-flagged member."
+      },
+      "items_path": "[]",
+      "natural_key": "FindingAggregatorArn",
+      "fields": {
+        "aggregator_arn": "FindingAggregatorArn",
+        "region_linking_mode": "RegionLinkingMode",
+        "regions": "Regions"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::SecurityHub::FindingAggregator says tagging.taggable is false, and the Security Hub tag operations take a hub, hub v2 or automation rule ARN, not this type (botocore 1.43.121)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_insight",
+      "service": "securityhub",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "securityhub_insights_described"
+      },
+      "why": "Enumerate Security Hub insights — the saved finding queries (managed and custom) a team works from.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore securityhub GetInsights output shape and custom_fn securityhub_insights_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Filters",
+            "category": "customer_content",
+            "reason": "Operator-authored finding filters; they can name accounts, resources and products.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "InsightArn",
+      "fields": {
+        "name": "Name",
+        "insight_arn": "InsightArn",
+        "group_by_attribute": "GroupByAttribute"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::SecurityHub::Insight says tagging.taggable is false, and the Security Hub tag operations take a hub, hub v2 or automation rule ARN, not this type (botocore 1.43.121)."
+      }
     }
   ]
 }

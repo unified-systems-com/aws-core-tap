@@ -564,6 +564,62 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'UserPoolId': 'us-east-1_Abc123', 'Domain': 'auth.example.com', 'Status': 'ACTIVE', 'CloudFrontDistribution': 'd111.cloudfront.net', 'CustomDomainConfig': {'CertificateArn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc'}, '_key': 'us-east-1_Abc123:auth.example.com'},
         {'name': 'auth.example.com', 'user_pool_id': 'us-east-1_Abc123', 'status': 'ACTIVE', 'certificate_arn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc'},
     ),
+    "aws_core__aws_cloudwatch_alarm": (
+        {'AlarmName': 'root-login', 'AlarmArn': 'arn:aws:cloudwatch:us-east-1:123456789012:alarm:root-login', 'StateValue': 'OK', 'ActionsEnabled': True, 'MetricName': 'RootUsage', 'Namespace': 'CISBenchmark', 'ComparisonOperator': 'GreaterThanOrEqualToThreshold', 'Threshold': 1.0, 'AlarmActions': ['arn:aws:sns:us-east-1:123456789012:alerts'], '_sns_topic_arns': ['arn:aws:sns:us-east-1:123456789012:alerts']},
+        {'name': 'root-login', 'state_value': 'OK', 'actions_enabled': True, 'metric_name': 'RootUsage', 'namespace': 'CISBenchmark'},
+    ),
+    "aws_core__aws_cloudwatch_composite_alarm": (
+        {'AlarmName': 'paging', 'AlarmArn': 'arn:aws:cloudwatch:us-east-1:123456789012:alarm:paging', 'StateValue': 'OK', 'ActionsEnabled': False, 'AlarmRule': 'ALARM(root-login)', 'AlarmActions': ['arn:aws:sns:us-east-1:123456789012:alerts'], '_sns_topic_arns': ['arn:aws:sns:us-east-1:123456789012:alerts']},
+        {'name': 'paging', 'actions_enabled': False, 'alarm_rule': 'ALARM(root-login)'},
+    ),
+    "aws_core__aws_cloudwatch_dashboard": (
+        {'DashboardName': 'ops', 'DashboardArn': 'arn:aws:cloudwatch::123456789012:dashboard/ops', 'Size': 2048},
+        {'name': 'ops', 'size': 2048},
+    ),
+    "aws_core__aws_cloudwatch_metric_stream": (
+        {'Name': 'to-vendor', 'Arn': 'arn:aws:cloudwatch:us-east-1:123456789012:metric-stream/to-vendor', 'FirehoseArn': 'arn:aws:firehose:us-east-1:123456789012:deliverystream/vendor', 'State': 'running', 'OutputFormat': 'json'},
+        {'name': 'to-vendor', 'state': 'running', 'output_format': 'json'},
+    ),
+    "aws_core__aws_logs_metric_filter": (
+        {'filterName': 'root-usage', 'logGroupName': '/aws/cloudtrail', 'filterPattern': '{ $.userIdentity.type = "Root" }', 'metricTransformations': [{'metricName': 'RootUsage', 'metricNamespace': 'CISBenchmark', 'metricValue': '1'}], '_key': '/aws/cloudtrail:root-usage', '_log_group_arn': 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/cloudtrail', '_metric_name': 'RootUsage', '_metric_namespace': 'CISBenchmark'},
+        {'name': 'root-usage', 'log_group_name': '/aws/cloudtrail', 'metric_name': 'RootUsage', 'metric_namespace': 'CISBenchmark'},
+    ),
+    "aws_core__aws_logs_subscription_filter": (
+        {'filterName': 'to-siem', 'logGroupName': '/aws/app', 'destinationArn': 'arn:aws:logs:us-east-1:999988887777:destination:siem', 'roleArn': 'arn:aws:iam::123456789012:role/cwl', 'distribution': 'ByLogStream', '_key': '/aws/app:to-siem', '_log_group_arn': 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/app'},
+        {'name': 'to-siem', 'log_group_name': '/aws/app', 'destination_arn': 'arn:aws:logs:us-east-1:999988887777:destination:siem', 'distribution': 'ByLogStream'},
+    ),
+    "aws_core__aws_logs_destination": (
+        {'destinationName': 'siem', 'arn': 'arn:aws:logs:us-east-1:123456789012:destination:siem', 'targetArn': 'arn:aws:kinesis:us-east-1:123456789012:stream/logs', 'roleArn': 'arn:aws:iam::123456789012:role/cwl', 'accessPolicy': '{}', '_tags': {'owner': 'net-team'}},
+        {'name': 'siem', 'target_arn': 'arn:aws:kinesis:us-east-1:123456789012:stream/logs'},
+    ),
+    "aws_core__aws_logs_delivery_source": (
+        {'name': 'waf', 'arn': 'arn:aws:logs:us-east-1:123456789012:delivery-source:waf', 'service': 'wafv2', 'logType': 'WAF_LOGS', 'resourceArns': ['arn:aws:wafv2:us-east-1:123456789012:regional/webacl/a/b'], 'tags': {'owner': 'net-team'}},
+        {'name': 'waf', 'service': 'wafv2', 'log_type': 'WAF_LOGS'},
+    ),
+    "aws_core__aws_logs_delivery_destination": (
+        {'name': 'to-s3', 'arn': 'arn:aws:logs:us-east-1:123456789012:delivery-destination:to-s3', 'deliveryDestinationType': 'S3', 'outputFormat': 'json', 'deliveryDestinationConfiguration': {'destinationResourceArn': 'arn:aws:s3:::logs'}, 'tags': {'owner': 'net-team'}},
+        {'name': 'to-s3', 'destination_type': 'S3', 'destination_resource_arn': 'arn:aws:s3:::logs'},
+    ),
+    "aws_core__aws_logs_delivery": (
+        {'id': 'd-1', 'arn': 'arn:aws:logs:us-east-1:123456789012:delivery:d-1', 'deliverySourceName': 'waf', 'deliveryDestinationArn': 'arn:aws:logs:us-east-1:123456789012:delivery-destination:to-s3', 'tags': {'owner': 'net-team'}},
+        {'delivery_id': 'd-1', 'source_name': 'waf'},
+    ),
+    "aws_core__aws_securityhub_action_target": (
+        {'ActionTargetArn': 'arn:aws:securityhub:us-east-1:123456789012:action/custom/page', 'Name': 'page', 'Description': 'Page oncall'},
+        {'name': 'page'},
+    ),
+    "aws_core__aws_securityhub_automation_rule": (
+        {'RuleArn': 'arn:aws:securityhub:us-east-1:123456789012:automation-rule/abc', 'RuleName': 'suppress-dev', 'RuleStatus': 'ENABLED', 'RuleOrder': 1, 'IsTerminal': True, 'Criteria': {}, 'Actions': [], '_tags': {'owner': 'net-team'}},
+        {'name': 'suppress-dev', 'rule_status': 'ENABLED', 'rule_order': 1, 'is_terminal': True},
+    ),
+    "aws_core__aws_securityhub_finding_aggregator": (
+        {'FindingAggregatorArn': 'arn:aws:securityhub:us-east-1:123456789012:finding-aggregator/abc', 'FindingAggregationRegion': 'us-east-1', 'RegionLinkingMode': 'ALL_REGIONS', 'Regions': []},
+        {'region_linking_mode': 'ALL_REGIONS', 'regions': []},
+    ),
+    "aws_core__aws_securityhub_insight": (
+        {'InsightArn': 'arn:aws:securityhub:us-east-1:123456789012:insight/123456789012/custom/abc', 'Name': 'open-critical', 'GroupByAttribute': 'ResourceId', 'Filters': {}},
+        {'name': 'open-critical', 'group_by_attribute': 'ResourceId'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
