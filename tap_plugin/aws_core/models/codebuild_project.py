@@ -65,8 +65,11 @@ class CodebuildProject(BaseModel):
         "source_type": {"type": "string", "enum": ["", *SOURCE_TYPES]},
         # True when the project has a vpcConfig with a vpcId; null until observed.
         "vpc_attached": {"type": ["boolean", "null"]},
+        # environment.privilegedMode: the build can run a Docker daemon with root on its host. Null until observed.
+        "privileged_mode": {"type": ["boolean", "null"]},
         "region": {"type": "string"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "configuration": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -82,9 +85,13 @@ class CodebuildProject(BaseModel):
     # Blank means not observed (the aws_elb.lb_type convention).
     source_type = models.CharField(max_length=32, blank=True, default="")
     vpc_attached = models.BooleanField(null=True, blank=True, default=None)
+    # environment.privilegedMode: the build can run a Docker daemon with root on its host. Null until observed.
+    privileged_mode = models.BooleanField(null=True, blank=True, default=None)
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: BatchGetProjects tags.
     tags = models.JSONField(null=True, blank=True, default=None)
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_codebuild_project"

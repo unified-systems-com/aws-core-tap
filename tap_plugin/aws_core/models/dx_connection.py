@@ -45,6 +45,7 @@ class DxConnection(BaseModel):
         "is_hosted": {"type": ["boolean", "null"]},
         "region": {"type": "string"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "configuration": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -64,6 +65,8 @@ class DxConnection(BaseModel):
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeConnections tags.
     tags = models.JSONField(null=True, blank=True, default=None)
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_dx_connection"

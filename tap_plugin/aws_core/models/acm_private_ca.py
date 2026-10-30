@@ -53,6 +53,7 @@ class AcmPrivateCa(BaseModel):
         "usage_mode": {"type": "string", "enum": ["", *USAGE_MODES]},
         "subject_common_name": {"type": "string"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "configuration": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -71,6 +72,8 @@ class AcmPrivateCa(BaseModel):
     subject_common_name = models.CharField(max_length=64, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: acm-pca:ListTags.
     tags = models.JSONField(null=True, blank=True, default=None)
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_acm_private_ca"

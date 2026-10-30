@@ -58,8 +58,72 @@ _ECS_CMD_CANARY = "canary-ecs-command-arg-62d0"
 # Planted at PendingModifiedValues.MasterUserPassword, the RDS entry's declared credential location.
 _RDS_CANARY = "canary-rds-pending-master-pw-7c19"
 _RDS_ARN = f"arn:aws:rds:us-east-1:{_ACCOUNT}:db:slice-db"
+# Planted at authKey, the Direct Connect virtual interface entry's declared credential location.
+_DX_CANARY = "canary-dx-bgp-md5-key-90ab"
+_DX_VIF = "dxvif-slice001"
+# Planted in a CodeBuild environment variable and in a CodePipeline action configuration: both are declared
+# credential locations of entries with persist_configuration: false.
+_CB_CANARY = "canary-codebuild-env-token-51ce"
+_CB_ARN = f"arn:aws:codebuild:us-east-1:{_ACCOUNT}:project/slice-build"
+_CP_CANARY = "canary-codepipeline-action-secret-8d24"
+_CP_ARN = f"arn:aws:codepipeline:us-east-1:{_ACCOUNT}:slice-pipe"
 
 _CANNED = {
+    "list_projects": {"projects": ["slice-build"]},
+    "batch_get_projects": {
+        "projects": [
+            {
+                "name": "slice-build",
+                "arn": _CB_ARN,
+                "source": {"type": "GITHUB", "location": "https://github.com/example/slice"},
+                "environment": {
+                    "type": "LINUX_CONTAINER",
+                    "image": "aws/codebuild/standard:7.0",
+                    "computeType": "BUILD_GENERAL1_SMALL",
+                    "privilegedMode": True,
+                    "environmentVariables": [{"name": "TOKEN", "value": _CB_CANARY, "type": "PLAINTEXT"}],
+                },
+                "serviceRole": _ROLE_ARN,
+                "tags": [{"key": "owner", "value": "ci"}],
+            }
+        ]
+    },
+    "list_pipelines": {"pipelines": [{"name": "slice-pipe"}]},
+    "get_pipeline": {
+        "pipeline": {
+            "name": "slice-pipe",
+            "roleArn": _ROLE_ARN,
+            "pipelineType": "V2",
+            "executionMode": "QUEUED",
+            "stages": [
+                {
+                    "name": "Source",
+                    "actions": [
+                        {
+                            "name": "src",
+                            "actionTypeId": {"category": "Source", "provider": "GitHub"},
+                            "configuration": {"OAuthToken": _CP_CANARY, "Repo": "slice"},
+                        }
+                    ],
+                },
+                {"name": "Build", "actions": []},
+            ],
+        },
+        "metadata": {"pipelineArn": _CP_ARN},
+    },
+    "describe_virtual_interfaces": {
+        "virtualInterfaces": [
+            {
+                "virtualInterfaceId": _DX_VIF,
+                "virtualInterfaceName": "slice-vif",
+                "virtualInterfaceType": "private",
+                "vlan": 101,
+                "asn": 65001,
+                "connectionId": "dxcon-slice001",
+                "authKey": _DX_CANARY,
+            }
+        ]
+    },
     "describe_db_instances": {
         "DBInstances": [
             {
@@ -616,6 +680,9 @@ _OFF_CASES = [
     ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_ENV_CANARY, "last_status", "RUNNING"),
     ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_CMD_CANARY, "last_status", "RUNNING"),
     ("aws_core__aws_rds_instance", _RDS_ARN, _RDS_CANARY, "publicly_accessible", True),
+    ("aws_core__aws_dx_virtual_interface", _DX_VIF, _DX_CANARY, "vlan", 101),
+    ("aws_core__aws_codebuild_project", _CB_ARN, _CB_CANARY, "compute_type", "BUILD_GENERAL1_SMALL"),
+    ("aws_core__aws_codepipeline_pipeline", _CP_ARN, _CP_CANARY, "execution_mode", "QUEUED"),
 ]
 _OFF_IDS = [f"{case[0]}-{case[2]}" for case in _OFF_CASES]
 

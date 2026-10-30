@@ -51,6 +51,8 @@ class DxGateway(BaseModel):
                 {"type": "integer", "minimum": 4200000000, "maximum": 4294967294},
             ]
         },
+        "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -63,6 +65,10 @@ class DxGateway(BaseModel):
     direct_connect_gateway_id = models.CharField(max_length=36, blank=True, default="", db_index=True)
     # amazonSideAsn: AWS accepts only the private ranges 64512-65534 and 4200000000-4294967294.
     amazon_side_asn = models.BigIntegerField(null=True, blank=True, default=None)
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
+    # AWS tags, canonical flat {str: str}. NULL = not read; {} = read, untagged.
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_dx_gateway"

@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.models import CodebuildProject, CodepipelinePipeline
 
 from tap_grid.caller_context import CallerContext
@@ -72,11 +73,14 @@ class TestDeclarations:
 
     @pytest.mark.parametrize(("model", "_key", "_good", "_bad"), TYPES)
     def test_no_blob_and_no_duplicated_owner(self, model, _key, _good, _bad) -> None:
-        # The owning account is the BELONGS_TO_ACCOUNT edge, never a second copy in a field; and no
-        # source fills a free-form configuration blob (a CodeBuild project's would carry environment
-        # variables).
+        # The owning account is the BELONGS_TO_ACCOUNT edge, never a second copy in a field. These models hold
+        # the collector's configuration envelope (batch.node_envelope always sends the key), but the manifest
+        # entries store nothing in it: a CodeBuild project's would carry environment variables and a pipeline's
+        # action configuration carries tokens, so both entries are persist_configuration: false.
         fields = {f.name for f in model._meta.get_fields()}
-        assert "configuration" not in fields
+        assert "configuration" in fields
+        entry = next(e for e in manifest_entries() if e["entity_type"] == model.ENTITY_TYPE)
+        assert entry["persist_configuration"] is False
         assert "owner_account_id" not in fields
         assert set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
 

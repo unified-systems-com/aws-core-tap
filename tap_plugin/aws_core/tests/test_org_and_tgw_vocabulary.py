@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.models import (
     AwsIdentityCenterInstance,
     AwsOrganization,
@@ -92,8 +93,12 @@ class TestDeclarations:
 
     @pytest.mark.parametrize(("model", "_key", "_good", "_bad"), TYPES)
     def test_design_vocabulary_has_no_configuration_blob(self, model, _key, _good, _bad) -> None:
-        assert "configuration" not in model.FIELD_CRUD_SCHEMA
-        assert not any(f.name == "configuration" for f in model._meta.get_fields())
+        # No blob while no source fills one. A type the boto3 collector collects through a manifest entry always
+        # receives its configuration envelope (batch.node_envelope), so its model must declare the field;
+        # the Organizations tree is read by its own reader and stays blob-free.
+        collected = model.ENTITY_TYPE in {e["entity_type"] for e in manifest_entries()}
+        assert ("configuration" in model.FIELD_CRUD_SCHEMA) is collected
+        assert any(f.name == "configuration" for f in model._meta.get_fields()) is collected
 
     @pytest.mark.parametrize(("model", "_key", "_good", "_bad"), TYPES)
     def test_schemas_agree(self, model, _key, _good, _bad) -> None:

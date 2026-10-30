@@ -38,7 +38,17 @@ def t(slug: str) -> str:
 
 # (model, natural-key field, a well-formed AWS id, a malformed one)
 # Network-plane types the collector collects and whose models hold the collector's configuration envelope.
-CONFIGURATION_REVIEWED = {"aws_core__aws_vpc_endpoint"}
+CONFIGURATION_REVIEWED = {
+    "aws_core__aws_vpc_endpoint",
+    "aws_core__aws_dx_connection",
+    "aws_core__aws_dx_gateway",
+    "aws_core__aws_dx_virtual_interface",
+    "aws_core__aws_vpc_endpoint_service",
+    "aws_core__aws_route53_resolver_firewall_rule_group",
+    "aws_core__aws_transit_gateway",
+    "aws_core__aws_transit_gateway_attachment",
+    "aws_core__aws_acm_private_ca",
+}
 
 TYPES = [
     (DxConnection, "connection_id", "dxcon-fg5678gh", "dxlag-fg5678gh"),
