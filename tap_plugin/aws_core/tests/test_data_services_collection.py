@@ -989,6 +989,15 @@ class TestApiGateway:
         assert (a["_certificate_arns"], b["_certificate_arns"], a["_security_policies"], b["_security_policies"]) == (["arn:reg"], ["arn:edge"], ["TLS_1_2"], [])
         assert (c["_api_kind"], c["_certificate_arns"], c["_security_policies"], c["_endpoint_types"]) == ("http", ["arn:x"], ["TLS_1_0", "TLS_1_2"], ["REGIONAL"])
 
+    def test_a_domain_listed_by_both_services_is_one_node_of_kind_both(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_domain_names_described
+
+        arn = "arn:aws:apigateway:us-east-1::/domainnames/shared.example.com"
+        rest = self._client(get_domain_names={"items": [{"domainName": "shared.example.com", "domainNameArn": arn, "regionalCertificateArn": "arn:c1", "securityPolicy": "TLS_1_2"}]})
+        http = self._client(get_domain_names={"Items": [{"DomainName": "shared.example.com", "DomainNameArn": arn, "DomainNameConfigurations": [{"CertificateArn": "arn:c1", "SecurityPolicy": "TLS_1_0"}]}]})
+        [domain] = list(apigateway_domain_names_described(None, client_for=self._both(rest, http)))
+        assert domain["_api_kind"] == "both" and domain["_certificate_arns"] == ["arn:c1"] and domain["_security_policies"] == ["TLS_1_0", "TLS_1_2"]
+
     def test_authorizers_and_vpc_links_are_normalised_across_services(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import apigateway_authorizers_described, apigateway_vpc_links_described
 

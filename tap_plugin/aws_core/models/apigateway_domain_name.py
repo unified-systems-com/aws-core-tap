@@ -45,7 +45,7 @@ class ApigatewayDomainName(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     domain_name_arn = models.CharField(max_length=2048, blank=True, default="")
-    # rest for a REST API, http for an HTTP or WebSocket API. NULL = not observed.
+    # rest, http (an HTTP or WebSocket API), or both when the same regional domain is listed by both services. NULL = not observed.
     api_kind = models.CharField(max_length=2048, blank=True, null=True, default=None)
     # TLS security policies across the domain's configurations. NULL = not observed.
     security_policies = models.JSONField(null=True, blank=True, default=None)

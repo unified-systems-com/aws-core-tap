@@ -2523,7 +2523,21 @@ def apigateway_domain_names_described(session: Any, *, client_for: Any) -> Itera
                     {"_certificate_arns": COMPLETE},
                 )
 
-    yield from _drain_all(rest(), http())
+    # A regional custom domain name can be listed by both services (the version 2 API manages regional REST
+    # domains too), and it is one node: the second sighting is merged into the first, and ``_api_kind`` says
+    # ``both``.
+    seen: dict[str, dict[str, Any]] = {}
+    for item in _drain_all(rest(), http()):
+        arn = item["_arn"]
+        if arn in seen:
+            first = seen[arn]
+            first["_api_kind"] = "both"
+            for key in ("_certificate_arns", "_security_policies", "_endpoint_types"):
+                first[key] = sorted({*(first.get(key) or []), *(item.get(key) or [])})
+            first["_truststore_uri"] = first.get("_truststore_uri") or item.get("_truststore_uri")
+        else:
+            seen[arn] = item
+    yield from seen.values()
 
 
 def apigateway_vpc_links_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
