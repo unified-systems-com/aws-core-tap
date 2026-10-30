@@ -15,7 +15,10 @@
     "aws_core__aws_sns_topic",
     "aws_core__aws_guardduty_publishing_destination",
     "aws_core__aws_efs_file_system",
-    "aws_core__aws_backup_vault"
+    "aws_core__aws_backup_vault",
+    "aws_core__aws_rds_db_cluster",
+    "aws_core__aws_rds_db_snapshot",
+    "aws_core__aws_rds_db_cluster_snapshot"
   ],
   "targets": [
     "aws_core__aws_kms_key"

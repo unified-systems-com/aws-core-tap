@@ -1021,3 +1021,42 @@ class TestApiGateway:
         client = self._client(get_client_certificates={"items": [{"clientCertificateId": "cc1", "expirationDate": datetime(2027, 10, 1, tzinfo=UTC)}]})
         [cert] = _run(apigateway_client_certificates_described, "apigateway", client)
         assert cert["_expiration"] == "2027-10-01T00:00:00Z"
+
+
+class TestRdsSnapshots:
+    def _snapshots(self, snap_type: str, attributes: Any) -> list[dict[str, Any]]:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import rds_db_snapshots_described
+
+        client = _Client(
+            describe_db_snapshots={"DBSnapshots": [{"DBSnapshotIdentifier": "s", "DBSnapshotArn": "arn:s", "SnapshotType": snap_type, "SnapshotCreateTime": None}, {"DBSnapshotIdentifier": "n"}]},
+            describe_db_snapshot_attributes=attributes,
+        )
+        return _run(rds_db_snapshots_described, "rds", client)
+
+    def test_a_manual_snapshot_shared_with_all_is_public(self) -> None:
+        shared = {"DBSnapshotAttributesResult": {"DBSnapshotAttributes": [{"AttributeName": "restore", "AttributeValues": ["all"]}]}}
+        [snapshot] = self._snapshots("manual", shared)
+        assert snapshot["_is_public"] is True
+
+    def test_a_manual_snapshot_shared_with_one_account_is_not_public(self) -> None:
+        shared = {"DBSnapshotAttributesResult": {"DBSnapshotAttributes": [{"AttributeName": "restore", "AttributeValues": ["123456789012"]}]}}
+        [snapshot] = self._snapshots("manual", shared)
+        assert snapshot["_is_public"] is False
+
+    def test_an_unreadable_attribute_answer_is_unread_not_private(self) -> None:
+        [snapshot] = self._snapshots("manual", _denied("DescribeDBSnapshotAttributes"))
+        assert snapshot["_is_public"] is None
+
+    def test_an_automated_snapshot_is_not_asked_and_has_no_public_sharing(self) -> None:
+        [snapshot] = self._snapshots("automated", _denied("DescribeDBSnapshotAttributes"))
+        assert snapshot["_is_public"] is False
+
+    def test_the_cluster_reader_reads_the_cluster_attribute_list(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import rds_db_cluster_snapshots_described
+
+        client = _Client(
+            describe_db_cluster_snapshots={"DBClusterSnapshots": [{"DBClusterSnapshotIdentifier": "c", "DBClusterSnapshotArn": "arn:c", "SnapshotType": "manual"}]},
+            describe_db_cluster_snapshot_attributes={"DBClusterSnapshotAttributesResult": {"DBClusterSnapshotAttributes": [{"AttributeName": "restore", "AttributeValues": ["all"]}]}},
+        )
+        [snapshot] = _run(rds_db_cluster_snapshots_described, "rds", client)
+        assert snapshot["_is_public"] is True

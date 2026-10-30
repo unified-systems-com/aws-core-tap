@@ -11,7 +11,8 @@
     "aws_core__aws_codebuild_project",
     "aws_core__aws_cognito_user_pool_group",
     "aws_core__aws_logs_subscription_filter",
-    "aws_core__aws_logs_destination"
+    "aws_core__aws_logs_destination",
+    "aws_core__aws_rds_db_proxy"
   ],
   "targets": [
     "aws_core__aws_iam_role"
