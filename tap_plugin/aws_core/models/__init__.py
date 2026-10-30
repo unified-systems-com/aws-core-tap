@@ -90,8 +90,24 @@ from tap_plugin.aws_core.models.transit_gateway_attachment import TransitGateway
 from tap_plugin.aws_core.models.vpc import Vpc
 from tap_plugin.aws_core.models.vpc_endpoint import VpcEndpoint
 from tap_plugin.aws_core.models.vpc_endpoint_service import VpcEndpointService
+from tap_plugin.aws_core.models.kms_alias import KmsAlias
+from tap_plugin.aws_core.models.cloudtrail_event_data_store import CloudtrailEventDataStore
+from tap_plugin.aws_core.models.cloudtrail_channel import CloudtrailChannel
+from tap_plugin.aws_core.models.cloudtrail_dashboard import CloudtrailDashboard
+from tap_plugin.aws_core.models.config_aggregation_authorization import ConfigAggregationAuthorization
+from tap_plugin.aws_core.models.config_organization_rule import ConfigOrganizationRule
+from tap_plugin.aws_core.models.config_organization_conformance_pack import ConfigOrganizationConformancePack
+from tap_plugin.aws_core.models.config_stored_query import ConfigStoredQuery
 
 __all__ = [
+    "ConfigStoredQuery",
+    "ConfigOrganizationConformancePack",
+    "ConfigOrganizationRule",
+    "ConfigAggregationAuthorization",
+    "CloudtrailDashboard",
+    "CloudtrailChannel",
+    "CloudtrailEventDataStore",
+    "KmsAlias",
     "AcmCertificate",
     "AcmPrivateCa",
     "Alb",

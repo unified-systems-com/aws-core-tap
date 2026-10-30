@@ -992,6 +992,7 @@ def _batched_tags(
     id_key: str,
     ids: list[str],
     *,
+    method: str = "describe_tags",
     list_key: str = "TagDescriptions",
     tags_key: str = "Tags",
     tag_key: str = "Key",
@@ -1001,7 +1002,8 @@ def _batched_tags(
 
     ``id_param``/``id_key`` are the request parameter and the response key that carry the id
     (``ResourceArns``/``ResourceArn`` for ELBv2, ``LoadBalancerNames``/``LoadBalancerName`` for Classic,
-    ``resourceArns``/``resourceArn`` for Direct Connect), ``list_key`` the response list, ``tags_key`` the
+    ``resourceArns``/``resourceArn`` for Direct Connect, ``ResourceIdList``/``ResourceId`` for CloudTrail with
+    ``method="list_tags"``), ``list_key`` the response list, ``tags_key`` the
     list of tags inside each entry, and ``tag_key``/``tag_value`` the spelling of the tag struct. An id is in the result only when an answer named
     it: absent is 'not read', and ``{}`` is 'read, untagged'. A batch that failed, and an id a successful
     answer left out (a resource deleted mid-run), are both 'not read', so neither clears the stored tags.
@@ -1010,7 +1012,7 @@ def _batched_tags(
     for start in range(0, len(ids), _TAG_BATCH):
         batch = ids[start : start + _TAG_BATCH]
         try:
-            answer = without_response_metadata(client.describe_tags(**{id_param: batch}))
+            answer = without_response_metadata(getattr(client, method)(**{id_param: batch}))
         except BotoCoreError, ClientError:
             continue
         for description in answer.get(list_key, []):
@@ -1278,6 +1280,94 @@ def codepipeline_pipelines_described(session: Any, *, client_for: Any) -> Iterat
         )
     if failed:
         raise _undescribed("CodePipeline pipelines", failed)
+
+
+def kms_aliases_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate KMS aliases (regional). ``_target_key_arn`` is the ARN of the key an alias points at, built
+    from the alias's own ARN (same partition, region and account) and its ``TargetKeyId``; it is ``None`` for
+    an alias with no target. AWS-managed aliases (``alias/aws/...``) are listed like any other."""
+    client = client_for("kms")
+    for page in _pages(client, "list_aliases"):
+        for alias in page.get("Aliases", []):
+            arn, key_id = alias.get("AliasArn"), alias.get("TargetKeyId")
+            if not arn:
+                continue
+            prefix = arn.rsplit(":", 1)[0] + ":"
+            yield with_edge_reads(
+                {**alias, "_target_key_arn": f"{prefix}key/{key_id}" if key_id else None},
+                {"_target_key_arn": COMPLETE},
+            )
+
+
+def _cloudtrail_lake_items(client_for: Any, method: str, list_key: str, id_key: str) -> Iterator[dict[str, Any]]:
+    """A CloudTrail Lake listing with each item's tags (``ListTags``, 20 ARNs to a call) in ``_tags``."""
+    client = client_for("cloudtrail")
+    items = [i for page in _pages(client, method) for i in page.get(list_key, []) if i.get(id_key)]
+    tags = _batched_tags(
+        client,
+        "ResourceIdList",
+        "ResourceId",
+        [str(i[id_key]) for i in items],
+        method="list_tags",
+        list_key="ResourceTagList",
+        tags_key="TagsList",
+    )
+    for item in items:
+        arn = str(item[id_key])
+        yield {
+            **item,
+            "_name": item.get("Name") or arn.rsplit("/", 1)[-1],
+            "_tags": tags.get(arn, {}),
+            "_tags_unread": arn not in tags,
+        }
+
+
+def cloudtrail_event_data_stores_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudTrail Lake event data stores (regional) with their tags."""
+    yield from _cloudtrail_lake_items(client_for, "list_event_data_stores", "EventDataStores", "EventDataStoreArn")
+
+
+def cloudtrail_channels_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudTrail Lake channels (regional) with their tags."""
+    yield from _cloudtrail_lake_items(client_for, "list_channels", "Channels", "ChannelArn")
+
+
+def cloudtrail_dashboards_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CloudTrail Lake dashboards (regional) with their tags."""
+    yield from _cloudtrail_lake_items(client_for, "list_dashboards", "Dashboards", "DashboardArn")
+
+
+# Config's organization calls fail this way in an account that is not the organization's management or
+# delegated administrator account (or has no organization): there is nothing to list, which is not an error.
+_NOT_AN_ORGANIZATION_ADMIN = frozenset(
+    {"OrganizationAccessDeniedException", "NoSuchOrganizationException", "OrganizationNotInAllFeaturesModeException"}
+)
+
+
+def _config_organization_items(client_for: Any, method: str, list_key: str) -> Iterator[dict[str, Any]]:
+    client = client_for("config")
+    try:
+        for page in _pages(client, method):
+            for item in page.get(list_key, []):
+                last = item.get("LastUpdateTime")
+                yield {**item, "_last_update_time": jsonable(last) if last else None}
+    except ClientError as exc:
+        if error_code(exc) not in _NOT_AN_ORGANIZATION_ADMIN:
+            raise
+
+
+def config_organization_rules_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate AWS Config organization rules (regional). Empty, without error, outside the organization's
+    management or delegated administrator account."""
+    yield from _config_organization_items(client_for, "describe_organization_config_rules", "OrganizationConfigRules")
+
+
+def config_organization_conformance_packs_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate AWS Config organization conformance packs (regional). Empty, without error, outside the
+    organization's management or delegated administrator account."""
+    yield from _config_organization_items(
+        client_for, "describe_organization_conformance_packs", "OrganizationConformancePacks"
+    )
 
 
 def _undescribed(kind: str, names: list[str]) -> SourceError:
@@ -1706,6 +1796,12 @@ _CUSTOM_FNS = {
     "iam_oidc_providers_described": iam_oidc_providers_described,
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
+    "kms_aliases_described": kms_aliases_described,
+    "cloudtrail_event_data_stores_described": cloudtrail_event_data_stores_described,
+    "cloudtrail_channels_described": cloudtrail_channels_described,
+    "cloudtrail_dashboards_described": cloudtrail_dashboards_described,
+    "config_organization_rules_described": config_organization_rules_described,
+    "config_organization_conformance_packs_described": config_organization_conformance_packs_described,
     "transit_gateways_described": transit_gateways_described,
     "codebuild_projects_described": codebuild_projects_described,
     "codepipeline_pipelines_described": codepipeline_pipelines_described,
