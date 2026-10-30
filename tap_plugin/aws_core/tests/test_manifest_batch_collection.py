@@ -26,6 +26,9 @@ ACCOUNT = "123456789012"
 KEY_ARN = f"arn:aws:kms:us-east-1:{ACCOUNT}:key/1234abcd-12ab-34cd-56ef-1234567890ab"
 TAGS = [{"Key": "owner", "Value": "net-team"}]
 
+# Edge types whose source (or target) list is open by design, with the ends left open.
+OPEN_ENDED_EDGES: dict[str, tuple[str, ...]] = {"INVOKES_LAMBDA__aws_core": ("sources",)}
+
 # entity_type -> (raw item, typed fields the entry must project)
 CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "aws_core__aws_elastic_ip": (
@@ -425,6 +428,46 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {"arn": f"arn:aws:config:us-east-1:{ACCOUNT}:connector/c1", "name": "azure-prod", "provider": "AZURE", "tenantIdentifier": "tenant-1"},
         {"name": "azure-prod", "provider": "AZURE", "tenant_identifier": "tenant-1"},
     ),
+    "aws_core__aws_sns_topic": (
+        {'TopicArn': 'arn:aws:sns:us-east-1:123456789012:alerts', '_name': 'alerts', 'Attributes': {'FifoTopic': 'false'}, '_kms_master_key_id': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', '_fifo_topic': False, '_subscriptions_confirmed': 3, '_subscriptions_pending': 0, '_tags': {'owner': 'net-team'}},
+        {'name': 'alerts', 'topic_arn': 'arn:aws:sns:us-east-1:123456789012:alerts', 'fifo_topic': False, 'subscriptions_confirmed': 3, 'subscriptions_pending': 0},
+    ),
+    "aws_core__aws_sns_subscription": (
+        {'SubscriptionArn': 'arn:aws:sns:us-east-1:123456789012:alerts:11111111-2222-3333-4444-555555555555', 'TopicArn': 'arn:aws:sns:us-east-1:123456789012:alerts', 'Protocol': 'https', 'Owner': '123456789012'},
+        {'protocol': 'https', 'owner': '123456789012'},
+    ),
+    "aws_core__aws_eventbridge_event_bus": (
+        {'Name': 'default', 'Arn': 'arn:aws:events:us-east-1:123456789012:event-bus/default', 'Policy': '{}'},
+        {'name': 'default', 'bus_arn': 'arn:aws:events:us-east-1:123456789012:event-bus/default'},
+    ),
+    "aws_core__aws_eventbridge_archive": (
+        {'ArchiveName': 'all', 'EventSourceArn': 'arn:aws:events:us-east-1:123456789012:event-bus/default', 'State': 'ENABLED', 'RetentionDays': 30, '_arn': 'arn:aws:events:us-east-1:123456789012:archive/all'},
+        {'name': 'all', 'state': 'ENABLED', 'retention_days': 30},
+    ),
+    "aws_core__aws_eventbridge_connection": (
+        {'ConnectionArn': 'arn:aws:events:us-east-1:123456789012:connection/crm/abc', 'Name': 'crm', 'AuthorizationType': 'API_KEY', 'ConnectionState': 'AUTHORIZED'},
+        {'name': 'crm', 'authorization_type': 'API_KEY', 'connection_state': 'AUTHORIZED'},
+    ),
+    "aws_core__aws_eventbridge_api_destination": (
+        {'ApiDestinationArn': 'arn:aws:events:us-east-1:123456789012:api-destination/crm/abc', 'Name': 'crm', 'ApiDestinationState': 'ACTIVE', 'ConnectionArn': 'arn:aws:events:us-east-1:123456789012:connection/crm/abc', 'InvocationEndpoint': 'https://api.example.com/hook', 'HttpMethod': 'POST'},
+        {'name': 'crm', 'state': 'ACTIVE', 'http_method': 'POST', 'invocation_endpoint': 'https://api.example.com/hook'},
+    ),
+    "aws_core__aws_lambda_function_url": (
+        {'FunctionUrl': 'https://abc.lambda-url.us-east-1.on.aws/', 'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:function:fn', 'AuthType': 'NONE', 'InvokeMode': 'BUFFERED', 'Cors': {'AllowOrigins': ['*']}, '_allow_origins': ['*']},
+        {'function_url': 'https://abc.lambda-url.us-east-1.on.aws/', 'auth_type': 'NONE', 'cors_allow_origins': ['*']},
+    ),
+    "aws_core__aws_lambda_layer_version": (
+        {'LayerVersionArn': 'arn:aws:lambda:us-east-1:123456789012:layer:deps:3', 'Version': 3, 'CompatibleRuntimes': ['python3.13'], 'CreatedDate': '2026-10-01T00:00:00.000+0000', '_layer_arn': 'arn:aws:lambda:us-east-1:123456789012:layer:deps', '_layer_name': 'deps'},
+        {'name': 'deps', 'version': 3, 'compatible_runtimes': ['python3.13']},
+    ),
+    "aws_core__aws_lambda_code_signing_config": (
+        {'CodeSigningConfigArn': 'arn:aws:lambda:us-east-1:123456789012:code-signing-config:csc-0abc', 'CodeSigningPolicies': {'UntrustedArtifactOnDeployment': 'Enforce'}, 'AllowedPublishers': {'SigningProfileVersionArns': ['arn:aws:signer:us-east-1:1:/signing-profiles/p/abc']}},
+        {'untrusted_artifact_on_deployment': 'Enforce'},
+    ),
+    "aws_core__aws_lambda_event_source_mapping": (
+        {'UUID': '14e0db71-5d35-4eb5-b481-8945cf9d10c2', 'State': 'Enabled', 'EventSourceArn': 'arn:aws:sqs:us-east-1:123456789012:jobs', 'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:function:fn', 'BatchSize': 10, '_arn': 'arn:aws:lambda:us-east-1:123456789012:event-source-mapping:14e0db71-5d35-4eb5-b481-8945cf9d10c2'},
+        {'state': 'Enabled', 'batch_size': 10},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -509,8 +552,13 @@ class TestBatchTypes:
         rules = _entry(entity_type).get("edges", [])
         for rule in rules:
             edge = _edge_json(rule["edge_type"])
-            assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
-            assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
+            # Most edge types name both ends. The few that leave one open on purpose (a source that any service
+            # type may be) are listed here; any other edge type must declare its ends.
+            open_ends = OPEN_ENDED_EDGES.get(rule["edge_type"], ())
+            if "sources" not in open_ends:
+                assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
+            if "targets" not in open_ends:
+                assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
         # A rule may be conditional on a sibling (a transit gateway attachment's VPC id exists only for a VPC
         # attachment), so the canned item need only resolve some rule, not all.
         assert not rules or any(eval_path(item, rule["value_path"]) for rule in rules)

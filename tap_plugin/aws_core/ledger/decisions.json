@@ -829,6 +829,26 @@
         "AWS::ElasticLoadBalancing::LoadBalancer"
       ]
     },
+    "aws_core__aws_eventbridge_api_destination": {
+      "cfn": [
+        "AWS::Events::ApiDestination"
+      ]
+    },
+    "aws_core__aws_eventbridge_archive": {
+      "cfn": [
+        "AWS::Events::Archive"
+      ]
+    },
+    "aws_core__aws_eventbridge_connection": {
+      "cfn": [
+        "AWS::Events::Connection"
+      ]
+    },
+    "aws_core__aws_eventbridge_event_bus": {
+      "cfn": [
+        "AWS::Events::EventBus"
+      ]
+    },
     "aws_core__aws_eventbridge_rule": {
       "cfn": [
         "AWS::Events::Rule"
@@ -944,6 +964,26 @@
         "AWS::Lambda::Function"
       ]
     },
+    "aws_core__aws_lambda_code_signing_config": {
+      "cfn": [
+        "AWS::Lambda::CodeSigningConfig"
+      ]
+    },
+    "aws_core__aws_lambda_event_source_mapping": {
+      "cfn": [
+        "AWS::Lambda::EventSourceMapping"
+      ]
+    },
+    "aws_core__aws_lambda_function_url": {
+      "cfn": [
+        "AWS::Lambda::Url"
+      ]
+    },
+    "aws_core__aws_lambda_layer_version": {
+      "cfn": [
+        "AWS::Lambda::LayerVersion"
+      ]
+    },
     "aws_core__aws_nat_gateway": {
       "cfn": [
         "AWS::EC2::NatGateway"
@@ -1039,6 +1079,16 @@
     "aws_core__aws_service_control_policy": {
       "cfn": [
         "AWS::Organizations::Policy"
+      ]
+    },
+    "aws_core__aws_sns_subscription": {
+      "cfn": [
+        "AWS::SNS::Subscription"
+      ]
+    },
+    "aws_core__aws_sns_topic": {
+      "cfn": [
+        "AWS::SNS::Topic"
       ]
     },
     "aws_core__aws_sqs_queue": {

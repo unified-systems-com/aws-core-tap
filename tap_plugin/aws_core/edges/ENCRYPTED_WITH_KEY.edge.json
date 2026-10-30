@@ -11,7 +11,8 @@
     "aws_core__aws_rds_instance",
     "aws_core__aws_s3_bucket",
     "aws_core__aws_secrets_manager_secret",
-    "aws_core__aws_sqs_queue"
+    "aws_core__aws_sqs_queue",
+    "aws_core__aws_sns_topic"
   ],
   "targets": [
     "aws_core__aws_kms_key"

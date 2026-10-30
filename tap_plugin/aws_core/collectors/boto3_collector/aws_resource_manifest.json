@@ -3935,6 +3935,482 @@
         "shape": "list_kv",
         "why": "Resource tags — ListTagsForResource by the connector's ARN; the listing carries none."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_sns_topic",
+      "service": "sns",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "sns_topics_described"
+      },
+      "why": "Enumerate SNS topics — the fan-out points that can push messages to email, HTTP endpoints, queues and functions; their access policy and encryption decide who can publish and whether messages are encrypted.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore sns ListTopics, GetTopicAttributes (a string map) and ListTagsForResource output shapes and custom_fn sns_topics_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Attributes.Policy",
+            "category": "access_policy",
+            "reason": "The topic's access policy: a map of who may publish and subscribe. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Attributes.DeliveryPolicy",
+            "category": "customer_content",
+            "reason": "Operator-authored HTTP delivery policy (retry, throttling) JSON.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Attributes.DisplayName",
+            "category": "free_text",
+            "reason": "Operator-authored display name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "TopicArn",
+      "fields": {
+        "name": "_name",
+        "topic_arn": "TopicArn",
+        "kms_master_key_id": "_kms_master_key_id",
+        "fifo_topic": "_fifo_topic",
+        "subscriptions_confirmed": "_subscriptions_confirmed",
+        "subscriptions_pending": "_subscriptions_pending"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the topic ARN into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "_kms_master_key_id",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_sns_subscription",
+      "service": "sns",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "sns_subscriptions_listed"
+      },
+      "why": "Enumerate SNS subscriptions — where a topic's messages end up (by protocol), which is how a message leaves the account by email, SMS or an HTTP endpoint.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: ListSubscriptions returns Endpoint verbatim, and an endpoint is personal data or a URL that can carry credentials. The reader removes it; identity, topic, protocol and owner are typed fields and the topic edge is derived from the item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore sns ListSubscriptions output shape and custom_fn sns_subscriptions_listed, 2026-10-29. botocore flags no member sensitive, but Endpoint is an email address, a phone number or a URL that can embed credentials: the reader drops it.",
+        "locations": [
+          {
+            "path": "Endpoint",
+            "category": "credential",
+            "reason": "The delivery endpoint: an email address or phone number (personal data) or an HTTP(S) URL that can embed basic-auth credentials. The reader removes it before the item is built.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "SubscriptionArn",
+      "fields": {
+        "subscription_arn": "SubscriptionArn",
+        "topic_arn": "TopicArn",
+        "protocol": "Protocol",
+        "owner": "Owner"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::SNS::Subscription says tagging.taggable is false, and the SNS tag operations (TagResource, ListTagsForResource) take a topic ARN (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "TopicArn",
+          "target_type": "aws_core__aws_sns_topic",
+          "key_kind": "arn",
+          "edge_type": "SUBSCRIBES_TO_TOPIC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_eventbridge_event_bus",
+      "service": "events",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "eventbridge_event_buses_described"
+      },
+      "why": "Enumerate EventBridge event buses — the default bus and every custom or partner bus; the bus policy decides which other accounts may send events into this one.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore events ListEventBuses and ListTagsForResource output shapes and custom_fn eventbridge_event_buses_described, 2026-10-29; no sensitive-flagged member. ListEventBuses has a continuation token and no paginator, so the reader follows it.",
+        "locations": [
+          {
+            "path": "Policy",
+            "category": "access_policy",
+            "reason": "The bus's resource policy: a map of which accounts and principals may put events. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "bus_arn": "Arn",
+        "managed_by": "ManagedBy"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_eventbridge_archive",
+      "service": "events",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "eventbridge_archives_described"
+      },
+      "why": "Enumerate EventBridge archives — stores of past events kept for replay, whose retention decides how long event payloads stay.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore events ListArchives output shape and custom_fn eventbridge_archives_described, 2026-10-29; no sensitive-flagged member. The archive's event pattern (DescribeArchive) is not requested."
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "ArchiveName",
+        "archive_arn": "_arn",
+        "event_source_arn": "EventSourceArn",
+        "state": "State",
+        "retention_days": "RetentionDays"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Events::Archive says tagging.taggable is false, and the EventBridge tag operations accept rules and event buses, not archives (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "EventSourceArn",
+          "target_type": "aws_core__aws_eventbridge_event_bus",
+          "key_kind": "arn",
+          "edge_type": "ARCHIVES_EVENT_BUS__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_eventbridge_connection",
+      "service": "events",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "eventbridge_connections_described"
+      },
+      "why": "Enumerate EventBridge connections — the stored credentials that API destinations use to call external services, and how they authenticate.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore events ListConnections output shape and custom_fn eventbridge_connections_described, 2026-10-29; no sensitive-flagged member. ListConnections never returns the credentials; DescribeConnection (the auth parameters) is not requested.",
+        "locations": [
+          {
+            "path": "StateReason",
+            "category": "diagnostic",
+            "reason": "A service-composed reason string for the state; may echo the failing endpoint.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ConnectionArn",
+      "fields": {
+        "name": "Name",
+        "connection_arn": "ConnectionArn",
+        "authorization_type": "AuthorizationType",
+        "connection_state": "ConnectionState"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Events::Connection says tagging.taggable is false, and the EventBridge tag operations accept rules and event buses, not connections (botocore 1.43.121)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_eventbridge_api_destination",
+      "service": "events",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "eventbridge_api_destinations_described"
+      },
+      "why": "Enumerate EventBridge API destinations — the external HTTP endpoints rules call, which is where event data leaves the account.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore events ListApiDestinations output shape and custom_fn eventbridge_api_destinations_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "InvocationEndpoint",
+            "category": "other",
+            "reason": "The external URL the destination calls: a network location. A URL can embed a token in its query string or user info, so the reader reduces it to scheme, host and path before the item is built.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ApiDestinationArn",
+      "fields": {
+        "name": "Name",
+        "destination_arn": "ApiDestinationArn",
+        "invocation_endpoint": "InvocationEndpoint",
+        "http_method": "HttpMethod",
+        "state": "ApiDestinationState"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Events::ApiDestination says tagging.taggable is false, and the EventBridge tag operations accept rules and event buses, not API destinations (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "ConnectionArn",
+          "target_type": "aws_core__aws_eventbridge_connection",
+          "key_kind": "arn",
+          "edge_type": "AUTHENTICATES_VIA_CONNECTION__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_lambda_function_url",
+      "service": "lambda",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "lambda_function_urls_described"
+      },
+      "why": "Enumerate Lambda function URLs — HTTPS endpoints that invoke a function directly; one with no authentication is an open door to whatever the function can do.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore lambda ListFunctions and ListFunctionUrlConfigs output shapes and custom_fn lambda_function_urls_described, 2026-10-29; no sensitive-flagged member."
+      },
+      "items_path": "[]",
+      "natural_key": "FunctionUrl",
+      "fields": {
+        "function_url": "FunctionUrl",
+        "function_arn": "FunctionArn",
+        "auth_type": "AuthType",
+        "invoke_mode": "InvokeMode",
+        "cors_allow_origins": "_allow_origins"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Lambda::Url says tagging.taggable is false, and the Lambda tag operations take a function, alias or mapping ARN, never a URL configuration (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "FunctionArn",
+          "target_type": "aws_core__aws_lambda",
+          "key_kind": "arn",
+          "edge_type": "INVOKES_LAMBDA__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_lambda_layer_version",
+      "service": "lambda",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "lambda_layer_versions_described"
+      },
+      "why": "Enumerate Lambda layer versions — shared code that runs inside every function that attaches it, and a supply-chain input worth knowing about.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore lambda ListLayers and ListLayerVersions output shapes and custom_fn lambda_layer_versions_described, 2026-10-29; no sensitive-flagged member. The layer's code location (GetLayerVersion) and its permission policy are not requested.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description of the version.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "LayerVersionArn",
+      "fields": {
+        "name": "_layer_name",
+        "layer_version_arn": "LayerVersionArn",
+        "layer_arn": "_layer_arn",
+        "version": "Version",
+        "compatible_runtimes": "CompatibleRuntimes",
+        "created_date": "CreatedDate"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Lambda::LayerVersion says tagging.taggable is false, and the Lambda tag operations take a function, alias or event source mapping ARN, never a layer version (botocore 1.43.121)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_lambda_code_signing_config",
+      "service": "lambda",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "lambda_code_signing_configs_described"
+      },
+      "why": "Enumerate Lambda code signing configurations — the control that decides whether unsigned code can be deployed to a function.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore lambda ListCodeSigningConfigs and ListTags output shapes and custom_fn lambda_code_signing_configs_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "CodeSigningConfigArn",
+      "fields": {
+        "code_signing_config_arn": "CodeSigningConfigArn",
+        "untrusted_artifact_on_deployment": "CodeSigningPolicies.UntrustedArtifactOnDeployment",
+        "signing_profile_version_arns": "AllowedPublishers.SigningProfileVersionArns"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "Resource": {
+            "from": "CodeSigningConfigArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTags; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_lambda_event_source_mapping",
+      "service": "lambda",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "lambda_event_source_mappings_described"
+      },
+      "why": "Enumerate Lambda event source mappings — what feeds each function (queues, streams, brokers), and so what data reaches its code.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore lambda ListEventSourceMappings and ListTags output shapes and custom_fn lambda_event_source_mappings_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "SourceAccessConfigurations[].URI",
+            "category": "other",
+            "reason": "For a self-managed or MSK source, the ARN of the secret (or the subnet or security group) used to connect: a reference to a credential, not the credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "SelfManagedEventSource.Endpoints",
+            "category": "other",
+            "reason": "Broker host:port addresses of a self-managed source: network locations.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FilterCriteria.Filters[].Pattern",
+            "category": "customer_content",
+            "reason": "Operator-authored event filter patterns (JSON).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "mapping_arn": "_arn",
+        "uuid": "UUID",
+        "state": "State",
+        "event_source_arn": "EventSourceArn",
+        "function_arn": "FunctionArn",
+        "batch_size": "BatchSize"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "Resource": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTags; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "FunctionArn",
+          "target_type": "aws_core__aws_lambda",
+          "key_kind": "arn",
+          "edge_type": "INVOKES_LAMBDA__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }
