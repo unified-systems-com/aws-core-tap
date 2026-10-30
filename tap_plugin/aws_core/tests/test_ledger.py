@@ -595,11 +595,18 @@ def test_the_committed_ledger_matches_its_schema_and_its_own_summary() -> None:
 @pytest.mark.spec("req-aws-core-ledger-states")
 def test_the_committed_ledger_agrees_with_the_manifest() -> None:
     entries = json.loads(cli.MANIFEST_PATH.read_text())["entries"]
-    collected = {e["entity_type"] for e in entries}
+    # A custom reader's types have no manifest entry and are declared in tag_lanes.json instead.
+    readers = json.loads(cli.TAG_LANES_PATH.read_text())["lanes"]
+    # The ledger counts a lane row as collection evidence only because each reader's own test asserts its lane
+    # types are a subset of what the reader emits (test_organizations_completeness, test_security_findings). A
+    # third reader must add that test before it may add lane rows.
+    assert {row["reader"] for row in readers} == {"organizations", "landing_zone"}
+    collected = {e["entity_type"] for e in entries} | {row["entity_type"] for row in readers}
     in_ledger = {
         entity for r in _committed()["rows"] if r["state"].startswith("collected") for entity in r["entity_types"]
     }
-    # Every manifest entry that maps to a CloudFormation type is a collected row, and no collected row lacks one.
+    # Every collected type (manifest entry or reader) that maps to a CloudFormation type is a collected row,
+    # and no collected row lacks one.
     assert in_ledger <= collected
     unmapped = {u["entity_type"] for u in _committed()["unmapped_models"]}
     assert collected - in_ledger <= unmapped | {

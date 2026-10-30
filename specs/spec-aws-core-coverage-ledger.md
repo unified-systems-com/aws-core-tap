@@ -93,8 +93,8 @@ Each row is in exactly one state:
 | `unclassified` | Named by the denominator, not yet judged | Nothing; the aim is zero of these in scope |
 | `excluded` | Judged not to be a node | A written reason: attribute of a named node, transient, metric or policy fragment |
 | `not-enumerable` | May be a node, but no in-scope source enumerates it | The sources searched and what each lacked; reported separately from coverage and revisited when the sources change |
-| `modeled` | A model exists, no manifest entry | The model name |
-| `collected-unverified` | A manifest entry exists, built from botocore only | The entry, the shape-conformance test passing, and the tag evidence below |
+| `modeled` | A model exists, no manifest entry and no reader that emits it | The model name |
+| `collected-unverified` | A manifest entry exists, or a custom reader emits the type (declared in `tag_lanes.json`), built from botocore only | The entry, the shape-conformance test passing, and the tag evidence below |
 | `collected-verified` | A live trial has run | The trial run recorded under `add-aws-type` step 5 |
 
 Until a sandbox account exists (deferred 2026-10-28), nothing can reach `collected-verified`. That is

@@ -750,6 +750,9 @@ class TestTripleAndDeclarations:
         assert emitted >= {ORGANIZATION, ORGANIZATIONAL_UNIT, ACCOUNT, SERVICE_CONTROL_POLICY, ORGANIZATIONS_POLICY, DELEGATED_ADMINISTRATION, POLICY_STATEMENT, TAG_POLICY_RULE}
         for entity_type in emitted:
             assert len(lanes.get(entity_type, [])) == 1, entity_type
+        # And the other way: a lane row is evidence that the reader collects the type (the coverage ledger
+        # counts it so), so a row for a type the reader never emits is a defect.
+        assert set(lanes) <= emitted
         for node in tree.nodes:
             if lanes[node["entity"]["entity_type"]][0]["tags"]["source"] == "none":
                 assert node["node"]["tags"] == {}
