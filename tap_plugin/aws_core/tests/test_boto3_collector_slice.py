@@ -58,6 +58,8 @@ _ECS_CMD_CANARY = "canary-ecs-command-arg-62d0"
 # Planted at PendingModifiedValues.MasterUserPassword, the RDS entry's declared credential location.
 _RDS_CANARY = "canary-rds-pending-master-pw-7c19"
 _RDS_ARN = f"arn:aws:rds:us-east-1:{_ACCOUNT}:db:slice-db"
+_FSX_BACKUP_CANARY = "canary-fsx-admin-password-5d2c"
+_FSX_BACKUP_ARN = f"arn:aws:fsx:us-east-1:{_ACCOUNT}:backup/backup-0a1"
 _RDS_CLUSTER_CANARY = "canary-rds-cluster-pending-pw-3e5a"
 _RDS_CLUSTER_ARN = f"arn:aws:rds:us-east-1:{_ACCOUNT}:cluster:slice-cluster"
 # Planted at authKey, the Direct Connect virtual interface entry's declared credential location.
@@ -193,6 +195,16 @@ _CANNED = {
                 "BackupRetentionPeriod": 7,
                 "PendingModifiedValues": {"MasterUserPassword": _RDS_CANARY},
                 "TagList": [{"Key": "owner", "Value": "data"}],
+            }
+        ]
+    },
+    "describe_backups": {
+        "Backups": [
+            {
+                "BackupId": "backup-0a1",
+                "ResourceARN": _FSX_BACKUP_ARN,
+                "FileSystem": {"OntapConfiguration": {"FsxAdminPassword": _FSX_BACKUP_CANARY}},
+                "Tags": [{"Key": "owner", "Value": "storage"}],
             }
         ]
     },
@@ -773,6 +785,7 @@ _OFF_CASES = [
     ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_CMD_CANARY, "last_status", "RUNNING"),
     ("aws_core__aws_rds_instance", _RDS_ARN, _RDS_CANARY, "publicly_accessible", True),
     ("aws_core__aws_rds_db_cluster", _RDS_CLUSTER_ARN, _RDS_CLUSTER_CANARY, "deletion_protection", True),
+    ("aws_core__aws_fsx_backup", _FSX_BACKUP_ARN, _FSX_BACKUP_CANARY, "backup_arn", _FSX_BACKUP_ARN),
     ("aws_core__aws_dx_virtual_interface", _DX_VIF, _DX_CANARY, "vlan", 101),
     ("aws_core__aws_codebuild_project", _CB_ARN, _CB_CANARY, "compute_type", "BUILD_GENERAL1_SMALL"),
     ("aws_core__aws_codepipeline_pipeline", _CP_ARN, _CP_CANARY, "execution_mode", "QUEUED"),

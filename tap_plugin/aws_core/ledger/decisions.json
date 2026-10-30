@@ -755,6 +755,11 @@
         "AWS::Batch::ServiceEnvironment"
       ]
     },
+    "aws_core__aws_bedrock_automated_reasoning_policy": {
+      "cfn": [
+        "AWS::Bedrock::AutomatedReasoningPolicy"
+      ]
+    },
     "aws_core__aws_bedrock_model": {
       "cfn": [],
       "reason": "AWS-owned foundation models; no CloudFormation resource type."
@@ -919,6 +924,11 @@
         "AWS::Config::StoredQuery"
       ]
     },
+    "aws_core__aws_connect_instance": {
+      "cfn": [
+        "AWS::Connect::Instance"
+      ]
+    },
     "aws_core__aws_controltower_enabled_baseline": {
       "cfn": [
         "AWS::ControlTower::EnabledBaseline"
@@ -951,6 +961,21 @@
     "aws_core__aws_detective_graph": {
       "cfn": [
         "AWS::Detective::Graph"
+      ]
+    },
+    "aws_core__aws_drs_launch_configuration_template": {
+      "cfn": [
+        "AWS::DRS::LaunchConfigurationTemplate"
+      ]
+    },
+    "aws_core__aws_drs_replication_configuration_template": {
+      "cfn": [
+        "AWS::DRS::ReplicationConfigurationTemplate"
+      ]
+    },
+    "aws_core__aws_drs_source_network": {
+      "cfn": [
+        "AWS::DRS::SourceNetwork"
       ]
     },
     "aws_core__aws_dx_connection": {
@@ -1083,6 +1108,11 @@
         "AWS::ElasticLoadBalancingV2::Listener"
       ]
     },
+    "aws_core__aws_emrcontainers_job_template": {
+      "cfn": [
+        "AWS::EMRContainers::JobTemplate"
+      ]
+    },
     "aws_core__aws_emrcontainers_security_configuration": {
       "cfn": [
         "AWS::EMRContainers::SecurityConfiguration"
@@ -1121,6 +1151,11 @@
     "aws_core__aws_eventschemas_registry": {
       "cfn": [
         "AWS::EventSchemas::Registry"
+      ]
+    },
+    "aws_core__aws_fsx_backup": {
+      "cfn": [
+        "AWS::FSx::Backup"
       ]
     },
     "aws_core__aws_fsx_file_cache": {
@@ -1403,6 +1438,31 @@
         "AWS::MemoryDB::Snapshot"
       ]
     },
+    "aws_core__aws_mgn_connector": {
+      "cfn": [
+        "AWS::MGN::Connector"
+      ]
+    },
+    "aws_core__aws_mgn_launch_configuration_template": {
+      "cfn": [
+        "AWS::MGN::LaunchConfigurationTemplate"
+      ]
+    },
+    "aws_core__aws_mgn_network_migration_definition": {
+      "cfn": [
+        "AWS::MGN::NetworkMigrationDefinition"
+      ]
+    },
+    "aws_core__aws_mgn_replication_configuration_template": {
+      "cfn": [
+        "AWS::MGN::ReplicationConfigurationTemplate"
+      ]
+    },
+    "aws_core__aws_mgn_wave": {
+      "cfn": [
+        "AWS::MGN::Wave"
+      ]
+    },
     "aws_core__aws_msk_configuration": {
       "cfn": [
         "AWS::MSK::Configuration"
@@ -1573,6 +1633,11 @@
     "aws_core__aws_resiliencehub_app": {
       "cfn": [
         "AWS::ResilienceHub::App"
+      ]
+    },
+    "aws_core__aws_resiliencehub_resiliency_policy": {
+      "cfn": [
+        "AWS::ResilienceHub::ResiliencyPolicy"
       ]
     },
     "aws_core__aws_resiliencehubv2_policy": {
@@ -1936,6 +2001,11 @@
     "aws_core__aws_wafv2_web_acl": {
       "cfn": [
         "AWS::WAFv2::WebACL"
+      ]
+    },
+    "aws_core__aws_wellarchitected_agent_profile": {
+      "cfn": [
+        "AWS::WellArchitected::AgentProfile"
       ]
     }
   },
