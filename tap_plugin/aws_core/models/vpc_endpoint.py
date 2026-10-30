@@ -47,6 +47,7 @@ class VpcEndpoint(BaseModel):
         "service_name": {"type": "string"},
         "private_dns_enabled": {"type": ["boolean", "null"]},
         "region": {"type": "string"},
+        "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -64,6 +65,8 @@ class VpcEndpoint(BaseModel):
     service_name = models.CharField(max_length=255, blank=True, default="")
     private_dns_enabled = models.BooleanField(null=True, blank=True, default=None)
     region = models.CharField(max_length=32, blank=True, default="")
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeVpcEndpoints Tags.
     tags = models.JSONField(null=True, blank=True, default=None)
 

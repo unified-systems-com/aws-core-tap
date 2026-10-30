@@ -12,6 +12,7 @@ import inspect
 from typing import Any
 
 import pytest
+from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.models import (
     AcmPrivateCa,
     AvailabilityZone,
@@ -103,7 +104,13 @@ class TestDeclarations:
     def test_no_blob_and_no_duplicated_owner(self, model, _key, _good, _bad) -> None:
         # The owning account is the BELONGS_TO_ACCOUNT edge, never a second copy in a field.
         fields = {f.name for f in model._meta.get_fields()}
-        assert "configuration" not in fields
+        # "No blob" holds while no source fills one. A type the boto3 collector collects always receives its
+        # configuration envelope (batch.node_envelope), so its model must declare the field or the batch is
+        # rejected at import; the manifest entry decides what is stored in it.
+        if model.ENTITY_TYPE in {e["entity_type"] for e in manifest_entries()}:
+            assert "configuration" in fields
+        else:
+            assert "configuration" not in fields
         assert "owner_account_id" not in fields
         assert set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
 

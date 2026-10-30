@@ -34,6 +34,7 @@ class NatGateway(BaseModel):
         "state": {"type": "string"},
         "connectivity_type": {"type": "string"},
         "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -42,6 +43,7 @@ class NatGateway(BaseModel):
         "state": {"validation": "jsonschema", "schema": {"type": "string"}},
         "connectivity_type": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["nat_gateway_id"]
 
@@ -50,6 +52,7 @@ class NatGateway(BaseModel):
     state = models.CharField(max_length=32, blank=True, default="")
     connectivity_type = models.CharField(max_length=32, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_nat_gateway"
