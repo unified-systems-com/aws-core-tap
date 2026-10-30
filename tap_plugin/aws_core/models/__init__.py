@@ -123,8 +123,36 @@ from tap_plugin.aws_core.models.wafv2_rule_group import Wafv2RuleGroup
 from tap_plugin.aws_core.models.wafv2_ip_set import Wafv2IpSet
 from tap_plugin.aws_core.models.wafv2_regex_pattern_set import Wafv2RegexPatternSet
 from tap_plugin.aws_core.models.s3_access_point import S3AccessPoint
+from tap_plugin.aws_core.models.efs_file_system import EfsFileSystem
+from tap_plugin.aws_core.models.efs_access_point import EfsAccessPoint
+from tap_plugin.aws_core.models.efs_mount_target import EfsMountTarget
+from tap_plugin.aws_core.models.elb_listener import ElbListener
+from tap_plugin.aws_core.models.backup_vault import BackupVault
+from tap_plugin.aws_core.models.backup_plan import BackupPlan
+from tap_plugin.aws_core.models.backup_framework import BackupFramework
+from tap_plugin.aws_core.models.backup_legal_hold import BackupLegalHold
+from tap_plugin.aws_core.models.cognito_identity_pool import CognitoIdentityPool
+from tap_plugin.aws_core.models.cognito_user_pool_client import CognitoUserPoolClient
+from tap_plugin.aws_core.models.cognito_identity_provider import CognitoIdentityProvider
+from tap_plugin.aws_core.models.cognito_user_pool_group import CognitoUserPoolGroup
+from tap_plugin.aws_core.models.cognito_user_pool_resource_server import CognitoUserPoolResourceServer
+from tap_plugin.aws_core.models.cognito_user_pool_domain import CognitoUserPoolDomain
 
 __all__ = [
+    "CognitoUserPoolDomain",
+    "CognitoUserPoolResourceServer",
+    "CognitoUserPoolGroup",
+    "CognitoIdentityProvider",
+    "CognitoUserPoolClient",
+    "CognitoIdentityPool",
+    "BackupLegalHold",
+    "BackupFramework",
+    "BackupPlan",
+    "BackupVault",
+    "ElbListener",
+    "EfsMountTarget",
+    "EfsAccessPoint",
+    "EfsFileSystem",
     "S3AccessPoint",
     "Wafv2RegexPatternSet",
     "Wafv2IpSet",

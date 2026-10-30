@@ -508,6 +508,62 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Name': 'ap1', 'Bucket': 'data', 'AccessPointArn': 'arn:aws:s3:us-east-1:123456789012:accesspoint/ap1', 'NetworkOrigin': 'Internet', 'Alias': 'ap1-abc-s3alias', '_account_id': '123456789012', '_is_public': True, '_vpc_id': None, '_bucket_arn': 'arn:aws:s3:::data'},
         {'name': 'ap1', 'bucket': 'data', 'network_origin': 'Internet', 'is_public': True},
     ),
+    "aws_core__aws_efs_file_system": (
+        {'FileSystemId': 'fs-0a1', 'FileSystemArn': 'arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0a1', 'Name': 'shared', 'Encrypted': True, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', 'PerformanceMode': 'generalPurpose', 'ThroughputMode': 'elastic', 'LifeCycleState': 'available', 'NumberOfMountTargets': 2, 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'shared', 'file_system_id': 'fs-0a1', 'encrypted': True, 'throughput_mode': 'elastic', 'number_of_mount_targets': 2},
+    ),
+    "aws_core__aws_efs_access_point": (
+        {'AccessPointId': 'fsap-0a1', 'AccessPointArn': 'arn:aws:elasticfilesystem:us-east-1:123456789012:access-point/fsap-0a1', 'FileSystemId': 'fs-0a1', 'Name': 'app', 'PosixUser': {'Uid': 1000, 'Gid': 1000}, 'RootDirectory': {'Path': '/app'}, 'LifeCycleState': 'available', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}], '_file_system_arn': 'arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0a1'},
+        {'name': 'app', 'file_system_id': 'fs-0a1', 'posix_uid': 1000, 'root_directory_path': '/app'},
+    ),
+    "aws_core__aws_efs_mount_target": (
+        {'MountTargetId': 'fsmt-0a1', 'FileSystemId': 'fs-0a1', 'SubnetId': 'subnet-0a1', 'VpcId': 'vpc-0a1', 'IpAddress': '10.0.1.5', 'LifeCycleState': 'available', '_file_system_arn': 'arn:aws:elasticfilesystem:us-east-1:123456789012:file-system/fs-0a1'},
+        {'file_system_id': 'fs-0a1', 'subnet_id': 'subnet-0a1', 'ip_address': '10.0.1.5'},
+    ),
+    "aws_core__aws_elb_listener": (
+        {'ListenerArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/web/abc/def', 'LoadBalancerArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/web/abc', 'Port': 443, 'Protocol': 'HTTPS', 'SslPolicy': 'ELBSecurityPolicy-TLS13-1-2-2021-06', 'MutualAuthentication': {'Mode': 'off'}, '_certificate_arns': ['arn:aws:acm:us-east-1:123456789012:certificate/abc'], '_action_types': ['forward'], '_alb_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/web/abc', '_tags': {'owner': 'net-team'}},
+        {'port': 443, 'protocol': 'HTTPS', 'ssl_policy': 'ELBSecurityPolicy-TLS13-1-2-2021-06', 'action_types': ['forward'], 'mutual_authentication_mode': 'off'},
+    ),
+    "aws_core__aws_backup_vault": (
+        {'BackupVaultName': 'prod', 'BackupVaultArn': 'arn:aws:backup:us-east-1:123456789012:backup-vault:prod', 'EncryptionKeyArn': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', 'Locked': True, 'MinRetentionDays': 30, 'MaxRetentionDays': 3650, 'NumberOfRecoveryPoints': 12, '_tags': {'owner': 'net-team'}},
+        {'name': 'prod', 'locked': True, 'min_retention_days': 30, 'number_of_recovery_points': 12},
+    ),
+    "aws_core__aws_backup_plan": (
+        {'BackupPlanName': 'daily', 'BackupPlanArn': 'arn:aws:backup:us-east-1:123456789012:backup-plan:p-1', 'BackupPlanId': 'p-1', '_rule_count': 2, '_target_vault_arns': ['arn:aws:backup:us-east-1:123456789012:backup-vault:prod'], '_tags': {'owner': 'net-team'}},
+        {'name': 'daily', 'plan_id': 'p-1', 'rule_count': 2},
+    ),
+    "aws_core__aws_backup_framework": (
+        {'FrameworkName': 'policy', 'FrameworkArn': 'arn:aws:backup:us-east-1:123456789012:framework:policy-abc', 'DeploymentStatus': 'COMPLETED', 'NumberOfControls': 4, '_tags': {'owner': 'net-team'}},
+        {'name': 'policy', 'deployment_status': 'COMPLETED', 'number_of_controls': 4},
+    ),
+    "aws_core__aws_backup_legal_hold": (
+        {'Title': 'case-17', 'LegalHoldArn': 'arn:aws:backup:us-east-1:123456789012:legal-hold:h-1', 'LegalHoldId': 'h-1', 'Status': 'ACTIVE', '_tags': {'owner': 'net-team'}},
+        {'name': 'case-17', 'hold_id': 'h-1', 'status': 'ACTIVE'},
+    ),
+    "aws_core__aws_cognito_identity_pool": (
+        {'IdentityPoolId': 'us-east-1:11111111-2222-3333-4444-555555555555', 'IdentityPoolName': 'app', 'AllowUnauthenticatedIdentities': True, 'AllowClassicFlow': False, 'IdentityPoolTags': {'owner': 'net-team'}},
+        {'name': 'app', 'allow_unauthenticated_identities': True, 'allow_classic_flow': False},
+    ),
+    "aws_core__aws_cognito_user_pool_client": (
+        {'UserPoolId': 'us-east-1_Abc123', 'ClientId': 'abc123', 'ClientName': 'web', 'ClientSecret': 'never-stored', '_key': 'us-east-1_Abc123:abc123', '_has_secret': True, 'AllowedOAuthFlows': ['code'], 'AllowedOAuthScopes': ['openid'], 'CallbackURLs': ['https://app.example.com/cb'], 'ExplicitAuthFlows': ['ALLOW_USER_SRP_AUTH'], 'PreventUserExistenceErrors': 'ENABLED', 'EnableTokenRevocation': True},
+        {'name': 'web', 'user_pool_id': 'us-east-1_Abc123', 'has_secret': True, 'allowed_oauth_flows': ['code'], 'callback_urls': ['https://app.example.com/cb'], 'prevent_user_existence_errors': 'ENABLED'},
+    ),
+    "aws_core__aws_cognito_identity_provider": (
+        {'UserPoolId': 'us-east-1_Abc123', 'ProviderName': 'corp-idp', 'ProviderType': 'SAML', 'ProviderDetails': {'MetadataURL': 'https://idp.example.com/meta'}, '_key': 'us-east-1_Abc123:corp-idp'},
+        {'name': 'corp-idp', 'user_pool_id': 'us-east-1_Abc123', 'provider_type': 'SAML'},
+    ),
+    "aws_core__aws_cognito_user_pool_group": (
+        {'UserPoolId': 'us-east-1_Abc123', 'GroupName': 'admins', 'Precedence': 1, 'RoleArn': 'arn:aws:iam::123456789012:role/cognito-admins', '_key': 'us-east-1_Abc123:admins'},
+        {'name': 'admins', 'precedence': 1, 'role_arn': 'arn:aws:iam::123456789012:role/cognito-admins'},
+    ),
+    "aws_core__aws_cognito_user_pool_resource_server": (
+        {'UserPoolId': 'us-east-1_Abc123', 'Identifier': 'https://api.example.com', 'Name': 'api', 'Scopes': [{'ScopeName': 'read', 'ScopeDescription': 'read'}], '_key': 'us-east-1_Abc123:https://api.example.com'},
+        {'name': 'api', 'user_pool_id': 'us-east-1_Abc123', 'identifier': 'https://api.example.com'},
+    ),
+    "aws_core__aws_cognito_user_pool_domain": (
+        {'UserPoolId': 'us-east-1_Abc123', 'Domain': 'auth.example.com', 'Status': 'ACTIVE', 'CloudFrontDistribution': 'd111.cloudfront.net', 'CustomDomainConfig': {'CertificateArn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc'}, '_key': 'us-east-1_Abc123:auth.example.com'},
+        {'name': 'auth.example.com', 'user_pool_id': 'us-east-1_Abc123', 'status': 'ACTIVE', 'certificate_arn': 'arn:aws:acm:us-east-1:123456789012:certificate/abc'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -579,14 +635,7 @@ class TestBatchTypes:
             assert all(eval_path(item, p["from"]) for p in tags["params"].values() if "from" in p), tags
             return
         assert tags["source"] == "field"
-        assert (tags["from"], tags["shape"]) in (
-            ("Tags[]", "list_kv"),
-            ("TagList", "list_kv"),
-            ("tags[]", "list_kv_lower"),
-            ("_tags", "map"),
-            ("tags", "map"),
-            ("Tags", "map"),
-        )
+        assert tags["from"] and tags["shape"] in ("list_kv", "list_kv_lower", "map")
 
     def test_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]

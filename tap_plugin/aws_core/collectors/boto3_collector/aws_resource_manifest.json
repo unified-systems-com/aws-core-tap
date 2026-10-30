@@ -4945,6 +4945,700 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_efs_file_system",
+      "service": "efs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeFileSystems"
+      },
+      "why": "Enumerate EFS file systems — shared network storage whose encryption and key are a compliance fact, and which any host that can reach a mount target can read.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore efs DescribeFileSystems output shape, 2026-10-29; no sensitive-flagged member. The file system policy (DescribeFileSystemPolicy) is not requested.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "FileSystems[]",
+      "natural_key": "FileSystemArn",
+      "fields": {
+        "name": "Name",
+        "file_system_arn": "FileSystemArn",
+        "file_system_id": "FileSystemId",
+        "encrypted": "Encrypted",
+        "kms_key_id": "KmsKeyId",
+        "performance_mode": "PerformanceMode",
+        "throughput_mode": "ThroughputMode",
+        "life_cycle_state": "LifeCycleState",
+        "number_of_mount_targets": "NumberOfMountTargets"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The Describe answer carries the tags inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "KmsKeyId",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_efs_access_point",
+      "service": "efs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "efs_access_points_described"
+      },
+      "why": "Enumerate EFS access points — entries that force a POSIX user and a root directory on every client that mounts through them.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore efs DescribeAccessPoints output shape and custom_fn efs_access_points_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "AccessPointArn",
+      "fields": {
+        "name": "Name",
+        "access_point_arn": "AccessPointArn",
+        "file_system_id": "FileSystemId",
+        "posix_uid": "PosixUser.Uid",
+        "root_directory_path": "RootDirectory.Path",
+        "life_cycle_state": "LifeCycleState"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The Describe answer carries the tags inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_file_system_arn",
+          "target_type": "aws_core__aws_efs_file_system",
+          "key_kind": "arn",
+          "edge_type": "ENTERS_FILE_SYSTEM__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_efs_mount_target",
+      "service": "efs",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "efs_mount_targets_described"
+      },
+      "why": "Enumerate EFS mount targets — where a file system is reachable on the network (subnet and address).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore efs DescribeMountTargets output shape and custom_fn efs_mount_targets_described, 2026-10-29; no sensitive-flagged member. Security groups (DescribeMountTargetSecurityGroups) are not requested.",
+        "locations": [
+          {
+            "path": "IpAddress",
+            "category": "other",
+            "reason": "The mount target's private IP address: a network location.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "MountTargetId",
+      "fields": {
+        "mount_target_id": "MountTargetId",
+        "file_system_id": "FileSystemId",
+        "subnet_id": "SubnetId",
+        "vpc_id": "VpcId",
+        "ip_address": "IpAddress",
+        "life_cycle_state": "LifeCycleState"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::EFS::MountTarget says tagging.taggable is false, and the EFS tag operations take a file system or access point ARN, not a mount target (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "SubnetId",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_file_system_arn",
+          "target_type": "aws_core__aws_efs_file_system",
+          "key_kind": "arn",
+          "edge_type": "MOUNTS_FILE_SYSTEM__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_elb_listener",
+      "service": "elbv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "elbv2_listeners_described"
+      },
+      "why": "Enumerate load balancer listeners — the ports a load balancer exposes, the TLS policy and certificates on each, and whether authentication is enforced in front of the backend.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeListeners returns DefaultActions[].AuthenticateOidcConfig.ClientSecret, the identity provider's client secret, on an authenticate-oidc action. Identity, port, protocol, TLS policy, certificates, action types, mutual authentication mode, tags and the load balancer and certificate edges are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers, DescribeListeners and DescribeTags output shapes and custom_fn elbv2_listeners_described, 2026-10-29. botocore flags no member sensitive, but an authenticate-oidc action carries the identity provider's client secret.",
+        "locations": [
+          {
+            "path": "DefaultActions[].AuthenticateOidcConfig.ClientSecret",
+            "category": "credential",
+            "reason": "The OIDC identity provider's client secret on an authenticate-oidc action. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "DefaultActions[].FixedResponseConfig.MessageBody",
+            "category": "customer_content",
+            "reason": "Operator-authored response body.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ListenerArn",
+      "fields": {
+        "listener_arn": "ListenerArn",
+        "load_balancer_arn": "LoadBalancerArn",
+        "port": "Port",
+        "protocol": "Protocol",
+        "ssl_policy": "SslPolicy",
+        "certificate_arns": "_certificate_arns",
+        "action_types": "_action_types",
+        "mutual_authentication_mode": "MutualAuthentication.Mode"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads the tags into _tags (a plain map); the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "_alb_arn",
+          "target_type": "aws_core__aws_alb",
+          "key_kind": "arn",
+          "edge_type": "LISTENS_ON_LOAD_BALANCER__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_certificate_arns",
+          "target_type": "aws_core__aws_acm_certificate",
+          "key_kind": "arn",
+          "edge_type": "PRESENTS_CERTIFICATE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_backup_vault",
+      "service": "backup",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "backup_vaults_described"
+      },
+      "why": "Enumerate AWS Backup vaults — where recovery points live; a vault with no lock can be emptied by anyone who can delete recovery points.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore backup vault listing and ListTags output shapes and custom_fn backup_vaults_described, 2026-10-29. botocore marks the ListTags tag map sensitive; its values go only to the canonical tags field.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "BackupVaultArn",
+      "fields": {
+        "name": "BackupVaultName",
+        "vault_arn": "BackupVaultArn",
+        "vault_state": "VaultState",
+        "encryption_key_arn": "EncryptionKeyArn",
+        "locked": "Locked",
+        "min_retention_days": "MinRetentionDays",
+        "max_retention_days": "MaxRetentionDays",
+        "number_of_recovery_points": "NumberOfRecoveryPoints"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads the tags into _tags (a plain map); the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "EncryptionKeyArn",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_backup_plan",
+      "service": "backup",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "backup_plans_described"
+      },
+      "why": "Enumerate AWS Backup plans — the schedules and target vaults that decide what gets backed up and where.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore backup plan listing and ListTags output shapes and custom_fn backup_plans_described, 2026-10-29. botocore marks the ListTags tag map sensitive; its values go only to the canonical tags field.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "BackupPlanArn",
+      "fields": {
+        "name": "BackupPlanName",
+        "plan_arn": "BackupPlanArn",
+        "plan_id": "BackupPlanId",
+        "rule_count": "_rule_count"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads the tags into _tags (a plain map); the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "_target_vault_arns",
+          "target_type": "aws_core__aws_backup_vault",
+          "key_kind": "arn",
+          "edge_type": "BACKS_UP_TO_VAULT__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_backup_framework",
+      "service": "backup",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "backup_frameworks_described"
+      },
+      "why": "Enumerate AWS Backup frameworks — the audit controls that check backup practice, and whether they are deployed.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore backup framework listing and ListTags output shapes and custom_fn backup_frameworks_described, 2026-10-29. botocore marks the ListTags tag map sensitive; its values go only to the canonical tags field.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "FrameworkArn",
+      "fields": {
+        "name": "FrameworkName",
+        "framework_arn": "FrameworkArn",
+        "deployment_status": "DeploymentStatus",
+        "number_of_controls": "NumberOfControls"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads the tags into _tags (a plain map); the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_backup_legal_hold",
+      "service": "backup",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "backup_legal_holds_described"
+      },
+      "why": "Enumerate AWS Backup legal holds — recovery points frozen against deletion, which is both a control and a retention liability.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore backup legal hold listing and ListTags output shapes and custom_fn backup_legal_holds_described, 2026-10-29. botocore marks the ListTags tag map sensitive; its values go only to the canonical tags field.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "LegalHoldArn",
+      "fields": {
+        "name": "Title",
+        "hold_arn": "LegalHoldArn",
+        "hold_id": "LegalHoldId",
+        "status": "Status"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads the tags into _tags (a plain map); the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_cognito_identity_pool",
+      "service": "cognito-identity",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cognito_identity_pools_described"
+      },
+      "why": "Enumerate Cognito identity pools — what trades a sign-in for AWS credentials, and whether it will do so for an anonymous caller.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cognito-identity ListIdentityPools and DescribeIdentityPool output shapes and custom_fn cognito_identity_pools_described, 2026-10-29; no sensitive-flagged member. Social login provider entries are application ids, not secrets.",
+        "locations": [
+          {
+            "path": "SupportedLoginProviders",
+            "category": "other",
+            "reason": "Social login provider application ids (Facebook, Google, ...): public identifiers, not secrets.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "IdentityPoolTags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "IdentityPoolId",
+      "fields": {
+        "name": "IdentityPoolName",
+        "identity_pool_id": "IdentityPoolId",
+        "allow_unauthenticated_identities": "AllowUnauthenticatedIdentities",
+        "allow_classic_flow": "AllowClassicFlow",
+        "developer_provider_name": "DeveloperProviderName"
+      },
+      "tags": {
+        "source": "field",
+        "from": "IdentityPoolTags",
+        "shape": "map",
+        "why": "DescribeIdentityPool returns the pool's tags as a plain map; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_cognito_user_pool_client",
+      "service": "cognito-idp",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cognito_user_pool_clients_described"
+      },
+      "why": "Enumerate user pool app clients — the registered applications, the OAuth flows and scopes they may use, and the callback URLs tokens are sent to.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeUserPoolClient returns ClientSecret (botocore marks it and ClientId sensitive) and AnalyticsConfiguration.ExternalId verbatim. Identity, flows, scopes, callbacks, token revocation, the has-secret flag and the pool edge are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cognito-idp ListUserPoolClients and DescribeUserPoolClient output shapes and custom_fn cognito_user_pool_clients_described, 2026-10-29. botocore marks ClientId and ClientSecret sensitive.",
+        "locations": [
+          {
+            "path": "ClientSecret",
+            "category": "credential",
+            "reason": "The app client's secret (botocore marks it sensitive).",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "ClientId",
+            "category": "credential",
+            "reason": "The app client id (botocore marks it sensitive); it is typed because it is half of the node's identity.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "AnalyticsConfiguration.ExternalId",
+            "category": "credential",
+            "reason": "The external id of the role Pinpoint analytics assumes.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "ClientName",
+        "client_key": "_key",
+        "user_pool_id": "UserPoolId",
+        "client_id": "ClientId",
+        "has_secret": "_has_secret",
+        "allowed_oauth_flows": "AllowedOAuthFlows",
+        "allowed_oauth_scopes": "AllowedOAuthScopes",
+        "callback_urls": "CallbackURLs",
+        "explicit_auth_flows": "ExplicitAuthFlows",
+        "prevent_user_existence_errors": "PreventUserExistenceErrors",
+        "enable_token_revocation": "EnableTokenRevocation"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Cognito::UserPoolClient says tagging.taggable is false, and the Cognito user pool tag operations address the pool itself, not its clients, groups, providers, domains or resource servers (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "UserPoolId",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "key_kind": "id",
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cognito_identity_provider",
+      "service": "cognito-idp",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cognito_identity_providers_described"
+      },
+      "why": "Enumerate user pool identity providers — the external identity sources a pool trusts to sign users in.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeIdentityProvider returns ProviderDetails verbatim, and for an OIDC or social provider that map holds the client_secret. Identity, type and the pool edge are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cognito-idp ListIdentityProviders and DescribeIdentityProvider output shapes and custom_fn cognito_identity_providers_described, 2026-10-29. ProviderDetails is a free-form map holding the provider's client secret (botocore does not mark it sensitive).",
+        "locations": [
+          {
+            "path": "ProviderDetails",
+            "category": "credential",
+            "reason": "A free-form map of the provider's settings: client_id and client_secret for OIDC and social providers, and a metadata document or URL for SAML.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "ProviderName",
+        "provider_key": "_key",
+        "user_pool_id": "UserPoolId",
+        "provider_name": "ProviderName",
+        "provider_type": "ProviderType"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Cognito::UserPoolIdentityProvider says tagging.taggable is false, and the Cognito user pool tag operations address the pool itself, not its clients, groups, providers, domains or resource servers (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "UserPoolId",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "key_kind": "id",
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cognito_user_pool_group",
+      "service": "cognito-idp",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cognito_user_pool_groups_described"
+      },
+      "why": "Enumerate user pool groups — each can hand its members an IAM role, which makes group membership a route to AWS permissions.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cognito-idp ListGroups output shape and custom_fn cognito_user_pool_groups_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "GroupName",
+        "group_key": "_key",
+        "user_pool_id": "UserPoolId",
+        "precedence": "Precedence",
+        "role_arn": "RoleArn"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Cognito::UserPoolGroup says tagging.taggable is false, and the Cognito user pool tag operations address the pool itself, not its clients, groups, providers, domains or resource servers (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "UserPoolId",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "key_kind": "id",
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "RoleArn",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cognito_user_pool_resource_server",
+      "service": "cognito-idp",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cognito_user_pool_resource_servers_described"
+      },
+      "why": "Enumerate user pool resource servers — the custom OAuth scopes a pool can grant, which app clients may then request.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cognito-idp ListResourceServers output shape and custom_fn cognito_user_pool_resource_servers_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Scopes[].ScopeDescription",
+            "category": "free_text",
+            "reason": "Operator-authored scope descriptions.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "server_key": "_key",
+        "user_pool_id": "UserPoolId",
+        "identifier": "Identifier"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Cognito::UserPoolResourceServer says tagging.taggable is false, and the Cognito user pool tag operations address the pool itself, not its clients, groups, providers, domains or resource servers (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "UserPoolId",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "key_kind": "id",
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_cognito_user_pool_domain",
+      "service": "cognito-idp",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "cognito_user_pool_domains_described"
+      },
+      "why": "Enumerate user pool domains — the hosted sign-in addresses of a pool, and the certificate a custom domain presents.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore cognito-idp DescribeUserPool and DescribeUserPoolDomain output shapes and custom_fn cognito_user_pool_domains_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "S3Bucket",
+            "category": "other",
+            "reason": "The S3 bucket that holds the domain's hosted UI assets: a location, not a credential.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Domain",
+        "domain_key": "_key",
+        "user_pool_id": "UserPoolId",
+        "status": "Status",
+        "certificate_arn": "CustomDomainConfig.CertificateArn",
+        "cloudfront_distribution": "CloudFrontDistribution"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Cognito::UserPoolDomain says tagging.taggable is false, and the Cognito user pool tag operations address the pool itself, not its clients, groups, providers, domains or resource servers (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "UserPoolId",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "key_kind": "id",
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "CustomDomainConfig.CertificateArn",
+          "target_type": "aws_core__aws_acm_certificate",
+          "key_kind": "arn",
+          "edge_type": "PRESENTS_CERTIFICATE__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }

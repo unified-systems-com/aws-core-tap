@@ -1,0 +1,17 @@
+{
+  "slug": "BACKS_UP_TO_VAULT__aws_core",
+  "name": "Backs Up To Vault",
+  "description": "An AWS Backup plan writes recovery points to a backup vault (plan -> vault): the target vault of one of the plan's rules, built into the vault's ARN from the plan's own partition, region and account. A reference, not containment.",
+  "sources": [
+    "aws_core__aws_backup_plan"
+  ],
+  "targets": [
+    "aws_core__aws_backup_vault"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

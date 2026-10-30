@@ -1,0 +1,21 @@
+{
+  "slug": "BELONGS_TO_USER_POOL__aws_core",
+  "name": "Belongs To User Pool",
+  "description": "A Cognito user pool's app client, identity provider, group, resource server or domain belongs to that user pool (object -> user pool): the pool id the call was made under. A reference, not containment. Emitted whether or not the pool was collected: it resolves by deterministic identity (the pool id) when it is.",
+  "sources": [
+    "aws_core__aws_cognito_user_pool_client",
+    "aws_core__aws_cognito_identity_provider",
+    "aws_core__aws_cognito_user_pool_group",
+    "aws_core__aws_cognito_user_pool_resource_server",
+    "aws_core__aws_cognito_user_pool_domain"
+  ],
+  "targets": [
+    "aws_core__aws_cognito_user_pool"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

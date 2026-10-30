@@ -16,7 +16,8 @@
     "aws_core__aws_elb",
     "aws_core__aws_network_firewall",
     "aws_core__aws_vpc_endpoint",
-    "aws_core__aws_sagemaker_endpoint"
+    "aws_core__aws_sagemaker_endpoint",
+    "aws_core__aws_efs_mount_target"
   ],
   "targets": [
     "aws_core__aws_subnet"

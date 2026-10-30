@@ -1,0 +1,17 @@
+{
+  "slug": "LISTENS_ON_LOAD_BALANCER__aws_core",
+  "name": "Listens On Load Balancer",
+  "description": "An ELBv2 listener accepts connections on one Application Load Balancer (listener -> load balancer): the listener's LoadBalancerArn. Written only for an Application Load Balancer, whose node is keyed by its ARN; Network and Gateway Load Balancers are keyed by DNS name and are not linked from a listener. A reference, not containment.",
+  "sources": [
+    "aws_core__aws_elb_listener"
+  ],
+  "targets": [
+    "aws_core__aws_alb"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

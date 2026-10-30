@@ -1,0 +1,17 @@
+{
+  "slug": "MOUNTS_FILE_SYSTEM__aws_core",
+  "name": "Mounts File System",
+  "description": "An EFS mount target is the network endpoint of one file system in one subnet (mount target -> file system): the file system's ARN, built from the mount target's file system. A reference, not containment.",
+  "sources": [
+    "aws_core__aws_efs_mount_target"
+  ],
+  "targets": [
+    "aws_core__aws_efs_file_system"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
