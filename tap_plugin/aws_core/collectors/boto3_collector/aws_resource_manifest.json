@@ -7716,6 +7716,12 @@
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "GitConfig.SecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
@@ -8968,7 +8974,7 @@
       },
       "why": "Enumerate EC2 Ipam External Resource Verification Token objects with DescribeIpamExternalResourceVerificationTokens — an inventory of the account's ipam external resource verification tokens and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the DescribeIpamExternalResourceVerificationTokens response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the DescribeIpamExternalResourceVerificationTokens response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected. The listing also carries TokenValue, which looks like secret material and is declared a credential location on reviewer judgement; none of it is stored.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore ec2 DescribeIpamExternalResourceVerificationTokens item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -8977,6 +8983,12 @@
             "path": "Tags[]",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "TokenValue",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
             "evidence": "reviewer_judgement"
           }
         ]
@@ -9120,6 +9132,18 @@
             "path": "tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "securityConfigurationData.authorizationConfiguration.encryptionConfiguration.inTransitEncryptionConfiguration.tlsCertificateConfiguration.publicCertificateSecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "securityConfigurationData.authorizationConfiguration.encryptionConfiguration.inTransitEncryptionConfiguration.tlsCertificateConfiguration.privateCertificateSecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
             "evidence": "reviewer_judgement"
           }
         ]
@@ -9456,6 +9480,24 @@
             "path": "_hydrate.tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "influxDBSummary.secretId",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "influxDBSummary.secretType",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "influxDBSummary.secretKey",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
             "evidence": "reviewer_judgement"
           }
         ]
@@ -11620,6 +11662,18 @@
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FileSystem.WindowsConfiguration.SelfManagedActiveDirectoryConfiguration.DomainJoinServiceAccountSecret",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Volume.AdministrativeActions[].TargetFileSystemValues.WindowsConfiguration.SelfManagedActiveDirectoryConfiguration.DomainJoinServiceAccountSecret",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
@@ -11770,6 +11824,12 @@
             "category": "customer_content",
             "reason": "botocore marks this member sensitive: operator-set content.",
             "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "storageConfiguration.fsxOntapConfiguration.credentialsSecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
@@ -12325,6 +12385,12 @@
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "eksProperties.podProperties.volumes[].secret",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
@@ -12442,7 +12508,7 @@
       },
       "why": "Enumerate CodePipeline Webhook objects with ListWebhooks — an inventory of the account's webhooks and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListWebhooks response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListWebhooks response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected. The listing also carries definition, which looks like secret material and is declared a credential location on reviewer judgement; none of it is stored.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore codepipeline ListWebhooks item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -12451,6 +12517,12 @@
             "path": "tags[]",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "definition.authenticationConfiguration.SecretToken",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
             "evidence": "reviewer_judgement"
           }
         ]
