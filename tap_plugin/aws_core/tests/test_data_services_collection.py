@@ -646,16 +646,17 @@ class TestWafv2:
     def test_the_cloudfront_scope_is_read_only_through_the_home_region_of_the_commercial_partition(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import wafv2_ip_sets_described
 
-        scopes: dict[str, list[str]] = {}
-        for region in ("us-east-1", "eu-west-1", "us-gov-west-1"):
-            seen: list[str] = []
-
-            def listing(Scope: str, seen: list[str] = seen) -> Any:
+        def listing_into(seen: list[str]) -> Any:
+            def listing(Scope: str) -> Any:
                 seen.append(Scope)
                 return {"IPSets": []}
 
-            _run(wafv2_ip_sets_described, "wafv2", self._client(region, list_ip_sets=listing))
-            scopes[region] = seen
+            return listing
+
+        scopes: dict[str, list[str]] = {}
+        for region in ("us-east-1", "eu-west-1", "us-gov-west-1"):
+            scopes[region] = []
+            _run(wafv2_ip_sets_described, "wafv2", self._client(region, list_ip_sets=listing_into(scopes[region])))
         assert scopes == {"us-east-1": ["REGIONAL", "CLOUDFRONT"], "eu-west-1": ["REGIONAL"], "us-gov-west-1": ["REGIONAL"]}
 
     def test_a_web_acl_carries_default_action_rule_count_and_tags(self) -> None:

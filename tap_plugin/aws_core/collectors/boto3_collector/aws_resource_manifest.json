@@ -4847,16 +4847,16 @@
         "custom_fn": "wafv2_regex_pattern_sets_described"
       },
       "why": "Enumerate WAFv2 regex pattern sets — the patterns rules match requests against.",
-      "persist_configuration": true,
-      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: GetRegexPatternSet returns RegularExpressionList verbatim, and AWS does not stop a pattern set holding a shared-secret header value that rules match requests against, the same class as a rule statement. Identity, scope, pattern count and tags are typed fields or derived from the in-memory item, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Read botocore wafv2 ListRegexPatternSets, GetRegexPatternSet and ListTagsForResource output shapes and custom_fn wafv2_regex_pattern_sets_described, 2026-10-29; no sensitive-flagged member.",
         "locations": [
           {
             "path": "RegularExpressionList",
-            "category": "customer_content",
-            "reason": "Operator-authored regular expressions; they can embed values a request is checked for.",
+            "category": "credential",
+            "reason": "Operator-authored regular expressions; a pattern can hold a shared-secret header value (a CloudFront-to-origin verification token) that rules match requests against. botocore does not mark it sensitive.",
             "evidence": "reviewer_judgement"
           },
           {

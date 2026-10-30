@@ -71,6 +71,7 @@ _CP_ARN = f"arn:aws:codepipeline:us-east-1:{_ACCOUNT}:slice-pipe"
 _WAF_CANARY = "canary-waf-origin-verify-2f77"
 _WAF_ACL_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/webacl/slice-acl/acl-1"
 _WAF_GROUP_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/rulegroup/slice-group/grp-1"
+_WAF_REGEX_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/regexpatternset/slice-regex/rx-1"
 
 _CANNED = {
     "list_web_acls": {"WebACLs": [{"Name": "slice-acl", "Id": "acl-1", "ARN": _WAF_ACL_ARN}]},
@@ -88,6 +89,15 @@ _CANNED = {
                     "Statement": {"ByteMatchStatement": {"SearchString": _WAF_CANARY, "PositionalConstraint": "EXACTLY"}},
                 }
             ],
+        }
+    },
+    "list_regex_pattern_sets": {"RegexPatternSets": [{"Name": "slice-regex", "Id": "rx-1", "ARN": _WAF_REGEX_ARN}]},
+    "get_regex_pattern_set": {
+        "RegexPatternSet": {
+            "Name": "slice-regex",
+            "Id": "rx-1",
+            "ARN": _WAF_REGEX_ARN,
+            "RegularExpressionList": [{"RegexString": _WAF_CANARY}, {"RegexString": "other"}],
         }
     },
     "list_rule_groups": {"RuleGroups": [{"Name": "slice-group", "Id": "grp-1", "ARN": _WAF_GROUP_ARN}]},
@@ -716,6 +726,7 @@ _OFF_CASES = [
     ("aws_core__aws_codepipeline_pipeline", _CP_ARN, _CP_CANARY, "execution_mode", "QUEUED"),
     ("aws_core__aws_wafv2_web_acl", _WAF_ACL_ARN, _WAF_CANARY, "default_action", "BLOCK"),
     ("aws_core__aws_wafv2_rule_group", _WAF_GROUP_ARN, _WAF_CANARY, "capacity", 20),
+    ("aws_core__aws_wafv2_regex_pattern_set", _WAF_REGEX_ARN, _WAF_CANARY, "pattern_count", 2),
 ]
 _OFF_IDS = [f"{case[0]}-{case[2]}" for case in _OFF_CASES]
 
