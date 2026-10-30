@@ -7288,7 +7288,7 @@
       },
       "why": "Enumerate APS Scraper objects with ListScrapers — an inventory of the account's scrapers and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListScrapers response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListScrapers response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore amp ListScrapers item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -7322,7 +7322,7 @@
       },
       "why": "Enumerate APS Workspace objects with ListWorkspaces — an inventory of the account's workspaces and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListWorkspaces response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListWorkspaces response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore amp ListWorkspaces item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -7356,7 +7356,7 @@
       },
       "why": "Enumerate Batch Compute Environment objects with DescribeComputeEnvironments — an inventory of the account's compute environments and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the DescribeComputeEnvironments response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the DescribeComputeEnvironments response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch DescribeComputeEnvironments item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -7391,7 +7391,7 @@
       },
       "why": "Enumerate Batch Consumable Resource objects with ListConsumableResources — an inventory of the account's consumable resources and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListConsumableResources response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListConsumableResources response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch ListConsumableResources item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -7432,7 +7432,7 @@
       },
       "why": "Enumerate Batch Job Queue objects with DescribeJobQueues — an inventory of the account's job queues and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the DescribeJobQueues response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the DescribeJobQueues response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch DescribeJobQueues item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -7467,7 +7467,7 @@
       },
       "why": "Enumerate Batch Scheduling Policy objects with ListSchedulingPolicies — an inventory of the account's scheduling policys and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListSchedulingPolicies response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListSchedulingPolicies response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch ListSchedulingPolicies item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
@@ -7507,7 +7507,7 @@
       },
       "why": "Enumerate Batch Service Environment objects with DescribeServiceEnvironments — an inventory of the account's service environments and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the DescribeServiceEnvironments response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the DescribeServiceEnvironments response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch DescribeServiceEnvironments item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",

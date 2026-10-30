@@ -27,7 +27,7 @@ class ApsWorkspace(BaseModel):
 
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"type": "string", "minLength": 1},
+        "name": {"type": "string"},
         "workspace_arn": {"type": "string"},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
@@ -36,7 +36,7 @@ class ApsWorkspace(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
-    CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
+    CREATE_REQUIRED: ClassVar[list[str]] = []
 
     name = models.CharField(max_length=255, blank=True, default="")
     workspace_arn = models.CharField(max_length=2048, blank=True, default="")
