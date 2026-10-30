@@ -1881,6 +1881,285 @@ def s3_access_points_described(session: Any, *, client_for: Any) -> Iterator[dic
             )
 
 
+def efs_access_points_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EFS access points (regional). ``_file_system_arn`` is the file system's ARN, built from the
+    access point's own (same partition, region and account) and its ``FileSystemId``."""
+    client = client_for("efs")
+    for page in _pages(client, "describe_access_points"):
+        for access_point in page.get("AccessPoints", []):
+            arn, file_system = str(access_point.get("AccessPointArn") or ""), access_point.get("FileSystemId")
+            prefix = arn.rsplit(":", 1)[0] if arn.count(":") >= 5 else ""
+            yield with_edge_reads(
+                {**access_point, "_file_system_arn": f"{prefix}:file-system/{file_system}" if prefix and file_system else None},
+                {"_file_system_arn": COMPLETE},
+            )
+
+
+def efs_mount_targets_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate EFS mount targets (regional): ``DescribeMountTargets`` takes a file system, so each file
+    system is asked in turn. ``_file_system_arn`` is built from the file system's own ARN. A file system whose
+    mount targets cannot be listed is a gap (:func:`_undescribed`)."""
+    client = client_for("efs")
+    failed: list[str] = []
+    for page in _pages(client, "describe_file_systems"):
+        for file_system in page.get("FileSystems", []):
+            fs_id = file_system.get("FileSystemId")
+            if not fs_id:
+                continue
+            try:
+                for targets in _pages(client, "describe_mount_targets", FileSystemId=fs_id):
+                    for target in targets.get("MountTargets", []):
+                        yield with_edge_reads(
+                            {**target, "_file_system_arn": file_system.get("FileSystemArn")}, {"_file_system_arn": COMPLETE, "SubnetId": COMPLETE}
+                        )
+            except BotoCoreError, ClientError:
+                failed.append(str(fs_id))
+    if failed:
+        raise _undescribed("EFS file systems whose mount targets", failed)
+
+
+def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate ELBv2 listeners (regional): ``DescribeListeners`` for each load balancer, tags 20 ARNs to a
+    call. The listener is the TLS fact (protocol, policy, certificates) and carries the authentication action
+    (an OIDC action holds a client secret). ``_certificate_arns`` and ``_action_types`` are derived; ``_alb_arn``
+    is the load balancer's ARN for an Application Load Balancer only, the one kind whose node is keyed by it.
+    A load balancer whose listeners cannot be listed is a gap (:func:`_undescribed`)."""
+    client = client_for("elbv2")
+    listeners: list[dict[str, Any]] = []
+    failed: list[str] = []
+    for lb in _elbv2_load_balancers(client):
+        lb_arn = lb.get("LoadBalancerArn")
+        if not lb_arn:
+            continue
+        try:
+            for page in _pages(client, "describe_listeners", LoadBalancerArn=lb_arn):
+                listeners.extend({**listener, "_lb_type": lb.get("Type")} for listener in page.get("Listeners", []) if listener.get("ListenerArn"))
+        except BotoCoreError, ClientError:
+            failed.append(str(lb_arn))
+    tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(x["ListenerArn"]) for x in listeners])
+    for listener in listeners:
+        arn = str(listener["ListenerArn"])
+        actions = listener.get("DefaultActions") or []
+        # DescribeListeners names the default certificate only; the others (SNI) are DescribeListenerCertificates'.
+        certificates = {str(c["CertificateArn"]) for c in listener.get("Certificates", []) if c.get("CertificateArn")}
+        certificates_read = COMPLETE
+        if listener.get("Protocol") in ("HTTPS", "TLS"):
+            try:
+                for cert_page in _pages(client, "describe_listener_certificates", ListenerArn=arn):
+                    certificates.update(str(c["CertificateArn"]) for c in cert_page.get("Certificates", []) if c.get("CertificateArn"))
+            except BotoCoreError, ClientError:
+                certificates_read = PARTIAL
+        yield with_edge_reads(
+            {
+                **listener,
+                "_certificate_arns": sorted(certificates),
+                "_action_types": [a.get("Type") for a in actions if a.get("Type")],
+                "_alb_arn": listener.get("LoadBalancerArn") if listener.get("_lb_type") == "application" else None,
+                "_tags": tags.get(arn, {}),
+                "_tags_unread": arn not in tags,
+            },
+            {"_certificate_arns": certificates_read, "_alb_arn": COMPLETE},
+        )
+    if failed:
+        raise _undescribed("load balancers whose listeners", failed)
+
+
+def _backup_tags(client: Any, arn: str) -> tuple[dict[str, str], bool]:
+    """``(tags, unread)`` for one AWS Backup resource: ``ListTags`` returns a plain map."""
+    try:
+        return dict(without_response_metadata(client.list_tags(ResourceArn=arn)).get("Tags") or {}), False
+    except BotoCoreError, ClientError:
+        return {}, True
+
+
+def backup_vaults_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate AWS Backup vaults (regional) with tags (botocore marks the tag map sensitive; the values go to
+    the canonical ``tags`` field only)."""
+    client = client_for("backup")
+    for page in _pages(client, "list_backup_vaults"):
+        for vault in page.get("BackupVaultList", []):
+            arn = vault.get("BackupVaultArn")
+            if arn:
+                tags, unread = _backup_tags(client, arn)
+                yield {**vault, "_tags": tags, "_tags_unread": unread}
+
+
+def backup_plans_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate AWS Backup plans (regional): ``ListBackupPlans`` names them, ``GetBackupPlan`` reads the rules.
+    ``BackupPlan`` is the plan's detail (rules, schedules, lifecycle), ``_rule_count`` the number of rules and
+    ``_target_vault_arns`` the vaults the rules write to, built from the plan's own ARN (same partition, region and account). A plan that cannot be read is a gap
+    (:func:`_undescribed`)."""
+    client = client_for("backup")
+    failed: list[str] = []
+    for page in _pages(client, "list_backup_plans"):
+        for plan in page.get("BackupPlansList", []):
+            arn, plan_id = plan.get("BackupPlanArn"), plan.get("BackupPlanId")
+            if not (arn and plan_id):
+                continue
+            try:
+                detail = without_response_metadata(client.get_backup_plan(BackupPlanId=plan_id)).get("BackupPlan") or {}
+            except BotoCoreError, ClientError:
+                failed.append(str(arn))
+                continue
+            rules = detail.get("Rules")
+            prefix = ":".join(str(arn).split(":")[:5])
+            vaults = sorted({f"{prefix}:backup-vault:{r['TargetBackupVaultName']}" for r in rules or [] if r.get("TargetBackupVaultName")})
+            tags, unread = _backup_tags(client, arn)
+            yield with_edge_reads(
+                {**plan, "BackupPlan": detail, "_rule_count": len(rules) if isinstance(rules, list) else None, "_target_vault_arns": vaults, "_tags": tags, "_tags_unread": unread},
+                {"_target_vault_arns": COMPLETE if isinstance(rules, list) else PARTIAL},
+            )
+    if failed:
+        raise _undescribed("Backup plans", failed)
+
+
+def backup_frameworks_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate AWS Backup audit frameworks (regional) with tags."""
+    client = client_for("backup")
+    for page in _token_pages(client, "list_frameworks", _CONTINUATION):
+        for framework in page.get("Frameworks", []):
+            arn = framework.get("FrameworkArn")
+            if arn:
+                tags, unread = _backup_tags(client, arn)
+                yield {**framework, "_tags": tags, "_tags_unread": unread}
+
+
+def backup_legal_holds_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate AWS Backup legal holds (regional) with tags."""
+    client = client_for("backup")
+    for page in _pages(client, "list_legal_holds"):
+        for hold in page.get("LegalHolds", []):
+            arn = hold.get("LegalHoldArn")
+            if arn:
+                tags, unread = _backup_tags(client, arn)
+                yield {**hold, "_tags": tags, "_tags_unread": unread}
+
+
+def cognito_identity_pools_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Cognito identity pools (regional): ``ListIdentityPools`` and ``DescribeIdentityPool`` (which
+    carries ``IdentityPoolTags``). ``AllowUnauthenticatedIdentities`` is the exposure fact: anyone can get
+    credentials. A pool that cannot be described is a gap (:func:`_undescribed`)."""
+    client = client_for("cognito-identity")
+    failed: list[str] = []
+    for page in _pages(client, "list_identity_pools", MaxResults=60):
+        for entry in page.get("IdentityPools", []):
+            pool_id = entry.get("IdentityPoolId")
+            if not pool_id:
+                continue
+            try:
+                yield without_response_metadata(client.describe_identity_pool(IdentityPoolId=pool_id))
+            except BotoCoreError, ClientError:
+                failed.append(str(pool_id))
+    if failed:
+        raise _undescribed("Cognito identity pools", failed)
+
+
+def _cognito_user_pool_ids(client: Any) -> list[str]:
+    return [p["Id"] for page in _pages(client, "list_user_pools", MaxResults=60) for p in page.get("UserPools", []) if p.get("Id")]
+
+
+def cognito_user_pool_clients_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the app clients of each Cognito user pool (regional): ``ListUserPoolClients`` then
+    ``DescribeUserPoolClient``. ``_key`` is ``<pool id>:<client id>`` and ``_has_secret`` whether the client
+    has a secret (the secret itself is in the answer and is why the entry stores nothing). A pool whose clients
+    cannot be read is a gap (:func:`_undescribed`)."""
+    client = client_for("cognito-idp")
+    failed: list[str] = []
+    for pool in _cognito_user_pool_ids(client):
+        try:
+            for page in _pages(client, "list_user_pool_clients", UserPoolId=pool, MaxResults=60):
+                for entry in page.get("UserPoolClients", []):
+                    client_id = entry.get("ClientId")
+                    if not client_id:
+                        continue
+                    detail = without_response_metadata(client.describe_user_pool_client(UserPoolId=pool, ClientId=client_id)).get("UserPoolClient") or {}
+                    yield {**detail, "UserPoolId": pool, "_key": f"{pool}:{client_id}", "_has_secret": bool(detail.get("ClientSecret"))}
+        except BotoCoreError, ClientError:
+            failed.append(str(pool))
+    if failed:
+        raise _undescribed("Cognito user pools whose clients", failed)
+
+
+def cognito_identity_providers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the identity providers of each Cognito user pool (regional): ``ListIdentityProviders`` then
+    ``DescribeIdentityProvider`` (whose provider details hold the OAuth client secret). ``_key`` is
+    ``<pool id>:<provider name>``. A pool whose providers cannot be read is a gap (:func:`_undescribed`)."""
+    client = client_for("cognito-idp")
+    failed: list[str] = []
+    for pool in _cognito_user_pool_ids(client):
+        try:
+            for page in _pages(client, "list_identity_providers", UserPoolId=pool, MaxResults=60):
+                for entry in page.get("Providers", []):
+                    name = entry.get("ProviderName")
+                    if not name:
+                        continue
+                    detail = without_response_metadata(client.describe_identity_provider(UserPoolId=pool, ProviderName=name)).get("IdentityProvider") or {}
+                    yield {**detail, "UserPoolId": pool, "_key": f"{pool}:{name}"}
+        except BotoCoreError, ClientError:
+            failed.append(str(pool))
+    if failed:
+        raise _undescribed("Cognito user pools whose identity providers", failed)
+
+
+def cognito_user_pool_groups_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the groups of each Cognito user pool (regional). ``_key`` is ``<pool id>:<group name>``. A group
+    can carry an IAM role its members assume. A pool whose groups cannot be read is a gap
+    (:func:`_undescribed`)."""
+    client = client_for("cognito-idp")
+    failed: list[str] = []
+    for pool in _cognito_user_pool_ids(client):
+        try:
+            for page in _pages(client, "list_groups", UserPoolId=pool, Limit=60):
+                for group in page.get("Groups", []):
+                    if group.get("GroupName"):
+                        yield with_edge_reads({**group, "UserPoolId": pool, "_key": f"{pool}:{group['GroupName']}"}, {"RoleArn": COMPLETE})
+        except BotoCoreError, ClientError:
+            failed.append(str(pool))
+    if failed:
+        raise _undescribed("Cognito user pools whose groups", failed)
+
+
+def cognito_user_pool_resource_servers_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the OAuth resource servers of each Cognito user pool (regional). ``_key`` is
+    ``<pool id>:<identifier>``. A pool whose resource servers cannot be read is a gap (:func:`_undescribed`)."""
+    client = client_for("cognito-idp")
+    failed: list[str] = []
+    for pool in _cognito_user_pool_ids(client):
+        try:
+            for page in _pages(client, "list_resource_servers", UserPoolId=pool, MaxResults=50):
+                for server in page.get("ResourceServers", []):
+                    if server.get("Identifier"):
+                        yield {**server, "UserPoolId": pool, "_key": f"{pool}:{server['Identifier']}"}
+        except BotoCoreError, ClientError:
+            failed.append(str(pool))
+    if failed:
+        raise _undescribed("Cognito user pools whose resource servers", failed)
+
+
+def cognito_user_pool_domains_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate the domains of each Cognito user pool (regional): the prefix domain and the custom domain
+    ``DescribeUserPool`` names, each described by ``DescribeUserPoolDomain``. A pool or domain that cannot be
+    read is a gap (:func:`_undescribed`)."""
+    client = client_for("cognito-idp")
+    failed: list[str] = []
+    for pool in _cognito_user_pool_ids(client):
+        try:
+            described = without_response_metadata(client.describe_user_pool(UserPoolId=pool)).get("UserPool") or {}
+        except BotoCoreError, ClientError:
+            failed.append(str(pool))
+            continue
+        for domain in sorted({d for d in (described.get("Domain"), described.get("CustomDomain")) if d}):
+            try:
+                detail = without_response_metadata(client.describe_user_pool_domain(Domain=domain)).get("DomainDescription") or {}
+            except BotoCoreError, ClientError:
+                failed.append(f"{pool}:{domain}")
+                continue
+            if detail.get("Domain"):
+                yield {**detail, "UserPoolId": detail.get("UserPoolId") or pool, "_key": f"{pool}:{detail['Domain']}"}
+    if failed:
+        raise _undescribed("Cognito user pool domains", failed)
+
+
 def _undescribed(kind: str, names: list[str]) -> SourceError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
     be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
@@ -2308,6 +2587,19 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "efs_access_points_described": efs_access_points_described,
+    "efs_mount_targets_described": efs_mount_targets_described,
+    "elbv2_listeners_described": elbv2_listeners_described,
+    "backup_vaults_described": backup_vaults_described,
+    "backup_plans_described": backup_plans_described,
+    "backup_frameworks_described": backup_frameworks_described,
+    "backup_legal_holds_described": backup_legal_holds_described,
+    "cognito_identity_pools_described": cognito_identity_pools_described,
+    "cognito_user_pool_clients_described": cognito_user_pool_clients_described,
+    "cognito_identity_providers_described": cognito_identity_providers_described,
+    "cognito_user_pool_groups_described": cognito_user_pool_groups_described,
+    "cognito_user_pool_resource_servers_described": cognito_user_pool_resource_servers_described,
+    "cognito_user_pool_domains_described": cognito_user_pool_domains_described,
     "guardduty_filters_described": guardduty_filters_described,
     "guardduty_ip_sets_described": guardduty_ip_sets_described,
     "guardduty_threat_intel_sets_described": guardduty_threat_intel_sets_described,

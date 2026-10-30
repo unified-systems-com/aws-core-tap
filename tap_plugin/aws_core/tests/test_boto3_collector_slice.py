@@ -72,6 +72,12 @@ _WAF_CANARY = "canary-waf-origin-verify-2f77"
 _WAF_ACL_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/webacl/slice-acl/acl-1"
 _WAF_GROUP_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/rulegroup/slice-group/grp-1"
 _WAF_REGEX_ARN = f"arn:aws:wafv2:us-east-1:{_ACCOUNT}:regional/regexpatternset/slice-regex/rx-1"
+# Planted at an authenticate-oidc ClientSecret, a Cognito app client secret and an identity provider's client_secret.
+_LISTENER_CANARY = "canary-listener-oidc-secret-6a10"
+_CLIENT_CANARY = "canary-cognito-client-secret-d4e2"
+_IDP_CANARY = "canary-cognito-idp-client-secret-91fb"
+_LB_ARN = f"arn:aws:elasticloadbalancing:us-east-1:{_ACCOUNT}:loadbalancer/app/slice-lb/abc"
+_LISTENER_ARN = f"arn:aws:elasticloadbalancing:us-east-1:{_ACCOUNT}:listener/app/slice-lb/abc/def"
 
 _CANNED = {
     "list_web_acls": {"WebACLs": [{"Name": "slice-acl", "Id": "acl-1", "ARN": _WAF_ACL_ARN}]},
@@ -350,6 +356,26 @@ _CANNED = {
     },
     # Cognito user pool whose SMS role assumption uses an external id.
     "list_user_pools": {"UserPools": [{"Id": _POOL_ID, "Name": "sam-pool"}]},
+    "list_user_pool_clients": {"UserPoolClients": [{"ClientId": "clientabc", "UserPoolId": _POOL_ID, "ClientName": "web"}]},
+    "describe_user_pool_client": {
+        "UserPoolClient": {"UserPoolId": _POOL_ID, "ClientId": "clientabc", "ClientName": "web", "ClientSecret": _CLIENT_CANARY, "AllowedOAuthFlows": ["code"]}
+    },
+    "list_identity_providers": {"Providers": [{"ProviderName": "corp", "ProviderType": "OIDC"}]},
+    "describe_identity_provider": {
+        "IdentityProvider": {"UserPoolId": _POOL_ID, "ProviderName": "corp", "ProviderType": "OIDC", "ProviderDetails": {"client_id": "x", "client_secret": _IDP_CANARY}}
+    },
+    "describe_load_balancers": {"LoadBalancers": [{"LoadBalancerArn": _LB_ARN, "Type": "application", "LoadBalancerName": "slice-lb", "DNSName": "slice-lb.example"}]},
+    "describe_listeners": {
+        "Listeners": [
+            {
+                "ListenerArn": _LISTENER_ARN,
+                "LoadBalancerArn": _LB_ARN,
+                "Port": 443,
+                "Protocol": "HTTPS",
+                "DefaultActions": [{"Type": "authenticate-oidc", "AuthenticateOidcConfig": {"ClientId": "x", "ClientSecret": _LISTENER_CANARY}}],
+            }
+        ]
+    },
     "describe_user_pool": {
         "UserPool": {
             "Id": _POOL_ID,
@@ -727,6 +753,9 @@ _OFF_CASES = [
     ("aws_core__aws_wafv2_web_acl", _WAF_ACL_ARN, _WAF_CANARY, "default_action", "BLOCK"),
     ("aws_core__aws_wafv2_rule_group", _WAF_GROUP_ARN, _WAF_CANARY, "capacity", 20),
     ("aws_core__aws_wafv2_regex_pattern_set", _WAF_REGEX_ARN, _WAF_CANARY, "pattern_count", 2),
+    ("aws_core__aws_elb_listener", _LISTENER_ARN, _LISTENER_CANARY, "port", 443),
+    ("aws_core__aws_cognito_user_pool_client", f"{_POOL_ID}:clientabc", _CLIENT_CANARY, "has_secret", True),
+    ("aws_core__aws_cognito_identity_provider", f"{_POOL_ID}:corp", _IDP_CANARY, "provider_type", "OIDC"),
 ]
 _OFF_IDS = [f"{case[0]}-{case[2]}" for case in _OFF_CASES]
 

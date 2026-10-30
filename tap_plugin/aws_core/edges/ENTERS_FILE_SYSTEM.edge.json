@@ -1,0 +1,17 @@
+{
+  "slug": "ENTERS_FILE_SYSTEM__aws_core",
+  "name": "Enters File System",
+  "description": "An EFS access point is an application entry into one file system (access point -> file system): the file system's ARN, built from the access point's own. A reference, not containment.",
+  "sources": [
+    "aws_core__aws_efs_access_point"
+  ],
+  "targets": [
+    "aws_core__aws_efs_file_system"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

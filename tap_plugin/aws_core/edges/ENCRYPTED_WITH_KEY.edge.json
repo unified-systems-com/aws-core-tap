@@ -13,7 +13,9 @@
     "aws_core__aws_secrets_manager_secret",
     "aws_core__aws_sqs_queue",
     "aws_core__aws_sns_topic",
-    "aws_core__aws_guardduty_publishing_destination"
+    "aws_core__aws_guardduty_publishing_destination",
+    "aws_core__aws_efs_file_system",
+    "aws_core__aws_backup_vault"
   ],
   "targets": [
     "aws_core__aws_kms_key"

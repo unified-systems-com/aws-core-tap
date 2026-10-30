@@ -631,6 +631,26 @@
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; availability zones are not a CloudFormation resource."
     },
+    "aws_core__aws_backup_framework": {
+      "cfn": [
+        "AWS::Backup::Framework"
+      ]
+    },
+    "aws_core__aws_backup_legal_hold": {
+      "cfn": [
+        "AWS::Backup::LegalHold"
+      ]
+    },
+    "aws_core__aws_backup_plan": {
+      "cfn": [
+        "AWS::Backup::BackupPlan"
+      ]
+    },
+    "aws_core__aws_backup_vault": {
+      "cfn": [
+        "AWS::Backup::BackupVault"
+      ]
+    },
     "aws_core__aws_bedrock_model": {
       "cfn": [],
       "reason": "AWS-owned foundation models; no CloudFormation resource type."
@@ -675,9 +695,39 @@
         "AWS::CodePipeline::Pipeline"
       ]
     },
+    "aws_core__aws_cognito_identity_pool": {
+      "cfn": [
+        "AWS::Cognito::IdentityPool"
+      ]
+    },
+    "aws_core__aws_cognito_identity_provider": {
+      "cfn": [
+        "AWS::Cognito::UserPoolIdentityProvider"
+      ]
+    },
     "aws_core__aws_cognito_user_pool": {
       "cfn": [
         "AWS::Cognito::UserPool"
+      ]
+    },
+    "aws_core__aws_cognito_user_pool_client": {
+      "cfn": [
+        "AWS::Cognito::UserPoolClient"
+      ]
+    },
+    "aws_core__aws_cognito_user_pool_domain": {
+      "cfn": [
+        "AWS::Cognito::UserPoolDomain"
+      ]
+    },
+    "aws_core__aws_cognito_user_pool_group": {
+      "cfn": [
+        "AWS::Cognito::UserPoolGroup"
+      ]
+    },
+    "aws_core__aws_cognito_user_pool_resource_server": {
+      "cfn": [
+        "AWS::Cognito::UserPoolResourceServer"
       ]
     },
     "aws_core__aws_config_aggregation_authorization": {
@@ -804,6 +854,21 @@
       "cfn": [],
       "reason": "A running task is a transient execution artifact; AWS::ECS::TaskDefinition is a different resource."
     },
+    "aws_core__aws_efs_access_point": {
+      "cfn": [
+        "AWS::EFS::AccessPoint"
+      ]
+    },
+    "aws_core__aws_efs_file_system": {
+      "cfn": [
+        "AWS::EFS::FileSystem"
+      ]
+    },
+    "aws_core__aws_efs_mount_target": {
+      "cfn": [
+        "AWS::EFS::MountTarget"
+      ]
+    },
     "aws_core__aws_eks_cluster": {
       "cfn": [
         "AWS::EKS::Cluster"
@@ -827,6 +892,11 @@
     "aws_core__aws_elb": {
       "cfn": [
         "AWS::ElasticLoadBalancing::LoadBalancer"
+      ]
+    },
+    "aws_core__aws_elb_listener": {
+      "cfn": [
+        "AWS::ElasticLoadBalancingV2::Listener"
       ]
     },
     "aws_core__aws_eventbridge_api_destination": {

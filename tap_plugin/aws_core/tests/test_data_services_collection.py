@@ -701,3 +701,149 @@ class TestS3AccessPoints:
         a, b = list(s3_access_points_described(None, client_for=lambda service: {"s3control": s3c, "sts": sts}[service]))
         assert (a["_is_public"], a["_account_id"], a["_bucket_arn"]) == (True, "123456789012", "arn:aws-us-gov:s3:::data")
         assert (b["_is_public"], b["_vpc_id"]) == (None, "vpc-1")
+
+
+class TestEfs:
+    def test_access_points_and_mount_targets_name_their_file_system_arn(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import efs_access_points_described, efs_mount_targets_described
+
+        fs_arn = "arn:aws-us-gov:elasticfilesystem:us-gov-west-1:1:file-system/fs-1"
+        efs = _Client(
+            describe_access_points={"AccessPoints": [{"AccessPointId": "fsap-1", "AccessPointArn": "arn:aws-us-gov:elasticfilesystem:us-gov-west-1:1:access-point/fsap-1", "FileSystemId": "fs-1"}]},
+            describe_file_systems={"FileSystems": [{"FileSystemId": "fs-1", "FileSystemArn": fs_arn}]},
+            describe_mount_targets={"MountTargets": [{"MountTargetId": "fsmt-1", "FileSystemId": "fs-1", "SubnetId": "subnet-1"}]},
+        )
+        [ap] = _run(efs_access_points_described, "efs", efs)
+        assert ap["_file_system_arn"] == fs_arn
+        [mt] = _run(efs_mount_targets_described, "efs", efs)
+        assert mt["_file_system_arn"] == fs_arn and mt[EDGE_READS]["SubnetId"] == COMPLETE
+
+    def test_a_file_system_whose_mount_targets_cannot_be_listed_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import efs_mount_targets_described
+
+        efs = _Client(describe_file_systems={"FileSystems": [{"FileSystemId": "fs-1"}]}, describe_mount_targets=_denied("DescribeMountTargets"))
+        yielded, gap = _run_to_the_gap(efs_mount_targets_described, "efs", efs)
+        assert yielded == [] and "fs-1" in gap
+
+
+class TestListeners:
+    LB = "arn:aws:elasticloadbalancing:us-east-1:1:loadbalancer/app/web/abc"
+
+    def test_a_listener_carries_certificates_actions_and_an_alb_arn_only_for_an_alb(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import elbv2_listeners_described
+
+        nlb = "arn:aws:elasticloadbalancing:us-east-1:1:loadbalancer/net/tcp/def"
+        listeners = {self.LB: {"ListenerArn": "arn:l1", "LoadBalancerArn": self.LB, "Protocol": "HTTPS", "Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a"}], "DefaultActions": [{"Type": "forward"}]}, nlb: {"ListenerArn": "arn:l2", "LoadBalancerArn": nlb}}
+        client = _Client(
+            describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}, {"LoadBalancerArn": nlb, "Type": "network"}]},
+            describe_listeners=lambda LoadBalancerArn: {"Listeners": [listeners[LoadBalancerArn]]},
+            describe_listener_certificates={"Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a", "IsDefault": True}, {"CertificateArn": "arn:aws:acm:r:1:certificate/sni", "IsDefault": False}]},
+            describe_tags={"TagDescriptions": [{"ResourceArn": "arn:l1", "Tags": [{"Key": "k", "Value": "v"}]}, {"ResourceArn": "arn:l2", "Tags": []}]},
+        )
+        alb_listener, nlb_listener = _run(elbv2_listeners_described, "elbv2", client)
+        assert alb_listener["_alb_arn"] == self.LB and nlb_listener["_alb_arn"] is None
+        assert alb_listener["_certificate_arns"] == ["arn:aws:acm:r:1:certificate/a", "arn:aws:acm:r:1:certificate/sni"]
+        assert alb_listener["_action_types"] == ["forward"]
+        assert alb_listener["_tags"] == {"k": "v"}
+
+    def test_unreadable_extra_certificates_make_the_certificate_read_partial_not_complete(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.authority import PARTIAL
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import elbv2_listeners_described
+
+        client = _Client(
+            describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}]},
+            describe_listeners={"Listeners": [{"ListenerArn": "arn:l1", "LoadBalancerArn": self.LB, "Protocol": "HTTPS", "Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a"}]}]},
+            describe_listener_certificates=_denied("DescribeListenerCertificates"),
+            describe_tags={"TagDescriptions": []},
+        )
+        [listener] = _run(elbv2_listeners_described, "elbv2", client)
+        assert listener["_certificate_arns"] == ["arn:aws:acm:r:1:certificate/a"]
+        assert listener[EDGE_READS]["_certificate_arns"] == PARTIAL
+
+    def test_a_load_balancer_whose_listeners_cannot_be_listed_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import elbv2_listeners_described
+
+        client = _Client(describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}]}, describe_listeners=_denied("DescribeListeners"), describe_tags={"TagDescriptions": []})
+        yielded, gap = _run_to_the_gap(elbv2_listeners_described, "elbv2", client)
+        assert yielded == [] and self.LB in gap
+
+
+class TestBackup:
+    def test_a_plan_names_its_target_vaults_and_a_vault_carries_tags(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import backup_plans_described, backup_vaults_described
+
+        client = _Client(
+            list_backup_plans={"BackupPlansList": [{"BackupPlanArn": "arn:aws:backup:us-east-1:1:backup-plan:p-1", "BackupPlanId": "p-1", "BackupPlanName": "daily"}]},
+            get_backup_plan={"BackupPlan": {"Rules": [{"TargetBackupVaultName": "prod"}, {"TargetBackupVaultName": "prod"}, {"TargetBackupVaultName": "dr"}]}},
+            list_tags={"Tags": {"owner": "x"}},
+            list_backup_vaults={"BackupVaultList": [{"BackupVaultArn": "arn:aws:backup:us-east-1:1:backup-vault:prod", "BackupVaultName": "prod"}]},
+        )
+        [plan] = _run(backup_plans_described, "backup", client)
+        assert plan["_rule_count"] == 3 and len(plan["BackupPlan"]["Rules"]) == 3
+        assert plan["_target_vault_arns"] == ["arn:aws:backup:us-east-1:1:backup-vault:dr", "arn:aws:backup:us-east-1:1:backup-vault:prod"]
+        [vault] = _run(backup_vaults_described, "backup", client)
+        assert (vault["_tags"], vault["_tags_unread"]) == ({"owner": "x"}, False)
+
+    def test_a_denied_tag_read_is_unread_and_an_unreadable_plan_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import backup_legal_holds_described, backup_plans_described
+
+        holds = _Client(list_legal_holds={"LegalHolds": [{"LegalHoldArn": "arn:h", "Title": "t"}]}, list_tags=_denied("ListTags"))
+        [hold] = _run(backup_legal_holds_described, "backup", holds)
+        assert (hold["_tags"], hold["_tags_unread"]) == ({}, True)
+        plans = _Client(list_backup_plans={"BackupPlansList": [{"BackupPlanArn": "arn:p", "BackupPlanId": "p-1"}]}, get_backup_plan=_denied("GetBackupPlan"))
+        yielded, gap = _run_to_the_gap(backup_plans_described, "backup", plans)
+        assert yielded == [] and "arn:p" in gap
+
+
+class TestCognitoPoolChildren:
+    POOL = "us-east-1_Abc123"
+
+    def _client(self, **canned: Any) -> Any:
+        return _Client(list_user_pools={"UserPools": [{"Id": self.POOL}]}, **canned)
+
+    def test_the_client_secret_flag_is_derived_and_the_key_names_the_pool(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import cognito_user_pool_clients_described
+
+        client = self._client(
+            list_user_pool_clients={"UserPoolClients": [{"ClientId": "c1"}, {"ClientId": "c2"}]},
+            describe_user_pool_client=lambda UserPoolId, ClientId: {"UserPoolClient": {"ClientId": ClientId, **({"ClientSecret": "s"} if ClientId == "c1" else {})}},
+        )
+        c1, c2 = _run(cognito_user_pool_clients_described, "cognito-idp", client)
+        assert (c1["_key"], c1["_has_secret"], c2["_has_secret"]) == (f"{self.POOL}:c1", True, False)
+
+    def test_a_pool_whose_clients_cannot_be_read_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import cognito_user_pool_clients_described
+
+        client = self._client(list_user_pool_clients=_denied("ListUserPoolClients"))
+        yielded, gap = _run_to_the_gap(cognito_user_pool_clients_described, "cognito-idp", client)
+        assert yielded == [] and self.POOL in gap
+
+    def test_groups_providers_servers_and_domains_are_keyed_by_pool(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
+            cognito_identity_providers_described,
+            cognito_user_pool_domains_described,
+            cognito_user_pool_groups_described,
+            cognito_user_pool_resource_servers_described,
+        )
+
+        client = self._client(
+            list_groups={"Groups": [{"GroupName": "admins", "RoleArn": "arn:aws:iam::1:role/r"}]},
+            list_identity_providers={"Providers": [{"ProviderName": "corp"}]},
+            describe_identity_provider={"IdentityProvider": {"ProviderName": "corp", "ProviderType": "SAML"}},
+            list_resource_servers={"ResourceServers": [{"Identifier": "https://api", "Name": "api"}]},
+            describe_user_pool={"UserPool": {"Domain": "prefix", "CustomDomain": "auth.example.com"}},
+            describe_user_pool_domain=lambda Domain: {"DomainDescription": {"Domain": Domain, "Status": "ACTIVE"}},
+        )
+        assert [g["_key"] for g in _run(cognito_user_pool_groups_described, "cognito-idp", client)] == [f"{self.POOL}:admins"]
+        assert [i["_key"] for i in _run(cognito_identity_providers_described, "cognito-idp", client)] == [f"{self.POOL}:corp"]
+        assert [r["_key"] for r in _run(cognito_user_pool_resource_servers_described, "cognito-idp", client)] == [f"{self.POOL}:https://api"]
+        domains = _run(cognito_user_pool_domains_described, "cognito-idp", client)
+        assert [d["_key"] for d in domains] == [f"{self.POOL}:auth.example.com", f"{self.POOL}:prefix"]
+        assert all(d["UserPoolId"] == self.POOL for d in domains)
+
+    def test_an_identity_pool_that_cannot_be_described_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import cognito_identity_pools_described
+
+        client = _Client(list_identity_pools={"IdentityPools": [{"IdentityPoolId": "us-east-1:abc"}]}, describe_identity_pool=_denied("DescribeIdentityPool"))
+        yielded, gap = _run_to_the_gap(cognito_identity_pools_described, "cognito-identity", client)
+        assert yielded == [] and "us-east-1:abc" in gap

@@ -1,0 +1,18 @@
+{
+  "slug": "PRESENTS_CERTIFICATE__aws_core",
+  "name": "Presents Certificate",
+  "description": "An ELBv2 listener or a Cognito user pool custom domain presents an ACM certificate to clients (listener or domain -> certificate): the certificate ARN in its configuration. A reference, not containment. Emitted whether or not the certificate was collected: it resolves by deterministic identity (the ARN) when it is.",
+  "sources": [
+    "aws_core__aws_elb_listener",
+    "aws_core__aws_cognito_user_pool_domain"
+  ],
+  "targets": [
+    "aws_core__aws_acm_certificate"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
