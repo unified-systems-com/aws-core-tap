@@ -394,8 +394,92 @@ from tap_plugin.aws_core.models.networkfirewall_tls_inspection_configuration imp
 from tap_plugin.aws_core.models.opensearchserverless_collection import OpensearchserverlessCollection
 from tap_plugin.aws_core.models.opensearchserverless_collection_group import OpensearchserverlessCollectionGroup
 from tap_plugin.aws_core.models.opensearchservice_application import OpensearchserviceApplication
+from tap_plugin.aws_core.models.quicksight_approval_policy import QuicksightApprovalPolicy
+from tap_plugin.aws_core.models.rds_db_proxy_endpoint import RdsDbProxyEndpoint
+from tap_plugin.aws_core.models.rds_db_security_group import RdsDbSecurityGroup
+from tap_plugin.aws_core.models.rds_db_shard_group import RdsDbShardGroup
+from tap_plugin.aws_core.models.redshiftserverless_namespace import RedshiftserverlessNamespace
+from tap_plugin.aws_core.models.redshiftserverless_snapshot import RedshiftserverlessSnapshot
+from tap_plugin.aws_core.models.redshiftserverless_workgroup import RedshiftserverlessWorkgroup
+from tap_plugin.aws_core.models.rekognition_project import RekognitionProject
+from tap_plugin.aws_core.models.rolesanywhere_profile import RolesanywhereProfile
+from tap_plugin.aws_core.models.rolesanywhere_trust_anchor import RolesanywhereTrustAnchor
+from tap_plugin.aws_core.models.route53profiles_profile import Route53profilesProfile
+from tap_plugin.aws_core.models.route53resolver_firewall_domain_list import Route53resolverFirewallDomainList
+from tap_plugin.aws_core.models.route53resolver_firewall_rule_group_association import Route53resolverFirewallRuleGroupAssociation
+from tap_plugin.aws_core.models.route53resolver_outpost_resolver import Route53resolverOutpostResolver
+from tap_plugin.aws_core.models.route53resolver_resolver_endpoint import Route53resolverResolverEndpoint
+from tap_plugin.aws_core.models.route53resolver_resolver_rule import Route53resolverResolverRule
+from tap_plugin.aws_core.models.sagemaker_app_image_config import SagemakerAppImageConfig
+from tap_plugin.aws_core.models.sagemaker_device import SagemakerDevice
+from tap_plugin.aws_core.models.sagemaker_device_fleet import SagemakerDeviceFleet
+from tap_plugin.aws_core.models.sagemaker_domain import SagemakerDomain
+from tap_plugin.aws_core.models.sagemaker_experiment import SagemakerExperiment
+from tap_plugin.aws_core.models.sagemaker_feature_group import SagemakerFeatureGroup
+from tap_plugin.aws_core.models.sagemaker_model_card import SagemakerModelCard
+from tap_plugin.aws_core.models.sagemaker_pipeline import SagemakerPipeline
+from tap_plugin.aws_core.models.sagemaker_studio_lifecycle_config import SagemakerStudioLifecycleConfig
+from tap_plugin.aws_core.models.scheduler_schedule import SchedulerSchedule
+from tap_plugin.aws_core.models.scheduler_schedule_group import SchedulerScheduleGroup
+from tap_plugin.aws_core.models.securitylake_data_lake import SecuritylakeDataLake
+from tap_plugin.aws_core.models.servicecatalogappregistry_application import ServicecatalogappregistryApplication
+from tap_plugin.aws_core.models.servicecatalogappregistry_attribute_group import ServicecatalogappregistryAttributeGroup
+from tap_plugin.aws_core.models.servicediscovery_service import ServicediscoveryService
+from tap_plugin.aws_core.models.stepfunctions_activity import StepfunctionsActivity
+from tap_plugin.aws_core.models.stepfunctions_state_machine import StepfunctionsStateMachine
+from tap_plugin.aws_core.models.synthetics_group import SyntheticsGroup
+from tap_plugin.aws_core.models.timestream_database import TimestreamDatabase
+from tap_plugin.aws_core.models.timestream_table import TimestreamTable
+from tap_plugin.aws_core.models.transfer_certificate import TransferCertificate
+from tap_plugin.aws_core.models.transfer_connector import TransferConnector
+from tap_plugin.aws_core.models.transfer_profile import TransferProfile
+from tap_plugin.aws_core.models.transfer_workflow import TransferWorkflow
+from tap_plugin.aws_core.models.verifiedpermissions_policy_store import VerifiedpermissionsPolicyStore
+from tap_plugin.aws_core.models.verifiedpermissions_policy_store_alias import VerifiedpermissionsPolicyStoreAlias
 
 __all__ = [
+    "VerifiedpermissionsPolicyStoreAlias",
+    "VerifiedpermissionsPolicyStore",
+    "TransferWorkflow",
+    "TransferProfile",
+    "TransferConnector",
+    "TransferCertificate",
+    "TimestreamTable",
+    "TimestreamDatabase",
+    "SyntheticsGroup",
+    "StepfunctionsStateMachine",
+    "StepfunctionsActivity",
+    "ServicediscoveryService",
+    "ServicecatalogappregistryAttributeGroup",
+    "ServicecatalogappregistryApplication",
+    "SecuritylakeDataLake",
+    "SchedulerScheduleGroup",
+    "SchedulerSchedule",
+    "SagemakerStudioLifecycleConfig",
+    "SagemakerPipeline",
+    "SagemakerModelCard",
+    "SagemakerFeatureGroup",
+    "SagemakerExperiment",
+    "SagemakerDomain",
+    "SagemakerDeviceFleet",
+    "SagemakerDevice",
+    "SagemakerAppImageConfig",
+    "Route53resolverResolverRule",
+    "Route53resolverResolverEndpoint",
+    "Route53resolverOutpostResolver",
+    "Route53resolverFirewallRuleGroupAssociation",
+    "Route53resolverFirewallDomainList",
+    "Route53profilesProfile",
+    "RolesanywhereTrustAnchor",
+    "RolesanywhereProfile",
+    "RekognitionProject",
+    "RedshiftserverlessWorkgroup",
+    "RedshiftserverlessSnapshot",
+    "RedshiftserverlessNamespace",
+    "RdsDbShardGroup",
+    "RdsDbSecurityGroup",
+    "RdsDbProxyEndpoint",
+    "QuicksightApprovalPolicy",
     "OpensearchserviceApplication",
     "OpensearchserverlessCollectionGroup",
     "OpensearchserverlessCollection",
