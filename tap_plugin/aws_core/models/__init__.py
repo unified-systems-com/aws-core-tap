@@ -320,8 +320,92 @@ from tap_plugin.aws_core.models.ec2_network_insights_path import Ec2NetworkInsig
 from tap_plugin.aws_core.models.ec2_placement_group import Ec2PlacementGroup
 from tap_plugin.aws_core.models.ec2_transit_gateway_multicast_domain import Ec2TransitGatewayMulticastDomain
 from tap_plugin.aws_core.models.ec2_verified_access_group import Ec2VerifiedAccessGroup
+from tap_plugin.aws_core.models.ecs_daemon_task_definition import EcsDaemonTaskDefinition
+from tap_plugin.aws_core.models.ecs_gateway import EcsGateway
+from tap_plugin.aws_core.models.emrcontainers_virtual_cluster import EmrcontainersVirtualCluster
+from tap_plugin.aws_core.models.emrserverless_application import EmrserverlessApplication
+from tap_plugin.aws_core.models.elasticache_global_replication_group import ElasticacheGlobalReplicationGroup
+from tap_plugin.aws_core.models.elasticache_replication_group import ElasticacheReplicationGroup
+from tap_plugin.aws_core.models.elasticache_serverless_cache import ElasticacheServerlessCache
+from tap_plugin.aws_core.models.elasticache_user import ElasticacheUser
+from tap_plugin.aws_core.models.elasticache_user_group import ElasticacheUserGroup
+from tap_plugin.aws_core.models.events_endpoint import EventsEndpoint
+from tap_plugin.aws_core.models.fms_policy import FmsPolicy
+from tap_plugin.aws_core.models.glue_registry import GlueRegistry
+from tap_plugin.aws_core.models.glue_schema import GlueSchema
+from tap_plugin.aws_core.models.greengrass_connector_definition import GreengrassConnectorDefinition
+from tap_plugin.aws_core.models.greengrass_core_definition import GreengrassCoreDefinition
+from tap_plugin.aws_core.models.greengrass_device_definition import GreengrassDeviceDefinition
+from tap_plugin.aws_core.models.greengrass_function_definition import GreengrassFunctionDefinition
+from tap_plugin.aws_core.models.greengrass_group import GreengrassGroup
+from tap_plugin.aws_core.models.greengrass_logger_definition import GreengrassLoggerDefinition
+from tap_plugin.aws_core.models.greengrass_resource_definition import GreengrassResourceDefinition
+from tap_plugin.aws_core.models.greengrass_subscription_definition import GreengrassSubscriptionDefinition
+from tap_plugin.aws_core.models.guardduty_custom_detection_rule_association import GuarddutyCustomDetectionRuleAssociation
+from tap_plugin.aws_core.models.inspectorv2_code_security_integration import Inspectorv2CodeSecurityIntegration
+from tap_plugin.aws_core.models.internetmonitor_monitor import InternetmonitorMonitor
+from tap_plugin.aws_core.models.iot_authorizer import IotAuthorizer
+from tap_plugin.aws_core.models.iot_billing_group import IotBillingGroup
+from tap_plugin.aws_core.models.iot_ca_certificate import IotCaCertificate
+from tap_plugin.aws_core.models.iot_certificate import IotCertificate
+from tap_plugin.aws_core.models.iot_certificate_provider import IotCertificateProvider
+from tap_plugin.aws_core.models.iot_command import IotCommand
+from tap_plugin.aws_core.models.iot_domain_configuration import IotDomainConfiguration
+from tap_plugin.aws_core.models.iot_fleet_metric import IotFleetMetric
+from tap_plugin.aws_core.models.iot_job_template import IotJobTemplate
+from tap_plugin.aws_core.models.iot_mitigation_action import IotMitigationAction
+from tap_plugin.aws_core.models.iot_policy import IotPolicy
+from tap_plugin.aws_core.models.iot_provisioning_template import IotProvisioningTemplate
+from tap_plugin.aws_core.models.iot_scheduled_audit import IotScheduledAudit
+from tap_plugin.aws_core.models.iot_security_profile import IotSecurityProfile
+from tap_plugin.aws_core.models.iot_stream import IotStream
+from tap_plugin.aws_core.models.iot_thing_group import IotThingGroup
+from tap_plugin.aws_core.models.iot_thing_type import IotThingType
+from tap_plugin.aws_core.models.iot_topic_rule import IotTopicRule
 
 __all__ = [
+    "IotTopicRule",
+    "IotThingType",
+    "IotThingGroup",
+    "IotStream",
+    "IotSecurityProfile",
+    "IotScheduledAudit",
+    "IotProvisioningTemplate",
+    "IotPolicy",
+    "IotMitigationAction",
+    "IotJobTemplate",
+    "IotFleetMetric",
+    "IotDomainConfiguration",
+    "IotCommand",
+    "IotCertificateProvider",
+    "IotCertificate",
+    "IotCaCertificate",
+    "IotBillingGroup",
+    "IotAuthorizer",
+    "InternetmonitorMonitor",
+    "Inspectorv2CodeSecurityIntegration",
+    "GuarddutyCustomDetectionRuleAssociation",
+    "GreengrassSubscriptionDefinition",
+    "GreengrassResourceDefinition",
+    "GreengrassLoggerDefinition",
+    "GreengrassGroup",
+    "GreengrassFunctionDefinition",
+    "GreengrassDeviceDefinition",
+    "GreengrassCoreDefinition",
+    "GreengrassConnectorDefinition",
+    "GlueSchema",
+    "GlueRegistry",
+    "FmsPolicy",
+    "EventsEndpoint",
+    "ElasticacheUserGroup",
+    "ElasticacheUser",
+    "ElasticacheServerlessCache",
+    "ElasticacheReplicationGroup",
+    "ElasticacheGlobalReplicationGroup",
+    "EmrserverlessApplication",
+    "EmrcontainersVirtualCluster",
+    "EcsGateway",
+    "EcsDaemonTaskDefinition",
     "Ec2VerifiedAccessGroup",
     "Ec2TransitGatewayMulticastDomain",
     "Ec2PlacementGroup",

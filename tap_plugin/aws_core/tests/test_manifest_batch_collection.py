@@ -1296,6 +1296,174 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'VerifiedAccessGroupArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
         {},
     ),
+    "aws_core__aws_ecs_daemon_task_definition": (
+        {'arn': 'arn:aws:ecs:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ecs_gateway": (
+        {'gatewayArn': 'arn:aws:ecs:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_emrcontainers_virtual_cluster": (
+        {'arn': 'arn:aws:emr-containers:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_emrserverless_application": (
+        {'arn': 'arn:aws:emr-serverless:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_global_replication_group": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_elasticache_replication_group": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_elasticache_serverless_cache": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'ServerlessCacheName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_user": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'UserName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_user_group": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_events_endpoint": (
+        {'Arn': 'arn:aws:events:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fms_policy": (
+        {'PolicyArn': 'arn:aws:fms:us-east-1:123456789012:res/gen-1', 'PolicyName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_registry": (
+        {'RegistryArn': 'arn:aws:glue:us-east-1:123456789012:res/gen-1', 'RegistryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_schema": (
+        {'SchemaArn': 'arn:aws:glue:us-east-1:123456789012:res/gen-1', 'SchemaName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_connector_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_core_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_device_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_function_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_group": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_logger_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_resource_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrass_subscription_definition": (
+        {'Arn': 'arn:aws:greengrass:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_guardduty_custom_detection_rule_association": (
+        {'Arn': 'arn:aws:guardduty:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_inspectorv2_code_security_integration": (
+        {'integrationArn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_internetmonitor_monitor": (
+        {'MonitorArn': 'arn:aws:internetmonitor:us-east-1:123456789012:res/gen-1', 'MonitorName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_authorizer": (
+        {'authorizerArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'authorizerName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_billing_group": (
+        {'groupArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'groupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_ca_certificate": (
+        {'certificateArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iot_certificate": (
+        {'certificateArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iot_certificate_provider": (
+        {'certificateProviderArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'certificateProviderName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_command": (
+        {'commandArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_domain_configuration": (
+        {'domainConfigurationArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'domainConfigurationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_fleet_metric": (
+        {'metricArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'metricName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_job_template": (
+        {'jobTemplateArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iot_mitigation_action": (
+        {'actionArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'actionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_policy": (
+        {'policyArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'policyName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_provisioning_template": (
+        {'templateArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'templateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_scheduled_audit": (
+        {'scheduledAuditArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'scheduledAuditName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_security_profile": (
+        {'arn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_stream": (
+        {'streamArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iot_thing_group": (
+        {'groupArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'groupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_thing_type": (
+        {'thingTypeArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'thingTypeName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iot_topic_rule": (
+        {'ruleArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'ruleName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
