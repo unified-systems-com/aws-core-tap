@@ -1388,6 +1388,31 @@
         "AWS::Logs::SubscriptionFilter"
       ]
     },
+    "aws_core__aws_m2_application": {
+      "cfn": [
+        "AWS::M2::Application"
+      ]
+    },
+    "aws_core__aws_m2_environment": {
+      "cfn": [
+        "AWS::M2::Environment"
+      ]
+    },
+    "aws_core__aws_memorydb_snapshot": {
+      "cfn": [
+        "AWS::MemoryDB::Snapshot"
+      ]
+    },
+    "aws_core__aws_msk_configuration": {
+      "cfn": [
+        "AWS::MSK::Configuration"
+      ]
+    },
+    "aws_core__aws_msk_replicator": {
+      "cfn": [
+        "AWS::MSK::Replicator"
+      ]
+    },
     "aws_core__aws_nat_gateway": {
       "cfn": [
         "AWS::EC2::NatGateway"
@@ -1401,6 +1426,26 @@
     "aws_core__aws_network_firewall": {
       "cfn": [
         "AWS::NetworkFirewall::Firewall"
+      ]
+    },
+    "aws_core__aws_networkfirewall_vpc_endpoint_association": {
+      "cfn": [
+        "AWS::NetworkFirewall::VpcEndpointAssociation"
+      ]
+    },
+    "aws_core__aws_notifications_notification_configuration": {
+      "cfn": [
+        "AWS::Notifications::NotificationConfiguration"
+      ]
+    },
+    "aws_core__aws_oam_link": {
+      "cfn": [
+        "AWS::Oam::Link"
+      ]
+    },
+    "aws_core__aws_oam_sink": {
+      "cfn": [
+        "AWS::Oam::Sink"
       ]
     },
     "aws_core__aws_organization": {
@@ -1418,15 +1463,40 @@
         "AWS::Organizations::Policy"
       ]
     },
+    "aws_core__aws_osis_pipeline": {
+      "cfn": [
+        "AWS::OSIS::Pipeline"
+      ]
+    },
+    "aws_core__aws_outposts_outpost": {
+      "cfn": [
+        "AWS::Outposts::Outpost"
+      ]
+    },
+    "aws_core__aws_outposts_site": {
+      "cfn": [
+        "AWS::Outposts::Site"
+      ]
+    },
     "aws_core__aws_policy_statement": {
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
+    },
+    "aws_core__aws_ram_permission": {
+      "cfn": [
+        "AWS::RAM::Permission"
+      ]
     },
     "aws_core__aws_rds_db_cluster": {
       "cfn": [
         "AWS::RDS::DBCluster",
         "AWS::DocDB::DBCluster",
         "AWS::Neptune::DBCluster"
+      ]
+    },
+    "aws_core__aws_rds_db_cluster_endpoint": {
+      "cfn": [
+        "AWS::RDS::DBClusterEndpoint"
       ]
     },
     "aws_core__aws_rds_db_cluster_parameter_group": {
@@ -1476,14 +1546,59 @@
         "AWS::Neptune::DBInstance"
       ]
     },
+    "aws_core__aws_rds_integration": {
+      "cfn": [
+        "AWS::RDS::Integration"
+      ]
+    },
     "aws_core__aws_rds_option_group": {
       "cfn": [
         "AWS::RDS::OptionGroup"
       ]
     },
+    "aws_core__aws_redshift_integration": {
+      "cfn": [
+        "AWS::Redshift::Integration"
+      ]
+    },
+    "aws_core__aws_redshift_redshift_idc_application": {
+      "cfn": [
+        "AWS::Redshift::RedshiftIdcApplication"
+      ]
+    },
     "aws_core__aws_region": {
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; regions are not a CloudFormation resource."
+    },
+    "aws_core__aws_resiliencehub_app": {
+      "cfn": [
+        "AWS::ResilienceHub::App"
+      ]
+    },
+    "aws_core__aws_resiliencehubv2_policy": {
+      "cfn": [
+        "AWS::ResilienceHubV2::Policy"
+      ]
+    },
+    "aws_core__aws_resiliencehubv2_service": {
+      "cfn": [
+        "AWS::ResilienceHubV2::Service"
+      ]
+    },
+    "aws_core__aws_resiliencehubv2_system": {
+      "cfn": [
+        "AWS::ResilienceHubV2::System"
+      ]
+    },
+    "aws_core__aws_resourceexplorer2_index": {
+      "cfn": [
+        "AWS::ResourceExplorer2::Index"
+      ]
+    },
+    "aws_core__aws_resourcegroups_tag_sync_task": {
+      "cfn": [
+        "AWS::ResourceGroups::TagSyncTask"
+      ]
     },
     "aws_core__aws_route53_resolver_firewall_rule_group": {
       "cfn": [
@@ -1655,6 +1770,16 @@
         "AWS::SecurityHub::AutomationRule"
       ]
     },
+    "aws_core__aws_securityhub_configuration_policy": {
+      "cfn": [
+        "AWS::SecurityHub::ConfigurationPolicy"
+      ]
+    },
+    "aws_core__aws_securityhub_connector": {
+      "cfn": [
+        "AWS::SecurityHub::Connector"
+      ]
+    },
     "aws_core__aws_securityhub_finding": {
       "cfn": [],
       "reason": "A finding Security Hub reports; no CloudFormation resource type."
@@ -1679,9 +1804,19 @@
         "AWS::SecurityHub::Standard"
       ]
     },
+    "aws_core__aws_securitylake_subscriber": {
+      "cfn": [
+        "AWS::SecurityLake::Subscriber"
+      ]
+    },
     "aws_core__aws_service_control_policy": {
       "cfn": [
         "AWS::Organizations::Policy"
+      ]
+    },
+    "aws_core__aws_signer_signing_profile": {
+      "cfn": [
+        "AWS::Signer::SigningProfile"
       ]
     },
     "aws_core__aws_sns_subscription": {
@@ -1704,6 +1839,21 @@
         "AWS::SSM::Parameter"
       ]
     },
+    "aws_core__aws_storagegateway_tape": {
+      "cfn": [
+        "AWS::StorageGateway::Tape"
+      ]
+    },
+    "aws_core__aws_storagegateway_tape_pool": {
+      "cfn": [
+        "AWS::StorageGateway::TapePool"
+      ]
+    },
+    "aws_core__aws_storagegateway_volume": {
+      "cfn": [
+        "AWS::StorageGateway::Volume"
+      ]
+    },
     "aws_core__aws_subnet": {
       "cfn": [
         "AWS::EC2::Subnet"
@@ -1718,6 +1868,21 @@
         "AWS::ElasticLoadBalancingV2::TargetGroup"
       ]
     },
+    "aws_core__aws_timestream_scheduled_query": {
+      "cfn": [
+        "AWS::Timestream::ScheduledQuery"
+      ]
+    },
+    "aws_core__aws_transfer_server": {
+      "cfn": [
+        "AWS::Transfer::Server"
+      ]
+    },
+    "aws_core__aws_transfer_web_app": {
+      "cfn": [
+        "AWS::Transfer::WebApp"
+      ]
+    },
     "aws_core__aws_transit_gateway": {
       "cfn": [
         "AWS::EC2::TransitGateway"
@@ -1726,6 +1891,16 @@
     "aws_core__aws_transit_gateway_attachment": {
       "cfn": [
         "AWS::EC2::TransitGatewayAttachment"
+      ]
+    },
+    "aws_core__aws_translate_parallel_data": {
+      "cfn": [
+        "AWS::Translate::ParallelData"
+      ]
+    },
+    "aws_core__aws_translate_terminology": {
+      "cfn": [
+        "AWS::Translate::Terminology"
       ]
     },
     "aws_core__aws_vpc": {

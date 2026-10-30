@@ -861,8 +861,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_ec2_ipam_external_resource_verification_token": (
-        {'IpamExternalResource' 'VerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ipam-token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {},
+        {'TokenName': 'gen-1', 'IpamExternalResource' 'VerificationTokenArn': 'arn:aws:ec2:us-east-1:123456789012:ipam-token/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_ipam_internet_registry_association": (
         {'IpamInternetRegistryAssociationArn': 'arn:aws:ec2:us-east-1:123456789012:ec2_ipam_internet_registry_association/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
@@ -953,11 +953,151 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_logs_log_anomaly_detector": (
-        {'anomalyDetectorArn': 'arn:aws:logs:us-east-1:123456789012:logs_log_anomaly_detector/gen-1'},
-        {},
+        {'detectorName': 'gen-1', 'anomalyDetectorArn': 'arn:aws:logs:us-east-1:123456789012:logs_log_anomaly_detector/gen-1'},
+        {'name': 'gen-1'},
     ),
     "aws_core__aws_logs_scheduled_query": (
         {'scheduledQueryArn': 'arn:aws:logs:us-east-1:123456789012:logs_scheduled_query/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_m2_application": (
+        {'applicationArn': 'arn:aws:m2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_m2_environment": (
+        {'environmentArn': 'arn:aws:m2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_msk_configuration": (
+        {'Arn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_msk_replicator": (
+        {'ReplicatorArn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1', 'ReplicatorName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_snapshot": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_vpc_endpoint_association": (
+        {'VpcEndpointAssociationArn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_notifications_notification_configuration": (
+        {'arn': 'arn:aws:notifications:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_osis_pipeline": (
+        {'PipelineArn': 'arn:aws:osis:us-east-1:123456789012:res/gen-1', 'PipelineName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_oam_link": (
+        {'Arn': 'arn:aws:oam:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_oam_sink": (
+        {'Arn': 'arn:aws:oam:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_outposts_outpost": (
+        {'OutpostArn': 'arn:aws:outposts:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_outposts_site": (
+        {'SiteArn': 'arn:aws:outposts:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ram_permission": (
+        {'arn': 'arn:aws:ram:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rds_db_cluster_endpoint": (
+        {'DBClusterEndpointArn': 'arn:aws:rds:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_rds_integration": (
+        {'IntegrationArn': 'arn:aws:rds:us-east-1:123456789012:res/gen-1', 'IntegrationName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_integration": (
+        {'IntegrationArn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'IntegrationName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_redshift_idc_application": (
+        {'RedshiftIdcApplicationArn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'RedshiftIdcApplicationName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehub_app": (
+        {'appArn': 'arn:aws:resiliencehub:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehubv2_policy": (
+        {'policyArn': 'arn:aws:resiliencehubv2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehubv2_service": (
+        {'serviceArn': 'arn:aws:resiliencehubv2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehubv2_system": (
+        {'systemArn': 'arn:aws:resiliencehubv2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resourceexplorer2_index": (
+        {'Arn': 'arn:aws:resource-explorer-2:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_resourcegroups_tag_sync_task": (
+        {'TaskArn': 'arn:aws:resource-groups:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_securityhub_configuration_policy": (
+        {'Arn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_connector": (
+        {'ConnectorArn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securitylake_subscriber": (
+        {'subscriberArn': 'arn:aws:securitylake:us-east-1:123456789012:res/gen-1', 'subscriberName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_signer_signing_profile": (
+        {'profileName': 'gen-1', 'arn': 'arn:aws:signer:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_storagegateway_tape": (
+        {'TapeARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_storagegateway_tape_pool": (
+        {'PoolName': 'gen-1', 'PoolARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_storagegateway_volume": (
+        {'VolumeARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_timestream_scheduled_query": (
+        {'Arn': 'arn:aws:timestream-query:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_transfer_server": (
+        {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_transfer_web_app": (
+        {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_translate_parallel_data": (
+        {'Arn': 'arn:aws:translate:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_translate_terminology": (
+        {'Arn': 'arn:aws:translate:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_vpc_endpoint": (

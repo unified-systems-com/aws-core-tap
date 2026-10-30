@@ -236,8 +236,78 @@ from tap_plugin.aws_core.models.licensemanager_license_asset_group import Licens
 from tap_plugin.aws_core.models.licensemanager_license_configuration import LicensemanagerLicenseConfiguration
 from tap_plugin.aws_core.models.logs_log_anomaly_detector import LogsLogAnomalyDetector
 from tap_plugin.aws_core.models.logs_scheduled_query import LogsScheduledQuery
+from tap_plugin.aws_core.models.m2_application import M2Application
+from tap_plugin.aws_core.models.m2_environment import M2Environment
+from tap_plugin.aws_core.models.msk_configuration import MskConfiguration
+from tap_plugin.aws_core.models.msk_replicator import MskReplicator
+from tap_plugin.aws_core.models.memorydb_snapshot import MemorydbSnapshot
+from tap_plugin.aws_core.models.networkfirewall_vpc_endpoint_association import NetworkfirewallVpcEndpointAssociation
+from tap_plugin.aws_core.models.notifications_notification_configuration import NotificationsNotificationConfiguration
+from tap_plugin.aws_core.models.osis_pipeline import OsisPipeline
+from tap_plugin.aws_core.models.oam_link import OamLink
+from tap_plugin.aws_core.models.oam_sink import OamSink
+from tap_plugin.aws_core.models.outposts_outpost import OutpostsOutpost
+from tap_plugin.aws_core.models.outposts_site import OutpostsSite
+from tap_plugin.aws_core.models.ram_permission import RamPermission
+from tap_plugin.aws_core.models.rds_db_cluster_endpoint import RdsDbClusterEndpoint
+from tap_plugin.aws_core.models.rds_integration import RdsIntegration
+from tap_plugin.aws_core.models.redshift_integration import RedshiftIntegration
+from tap_plugin.aws_core.models.redshift_redshift_idc_application import RedshiftRedshiftIdcApplication
+from tap_plugin.aws_core.models.resiliencehub_app import ResiliencehubApp
+from tap_plugin.aws_core.models.resiliencehubv2_policy import Resiliencehubv2Policy
+from tap_plugin.aws_core.models.resiliencehubv2_service import Resiliencehubv2Service
+from tap_plugin.aws_core.models.resiliencehubv2_system import Resiliencehubv2System
+from tap_plugin.aws_core.models.resourceexplorer2_index import Resourceexplorer2Index
+from tap_plugin.aws_core.models.resourcegroups_tag_sync_task import ResourcegroupsTagSyncTask
+from tap_plugin.aws_core.models.securityhub_configuration_policy import SecurityhubConfigurationPolicy
+from tap_plugin.aws_core.models.securityhub_connector import SecurityhubConnector
+from tap_plugin.aws_core.models.securitylake_subscriber import SecuritylakeSubscriber
+from tap_plugin.aws_core.models.signer_signing_profile import SignerSigningProfile
+from tap_plugin.aws_core.models.storagegateway_tape import StoragegatewayTape
+from tap_plugin.aws_core.models.storagegateway_tape_pool import StoragegatewayTapePool
+from tap_plugin.aws_core.models.storagegateway_volume import StoragegatewayVolume
+from tap_plugin.aws_core.models.timestream_scheduled_query import TimestreamScheduledQuery
+from tap_plugin.aws_core.models.transfer_server import TransferServer
+from tap_plugin.aws_core.models.transfer_web_app import TransferWebApp
+from tap_plugin.aws_core.models.translate_parallel_data import TranslateParallelData
+from tap_plugin.aws_core.models.translate_terminology import TranslateTerminology
 
 __all__ = [
+    "TranslateTerminology",
+    "TranslateParallelData",
+    "TransferWebApp",
+    "TransferServer",
+    "TimestreamScheduledQuery",
+    "StoragegatewayVolume",
+    "StoragegatewayTapePool",
+    "StoragegatewayTape",
+    "SignerSigningProfile",
+    "SecuritylakeSubscriber",
+    "SecurityhubConnector",
+    "SecurityhubConfigurationPolicy",
+    "ResourcegroupsTagSyncTask",
+    "Resourceexplorer2Index",
+    "Resiliencehubv2System",
+    "Resiliencehubv2Service",
+    "Resiliencehubv2Policy",
+    "ResiliencehubApp",
+    "RedshiftRedshiftIdcApplication",
+    "RedshiftIntegration",
+    "RdsIntegration",
+    "RdsDbClusterEndpoint",
+    "RamPermission",
+    "OutpostsSite",
+    "OutpostsOutpost",
+    "OamSink",
+    "OamLink",
+    "OsisPipeline",
+    "NotificationsNotificationConfiguration",
+    "NetworkfirewallVpcEndpointAssociation",
+    "MemorydbSnapshot",
+    "MskReplicator",
+    "MskConfiguration",
+    "M2Environment",
+    "M2Application",
     "LogsScheduledQuery",
     "LogsLogAnomalyDetector",
     "LicensemanagerLicenseConfiguration",
