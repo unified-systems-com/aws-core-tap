@@ -680,9 +680,29 @@
         "AWS::CloudTrail::Trail"
       ]
     },
+    "aws_core__aws_cloudwatch_alarm": {
+      "cfn": [
+        "AWS::CloudWatch::Alarm"
+      ]
+    },
+    "aws_core__aws_cloudwatch_composite_alarm": {
+      "cfn": [
+        "AWS::CloudWatch::CompositeAlarm"
+      ]
+    },
+    "aws_core__aws_cloudwatch_dashboard": {
+      "cfn": [
+        "AWS::CloudWatch::Dashboard"
+      ]
+    },
     "aws_core__aws_cloudwatch_log_group": {
       "cfn": [
         "AWS::Logs::LogGroup"
+      ]
+    },
+    "aws_core__aws_cloudwatch_metric_stream": {
+      "cfn": [
+        "AWS::CloudWatch::MetricStream"
       ]
     },
     "aws_core__aws_codebuild_project": {
@@ -1079,6 +1099,36 @@
         "AWS::Lambda::LayerVersion"
       ]
     },
+    "aws_core__aws_logs_delivery": {
+      "cfn": [
+        "AWS::Logs::Delivery"
+      ]
+    },
+    "aws_core__aws_logs_delivery_destination": {
+      "cfn": [
+        "AWS::Logs::DeliveryDestination"
+      ]
+    },
+    "aws_core__aws_logs_delivery_source": {
+      "cfn": [
+        "AWS::Logs::DeliverySource"
+      ]
+    },
+    "aws_core__aws_logs_destination": {
+      "cfn": [
+        "AWS::Logs::Destination"
+      ]
+    },
+    "aws_core__aws_logs_metric_filter": {
+      "cfn": [
+        "AWS::Logs::MetricFilter"
+      ]
+    },
+    "aws_core__aws_logs_subscription_filter": {
+      "cfn": [
+        "AWS::Logs::SubscriptionFilter"
+      ]
+    },
     "aws_core__aws_nat_gateway": {
       "cfn": [
         "AWS::EC2::NatGateway"
@@ -1162,13 +1212,33 @@
         "AWS::EC2::SecurityGroup"
       ]
     },
+    "aws_core__aws_securityhub_action_target": {
+      "cfn": [
+        "AWS::SecurityHub::ActionTarget"
+      ]
+    },
+    "aws_core__aws_securityhub_automation_rule": {
+      "cfn": [
+        "AWS::SecurityHub::AutomationRule"
+      ]
+    },
     "aws_core__aws_securityhub_finding": {
       "cfn": [],
       "reason": "A finding Security Hub reports; no CloudFormation resource type."
     },
+    "aws_core__aws_securityhub_finding_aggregator": {
+      "cfn": [
+        "AWS::SecurityHub::FindingAggregator"
+      ]
+    },
     "aws_core__aws_securityhub_hub": {
       "cfn": [
         "AWS::SecurityHub::Hub"
+      ]
+    },
+    "aws_core__aws_securityhub_insight": {
+      "cfn": [
+        "AWS::SecurityHub::Insight"
       ]
     },
     "aws_core__aws_securityhub_standards_subscription": {

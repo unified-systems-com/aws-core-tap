@@ -1,0 +1,18 @@
+{
+  "slug": "FILTERS_LOG_GROUP__aws_core",
+  "name": "Filters Log Group",
+  "description": "A CloudWatch Logs metric filter or subscription filter acts on the events of one log group (filter -> log group): the group's ARN, built from the filter's log group name and the run's partition, region and account (the form the log group node is keyed by). A reference, not containment. Emitted whether or not the log group was collected: it resolves by deterministic identity when it is.",
+  "sources": [
+    "aws_core__aws_logs_metric_filter",
+    "aws_core__aws_logs_subscription_filter"
+  ],
+  "targets": [
+    "aws_core__aws_cloudwatch_log_group"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

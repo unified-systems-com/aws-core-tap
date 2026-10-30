@@ -9,7 +9,9 @@
     "aws_core__aws_eventbridge_rule",
     "aws_core__aws_codepipeline_pipeline",
     "aws_core__aws_codebuild_project",
-    "aws_core__aws_cognito_user_pool_group"
+    "aws_core__aws_cognito_user_pool_group",
+    "aws_core__aws_logs_subscription_filter",
+    "aws_core__aws_logs_destination"
   ],
   "targets": [
     "aws_core__aws_iam_role"

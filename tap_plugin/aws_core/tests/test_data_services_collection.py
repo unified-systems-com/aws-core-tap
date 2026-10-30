@@ -847,3 +847,71 @@ class TestCognitoPoolChildren:
         client = _Client(list_identity_pools={"IdentityPools": [{"IdentityPoolId": "us-east-1:abc"}]}, describe_identity_pool=_denied("DescribeIdentityPool"))
         yielded, gap = _run_to_the_gap(cognito_identity_pools_described, "cognito-identity", client)
         assert yielded == [] and "us-east-1:abc" in gap
+
+
+class TestObservability:
+    def test_alarms_name_the_sns_topics_among_their_actions(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import cloudwatch_alarms_described, cloudwatch_composite_alarms_described
+
+        topic = "arn:aws-us-gov:sns:us-gov-west-1:1:alerts"
+        asked: list[Any] = []
+
+        def describe(AlarmTypes: list[str]) -> Any:
+            asked.append(AlarmTypes)
+            return {
+                "MetricAlarms": [{"AlarmName": "m", "AlarmArn": "arn:m", "AlarmActions": [topic, "arn:aws:autoscaling:r:1:scalingPolicy:x"], "OKActions": [topic]}],
+                "CompositeAlarms": [{"AlarmName": "c", "AlarmArn": "arn:c", "AlarmActions": [topic]}],
+            }
+
+        client = _Client(describe_alarms=describe)
+        [metric] = _run(cloudwatch_alarms_described, "cloudwatch", client)
+        [composite] = _run(cloudwatch_composite_alarms_described, "cloudwatch", client)
+        assert metric["_sns_topic_arns"] == [topic] and composite["_sns_topic_arns"] == [topic]
+        assert asked == [["MetricAlarm"], ["CompositeAlarm"]]
+
+    def test_metric_filters_are_keyed_by_group_and_name_and_point_at_the_log_group_arn(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import logs_metric_filters_described
+
+        class _Logs(_Client):
+            meta = type("Meta", (), {"region_name": "us-gov-west-1"})()
+
+        logs = _Logs(describe_metric_filters={"metricFilters": [{"filterName": "root", "logGroupName": "/aws/cloudtrail", "metricTransformations": [{"metricName": "RootUsage", "metricNamespace": "CIS"}]}, {"filterName": "orphan"}]})
+        sts = _Client(get_caller_identity={"Account": "123456789012"})
+        [item] = list(logs_metric_filters_described(None, client_for=lambda service: {"logs": logs, "sts": sts}[service]))
+        assert item["_key"] == "/aws/cloudtrail:root"
+        assert item["_log_group_arn"] == "arn:aws-us-gov:logs:us-gov-west-1:123456789012:log-group:/aws/cloudtrail"
+        assert (item["_metric_name"], item["_metric_namespace"]) == ("RootUsage", "CIS")
+
+    def test_a_log_group_whose_subscription_filters_cannot_be_listed_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import logs_subscription_filters_described
+
+        class _Logs(_Client):
+            meta = type("Meta", (), {"region_name": "us-east-1"})()
+
+        logs = _Logs(describe_log_groups={"logGroups": [{"logGroupName": "/aws/app"}]}, describe_subscription_filters=_denied("DescribeSubscriptionFilters"))
+        sts = _Client(get_caller_identity={"Account": "123456789012"})
+        with pytest.raises(SourceError) as gap:
+            list(logs_subscription_filters_described(None, client_for=lambda service: {"logs": logs, "sts": sts}[service]))
+        assert "/aws/app" in str(gap.value)
+
+    def test_securityhub_readers_are_empty_where_it_is_not_enabled_but_fail_after_a_page(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import securityhub_insights_described
+
+        off = ClientError({"Error": {"Code": "InvalidAccessException", "Message": "not subscribed"}}, "GetInsights")
+        assert _run(securityhub_insights_described, "securityhub", _Client(get_insights=off)) == []
+        with pytest.raises(ClientError):
+            _run(securityhub_insights_described, "securityhub", _Client(get_insights=_denied("GetInsights")))
+
+    def test_automation_rules_carry_their_criteria_and_actions_from_the_batch_read(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import securityhub_automation_rules_described
+
+        client = _Client(
+            list_automation_rules={"AutomationRulesMetadata": [{"RuleArn": "arn:r1", "RuleName": "r"}]},
+            batch_get_automation_rules={"Rules": [{"RuleArn": "arn:r1", "Criteria": {"a": 1}, "Actions": [{"Type": "FINDING_FIELDS_UPDATE"}]}]},
+            list_tags_for_resource={"Tags": {"owner": "x"}},
+        )
+        [rule] = _run(securityhub_automation_rules_described, "securityhub", client)
+        assert rule["Criteria"] == {"a": 1} and rule["Actions"] == [{"Type": "FINDING_FIELDS_UPDATE"}] and rule["_tags"] == {"owner": "x"}
+        failed = _Client(list_automation_rules={"AutomationRulesMetadata": [{"RuleArn": "arn:r1"}]}, batch_get_automation_rules=_denied("BatchGetAutomationRules"), list_tags_for_resource=_denied("ListTagsForResource"))
+        [bare] = _run(securityhub_automation_rules_described, "securityhub", failed)
+        assert (bare["Criteria"], bare["_tags_unread"]) == (None, True)
