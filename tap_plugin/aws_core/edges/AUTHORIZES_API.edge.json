@@ -1,0 +1,18 @@
+{
+  "slug": "AUTHORIZES_API__aws_core",
+  "name": "Authorizes API",
+  "description": "An API Gateway authorizer decides who may call an API (authorizer -> API): the REST API or HTTP/WebSocket API it belongs to, named by that API's ARN. A reference, not containment.",
+  "sources": [
+    "aws_core__aws_apigateway_authorizer"
+  ],
+  "targets": [
+    "aws_core__aws_apigateway_rest_api",
+    "aws_core__aws_apigateway_http_api"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

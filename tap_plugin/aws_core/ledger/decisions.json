@@ -622,9 +622,53 @@
         "AWS::ElasticLoadBalancingV2::LoadBalancer"
       ]
     },
+    "aws_core__aws_apigateway_api_key": {
+      "cfn": [
+        "AWS::ApiGateway::ApiKey"
+      ]
+    },
+    "aws_core__aws_apigateway_authorizer": {
+      "cfn": [
+        "AWS::ApiGateway::Authorizer",
+        "AWS::ApiGatewayV2::Authorizer"
+      ]
+    },
+    "aws_core__aws_apigateway_client_certificate": {
+      "cfn": [
+        "AWS::ApiGateway::ClientCertificate"
+      ]
+    },
+    "aws_core__aws_apigateway_domain_name": {
+      "cfn": [
+        "AWS::ApiGateway::DomainName",
+        "AWS::ApiGatewayV2::DomainName"
+      ]
+    },
     "aws_core__aws_apigateway_http_api": {
       "cfn": [
         "AWS::ApiGatewayV2::Api"
+      ]
+    },
+    "aws_core__aws_apigateway_rest_api": {
+      "cfn": [
+        "AWS::ApiGateway::RestApi"
+      ]
+    },
+    "aws_core__aws_apigateway_stage": {
+      "cfn": [
+        "AWS::ApiGateway::Stage",
+        "AWS::ApiGatewayV2::Stage"
+      ]
+    },
+    "aws_core__aws_apigateway_usage_plan": {
+      "cfn": [
+        "AWS::ApiGateway::UsagePlan"
+      ]
+    },
+    "aws_core__aws_apigateway_vpc_link": {
+      "cfn": [
+        "AWS::ApiGateway::VpcLink",
+        "AWS::ApiGatewayV2::VpcLink"
       ]
     },
     "aws_core__aws_az": {

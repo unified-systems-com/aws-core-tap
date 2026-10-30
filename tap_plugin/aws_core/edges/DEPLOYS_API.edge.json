@@ -1,0 +1,18 @@
+{
+  "slug": "DEPLOYS_API__aws_core",
+  "name": "Deploys API",
+  "description": "An API Gateway stage is a deployment of one API (stage -> API): the REST API or HTTP/WebSocket API the stage belongs to, named by that API's ARN. A reference, not containment. Emitted whether or not the API was collected: it resolves by deterministic identity (the API ARN) when it is.",
+  "sources": [
+    "aws_core__aws_apigateway_stage"
+  ],
+  "targets": [
+    "aws_core__aws_apigateway_rest_api",
+    "aws_core__aws_apigateway_http_api"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
