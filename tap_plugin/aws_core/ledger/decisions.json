@@ -1207,9 +1207,68 @@
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
     },
+    "aws_core__aws_rds_db_cluster": {
+      "cfn": [
+        "AWS::RDS::DBCluster",
+        "AWS::DocDB::DBCluster",
+        "AWS::Neptune::DBCluster"
+      ]
+    },
+    "aws_core__aws_rds_db_cluster_parameter_group": {
+      "cfn": [
+        "AWS::RDS::DBClusterParameterGroup",
+        "AWS::DocDB::DBClusterParameterGroup",
+        "AWS::Neptune::DBClusterParameterGroup"
+      ]
+    },
+    "aws_core__aws_rds_db_cluster_snapshot": {
+      "cfn": [],
+      "reason": "A snapshot is created by the service or by an API call, not by a template: CloudFormation has no DB cluster snapshot resource type (no AWS::RDS::DBClusterSnapshot in the schema bundle). Collected from DescribeDBClusterSnapshots."
+    },
+    "aws_core__aws_rds_db_parameter_group": {
+      "cfn": [
+        "AWS::RDS::DBParameterGroup",
+        "AWS::Neptune::DBParameterGroup"
+      ]
+    },
+    "aws_core__aws_rds_db_proxy": {
+      "cfn": [
+        "AWS::RDS::DBProxy"
+      ]
+    },
+    "aws_core__aws_rds_db_snapshot": {
+      "cfn": [
+        "AWS::RDS::DBSnapshot"
+      ]
+    },
+    "aws_core__aws_rds_db_subnet_group": {
+      "cfn": [
+        "AWS::RDS::DBSubnetGroup",
+        "AWS::DocDB::DBSubnetGroup",
+        "AWS::Neptune::DBSubnetGroup"
+      ]
+    },
+    "aws_core__aws_rds_event_subscription": {
+      "cfn": [
+        "AWS::RDS::EventSubscription"
+      ]
+    },
+    "aws_core__aws_rds_global_cluster": {
+      "cfn": [
+        "AWS::RDS::GlobalCluster",
+        "AWS::Neptune::GlobalCluster"
+      ]
+    },
     "aws_core__aws_rds_instance": {
       "cfn": [
-        "AWS::RDS::DBInstance"
+        "AWS::RDS::DBInstance",
+        "AWS::DocDB::DBInstance",
+        "AWS::Neptune::DBInstance"
+      ]
+    },
+    "aws_core__aws_rds_option_group": {
+      "cfn": [
+        "AWS::RDS::OptionGroup"
       ]
     },
     "aws_core__aws_region": {

@@ -6715,6 +6715,569 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_cluster",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDBClusters"
+      },
+      "why": "Enumerate DB clusters (Aurora, Multi-AZ, DocumentDB, Neptune) — the clustered databases of the account and the facts that decide their exposure.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDBClusters returns PendingModifiedValues.MasterUserPassword verbatim, and a queued master-password change is a credential. The exposure facts (public access, encryption, backups, deletion protection, IAM authentication), tags and the key edge are typed fields or derived from the item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBClusters output shape, 2026-10-29. botocore marks PendingModifiedValues.MasterUserPassword sensitive: a requested change of the master password, returned verbatim.",
+        "locations": [
+          {
+            "path": "PendingModifiedValues.MasterUserPassword",
+            "category": "credential",
+            "reason": "A queued change of the master user password, returned in plain text while the change is pending.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "MasterUsername",
+            "category": "personal_data",
+            "reason": "The master user name is operator-chosen and can be a person's name or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "TagList",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DBClusters[]",
+      "natural_key": "DBClusterArn",
+      "fields": {
+        "name": "DBClusterIdentifier",
+        "db_cluster_arn": "DBClusterArn",
+        "engine": "Engine",
+        "engine_version": "EngineVersion",
+        "engine_mode": "EngineMode",
+        "status": "Status",
+        "storage_encrypted": "StorageEncrypted",
+        "iam_database_auth_enabled": "IAMDatabaseAuthenticationEnabled",
+        "deletion_protection": "DeletionProtection",
+        "publicly_accessible": "PubliclyAccessible",
+        "backup_retention_days": "BackupRetentionPeriod",
+        "multi_az": "MultiAZ",
+        "global_cluster_identifier": "GlobalClusterIdentifier"
+      },
+      "tags": {
+        "source": "field",
+        "from": "TagList",
+        "shape": "list_kv",
+        "why": "The Describe answer carries the TagList inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "KmsKeyId",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_snapshot",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "rds_db_snapshots_described"
+      },
+      "why": "Enumerate DB snapshots — copies of databases kept outside the instance, and whether any manual snapshot is shared with everyone.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDBSnapshots returns MasterUsername, an operator-chosen name that can be a person's, and the snapshot is a copy of a database. Identity, engine, type, status, encryption, public sharing, tags and the key edge are typed fields or derived from the item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBSnapshots and DescribeDBSnapshotAttributes output shapes and custom_fn rds_db_snapshots_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "MasterUsername",
+            "category": "personal_data",
+            "reason": "The master user name is operator-chosen and can be a person's name or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "TagList",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "DBSnapshotArn",
+      "fields": {
+        "name": "DBSnapshotIdentifier",
+        "db_snapshot_arn": "DBSnapshotArn",
+        "db_instance_identifier": "DBInstanceIdentifier",
+        "engine": "Engine",
+        "snapshot_type": "SnapshotType",
+        "status": "Status",
+        "encrypted": "Encrypted",
+        "is_public": "_is_public",
+        "created_at": "_created_at"
+      },
+      "tags": {
+        "source": "field",
+        "from": "TagList",
+        "shape": "list_kv",
+        "why": "The Describe answer carries the TagList inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "KmsKeyId",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_cluster_snapshot",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "rds_db_cluster_snapshots_described"
+      },
+      "why": "Enumerate DB cluster snapshots — copies of clustered databases, and whether any manual snapshot is shared with everyone.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDBClusterSnapshots returns MasterUsername, an operator-chosen name that can be a person's, and the snapshot is a copy of a database. Identity, engine, type, status, encryption, public sharing, tags and the key edge are typed fields or derived from the item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBClusterSnapshots and DescribeDBClusterSnapshotAttributes output shapes and custom_fn rds_db_cluster_snapshots_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "MasterUsername",
+            "category": "personal_data",
+            "reason": "The master user name is operator-chosen and can be a person's name or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "TagList",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "DBClusterSnapshotArn",
+      "fields": {
+        "name": "DBClusterSnapshotIdentifier",
+        "db_cluster_snapshot_arn": "DBClusterSnapshotArn",
+        "db_cluster_identifier": "DBClusterIdentifier",
+        "engine": "Engine",
+        "snapshot_type": "SnapshotType",
+        "status": "Status",
+        "storage_encrypted": "StorageEncrypted",
+        "is_public": "_is_public",
+        "created_at": "_created_at"
+      },
+      "tags": {
+        "source": "field",
+        "from": "TagList",
+        "shape": "list_kv",
+        "why": "The Describe answer carries the TagList inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "KmsKeyId",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_subnet_group",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDBSubnetGroups"
+      },
+      "why": "Enumerate DB subnet groups — the subnets databases may be placed in, and so how reachable they can be.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBSubnetGroups and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "DBSubnetGroupDescription",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DBSubnetGroups[]",
+      "natural_key": "DBSubnetGroupArn",
+      "fields": {
+        "name": "DBSubnetGroupName",
+        "db_subnet_group_arn": "DBSubnetGroupArn",
+        "vpc_id": "VpcId",
+        "status": "SubnetGroupStatus",
+        "subnet_ids": "Subnets[].SubnetIdentifier"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceName": {
+            "from": "DBSubnetGroupArn"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "Subnets[].SubnetIdentifier",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_parameter_group",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDBParameterGroups"
+      },
+      "why": "Enumerate DB parameter groups — the named sets of engine settings instances run with.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBParameterGroups and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member. The parameters (DescribeDBParameters) are not requested.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DBParameterGroups[]",
+      "natural_key": "DBParameterGroupArn",
+      "fields": {
+        "name": "DBParameterGroupName",
+        "db_parameter_group_arn": "DBParameterGroupArn",
+        "family": "DBParameterGroupFamily"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceName": {
+            "from": "DBParameterGroupArn"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_cluster_parameter_group",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDBClusterParameterGroups"
+      },
+      "why": "Enumerate DB cluster parameter groups — the cluster-wide engine settings (TLS, audit logging) clusters run with.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBClusterParameterGroups and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member. The parameters are not requested.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DBClusterParameterGroups[]",
+      "natural_key": "DBClusterParameterGroupArn",
+      "fields": {
+        "name": "DBClusterParameterGroupName",
+        "db_cluster_parameter_group_arn": "DBClusterParameterGroupArn",
+        "family": "DBParameterGroupFamily"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceName": {
+            "from": "DBClusterParameterGroupArn"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_rds_option_group",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeOptionGroups"
+      },
+      "why": "Enumerate RDS option groups — the optional engine features (TDE, native backup, SSL) enabled on instances.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeOptionGroups and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Options[].OptionSettings",
+            "category": "customer_content",
+            "reason": "Operator-set option settings (values can name buckets, roles and ports).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "OptionGroupDescription",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "OptionGroupsList[]",
+      "natural_key": "OptionGroupArn",
+      "fields": {
+        "name": "OptionGroupName",
+        "option_group_arn": "OptionGroupArn",
+        "engine_name": "EngineName",
+        "major_engine_version": "MajorEngineVersion"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceName": {
+            "from": "OptionGroupArn"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_rds_db_proxy",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDBProxies"
+      },
+      "why": "Enumerate RDS proxies — connection poolers in front of databases, and whether they require TLS and IAM authentication.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDBProxies returns Auth[].UserName (operator-chosen database user names, which can be personal) and the secret ARNs per user. Identity, status, engine family, VPC, TLS requirement, idle timeout, endpoint, tags and the subnet and role edges are typed fields or derived from the item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBProxies and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member. Auth entries name a Secrets Manager secret by ARN, never its value.",
+        "locations": [
+          {
+            "path": "Auth[].UserName",
+            "category": "personal_data",
+            "reason": "The database user a proxy authenticates as; operator-chosen, can be a person's name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Auth[].SecretArn",
+            "category": "other",
+            "reason": "The ARN of the secret holding the user's credentials: a reference, not the credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DBProxies[]",
+      "natural_key": "DBProxyArn",
+      "fields": {
+        "name": "DBProxyName",
+        "db_proxy_arn": "DBProxyArn",
+        "status": "Status",
+        "engine_family": "EngineFamily",
+        "vpc_id": "VpcId",
+        "require_tls": "RequireTLS",
+        "idle_client_timeout_seconds": "IdleClientTimeout",
+        "endpoint": "Endpoint"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceName": {
+            "from": "DBProxyArn"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "VpcSubnetIds[]",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "RoleArn",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_event_subscription",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeEventSubscriptions"
+      },
+      "why": "Enumerate RDS event subscriptions — where database events are sent, which is how an operator learns of a failover or a configuration change.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeEventSubscriptions and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "EventSubscriptionsList[]",
+      "natural_key": "EventSubscriptionArn",
+      "fields": {
+        "name": "CustSubscriptionId",
+        "event_subscription_arn": "EventSubscriptionArn",
+        "sns_topic_arn": "SnsTopicArn",
+        "source_type": "SourceType",
+        "enabled": "Enabled",
+        "status": "Status"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceName": {
+            "from": "EventSubscriptionArn"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "SnsTopicArn",
+          "target_type": "aws_core__aws_sns_topic",
+          "key_kind": "arn",
+          "edge_type": "NOTIFIES_ON_EVENTS__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_global_cluster",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeGlobalClusters"
+      },
+      "why": "Enumerate global clusters — databases replicated across regions, and the regional clusters that make them up.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeGlobalClusters output shape, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "TagList",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "GlobalClusters[]",
+      "natural_key": "GlobalClusterArn",
+      "fields": {
+        "name": "GlobalClusterIdentifier",
+        "global_cluster_arn": "GlobalClusterArn",
+        "engine": "Engine",
+        "engine_version": "EngineVersion",
+        "storage_encrypted": "StorageEncrypted",
+        "deletion_protection": "DeletionProtection",
+        "status": "Status"
+      },
+      "tags": {
+        "source": "field",
+        "from": "TagList",
+        "shape": "list_kv",
+        "why": "The Describe answer carries the TagList inline; no extra call."
+      }
     }
   ]
 }

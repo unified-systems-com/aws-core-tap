@@ -18,7 +18,9 @@
     "aws_core__aws_vpc_endpoint",
     "aws_core__aws_sagemaker_endpoint",
     "aws_core__aws_efs_mount_target",
-    "aws_core__aws_apigateway_vpc_link"
+    "aws_core__aws_apigateway_vpc_link",
+    "aws_core__aws_rds_db_subnet_group",
+    "aws_core__aws_rds_db_proxy"
   ],
   "targets": [
     "aws_core__aws_subnet"

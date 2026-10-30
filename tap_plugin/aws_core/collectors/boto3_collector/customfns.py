@@ -2584,6 +2584,42 @@ def apigateway_client_certificates_described(session: Any, *, client_for: Any) -
         yield {**cert, "_expiration": jsonable(expires) if expires else None}
 
 
+def _rds_snapshots(
+    client_for: Any, list_method: str, list_key: str, arn_key: str, attrs_method: str, attrs_param: str, id_key: str, attrs_key: str
+) -> Iterator[dict[str, Any]]:
+    """RDS snapshots (instance or cluster) and whether each is shared with everyone.
+
+    A manual snapshot is public when its ``restore`` attribute lists ``all``; the attribute call is made for
+    manual snapshots only (an automated snapshot cannot be shared, so it is not public), and ``_is_public`` is
+    ``None`` when that call did not answer. ``_created_at`` is the snapshot time as ISO 8601 UTC. The list call
+    is asked for the account's own snapshots (shared and public ones from other accounts are not included)."""
+    client = client_for("rds")
+    for page in _pages(client, list_method):
+        for snapshot in page.get(list_key, []):
+            if not snapshot.get(arn_key):
+                continue
+            is_public: bool | None = False
+            if snapshot.get("SnapshotType") == "manual":
+                try:
+                    answer = without_response_metadata(getattr(client, attrs_method)(**{attrs_param: snapshot[id_key]}))
+                    attributes = (answer.get(attrs_key) or {}).get(attrs_key.removesuffix("Result"), [])
+                    is_public = any(a.get("AttributeName") == "restore" and "all" in (a.get("AttributeValues") or []) for a in attributes)
+                except BotoCoreError, ClientError:
+                    is_public = None
+            created = snapshot.get("SnapshotCreateTime")
+            yield {**snapshot, "_is_public": is_public, "_created_at": jsonable(created) if created else None}
+
+
+def rds_db_snapshots_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate RDS DB snapshots (regional) with whether each manual snapshot is public."""
+    yield from _rds_snapshots(client_for, "describe_db_snapshots", "DBSnapshots", "DBSnapshotArn", "describe_db_snapshot_attributes", "DBSnapshotIdentifier", "DBSnapshotIdentifier", "DBSnapshotAttributesResult")
+
+
+def rds_db_cluster_snapshots_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate RDS DB cluster snapshots (regional) with whether each manual snapshot is public."""
+    yield from _rds_snapshots(client_for, "describe_db_cluster_snapshots", "DBClusterSnapshots", "DBClusterSnapshotArn", "describe_db_cluster_snapshot_attributes", "DBClusterSnapshotIdentifier", "DBClusterSnapshotIdentifier", "DBClusterSnapshotAttributesResult")
+
+
 def _undescribed(kind: str, names: list[str]) -> SourceError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
     be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
@@ -3011,6 +3047,8 @@ _CUSTOM_FNS = {
     "eks_clusters_described": eks_clusters_described,
     "dx_gateways_described": dx_gateways_described,
     "kms_aliases_described": kms_aliases_described,
+    "rds_db_snapshots_described": rds_db_snapshots_described,
+    "rds_db_cluster_snapshots_described": rds_db_cluster_snapshots_described,
     "apigateway_rest_apis_described": apigateway_rest_apis_described,
     "apigateway_stages_described": apigateway_stages_described,
     "apigateway_authorizers_described": apigateway_authorizers_described,

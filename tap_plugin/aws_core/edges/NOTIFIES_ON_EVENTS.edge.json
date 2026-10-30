@@ -1,0 +1,17 @@
+{
+  "slug": "NOTIFIES_ON_EVENTS__aws_core",
+  "name": "Notifies On Events",
+  "description": "An RDS event subscription sends database events to an SNS topic (subscription -> topic): the subscription's SnsTopicArn. A reference, not containment. Emitted whether or not the topic was collected: it resolves by deterministic identity (the topic ARN) when it is.",
+  "sources": [
+    "aws_core__aws_rds_event_subscription"
+  ],
+  "targets": [
+    "aws_core__aws_sns_topic"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

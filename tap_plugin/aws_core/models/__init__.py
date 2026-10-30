@@ -159,8 +159,28 @@ from tap_plugin.aws_core.models.apigateway_stage import ApigatewayStage
 from tap_plugin.aws_core.models.apigateway_authorizer import ApigatewayAuthorizer
 from tap_plugin.aws_core.models.apigateway_domain_name import ApigatewayDomainName
 from tap_plugin.aws_core.models.apigateway_vpc_link import ApigatewayVpcLink
+from tap_plugin.aws_core.models.rds_db_cluster import RdsDbCluster
+from tap_plugin.aws_core.models.rds_db_snapshot import RdsDbSnapshot
+from tap_plugin.aws_core.models.rds_db_cluster_snapshot import RdsDbClusterSnapshot
+from tap_plugin.aws_core.models.rds_db_subnet_group import RdsDbSubnetGroup
+from tap_plugin.aws_core.models.rds_db_parameter_group import RdsDbParameterGroup
+from tap_plugin.aws_core.models.rds_db_cluster_parameter_group import RdsDbClusterParameterGroup
+from tap_plugin.aws_core.models.rds_option_group import RdsOptionGroup
+from tap_plugin.aws_core.models.rds_db_proxy import RdsDbProxy
+from tap_plugin.aws_core.models.rds_event_subscription import RdsEventSubscription
+from tap_plugin.aws_core.models.rds_global_cluster import RdsGlobalCluster
 
 __all__ = [
+    "RdsGlobalCluster",
+    "RdsEventSubscription",
+    "RdsDbProxy",
+    "RdsOptionGroup",
+    "RdsDbClusterParameterGroup",
+    "RdsDbParameterGroup",
+    "RdsDbSubnetGroup",
+    "RdsDbClusterSnapshot",
+    "RdsDbSnapshot",
+    "RdsDbCluster",
     "ApigatewayVpcLink",
     "ApigatewayDomainName",
     "ApigatewayAuthorizer",

@@ -652,6 +652,46 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'VpcLinkId': 'vl1', '_arn': 'arn:aws:apigateway:us-east-1::/vpclinks/vl1', '_api_kind': 'http', '_name': 'to-vpc', '_tags': {'owner': 'net-team'}, '_status': 'AVAILABLE', '_target_arns': None, '_subnet_ids': ['subnet-0a1'], '_security_group_ids': ['sg-0a1']},
         {'name': 'to-vpc', 'api_kind': 'http', 'status': 'AVAILABLE', 'subnet_ids': ['subnet-0a1']},
     ),
+    "aws_core__aws_rds_db_cluster": (
+        {'DBClusterIdentifier': 'orders', 'DBClusterArn': 'arn:aws:rds:us-east-1:123456789012:cluster:orders', 'Engine': 'aurora-postgresql', 'EngineVersion': '16.4', 'EngineMode': 'provisioned', 'Status': 'available', 'StorageEncrypted': True, 'IAMDatabaseAuthenticationEnabled': True, 'DeletionProtection': True, 'PubliclyAccessible': False, 'BackupRetentionPeriod': 14, 'MultiAZ': True, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', 'PendingModifiedValues': {'MasterUserPassword': 'never-stored'}, 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'orders', 'engine': 'aurora-postgresql', 'storage_encrypted': True, 'publicly_accessible': False, 'deletion_protection': True, 'backup_retention_days': 14},
+    ),
+    "aws_core__aws_rds_db_snapshot": (
+        {'DBSnapshotIdentifier': 'pre-upgrade', 'DBSnapshotArn': 'arn:aws:rds:us-east-1:123456789012:snapshot:pre-upgrade', 'DBInstanceIdentifier': 'orders-db', 'Engine': 'postgres', 'SnapshotType': 'manual', 'Status': 'available', 'Encrypted': True, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', '_is_public': True, '_created_at': '2026-10-01T00:00:00Z', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}], 'MasterUsername': 'never-stored'},
+        {'name': 'pre-upgrade', 'snapshot_type': 'manual', 'encrypted': True, 'is_public': True, 'created_at': '2026-10-01T00:00:00Z'},
+    ),
+    "aws_core__aws_rds_db_cluster_snapshot": (
+        {'DBClusterSnapshotIdentifier': 'nightly', 'DBClusterSnapshotArn': 'arn:aws:rds:us-east-1:123456789012:cluster-snapshot:nightly', 'DBClusterIdentifier': 'orders', 'Engine': 'aurora-postgresql', 'SnapshotType': 'automated', 'Status': 'available', 'StorageEncrypted': True, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', '_is_public': False, '_created_at': '2026-10-01T00:00:00Z', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'nightly', 'snapshot_type': 'automated', 'storage_encrypted': True, 'is_public': False},
+    ),
+    "aws_core__aws_rds_db_subnet_group": (
+        {'DBSubnetGroupName': 'db-private', 'DBSubnetGroupArn': 'arn:aws:rds:us-east-1:123456789012:subgrp:db-private', 'VpcId': 'vpc-0a1', 'SubnetGroupStatus': 'Complete', 'Subnets': [{'SubnetIdentifier': 'subnet-0a1'}, {'SubnetIdentifier': 'subnet-0a2'}]},
+        {'name': 'db-private', 'vpc_id': 'vpc-0a1', 'status': 'Complete', 'subnet_ids': ['subnet-0a1', 'subnet-0a2']},
+    ),
+    "aws_core__aws_rds_db_parameter_group": (
+        {'DBParameterGroupName': 'pg16-tls', 'DBParameterGroupArn': 'arn:aws:rds:us-east-1:123456789012:pg:pg16-tls', 'DBParameterGroupFamily': 'postgres16'},
+        {'name': 'pg16-tls', 'family': 'postgres16'},
+    ),
+    "aws_core__aws_rds_db_cluster_parameter_group": (
+        {'DBClusterParameterGroupName': 'aurora-tls', 'DBClusterParameterGroupArn': 'arn:aws:rds:us-east-1:123456789012:cluster-pg:aurora-tls', 'DBParameterGroupFamily': 'aurora-postgresql16'},
+        {'name': 'aurora-tls', 'family': 'aurora-postgresql16'},
+    ),
+    "aws_core__aws_rds_option_group": (
+        {'OptionGroupName': 'oracle-backup', 'OptionGroupArn': 'arn:aws:rds:us-east-1:123456789012:og:oracle-backup', 'EngineName': 'oracle-ee', 'MajorEngineVersion': '19'},
+        {'name': 'oracle-backup', 'engine_name': 'oracle-ee', 'major_engine_version': '19'},
+    ),
+    "aws_core__aws_rds_db_proxy": (
+        {'DBProxyName': 'orders-proxy', 'DBProxyArn': 'arn:aws:rds:us-east-1:123456789012:db-proxy:prx-0a1', 'Status': 'available', 'EngineFamily': 'POSTGRESQL', 'VpcId': 'vpc-0a1', 'RequireTLS': True, 'IdleClientTimeout': 1800, 'Endpoint': 'orders-proxy.proxy-abc.us-east-1.rds.amazonaws.com', 'VpcSubnetIds': ['subnet-0a1'], 'RoleArn': 'arn:aws:iam::123456789012:role/proxy'},
+        {'name': 'orders-proxy', 'engine_family': 'POSTGRESQL', 'require_tls': True, 'idle_client_timeout_seconds': 1800},
+    ),
+    "aws_core__aws_rds_event_subscription": (
+        {'CustSubscriptionId': 'failovers', 'EventSubscriptionArn': 'arn:aws:rds:us-east-1:123456789012:es:failovers', 'SnsTopicArn': 'arn:aws:sns:us-east-1:123456789012:alerts', 'SourceType': 'db-instance', 'Enabled': True, 'Status': 'active'},
+        {'name': 'failovers', 'source_type': 'db-instance', 'enabled': True, 'status': 'active'},
+    ),
+    "aws_core__aws_rds_global_cluster": (
+        {'GlobalClusterIdentifier': 'orders-global', 'GlobalClusterArn': 'arn:aws:rds::123456789012:global-cluster:orders-global', 'Engine': 'aurora-postgresql', 'EngineVersion': '16.4', 'StorageEncrypted': True, 'DeletionProtection': True, 'Status': 'available', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'orders-global', 'engine': 'aurora-postgresql', 'storage_encrypted': True, 'deletion_protection': True},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
