@@ -47,7 +47,7 @@ class LogsSubscriptionFilter(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    filter_key = models.CharField(max_length=512, blank=True, default="")
+    filter_key = models.CharField(max_length=2048, blank=True, default="")
     # The log group the filter reads. NULL = not observed.
     log_group_name = models.CharField(max_length=512, blank=True, null=True, default=None)
     # Where events are streamed to. NULL = not observed.

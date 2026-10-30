@@ -2282,14 +2282,15 @@ _SECURITYHUB_NOT_ENABLED = frozenset({"InvalidAccessException"})
 
 def _securityhub_items(client_for: Any, method: str, list_key: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
     client = client_for("securityhub")
-    yielded = False
+    answered = False
     try:
         for page in _token_pages(client, method, _CONTINUATION, **kwargs):
-            for item in page.get(list_key, []):
-                yielded = True
-                yield item
+            answered = True
+            yield from page.get(list_key, [])
     except ClientError as exc:
-        if yielded or error_code(exc) not in _SECURITYHUB_NOT_ENABLED:
+        # 'Not enabled' is an answer to the first call; after any page has come back the same code means the
+        # listing was cut short, which must not read as a complete one.
+        if answered or error_code(exc) not in _SECURITYHUB_NOT_ENABLED:
             raise
 
 
@@ -2308,8 +2309,10 @@ def securityhub_action_targets_described(session: Any, *, client_for: Any) -> It
 def securityhub_automation_rules_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate Security Hub automation rules (regional): rules that rewrite or suppress findings as they
     arrive. ``ListAutomationRules`` names them; ``BatchGetAutomationRules`` (100 ARNs to a call) adds the
-    criteria and actions as ``Criteria`` and ``Actions``, and a batch that fails leaves those off. Tags are
-    read by ARN. Empty, without error, where Security Hub is not enabled."""
+    criteria and actions as ``Criteria`` and ``Actions``. A rule the batch read did not return (a denied batch,
+    or a rule left unprocessed) is still yielded, and then the reader raises (:func:`_undescribed`), so a rule
+    whose suppression logic was not read is a loud gap. Tags are read by ARN. Empty, without error, where
+    Security Hub is not enabled."""
     client = client_for("securityhub")
     rules = [r for r in _securityhub_items(client_for, "list_automation_rules", "AutomationRulesMetadata") if r.get("RuleArn")]
     detail: dict[str, dict[str, Any]] = {}
@@ -2320,10 +2323,17 @@ def securityhub_automation_rules_described(session: Any, *, client_for: Any) -> 
             detail.update({r["RuleArn"]: r for r in answer.get("Rules", []) if r.get("RuleArn")})
         except BotoCoreError, ClientError:
             continue
+    missing: list[str] = []
     for rule in rules:
-        tags, unread = _securityhub_tags(client, str(rule["RuleArn"]))
-        extra = detail.get(str(rule["RuleArn"]), {})
+        arn = str(rule["RuleArn"])
+        tags, unread = _securityhub_tags(client, arn)
+        extra = detail.get(arn)
+        if extra is None:
+            missing.append(arn)
+            extra = {}
         yield {**rule, "Criteria": extra.get("Criteria"), "Actions": extra.get("Actions"), "_tags": tags, "_tags_unread": unread}
+    if missing:
+        raise _undescribed("Security Hub automation rules whose criteria and actions", missing)
 
 
 def securityhub_finding_aggregators_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:

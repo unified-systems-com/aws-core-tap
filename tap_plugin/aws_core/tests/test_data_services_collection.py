@@ -902,6 +902,21 @@ class TestObservability:
         with pytest.raises(ClientError):
             _run(securityhub_insights_described, "securityhub", _Client(get_insights=_denied("GetInsights")))
 
+    def test_an_empty_first_page_with_a_token_then_a_not_enabled_error_is_a_failure(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import securityhub_insights_described
+
+        calls: list[dict[str, Any]] = []
+
+        def get_insights(**kwargs: Any) -> Any:
+            calls.append(kwargs)
+            if not kwargs:
+                return {"Insights": [], "NextToken": "t"}
+            return ClientError({"Error": {"Code": "InvalidAccessException", "Message": "x"}}, "GetInsights")
+
+        with pytest.raises(ClientError):
+            _run(securityhub_insights_described, "securityhub", _Client(get_insights=get_insights))
+        assert calls == [{}, {"NextToken": "t"}]
+
     def test_automation_rules_carry_their_criteria_and_actions_from_the_batch_read(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import securityhub_automation_rules_described
 
@@ -913,5 +928,8 @@ class TestObservability:
         [rule] = _run(securityhub_automation_rules_described, "securityhub", client)
         assert rule["Criteria"] == {"a": 1} and rule["Actions"] == [{"Type": "FINDING_FIELDS_UPDATE"}] and rule["_tags"] == {"owner": "x"}
         failed = _Client(list_automation_rules={"AutomationRulesMetadata": [{"RuleArn": "arn:r1"}]}, batch_get_automation_rules=_denied("BatchGetAutomationRules"), list_tags_for_resource=_denied("ListTagsForResource"))
-        [bare] = _run(securityhub_automation_rules_described, "securityhub", failed)
-        assert (bare["Criteria"], bare["_tags_unread"]) == (None, True)
+        [bare], gap = _run_to_the_gap(securityhub_automation_rules_described, "securityhub", failed)
+        assert (bare["Criteria"], bare["_tags_unread"]) == (None, True) and "arn:r1" in gap
+        unprocessed = _Client(list_automation_rules={"AutomationRulesMetadata": [{"RuleArn": "arn:r1"}, {"RuleArn": "arn:r2"}]}, batch_get_automation_rules={"Rules": [{"RuleArn": "arn:r1", "Criteria": {}}]}, list_tags_for_resource={"Tags": {}})
+        yielded, gap = _run_to_the_gap(securityhub_automation_rules_described, "securityhub", unprocessed)
+        assert len(yielded) == 2 and "arn:r2" in gap and "arn:r1" not in gap
