@@ -1219,6 +1219,16 @@
         "AWS::ECS::Daemon"
       ]
     },
+    "aws_core__aws_ecs_daemon_task_definition": {
+      "cfn": [
+        "AWS::ECS::DaemonTaskDefinition"
+      ]
+    },
+    "aws_core__aws_ecs_gateway": {
+      "cfn": [
+        "AWS::ECS::Gateway"
+      ]
+    },
     "aws_core__aws_ecs_service": {
       "cfn": [
         "AWS::ECS::Service"
@@ -1258,6 +1268,21 @@
         "AWS::ElastiCache::CacheCluster"
       ]
     },
+    "aws_core__aws_elasticache_global_replication_group": {
+      "cfn": [
+        "AWS::ElastiCache::GlobalReplicationGroup"
+      ]
+    },
+    "aws_core__aws_elasticache_replication_group": {
+      "cfn": [
+        "AWS::ElastiCache::ReplicationGroup"
+      ]
+    },
+    "aws_core__aws_elasticache_serverless_cache": {
+      "cfn": [
+        "AWS::ElastiCache::ServerlessCache"
+      ]
+    },
     "aws_core__aws_elasticache_serverless_cache_snapshot": {
       "cfn": [
         "AWS::ElastiCache::ServerlessCacheSnapshot"
@@ -1266,6 +1291,16 @@
     "aws_core__aws_elasticache_snapshot": {
       "cfn": [
         "AWS::ElastiCache::Snapshot"
+      ]
+    },
+    "aws_core__aws_elasticache_user": {
+      "cfn": [
+        "AWS::ElastiCache::User"
+      ]
+    },
+    "aws_core__aws_elasticache_user_group": {
+      "cfn": [
+        "AWS::ElastiCache::UserGroup"
       ]
     },
     "aws_core__aws_elasticsearch_domain": {
@@ -1293,6 +1328,16 @@
         "AWS::EMRContainers::SecurityConfiguration"
       ]
     },
+    "aws_core__aws_emrcontainers_virtual_cluster": {
+      "cfn": [
+        "AWS::EMRContainers::VirtualCluster"
+      ]
+    },
+    "aws_core__aws_emrserverless_application": {
+      "cfn": [
+        "AWS::EMRServerless::Application"
+      ]
+    },
     "aws_core__aws_eventbridge_api_destination": {
       "cfn": [
         "AWS::Events::ApiDestination"
@@ -1318,6 +1363,11 @@
         "AWS::Events::Rule"
       ]
     },
+    "aws_core__aws_events_endpoint": {
+      "cfn": [
+        "AWS::Events::Endpoint"
+      ]
+    },
     "aws_core__aws_eventschemas_discoverer": {
       "cfn": [
         "AWS::EventSchemas::Discoverer"
@@ -1328,6 +1378,11 @@
         "AWS::EventSchemas::Registry"
       ]
     },
+    "aws_core__aws_fms_policy": {
+      "cfn": [
+        "AWS::FMS::Policy"
+      ]
+    },
     "aws_core__aws_fsx_backup": {
       "cfn": [
         "AWS::FSx::Backup"
@@ -1336,6 +1391,61 @@
     "aws_core__aws_fsx_file_cache": {
       "cfn": [
         "AWS::FSx::FileCache"
+      ]
+    },
+    "aws_core__aws_glue_registry": {
+      "cfn": [
+        "AWS::Glue::Registry"
+      ]
+    },
+    "aws_core__aws_glue_schema": {
+      "cfn": [
+        "AWS::Glue::Schema"
+      ]
+    },
+    "aws_core__aws_greengrass_connector_definition": {
+      "cfn": [
+        "AWS::Greengrass::ConnectorDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_core_definition": {
+      "cfn": [
+        "AWS::Greengrass::CoreDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_device_definition": {
+      "cfn": [
+        "AWS::Greengrass::DeviceDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_function_definition": {
+      "cfn": [
+        "AWS::Greengrass::FunctionDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_group": {
+      "cfn": [
+        "AWS::Greengrass::Group"
+      ]
+    },
+    "aws_core__aws_greengrass_logger_definition": {
+      "cfn": [
+        "AWS::Greengrass::LoggerDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_resource_definition": {
+      "cfn": [
+        "AWS::Greengrass::ResourceDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_subscription_definition": {
+      "cfn": [
+        "AWS::Greengrass::SubscriptionDefinition"
+      ]
+    },
+    "aws_core__aws_guardduty_custom_detection_rule_association": {
+      "cfn": [
+        "AWS::GuardDuty::CustomDetectionRuleAssociation"
       ]
     },
     "aws_core__aws_guardduty_detector": {
@@ -1452,6 +1562,11 @@
         "AWS::IdentityStore::User"
       ]
     },
+    "aws_core__aws_inspectorv2_code_security_integration": {
+      "cfn": [
+        "AWS::InspectorV2::CodeSecurityIntegration"
+      ]
+    },
     "aws_core__aws_inspectorv2_connector": {
       "cfn": [
         "AWS::InspectorV2::Connector"
@@ -1467,9 +1582,104 @@
         "AWS::EC2::InternetGateway"
       ]
     },
+    "aws_core__aws_internetmonitor_monitor": {
+      "cfn": [
+        "AWS::InternetMonitor::Monitor"
+      ]
+    },
+    "aws_core__aws_iot_authorizer": {
+      "cfn": [
+        "AWS::IoT::Authorizer"
+      ]
+    },
+    "aws_core__aws_iot_billing_group": {
+      "cfn": [
+        "AWS::IoT::BillingGroup"
+      ]
+    },
+    "aws_core__aws_iot_ca_certificate": {
+      "cfn": [
+        "AWS::IoT::CACertificate"
+      ]
+    },
+    "aws_core__aws_iot_certificate": {
+      "cfn": [
+        "AWS::IoT::Certificate"
+      ]
+    },
+    "aws_core__aws_iot_certificate_provider": {
+      "cfn": [
+        "AWS::IoT::CertificateProvider"
+      ]
+    },
+    "aws_core__aws_iot_command": {
+      "cfn": [
+        "AWS::IoT::Command"
+      ]
+    },
+    "aws_core__aws_iot_domain_configuration": {
+      "cfn": [
+        "AWS::IoT::DomainConfiguration"
+      ]
+    },
+    "aws_core__aws_iot_fleet_metric": {
+      "cfn": [
+        "AWS::IoT::FleetMetric"
+      ]
+    },
+    "aws_core__aws_iot_job_template": {
+      "cfn": [
+        "AWS::IoT::JobTemplate"
+      ]
+    },
+    "aws_core__aws_iot_mitigation_action": {
+      "cfn": [
+        "AWS::IoT::MitigationAction"
+      ]
+    },
     "aws_core__aws_iot_ota_update": {
       "cfn": [
         "AWS::IoT::OTAUpdate"
+      ]
+    },
+    "aws_core__aws_iot_policy": {
+      "cfn": [
+        "AWS::IoT::Policy"
+      ]
+    },
+    "aws_core__aws_iot_provisioning_template": {
+      "cfn": [
+        "AWS::IoT::ProvisioningTemplate"
+      ]
+    },
+    "aws_core__aws_iot_scheduled_audit": {
+      "cfn": [
+        "AWS::IoT::ScheduledAudit"
+      ]
+    },
+    "aws_core__aws_iot_security_profile": {
+      "cfn": [
+        "AWS::IoT::SecurityProfile"
+      ]
+    },
+    "aws_core__aws_iot_stream": {
+      "cfn": [
+        "AWS::IoT::Stream"
+      ]
+    },
+    "aws_core__aws_iot_thing_group": {
+      "cfn": [
+        "AWS::IoT::ThingGroup"
+      ]
+    },
+    "aws_core__aws_iot_thing_type": {
+      "cfn": [
+        "AWS::IoT::ThingType"
+      ]
+    },
+    "aws_core__aws_iot_topic_rule": {
+      "cfn": [
+        "AWS::IoT::TopicRule"
       ]
     },
     "aws_core__aws_iot_topic_rule_destination": {
