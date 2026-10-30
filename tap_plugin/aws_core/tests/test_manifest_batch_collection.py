@@ -66,6 +66,43 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         },
         {"volume_id": "vol-0a1", "volume_type": "gp3", "size_gb": 100, "state": "in-use", "encrypted": True},
     ),
+    "aws_core__aws_alb": (
+        {
+            "LoadBalancerArn": f"arn:aws:elasticloadbalancing:us-east-1:{ACCOUNT}:loadbalancer/app/web/50dc6c495c0c9188",
+            "LoadBalancerName": "web",
+            "DNSName": "web-1.us-east-1.elb.amazonaws.com",
+            "Scheme": "internet-facing",
+            "Type": "application",
+            "_state": "active",
+            "_subnet_ids": ["subnet-0a1", "subnet-0a2"],
+            "_tags": {"owner": "net-team"},
+        },
+        {"name": "web", "dns_name": "web-1.us-east-1.elb.amazonaws.com", "scheme": "internet-facing", "state": "active"},
+    ),
+    "aws_core__aws_elb": (
+        {
+            "LoadBalancerName": "legacy",
+            "DNSName": "legacy-1.us-east-1.elb.amazonaws.com",
+            "Scheme": "internal",
+            "_lb_type": "classic",
+            "_subnet_ids": ["subnet-0a1"],
+            "_tags": {"owner": "net-team"},
+        },
+        {"name": "legacy", "dns_name": "legacy-1.us-east-1.elb.amazonaws.com", "scheme": "internal", "lb_type": "classic"},
+    ),
+    "aws_core__aws_target_group": (
+        {
+            "TargetGroupArn": f"arn:aws:elasticloadbalancing:us-east-1:{ACCOUNT}:targetgroup/web/73e2d6bc24d8a067",
+            "TargetGroupName": "web",
+            "Protocol": "HTTPS",
+            "Port": 443,
+            "TargetType": "ip",
+            "HealthCheckPath": "/healthz",
+            "VpcId": "vpc-0a1",
+            "_tags": {"owner": "net-team"},
+        },
+        {"name": "web", "protocol": "HTTPS", "port": 443, "target_type": "ip", "health_check_path": "/healthz"},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -119,9 +156,10 @@ class TestBatchTypes:
         jsonschema.validate(_prepare_null_payload(payload, schema), schema)
         assert payload["tags"] == {"owner": "net-team"}
 
-    def test_the_tags_are_read_inline_from_the_describe_answer(self, entity_type: str) -> None:
+    def test_the_tags_are_read_from_the_item_with_no_second_fetch(self, entity_type: str) -> None:
         tags = _entry(entity_type)["tags"]
-        assert (tags["source"], tags["from"], tags["shape"]) == ("field", "Tags[]", "list_kv")
+        assert tags["source"] == "field"
+        assert (tags["from"], tags["shape"]) in (("Tags[]", "list_kv"), ("_tags", "map"))
 
     def test_every_edge_rule_resolves_and_names_an_edge_that_allows_the_pair(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]
