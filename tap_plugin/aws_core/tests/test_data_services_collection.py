@@ -360,6 +360,26 @@ class TestConfigOrganizationReaders:
         with pytest.raises(ClientError):
             _run(config_organization_rules_described, "config", _Client(describe_organization_config_rules=_denied("DescribeOrganizationConfigRules")))
 
+    def test_a_not_the_admin_error_after_a_page_was_yielded_is_a_failure_not_an_empty_end(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import config_organization_rules_described
+
+        class _TwoPages(_Client):
+            def can_paginate(self, method: str) -> bool:
+                return True
+
+            def get_paginator(self, method: str) -> Any:
+                outer = self
+
+                class _Paginator:
+                    def paginate(self, **_: Any) -> Any:
+                        yield {"OrganizationConfigRules": [{"OrganizationConfigRuleName": "r", "OrganizationConfigRuleArn": "arn"}]}
+                        raise outer._canned["error"]
+
+                return _Paginator()
+
+        with pytest.raises(ClientError):
+            _run(config_organization_rules_described, "config", _TwoPages(error=self._denied_org()))
+
     def test_rules_carry_a_json_safe_update_time(self) -> None:
         from datetime import UTC, datetime
 

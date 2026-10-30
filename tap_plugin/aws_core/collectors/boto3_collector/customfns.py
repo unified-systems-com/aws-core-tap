@@ -1346,13 +1346,17 @@ _NOT_AN_ORGANIZATION_ADMIN = frozenset(
 
 def _config_organization_items(client_for: Any, method: str, list_key: str) -> Iterator[dict[str, Any]]:
     client = client_for("config")
+    yielded = False
     try:
         for page in _pages(client, method):
             for item in page.get(list_key, []):
                 last = item.get("LastUpdateTime")
+                yielded = True
                 yield {**item, "_last_update_time": jsonable(last) if last else None}
     except ClientError as exc:
-        if error_code(exc) not in _NOT_AN_ORGANIZATION_ADMIN:
+        # 'Not the organization admin' is an answer to the first call. After a page has been yielded the same
+        # code means the listing was cut short, which must not read as a complete one.
+        if yielded or error_code(exc) not in _NOT_AN_ORGANIZATION_ADMIN:
             raise
 
 
