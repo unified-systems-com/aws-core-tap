@@ -30,3 +30,7 @@ jobs:
     uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@85db0301623125dce548d4be95ece3c5f5bc2c52
     with:
       plugin_slug: aws_core
+      # The test database is built by applying every migration, and each generated type adds a live and
+      # a history table, so the build alone now takes about 10 minutes on the runner and grows with every
+      # batch. The 25-minute default cancelled the run on #142 before its tests finished (0 tests executed).
+      boot_and_test_timeout_minutes: 45
