@@ -29,6 +29,7 @@ LEDGER_PATH = PACKAGE / "aws_coverage_ledger.json"
 DECISIONS_PATH = PACKAGE / "decisions.json"
 MANIFEST_PATH = PLUGIN / "collectors" / "boto3_collector" / "aws_resource_manifest.json"
 PLUGIN_TOML = PLUGIN / "tap-plugin.toml"
+TAG_LANES_PATH = PLUGIN / "collectors" / "boto3_collector" / "tag_lanes.json"
 
 
 def _load_validated(path: Path, schema_path: Path) -> Any:
@@ -47,6 +48,9 @@ def load_decisions() -> dict[str, Any]:
 def gather_inputs(cfn_path: Path) -> Inputs:
     cfn, sha = sources.load_cfn_bundle(cfn_path)
     manifest = json.loads(MANIFEST_PATH.read_text())["entries"]
+    # A custom reader (Organizations, landing zone) collects types that have no manifest entry; each is
+    # declared in tag_lanes.json, so the type is collected and its tag lane is that file's row.
+    readers = json.loads(TAG_LANES_PATH.read_text())["lanes"]
     models = frozenset(tomllib.loads(PLUGIN_TOML.read_text())["models"])
     with_endpoints, named = sources.partition_services()
     return Inputs(
@@ -58,7 +62,7 @@ def gather_inputs(cfn_path: Path) -> Inputs:
         named_prefixes=named,
         decisions=load_decisions(),
         models=models,
-        manifest={entry["entity_type"]: entry for entry in manifest},
+        manifest={**{row["entity_type"]: row for row in readers}, **{entry["entity_type"]: entry for entry in manifest}},
     )
 
 
