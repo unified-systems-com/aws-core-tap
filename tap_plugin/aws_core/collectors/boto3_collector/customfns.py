@@ -982,6 +982,104 @@ def iam_virtual_mfa_devices_listed(
         )
 
 
+# DescribeTags on both load balancer APIs takes at most this many ids per call.
+_ELB_TAG_BATCH = 20
+
+
+def _elb_tags(client: Any, id_param: str, id_key: str, ids: list[str]) -> dict[str, dict[str, str]]:
+    """Tags per load balancer or target group, read 20 ids to a call.
+
+    ``id_param``/``id_key`` are the request parameter and the response key that carry the id
+    (``ResourceArns``/``ResourceArn`` for ELBv2, ``LoadBalancerNames``/``LoadBalancerName`` for Classic).
+    An id whose batch did not answer is left out of the result: absent is 'not read', and ``{}`` is 'read,
+    untagged'. A call that answers without naming an id it was asked about reads that id as untagged.
+    """
+    tags: dict[str, dict[str, str]] = {}
+    for start in range(0, len(ids), _ELB_TAG_BATCH):
+        batch = ids[start : start + _ELB_TAG_BATCH]
+        try:
+            answer = without_response_metadata(client.describe_tags(**{id_param: batch}))
+        except BotoCoreError, ClientError:
+            continue
+        tags.update({i: {} for i in batch})
+        for description in answer.get("TagDescriptions", []):
+            ident = description.get(id_key)
+            if ident in tags:
+                tags[ident] = {t["Key"]: t.get("Value") or "" for t in description.get("Tags", []) if "Key" in t}
+    return tags
+
+
+def _lb_item(lb: dict[str, Any], tags: dict[str, dict[str, str]], tag_id: str, subnet_ids: list[str]) -> dict[str, Any]:
+    """A load balancer as the manifest projects it: the listing, plus the derived ``_`` siblings."""
+    return with_edge_reads(
+        {
+            **lb,
+            "_state": (lb.get("State") or {}).get("Code"),
+            "_subnet_ids": subnet_ids,
+            "_tags": tags.get(tag_id, {}),
+            "_tags_unread": tag_id not in tags,
+        },
+        {"_subnet_ids": COMPLETE},
+    )
+
+
+def _elbv2_load_balancers(client: Any) -> list[dict[str, Any]]:
+    return [lb for page in _pages(client, "describe_load_balancers") for lb in page.get("LoadBalancers", [])]
+
+
+def _az_subnet_ids(lb: dict[str, Any]) -> list[str]:
+    return sorted({str(az["SubnetId"]) for az in lb.get("AvailabilityZones", []) if az.get("SubnetId")})
+
+
+def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Application Load Balancers (regional) with their tags.
+
+    ``DescribeLoadBalancers`` returns Application, Network and Gateway load balancers together; the
+    application ones are these, the others are :func:`elb_family_described`'s. Tags come from
+    ``DescribeTags``, 20 ARNs to a call, so a denial costs the tags of a batch and not the load balancers.
+    """
+    client = client_for("elbv2")
+    albs = [lb for lb in _elbv2_load_balancers(client) if lb.get("Type") == "application"]
+    tags = _elb_tags(client, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in albs])
+    for lb in albs:
+        yield _lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
+
+
+def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Network, Gateway and Classic Load Balancers (regional) with their tags.
+
+    The network and gateway ones come from the ELBv2 listing (the application ones are
+    :func:`elbv2_albs_described`'s) and are keyed by their DNS name, as the Classic ones are, which have no
+    ARN. ``_lb_type`` tells them apart. A Classic load balancer's tags are read by name from the ELB API.
+    """
+    v2 = client_for("elbv2")
+    others = [lb for lb in _elbv2_load_balancers(v2) if lb.get("Type") in ("network", "gateway")]
+    v2_tags = _elb_tags(v2, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in others])
+    for lb in others:
+        item = _lb_item(lb, v2_tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
+        yield {**item, "_lb_type": lb["Type"]}
+    classic = client_for("elb")
+    described = [
+        lb for page in _pages(classic, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])
+    ]
+    classic_tags = _elb_tags(
+        classic, "LoadBalancerNames", "LoadBalancerName", [str(lb["LoadBalancerName"]) for lb in described]
+    )
+    for lb in described:
+        item = _lb_item(lb, classic_tags, str(lb["LoadBalancerName"]), sorted(str(i) for i in lb.get("Subnets", [])))
+        yield {**item, "_lb_type": "classic"}
+
+
+def elbv2_target_groups_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate ELBv2 target groups (regional) with their tags (``DescribeTags``, 20 ARNs to a call)."""
+    client = client_for("elbv2")
+    groups = [tg for page in _pages(client, "describe_target_groups") for tg in page.get("TargetGroups", [])]
+    tags = _elb_tags(client, "ResourceArns", "ResourceArn", [str(tg["TargetGroupArn"]) for tg in groups])
+    for group in groups:
+        arn = str(group["TargetGroupArn"])
+        yield {**group, "_tags": tags.get(arn, {}), "_tags_unread": arn not in tags}
+
+
 # An API Gateway v2 Lambda-proxy IntegrationUri embeds the function's invoke
 # path: .../functions/<function-arn>/invocations. Capture the embedded ARN.
 _LAMBDA_INTEGRATION_URI_RE = re.compile(rf"/functions/(arn:{PARTITION_RE}:lambda:[^/]+)/invocations$")
@@ -1321,6 +1419,9 @@ _CUSTOM_FNS = {
     "dynamodb_tables_described": dynamodb_tables_described,
     "eventbridge_rules_with_targets": eventbridge_rules_with_targets,
     "iam_oidc_providers_described": iam_oidc_providers_described,
+    "elbv2_albs_described": elbv2_albs_described,
+    "elb_family_described": elb_family_described,
+    "elbv2_target_groups_described": elbv2_target_groups_described,
     "iam_groups_listed": iam_groups_listed,
     "iam_instance_profiles_listed": iam_instance_profiles_listed,
     "iam_saml_providers_described": iam_saml_providers_described,

@@ -34,6 +34,7 @@ class TargetGroup(BaseModel):
         "target_type": {"type": "string"},
         "health_check_path": {"type": "string"},
         "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -44,6 +45,7 @@ class TargetGroup(BaseModel):
         "target_type": {"validation": "jsonschema", "schema": {"type": "string"}},
         "health_check_path": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -54,6 +56,7 @@ class TargetGroup(BaseModel):
     target_type = models.CharField(max_length=32, blank=True, default="")
     health_check_path = models.CharField(max_length=255, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_target_group"

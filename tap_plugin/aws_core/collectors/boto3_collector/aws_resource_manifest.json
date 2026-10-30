@@ -2308,6 +2308,147 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_alb",
+      "service": "elbv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "elbv2_albs_described"
+      },
+      "why": "Enumerate Application Load Balancers — the public or internal HTTP front doors of the account, and the first place an exposure question lands.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers and DescribeTags output shapes and custom_fn elbv2_albs_described, 2026-10-29; no sensitive-flagged member. Listeners and their certificates are not requested.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "LoadBalancerArn",
+      "fields": {
+        "name": "LoadBalancerName",
+        "lb_arn": "LoadBalancerArn",
+        "dns_name": "DNSName",
+        "scheme": "Scheme",
+        "state": "_state"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. The custom fn reads DescribeTags (20 ids to a call) into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "_subnet_ids",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_elb",
+      "service": "elbv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "elb_family_described"
+      },
+      "why": "Enumerate Network, Gateway and Classic Load Balancers — the non-HTTP and legacy front doors, including Classic ones that have no ARN and are easy to lose track of.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers, elb DescribeLoadBalancers and both DescribeTags output shapes and custom_fn elb_family_described, 2026-10-29; no sensitive-flagged member. A Classic listener names its certificate by ARN, never its body.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "DNSName",
+      "fields": {
+        "name": "LoadBalancerName",
+        "dns_name": "DNSName",
+        "scheme": "Scheme",
+        "lb_type": "_lb_type"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. The custom fn reads DescribeTags (20 ids to a call) into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "_subnet_ids",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_target_group",
+      "service": "elbv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "elbv2_target_groups_described"
+      },
+      "why": "Enumerate target groups — what a load balancer forwards to, and the health check that decides whether it keeps doing so.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore elbv2 DescribeTargetGroups and DescribeTags output shapes and custom_fn elbv2_target_groups_described, 2026-10-29; no sensitive-flagged member. Registered targets are not requested.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "TargetGroupArn",
+      "fields": {
+        "name": "TargetGroupName",
+        "target_group_arn": "TargetGroupArn",
+        "protocol": "Protocol",
+        "port": "Port",
+        "target_type": "TargetType",
+        "health_check_path": "HealthCheckPath"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. The custom fn reads DescribeTags (20 ids to a call) into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "VpcId",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }
