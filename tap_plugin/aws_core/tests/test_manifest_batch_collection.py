@@ -1760,6 +1760,90 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'aliasArn': 'arn:aws:verifiedpermissions:us-east-1:123456789012:res/gen-1', 'aliasName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_dms_certificate": (
+        {'CertificateArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_data_migration": (
+        {'DataMigrationArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'DataMigrationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_data_provider": (
+        {'DataProviderArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'DataProviderName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_endpoint": (
+        {'EndpointArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_instance_profile": (
+        {'InstanceProfileArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'InstanceProfileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_migration_project": (
+        {'MigrationProjectArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'MigrationProjectName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_replication_config": (
+        {'ReplicationConfigArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_replication_instance": (
+        {'ReplicationInstanceArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_replication_task": (
+        {'ReplicationTaskArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_docdb_global_cluster": (
+        {'GlobalClusterArn': 'arn:aws:docdb:us-east-1:123456789012:res/gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_elasticbeanstalk_application": (
+        {'ApplicationArn': 'arn:aws:elasticbeanstalk:us-east-1:123456789012:res/gen-1', 'ApplicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticbeanstalk_application_version": (
+        {'ApplicationVersionArn': 'arn:aws:elasticbeanstalk:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_elasticbeanstalk_environment": (
+        {'EnvironmentArn': 'arn:aws:elasticbeanstalk:us-east-1:123456789012:res/gen-1', 'EnvironmentName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_lambda_capacity_provider": (
+        {'CapacityProviderArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_mediaconvert_job_template": (
+        {'Arn': 'arn:aws:mediaconvert:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_mediaconvert_preset": (
+        {'Arn': 'arn:aws:mediaconvert:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_mediaconvert_queue": (
+        {'Arn': 'arn:aws:mediaconvert:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_lens": (
+        {'LensArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'LensName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_profile": (
+        {'ProfileArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'ProfileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_review_template": (
+        {'TemplateArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_workload": (
+        {'WorkloadArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'WorkloadName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

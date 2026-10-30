@@ -1063,6 +1063,51 @@
         "AWS::Detective::Graph"
       ]
     },
+    "aws_core__aws_dms_certificate": {
+      "cfn": [
+        "AWS::DMS::Certificate"
+      ]
+    },
+    "aws_core__aws_dms_data_migration": {
+      "cfn": [
+        "AWS::DMS::DataMigration"
+      ]
+    },
+    "aws_core__aws_dms_data_provider": {
+      "cfn": [
+        "AWS::DMS::DataProvider"
+      ]
+    },
+    "aws_core__aws_dms_endpoint": {
+      "cfn": [
+        "AWS::DMS::Endpoint"
+      ]
+    },
+    "aws_core__aws_dms_instance_profile": {
+      "cfn": [
+        "AWS::DMS::InstanceProfile"
+      ]
+    },
+    "aws_core__aws_dms_migration_project": {
+      "cfn": [
+        "AWS::DMS::MigrationProject"
+      ]
+    },
+    "aws_core__aws_dms_replication_config": {
+      "cfn": [
+        "AWS::DMS::ReplicationConfig"
+      ]
+    },
+    "aws_core__aws_dms_replication_instance": {
+      "cfn": [
+        "AWS::DMS::ReplicationInstance"
+      ]
+    },
+    "aws_core__aws_dms_replication_task": {
+      "cfn": [
+        "AWS::DMS::ReplicationTask"
+      ]
+    },
     "aws_core__aws_docdb_db_cluster_parameter_group": {
       "cfn": [
         "AWS::DocDB::DBClusterParameterGroup"
@@ -1076,6 +1121,11 @@
     "aws_core__aws_docdb_event_subscription": {
       "cfn": [
         "AWS::DocDB::EventSubscription"
+      ]
+    },
+    "aws_core__aws_docdb_global_cluster": {
+      "cfn": [
+        "AWS::DocDB::GlobalCluster"
       ]
     },
     "aws_core__aws_drs_launch_configuration_template": {
@@ -1301,6 +1351,21 @@
     "aws_core__aws_elasticache_user_group": {
       "cfn": [
         "AWS::ElastiCache::UserGroup"
+      ]
+    },
+    "aws_core__aws_elasticbeanstalk_application": {
+      "cfn": [
+        "AWS::ElasticBeanstalk::Application"
+      ]
+    },
+    "aws_core__aws_elasticbeanstalk_application_version": {
+      "cfn": [
+        "AWS::ElasticBeanstalk::ApplicationVersion"
+      ]
+    },
+    "aws_core__aws_elasticbeanstalk_environment": {
+      "cfn": [
+        "AWS::ElasticBeanstalk::Environment"
       ]
     },
     "aws_core__aws_elasticsearch_domain": {
@@ -1783,6 +1848,11 @@
         "AWS::Lambda::Function"
       ]
     },
+    "aws_core__aws_lambda_capacity_provider": {
+      "cfn": [
+        "AWS::Lambda::CapacityProvider"
+      ]
+    },
     "aws_core__aws_lambda_code_signing_config": {
       "cfn": [
         "AWS::Lambda::CodeSigningConfig"
@@ -1876,6 +1946,21 @@
     "aws_core__aws_managedblockchain_accessor": {
       "cfn": [
         "AWS::ManagedBlockchain::Accessor"
+      ]
+    },
+    "aws_core__aws_mediaconvert_job_template": {
+      "cfn": [
+        "AWS::MediaConvert::JobTemplate"
+      ]
+    },
+    "aws_core__aws_mediaconvert_preset": {
+      "cfn": [
+        "AWS::MediaConvert::Preset"
+      ]
+    },
+    "aws_core__aws_mediaconvert_queue": {
+      "cfn": [
+        "AWS::MediaConvert::Queue"
       ]
     },
     "aws_core__aws_memorydb_acl": {
@@ -2761,6 +2846,26 @@
     "aws_core__aws_wellarchitected_agent_profile": {
       "cfn": [
         "AWS::WellArchitected::AgentProfile"
+      ]
+    },
+    "aws_core__aws_wellarchitected_lens": {
+      "cfn": [
+        "AWS::WellArchitected::Lens"
+      ]
+    },
+    "aws_core__aws_wellarchitected_profile": {
+      "cfn": [
+        "AWS::WellArchitected::Profile"
+      ]
+    },
+    "aws_core__aws_wellarchitected_review_template": {
+      "cfn": [
+        "AWS::WellArchitected::ReviewTemplate"
+      ]
+    },
+    "aws_core__aws_wellarchitected_workload": {
+      "cfn": [
+        "AWS::WellArchitected::Workload"
       ]
     }
   },

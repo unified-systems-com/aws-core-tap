@@ -436,8 +436,50 @@ from tap_plugin.aws_core.models.transfer_profile import TransferProfile
 from tap_plugin.aws_core.models.transfer_workflow import TransferWorkflow
 from tap_plugin.aws_core.models.verifiedpermissions_policy_store import VerifiedpermissionsPolicyStore
 from tap_plugin.aws_core.models.verifiedpermissions_policy_store_alias import VerifiedpermissionsPolicyStoreAlias
+from tap_plugin.aws_core.models.dms_certificate import DmsCertificate
+from tap_plugin.aws_core.models.dms_data_migration import DmsDataMigration
+from tap_plugin.aws_core.models.dms_data_provider import DmsDataProvider
+from tap_plugin.aws_core.models.dms_endpoint import DmsEndpoint
+from tap_plugin.aws_core.models.dms_instance_profile import DmsInstanceProfile
+from tap_plugin.aws_core.models.dms_migration_project import DmsMigrationProject
+from tap_plugin.aws_core.models.dms_replication_config import DmsReplicationConfig
+from tap_plugin.aws_core.models.dms_replication_instance import DmsReplicationInstance
+from tap_plugin.aws_core.models.dms_replication_task import DmsReplicationTask
+from tap_plugin.aws_core.models.docdb_global_cluster import DocdbGlobalCluster
+from tap_plugin.aws_core.models.elasticbeanstalk_application import ElasticbeanstalkApplication
+from tap_plugin.aws_core.models.elasticbeanstalk_application_version import ElasticbeanstalkApplicationVersion
+from tap_plugin.aws_core.models.elasticbeanstalk_environment import ElasticbeanstalkEnvironment
+from tap_plugin.aws_core.models.lambda_capacity_provider import LambdaCapacityProvider
+from tap_plugin.aws_core.models.mediaconvert_job_template import MediaconvertJobTemplate
+from tap_plugin.aws_core.models.mediaconvert_preset import MediaconvertPreset
+from tap_plugin.aws_core.models.mediaconvert_queue import MediaconvertQueue
+from tap_plugin.aws_core.models.wellarchitected_lens import WellarchitectedLens
+from tap_plugin.aws_core.models.wellarchitected_profile import WellarchitectedProfile
+from tap_plugin.aws_core.models.wellarchitected_review_template import WellarchitectedReviewTemplate
+from tap_plugin.aws_core.models.wellarchitected_workload import WellarchitectedWorkload
 
 __all__ = [
+    "WellarchitectedWorkload",
+    "WellarchitectedReviewTemplate",
+    "WellarchitectedProfile",
+    "WellarchitectedLens",
+    "MediaconvertQueue",
+    "MediaconvertPreset",
+    "MediaconvertJobTemplate",
+    "LambdaCapacityProvider",
+    "ElasticbeanstalkEnvironment",
+    "ElasticbeanstalkApplicationVersion",
+    "ElasticbeanstalkApplication",
+    "DocdbGlobalCluster",
+    "DmsReplicationTask",
+    "DmsReplicationInstance",
+    "DmsReplicationConfig",
+    "DmsMigrationProject",
+    "DmsInstanceProfile",
+    "DmsEndpoint",
+    "DmsDataProvider",
+    "DmsDataMigration",
+    "DmsCertificate",
     "VerifiedpermissionsPolicyStoreAlias",
     "VerifiedpermissionsPolicyStore",
     "TransferWorkflow",
