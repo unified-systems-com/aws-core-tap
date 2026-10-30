@@ -176,8 +176,56 @@ from tap_plugin.aws_core.models.batch_consumable_resource import BatchConsumable
 from tap_plugin.aws_core.models.batch_job_queue import BatchJobQueue
 from tap_plugin.aws_core.models.batch_scheduling_policy import BatchSchedulingPolicy
 from tap_plugin.aws_core.models.batch_service_environment import BatchServiceEnvironment
+from tap_plugin.aws_core.models.sagemaker_ai_workload_config import SagemakerAiWorkloadConfig
+from tap_plugin.aws_core.models.sagemaker_algorithm import SagemakerAlgorithm
+from tap_plugin.aws_core.models.sagemaker_cluster import SagemakerCluster
+from tap_plugin.aws_core.models.sagemaker_cluster_scheduler_config import SagemakerClusterSchedulerConfig
+from tap_plugin.aws_core.models.sagemaker_code_repository import SagemakerCodeRepository
+from tap_plugin.aws_core.models.sagemaker_compute_quota import SagemakerComputeQuota
+from tap_plugin.aws_core.models.sagemaker_endpoint_config import SagemakerEndpointConfig
+from tap_plugin.aws_core.models.sagemaker_hub import SagemakerHub
+from tap_plugin.aws_core.models.sagemaker_human_task_ui import SagemakerHumanTaskUi
+from tap_plugin.aws_core.models.sagemaker_image import SagemakerImage
+from tap_plugin.aws_core.models.sagemaker_inference_component import SagemakerInferenceComponent
+from tap_plugin.aws_core.models.sagemaker_mlflow_app import SagemakerMlflowApp
+from tap_plugin.aws_core.models.sagemaker_model import SagemakerModel
+from tap_plugin.aws_core.models.sagemaker_model_package import SagemakerModelPackage
+from tap_plugin.aws_core.models.sagemaker_model_package_group import SagemakerModelPackageGroup
+from tap_plugin.aws_core.models.sagemaker_monitoring_schedule import SagemakerMonitoringSchedule
+from tap_plugin.aws_core.models.sagemaker_notebook_instance import SagemakerNotebookInstance
+from tap_plugin.aws_core.models.sagemaker_notebook_instance_lifecycle_config import SagemakerNotebookInstanceLifecycleConfig
+from tap_plugin.aws_core.models.sagemaker_partner_app import SagemakerPartnerApp
+from tap_plugin.aws_core.models.sagemaker_processing_job import SagemakerProcessingJob
+from tap_plugin.aws_core.models.sagemaker_project import SagemakerProject
+from tap_plugin.aws_core.models.sagemaker_trial_component import SagemakerTrialComponent
+from tap_plugin.aws_core.models.sagemaker_workforce import SagemakerWorkforce
+from tap_plugin.aws_core.models.sagemaker_workteam import SagemakerWorkteam
 
 __all__ = [
+    "SagemakerWorkteam",
+    "SagemakerWorkforce",
+    "SagemakerTrialComponent",
+    "SagemakerProject",
+    "SagemakerProcessingJob",
+    "SagemakerPartnerApp",
+    "SagemakerNotebookInstanceLifecycleConfig",
+    "SagemakerNotebookInstance",
+    "SagemakerMonitoringSchedule",
+    "SagemakerModelPackageGroup",
+    "SagemakerModelPackage",
+    "SagemakerModel",
+    "SagemakerMlflowApp",
+    "SagemakerInferenceComponent",
+    "SagemakerImage",
+    "SagemakerHumanTaskUi",
+    "SagemakerHub",
+    "SagemakerEndpointConfig",
+    "SagemakerComputeQuota",
+    "SagemakerCodeRepository",
+    "SagemakerClusterSchedulerConfig",
+    "SagemakerCluster",
+    "SagemakerAlgorithm",
+    "SagemakerAiWorkloadConfig",
     "BatchServiceEnvironment",
     "BatchSchedulingPolicy",
     "BatchJobQueue",

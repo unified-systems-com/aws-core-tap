@@ -1330,9 +1330,129 @@
         "AWS::S3::Bucket"
       ]
     },
+    "aws_core__aws_sagemaker_ai_workload_config": {
+      "cfn": [
+        "AWS::SageMaker::AIWorkloadConfig"
+      ]
+    },
+    "aws_core__aws_sagemaker_algorithm": {
+      "cfn": [
+        "AWS::SageMaker::Algorithm"
+      ]
+    },
+    "aws_core__aws_sagemaker_cluster": {
+      "cfn": [
+        "AWS::SageMaker::Cluster"
+      ]
+    },
+    "aws_core__aws_sagemaker_cluster_scheduler_config": {
+      "cfn": [
+        "AWS::SageMaker::ClusterSchedulerConfig"
+      ]
+    },
+    "aws_core__aws_sagemaker_code_repository": {
+      "cfn": [
+        "AWS::SageMaker::CodeRepository"
+      ]
+    },
+    "aws_core__aws_sagemaker_compute_quota": {
+      "cfn": [
+        "AWS::SageMaker::ComputeQuota"
+      ]
+    },
     "aws_core__aws_sagemaker_endpoint": {
       "cfn": [
         "AWS::SageMaker::Endpoint"
+      ]
+    },
+    "aws_core__aws_sagemaker_endpoint_config": {
+      "cfn": [
+        "AWS::SageMaker::EndpointConfig"
+      ]
+    },
+    "aws_core__aws_sagemaker_hub": {
+      "cfn": [
+        "AWS::SageMaker::Hub"
+      ]
+    },
+    "aws_core__aws_sagemaker_human_task_ui": {
+      "cfn": [
+        "AWS::SageMaker::HumanTaskUi"
+      ]
+    },
+    "aws_core__aws_sagemaker_image": {
+      "cfn": [
+        "AWS::SageMaker::Image"
+      ]
+    },
+    "aws_core__aws_sagemaker_inference_component": {
+      "cfn": [
+        "AWS::SageMaker::InferenceComponent"
+      ]
+    },
+    "aws_core__aws_sagemaker_mlflow_app": {
+      "cfn": [
+        "AWS::SageMaker::MlflowApp"
+      ]
+    },
+    "aws_core__aws_sagemaker_model": {
+      "cfn": [
+        "AWS::SageMaker::Model"
+      ]
+    },
+    "aws_core__aws_sagemaker_model_package": {
+      "cfn": [
+        "AWS::SageMaker::ModelPackage"
+      ]
+    },
+    "aws_core__aws_sagemaker_model_package_group": {
+      "cfn": [
+        "AWS::SageMaker::ModelPackageGroup"
+      ]
+    },
+    "aws_core__aws_sagemaker_monitoring_schedule": {
+      "cfn": [
+        "AWS::SageMaker::MonitoringSchedule"
+      ]
+    },
+    "aws_core__aws_sagemaker_notebook_instance": {
+      "cfn": [
+        "AWS::SageMaker::NotebookInstance"
+      ]
+    },
+    "aws_core__aws_sagemaker_notebook_instance_lifecycle_config": {
+      "cfn": [
+        "AWS::SageMaker::NotebookInstanceLifecycleConfig"
+      ]
+    },
+    "aws_core__aws_sagemaker_partner_app": {
+      "cfn": [
+        "AWS::SageMaker::PartnerApp"
+      ]
+    },
+    "aws_core__aws_sagemaker_processing_job": {
+      "cfn": [
+        "AWS::SageMaker::ProcessingJob"
+      ]
+    },
+    "aws_core__aws_sagemaker_project": {
+      "cfn": [
+        "AWS::SageMaker::Project"
+      ]
+    },
+    "aws_core__aws_sagemaker_trial_component": {
+      "cfn": [
+        "AWS::SageMaker::TrialComponent"
+      ]
+    },
+    "aws_core__aws_sagemaker_workforce": {
+      "cfn": [
+        "AWS::SageMaker::Workforce"
+      ]
+    },
+    "aws_core__aws_sagemaker_workteam": {
+      "cfn": [
+        "AWS::SageMaker::Workteam"
       ]
     },
     "aws_core__aws_secrets_manager_secret": {
