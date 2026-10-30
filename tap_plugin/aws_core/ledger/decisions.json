@@ -589,6 +589,11 @@
         "AWS::AccessAnalyzer::Analyzer"
       ]
     },
+    "aws_core__aws_access_analyzer_archive_rule": {
+      "cfn": [
+        "AWS::AccessAnalyzer::ArchiveRule"
+      ]
+    },
     "aws_core__aws_access_analyzer_finding": {
       "cfn": [],
       "reason": "A finding the analyzer reports; CloudFormation has no resource type for findings."
@@ -688,6 +693,11 @@
     "aws_core__aws_config_conformance_pack": {
       "cfn": [
         "AWS::Config::ConformancePack"
+      ]
+    },
+    "aws_core__aws_config_connector": {
+      "cfn": [
+        "AWS::Config::Connector"
       ]
     },
     "aws_core__aws_config_delivery_channel": {
@@ -883,6 +893,16 @@
         "AWS::SSO::Assignment"
       ]
     },
+    "aws_core__aws_identity_center_application": {
+      "cfn": [
+        "AWS::SSO::Application"
+      ]
+    },
+    "aws_core__aws_identity_center_application_assignment": {
+      "cfn": [
+        "AWS::SSO::ApplicationAssignment"
+      ]
+    },
     "aws_core__aws_identity_center_group": {
       "cfn": [
         "AWS::IdentityStore::Group"
@@ -896,6 +916,11 @@
     "aws_core__aws_identity_center_permission_set": {
       "cfn": [
         "AWS::SSO::PermissionSet"
+      ]
+    },
+    "aws_core__aws_identity_center_user": {
+      "cfn": [
+        "AWS::IdentityStore::User"
       ]
     },
     "aws_core__aws_internet_gateway": {
