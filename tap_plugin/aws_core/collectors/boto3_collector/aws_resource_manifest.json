@@ -2455,6 +2455,385 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_eks_cluster",
+      "service": "eks",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "eks_clusters_described"
+      },
+      "why": "Enumerate EKS clusters — the Kubernetes control planes of the account, and whether each one's API endpoint is public.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore eks DescribeCluster output shape and custom_fn eks_clusters_described, 2026-10-29; no sensitive-flagged member. certificateAuthority.data is the cluster's public CA certificate, not a key.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "endpoint",
+            "category": "other",
+            "reason": "The cluster API endpoint URL: a network location, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "identity.oidc.issuer",
+            "category": "other",
+            "reason": "The cluster's OIDC issuer URL: public, used to federate service accounts to IAM roles.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "cluster_arn": "arn",
+        "status": "status",
+        "kubernetes_version": "version",
+        "endpoint": "endpoint"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "DescribeCluster returns the cluster's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "resourcesVpcConfig.subnetIds[]",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_rds_instance",
+      "service": "rds",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDBInstances"
+      },
+      "why": "Enumerate RDS DB instances — the relational databases of the account, and the four facts that decide their exposure: public reachability, encryption, backups and deletion protection.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDBInstances returns PendingModifiedValues.MasterUserPassword verbatim, and a queued master-password change is a credential. The security facts the instance needs (public reachability, encryption, backups, deletion protection, IAM authentication), tags and the key and subnet edges are typed fields and derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore rds DescribeDBInstances output shape, 2026-10-29. botocore marks DBInstances[].PendingModifiedValues.MasterUserPassword sensitive: a requested change of the master password, returned verbatim.",
+        "locations": [
+          {
+            "path": "PendingModifiedValues.MasterUserPassword",
+            "category": "credential",
+            "reason": "A pending change of the master user password, returned in plain text while the change is queued.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "MasterUsername",
+            "category": "personal_data",
+            "reason": "The master user name is operator-chosen and can be a person's name or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "TagList",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DBInstances[]",
+      "natural_key": "DBInstanceArn",
+      "fields": {
+        "name": "DBInstanceIdentifier",
+        "db_instance_id": "DBInstanceIdentifier",
+        "db_instance_arn": "DBInstanceArn",
+        "engine": "Engine",
+        "engine_version": "EngineVersion",
+        "instance_class": "DBInstanceClass",
+        "status": "DBInstanceStatus",
+        "multi_az": "MultiAZ",
+        "encrypted": "StorageEncrypted",
+        "publicly_accessible": "PubliclyAccessible",
+        "deletion_protection": "DeletionProtection",
+        "iam_database_auth_enabled": "IAMDatabaseAuthenticationEnabled",
+        "backup_retention_days": "BackupRetentionPeriod"
+      },
+      "tags": {
+        "source": "field",
+        "from": "TagList",
+        "shape": "list_kv",
+        "why": "DescribeDBInstances returns each instance's TagList inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "KmsKeyId",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        },
+        {
+          "value_path": "DBSubnetGroup.Subnets[].SubnetIdentifier",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_elasticache_cluster",
+      "service": "elasticache",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeCacheClusters"
+      },
+      "why": "Enumerate ElastiCache clusters — Redis and Memcached caches, which often hold session data and sit outside the database review.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore elasticache DescribeCacheClusters output shape, 2026-10-29; no sensitive-flagged member. The auth token is never returned; AuthTokenEnabled is a flag.",
+        "locations": [
+          {
+            "path": "ConfigurationEndpoint",
+            "category": "other",
+            "reason": "The cluster's configuration endpoint address: a network location, not a credential.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "CacheClusters[]",
+      "natural_key": "ARN",
+      "fields": {
+        "name": "CacheClusterId",
+        "cluster_id": "CacheClusterId",
+        "cluster_arn": "ARN",
+        "engine": "Engine",
+        "engine_version": "EngineVersion",
+        "node_type": "CacheNodeType",
+        "num_nodes": "NumCacheNodes",
+        "status": "CacheClusterStatus"
+      },
+      "tags": {
+        "source": "rgta",
+        "resource_type_filter": "elasticache:cluster",
+        "arn_from": "ARN",
+        "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_elasticsearch_domain",
+      "service": "es",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "elasticsearch_domains_described"
+      },
+      "why": "Enumerate Elasticsearch Service domains — search clusters whose access policy and network placement decide whether their data is public.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore es DescribeElasticsearchDomain output shape and custom_fn elasticsearch_domains_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "AccessPolicies",
+            "category": "access_policy",
+            "reason": "The domain's resource access policy: a map of who may reach the domain. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Endpoint",
+            "category": "other",
+            "reason": "The domain endpoint address: a network location, not a credential.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ARN",
+      "fields": {
+        "name": "DomainName",
+        "domain_arn": "ARN",
+        "engine_version": "ElasticsearchVersion",
+        "node_type": "ElasticsearchClusterConfig.InstanceType",
+        "instance_count": "ElasticsearchClusterConfig.InstanceCount",
+        "encrypted": "EncryptionAtRestOptions.Enabled"
+      },
+      "tags": {
+        "source": "rgta",
+        "resource_type_filter": "es:domain",
+        "arn_from": "ARN",
+        "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
+      },
+      "edges": [
+        {
+          "value_path": "VPCOptions.SubnetIds[]",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ecr_repository",
+      "service": "ecr",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeRepositories"
+      },
+      "why": "Enumerate ECR repositories — where container images are stored, and the scanning, mutability and encryption settings that decide how trustworthy they are.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore ecr DescribeRepositories output shape, 2026-10-29; no sensitive-flagged member. Images and the repository policy are not requested."
+      },
+      "items_path": "repositories[]",
+      "natural_key": "repositoryArn",
+      "fields": {
+        "name": "repositoryName",
+        "repository_arn": "repositoryArn",
+        "repository_uri": "repositoryUri"
+      },
+      "tags": {
+        "source": "rgta",
+        "resource_type_filter": "ecr:repository",
+        "arn_from": "repositoryArn",
+        "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_sagemaker_endpoint",
+      "service": "sagemaker",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListEndpoints"
+      },
+      "why": "Enumerate SageMaker endpoints — live model-serving endpoints, which are compute that answers network requests.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore sagemaker ListEndpoints output shape, 2026-10-29; no sensitive-flagged member. DescribeEndpoint and the endpoint configuration are not requested, so the instance type is not collected."
+      },
+      "items_path": "Endpoints[]",
+      "natural_key": "EndpointArn",
+      "fields": {
+        "name": "EndpointName",
+        "endpoint_arn": "EndpointArn",
+        "status": "EndpointStatus"
+      },
+      "tags": {
+        "source": "rgta",
+        "resource_type_filter": "sagemaker:endpoint",
+        "arn_from": "EndpointArn",
+        "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_network_firewall",
+      "service": "network-firewall",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "network_firewalls_described"
+      },
+      "why": "Enumerate Network Firewall firewalls — the managed inspection layer in front of a VPC's subnets, and whether it is protected against deletion.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore network-firewall DescribeFirewall output shape and custom_fn network_firewalls_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "FirewallArn",
+      "fields": {
+        "name": "FirewallName",
+        "firewall_arn": "FirewallArn",
+        "status": "_status"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "DescribeFirewall returns the firewall's tags inline; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "SubnetMappings[].SubnetId",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_parameter",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeParameters"
+      },
+      "why": "Enumerate Systems Manager parameters — configuration and secrets stored by name, listed here without ever reading a value.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ssm DescribeParameters output shape, 2026-10-29; no sensitive-flagged member. DescribeParameters returns metadata only: GetParameter and GetParametersByPath, which return values (including SecureString), are never called.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description of the parameter.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Policies[]",
+            "category": "access_policy",
+            "reason": "Parameter policies (expiration and notification rules) as JSON. Not secret.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "KeyId",
+            "category": "other",
+            "reason": "The KMS key (id or alias) that encrypts a SecureString parameter: a reference, not a key.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Parameters[]",
+      "natural_key": "ARN",
+      "fields": {
+        "name": "Name",
+        "parameter_arn": "ARN",
+        "type": "Type",
+        "tier": "Tier"
+      },
+      "tags": {
+        "source": "rgta",
+        "resource_type_filter": "ssm:parameter",
+        "arn_from": "ARN",
+        "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
+      }
     }
   ]
 }

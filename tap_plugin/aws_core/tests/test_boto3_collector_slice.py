@@ -55,8 +55,30 @@ _ECS_DIGEST = "sha256:" + "cd" * 32
 # of the ECS task entry (persist_configuration: false), so neither may persist anywhere.
 _ECS_ENV_CANARY = "canary-ecs-env-token-3e8b"
 _ECS_CMD_CANARY = "canary-ecs-command-arg-62d0"
+# Planted at PendingModifiedValues.MasterUserPassword, the RDS entry's declared credential location.
+_RDS_CANARY = "canary-rds-pending-master-pw-7c19"
+_RDS_ARN = f"arn:aws:rds:us-east-1:{_ACCOUNT}:db:slice-db"
 
 _CANNED = {
+    "describe_db_instances": {
+        "DBInstances": [
+            {
+                "DBInstanceIdentifier": "slice-db",
+                "DBInstanceArn": _RDS_ARN,
+                "Engine": "postgres",
+                "EngineVersion": "16.4",
+                "DBInstanceClass": "db.t3.micro",
+                "DBInstanceStatus": "available",
+                "MultiAZ": False,
+                "StorageEncrypted": True,
+                "PubliclyAccessible": True,
+                "DeletionProtection": False,
+                "BackupRetentionPeriod": 7,
+                "PendingModifiedValues": {"MasterUserPassword": _RDS_CANARY},
+                "TagList": [{"Key": "owner", "Value": "data"}],
+            }
+        ]
+    },
     "list_functions": {
         "Functions": [
             {
@@ -593,6 +615,7 @@ _OFF_CASES = [
     ("aws_core__aws_cognito_user_pool", _POOL_ID, _COGNITO_CANARY, "mfa_configuration", "OFF"),
     ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_ENV_CANARY, "last_status", "RUNNING"),
     ("aws_core__aws_ecs_task", _ECS_TASK, _ECS_CMD_CANARY, "last_status", "RUNNING"),
+    ("aws_core__aws_rds_instance", _RDS_ARN, _RDS_CANARY, "publicly_accessible", True),
 ]
 _OFF_IDS = [f"{case[0]}-{case[2]}" for case in _OFF_CASES]
 

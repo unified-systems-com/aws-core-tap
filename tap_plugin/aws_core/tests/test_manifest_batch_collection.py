@@ -103,6 +103,107 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         },
         {"name": "web", "protocol": "HTTPS", "port": 443, "target_type": "ip", "health_check_path": "/healthz"},
     ),
+    "aws_core__aws_eks_cluster": (
+        {
+            "arn": f"arn:aws:eks:us-east-1:{ACCOUNT}:cluster/prod",
+            "name": "prod",
+            "status": "ACTIVE",
+            "version": "1.31",
+            "endpoint": "https://ABC.gr7.us-east-1.eks.amazonaws.com",
+            "resourcesVpcConfig": {"subnetIds": ["subnet-0a1", "subnet-0a2"], "endpointPublicAccess": True},
+            "tags": {"owner": "net-team"},
+        },
+        {"name": "prod", "status": "ACTIVE", "kubernetes_version": "1.31"},
+    ),
+    "aws_core__aws_rds_instance": (
+        {
+            "DBInstanceIdentifier": "db1",
+            "DBInstanceArn": f"arn:aws:rds:us-east-1:{ACCOUNT}:db:db1",
+            "Engine": "postgres",
+            "EngineVersion": "16.4",
+            "DBInstanceClass": "db.t3.micro",
+            "DBInstanceStatus": "available",
+            "MultiAZ": True,
+            "StorageEncrypted": True,
+            "PubliclyAccessible": False,
+            "DeletionProtection": True,
+            "IAMDatabaseAuthenticationEnabled": True,
+            "BackupRetentionPeriod": 7,
+            "KmsKeyId": KEY_ARN,
+            "DBSubnetGroup": {"Subnets": [{"SubnetIdentifier": "subnet-0a1"}]},
+            "PendingModifiedValues": {"MasterUserPassword": "never-stored"},
+            "TagList": TAGS,
+        },
+        {
+            "db_instance_id": "db1",
+            "engine": "postgres",
+            "multi_az": True,
+            "encrypted": True,
+            "publicly_accessible": False,
+            "deletion_protection": True,
+            "iam_database_auth_enabled": True,
+            "backup_retention_days": 7,
+        },
+    ),
+    "aws_core__aws_elasticache_cluster": (
+        {
+            "CacheClusterId": "cache1",
+            "ARN": f"arn:aws:elasticache:us-east-1:{ACCOUNT}:cluster:cache1",
+            "Engine": "redis",
+            "EngineVersion": "7.1",
+            "CacheNodeType": "cache.t3.micro",
+            "NumCacheNodes": 1,
+            "CacheClusterStatus": "available",
+        },
+        {"cluster_id": "cache1", "engine": "redis", "node_type": "cache.t3.micro", "num_nodes": 1},
+    ),
+    "aws_core__aws_elasticsearch_domain": (
+        {
+            "DomainName": "logs",
+            "ARN": f"arn:aws:es:us-east-1:{ACCOUNT}:domain/logs",
+            "ElasticsearchVersion": "7.10",
+            "ElasticsearchClusterConfig": {"InstanceType": "m5.large.elasticsearch", "InstanceCount": 3},
+            "EncryptionAtRestOptions": {"Enabled": True},
+            "VPCOptions": {"SubnetIds": ["subnet-0a1"]},
+            "AccessPolicies": "{}",
+        },
+        {"name": "logs", "node_type": "m5.large.elasticsearch", "instance_count": 3, "encrypted": True},
+    ),
+    "aws_core__aws_ecr_repository": (
+        {
+            "repositoryName": "app",
+            "repositoryArn": f"arn:aws:ecr:us-east-1:{ACCOUNT}:repository/app",
+            "repositoryUri": f"{ACCOUNT}.dkr.ecr.us-east-1.amazonaws.com/app",
+        },
+        {"name": "app", "repository_uri": f"{ACCOUNT}.dkr.ecr.us-east-1.amazonaws.com/app"},
+    ),
+    "aws_core__aws_sagemaker_endpoint": (
+        {
+            "EndpointName": "m1",
+            "EndpointArn": f"arn:aws:sagemaker:us-east-1:{ACCOUNT}:endpoint/m1",
+            "EndpointStatus": "InService",
+        },
+        {"name": "m1", "status": "InService"},
+    ),
+    "aws_core__aws_network_firewall": (
+        {
+            "FirewallName": "edge",
+            "FirewallArn": f"arn:aws:network-firewall:us-east-1:{ACCOUNT}:firewall/edge",
+            "SubnetMappings": [{"SubnetId": "subnet-0a1"}],
+            "_status": "READY",
+            "Tags": TAGS,
+        },
+        {"name": "edge", "status": "READY"},
+    ),
+    "aws_core__aws_ssm_parameter": (
+        {
+            "Name": "/app/db/url",
+            "ARN": f"arn:aws:ssm:us-east-1:{ACCOUNT}:parameter/app/db/url",
+            "Type": "SecureString",
+            "Tier": "Standard",
+        },
+        {"name": "/app/db/url", "type": "SecureString", "tier": "Standard"},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -148,18 +249,27 @@ class TestBatchTypes:
     def test_the_payload_imports_under_the_model_schema(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]
         entry = _entry(entity_type)
-        tags = normalize_tags(eval_path(item, entry["tags"]["from"]), entry["tags"]["shape"])
         payload = node_envelope(
-            project_item(entry, item), {}, tags, persist_configuration=entry["persist_configuration"]
+            project_item(entry, item), {}, _read_tags(entry, item), persist_configuration=entry["persist_configuration"]
         )["node"]
         schema = _create_verb_schema(_model(entity_type))
         jsonschema.validate(_prepare_null_payload(payload, schema), schema)
         assert payload["tags"] == {"owner": "net-team"}
 
-    def test_the_tags_are_read_from_the_item_with_no_second_fetch(self, entity_type: str) -> None:
+    def test_the_tags_are_read_by_a_declared_lane(self, entity_type: str) -> None:
         tags = _entry(entity_type)["tags"]
+        if tags["source"] == "rgta":
+            # Joined by ARN from the region's one sweep; the item must carry the ARN it is joined on.
+            item, _ = CASES[entity_type]
+            assert eval_path(item, tags["arn_from"]), tags
+            return
         assert tags["source"] == "field"
-        assert (tags["from"], tags["shape"]) in (("Tags[]", "list_kv"), ("_tags", "map"))
+        assert (tags["from"], tags["shape"]) in (
+            ("Tags[]", "list_kv"),
+            ("TagList", "list_kv"),
+            ("_tags", "map"),
+            ("tags", "map"),
+        )
 
     def test_every_edge_rule_resolves_and_names_an_edge_that_allows_the_pair(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]
@@ -173,9 +283,19 @@ class TestBatchTypes:
         item, _ = CASES[entity_type]
         entry = _entry(entity_type)
         node = project_item(entry, item)
-        stored = node_envelope(node, {}, {}, persist_configuration=True)["node"]["configuration"]
-        assert stored and node_envelope(node, {}, {}, persist_configuration=False)["node"]["configuration"] == {}
-        assert entry["persist_configuration"] is True
+        envelope = node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"])["node"]
+        assert bool(envelope["configuration"]) is entry["persist_configuration"]
+        if not entry["persist_configuration"]:
+            assert envelope["configuration"] == {}
+            assert "never-stored" not in json.dumps(envelope, default=str)
+
+
+def _read_tags(entry: dict[str, Any], item: dict[str, Any]) -> dict[str, str]:
+    """The tags the entry's lane would resolve for ``item``: the item's own, or the sweep's map for an rgta lane."""
+    block = entry["tags"]
+    if block["source"] == "rgta":
+        return {"owner": "net-team"}
+    return normalize_tags(eval_path(item, block["from"]), block["shape"])
 
 
 @pytest.mark.parametrize("entry", manifest_entries(), ids=lambda e: e["entity_type"])

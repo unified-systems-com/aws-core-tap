@@ -32,6 +32,7 @@ class SsmParameter(BaseModel):
         "type": {"type": "string"},
         "tier": {"type": "string"},
         "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -40,6 +41,7 @@ class SsmParameter(BaseModel):
         "type": {"validation": "jsonschema", "schema": {"type": "string"}},
         "tier": {"validation": "jsonschema", "schema": {"type": "string"}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
@@ -48,6 +50,7 @@ class SsmParameter(BaseModel):
     type = models.CharField(max_length=32, blank=True, default="")
     tier = models.CharField(max_length=32, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_ssm_parameter"
