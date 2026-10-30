@@ -4411,6 +4411,540 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_filter",
+      "service": "guardduty",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "guardduty_filters_described"
+      },
+      "why": "Enumerate GuardDuty filters — suppression rules that archive matching findings automatically, so what they hide matters as much as what GuardDuty finds.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore guardduty ListFilters and GetFilter output shapes and custom_fn guardduty_filters_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "FindingCriteria",
+            "category": "customer_content",
+            "reason": "Operator-authored match criteria; they can name accounts, resources and addresses.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "filter_key": "_key",
+        "detector_id": "DetectorId",
+        "action": "Action",
+        "rank": "Rank"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_detector_key",
+          "target_type": "aws_core__aws_guardduty_detector",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_DETECTOR__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_ip_set",
+      "service": "guardduty",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "guardduty_ip_sets_described"
+      },
+      "why": "Enumerate GuardDuty trusted IP lists — addresses GuardDuty is told not to report on, which is a blind spot by design and worth knowing the size of.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore guardduty ListIPSets and GetIPSet output shapes and custom_fn guardduty_ip_sets_described, 2026-10-29; no sensitive-flagged member. The list file itself in S3 is never read.",
+        "locations": [
+          {
+            "path": "Location",
+            "category": "other",
+            "reason": "The S3 URL of the list file: a location, not the contents.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "ip_set_key": "_key",
+        "detector_id": "DetectorId",
+        "status": "Status",
+        "format": "Format",
+        "location": "Location"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_detector_key",
+          "target_type": "aws_core__aws_guardduty_detector",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_DETECTOR__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_threat_intel_set",
+      "service": "guardduty",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "guardduty_threat_intel_sets_described"
+      },
+      "why": "Enumerate GuardDuty threat intelligence sets — the operator-supplied lists of malicious addresses GuardDuty raises findings on.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore guardduty ListThreatIntelSets and GetThreatIntelSet output shapes and custom_fn guardduty_threat_intel_sets_described, 2026-10-29; no sensitive-flagged member. The list file itself in S3 is never read.",
+        "locations": [
+          {
+            "path": "Location",
+            "category": "other",
+            "reason": "The S3 URL of the list file: a location, not the contents.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "threat_intel_set_key": "_key",
+        "detector_id": "DetectorId",
+        "status": "Status",
+        "format": "Format",
+        "location": "Location"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_detector_key",
+          "target_type": "aws_core__aws_guardduty_detector",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_DETECTOR__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_publishing_destination",
+      "service": "guardduty",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "guardduty_publishing_destinations_described"
+      },
+      "why": "Enumerate GuardDuty publishing destinations — where findings are exported to, and the key that encrypts the export.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore guardduty ListPublishingDestinations and DescribePublishingDestination output shapes and custom_fn guardduty_publishing_destinations_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "DestinationProperties.DestinationArn",
+            "category": "other",
+            "reason": "The destination bucket's ARN: a location, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "destination_key": "_key",
+        "detector_id": "DetectorId",
+        "destination_type": "DestinationType",
+        "status": "Status",
+        "destination_arn": "DestinationProperties.DestinationArn",
+        "kms_key_arn": "DestinationProperties.KmsKeyArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The Get call returns the object's tags as a plain map; no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "_detector_key",
+          "target_type": "aws_core__aws_guardduty_detector",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_DETECTOR__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "DestinationProperties.KmsKeyArn",
+          "target_type": "aws_core__aws_kms_key",
+          "key_kind": "arn",
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "direction": "outbound",
+          "transform": "kms_key_arn_or_none"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_guardduty_member",
+      "service": "guardduty",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "guardduty_members_described"
+      },
+      "why": "Enumerate GuardDuty member accounts — which accounts this detector administers, and whether each relationship is enabled.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: ListMembers returns each member's contact email address, which botocore marks sensitive. The reader removes it, and the typed fields (account, relationship status, administrator) carry everything the type needs, so nothing further is stored",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore guardduty ListMembers output shape and custom_fn guardduty_members_described, 2026-10-29. botocore marks Members[].Email sensitive; the reader drops it.",
+        "locations": [
+          {
+            "path": "Email",
+            "category": "personal_data",
+            "reason": "The member account's contact email address (botocore marks it sensitive). The reader removes it before the item is built.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "AccountId",
+        "member_key": "_key",
+        "detector_id": "ParentDetectorId",
+        "account_id": "AccountId",
+        "relationship_status": "RelationshipStatus",
+        "administrator_id": "AdministratorId"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::GuardDuty::Member says tagging.taggable is false, and the GuardDuty tag operations take a detector, filter, IP set, threat intel set or publishing destination ARN, not a member (botocore 1.43.121)."
+      },
+      "edges": [
+        {
+          "value_path": "_detector_key",
+          "target_type": "aws_core__aws_guardduty_detector",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_DETECTOR__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_wafv2_web_acl",
+      "service": "wafv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "wafv2_web_acls_described"
+      },
+      "why": "Enumerate WAFv2 web ACLs — the request filters in front of web workloads, and whether the default for an unmatched request is to allow or block it.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: GetWebACL returns Rules[].Statement (every rule's match statement) verbatim, and a byte-match or regex statement often holds a shared-secret header value (a CloudFront-to-origin verification token) as its search string. Identity, scope, default action, rule count, capacity, tags and the Firewall Manager flag are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore wafv2 ListWebACLs, GetWebACL and ListTagsForResource output shapes and custom_fn wafv2_web_acls_described, 2026-10-29; no sensitive-flagged member. A rule's statement can hold a shared-secret value as a search string.",
+        "locations": [
+          {
+            "path": "Rules[].Statement",
+            "category": "credential",
+            "reason": "Rule statements are operator-authored match conditions. A byte-match or regex statement often holds a shared-secret header value (a CloudFront-to-origin verification token) as its search string. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "CustomResponseBodies",
+            "category": "customer_content",
+            "reason": "Operator-authored custom response bodies.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "web_acl_arn": "_arn",
+        "scope": "Scope",
+        "default_action": "_default_action",
+        "rule_count": "_rule_count",
+        "capacity": "Capacity",
+        "managed_by_firewall_manager": "ManagedByFirewallManager"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the object's ARN into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_wafv2_rule_group",
+      "service": "wafv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "wafv2_rule_groups_described"
+      },
+      "why": "Enumerate WAFv2 rule groups — reusable rule sets that web ACLs pull in, which can change many ACLs at once.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: GetRuleGroup returns Rules[].Statement (every rule's match statement) verbatim, and a byte-match or regex statement often holds a shared-secret header value as its search string. Identity, scope, rule count, capacity and tags are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore wafv2 ListRuleGroups, GetRuleGroup and ListTagsForResource output shapes and custom_fn wafv2_rule_groups_described, 2026-10-29; no sensitive-flagged member. A rule's statement can hold a shared-secret value as a search string.",
+        "locations": [
+          {
+            "path": "Rules[].Statement",
+            "category": "credential",
+            "reason": "Rule statements are operator-authored match conditions. A byte-match or regex statement often holds a shared-secret header value (a CloudFront-to-origin verification token) as its search string. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "CustomResponseBodies",
+            "category": "customer_content",
+            "reason": "Operator-authored custom response bodies.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "rule_group_arn": "_arn",
+        "scope": "Scope",
+        "rule_count": "_rule_count",
+        "capacity": "Capacity"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the object's ARN into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_wafv2_ip_set",
+      "service": "wafv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "wafv2_ip_sets_described"
+      },
+      "why": "Enumerate WAFv2 IP sets — the address lists rules allow or block; an allow list that is too wide is a hole in the filter.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore wafv2 ListIPSets, GetIPSet and ListTagsForResource output shapes and custom_fn wafv2_ip_sets_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Addresses",
+            "category": "other",
+            "reason": "The addresses and ranges in the set: network locations (allow or block lists), not credentials. A list of customer addresses can be personal data.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "ip_set_arn": "_arn",
+        "scope": "Scope",
+        "ip_address_version": "IPAddressVersion",
+        "address_count": "_address_count"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the object's ARN into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_wafv2_regex_pattern_set",
+      "service": "wafv2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "wafv2_regex_pattern_sets_described"
+      },
+      "why": "Enumerate WAFv2 regex pattern sets — the patterns rules match requests against.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore wafv2 ListRegexPatternSets, GetRegexPatternSet and ListTagsForResource output shapes and custom_fn wafv2_regex_pattern_sets_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "RegularExpressionList",
+            "category": "customer_content",
+            "reason": "Operator-authored regular expressions; they can embed values a request is checked for.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "regex_pattern_set_arn": "_arn",
+        "scope": "Scope",
+        "pattern_count": "_pattern_count"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the object's ARN into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_s3_access_point",
+      "service": "s3control",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "s3_access_points_described"
+      },
+      "why": "Enumerate S3 access points — separate doors into a bucket with their own policies; an internet-origin, public access point exposes a bucket the bucket policy alone would not.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore s3control ListAccessPoints, GetAccessPointPolicyStatus and ListTagsForResource output shapes and custom_fn s3_access_points_described, 2026-10-29; no sensitive-flagged member. The access point's policy (GetAccessPointPolicy) is not requested.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "AccessPointArn",
+      "fields": {
+        "name": "Name",
+        "access_point_arn": "AccessPointArn",
+        "bucket": "Bucket",
+        "network_origin": "NetworkOrigin",
+        "vpc_id": "_vpc_id",
+        "is_public": "_is_public",
+        "alias": "Alias"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "AccountId": {
+            "from": "_account_id"
+          },
+          "ResourceArn": {
+            "from": "AccessPointArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource; the listing carries none."
+      },
+      "edges": [
+        {
+          "value_path": "_bucket_arn",
+          "target_type": "aws_core__aws_s3_bucket",
+          "key_kind": "arn",
+          "edge_type": "FRONTS_BUCKET__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }

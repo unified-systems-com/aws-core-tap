@@ -113,8 +113,28 @@ from tap_plugin.aws_core.models.lambda_function_url import LambdaFunctionUrl
 from tap_plugin.aws_core.models.lambda_layer_version import LambdaLayerVersion
 from tap_plugin.aws_core.models.lambda_code_signing_config import LambdaCodeSigningConfig
 from tap_plugin.aws_core.models.lambda_event_source_mapping import LambdaEventSourceMapping
+from tap_plugin.aws_core.models.guardduty_filter import GuarddutyFilter
+from tap_plugin.aws_core.models.guardduty_ip_set import GuarddutyIpSet
+from tap_plugin.aws_core.models.guardduty_threat_intel_set import GuarddutyThreatIntelSet
+from tap_plugin.aws_core.models.guardduty_publishing_destination import GuarddutyPublishingDestination
+from tap_plugin.aws_core.models.guardduty_member import GuarddutyMember
+from tap_plugin.aws_core.models.wafv2_web_acl import Wafv2WebAcl
+from tap_plugin.aws_core.models.wafv2_rule_group import Wafv2RuleGroup
+from tap_plugin.aws_core.models.wafv2_ip_set import Wafv2IpSet
+from tap_plugin.aws_core.models.wafv2_regex_pattern_set import Wafv2RegexPatternSet
+from tap_plugin.aws_core.models.s3_access_point import S3AccessPoint
 
 __all__ = [
+    "S3AccessPoint",
+    "Wafv2RegexPatternSet",
+    "Wafv2IpSet",
+    "Wafv2RuleGroup",
+    "Wafv2WebAcl",
+    "GuarddutyMember",
+    "GuarddutyPublishingDestination",
+    "GuarddutyThreatIntelSet",
+    "GuarddutyIpSet",
+    "GuarddutyFilter",
     "LambdaEventSourceMapping",
     "LambdaCodeSigningConfig",
     "LambdaLayerVersion",

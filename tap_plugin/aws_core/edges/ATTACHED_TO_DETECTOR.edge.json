@@ -1,0 +1,21 @@
+{
+  "slug": "ATTACHED_TO_DETECTOR__aws_core",
+  "name": "Attached To Detector",
+  "description": "A GuardDuty filter, trusted IP list, threat intelligence set, publishing destination or member account belongs to one GuardDuty detector (object -> detector): the detector the call was made under, named by the detector node's key (account, region and detector id). The `_TO` is the locative preposition of 'attached to', not a direction marker. A reference, not containment. Emitted whether or not the detector node was collected: it resolves by deterministic identity when it is.",
+  "sources": [
+    "aws_core__aws_guardduty_filter",
+    "aws_core__aws_guardduty_ip_set",
+    "aws_core__aws_guardduty_threat_intel_set",
+    "aws_core__aws_guardduty_publishing_destination",
+    "aws_core__aws_guardduty_member"
+  ],
+  "targets": [
+    "aws_core__aws_guardduty_detector"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

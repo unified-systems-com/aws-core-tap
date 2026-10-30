@@ -468,6 +468,46 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'UUID': '14e0db71-5d35-4eb5-b481-8945cf9d10c2', 'State': 'Enabled', 'EventSourceArn': 'arn:aws:sqs:us-east-1:123456789012:jobs', 'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:function:fn', 'BatchSize': 10, '_arn': 'arn:aws:lambda:us-east-1:123456789012:event-source-mapping:14e0db71-5d35-4eb5-b481-8945cf9d10c2'},
         {'state': 'Enabled', 'batch_size': 10},
     ),
+    "aws_core__aws_guardduty_filter": (
+        {'Name': 'known-scanner', 'Action': 'ARCHIVE', 'Rank': 1, 'DetectorId': '12abc34d567e8fa901bc2d34e56789f0', 'FilterName': 'known-scanner', 'Tags': {'owner': 'net-team'}, '_key': '12abc34d567e8fa901bc2d34e56789f0/filter/known-scanner', '_detector_key': '123456789012:us-east-1:12abc34d567e8fa901bc2d34e56789f0'},
+        {'name': 'known-scanner', 'detector_id': '12abc34d567e8fa901bc2d34e56789f0', 'action': 'ARCHIVE', 'rank': 1},
+    ),
+    "aws_core__aws_guardduty_ip_set": (
+        {'Name': 'office', 'Format': 'TXT', 'Location': 'https://s3.amazonaws.com/lists/office.txt', 'Status': 'ACTIVE', 'DetectorId': '12abc34d567e8fa901bc2d34e56789f0', 'IpSetId': 'set-1', 'Tags': {'owner': 'net-team'}, '_key': '12abc34d567e8fa901bc2d34e56789f0/ipset/set-1', '_detector_key': '123456789012:us-east-1:12abc34d567e8fa901bc2d34e56789f0'},
+        {'name': 'office', 'detector_id': '12abc34d567e8fa901bc2d34e56789f0', 'status': 'ACTIVE', 'format': 'TXT', 'location': 'https://s3.amazonaws.com/lists/office.txt'},
+    ),
+    "aws_core__aws_guardduty_threat_intel_set": (
+        {'Name': 'office', 'Format': 'TXT', 'Location': 'https://s3.amazonaws.com/lists/office.txt', 'Status': 'ACTIVE', 'DetectorId': '12abc34d567e8fa901bc2d34e56789f0', 'ThreatIntelSetId': 'set-1', 'Tags': {'owner': 'net-team'}, '_key': '12abc34d567e8fa901bc2d34e56789f0/threatintelset/set-1', '_detector_key': '123456789012:us-east-1:12abc34d567e8fa901bc2d34e56789f0'},
+        {'name': 'office', 'detector_id': '12abc34d567e8fa901bc2d34e56789f0', 'status': 'ACTIVE', 'format': 'TXT', 'location': 'https://s3.amazonaws.com/lists/office.txt'},
+    ),
+    "aws_core__aws_guardduty_publishing_destination": (
+        {'DestinationId': 'd-1', 'DestinationType': 'S3', 'Status': 'PUBLISHING', 'DestinationProperties': {'DestinationArn': 'arn:aws:s3:::findings', 'KmsKeyArn': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab'}, 'DetectorId': '12abc34d567e8fa901bc2d34e56789f0', 'Tags': {'owner': 'net-team'}, '_key': '12abc34d567e8fa901bc2d34e56789f0/destination/d-1', '_detector_key': '123456789012:us-east-1:12abc34d567e8fa901bc2d34e56789f0'},
+        {'detector_id': '12abc34d567e8fa901bc2d34e56789f0', 'destination_type': 'S3', 'status': 'PUBLISHING', 'destination_arn': 'arn:aws:s3:::findings'},
+    ),
+    "aws_core__aws_guardduty_member": (
+        {'AccountId': '999988887777', 'DetectorId': 'd2', 'RelationshipStatus': 'Enabled', 'AdministratorId': '123456789012', 'ParentDetectorId': '12abc34d567e8fa901bc2d34e56789f0', '_key': '12abc34d567e8fa901bc2d34e56789f0/member/999988887777', '_detector_key': '123456789012:us-east-1:12abc34d567e8fa901bc2d34e56789f0'},
+        {'account_id': '999988887777', 'relationship_status': 'Enabled', 'administrator_id': '123456789012', 'detector_id': '12abc34d567e8fa901bc2d34e56789f0'},
+    ),
+    "aws_core__aws_wafv2_web_acl": (
+        {'Name': 'edge-acl', 'Id': 'i-1', 'ARN': 'arn:aws:wafv2:us-east-1:123456789012:regional/webacl/edge-acl/i-1', 'Scope': 'REGIONAL', 'DefaultAction': {'Block': {}}, 'Rules': [{'Name': 'r1'}], 'Capacity': 50, 'ManagedByFirewallManager': False, '_arn': 'arn:aws:wafv2:us-east-1:123456789012:regional/webacl/edge-acl/i-1', '_default_action': 'BLOCK', '_rule_count': 1, '_tags': {'owner': 'net-team'}},
+        {'name': 'edge-acl', 'scope': 'REGIONAL', 'default_action': 'BLOCK', 'rule_count': 1, 'capacity': 50, 'managed_by_firewall_manager': False},
+    ),
+    "aws_core__aws_wafv2_rule_group": (
+        {'Name': 'shared', 'Id': 'g-1', 'ARN': 'arn:aws:wafv2:us-east-1:123456789012:regional/rulegroup/shared/g-1', 'Scope': 'REGIONAL', 'Rules': [{'Name': 'r1'}, {'Name': 'r2'}], 'Capacity': 100, '_arn': 'arn:aws:wafv2:us-east-1:123456789012:regional/rulegroup/shared/g-1', '_rule_count': 2, '_tags': {'owner': 'net-team'}},
+        {'name': 'shared', 'scope': 'REGIONAL', 'rule_count': 2, 'capacity': 100},
+    ),
+    "aws_core__aws_wafv2_ip_set": (
+        {'Name': 'office', 'Id': 's-1', 'ARN': 'arn:aws:wafv2:us-east-1:123456789012:regional/ipset/office/s-1', 'Scope': 'REGIONAL', 'IPAddressVersion': 'IPV4', 'Addresses': ['203.0.113.0/24', '198.51.100.7/32'], '_arn': 'arn:aws:wafv2:us-east-1:123456789012:regional/ipset/office/s-1', '_address_count': 2, '_tags': {'owner': 'net-team'}},
+        {'name': 'office', 'scope': 'REGIONAL', 'ip_address_version': 'IPV4', 'address_count': 2},
+    ),
+    "aws_core__aws_wafv2_regex_pattern_set": (
+        {'Name': 'bad-agents', 'Id': 'p-1', 'ARN': 'arn:aws:wafv2:us-east-1:123456789012:regional/regexpatternset/bad-agents/p-1', 'Scope': 'REGIONAL', 'RegularExpressionList': [{'RegexString': 'sqlmap'}], '_arn': 'arn:aws:wafv2:us-east-1:123456789012:regional/regexpatternset/bad-agents/p-1', '_pattern_count': 1, '_tags': {'owner': 'net-team'}},
+        {'name': 'bad-agents', 'scope': 'REGIONAL', 'pattern_count': 1},
+    ),
+    "aws_core__aws_s3_access_point": (
+        {'Name': 'ap1', 'Bucket': 'data', 'AccessPointArn': 'arn:aws:s3:us-east-1:123456789012:accesspoint/ap1', 'NetworkOrigin': 'Internet', 'Alias': 'ap1-abc-s3alias', '_account_id': '123456789012', '_is_public': True, '_vpc_id': None, '_bucket_arn': 'arn:aws:s3:::data'},
+        {'name': 'ap1', 'bucket': 'data', 'network_origin': 'Internet', 'is_public': True},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -545,6 +585,7 @@ class TestBatchTypes:
             ("tags[]", "list_kv_lower"),
             ("_tags", "map"),
             ("tags", "map"),
+            ("Tags", "map"),
         )
 
     def test_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(self, entity_type: str) -> None:

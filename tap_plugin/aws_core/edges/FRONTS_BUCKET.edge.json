@@ -1,0 +1,17 @@
+{
+  "slug": "FRONTS_BUCKET__aws_core",
+  "name": "Fronts Bucket",
+  "description": "An S3 access point is a named endpoint with its own policy in front of one S3 bucket (access point -> bucket): the access point's Bucket, built into the bucket's ARN. A reference, not containment. Emitted whether or not the bucket was collected: it resolves by deterministic identity (the bucket ARN) when it is.",
+  "sources": [
+    "aws_core__aws_s3_access_point"
+  ],
+  "targets": [
+    "aws_core__aws_s3_bucket"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

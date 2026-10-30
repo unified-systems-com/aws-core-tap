@@ -597,3 +597,106 @@ class TestLambdaSecurityTypes:
         built, given = _run(lambda_event_source_mappings_described, "lambda", client)
         assert built["_arn"] == "arn:aws:lambda:us-east-1:1:event-source-mapping:u-1"
         assert given["_arn"] == "arn:aws:lambda:us-east-1:1:event-source-mapping:u-2"
+
+
+class TestGuardDutyChildren:
+    DET = "12abc34d567e8fa901bc2d34e56789f0"
+
+    def _client(self, **canned: Any) -> Any:
+        class _Gd(_Client):
+            meta = type("Meta", (), {"region_name": "us-east-1"})()
+
+        gd = _Gd(list_detectors={"DetectorIds": [self.DET]}, **canned)
+        sts = _Client(get_caller_identity={"Account": "123456789012"})
+        return lambda service: {"guardduty": gd, "sts": sts}[service]
+
+    def test_a_filter_is_keyed_under_its_detector_and_points_at_the_detector_node(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import guardduty_filters_described
+
+        client_for = self._client(list_filters={"FilterNames": ["known"]}, get_filter=lambda DetectorId, FilterName: {"Name": FilterName, "Action": "ARCHIVE", "Rank": 1})
+        [item] = list(guardduty_filters_described(None, client_for=client_for))
+        assert item["_key"] == f"{self.DET}/filter/known"
+        assert item["_detector_key"] == f"123456789012:us-east-1:{self.DET}"
+        assert item[EDGE_READS] == {"_detector_key": COMPLETE}
+
+    def test_a_filter_that_cannot_be_described_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import guardduty_filters_described
+
+        client_for = self._client(list_filters={"FilterNames": ["known"]}, get_filter=_denied("GetFilter"))
+        with pytest.raises(SourceError) as gap:
+            list(guardduty_filters_described(None, client_for=client_for))
+        assert "known" in str(gap.value)
+
+    def test_the_member_email_never_leaves_the_reader(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import guardduty_members_described
+
+        client_for = self._client(list_members={"Members": [{"AccountId": "999988887777", "Email": "owner@example.com", "RelationshipStatus": "Enabled"}]})
+        [member] = list(guardduty_members_described(None, client_for=client_for))
+        assert "Email" not in member and "owner@example.com" not in str(member)
+        assert member["_key"] == f"{self.DET}/member/999988887777"
+
+
+class TestWafv2:
+    def _client(self, region: str = "us-east-1", **canned: Any) -> Any:
+        class _Waf(_Client):
+            meta = type("Meta", (), {"region_name": region})()
+
+        return _Waf(**canned)
+
+    def test_the_cloudfront_scope_is_read_only_through_the_home_region_of_the_commercial_partition(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import wafv2_ip_sets_described
+
+        scopes: dict[str, list[str]] = {}
+        for region in ("us-east-1", "eu-west-1", "us-gov-west-1"):
+            seen: list[str] = []
+
+            def listing(Scope: str, seen: list[str] = seen) -> Any:
+                seen.append(Scope)
+                return {"IPSets": []}
+
+            _run(wafv2_ip_sets_described, "wafv2", self._client(region, list_ip_sets=listing))
+            scopes[region] = seen
+        assert scopes == {"us-east-1": ["REGIONAL", "CLOUDFRONT"], "eu-west-1": ["REGIONAL"], "us-gov-west-1": ["REGIONAL"]}
+
+    def test_a_web_acl_carries_default_action_rule_count_and_tags(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import wafv2_web_acls_described
+
+        arn = "arn:aws:wafv2:eu-west-1:1:regional/webacl/a/i"
+        client = self._client(
+            "eu-west-1",
+            list_web_acls={"WebACLs": [{"Name": "a", "Id": "i", "ARN": arn}]},
+            get_web_acl={"WebACL": {"Name": "a", "Id": "i", "ARN": arn, "DefaultAction": {"Allow": {}}, "Rules": [{}, {}]}},
+            list_tags_for_resource={"TagInfoForResource": {"TagList": [{"Key": "k", "Value": "v"}]}},
+        )
+        [acl] = _run(wafv2_web_acls_described, "wafv2", client)
+        assert (acl["_default_action"], acl["_rule_count"], acl["Scope"]) == ("ALLOW", 2, "REGIONAL")
+        assert (acl["_tags"], acl["_tags_unread"]) == ({"k": "v"}, False)
+
+    def test_a_denied_tag_read_is_unread_and_an_undescribable_object_is_a_loud_gap(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import wafv2_ip_sets_described
+
+        arn = "arn:aws:wafv2:eu-west-1:1:regional/ipset/a/i"
+        listing = {"IPSets": [{"Name": "a", "Id": "i", "ARN": arn}]}
+        ok = self._client("eu-west-1", list_ip_sets=listing, get_ip_set={"IPSet": {"Addresses": ["1.2.3.4/32"]}}, list_tags_for_resource=_denied("ListTagsForResource"))
+        [ip_set] = _run(wafv2_ip_sets_described, "wafv2", ok)
+        assert (ip_set["_tags"], ip_set["_tags_unread"], ip_set["_address_count"]) == ({}, True, 1)
+        bad = self._client("eu-west-1", list_ip_sets=listing, get_ip_set=_denied("GetIPSet"))
+        yielded, gap = _run_to_the_gap(wafv2_ip_sets_described, "wafv2", bad)
+        assert yielded == [] and arn in gap
+
+
+class TestS3AccessPoints:
+    def test_status_account_and_bucket_arn_ride_with_the_item(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import s3_access_points_described
+
+        class _S3c(_Client):
+            meta = type("Meta", (), {"region_name": "us-gov-west-1"})()
+
+        s3c = _S3c(
+            list_access_points={"AccessPointList": [{"Name": "a", "Bucket": "data", "NetworkOrigin": "Internet"}, {"Name": "b", "Bucket": "data", "NetworkOrigin": "VPC", "VpcConfiguration": {"VpcId": "vpc-1"}}]},
+            get_access_point_policy_status=lambda AccountId, Name: {"PolicyStatus": {"IsPublic": True}} if Name == "a" else _denied("GetAccessPointPolicyStatus"),
+        )
+        sts = _Client(get_caller_identity={"Account": "123456789012"})
+        a, b = list(s3_access_points_described(None, client_for=lambda service: {"s3control": s3c, "sts": sts}[service]))
+        assert (a["_is_public"], a["_account_id"], a["_bucket_arn"]) == (True, "123456789012", "arn:aws-us-gov:s3:::data")
+        assert (b["_is_public"], b["_vpc_id"]) == (None, "vpc-1")

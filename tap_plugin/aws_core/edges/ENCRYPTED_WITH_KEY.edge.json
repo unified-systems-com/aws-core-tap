@@ -12,7 +12,8 @@
     "aws_core__aws_s3_bucket",
     "aws_core__aws_secrets_manager_secret",
     "aws_core__aws_sqs_queue",
-    "aws_core__aws_sns_topic"
+    "aws_core__aws_sns_topic",
+    "aws_core__aws_guardduty_publishing_destination"
   ],
   "targets": [
     "aws_core__aws_kms_key"
