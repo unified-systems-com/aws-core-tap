@@ -1,4 +1,4 @@
-"""RDS DB Parameter Group — an Amazon RDS or Neptune DB parameter group."""
+"""RDS DB Parameter Group — an Amazon RDS DB parameter group."""
 
 from typing import Any, ClassVar
 
@@ -12,7 +12,7 @@ class RdsDbParameterGroup(BaseModel):
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_rds_db_parameter_group"
     ENTITY_NAME: ClassVar[str] = "RDS DB Parameter Group"
-    ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS or Neptune DB parameter group."
+    ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS DB parameter group."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The parameter group's ARN: a name is unique only within an account and region.

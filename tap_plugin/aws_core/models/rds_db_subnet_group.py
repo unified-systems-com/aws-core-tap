@@ -1,4 +1,4 @@
-"""RDS DB Subnet Group — an Amazon RDS, DocumentDB or Neptune DB subnet group."""
+"""RDS DB Subnet Group — an Amazon RDS DB subnet group."""
 
 from typing import Any, ClassVar
 
@@ -12,7 +12,7 @@ class RdsDbSubnetGroup(BaseModel):
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_rds_db_subnet_group"
     ENTITY_NAME: ClassVar[str] = "RDS DB Subnet Group"
-    ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS, DocumentDB or Neptune DB subnet group."
+    ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS DB subnet group."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subnet group's ARN: a name is unique only within an account and region.

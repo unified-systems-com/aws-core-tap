@@ -1216,19 +1216,17 @@
     },
     "aws_core__aws_rds_db_cluster_parameter_group": {
       "cfn": [
-        "AWS::RDS::DBClusterParameterGroup",
-        "AWS::DocDB::DBClusterParameterGroup",
-        "AWS::Neptune::DBClusterParameterGroup"
+        "AWS::RDS::DBClusterParameterGroup"
       ]
     },
     "aws_core__aws_rds_db_cluster_snapshot": {
-      "cfn": [],
-      "reason": "A snapshot is created by the service or by an API call, not by a template: CloudFormation has no DB cluster snapshot resource type (no AWS::RDS::DBClusterSnapshot in the schema bundle). Collected from DescribeDBClusterSnapshots."
+      "cfn": [
+        "AWS::RDS::ClusterSnapshot"
+      ]
     },
     "aws_core__aws_rds_db_parameter_group": {
       "cfn": [
-        "AWS::RDS::DBParameterGroup",
-        "AWS::Neptune::DBParameterGroup"
+        "AWS::RDS::DBParameterGroup"
       ]
     },
     "aws_core__aws_rds_db_proxy": {
@@ -1243,9 +1241,7 @@
     },
     "aws_core__aws_rds_db_subnet_group": {
       "cfn": [
-        "AWS::RDS::DBSubnetGroup",
-        "AWS::DocDB::DBSubnetGroup",
-        "AWS::Neptune::DBSubnetGroup"
+        "AWS::RDS::DBSubnetGroup"
       ]
     },
     "aws_core__aws_rds_event_subscription": {
@@ -1255,8 +1251,7 @@
     },
     "aws_core__aws_rds_global_cluster": {
       "cfn": [
-        "AWS::RDS::GlobalCluster",
-        "AWS::Neptune::GlobalCluster"
+        "AWS::RDS::GlobalCluster"
       ]
     },
     "aws_core__aws_rds_instance": {
