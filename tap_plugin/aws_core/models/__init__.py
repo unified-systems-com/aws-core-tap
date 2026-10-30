@@ -169,8 +169,22 @@ from tap_plugin.aws_core.models.rds_option_group import RdsOptionGroup
 from tap_plugin.aws_core.models.rds_db_proxy import RdsDbProxy
 from tap_plugin.aws_core.models.rds_event_subscription import RdsEventSubscription
 from tap_plugin.aws_core.models.rds_global_cluster import RdsGlobalCluster
+from tap_plugin.aws_core.models.aps_scraper import ApsScraper
+from tap_plugin.aws_core.models.aps_workspace import ApsWorkspace
+from tap_plugin.aws_core.models.batch_compute_environment import BatchComputeEnvironment
+from tap_plugin.aws_core.models.batch_consumable_resource import BatchConsumableResource
+from tap_plugin.aws_core.models.batch_job_queue import BatchJobQueue
+from tap_plugin.aws_core.models.batch_scheduling_policy import BatchSchedulingPolicy
+from tap_plugin.aws_core.models.batch_service_environment import BatchServiceEnvironment
 
 __all__ = [
+    "BatchServiceEnvironment",
+    "BatchSchedulingPolicy",
+    "BatchJobQueue",
+    "BatchConsumableResource",
+    "BatchComputeEnvironment",
+    "ApsWorkspace",
+    "ApsScraper",
     "RdsGlobalCluster",
     "RdsEventSubscription",
     "RdsDbProxy",

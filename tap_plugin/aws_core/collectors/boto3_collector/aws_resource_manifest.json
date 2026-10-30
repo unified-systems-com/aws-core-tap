@@ -7278,6 +7278,260 @@
         "shape": "list_kv",
         "why": "The Describe answer carries the TagList inline; no extra call."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_aps_scraper",
+      "service": "amp",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListScrapers"
+      },
+      "why": "Enumerate APS Scraper objects with ListScrapers — an inventory of the account's scrapers and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListScrapers response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore amp ListScrapers item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "scrapers[]",
+      "natural_key": "arn",
+      "fields": {
+        "scraper_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_aps_workspace",
+      "service": "amp",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListWorkspaces"
+      },
+      "why": "Enumerate APS Workspace objects with ListWorkspaces — an inventory of the account's workspaces and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListWorkspaces response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore amp ListWorkspaces item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "workspaces[]",
+      "natural_key": "arn",
+      "fields": {
+        "workspace_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_batch_compute_environment",
+      "service": "batch",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeComputeEnvironments"
+      },
+      "why": "Enumerate Batch Compute Environment objects with DescribeComputeEnvironments — an inventory of the account's compute environments and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeComputeEnvironments response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch DescribeComputeEnvironments item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "computeEnvironments[]",
+      "natural_key": "computeEnvironmentArn",
+      "fields": {
+        "name": "computeEnvironmentName",
+        "compute_environment_arn": "computeEnvironmentArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_batch_consumable_resource",
+      "service": "batch",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListConsumableResources"
+      },
+      "why": "Enumerate Batch Consumable Resource objects with ListConsumableResources — an inventory of the account's consumable resources and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListConsumableResources response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch ListConsumableResources item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "consumableResources[]",
+      "natural_key": "consumableResourceArn",
+      "fields": {
+        "name": "consumableResourceName",
+        "consumable_resource_arn": "consumableResourceArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "consumableResourceArn"
+          }
+        },
+        "path": "tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_batch_job_queue",
+      "service": "batch",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeJobQueues"
+      },
+      "why": "Enumerate Batch Job Queue objects with DescribeJobQueues — an inventory of the account's job queues and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeJobQueues response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch DescribeJobQueues item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "jobQueues[]",
+      "natural_key": "jobQueueArn",
+      "fields": {
+        "name": "jobQueueName",
+        "job_queue_arn": "jobQueueArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_batch_scheduling_policy",
+      "service": "batch",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListSchedulingPolicies"
+      },
+      "why": "Enumerate Batch Scheduling Policy objects with ListSchedulingPolicies — an inventory of the account's scheduling policys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListSchedulingPolicies response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch ListSchedulingPolicies item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "schedulingPolicies[]",
+      "natural_key": "arn",
+      "fields": {
+        "scheduling_policy_arn": "arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "arn"
+          }
+        },
+        "path": "tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_batch_service_environment",
+      "service": "batch",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeServiceEnvironments"
+      },
+      "why": "Enumerate Batch Service Environment objects with DescribeServiceEnvironments — an inventory of the account's service environments and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeServiceEnvironments response shape has not been reviewed for sensitive values (sensitivity unreviewed), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore batch DescribeServiceEnvironments item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "serviceEnvironments[]",
+      "natural_key": "serviceEnvironmentArn",
+      "fields": {
+        "name": "serviceEnvironmentName",
+        "service_environment_arn": "serviceEnvironmentArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
     }
   ]
 }

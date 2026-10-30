@@ -692,6 +692,34 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'GlobalClusterIdentifier': 'orders-global', 'GlobalClusterArn': 'arn:aws:rds::123456789012:global-cluster:orders-global', 'Engine': 'aurora-postgresql', 'EngineVersion': '16.4', 'StorageEncrypted': True, 'DeletionProtection': True, 'Status': 'available', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
         {'name': 'orders-global', 'engine': 'aurora-postgresql', 'storage_encrypted': True, 'deletion_protection': True},
     ),
+    "aws_core__aws_aps_scraper": (
+        {'arn': 'arn:aws:amp:us-east-1:123456789012:aps_scraper/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_aps_workspace": (
+        {'arn': 'arn:aws:amp:us-east-1:123456789012:aps_workspace/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_batch_compute_environment": (
+        {'computeEnvironmentArn': 'arn:aws:batch:us-east-1:123456789012:batch_compute_environment/gen-1', 'computeEnvironmentName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_batch_consumable_resource": (
+        {'consumableResourceArn': 'arn:aws:batch:us-east-1:123456789012:batch_consumable_resource/gen-1', 'consumableResourceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_batch_job_queue": (
+        {'jobQueueArn': 'arn:aws:batch:us-east-1:123456789012:batch_job_queue/gen-1', 'jobQueueName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_batch_scheduling_policy": (
+        {'arn': 'arn:aws:batch:us-east-1:123456789012:batch_scheduling_policy/gen-1'},
+        {},
+    ),
+    "aws_core__aws_batch_service_environment": (
+        {'serviceEnvironmentArn': 'arn:aws:batch:us-east-1:123456789012:batch_service_environment/gen-1', 'serviceEnvironmentName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
