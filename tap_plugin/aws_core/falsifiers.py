@@ -152,7 +152,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
     resolve_partition,
     resolve_regions,
 )
-from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import iam_endpoint_region
+from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import account_of_iam_arn, iam_endpoint_region
 from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
     ACCOUNT_NOT_REGISTERED,
     INACTIVE_ACCOUNT_STATES,
@@ -1798,6 +1798,13 @@ class _IamAccountListedFalsifier(_IamFalsifier):
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
+        if account_of_iam_arn(arn) != expected_account:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's ARN ({arn!r}) names a different account than the one it was observed in "
+                f"({expected_account}); a name-keyed probe here would ask about another account's object",
+            )
         if self.by_name and _arn_resource_name(arn) != name:
             return _undetermined(
                 candidate,
@@ -1874,7 +1881,9 @@ class IamSamlProviderFalsifier(_IamAccountListedFalsifier):
 
     def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
         # The response does not echo the ARN; the request was made by it, so it is the answer's identity.
-        return {**client.get_saml_provider(SAMLProviderArn=arn), "Arn": arn}
+        answer = client.get_saml_provider(SAMLProviderArn=arn)
+        answer.pop("SAMLMetadataDocument", None)
+        return {**answer, "Arn": arn}
 
     def _probe_of(self, result: dict[str, Any]) -> Probe:
         arn = str(result.get("Arn") or "")
@@ -1899,7 +1908,10 @@ class IamServerCertificateFalsifier(_IamAccountListedFalsifier):
     noun = "IAM server certificate"
 
     def _call(self, client: Any, name: str, arn: str) -> dict[str, Any]:
-        return client.get_server_certificate(ServerCertificateName=name)  # type: ignore[no-any-return]
+        answer = client.get_server_certificate(ServerCertificateName=name)
+        meta = (answer.get("ServerCertificate") or {}).get("ServerCertificateMetadata") or {}
+        # Only the metadata block is kept: the body and chain the call also returns are not needed.
+        return {"ServerCertificate": {"ServerCertificateMetadata": meta}}
 
     def _probe_of(self, result: dict[str, Any]) -> Probe:
         meta = (result.get("ServerCertificate") or {}).get("ServerCertificateMetadata") or {}

@@ -1317,6 +1317,17 @@ class TestIamAccountListedFalsifiers:
         getattr(client, case["call"]).assert_not_called()
 
     @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
+    def test_an_arn_from_another_account_refuses_before_any_probe(self, case: dict[str, Any]) -> None:
+        # Dimensioned to this account, but the stored ARN names another one.
+        arn = self._arn(case, "kept", account=OTHER_ACCOUNT_ID)
+        client = MagicMock()
+        falsifier = case["cls"](session=_mock_session("iam", client), account_id=ACCOUNT_ID)
+        [verdict] = falsifier.batch_falsify([self._candidate(case, "kept", arn)], _context())
+        assert (verdict.verdict, verdict.reason) == (UNDETERMINED, "scope_unknown")
+        assert "different account" in verdict.note
+        getattr(client, case["call"]).assert_not_called()
+
+    @pytest.mark.parametrize("case", CASES, ids=lambda c: c["type"])
     def test_a_row_without_an_arn_is_not_answered(self, case: dict[str, Any]) -> None:
         uid = _dimensioned(case["type"], {"name": "legacy"})
         client = MagicMock()
