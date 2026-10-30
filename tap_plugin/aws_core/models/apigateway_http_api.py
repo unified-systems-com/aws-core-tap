@@ -42,14 +42,7 @@ class ApiGatewayHttpApi(BaseModel):
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "api_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "api_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "api_endpoint": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "protocol_type": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "route_authorization_types": {"validation": "jsonschema", "schema": {"type": ["object", "null"], "additionalProperties": {"type": "string", "minLength": 1}}},
-        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
-        "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 

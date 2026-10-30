@@ -36,12 +36,7 @@ class ApigatewayClientCertificate(BaseModel):
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "client_certificate_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "client_certificate_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "expiration": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 

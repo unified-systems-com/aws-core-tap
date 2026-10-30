@@ -38,14 +38,7 @@ class ApigatewayUsagePlan(BaseModel):
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "usage_plan_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "quota_limit": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "quota_period": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "throttle_rate_limit": {"validation": "jsonschema", "schema": {"type": ["number", "null"]}},
-        "throttle_burst_limit": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 

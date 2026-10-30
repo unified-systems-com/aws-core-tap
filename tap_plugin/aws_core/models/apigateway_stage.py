@@ -41,17 +41,7 @@ class ApigatewayStage(BaseModel):
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "stage_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "stage_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "deployment_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "cache_cluster_enabled": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
-        "tracing_enabled": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
-        "web_acl_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "client_certificate_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "access_log_destination_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 

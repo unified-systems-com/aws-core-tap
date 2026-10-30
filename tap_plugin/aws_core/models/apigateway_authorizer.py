@@ -37,13 +37,7 @@ class ApigatewayAuthorizer(BaseModel):
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "authorizer_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "authorizer_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "identity_source": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "result_ttl_seconds": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 

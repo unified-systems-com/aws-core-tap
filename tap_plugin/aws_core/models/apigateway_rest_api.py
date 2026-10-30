@@ -39,15 +39,7 @@ class ApigatewayRestApi(BaseModel):
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
-        "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "rest_api_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "rest_api_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "endpoint_types": {"validation": "jsonschema", "schema": {"type": ["array", "null"]}},
-        "api_key_source": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "disable_execute_api_endpoint": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
-        "security_policy": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
-        "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
