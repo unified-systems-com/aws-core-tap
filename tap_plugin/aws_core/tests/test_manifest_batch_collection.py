@@ -26,6 +26,9 @@ ACCOUNT = "123456789012"
 KEY_ARN = f"arn:aws:kms:us-east-1:{ACCOUNT}:key/1234abcd-12ab-34cd-56ef-1234567890ab"
 TAGS = [{"Key": "owner", "Value": "net-team"}]
 
+# Edge types whose source (or target) list is open by design, with the ends left open.
+OPEN_ENDED_EDGES: dict[str, tuple[str, ...]] = {"INVOKES_LAMBDA__aws_core": ("sources",)}
+
 # entity_type -> (raw item, typed fields the entry must project)
 CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "aws_core__aws_elastic_ip": (
@@ -549,9 +552,13 @@ class TestBatchTypes:
         rules = _entry(entity_type).get("edges", [])
         for rule in rules:
             edge = _edge_json(rule["edge_type"])
-            # An edge type that omits `sources` (or `targets`) leaves that end open: any type may use it.
-            assert entity_type in edge.get("sources", [entity_type]), (entity_type, rule["edge_type"])
-            assert rule["target_type"] in edge.get("targets", [rule["target_type"]]), (entity_type, rule["edge_type"])
+            # Most edge types name both ends. The few that leave one open on purpose (a source that any service
+            # type may be) are listed here; any other edge type must declare its ends.
+            open_ends = OPEN_ENDED_EDGES.get(rule["edge_type"], ())
+            if "sources" not in open_ends:
+                assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
+            if "targets" not in open_ends:
+                assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
         # A rule may be conditional on a sibling (a transit gateway attachment's VPC id exists only for a VPC
         # attachment), so the canned item need only resolve some rule, not all.
         assert not rules or any(eval_path(item, rule["value_path"]) for rule in rules)

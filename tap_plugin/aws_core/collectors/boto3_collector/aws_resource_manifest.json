@@ -4190,7 +4190,7 @@
           {
             "path": "InvocationEndpoint",
             "category": "other",
-            "reason": "The external URL the destination calls: a network location. A URL can embed a token in its query string, which is why the connection, not the URL, should carry credentials.",
+            "reason": "The external URL the destination calls: a network location. A URL can embed a token in its query string or user info, so the reader reduces it to scheme, host and path before the item is built.",
             "evidence": "reviewer_judgement"
           }
         ]

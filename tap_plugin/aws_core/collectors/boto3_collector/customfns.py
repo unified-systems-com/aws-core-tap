@@ -23,6 +23,7 @@ import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -1486,18 +1487,22 @@ def access_analyzer_archive_rules_described(session: Any, *, client_for: Any) ->
         raise _undescribed("analyzers whose archive rules", failed)
 
 
-def _token_pages(client: Any, method: str, token_key: str = "NextToken", **kwargs: Any) -> Iterator[dict[str, Any]]:
-    """Pages of a list call that has a continuation token but no botocore paginator (EventBridge's list
-    calls): call, then call again with the token the answer returned, until it returns none."""
+# The continuation key of EventBridge's list calls, which return one and have no paginator.
+_CONTINUATION = "NextToken"
+
+
+def _token_pages(client: Any, method: str, **kwargs: Any) -> Iterator[dict[str, Any]]:
+    """Pages of a list call that has a continuation key but no botocore paginator (EventBridge's list
+    calls): call, then call again with what the answer returned under that key, until it returns none."""
     if client.can_paginate(method):
         yield from _pages(client, method, **kwargs)
         return
-    token: str | None = None
+    after: str | None = None
     while True:
-        page = without_response_metadata(getattr(client, method)(**kwargs, **({token_key: token} if token else {})))
+        page = without_response_metadata(getattr(client, method)(**kwargs, **({_CONTINUATION: after} if after else {})))
         yield page
-        token = page.get(token_key)
-        if not token:
+        after = page.get(_CONTINUATION)
+        if not after:
             return
 
 
@@ -1584,9 +1589,22 @@ def eventbridge_connections_described(session: Any, *, client_for: Any) -> Itera
     yield from _eventbridge_items(client_for, "list_connections", "Connections")
 
 
+def _without_credentials(url: str) -> str:
+    """``url`` as scheme, host and path only: the user info, query string and fragment are where a token or a
+    password goes in a URL, and none of them is needed to know which endpoint is called."""
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    if parts.port:
+        host = f"{host}:{parts.port}"
+    return urlunsplit((parts.scheme, host, parts.path, "", ""))
+
+
 def eventbridge_api_destinations_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate EventBridge API destinations (regional)."""
-    yield from _eventbridge_items(client_for, "list_api_destinations", "ApiDestinations")
+    """Enumerate EventBridge API destinations (regional). The endpoint URL is reduced to scheme, host and path
+    (:func:`_without_credentials`): a token in a query string or user info never leaves the reader."""
+    for destination in _eventbridge_items(client_for, "list_api_destinations", "ApiDestinations"):
+        endpoint = destination.get("InvocationEndpoint")
+        yield {**destination, "InvocationEndpoint": _without_credentials(endpoint) if endpoint else endpoint}
 
 
 def lambda_function_urls_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:

@@ -542,6 +542,24 @@ class TestEventBridge:
         assert archive["_arn"] == "arn:aws-us-gov:events:us-gov-west-1:1:archive/all"
 
 
+class TestApiDestinationUrls:
+    def test_a_token_in_the_url_never_leaves_the_reader(self) -> None:
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import eventbridge_api_destinations_described
+
+        client = _Client(
+            list_api_destinations={
+                "ApiDestinations": [
+                    {"Name": "a", "InvocationEndpoint": "https://user:pw@api.example.com:8443/hook/v1?token=SECRET&x=1#frag"},
+                    {"Name": "b", "InvocationEndpoint": "https://api.example.com/plain"},
+                ]
+            }
+        )
+        a, b = _run(eventbridge_api_destinations_described, "events", client)
+        assert a["InvocationEndpoint"] == "https://api.example.com:8443/hook/v1"
+        assert "SECRET" not in str(a) and "pw" not in a["InvocationEndpoint"]
+        assert b["InvocationEndpoint"] == "https://api.example.com/plain"
+
+
 class TestLambdaSecurityTypes:
     def test_function_urls_are_listed_per_function_and_a_failed_function_is_a_loud_gap(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import lambda_function_urls_described
