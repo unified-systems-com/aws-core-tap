@@ -1464,6 +1464,134 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'ruleArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'ruleName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_iotsitewise_asset": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_asset_model": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_computation_model": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_workspace": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iottwinmaker_workspace": (
+        {'arn': 'arn:aws:iottwinmaker:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_kinesis_stream": (
+        {'StreamARN': 'arn:aws:kinesis:us-east-1:123456789012:res/gen-1', 'StreamName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisanalytics_application": (
+        {'ApplicationARN': 'arn:aws:kinesisanalytics:us-east-1:123456789012:res/gen-1', 'ApplicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisanalyticsv2_application": (
+        {'ApplicationARN': 'arn:aws:kinesisanalyticsv2:us-east-1:123456789012:res/gen-1', 'ApplicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisvideo_signaling_channel": (
+        {'ChannelARN': 'arn:aws:kinesisvideo:us-east-1:123456789012:res/gen-1', 'ChannelName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisvideo_stream": (
+        {'StreamARN': 'arn:aws:kinesisvideo:us-east-1:123456789012:res/gen-1', 'StreamName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_licensemanagerusersubscriptions_license_server_endpoint": (
+        {'LicenseServerEndpointArn': 'arn:aws:license-manager-user-subscriptions:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_msk_cluster": (
+        {'ClusterArn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1', 'ClusterName': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_msk_vpc_connection": (
+        {'VpcConnectionArn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_managedblockchain_accessor": (
+        {'Arn': 'arn:aws:managedblockchain:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_memorydb_acl": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_cluster": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_multi_region_cluster": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'MultiRegionClusterName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_parameter_group": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_subnet_group": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_user": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_db_cluster_parameter_group": (
+        {'DBClusterParameterGroupArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'DBClusterParameterGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_db_parameter_group": (
+        {'DBParameterGroupArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'DBParameterGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_db_subnet_group": (
+        {'DBSubnetGroupArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'DBSubnetGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_event_subscription": (
+        {'EventSubscriptionArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_neptune_global_cluster": (
+        {'GlobalClusterArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkfirewall_container_association": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_firewall_policy": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_rule_group": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_tls_inspection_configuration": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchserverless_collection": (
+        {'arn': 'arn:aws:opensearchserverless:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchserverless_collection_group": (
+        {'arn': 'arn:aws:opensearchserverless:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchservice_application": (
+        {'arn': 'arn:aws:opensearch:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

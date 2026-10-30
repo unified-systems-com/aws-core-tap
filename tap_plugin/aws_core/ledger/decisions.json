@@ -1697,6 +1697,31 @@
         "AWS::IoTSiteWise::Application"
       ]
     },
+    "aws_core__aws_iotsitewise_asset": {
+      "cfn": [
+        "AWS::IoTSiteWise::Asset"
+      ]
+    },
+    "aws_core__aws_iotsitewise_asset_model": {
+      "cfn": [
+        "AWS::IoTSiteWise::AssetModel"
+      ]
+    },
+    "aws_core__aws_iotsitewise_computation_model": {
+      "cfn": [
+        "AWS::IoTSiteWise::ComputationModel"
+      ]
+    },
+    "aws_core__aws_iotsitewise_workspace": {
+      "cfn": [
+        "AWS::IoTSiteWise::Workspace"
+      ]
+    },
+    "aws_core__aws_iottwinmaker_workspace": {
+      "cfn": [
+        "AWS::IoTTwinMaker::Workspace"
+      ]
+    },
     "aws_core__aws_kafkaconnect_connector": {
       "cfn": [
         "AWS::KafkaConnect::Connector"
@@ -1715,6 +1740,31 @@
     "aws_core__aws_kinesis_channel": {
       "cfn": [
         "AWS::Kinesis::Channel"
+      ]
+    },
+    "aws_core__aws_kinesis_stream": {
+      "cfn": [
+        "AWS::Kinesis::Stream"
+      ]
+    },
+    "aws_core__aws_kinesisanalytics_application": {
+      "cfn": [
+        "AWS::KinesisAnalytics::Application"
+      ]
+    },
+    "aws_core__aws_kinesisanalyticsv2_application": {
+      "cfn": [
+        "AWS::KinesisAnalyticsV2::Application"
+      ]
+    },
+    "aws_core__aws_kinesisvideo_signaling_channel": {
+      "cfn": [
+        "AWS::KinesisVideo::SignalingChannel"
+      ]
+    },
+    "aws_core__aws_kinesisvideo_stream": {
+      "cfn": [
+        "AWS::KinesisVideo::Stream"
       ]
     },
     "aws_core__aws_kms_alias": {
@@ -1768,6 +1818,11 @@
         "AWS::LicenseManager::LicenseConfiguration"
       ]
     },
+    "aws_core__aws_licensemanagerusersubscriptions_license_server_endpoint": {
+      "cfn": [
+        "AWS::LicenseManagerUserSubscriptions::LicenseServerEndpoint"
+      ]
+    },
     "aws_core__aws_logs_delivery": {
       "cfn": [
         "AWS::Logs::Delivery"
@@ -1818,9 +1873,44 @@
         "AWS::M2::Environment"
       ]
     },
+    "aws_core__aws_managedblockchain_accessor": {
+      "cfn": [
+        "AWS::ManagedBlockchain::Accessor"
+      ]
+    },
+    "aws_core__aws_memorydb_acl": {
+      "cfn": [
+        "AWS::MemoryDB::ACL"
+      ]
+    },
+    "aws_core__aws_memorydb_cluster": {
+      "cfn": [
+        "AWS::MemoryDB::Cluster"
+      ]
+    },
+    "aws_core__aws_memorydb_multi_region_cluster": {
+      "cfn": [
+        "AWS::MemoryDB::MultiRegionCluster"
+      ]
+    },
+    "aws_core__aws_memorydb_parameter_group": {
+      "cfn": [
+        "AWS::MemoryDB::ParameterGroup"
+      ]
+    },
     "aws_core__aws_memorydb_snapshot": {
       "cfn": [
         "AWS::MemoryDB::Snapshot"
+      ]
+    },
+    "aws_core__aws_memorydb_subnet_group": {
+      "cfn": [
+        "AWS::MemoryDB::SubnetGroup"
+      ]
+    },
+    "aws_core__aws_memorydb_user": {
+      "cfn": [
+        "AWS::MemoryDB::User"
       ]
     },
     "aws_core__aws_mgn_connector": {
@@ -1848,6 +1938,11 @@
         "AWS::MGN::Wave"
       ]
     },
+    "aws_core__aws_msk_cluster": {
+      "cfn": [
+        "AWS::MSK::Cluster"
+      ]
+    },
     "aws_core__aws_msk_configuration": {
       "cfn": [
         "AWS::MSK::Configuration"
@@ -1858,9 +1953,39 @@
         "AWS::MSK::Replicator"
       ]
     },
+    "aws_core__aws_msk_vpc_connection": {
+      "cfn": [
+        "AWS::MSK::VpcConnection"
+      ]
+    },
     "aws_core__aws_nat_gateway": {
       "cfn": [
         "AWS::EC2::NatGateway"
+      ]
+    },
+    "aws_core__aws_neptune_db_cluster_parameter_group": {
+      "cfn": [
+        "AWS::Neptune::DBClusterParameterGroup"
+      ]
+    },
+    "aws_core__aws_neptune_db_parameter_group": {
+      "cfn": [
+        "AWS::Neptune::DBParameterGroup"
+      ]
+    },
+    "aws_core__aws_neptune_db_subnet_group": {
+      "cfn": [
+        "AWS::Neptune::DBSubnetGroup"
+      ]
+    },
+    "aws_core__aws_neptune_event_subscription": {
+      "cfn": [
+        "AWS::Neptune::EventSubscription"
+      ]
+    },
+    "aws_core__aws_neptune_global_cluster": {
+      "cfn": [
+        "AWS::Neptune::GlobalCluster"
       ]
     },
     "aws_core__aws_network_acl": {
@@ -1871,6 +1996,26 @@
     "aws_core__aws_network_firewall": {
       "cfn": [
         "AWS::NetworkFirewall::Firewall"
+      ]
+    },
+    "aws_core__aws_networkfirewall_container_association": {
+      "cfn": [
+        "AWS::NetworkFirewall::ContainerAssociation"
+      ]
+    },
+    "aws_core__aws_networkfirewall_firewall_policy": {
+      "cfn": [
+        "AWS::NetworkFirewall::FirewallPolicy"
+      ]
+    },
+    "aws_core__aws_networkfirewall_rule_group": {
+      "cfn": [
+        "AWS::NetworkFirewall::RuleGroup"
+      ]
+    },
+    "aws_core__aws_networkfirewall_tls_inspection_configuration": {
+      "cfn": [
+        "AWS::NetworkFirewall::TLSInspectionConfiguration"
       ]
     },
     "aws_core__aws_networkfirewall_vpc_endpoint_association": {
@@ -1891,6 +2036,21 @@
     "aws_core__aws_oam_sink": {
       "cfn": [
         "AWS::Oam::Sink"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_collection": {
+      "cfn": [
+        "AWS::OpenSearchServerless::Collection"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_collection_group": {
+      "cfn": [
+        "AWS::OpenSearchServerless::CollectionGroup"
+      ]
+    },
+    "aws_core__aws_opensearchservice_application": {
+      "cfn": [
+        "AWS::OpenSearchService::Application"
       ]
     },
     "aws_core__aws_organization": {

@@ -362,8 +362,72 @@ from tap_plugin.aws_core.models.iot_stream import IotStream
 from tap_plugin.aws_core.models.iot_thing_group import IotThingGroup
 from tap_plugin.aws_core.models.iot_thing_type import IotThingType
 from tap_plugin.aws_core.models.iot_topic_rule import IotTopicRule
+from tap_plugin.aws_core.models.iotsitewise_asset import IotsitewiseAsset
+from tap_plugin.aws_core.models.iotsitewise_asset_model import IotsitewiseAssetModel
+from tap_plugin.aws_core.models.iotsitewise_computation_model import IotsitewiseComputationModel
+from tap_plugin.aws_core.models.iotsitewise_workspace import IotsitewiseWorkspace
+from tap_plugin.aws_core.models.iottwinmaker_workspace import IottwinmakerWorkspace
+from tap_plugin.aws_core.models.kinesis_stream import KinesisStream
+from tap_plugin.aws_core.models.kinesisanalytics_application import KinesisanalyticsApplication
+from tap_plugin.aws_core.models.kinesisanalyticsv2_application import Kinesisanalyticsv2Application
+from tap_plugin.aws_core.models.kinesisvideo_signaling_channel import KinesisvideoSignalingChannel
+from tap_plugin.aws_core.models.kinesisvideo_stream import KinesisvideoStream
+from tap_plugin.aws_core.models.licensemanagerusersubscriptions_license_server_endpoint import LicensemanagerusersubscriptionsLicenseServerEndpoint
+from tap_plugin.aws_core.models.msk_cluster import MskCluster
+from tap_plugin.aws_core.models.msk_vpc_connection import MskVpcConnection
+from tap_plugin.aws_core.models.managedblockchain_accessor import ManagedblockchainAccessor
+from tap_plugin.aws_core.models.memorydb_acl import MemorydbAcl
+from tap_plugin.aws_core.models.memorydb_cluster import MemorydbCluster
+from tap_plugin.aws_core.models.memorydb_multi_region_cluster import MemorydbMultiRegionCluster
+from tap_plugin.aws_core.models.memorydb_parameter_group import MemorydbParameterGroup
+from tap_plugin.aws_core.models.memorydb_subnet_group import MemorydbSubnetGroup
+from tap_plugin.aws_core.models.memorydb_user import MemorydbUser
+from tap_plugin.aws_core.models.neptune_db_cluster_parameter_group import NeptuneDbClusterParameterGroup
+from tap_plugin.aws_core.models.neptune_db_parameter_group import NeptuneDbParameterGroup
+from tap_plugin.aws_core.models.neptune_db_subnet_group import NeptuneDbSubnetGroup
+from tap_plugin.aws_core.models.neptune_event_subscription import NeptuneEventSubscription
+from tap_plugin.aws_core.models.neptune_global_cluster import NeptuneGlobalCluster
+from tap_plugin.aws_core.models.networkfirewall_container_association import NetworkfirewallContainerAssociation
+from tap_plugin.aws_core.models.networkfirewall_firewall_policy import NetworkfirewallFirewallPolicy
+from tap_plugin.aws_core.models.networkfirewall_rule_group import NetworkfirewallRuleGroup
+from tap_plugin.aws_core.models.networkfirewall_tls_inspection_configuration import NetworkfirewallTlsInspectionConfiguration
+from tap_plugin.aws_core.models.opensearchserverless_collection import OpensearchserverlessCollection
+from tap_plugin.aws_core.models.opensearchserverless_collection_group import OpensearchserverlessCollectionGroup
+from tap_plugin.aws_core.models.opensearchservice_application import OpensearchserviceApplication
 
 __all__ = [
+    "OpensearchserviceApplication",
+    "OpensearchserverlessCollectionGroup",
+    "OpensearchserverlessCollection",
+    "NetworkfirewallTlsInspectionConfiguration",
+    "NetworkfirewallRuleGroup",
+    "NetworkfirewallFirewallPolicy",
+    "NetworkfirewallContainerAssociation",
+    "NeptuneGlobalCluster",
+    "NeptuneEventSubscription",
+    "NeptuneDbSubnetGroup",
+    "NeptuneDbParameterGroup",
+    "NeptuneDbClusterParameterGroup",
+    "MemorydbUser",
+    "MemorydbSubnetGroup",
+    "MemorydbParameterGroup",
+    "MemorydbMultiRegionCluster",
+    "MemorydbCluster",
+    "MemorydbAcl",
+    "ManagedblockchainAccessor",
+    "MskVpcConnection",
+    "MskCluster",
+    "LicensemanagerusersubscriptionsLicenseServerEndpoint",
+    "KinesisvideoStream",
+    "KinesisvideoSignalingChannel",
+    "Kinesisanalyticsv2Application",
+    "KinesisanalyticsApplication",
+    "KinesisStream",
+    "IottwinmakerWorkspace",
+    "IotsitewiseWorkspace",
+    "IotsitewiseComputationModel",
+    "IotsitewiseAssetModel",
+    "IotsitewiseAsset",
     "IotTopicRule",
     "IotThingType",
     "IotThingGroup",
