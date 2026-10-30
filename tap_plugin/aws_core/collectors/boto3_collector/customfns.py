@@ -982,30 +982,43 @@ def iam_virtual_mfa_devices_listed(
         )
 
 
-# DescribeTags on both load balancer APIs takes at most this many ids per call.
-_ELB_TAG_BATCH = 20
+# DescribeTags on the load balancer APIs and on Direct Connect takes at most this many ids per call.
+_TAG_BATCH = 20
 
 
-def _elb_tags(client: Any, id_param: str, id_key: str, ids: list[str]) -> dict[str, dict[str, str]]:
-    """Tags per load balancer or target group, read 20 ids to a call.
+def _batched_tags(
+    client: Any,
+    id_param: str,
+    id_key: str,
+    ids: list[str],
+    *,
+    list_key: str = "TagDescriptions",
+    tags_key: str = "Tags",
+    tag_key: str = "Key",
+    tag_value: str = "Value",
+) -> dict[str, dict[str, str]]:
+    """Tags per resource, read 20 ids to a ``describe_tags`` call.
 
     ``id_param``/``id_key`` are the request parameter and the response key that carry the id
-    (``ResourceArns``/``ResourceArn`` for ELBv2, ``LoadBalancerNames``/``LoadBalancerName`` for Classic).
-    An id is in the result only when an answer named it: absent is 'not read', and ``{}`` is 'read, untagged'.
-    A batch that failed, and an id a successful answer left out (a load balancer deleted mid-run), are both
-    'not read', so neither clears the stored tags.
+    (``ResourceArns``/``ResourceArn`` for ELBv2, ``LoadBalancerNames``/``LoadBalancerName`` for Classic,
+    ``resourceArns``/``resourceArn`` for Direct Connect), ``list_key`` the response list, ``tags_key`` the
+    list of tags inside each entry, and ``tag_key``/``tag_value`` the spelling of the tag struct. An id is in the result only when an answer named
+    it: absent is 'not read', and ``{}`` is 'read, untagged'. A batch that failed, and an id a successful
+    answer left out (a resource deleted mid-run), are both 'not read', so neither clears the stored tags.
     """
     tags: dict[str, dict[str, str]] = {}
-    for start in range(0, len(ids), _ELB_TAG_BATCH):
-        batch = ids[start : start + _ELB_TAG_BATCH]
+    for start in range(0, len(ids), _TAG_BATCH):
+        batch = ids[start : start + _TAG_BATCH]
         try:
             answer = without_response_metadata(client.describe_tags(**{id_param: batch}))
         except BotoCoreError, ClientError:
             continue
-        for description in answer.get("TagDescriptions", []):
+        for description in answer.get(list_key, []):
             ident = description.get(id_key)
             if ident in batch:
-                tags[ident] = {t["Key"]: t.get("Value") or "" for t in description.get("Tags", []) if "Key" in t}
+                tags[ident] = {
+                    t[tag_key]: t.get(tag_value) or "" for t in description.get(tags_key, []) if tag_key in t
+                }
     return tags
 
 
@@ -1040,7 +1053,7 @@ def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     """
     client = client_for("elbv2")
     albs = [lb for lb in _elbv2_load_balancers(client) if lb.get("Type") == "application"]
-    tags = _elb_tags(client, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in albs])
+    tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in albs])
     for lb in albs:
         yield _lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
 
@@ -1054,7 +1067,7 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     """
     v2 = client_for("elbv2")
     others = [lb for lb in _elbv2_load_balancers(v2) if lb.get("Type") in ("network", "gateway")]
-    v2_tags = _elb_tags(v2, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in others])
+    v2_tags = _batched_tags(v2, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in others])
     for lb in others:
         item = _lb_item(lb, v2_tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
         yield {**item, "_lb_type": lb["Type"]}
@@ -1062,7 +1075,7 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     described = [
         lb for page in _pages(classic, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])
     ]
-    classic_tags = _elb_tags(
+    classic_tags = _batched_tags(
         classic, "LoadBalancerNames", "LoadBalancerName", [str(lb["LoadBalancerName"]) for lb in described]
     )
     for lb in described:
@@ -1074,10 +1087,197 @@ def elbv2_target_groups_described(session: Any, *, client_for: Any) -> Iterator[
     """Enumerate ELBv2 target groups (regional) with their tags (``DescribeTags``, 20 ARNs to a call)."""
     client = client_for("elbv2")
     groups = [tg for page in _pages(client, "describe_target_groups") for tg in page.get("TargetGroups", [])]
-    tags = _elb_tags(client, "ResourceArns", "ResourceArn", [str(tg["TargetGroupArn"]) for tg in groups])
+    tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(tg["TargetGroupArn"]) for tg in groups])
     for group in groups:
         arn = str(group["TargetGroupArn"])
         yield {**group, "_tags": tags.get(arn, {}), "_tags_unread": arn not in tags}
+
+
+def dx_gateways_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Direct Connect gateways (global) with their tags.
+
+    ``DescribeDirectConnectGateways`` returns no ARN and the tag API is keyed by ARN, so the ARN is built
+    from the partition, the owning account and the gateway id (``arn:<partition>:directconnect::<account>:
+    dx-gateway/<id>``, as CloudFormation's ``DirectConnectGatewayArn`` is). Tags are read 20 ARNs to a call;
+    a batch that fails leaves its gateways' tags unread. A gateway with no owner account or id has no ARN and
+    is left out of the batch, and the reader raises once it has yielded the rest.
+    """
+    client = client_for("directconnect")
+    partition = _client_partition(client)
+    gateways = [
+        g for page in _pages(client, "describe_direct_connect_gateways") for g in page.get("directConnectGateways", [])
+    ]
+    arns: dict[str, str] = {}
+    failed: list[str] = []
+    for gateway in gateways:
+        gateway_id, owner = gateway.get("directConnectGatewayId"), gateway.get("ownerAccount")
+        if gateway_id and owner:
+            arns[gateway_id] = build_arn(partition, "directconnect", "", owner, f"dx-gateway/{gateway_id}")
+        else:
+            failed.append(str(gateway_id or gateway.get("directConnectGatewayName") or "<unnamed>"))
+    tags = _batched_tags(
+        client,
+        "resourceArns",
+        "resourceArn",
+        list(arns.values()),
+        list_key="resourceTags",
+        tags_key="tags",
+        tag_key="key",
+        tag_value="value",
+    )
+    for gateway in gateways:
+        arn = arns.get(str(gateway.get("directConnectGatewayId")))
+        if arn:
+            yield {**gateway, "_arn": arn, "_tags": tags.get(arn, {}), "_tags_unread": arn not in tags}
+    if failed:
+        raise _undescribed("Direct Connect gateways without an owner account", failed)
+
+
+def transit_gateways_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate transit gateways (regional). EC2 reports an option as ``enable``/``disable``; the model holds
+    a boolean, ``None`` when the option is absent from the answer (the three ``_`` flags below)."""
+    client = client_for("ec2")
+
+    def flag(options: dict[str, Any], key: str) -> bool | None:
+        value = options.get(key)
+        return None if value is None else value == "enable"
+
+    for page in _pages(client, "describe_transit_gateways"):
+        for gateway in page.get("TransitGateways", []):
+            options = gateway.get("Options") or {}
+            yield {
+                **gateway,
+                "_auto_accept_shared_attachments": flag(options, "AutoAcceptSharedAttachments"),
+                "_default_route_table_association": flag(options, "DefaultRouteTableAssociation"),
+                "_default_route_table_propagation": flag(options, "DefaultRouteTablePropagation"),
+            }
+
+
+def transit_gateway_attachments_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate transit gateway attachments (regional).
+
+    An attachment's ``ResourceId`` names a different kind of thing by ``ResourceType``: a VPC, a Direct
+    Connect gateway or the peer transit gateway of a peering attachment. The three ``_`` ids carry it for the
+    type it is and ``None`` otherwise, so each edge is written from the one id that is true. They come from the
+    same record as the type, so the edge read is ``complete``.
+    """
+    client = client_for("ec2")
+    for page in _pages(client, "describe_transit_gateway_attachments"):
+        for attachment in page.get("TransitGatewayAttachments", []):
+            kind, target = attachment.get("ResourceType"), attachment.get("ResourceId")
+            yield with_edge_reads(
+                {
+                    **attachment,
+                    "_vpc_id": target if kind == "vpc" else None,
+                    "_dx_gateway_id": target if kind == "direct-connect-gateway" else None,
+                    "_peer_transit_gateway_id": target if kind == "peering" else None,
+                },
+                {
+                    "TransitGatewayId": COMPLETE,
+                    "_vpc_id": COMPLETE,
+                    "_dx_gateway_id": COMPLETE,
+                    "_peer_transit_gateway_id": COMPLETE,
+                },
+            )
+
+
+_CODEBUILD_BATCH = 100
+
+
+def codebuild_projects_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CodeBuild projects (regional): ``ListProjects`` names them and ``BatchGetProjects``
+    (100 names to a call) describes them, tags included.
+
+    ``_vpc_attached`` is whether the project runs inside a VPC (``vpcConfig.vpcId`` is set). A name that
+    ``BatchGetProjects`` does not return, or a batch that fails, is a gap: the reader yields what it did
+    describe and then raises (:func:`_undescribed`).
+    """
+    client = client_for("codebuild")
+    names = [n for page in _pages(client, "list_projects") for n in page.get("projects", [])]
+    failed: list[str] = []
+    for start in range(0, len(names), _CODEBUILD_BATCH):
+        batch = names[start : start + _CODEBUILD_BATCH]
+        try:
+            answer = without_response_metadata(client.batch_get_projects(names=batch))
+        except BotoCoreError, ClientError:
+            failed.extend(batch)
+            continue
+        got = {p.get("name"): p for p in answer.get("projects", []) if p.get("arn")}
+        failed.extend(n for n in batch if n not in got)
+        for project in got.values():
+            yield {**project, "_vpc_attached": bool((project.get("vpcConfig") or {}).get("vpcId"))}
+    if failed:
+        raise _undescribed("CodeBuild projects", failed)
+
+
+def codepipeline_pipelines_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate CodePipeline pipelines (regional): ``ListPipelines`` names them, ``GetPipeline`` describes
+    each, and ``ListTagsForResource`` reads its tags by ARN.
+
+    Derived siblings: ``_arn`` (``metadata.pipelineArn``), ``_stage_names`` in order, ``_codebuild_project_arns``
+    (the CodeBuild projects its build and test actions run, named by project name and built into an ARN with
+    the pipeline's own partition, region and account) and ``_s3_source_bucket_arns`` (its S3 source actions'
+    buckets). All come from the one ``GetPipeline`` answer, so the edge reads are ``complete``. A failed tag
+    read leaves the tags unread; a pipeline that cannot be described is a gap (:func:`_undescribed`).
+    """
+    client = client_for("codepipeline")
+    names = [p["name"] for page in _pages(client, "list_pipelines") for p in page.get("pipelines", []) if p.get("name")]
+    failed: list[str] = []
+    for name in names:
+        try:
+            answer = without_response_metadata(client.get_pipeline(name=name))
+        except BotoCoreError, ClientError:
+            failed.append(name)
+            continue
+        pipeline = answer.get("pipeline") or {}
+        arn = (answer.get("metadata") or {}).get("pipelineArn")
+        if not arn:
+            failed.append(name)
+            continue
+        partition, _, region, account = (arn.split(":") + [""] * 5)[1:5]
+        actions = [a for stage in pipeline.get("stages", []) for a in stage.get("actions", [])]
+        builds = sorted(
+            {
+                build_arn(partition, "codebuild", region, account, f"project/{a['configuration']['ProjectName']}")
+                for a in actions
+                if (a.get("actionTypeId") or {}).get("provider") == "CodeBuild"
+                and (a.get("configuration") or {}).get("ProjectName")
+            }
+        )
+        buckets = sorted(
+            {
+                build_arn(partition, "s3", "", "", a["configuration"]["S3Bucket"])
+                for a in actions
+                if (a.get("actionTypeId") or {}).get("category") == "Source"
+                and (a.get("actionTypeId") or {}).get("provider") == "S3"
+                and (a.get("configuration") or {}).get("S3Bucket")
+            }
+        )
+        tags: dict[str, str] = {}
+        tags_unread = False
+        try:
+            for page in _pages(client, "list_tags_for_resource", resourceArn=arn):
+                tags.update({t["key"]: t.get("value") or "" for t in page.get("tags", []) if "key" in t})
+        except BotoCoreError, ClientError:
+            tags, tags_unread = {}, True
+        yield with_edge_reads(
+            {
+                **pipeline,
+                "_arn": arn,
+                "_stage_names": [s.get("name") for s in pipeline.get("stages", []) if s.get("name")],
+                "_codebuild_project_arns": builds,
+                "_s3_source_bucket_arns": buckets,
+                "_tags": tags,
+                "_tags_unread": tags_unread,
+            },
+            {
+                "roleArn": COMPLETE,
+                "_codebuild_project_arns": COMPLETE,
+                "_s3_source_bucket_arns": COMPLETE,
+            },
+        )
+    if failed:
+        raise _undescribed("CodePipeline pipelines", failed)
 
 
 def _undescribed(kind: str, names: list[str]) -> SourceError:
@@ -1505,6 +1705,11 @@ _CUSTOM_FNS = {
     "eventbridge_rules_with_targets": eventbridge_rules_with_targets,
     "iam_oidc_providers_described": iam_oidc_providers_described,
     "eks_clusters_described": eks_clusters_described,
+    "dx_gateways_described": dx_gateways_described,
+    "transit_gateways_described": transit_gateways_described,
+    "codebuild_projects_described": codebuild_projects_described,
+    "codepipeline_pipelines_described": codepipeline_pipelines_described,
+    "transit_gateway_attachments_described": transit_gateway_attachments_described,
     "elasticsearch_domains_described": elasticsearch_domains_described,
     "network_firewalls_described": network_firewalls_described,
     "elbv2_albs_described": elbv2_albs_described,

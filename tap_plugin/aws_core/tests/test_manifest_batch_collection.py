@@ -204,6 +204,122 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         },
         {"name": "/app/db/url", "type": "SecureString", "tier": "Standard"},
     ),
+    "aws_core__aws_dx_connection": (
+        {
+            "connectionId": "dxcon-fg5678gh",
+            "connectionName": "colo-1",
+            "location": "EqDC2",
+            "bandwidth": "10Gbps",
+            "tags": [{"key": "owner", "value": "net-team"}],
+        },
+        {"connection_id": "dxcon-fg5678gh", "name": "colo-1", "location": "EqDC2", "bandwidth": "10Gbps"},
+    ),
+    "aws_core__aws_dx_virtual_interface": (
+        {
+            "virtualInterfaceId": "dxvif-ffhhk74f",
+            "virtualInterfaceName": "vif-1",
+            "virtualInterfaceType": "private",
+            "vlan": 101,
+            "asn": 65001,
+            "connectionId": "dxcon-fg5678gh",
+            "directConnectGatewayId": "5f294f92-bafb-4011-916d-9b0bb4a1b2c3",
+            "authKey": "never-stored",
+            "tags": [{"key": "owner", "value": "net-team"}],
+        },
+        {"virtual_interface_type": "private", "vlan": 101, "customer_asn": 65001, "name": "vif-1"},
+    ),
+    "aws_core__aws_dx_gateway": (
+        {
+            "directConnectGatewayId": "5f294f92-bafb-4011-916d-9b0bb4a1b2c3",
+            "directConnectGatewayName": "gw-1",
+            "amazonSideAsn": 64512,
+            "_tags": {"owner": "net-team"},
+        },
+        {"name": "gw-1", "amazon_side_asn": 64512},
+    ),
+    "aws_core__aws_vpc_endpoint_service": (
+        {
+            "ServiceId": "vpce-svc-0123456789abcdef0",
+            "ServiceName": "com.amazonaws.vpce.us-east-1.vpce-svc-0123456789abcdef0",
+            "AcceptanceRequired": True,
+            "PrivateDnsName": "svc.example.com",
+            "Tags": TAGS,
+        },
+        {"service_id": "vpce-svc-0123456789abcdef0", "acceptance_required": True, "private_dns_name": "svc.example.com"},
+    ),
+    "aws_core__aws_route53_resolver_firewall_rule_group": (
+        {"Id": "rslvr-frg-0123456789abcdef", "Name": "egress", "Arn": f"arn:aws:route53resolver:us-east-1:{ACCOUNT}:firewall-rule-group/rslvr-frg-0123456789abcdef"},
+        {"name": "egress", "rule_group_id": "rslvr-frg-0123456789abcdef"},
+    ),
+    "aws_core__aws_transit_gateway": (
+        {
+            "TransitGatewayId": "tgw-0a1b2c3d4e5f60718",
+            "OwnerId": ACCOUNT,
+            "Options": {"AmazonSideAsn": 64512},
+            "_auto_accept_shared_attachments": False,
+            "_default_route_table_association": True,
+            "_default_route_table_propagation": True,
+            "Tags": [{"Key": "owner", "Value": "net-team"}, {"Key": "Name", "Value": "hub"}],
+        },
+        {
+            "transit_gateway_id": "tgw-0a1b2c3d4e5f60718",
+            "owner_account_id": ACCOUNT,
+            "amazon_side_asn": 64512,
+            "auto_accept_shared_attachments": False,
+            "default_route_table_association": True,
+            "name": "hub",
+        },
+    ),
+    "aws_core__aws_transit_gateway_attachment": (
+        {
+            "TransitGatewayAttachmentId": "tgw-attach-0a1b2c3d4e5f60718",
+            "TransitGatewayId": "tgw-0a1b2c3d4e5f60718",
+            "ResourceType": "vpc",
+            "ResourceId": "vpc-0a1",
+            "ResourceOwnerId": ACCOUNT,
+            "_vpc_id": "vpc-0a1",
+            "_dx_gateway_id": None,
+            "_peer_transit_gateway_id": None,
+            "Tags": TAGS,
+        },
+        {"attachment_id": "tgw-attach-0a1b2c3d4e5f60718", "resource_type": "vpc", "resource_owner_account_id": ACCOUNT},
+    ),
+    "aws_core__aws_acm_private_ca": (
+        {
+            "Arn": f"arn:aws:acm-pca:us-east-1:{ACCOUNT}:certificate-authority/12345678-1234-1234-1234-123456789012",
+            "Type": "SUBORDINATE",
+            "Status": "ACTIVE",
+            "UsageMode": "GENERAL_PURPOSE",
+            "CertificateAuthorityConfiguration": {"KeyAlgorithm": "RSA_2048", "Subject": {"CommonName": "Issuing CA 1"}},
+        },
+        {"ca_type": "SUBORDINATE", "key_algorithm": "RSA_2048", "status": "ACTIVE", "subject_common_name": "Issuing CA 1", "name": "Issuing CA 1"},
+    ),
+    "aws_core__aws_codebuild_project": (
+        {
+            "name": "build",
+            "arn": f"arn:aws:codebuild:us-east-1:{ACCOUNT}:project/build",
+            "source": {"type": "GITHUB"},
+            "environment": {"image": "aws/codebuild/standard:7.0", "computeType": "BUILD_GENERAL1_SMALL", "privilegedMode": False},
+            "serviceRole": f"arn:aws:iam::{ACCOUNT}:role/build",
+            "_vpc_attached": False,
+            "tags": [{"key": "owner", "value": "net-team"}],
+        },
+        {"name": "build", "environment_image": "aws/codebuild/standard:7.0", "source_type": "GITHUB", "vpc_attached": False, "privileged_mode": False},
+    ),
+    "aws_core__aws_codepipeline_pipeline": (
+        {
+            "name": "release",
+            "roleArn": f"arn:aws:iam::{ACCOUNT}:role/release",
+            "pipelineType": "V2",
+            "executionMode": "QUEUED",
+            "_arn": f"arn:aws:codepipeline:us-east-1:{ACCOUNT}:release",
+            "_stage_names": ["Source", "Build"],
+            "_codebuild_project_arns": [f"arn:aws:codebuild:us-east-1:{ACCOUNT}:project/build"],
+            "_s3_source_bucket_arns": ["arn:aws:s3:::src"],
+            "_tags": {"owner": "net-team"},
+        },
+        {"name": "release", "stage_names": ["Source", "Build"], "pipeline_type": "V2", "execution_mode": "QUEUED"},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -254,7 +370,7 @@ class TestBatchTypes:
         )["node"]
         schema = _create_verb_schema(_model(entity_type))
         jsonschema.validate(_prepare_null_payload(payload, schema), schema)
-        assert payload["tags"] == {"owner": "net-team"}
+        assert payload["tags"].get("owner") == "net-team"
 
     def test_the_tags_are_read_by_a_declared_lane(self, entity_type: str) -> None:
         tags = _entry(entity_type)["tags"]
@@ -263,21 +379,30 @@ class TestBatchTypes:
             item, _ = CASES[entity_type]
             assert eval_path(item, tags["arn_from"]), tags
             return
+        if tags["source"] == "service":
+            # Read by a side call the engine makes by the item's own id or ARN.
+            item, _ = CASES[entity_type]
+            assert all(eval_path(item, p["from"]) for p in tags["params"].values() if "from" in p), tags
+            return
         assert tags["source"] == "field"
         assert (tags["from"], tags["shape"]) in (
             ("Tags[]", "list_kv"),
             ("TagList", "list_kv"),
+            ("tags[]", "list_kv_lower"),
             ("_tags", "map"),
             ("tags", "map"),
         )
 
-    def test_every_edge_rule_resolves_and_names_an_edge_that_allows_the_pair(self, entity_type: str) -> None:
+    def test_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]
-        for rule in _entry(entity_type).get("edges", []):
-            assert eval_path(item, rule["value_path"]), rule
+        rules = _entry(entity_type).get("edges", [])
+        for rule in rules:
             edge = _edge_json(rule["edge_type"])
             assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
             assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
+        # A rule may be conditional on a sibling (a transit gateway attachment's VPC id exists only for a VPC
+        # attachment), so the canned item need only resolve some rule, not all.
+        assert not rules or any(eval_path(item, rule["value_path"]) for rule in rules)
 
     def test_configuration_is_stored_only_when_the_entry_says_so(self, entity_type: str) -> None:
         item, _ = CASES[entity_type]
@@ -293,7 +418,7 @@ class TestBatchTypes:
 def _read_tags(entry: dict[str, Any], item: dict[str, Any]) -> dict[str, str]:
     """The tags the entry's lane would resolve for ``item``: the item's own, or the sweep's map for an rgta lane."""
     block = entry["tags"]
-    if block["source"] == "rgta":
+    if block["source"] in ("rgta", "service"):
         return {"owner": "net-team"}
     return normalize_tags(eval_path(item, block["from"]), block["shape"])
 

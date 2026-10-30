@@ -2834,6 +2834,540 @@
         "arn_from": "ARN",
         "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_dx_connection",
+      "service": "directconnect",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeConnections"
+      },
+      "why": "Enumerate Direct Connect connections — the dedicated physical links between the account and a colocation facility, which bypass the internet and so bypass its controls.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore directconnect DescribeConnections output shape, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "connections[]",
+      "natural_key": "connectionId",
+      "fields": {
+        "name": "connectionName",
+        "connection_id": "connectionId",
+        "location": "location",
+        "bandwidth": "bandwidth"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags[]",
+        "shape": "list_kv_lower",
+        "why": "DescribeConnections returns each connection's tags inline (lowercase key/value); no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_dx_virtual_interface",
+      "service": "directconnect",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeVirtualInterfaces"
+      },
+      "why": "Enumerate Direct Connect virtual interfaces — the VLANs and BGP sessions on a connection that decide what on-premises networks can reach the account.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeVirtualInterfaces returns authKey verbatim, and a BGP MD5 key is a shared secret between routers. Identity, type, VLAN, customer ASN, tags and the connection and gateway edges are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore directconnect DescribeVirtualInterfaces output shape, 2026-10-29. botocore flags no member sensitive, but authKey is the interface's BGP MD5 authentication key: a shared secret between the two routers.",
+        "locations": [
+          {
+            "path": "authKey",
+            "category": "credential",
+            "reason": "The BGP MD5 authentication key of the virtual interface: a shared secret between the AWS and customer routers. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "customerAddress",
+            "category": "other",
+            "reason": "The customer-side BGP peer address: a network location, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "routeFilterPrefixes[].cidr",
+            "category": "other",
+            "reason": "Prefixes the customer advertises on a public virtual interface: network locations.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "virtualInterfaces[]",
+      "natural_key": "virtualInterfaceId",
+      "fields": {
+        "name": "virtualInterfaceName",
+        "virtual_interface_id": "virtualInterfaceId",
+        "virtual_interface_type": "virtualInterfaceType",
+        "vlan": "vlan",
+        "customer_asn": "asn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags[]",
+        "shape": "list_kv_lower",
+        "why": "DescribeVirtualInterfaces returns each interface's tags inline (lowercase key/value); no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "connectionId",
+          "target_type": "aws_core__aws_dx_connection",
+          "key_kind": "id",
+          "edge_type": "CARRIED_ON_CONNECTION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "directConnectGatewayId",
+          "target_type": "aws_core__aws_dx_gateway",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_DX_GATEWAY__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_dx_gateway",
+      "service": "directconnect",
+      "scope": "global",
+      "source": {
+        "custom_fn": "dx_gateways_described"
+      },
+      "why": "Enumerate Direct Connect gateways — the global hubs that connect virtual interfaces to VPCs and transit gateways in other regions.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore directconnect DescribeDirectConnectGateways and DescribeTags output shapes and custom_fn dx_gateways_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "directConnectGatewayId",
+      "fields": {
+        "name": "directConnectGatewayName",
+        "direct_connect_gateway_id": "directConnectGatewayId",
+        "amazon_side_asn": "amazonSideAsn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads DescribeTags (20 ARNs to a call, ARN built from the owner account) into _tags; the field lane reads it without a second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_vpc_endpoint_service",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeVpcEndpointServiceConfigurations"
+      },
+      "why": "Enumerate VPC endpoint services — what the account publishes over PrivateLink, and whether a consumer's connection needs acceptance.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeVpcEndpointServiceConfigurations output shape, 2026-10-29; no sensitive-flagged member. Allowed principals (DescribeVpcEndpointServicePermissions) are not requested.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "PrivateDnsNameConfiguration.Value",
+            "category": "other",
+            "reason": "The DNS TXT value that proves ownership of the private DNS name: a validation token, not a credential.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ServiceConfigurations[]",
+      "natural_key": "ServiceId",
+      "fields": {
+        "service_id": "ServiceId",
+        "service_name": "ServiceName",
+        "acceptance_required": "AcceptanceRequired",
+        "private_dns_name": "PrivateDnsName"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_route53_resolver_firewall_rule_group",
+      "service": "route53resolver",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListFirewallRuleGroups"
+      },
+      "why": "Enumerate Route 53 Resolver DNS Firewall rule groups — the DNS-level egress filters that block or alert on domains a VPC resolves.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore route53resolver ListFirewallRuleGroups and ListTagsForResource output shapes, 2026-10-29; no sensitive-flagged member. Rules and domain lists are not requested.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "FirewallRuleGroups[]",
+      "natural_key": "Id",
+      "fields": {
+        "name": "Name",
+        "rule_group_id": "Id"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the rule group's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_transit_gateway",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "transit_gateways_described"
+      },
+      "why": "Enumerate transit gateways — the regional hubs that join VPCs, VPNs and Direct Connect, and whether they accept shared attachments without approval.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeTransitGateways output shape and custom_fn transit_gateways_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "TransitGatewayId",
+      "name_tag": "Name",
+      "fields": {
+        "transit_gateway_id": "TransitGatewayId",
+        "owner_account_id": "OwnerId",
+        "amazon_side_asn": "Options.AmazonSideAsn",
+        "auto_accept_shared_attachments": "_auto_accept_shared_attachments",
+        "default_route_table_association": "_default_route_table_association",
+        "default_route_table_propagation": "_default_route_table_propagation"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_transit_gateway_attachment",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "transit_gateway_attachments_described"
+      },
+      "why": "Enumerate transit gateway attachments — each connection of a VPC, VPN, Direct Connect gateway or peer transit gateway to a hub, which is how network reachability between them is decided.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeTransitGatewayAttachments output shape and custom_fn transit_gateway_attachments_described, 2026-10-29; no sensitive-flagged member.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "TransitGatewayAttachmentId",
+      "name_tag": "Name",
+      "fields": {
+        "attachment_id": "TransitGatewayAttachmentId",
+        "resource_type": "ResourceType",
+        "resource_owner_account_id": "ResourceOwnerId"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "Resource tags — ownership / environment / cost / compliance scoping. Returned inline by the Describe call; no second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "TransitGatewayId",
+          "target_type": "aws_core__aws_transit_gateway",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_TRANSIT_GATEWAY__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_vpc_id",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "ATTACHES_VPC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_dx_gateway_id",
+          "target_type": "aws_core__aws_dx_gateway",
+          "key_kind": "id",
+          "edge_type": "ATTACHES_DX_GATEWAY__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_peer_transit_gateway_id",
+          "target_type": "aws_core__aws_transit_gateway",
+          "key_kind": "id",
+          "edge_type": "PEERS_WITH_TRANSIT_GATEWAY__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_acm_private_ca",
+      "service": "acm-pca",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListCertificateAuthorities"
+      },
+      "why": "Enumerate AWS Private CAs — the roots and subordinates an organization's private PKI is issued from; a CA that is disabled or expired breaks everything it signed.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: carries the posture and relationship detail the typed fields do not; no credential location is declared in sensitivity.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore acm-pca ListCertificateAuthorities and ListTags output shapes, 2026-10-29; no sensitive-flagged member. The CA's certificate and CSR (GetCertificateAuthorityCertificate, GetCertificateAuthorityCsr) are not requested.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "CertificateAuthorityConfiguration.Subject",
+            "category": "other",
+            "reason": "The CA's distinguished name (organization, unit, country, common name): public identity of the CA, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "RevocationConfiguration",
+            "category": "other",
+            "reason": "CRL bucket name and OCSP CNAME: locations, not credentials.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "CertificateAuthorities[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "CertificateAuthorityConfiguration.Subject.CommonName",
+        "ca_arn": "Arn",
+        "ca_type": "Type",
+        "key_algorithm": "CertificateAuthorityConfiguration.KeyAlgorithm",
+        "status": "Status",
+        "usage_mode": "UsageMode",
+        "subject_common_name": "CertificateAuthorityConfiguration.Subject.CommonName"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "CertificateAuthorityArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the CA's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_codebuild_project",
+      "service": "codebuild",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "codebuild_projects_described"
+      },
+      "why": "Enumerate CodeBuild projects — the build environments that hold deployment credentials and run arbitrary code, and whether each is privileged or inside a VPC.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: BatchGetProjects returns environment.environmentVariables verbatim (plaintext variables routinely hold tokens), the inline buildspec, and the GitHub webhook secret. Identity, image, compute type, source type, VPC and privileged flags, tags and the service-role edge are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore codebuild ListProjects and BatchGetProjects output shapes and custom_fn codebuild_projects_described, 2026-10-29. botocore flags no member sensitive, but environment variables, the inline buildspec and the webhook secret are credential-bearing.",
+        "locations": [
+          {
+            "path": "environment.environmentVariables[].value",
+            "category": "credential",
+            "reason": "Build environment variables: plaintext type variables routinely hold tokens and passwords (PARAMETER_STORE and SECRETS_MANAGER types hold a reference). botocore does not mark them sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "webhook.secret",
+            "category": "credential",
+            "reason": "The shared secret that signs the source provider's webhook calls to CodeBuild. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "source.buildspec",
+            "category": "customer_content",
+            "reason": "An inline buildspec: operator-authored build commands that can embed any other category.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "source.location",
+            "category": "customer_content",
+            "reason": "The source repository location; a clone URL can embed credentials.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "project_arn": "arn",
+        "environment_image": "environment.image",
+        "compute_type": "environment.computeType",
+        "source_type": "source.type",
+        "vpc_attached": "_vpc_attached",
+        "privileged_mode": "environment.privilegedMode"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags[]",
+        "shape": "list_kv_lower",
+        "why": "BatchGetProjects returns each project's tags inline (lowercase key/value); no extra call."
+      },
+      "edges": [
+        {
+          "value_path": "serviceRole",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_codepipeline_pipeline",
+      "service": "codepipeline",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "codepipeline_pipelines_described"
+      },
+      "why": "Enumerate CodePipeline pipelines — the release paths from source to production, and the service role and builds each one runs with.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: GetPipeline returns stages[].actions[].configuration verbatim, and action configuration carries environment variables (a CodeBuild action's EnvironmentVariables), repository tokens and webhook-style secrets that AWS masks only for some providers. Identity, stage names, type, execution mode, tags and the role, build and source-bucket edges are typed fields or derived from the in-memory item, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore codepipeline ListPipelines, GetPipeline and ListTagsForResource output shapes and custom_fn codepipeline_pipelines_described, 2026-10-29. botocore flags no member sensitive; action configuration is a free-form string map.",
+        "locations": [
+          {
+            "path": "stages[].actions[].configuration",
+            "category": "credential",
+            "reason": "Per-action configuration, a free-form string map: provider tokens (AWS masks some as ****, not all), CodeBuild EnvironmentVariables, and other operator values. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "pipeline_arn": "_arn",
+        "stage_names": "_stage_names",
+        "pipeline_type": "pipelineType",
+        "execution_mode": "executionMode"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The custom fn reads ListTagsForResource by the pipeline ARN into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "roleArn",
+          "target_type": "aws_core__aws_iam_role",
+          "key_kind": "arn",
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_codebuild_project_arns",
+          "target_type": "aws_core__aws_codebuild_project",
+          "key_kind": "arn",
+          "edge_type": "RUNS_BUILD__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_s3_source_bucket_arns",
+          "target_type": "aws_core__aws_s3_bucket",
+          "key_kind": "arn",
+          "edge_type": "RETRIEVES_SOURCE_FROM__aws_core",
+          "direction": "outbound"
+        }
+      ]
     }
   ]
 }

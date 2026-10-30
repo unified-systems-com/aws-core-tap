@@ -49,6 +49,7 @@ class Route53ResolverFirewallRuleGroup(BaseModel):
         "alert_domain_lists": _NAME_LIST,
         "region": {"type": "string"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "configuration": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -67,6 +68,8 @@ class Route53ResolverFirewallRuleGroup(BaseModel):
     region = models.CharField(max_length=32, blank=True, default="")
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: route53resolver:ListTagsForResource.
     tags = models.JSONField(null=True, blank=True, default=None)
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_route53_resolver_firewall_rule_group"

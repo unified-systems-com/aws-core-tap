@@ -55,6 +55,7 @@ class TransitGateway(BaseModel):
         "default_route_table_association": {"type": ["boolean", "null"]},
         "default_route_table_propagation": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "configuration": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -77,6 +78,8 @@ class TransitGateway(BaseModel):
     default_route_table_propagation = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeTransitGateways Tags.
     tags = models.JSONField(null=True, blank=True, default=None)
+    # The collector's configuration envelope; {} when the manifest entry does not persist it.
+    configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_transit_gateway"
