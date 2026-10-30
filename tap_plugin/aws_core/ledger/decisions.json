@@ -2087,6 +2087,11 @@
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
     },
+    "aws_core__aws_quicksight_approval_policy": {
+      "cfn": [
+        "AWS::QuickSight::ApprovalPolicy"
+      ]
+    },
     "aws_core__aws_ram_permission": {
       "cfn": [
         "AWS::RAM::Permission"
@@ -2122,6 +2127,21 @@
     "aws_core__aws_rds_db_proxy": {
       "cfn": [
         "AWS::RDS::DBProxy"
+      ]
+    },
+    "aws_core__aws_rds_db_proxy_endpoint": {
+      "cfn": [
+        "AWS::RDS::DBProxyEndpoint"
+      ]
+    },
+    "aws_core__aws_rds_db_security_group": {
+      "cfn": [
+        "AWS::RDS::DBSecurityGroup"
+      ]
+    },
+    "aws_core__aws_rds_db_shard_group": {
+      "cfn": [
+        "AWS::RDS::DBShardGroup"
       ]
     },
     "aws_core__aws_rds_db_snapshot": {
@@ -2171,9 +2191,29 @@
         "AWS::Redshift::RedshiftIdcApplication"
       ]
     },
+    "aws_core__aws_redshiftserverless_namespace": {
+      "cfn": [
+        "AWS::RedshiftServerless::Namespace"
+      ]
+    },
+    "aws_core__aws_redshiftserverless_snapshot": {
+      "cfn": [
+        "AWS::RedshiftServerless::Snapshot"
+      ]
+    },
+    "aws_core__aws_redshiftserverless_workgroup": {
+      "cfn": [
+        "AWS::RedshiftServerless::Workgroup"
+      ]
+    },
     "aws_core__aws_region": {
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; regions are not a CloudFormation resource."
+    },
+    "aws_core__aws_rekognition_project": {
+      "cfn": [
+        "AWS::Rekognition::Project"
+      ]
     },
     "aws_core__aws_resiliencehub_app": {
       "cfn": [
@@ -2210,6 +2250,16 @@
         "AWS::ResourceGroups::TagSyncTask"
       ]
     },
+    "aws_core__aws_rolesanywhere_profile": {
+      "cfn": [
+        "AWS::RolesAnywhere::Profile"
+      ]
+    },
+    "aws_core__aws_rolesanywhere_trust_anchor": {
+      "cfn": [
+        "AWS::RolesAnywhere::TrustAnchor"
+      ]
+    },
     "aws_core__aws_route53_resolver_firewall_rule_group": {
       "cfn": [
         "AWS::Route53Resolver::FirewallRuleGroup"
@@ -2218,6 +2268,36 @@
     "aws_core__aws_route53_zone": {
       "cfn": [
         "AWS::Route53::HostedZone"
+      ]
+    },
+    "aws_core__aws_route53profiles_profile": {
+      "cfn": [
+        "AWS::Route53Profiles::Profile"
+      ]
+    },
+    "aws_core__aws_route53resolver_firewall_domain_list": {
+      "cfn": [
+        "AWS::Route53Resolver::FirewallDomainList"
+      ]
+    },
+    "aws_core__aws_route53resolver_firewall_rule_group_association": {
+      "cfn": [
+        "AWS::Route53Resolver::FirewallRuleGroupAssociation"
+      ]
+    },
+    "aws_core__aws_route53resolver_outpost_resolver": {
+      "cfn": [
+        "AWS::Route53Resolver::OutpostResolver"
+      ]
+    },
+    "aws_core__aws_route53resolver_resolver_endpoint": {
+      "cfn": [
+        "AWS::Route53Resolver::ResolverEndpoint"
+      ]
+    },
+    "aws_core__aws_route53resolver_resolver_rule": {
+      "cfn": [
+        "AWS::Route53Resolver::ResolverRule"
       ]
     },
     "aws_core__aws_route_table": {
@@ -2245,6 +2325,11 @@
         "AWS::SageMaker::Algorithm"
       ]
     },
+    "aws_core__aws_sagemaker_app_image_config": {
+      "cfn": [
+        "AWS::SageMaker::AppImageConfig"
+      ]
+    },
     "aws_core__aws_sagemaker_cluster": {
       "cfn": [
         "AWS::SageMaker::Cluster"
@@ -2265,6 +2350,21 @@
         "AWS::SageMaker::ComputeQuota"
       ]
     },
+    "aws_core__aws_sagemaker_device": {
+      "cfn": [
+        "AWS::SageMaker::Device"
+      ]
+    },
+    "aws_core__aws_sagemaker_device_fleet": {
+      "cfn": [
+        "AWS::SageMaker::DeviceFleet"
+      ]
+    },
+    "aws_core__aws_sagemaker_domain": {
+      "cfn": [
+        "AWS::SageMaker::Domain"
+      ]
+    },
     "aws_core__aws_sagemaker_endpoint": {
       "cfn": [
         "AWS::SageMaker::Endpoint"
@@ -2273,6 +2373,16 @@
     "aws_core__aws_sagemaker_endpoint_config": {
       "cfn": [
         "AWS::SageMaker::EndpointConfig"
+      ]
+    },
+    "aws_core__aws_sagemaker_experiment": {
+      "cfn": [
+        "AWS::SageMaker::Experiment"
+      ]
+    },
+    "aws_core__aws_sagemaker_feature_group": {
+      "cfn": [
+        "AWS::SageMaker::FeatureGroup"
       ]
     },
     "aws_core__aws_sagemaker_hub": {
@@ -2305,6 +2415,11 @@
         "AWS::SageMaker::Model"
       ]
     },
+    "aws_core__aws_sagemaker_model_card": {
+      "cfn": [
+        "AWS::SageMaker::ModelCard"
+      ]
+    },
     "aws_core__aws_sagemaker_model_package": {
       "cfn": [
         "AWS::SageMaker::ModelPackage"
@@ -2335,6 +2450,11 @@
         "AWS::SageMaker::PartnerApp"
       ]
     },
+    "aws_core__aws_sagemaker_pipeline": {
+      "cfn": [
+        "AWS::SageMaker::Pipeline"
+      ]
+    },
     "aws_core__aws_sagemaker_processing_job": {
       "cfn": [
         "AWS::SageMaker::ProcessingJob"
@@ -2343,6 +2463,11 @@
     "aws_core__aws_sagemaker_project": {
       "cfn": [
         "AWS::SageMaker::Project"
+      ]
+    },
+    "aws_core__aws_sagemaker_studio_lifecycle_config": {
+      "cfn": [
+        "AWS::SageMaker::StudioLifecycleConfig"
       ]
     },
     "aws_core__aws_sagemaker_trial_component": {
@@ -2358,6 +2483,16 @@
     "aws_core__aws_sagemaker_workteam": {
       "cfn": [
         "AWS::SageMaker::Workteam"
+      ]
+    },
+    "aws_core__aws_scheduler_schedule": {
+      "cfn": [
+        "AWS::Scheduler::Schedule"
+      ]
+    },
+    "aws_core__aws_scheduler_schedule_group": {
+      "cfn": [
+        "AWS::Scheduler::ScheduleGroup"
       ]
     },
     "aws_core__aws_secrets_manager_secret": {
@@ -2414,6 +2549,11 @@
         "AWS::SecurityHub::Standard"
       ]
     },
+    "aws_core__aws_securitylake_data_lake": {
+      "cfn": [
+        "AWS::SecurityLake::DataLake"
+      ]
+    },
     "aws_core__aws_securitylake_subscriber": {
       "cfn": [
         "AWS::SecurityLake::Subscriber"
@@ -2422,6 +2562,21 @@
     "aws_core__aws_service_control_policy": {
       "cfn": [
         "AWS::Organizations::Policy"
+      ]
+    },
+    "aws_core__aws_servicecatalogappregistry_application": {
+      "cfn": [
+        "AWS::ServiceCatalogAppRegistry::Application"
+      ]
+    },
+    "aws_core__aws_servicecatalogappregistry_attribute_group": {
+      "cfn": [
+        "AWS::ServiceCatalogAppRegistry::AttributeGroup"
+      ]
+    },
+    "aws_core__aws_servicediscovery_service": {
+      "cfn": [
+        "AWS::ServiceDiscovery::Service"
       ]
     },
     "aws_core__aws_signer_signing_profile": {
@@ -2449,6 +2604,16 @@
         "AWS::SSM::Parameter"
       ]
     },
+    "aws_core__aws_stepfunctions_activity": {
+      "cfn": [
+        "AWS::StepFunctions::Activity"
+      ]
+    },
+    "aws_core__aws_stepfunctions_state_machine": {
+      "cfn": [
+        "AWS::StepFunctions::StateMachine"
+      ]
+    },
     "aws_core__aws_storagegateway_tape": {
       "cfn": [
         "AWS::StorageGateway::Tape"
@@ -2469,6 +2634,11 @@
         "AWS::EC2::Subnet"
       ]
     },
+    "aws_core__aws_synthetics_group": {
+      "cfn": [
+        "AWS::Synthetics::Group"
+      ]
+    },
     "aws_core__aws_tag_policy_rule": {
       "cfn": [],
       "reason": "One key's entry in a tag policy document, not an AWS resource; only the policy can be tagged."
@@ -2478,9 +2648,34 @@
         "AWS::ElasticLoadBalancingV2::TargetGroup"
       ]
     },
+    "aws_core__aws_timestream_database": {
+      "cfn": [
+        "AWS::Timestream::Database"
+      ]
+    },
     "aws_core__aws_timestream_scheduled_query": {
       "cfn": [
         "AWS::Timestream::ScheduledQuery"
+      ]
+    },
+    "aws_core__aws_timestream_table": {
+      "cfn": [
+        "AWS::Timestream::Table"
+      ]
+    },
+    "aws_core__aws_transfer_certificate": {
+      "cfn": [
+        "AWS::Transfer::Certificate"
+      ]
+    },
+    "aws_core__aws_transfer_connector": {
+      "cfn": [
+        "AWS::Transfer::Connector"
+      ]
+    },
+    "aws_core__aws_transfer_profile": {
+      "cfn": [
+        "AWS::Transfer::Profile"
       ]
     },
     "aws_core__aws_transfer_server": {
@@ -2491,6 +2686,11 @@
     "aws_core__aws_transfer_web_app": {
       "cfn": [
         "AWS::Transfer::WebApp"
+      ]
+    },
+    "aws_core__aws_transfer_workflow": {
+      "cfn": [
+        "AWS::Transfer::Workflow"
       ]
     },
     "aws_core__aws_transit_gateway": {
@@ -2511,6 +2711,16 @@
     "aws_core__aws_translate_terminology": {
       "cfn": [
         "AWS::Translate::Terminology"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_policy_store": {
+      "cfn": [
+        "AWS::VerifiedPermissions::PolicyStore"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_policy_store_alias": {
+      "cfn": [
+        "AWS::VerifiedPermissions::PolicyStoreAlias"
       ]
     },
     "aws_core__aws_vpc": {
