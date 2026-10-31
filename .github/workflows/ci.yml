@@ -33,4 +33,7 @@ jobs:
       # The test database is built by applying every migration, and each generated type adds a live and
       # a history table, so the build alone now takes about 10 minutes on the runner and grows with every
       # batch. The 25-minute default cancelled the run on #142 before its tests finished (0 tests executed).
-      boot_and_test_timeout_minutes: 45
+      #
+      # 45 minutes also stopped being enough (#151, #152 head runs: ~22 minutes until web is healthy, then the
+      # plugin's tests ran past the cap and the job was cancelled at 46 minutes with the suite unfinished).
+      boot_and_test_timeout_minutes: 90
