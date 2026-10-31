@@ -19582,16 +19582,16 @@
         ]
       },
       "items_path": "IntegrationAssociationSummaryList[]",
-      "natural_key": "IntegrationArn",
+      "natural_key": "IntegrationAssociationArn",
       "fields": {
-        "connect_integration_association_arn": "IntegrationArn"
+        "connect_integration_association_arn": "IntegrationAssociationArn"
       },
       "tags": {
         "source": "service",
         "op": "ListTagsForResource",
         "params": {
           "resourceArn": {
-            "from": "IntegrationArn"
+            "from": "IntegrationAssociationArn"
           }
         },
         "path": "tags",
@@ -20886,13 +20886,14 @@
         "aws_op": "ListMembers",
         "per": {
           "aws_op": "ListNetworks",
-          "items_path": "Networks[]"
+          "items_path": "Networks[]",
+          "params": { "Framework": "HYPERLEDGER_FABRIC" }
         },
         "bind": {
           "NetworkId": "Id"
         }
       },
-      "why": "Enumerate ManagedBlockchain Member objects with ListMembers — an inventory of the account's members and how each is tagged.",
+      "why": "Enumerate ManagedBlockchain Member objects of Hyperledger Fabric networks (ListMembers applies only to Fabric) with ListMembers — an inventory of the account's members and how each is tagged.",
       "persist_configuration": false,
       "persist_configuration_why": "Off: the ListMembers response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
@@ -20933,14 +20934,23 @@
       "source": {
         "aws_op": "ListNodes",
         "per": {
-          "aws_op": "ListNetworks",
-          "items_path": "Networks[]"
+          "aws_op": "ListMembers",
+          "items_path": "Members[]",
+          "per": {
+            "aws_op": "ListNetworks",
+            "items_path": "Networks[]",
+            "params": { "Framework": "HYPERLEDGER_FABRIC" }
+          },
+          "bind": {
+            "NetworkId": "Id"
+          }
         },
         "bind": {
-          "NetworkId": "Id"
+          "NetworkId": "_parent.Id",
+          "MemberId": "Id"
         }
       },
-      "why": "Enumerate ManagedBlockchain Node objects with ListNodes — an inventory of the account's nodes and how each is tagged.",
+      "why": "Enumerate ManagedBlockchain Node objects of Hyperledger Fabric networks (ListNodes needs the owning member there; Ethereum nodes are not collected) with ListNodes — an inventory of the account's nodes and how each is tagged.",
       "persist_configuration": false,
       "persist_configuration_why": "Off: the ListNodes response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {

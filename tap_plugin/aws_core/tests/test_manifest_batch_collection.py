@@ -1877,7 +1877,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_connect_integration_association": (
-        {'IntegrationArn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {'IntegrationAssociationArn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1', 'IntegrationArn': 'arn:aws:lambda:us-east-1:123456789012:function:target'},
         {},
     ),
     "aws_core__aws_connect_metric": (
