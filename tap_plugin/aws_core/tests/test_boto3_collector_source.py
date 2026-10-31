@@ -130,3 +130,111 @@ class TestSourceDispatch:
         list(iter_source(entry, client_for=fake_client_for, custom_fns=reg))
         assert seen["asked_for"] == "dynamodb"
         assert seen["client"] is sentinel_client
+
+
+class _CallLog:
+    """A client whose list calls answer by their arguments and remember them."""
+
+    def __init__(self, answers):
+        self._answers = answers
+        self.calls = []
+
+    def can_paginate(self, _method):
+        return False
+
+    def __getattr__(self, name):
+        if name.startswith("_") or name not in self._answers:
+            raise AttributeError(name)
+
+        def call(**kw):
+            self.calls.append((name, kw))
+            answer = self._answers[name]
+            if isinstance(answer, Exception):
+                raise answer
+            return answer(**kw) if callable(answer) else answer
+
+        return call
+
+
+class TestPerFanout:
+    """A list call that needs a parent's identifier runs once per parent (source.per)."""
+
+    _ENTRY = {
+        "service": "glue",
+        "items_path": "Tables[]",
+        "source": {
+            "aws_op": "GetTables",
+            "per": {"aws_op": "GetDatabases", "items_path": "DatabaseList[]"},
+            "bind": {"DatabaseName": "Name"},
+        },
+    }
+
+    def _client(self):
+        return _CallLog(
+            {
+                "get_databases": {"DatabaseList": [{"Name": "a"}, {"Name": "b"}]},
+                "get_tables": lambda DatabaseName: {"Tables": [{"Name": f"{DatabaseName}-t"}]},
+            }
+        )
+
+    def test_one_call_per_parent_with_bound_parameter(self):
+        client = self._client()
+        list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [kw for name, kw in client.calls if name == "get_tables"] == [{"DatabaseName": "a"}, {"DatabaseName": "b"}]
+
+    def test_child_items_carry_their_parent(self):
+        client = self._client()
+        items = list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [(i["Name"], i["_parent"]["Name"]) for i in items] == [("a-t", "a"), ("b-t", "b")]
+
+    def test_a_failing_parent_fails_the_whole_listing(self):
+        client = _CallLog(
+            {
+                "get_databases": {"DatabaseList": [{"Name": "a"}, {"Name": "b"}]},
+                "get_tables": lambda DatabaseName: (_ for _ in ()).throw(RuntimeError(DatabaseName))
+                if DatabaseName == "b"
+                else {"Tables": [{"Name": "x"}]},
+            }
+        )
+        with pytest.raises(RuntimeError, match="b"):
+            list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+    def test_two_levels_bind_the_grandparent_through_the_parent_slot(self):
+        entry = {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "ListThings",
+                "per": {
+                    "aws_op": "ListKids",
+                    "items_path": "Kids[]",
+                    "per": {"aws_op": "ListRoots", "items_path": "Roots[]"},
+                    "bind": {"RootId": "Id"},
+                },
+                "bind": {"RootId": "_parent.Id", "KidId": "Id"},
+            },
+        }
+        client = _CallLog(
+            {
+                "list_roots": {"Roots": [{"Id": "r1"}]},
+                "list_kids": lambda RootId: {"Kids": [{"Id": f"{RootId}-k"}]},
+                "list_things": lambda RootId, KidId: {"Things": [{"Name": f"{RootId}/{KidId}"}]},
+            }
+        )
+        items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["Name"] for i in items] == ["r1/r1-k"]
+
+    def test_a_bare_string_parent_binds_with_an_empty_path(self):
+        entry = {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "ListThings",
+                "per": {"aws_op": "ListNames", "items_path": "Names[]"},
+                "bind": {"Name": ""},
+            },
+        }
+        client = _CallLog(
+            {"list_names": {"Names": ["n1"]}, "list_things": lambda Name: {"Things": [{"Id": Name}]}}
+        )
+        assert [i["Id"] for i in iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry())] == ["n1"]
