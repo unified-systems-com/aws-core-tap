@@ -301,5 +301,30 @@ def test_parent_slot_is_not_stored_in_configuration():
 
     entry = next(e for e in manifest_entries() if e["entity_type"] == "aws_core__aws_vpc")
     item = {"VpcId": "vpc-1", "CidrBlock": "10.0.0.0/16", "_parent": {"Secret": "nope"}}
-    node = project_item({**entry, "persist_configuration": True}, item)
-    assert "_parent" not in str(node.configuration)
+    fanned = {**entry, "persist_configuration": True, "source": {**TestPerFanout._ENTRY["source"]}}
+    assert "_parent" not in str(project_item(fanned, item).configuration)
+    # an entry that is not a fan-out stores its item whole, whatever keys it carries
+    plain = project_item({**entry, "persist_configuration": True}, item)
+    assert "nope" in str(plain.configuration)
+
+
+def test_literal_params_reach_the_call_alongside_the_bound_one():
+    client = _CallLog(
+        {
+            "list_names": {"Names": ["n1"]},
+            "list_things": lambda **kw: {"Things": [{"Id": str(sorted(kw.items()))}]},
+        }
+    )
+    entry = {
+        "service": "x",
+        "items_path": "Things[]",
+        "source": {
+            "aws_op": "ListThings",
+            "per": {"aws_op": "ListNames", "items_path": "Names[]", "params": {"Scope": "ALL"}},
+            "bind": {"Name": ""},
+            "params": {"Filter": "f"},
+        },
+    }
+    items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+    assert items[0]["Id"] == "[('Filter', 'f'), ('Name', 'n1')]"
+    assert ("list_names", {"Scope": "ALL"}) in client.calls

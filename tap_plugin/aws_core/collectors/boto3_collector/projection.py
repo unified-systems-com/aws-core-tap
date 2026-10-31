@@ -45,9 +45,12 @@ class ProjectionError(Exception):
     """
 
 
-def _without_parent(item: Any) -> Any:
-    """The item as AWS returned it: a fan-out's ``_parent`` slot is for ``fields`` to read, not to store."""
-    if isinstance(item, dict) and PARENT_SLOT in item:
+def _without_parent(entry: dict[str, Any], item: Any) -> Any:
+    """The item as AWS returned it: a fan-out's ``_parent`` slot is for ``fields`` to read, not to store.
+
+    Only a ``per`` entry has the slot; any other entry's item is stored whole.
+    """
+    if "per" in entry["source"] and isinstance(item, dict) and PARENT_SLOT in item:
         return {k: v for k, v in item.items() if k != PARENT_SLOT}
     return item
 
@@ -139,7 +142,7 @@ def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
         name=str(name),
         fields=fields,
         configuration=build_configuration(
-            _without_parent(item), source_op=source_op_label(entry), why=entry["why"]
+            _without_parent(entry, item), source_op=source_op_label(entry), why=entry["why"]
         ),
         raw_item=item,
     )
