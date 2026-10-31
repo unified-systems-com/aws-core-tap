@@ -2016,6 +2016,62 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1', 'UserName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_aps_anomaly_detector": (
+        {'arn': 'arn:aws:amp:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_aps_rule_groups_namespace": (
+        {'arn': 'arn:aws:amp:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_eks_capability": (
+        {'arn': 'arn:aws:eks:us-east-1:123456789012:res/gen-1', 'capabilityName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_eks_pod_identity_association": (
+        {'associationArn': 'arn:aws:eks:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iotsitewise_pipeline": (
+        {'pipelineArn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'pipelineName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_task": (
+        {'taskArn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'taskName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iottwinmaker_component_type": (
+        {'arn': 'arn:aws:iottwinmaker:us-east-1:123456789012:res/gen-1', 'componentTypeName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iottwinmaker_entity": (
+        {'arn': 'arn:aws:iottwinmaker:us-east-1:123456789012:res/gen-1', 'entityName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iottwinmaker_scene": (
+        {'arn': 'arn:aws:iottwinmaker:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iottwinmaker_sync_job": (
+        {'arn': 'arn:aws:iottwinmaker:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_notifications_event_rule": (
+        {'arn': 'arn:aws:notifications:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_qbusiness_data_accessor": (
+        {'dataAccessorArn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_stepfunctions_state_machine_alias": (
+        {'stateMachineAliasArn': 'arn:aws:stepfunctions:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_stepfunctions_state_machine_version": (
+        {'stateMachineVersionArn': 'arn:aws:stepfunctions:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

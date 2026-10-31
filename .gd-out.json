@@ -1,0 +1,21 @@
+[
+ {
+  "slug": "glue_integration",
+  "cfn": "AWS::Glue::Integration",
+  "cfn_service": "Glue",
+  "service": "glue",
+  "op": "DescribeIntegrations",
+  "items": "Integrations",
+  "arn": "IntegrationArn",
+  "name": "IntegrationName",
+  "tags": "Tags",
+  "tag_shape": "list_kv_lower",
+  "side": null,
+  "type": "Integration",
+  "sens": [],
+  "judged": [],
+  "paged": true,
+  "per": null,
+  "opdoc": "glue"
+ }
+]
