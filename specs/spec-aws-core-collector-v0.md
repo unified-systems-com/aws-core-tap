@@ -86,7 +86,7 @@ no encrypted secrets) are inherited as v0 fences.
 | --- | --- | :---: | --- |
 | req-aws-collector-scope | [Collector Scope](#collector-scope) | Approved for Development | One account, Sam's resource set, no deletes |
 | req-aws-collector-manifest | [Resource Manifest](#resource-manifest) | Approved for Development | The JSON descriptor format — the architectural heart |
-| req-aws-collector-source | [Source Primitive](#source-primitive) | Approved for Development | `source` ∈ {aws_op, custom_fn}, uniform "yields items" contract |
+| req-aws-collector-source | [Source Primitive](#source-primitive) | Approved for Development | `source` ∈ {aws_op, aws_op with per, custom_fn}, uniform "yields items" contract |
 | req-aws-collector-field-projection | [Field Projection](#field-projection) | Approved for Development | jsonpath → typed fields + full payload → `configuration` |
 | req-aws-collector-identity | [Identity By Natural Key](#identity-by-natural-key) | Approved for Development | Nodes and edges sent by ref and natural key; core assigns and finds ids; re-runs update in place |
 | req-aws-collector-edges | [Declarative Edge Rules](#declarative-edge-rules) | Approved for Development | Endpoints named by natural key, resolved by core; v0 make-it-work = mutually-available natural keys |
@@ -283,6 +283,12 @@ branches on which was used.
   model, otherwise calls it once, and yields items via `items_path`. This is the
   common case ("one describe call per service" — confirmed single-call for
   Lambda, IAM roles, EventBridge rules, CloudWatch log groups, and CloudFront).
+- **`aws_op` with `per`** — the same declared operation for a resource whose list
+  call needs a parent's identifier. `per` names the call that lists the parents
+  (itself `per` another for a resource two levels down) and `bind` maps the
+  operation's request parameters to paths on one parent. The engine runs the
+  operation once per parent and tags each child item with its parent under
+  `_parent`. It is a loop over declared calls, not assembly (`req-aws-collector-source-6`).
 - **`custom_fn`** — a named, registered Python callable shipped in the plugin,
   used only where AWS requires multiple calls to assemble one logical resource
   (confirmed for S3, ACM full detail, Route 53 record sets, DynamoDB
@@ -307,8 +313,9 @@ Seam](#fan-out-hydrate-seam) rather than hand-rolling pagination/error handling.
 | req-aws-collector-source-1 | Uniform Item Contract | Approved for Development | `aws_op` and `custom_fn` both yield the same raw-item iterable; the engine does not branch on source kind downstream. | |
 | req-aws-collector-source-2 | Generic Pagination | Approved for Development | `aws_op` uses the botocore paginator when the model defines one, else a single call; no per-resource pagination code. | |
 | req-aws-collector-source-3 | Registered Callables Only | Approved for Development | `custom_fn` resolves through a plugin-local registry; manifest data never drives code import or path loading. | |
-| req-aws-collector-source-4 | Quarantined Complexity | Approved for Development | Multi-call assembly exists only inside `custom_fn` callables, never in the engine. | |
+| req-aws-collector-source-4 | Quarantined Complexity | Approved for Development | Multi-call assembly of one logical resource exists only inside `custom_fn` callables. The one thing the engine does itself is the declared parent fan-out of `req-aws-collector-source-6`, which runs a list call once per parent and assembles nothing. | Narrowed from "multi-call assembly never in the engine" when `source.per` was added. |
 | req-aws-collector-source-5 | Custom-Fn Signature | Approved for Development | `custom_fn` callables accept `(session, *, client_for)`. `client_for(service) → Client` is bound to the current per-region iteration so regional custom_fns can build region-bound clients without inventing their own region resolution; global custom_fns accept-and-ignore. | Discovered in autonomous pass 2026-05-20 when DynamoDB regional collection failed with "You must specify a region." |
+| req-aws-collector-source-6 | Parent Fan-Out | Approved for Development | `source` may be `{aws_op, per, bind}`: `per` is the call (itself possibly `per` another) that lists the parents, `bind` maps this operation's request parameters to paths on one parent (`""` is the parent itself), and the operation runs once per parent. Each child item carries its parent under `_parent` for `fields` to read. A parent whose call raises fails the whole listing, so the type reads as not collected, never as a short list that looks complete. A `per` that has its own `per` must carry a `bind`. The final listing's items must be structures (a scalar item has no slot for `_parent`, so one fails the listing); every declared operation, parent calls included, must start with a read verb (`tests/test_boto3_collector_source.py::test_every_declared_operation_is_a_read`); `_parent` is stripped before the item is stored as `configuration` (for a `per` entry only; `raw_item` keeps it in memory for edge and authority reads and is never stored). Either level may carry literal `params`, fixed request arguments the parent does not supply. An entry with `per` cannot declare `containment`. The collector reads the whole listing before it emits any node, so a failing parent skips the entry with no partial output (`collector.py`, `items = list(iter_source(...))`). | `source.py::iter_fanout`; `tests/test_boto3_collector_source.py::TestPerFanout`. Opens the types whose list call needs a parent id (a table inside a database, a device inside a fleet). |
 
 ### Field Projection
 ----

@@ -145,6 +145,7 @@ def iter_aws_op(
     *,
     walk: ListingWalk | None = None,
     truncated: list[str] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> Iterator[Any]:
     """Yield raw items from a boto3 operation, generically.
 
@@ -165,19 +166,66 @@ def iter_aws_op(
             The items are still yielded — an existing consumer is unchanged — but a caller that must
             know the listing ran to its end (a completeness surface) can tell it did not. Mutually
             exclusive with ``walk``.
+        params: Request parameters for the call (the values a ``per`` fan-out bound from its parent);
+            ``None`` for the argument-free listings every other entry uses.
     """
     method = xform_name(op_name)
+    kwargs = params or {}
     if walk is not None:
-        yield from iter_listing(client, method, items_path, walk)
+        yield from iter_listing(client, method, items_path, walk, **kwargs)
         return
     if client.can_paginate(method):
-        for page in client.get_paginator(method).paginate():
+        for page in client.get_paginator(method).paginate(**kwargs):
             yield from eval_path(without_response_metadata(page), items_path)
         return
-    response = getattr(client, method)()
+    response = getattr(client, method)(**kwargs)
     if truncated is not None and (marker := continuation_of(response)) is not None:
         truncated.append(marker)
     yield from eval_path(without_response_metadata(response), items_path)
+
+
+#: The slot a fanned-out child item carries its parent under, so ``fields`` can read the parent
+#: (``_parent.Name``) for an identifier or ARN the child's own response does not hold.
+PARENT_SLOT = "_parent"
+
+
+def _iter_parents(per: dict[str, Any], default_service: str, client_for: Callable[[str], Any]) -> Iterator[Any]:
+    """Yield the items of a ``per`` block, each carrying its own parent when it has one."""
+    client = client_for(per.get("service", default_service))
+    if "per" in per:
+        for grand in _iter_parents(per["per"], per.get("service", default_service), client_for):
+            yield from _children(client, per, grand)
+        return
+    yield from iter_aws_op(client, per["aws_op"], per["items_path"], params=dict(per.get("params", {})))
+
+
+def _children(client: Any, spec: dict[str, Any], parent: Any) -> Iterator[Any]:
+    """One call of ``spec`` for ``parent``: its ``bind`` pulls the request parameters off the parent."""
+    bound = {name: eval_path(parent, path) for name, path in spec["bind"].items()}
+    missing = [name for name, value in bound.items() if value in (None, "", [])]
+    if missing:
+        raise SourceError(f"{spec['aws_op']}: a parent item has no value for {', '.join(missing)} (bind path unresolved)")
+    params = {**spec.get("params", {}), **bound}
+    for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params):
+        if not isinstance(item, dict):
+            raise SourceError(f"{spec['aws_op']}: a fan-out item must be a structure to carry its parent, got {type(item).__name__}")
+        yield {**item, PARENT_SLOT: parent}
+
+
+def iter_fanout(
+    entry: dict[str, Any], *, client_for: Callable[[str], Any]
+) -> Iterator[Any]:
+    """Yield the items of an entry whose list call needs a parent's identifier.
+
+    ``source.per`` names the call that lists the parents (itself possibly ``per`` another, for a
+    resource two levels down); ``source.bind`` maps this entry's request parameters to paths on one
+    parent. The operation runs once per parent. A parent whose call raises raises here, so the type
+    reads as not collected rather than as a shorter list that looks complete.
+    """
+    source = entry["source"]
+    client = client_for(entry["service"])
+    for parent in _iter_parents(source["per"], entry["service"], client_for):
+        yield from _children(client, {**source, "items_path": entry["items_path"]}, parent)
 
 
 def iter_source(
@@ -208,6 +256,9 @@ def iter_source(
             completeness claim is an ``aws_op`` entry only.
     """
     source = entry["source"]
+    if "per" in source:
+        yield from iter_fanout(entry, client_for=client_for)
+        return
     if "aws_op" in source:
         client = client_for(entry["service"])
         yield from iter_aws_op(client, source["aws_op"], entry["items_path"], walk=walk, truncated=truncated)

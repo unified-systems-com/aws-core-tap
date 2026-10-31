@@ -80,6 +80,11 @@
           "then": { "properties": { "scope": { "const": "global" } } }
         },
         {
+          "description": "A fan-out (source.per) cannot back a completeness claim: one parent's listing is not the whole type's, so containment is refused rather than half-measured.",
+          "if": { "required": ["source"], "properties": { "source": { "required": ["per"] } } },
+          "then": { "not": { "required": ["containment"] } }
+        },
+        {
           "description": "Region-scoped containment (tap-plugin-aws-core#49, the containment_regional shape below, marked by the ABSENCE of 'parent'): the parent is one AwsAccountRegion per (account, region). aws_op: the engine paginates it, or sees that it could not, so it can say whether the listing reached its end; a custom_fn is opaque to the engine and cannot back a completeness claim.",
           "if": {
             "required": ["containment"],
@@ -142,6 +147,28 @@
         }
       }
     },
+    "bind": {
+      "type": "object",
+      "minProperties": 1,
+      "description": "Request parameter -> path on the parent item ('' is the parent itself).",
+      "additionalProperties": { "type": "string" }
+    },
+    "per": {
+      "type": "object",
+      "description": "The call that lists the parents of a `per` fan-out; itself `per` another (with `bind`) when the resource sits two levels down.",
+      "additionalProperties": false,
+      "required": ["aws_op", "items_path"],
+      "properties": {
+        "aws_op": { "type": "string", "minLength": 1 },
+        "items_path": { "type": "string", "minLength": 1 },
+        "service": { "type": "string", "minLength": 1 },
+        "params": { "type": "object" },
+        "per": { "$ref": "#/$defs/per" },
+        "bind": { "$ref": "#/$defs/bind" }
+      },
+      "if": { "required": ["per"] },
+      "then": { "required": ["bind"] }
+    },
     "source": {
       "type": "object",
       "oneOf": [
@@ -150,6 +177,18 @@
           "additionalProperties": false,
           "required": ["aws_op"],
           "properties": { "aws_op": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "description": "A list call that needs a parent's identifier: run once per item of `per`, with `bind` mapping this call's request parameters to paths on that parent. Each child item carries its parent under `_parent`.",
+          "additionalProperties": false,
+          "required": ["aws_op", "per", "bind"],
+          "properties": {
+            "aws_op": { "type": "string", "minLength": 1 },
+            "per": { "$ref": "#/$defs/per" },
+            "bind": { "$ref": "#/$defs/bind" },
+            "params": { "type": "object" }
+          }
         },
         {
           "type": "object",

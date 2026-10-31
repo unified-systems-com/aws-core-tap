@@ -32,6 +32,7 @@ from typing import Any
 from .envelope import build_configuration, without_response_metadata
 from .identity import node_ref
 from .paths import eval_path
+from .source import PARENT_SLOT
 from .tags import normalize_tags
 
 
@@ -42,6 +43,16 @@ class ProjectionError(Exception):
     (core would create it afresh on every run). The runtime integration classifies this per-item (record a warn
     and skip the item) rather than failing the whole run.
     """
+
+
+def _without_parent(entry: dict[str, Any], item: Any) -> Any:
+    """The item as AWS returned it: a fan-out's ``_parent`` slot is for ``fields`` to read, not to store.
+
+    Only a ``per`` entry has the slot; any other entry's item is stored whole.
+    """
+    if "per" in entry["source"] and isinstance(item, dict) and PARENT_SLOT in item:
+        return {k: v for k, v in item.items() if k != PARENT_SLOT}
+    return item
 
 
 @dataclass(frozen=True)
@@ -131,7 +142,7 @@ def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
         name=str(name),
         fields=fields,
         configuration=build_configuration(
-            item, source_op=source_op_label(entry), why=entry["why"]
+            _without_parent(entry, item), source_op=source_op_label(entry), why=entry["why"]
         ),
         raw_item=item,
     )
