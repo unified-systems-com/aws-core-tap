@@ -2072,6 +2072,70 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'stateMachineVersionArn': 'arn:aws:stepfunctions:us-east-1:123456789012:res/gen-1'},
         {},
     ),
+    "aws_core__aws_quicksight_action_connector": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_quicksight_agent": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_brand": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'BrandName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_custom_permissions": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'CustomPermissionsName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_dashboard": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_data_set": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_data_source": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_flow": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_folder": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_knowledge_base": (
+        {'KnowledgeBaseArn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_o_auth_client_application": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_space": (
+        {'spaceArn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_template": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_theme": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_topic": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_vpc_connection": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
