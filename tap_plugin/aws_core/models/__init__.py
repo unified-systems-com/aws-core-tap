@@ -530,8 +530,180 @@ from tap_plugin.aws_core.models.quicksight_template import QuicksightTemplate
 from tap_plugin.aws_core.models.quicksight_theme import QuicksightTheme
 from tap_plugin.aws_core.models.quicksight_topic import QuicksightTopic
 from tap_plugin.aws_core.models.quicksight_vpc_connection import QuicksightVpcConnection
+from tap_plugin.aws_core.models.ec2_application_status_check import Ec2ApplicationStatusCheck
+from tap_plugin.aws_core.models.ec2_capacity_manager_data_export import Ec2CapacityManagerDataExport
+from tap_plugin.aws_core.models.ec2_carrier_gateway import Ec2CarrierGateway
+from tap_plugin.aws_core.models.ec2_client_vpn_endpoint import Ec2ClientVpnEndpoint
+from tap_plugin.aws_core.models.ec2_customer_gateway import Ec2CustomerGateway
+from tap_plugin.aws_core.models.ec2_dhcp_options import Ec2DhcpOptions
+from tap_plugin.aws_core.models.ec2_fleet import Ec2Fleet
+from tap_plugin.aws_core.models.ec2_egress_only_internet_gateway import Ec2EgressOnlyInternetGateway
+from tap_plugin.aws_core.models.ec2_flow_log import Ec2FlowLog
+from tap_plugin.aws_core.models.ec2_fpga_image import Ec2FpgaImage
+from tap_plugin.aws_core.models.ec2_host import Ec2Host
+from tap_plugin.aws_core.models.ec2_ipam import Ec2Ipam
+from tap_plugin.aws_core.models.ec2_ipam_pool import Ec2IpamPool
+from tap_plugin.aws_core.models.ec2_ipam_pool_cidr import Ec2IpamPoolCidr
+from tap_plugin.aws_core.models.ec2_ipam_prefix_list_resolver import Ec2IpamPrefixListResolver
+from tap_plugin.aws_core.models.ec2_ipam_prefix_list_resolver_target import Ec2IpamPrefixListResolverTarget
+from tap_plugin.aws_core.models.ec2_ipam_resource_discovery import Ec2IpamResourceDiscovery
+from tap_plugin.aws_core.models.ec2_ipam_resource_discovery_association import Ec2IpamResourceDiscoveryAssociation
+from tap_plugin.aws_core.models.ec2_ipam_scope import Ec2IpamScope
+from tap_plugin.aws_core.models.ec2_ipv4_pool import Ec2Ipv4Pool
+from tap_plugin.aws_core.models.ec2_instance_event_window import Ec2InstanceEventWindow
+from tap_plugin.aws_core.models.ec2_key_pair import Ec2KeyPair
+from tap_plugin.aws_core.models.ec2_launch_template import Ec2LaunchTemplate
+from tap_plugin.aws_core.models.ec2_local_gateway_route_table_vpc_association import Ec2LocalGatewayRouteTableVpcAssociation
+from tap_plugin.aws_core.models.ec2_lgw_route_table_vif_group_association import Ec2LgwRouteTableVifGroupAssociation
+from tap_plugin.aws_core.models.ec2_network_insights_access_scope_analysis import Ec2NetworkInsightsAccessScopeAnalysis
+from tap_plugin.aws_core.models.ec2_network_insights_analysis import Ec2NetworkInsightsAnalysis
+from tap_plugin.aws_core.models.ec2_network_interface import Ec2NetworkInterface
+from tap_plugin.aws_core.models.ec2_prefix_list import Ec2PrefixList
+from tap_plugin.aws_core.models.ec2_route_server import Ec2RouteServer
+from tap_plugin.aws_core.models.ec2_route_server_endpoint import Ec2RouteServerEndpoint
+from tap_plugin.aws_core.models.ec2_route_server_peer import Ec2RouteServerPeer
+from tap_plugin.aws_core.models.ec2_security_group_rule import Ec2SecurityGroupRule
+from tap_plugin.aws_core.models.ec2_spot_fleet import Ec2SpotFleet
+from tap_plugin.aws_core.models.ec2_traffic_mirror_filter import Ec2TrafficMirrorFilter
+from tap_plugin.aws_core.models.ec2_traffic_mirror_filter_rule import Ec2TrafficMirrorFilterRule
+from tap_plugin.aws_core.models.ec2_traffic_mirror_session import Ec2TrafficMirrorSession
+from tap_plugin.aws_core.models.ec2_traffic_mirror_target import Ec2TrafficMirrorTarget
+from tap_plugin.aws_core.models.ec2_transit_gateway_connect import Ec2TransitGatewayConnect
+from tap_plugin.aws_core.models.ec2_transit_gateway_connect_peer import Ec2TransitGatewayConnectPeer
+from tap_plugin.aws_core.models.ec2_transit_gateway_metering_policy import Ec2TransitGatewayMeteringPolicy
+from tap_plugin.aws_core.models.ec2_transit_gateway_peering_attachment import Ec2TransitGatewayPeeringAttachment
+from tap_plugin.aws_core.models.ec2_transit_gateway_policy_table import Ec2TransitGatewayPolicyTable
+from tap_plugin.aws_core.models.ec2_transit_gateway_route_table import Ec2TransitGatewayRouteTable
+from tap_plugin.aws_core.models.ec2_transit_gateway_vpc_attachment import Ec2TransitGatewayVpcAttachment
+from tap_plugin.aws_core.models.ec2_vpc_block_public_access_exclusion import Ec2VpcBlockPublicAccessExclusion
+from tap_plugin.aws_core.models.ec2_vpc_encryption_control import Ec2VpcEncryptionControl
+from tap_plugin.aws_core.models.ec2_vpc_endpoint_connection_notification import Ec2VpcEndpointConnectionNotification
+from tap_plugin.aws_core.models.ec2_vpc_peering_connection import Ec2VpcPeeringConnection
+from tap_plugin.aws_core.models.ec2_vpn_concentrator import Ec2VpnConcentrator
+from tap_plugin.aws_core.models.ec2_vpn_connection import Ec2VpnConnection
+from tap_plugin.aws_core.models.ec2_vpn_gateway import Ec2VpnGateway
+from tap_plugin.aws_core.models.ec2_verified_access_endpoint import Ec2VerifiedAccessEndpoint
+from tap_plugin.aws_core.models.ec2_verified_access_instance import Ec2VerifiedAccessInstance
+from tap_plugin.aws_core.models.ec2_verified_access_trust_provider import Ec2VerifiedAccessTrustProvider
+from tap_plugin.aws_core.models.autoscaling_launch_configuration import AutoscalingLaunchConfiguration
+from tap_plugin.aws_core.models.autoscaling_scaling_policy import AutoscalingScalingPolicy
+from tap_plugin.aws_core.models.autoscaling_scheduled_action import AutoscalingScheduledAction
+from tap_plugin.aws_core.models.cassandra_keyspace import CassandraKeyspace
+from tap_plugin.aws_core.models.cassandra_table import CassandraTable
+from tap_plugin.aws_core.models.ecs_capacity_provider import EcsCapacityProvider
+from tap_plugin.aws_core.models.elasticache_parameter_group import ElasticacheParameterGroup
+from tap_plugin.aws_core.models.elasticache_security_group import ElasticacheSecurityGroup
+from tap_plugin.aws_core.models.elasticache_subnet_group import ElasticacheSubnetGroup
+from tap_plugin.aws_core.models.fms_applications_list import FmsApplicationsList
+from tap_plugin.aws_core.models.fms_protocols_list import FmsProtocolsList
+from tap_plugin.aws_core.models.inspectorv2_cis_scan_configuration import Inspectorv2CisScanConfiguration
+from tap_plugin.aws_core.models.inspectorv2_code_security_scan_configuration import Inspectorv2CodeSecurityScanConfiguration
+from tap_plugin.aws_core.models.lambda_function_version import LambdaFunctionVersion
+from tap_plugin.aws_core.models.licensemanager_license_asset_rule_set import LicensemanagerLicenseAssetRuleSet
+from tap_plugin.aws_core.models.licensemanager_report_generator import LicensemanagerReportGenerator
+from tap_plugin.aws_core.models.route53resolver_firewall_config import Route53resolverFirewallConfig
+from tap_plugin.aws_core.models.route53resolver_resolver_config import Route53resolverResolverConfig
+from tap_plugin.aws_core.models.route53resolver_resolver_dnssec_config import Route53resolverResolverDnssecConfig
+from tap_plugin.aws_core.models.route53resolver_resolver_query_log_config import Route53resolverResolverQueryLogConfig
+from tap_plugin.aws_core.models.s3objectlambda_access_point import S3objectlambdaAccessPoint
+from tap_plugin.aws_core.models.s3outposts_endpoint import S3outpostsEndpoint
+from tap_plugin.aws_core.models.wafregional_byte_match_set import WafregionalByteMatchSet
+from tap_plugin.aws_core.models.wafregional_geo_match_set import WafregionalGeoMatchSet
+from tap_plugin.aws_core.models.wafregional_ip_set import WafregionalIpSet
+from tap_plugin.aws_core.models.wafregional_regex_pattern_set import WafregionalRegexPatternSet
+from tap_plugin.aws_core.models.wafregional_size_constraint_set import WafregionalSizeConstraintSet
+from tap_plugin.aws_core.models.wafregional_sql_injection_match_set import WafregionalSqlInjectionMatchSet
+from tap_plugin.aws_core.models.wafregional_xss_match_set import WafregionalXssMatchSet
+from tap_plugin.aws_core.models.wellarchitected_agent_context import WellarchitectedAgentContext
+from tap_plugin.aws_core.models.wellarchitected_agent_goal import WellarchitectedAgentGoal
 
 __all__ = [
+    "WellarchitectedAgentGoal",
+    "WellarchitectedAgentContext",
+    "WafregionalXssMatchSet",
+    "WafregionalSqlInjectionMatchSet",
+    "WafregionalSizeConstraintSet",
+    "WafregionalRegexPatternSet",
+    "WafregionalIpSet",
+    "WafregionalGeoMatchSet",
+    "WafregionalByteMatchSet",
+    "S3outpostsEndpoint",
+    "S3objectlambdaAccessPoint",
+    "Route53resolverResolverQueryLogConfig",
+    "Route53resolverResolverDnssecConfig",
+    "Route53resolverResolverConfig",
+    "Route53resolverFirewallConfig",
+    "LicensemanagerReportGenerator",
+    "LicensemanagerLicenseAssetRuleSet",
+    "LambdaFunctionVersion",
+    "Inspectorv2CodeSecurityScanConfiguration",
+    "Inspectorv2CisScanConfiguration",
+    "FmsProtocolsList",
+    "FmsApplicationsList",
+    "ElasticacheSubnetGroup",
+    "ElasticacheSecurityGroup",
+    "ElasticacheParameterGroup",
+    "EcsCapacityProvider",
+    "CassandraTable",
+    "CassandraKeyspace",
+    "AutoscalingScheduledAction",
+    "AutoscalingScalingPolicy",
+    "AutoscalingLaunchConfiguration",
+    "Ec2VerifiedAccessTrustProvider",
+    "Ec2VerifiedAccessInstance",
+    "Ec2VerifiedAccessEndpoint",
+    "Ec2VpnGateway",
+    "Ec2VpnConnection",
+    "Ec2VpnConcentrator",
+    "Ec2VpcPeeringConnection",
+    "Ec2VpcEndpointConnectionNotification",
+    "Ec2VpcEncryptionControl",
+    "Ec2VpcBlockPublicAccessExclusion",
+    "Ec2TransitGatewayVpcAttachment",
+    "Ec2TransitGatewayRouteTable",
+    "Ec2TransitGatewayPolicyTable",
+    "Ec2TransitGatewayPeeringAttachment",
+    "Ec2TransitGatewayMeteringPolicy",
+    "Ec2TransitGatewayConnectPeer",
+    "Ec2TransitGatewayConnect",
+    "Ec2TrafficMirrorTarget",
+    "Ec2TrafficMirrorSession",
+    "Ec2TrafficMirrorFilterRule",
+    "Ec2TrafficMirrorFilter",
+    "Ec2SpotFleet",
+    "Ec2SecurityGroupRule",
+    "Ec2RouteServerPeer",
+    "Ec2RouteServerEndpoint",
+    "Ec2RouteServer",
+    "Ec2PrefixList",
+    "Ec2NetworkInterface",
+    "Ec2NetworkInsightsAnalysis",
+    "Ec2NetworkInsightsAccessScopeAnalysis",
+    "Ec2LgwRouteTableVifGroupAssociation",
+    "Ec2LocalGatewayRouteTableVpcAssociation",
+    "Ec2LaunchTemplate",
+    "Ec2KeyPair",
+    "Ec2InstanceEventWindow",
+    "Ec2Ipv4Pool",
+    "Ec2IpamScope",
+    "Ec2IpamResourceDiscoveryAssociation",
+    "Ec2IpamResourceDiscovery",
+    "Ec2IpamPrefixListResolverTarget",
+    "Ec2IpamPrefixListResolver",
+    "Ec2IpamPoolCidr",
+    "Ec2IpamPool",
+    "Ec2Ipam",
+    "Ec2Host",
+    "Ec2FpgaImage",
+    "Ec2FlowLog",
+    "Ec2EgressOnlyInternetGateway",
+    "Ec2Fleet",
+    "Ec2DhcpOptions",
+    "Ec2CustomerGateway",
+    "Ec2ClientVpnEndpoint",
+    "Ec2CarrierGateway",
+    "Ec2CapacityManagerDataExport",
+    "Ec2ApplicationStatusCheck",
     "QuicksightVpcConnection",
     "QuicksightTopic",
     "QuicksightTheme",
