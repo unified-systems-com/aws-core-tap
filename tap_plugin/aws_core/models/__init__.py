@@ -530,8 +530,44 @@ from tap_plugin.aws_core.models.quicksight_template import QuicksightTemplate
 from tap_plugin.aws_core.models.quicksight_theme import QuicksightTheme
 from tap_plugin.aws_core.models.quicksight_topic import QuicksightTopic
 from tap_plugin.aws_core.models.quicksight_vpc_connection import QuicksightVpcConnection
+from tap_plugin.aws_core.models.backup_logically_air_gapped_backup_vault import BackupLogicallyAirGappedBackupVault
+from tap_plugin.aws_core.models.fsx_data_repository_association import FsxDataRepositoryAssociation
+from tap_plugin.aws_core.models.fsx_file_system import FsxFileSystem
+from tap_plugin.aws_core.models.fsx_snapshot import FsxSnapshot
+from tap_plugin.aws_core.models.fsx_storage_virtual_machine import FsxStorageVirtualMachine
+from tap_plugin.aws_core.models.fsx_volume import FsxVolume
+from tap_plugin.aws_core.models.greengrassv2_component_version import Greengrassv2ComponentVersion
+from tap_plugin.aws_core.models.quicksight_analysis import QuicksightAnalysis
+from tap_plugin.aws_core.models.quicksight_dlp_setting import QuicksightDlpSetting
+from tap_plugin.aws_core.models.quicksight_group import QuicksightGroup
+from tap_plugin.aws_core.models.quicksight_limits_profile import QuicksightLimitsProfile
+from tap_plugin.aws_core.models.quicksight_refresh_schedule import QuicksightRefreshSchedule
+from tap_plugin.aws_core.models.quicksight_topic_v2 import QuicksightTopicV2
+from tap_plugin.aws_core.models.redshift_qev2_idc_application import RedshiftQev2IdcApplication
+from tap_plugin.aws_core.models.securityhub_aggregator_v2 import SecurityhubAggregatorV2
+from tap_plugin.aws_core.models.securityhub_automation_rule_v2 import SecurityhubAutomationRuleV2
+from tap_plugin.aws_core.models.securityhub_connector_v2 import SecurityhubConnectorV2
+from tap_plugin.aws_core.models.xray_group import XrayGroup
 
 __all__ = [
+    "XrayGroup",
+    "SecurityhubConnectorV2",
+    "SecurityhubAutomationRuleV2",
+    "SecurityhubAggregatorV2",
+    "RedshiftQev2IdcApplication",
+    "QuicksightTopicV2",
+    "QuicksightRefreshSchedule",
+    "QuicksightLimitsProfile",
+    "QuicksightGroup",
+    "QuicksightDlpSetting",
+    "QuicksightAnalysis",
+    "Greengrassv2ComponentVersion",
+    "FsxVolume",
+    "FsxStorageVirtualMachine",
+    "FsxSnapshot",
+    "FsxFileSystem",
+    "FsxDataRepositoryAssociation",
+    "BackupLogicallyAirGappedBackupVault",
     "QuicksightVpcConnection",
     "QuicksightTopic",
     "QuicksightTheme",

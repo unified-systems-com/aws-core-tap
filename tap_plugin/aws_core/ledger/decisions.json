@@ -760,6 +760,11 @@
         "AWS::Backup::LegalHold"
       ]
     },
+    "aws_core__aws_backup_logically_air_gapped_backup_vault": {
+      "cfn": [
+        "AWS::Backup::LogicallyAirGappedBackupVault"
+      ]
+    },
     "aws_core__aws_backup_plan": {
       "cfn": [
         "AWS::Backup::BackupPlan"
@@ -1598,9 +1603,34 @@
         "AWS::FSx::Backup"
       ]
     },
+    "aws_core__aws_fsx_data_repository_association": {
+      "cfn": [
+        "AWS::FSx::DataRepositoryAssociation"
+      ]
+    },
     "aws_core__aws_fsx_file_cache": {
       "cfn": [
         "AWS::FSx::FileCache"
+      ]
+    },
+    "aws_core__aws_fsx_file_system": {
+      "cfn": [
+        "AWS::FSx::FileSystem"
+      ]
+    },
+    "aws_core__aws_fsx_snapshot": {
+      "cfn": [
+        "AWS::FSx::Snapshot"
+      ]
+    },
+    "aws_core__aws_fsx_storage_virtual_machine": {
+      "cfn": [
+        "AWS::FSx::StorageVirtualMachine"
+      ]
+    },
+    "aws_core__aws_fsx_volume": {
+      "cfn": [
+        "AWS::FSx::Volume"
       ]
     },
     "aws_core__aws_glue_registry": {
@@ -1691,6 +1721,11 @@
     "aws_core__aws_greengrass_subscription_definition_version": {
       "cfn": [
         "AWS::Greengrass::SubscriptionDefinitionVersion"
+      ]
+    },
+    "aws_core__aws_greengrassv2_component_version": {
+      "cfn": [
+        "AWS::GreengrassV2::ComponentVersion"
       ]
     },
     "aws_core__aws_guardduty_custom_detection_rule_association": {
@@ -2432,6 +2467,11 @@
         "AWS::QuickSight::Agent"
       ]
     },
+    "aws_core__aws_quicksight_analysis": {
+      "cfn": [
+        "AWS::QuickSight::Analysis"
+      ]
+    },
     "aws_core__aws_quicksight_approval_policy": {
       "cfn": [
         "AWS::QuickSight::ApprovalPolicy"
@@ -2462,6 +2502,11 @@
         "AWS::QuickSight::DataSource"
       ]
     },
+    "aws_core__aws_quicksight_dlp_setting": {
+      "cfn": [
+        "AWS::QuickSight::DLPSetting"
+      ]
+    },
     "aws_core__aws_quicksight_flow": {
       "cfn": [
         "AWS::QuickSight::Flow"
@@ -2472,14 +2517,29 @@
         "AWS::QuickSight::Folder"
       ]
     },
+    "aws_core__aws_quicksight_group": {
+      "cfn": [
+        "AWS::QuickSight::Group"
+      ]
+    },
     "aws_core__aws_quicksight_knowledge_base": {
       "cfn": [
         "AWS::QuickSight::KnowledgeBase"
       ]
     },
+    "aws_core__aws_quicksight_limits_profile": {
+      "cfn": [
+        "AWS::QuickSight::LimitsProfile"
+      ]
+    },
     "aws_core__aws_quicksight_o_auth_client_application": {
       "cfn": [
         "AWS::QuickSight::OAuthClientApplication"
+      ]
+    },
+    "aws_core__aws_quicksight_refresh_schedule": {
+      "cfn": [
+        "AWS::QuickSight::RefreshSchedule"
       ]
     },
     "aws_core__aws_quicksight_space": {
@@ -2500,6 +2560,11 @@
     "aws_core__aws_quicksight_topic": {
       "cfn": [
         "AWS::QuickSight::Topic"
+      ]
+    },
+    "aws_core__aws_quicksight_topic_v2": {
+      "cfn": [
+        "AWS::QuickSight::TopicV2"
       ]
     },
     "aws_core__aws_quicksight_vpc_connection": {
@@ -2604,6 +2669,11 @@
     "aws_core__aws_redshift_integration": {
       "cfn": [
         "AWS::Redshift::Integration"
+      ]
+    },
+    "aws_core__aws_redshift_qev2_idc_application": {
+      "cfn": [
+        "AWS::Redshift::QEV2IdcApplication"
       ]
     },
     "aws_core__aws_redshift_redshift_idc_application": {
@@ -2935,9 +3005,19 @@
         "AWS::SecurityHub::ActionTarget"
       ]
     },
+    "aws_core__aws_securityhub_aggregator_v2": {
+      "cfn": [
+        "AWS::SecurityHub::AggregatorV2"
+      ]
+    },
     "aws_core__aws_securityhub_automation_rule": {
       "cfn": [
         "AWS::SecurityHub::AutomationRule"
+      ]
+    },
+    "aws_core__aws_securityhub_automation_rule_v2": {
+      "cfn": [
+        "AWS::SecurityHub::AutomationRuleV2"
       ]
     },
     "aws_core__aws_securityhub_configuration_policy": {
@@ -2948,6 +3028,11 @@
     "aws_core__aws_securityhub_connector": {
       "cfn": [
         "AWS::SecurityHub::Connector"
+      ]
+    },
+    "aws_core__aws_securityhub_connector_v2": {
+      "cfn": [
+        "AWS::SecurityHub::ConnectorV2"
       ]
     },
     "aws_core__aws_securityhub_finding": {
@@ -3231,6 +3316,11 @@
     "aws_core__aws_wellarchitected_workload": {
       "cfn": [
         "AWS::WellArchitected::Workload"
+      ]
+    },
+    "aws_core__aws_xray_group": {
+      "cfn": [
+        "AWS::XRay::Group"
       ]
     }
   },

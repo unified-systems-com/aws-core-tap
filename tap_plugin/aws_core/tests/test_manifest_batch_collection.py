@@ -2136,6 +2136,78 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_backup_logically_air_gapped_backup_vault": (
+        {'BackupVaultArn': 'arn:aws:backup:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_fsx_data_repository_association": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_fsx_file_system": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_fsx_snapshot": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fsx_storage_virtual_machine": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fsx_volume": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrassv2_component_version": (
+        {'arn': 'arn:aws:greengrassv2:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_quicksight_analysis": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_dlp_setting": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_group": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_limits_profile": (
+        {'arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'profileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_refresh_schedule": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_quicksight_topic_v2": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_qev2_idc_application": (
+        {'Qev2IdcApplicationArn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'Qev2IdcApplicationName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_aggregator_v2": (
+        {'AggregatorV2Arn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_securityhub_automation_rule_v2": (
+        {'RuleArn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1', 'RuleName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_connector_v2": (
+        {'ConnectorArn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_xray_group": (
+        {'GroupARN': 'arn:aws:xray:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
