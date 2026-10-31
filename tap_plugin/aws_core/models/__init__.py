@@ -530,8 +530,90 @@ from tap_plugin.aws_core.models.quicksight_template import QuicksightTemplate
 from tap_plugin.aws_core.models.quicksight_theme import QuicksightTheme
 from tap_plugin.aws_core.models.quicksight_topic import QuicksightTopic
 from tap_plugin.aws_core.models.quicksight_vpc_connection import QuicksightVpcConnection
+from tap_plugin.aws_core.models.batch_quota_share import BatchQuotaShare
+from tap_plugin.aws_core.models.codebuild_source_credential import CodebuildSourceCredential
+from tap_plugin.aws_core.models.connect_contact_flow_module_alias import ConnectContactFlowModuleAlias
+from tap_plugin.aws_core.models.connect_contact_flow_module_version import ConnectContactFlowModuleVersion
+from tap_plugin.aws_core.models.connect_contact_flow_version import ConnectContactFlowVersion
+from tap_plugin.aws_core.models.connect_email_address import ConnectEmailAddress
+from tap_plugin.aws_core.models.connect_use_case import ConnectUseCase
+from tap_plugin.aws_core.models.connect_view_version import ConnectViewVersion
+from tap_plugin.aws_core.models.connect_vocabulary import ConnectVocabulary
+from tap_plugin.aws_core.models.databrew_dataset import DatabrewDataset
+from tap_plugin.aws_core.models.databrew_job import DatabrewJob
+from tap_plugin.aws_core.models.databrew_project import DatabrewProject
+from tap_plugin.aws_core.models.databrew_recipe import DatabrewRecipe
+from tap_plugin.aws_core.models.databrew_ruleset import DatabrewRuleset
+from tap_plugin.aws_core.models.databrew_schedule import DatabrewSchedule
+from tap_plugin.aws_core.models.emrcontainers_endpoint import EmrcontainersEndpoint
+from tap_plugin.aws_core.models.glue_integration import GlueIntegration
+from tap_plugin.aws_core.models.glue_integration_resource_property import GlueIntegrationResourceProperty
+from tap_plugin.aws_core.models.glue_catalog import GlueCatalog
+from tap_plugin.aws_core.models.kinesis_stream_consumer import KinesisStreamConsumer
+from tap_plugin.aws_core.models.msk_serverless_cluster import MskServerlessCluster
+from tap_plugin.aws_core.models.polly_lexicon import PollyLexicon
+from tap_plugin.aws_core.models.resourcegroups_group import ResourcegroupsGroup
+from tap_plugin.aws_core.models.route53_cidr_collection import Route53CidrCollection
+from tap_plugin.aws_core.models.route53_delegation_set import Route53DelegationSet
+from tap_plugin.aws_core.models.route53_health_check import Route53HealthCheck
+from tap_plugin.aws_core.models.route53_query_logging_config import Route53QueryLoggingConfig
+from tap_plugin.aws_core.models.route53_traffic_policy_instance import Route53TrafficPolicyInstance
+from tap_plugin.aws_core.models.ssm_association import SsmAssociation
+from tap_plugin.aws_core.models.ssm_cloud_connector import SsmCloudConnector
+from tap_plugin.aws_core.models.ssm_maintenance_window import SsmMaintenanceWindow
+from tap_plugin.aws_core.models.ssm_patch_baseline import SsmPatchBaseline
+from tap_plugin.aws_core.models.servicecatalog_provisioned_product import ServicecatalogProvisionedProduct
+from tap_plugin.aws_core.models.servicecatalog_service_action import ServicecatalogServiceAction
+from tap_plugin.aws_core.models.servicecatalog_tag_option import ServicecatalogTagOption
+from tap_plugin.aws_core.models.servicediscovery_http_namespace import ServicediscoveryHttpNamespace
+from tap_plugin.aws_core.models.servicediscovery_private_dns_namespace import ServicediscoveryPrivateDnsNamespace
+from tap_plugin.aws_core.models.servicediscovery_public_dns_namespace import ServicediscoveryPublicDnsNamespace
+from tap_plugin.aws_core.models.timestream_influx_db_backup import TimestreamInfluxDbBackup
+from tap_plugin.aws_core.models.timestream_influx_db_cluster import TimestreamInfluxDbCluster
+from tap_plugin.aws_core.models.timestream_influx_db_instance import TimestreamInfluxDbInstance
 
 __all__ = [
+    "TimestreamInfluxDbInstance",
+    "TimestreamInfluxDbCluster",
+    "TimestreamInfluxDbBackup",
+    "ServicediscoveryPublicDnsNamespace",
+    "ServicediscoveryPrivateDnsNamespace",
+    "ServicediscoveryHttpNamespace",
+    "ServicecatalogTagOption",
+    "ServicecatalogServiceAction",
+    "ServicecatalogProvisionedProduct",
+    "SsmPatchBaseline",
+    "SsmMaintenanceWindow",
+    "SsmCloudConnector",
+    "SsmAssociation",
+    "Route53TrafficPolicyInstance",
+    "Route53QueryLoggingConfig",
+    "Route53HealthCheck",
+    "Route53DelegationSet",
+    "Route53CidrCollection",
+    "ResourcegroupsGroup",
+    "PollyLexicon",
+    "MskServerlessCluster",
+    "KinesisStreamConsumer",
+    "GlueCatalog",
+    "GlueIntegrationResourceProperty",
+    "GlueIntegration",
+    "EmrcontainersEndpoint",
+    "DatabrewSchedule",
+    "DatabrewRuleset",
+    "DatabrewRecipe",
+    "DatabrewProject",
+    "DatabrewJob",
+    "DatabrewDataset",
+    "ConnectVocabulary",
+    "ConnectViewVersion",
+    "ConnectUseCase",
+    "ConnectEmailAddress",
+    "ConnectContactFlowVersion",
+    "ConnectContactFlowModuleVersion",
+    "ConnectContactFlowModuleAlias",
+    "CodebuildSourceCredential",
+    "BatchQuotaShare",
     "QuicksightVpcConnection",
     "QuicksightTopic",
     "QuicksightTheme",

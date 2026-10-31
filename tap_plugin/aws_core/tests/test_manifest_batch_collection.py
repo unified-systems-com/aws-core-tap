@@ -2136,6 +2136,170 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_batch_quota_share": (
+        {'quotaShareArn': 'arn:aws:batch:us-east-1:123456789012:res/gen-1', 'quotaShareName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_codebuild_source_credential": (
+        {'arn': 'arn:aws:codebuild:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_contact_flow_module_alias": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1', 'AliasName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_connect_contact_flow_module_version": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_contact_flow_version": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_email_address": (
+        {'EmailAddressArn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_use_case": (
+        {'UseCaseArn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_view_version": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_connect_vocabulary": (
+        {'Arn': 'arn:aws:connect:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_databrew_dataset": (
+        {'ResourceArn': 'arn:aws:databrew:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_databrew_job": (
+        {'ResourceArn': 'arn:aws:databrew:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_databrew_project": (
+        {'ResourceArn': 'arn:aws:databrew:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_databrew_recipe": (
+        {'ResourceArn': 'arn:aws:databrew:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_databrew_ruleset": (
+        {'ResourceArn': 'arn:aws:databrew:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_databrew_schedule": (
+        {'ResourceArn': 'arn:aws:databrew:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_emrcontainers_endpoint": (
+        {'arn': 'arn:aws:emr-containers:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_integration": (
+        {'IntegrationArn': 'arn:aws:glue:us-east-1:123456789012:res/gen-1', 'IntegrationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_integration_resource_property": (
+        {'ResourcePropertyArn': 'arn:aws:glue:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_glue_catalog": (
+        {'ResourceArn': 'arn:aws:glue:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesis_stream_consumer": (
+        {'ConsumerARN': 'arn:aws:kinesis:us-east-1:123456789012:res/gen-1', 'ConsumerName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_msk_serverless_cluster": (
+        {'ClusterArn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1', 'ClusterName': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_polly_lexicon": (
+        {'Attributes': {'LexiconArn': 'arn:aws:polly:us-east-1:123456789012:res/gen-1'}, 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resourcegroups_group": (
+        {'GroupArn': 'arn:aws:resource-groups:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53_cidr_collection": (
+        {'Arn': 'arn:aws:route53:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53_delegation_set": (
+        {'Id': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_route53_health_check": (
+        {'Id': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_route53_query_logging_config": (
+        {'Id': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_route53_traffic_policy_instance": (
+        {'Id': 'gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ssm_association": (
+        {'AssociationId': 'gen-1', 'AssociationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ssm_cloud_connector": (
+        {'CloudConnectorId': 'gen-1', 'DisplayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ssm_maintenance_window": (
+        {'WindowId': 'gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ssm_patch_baseline": (
+        {'BaselineId': 'gen-1', 'BaselineName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicecatalog_provisioned_product": (
+        {'Arn': 'arn:aws:servicecatalog:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicecatalog_service_action": (
+        {'Id': 'gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicecatalog_tag_option": (
+        {'Id': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_servicediscovery_http_namespace": (
+        {'Arn': 'arn:aws:servicediscovery:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicediscovery_private_dns_namespace": (
+        {'Arn': 'arn:aws:servicediscovery:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicediscovery_public_dns_namespace": (
+        {'Arn': 'arn:aws:servicediscovery:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_timestream_influx_db_backup": (
+        {'arn': 'arn:aws:timestream-influxdb:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_timestream_influx_db_cluster": (
+        {'arn': 'arn:aws:timestream-influxdb:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_timestream_influx_db_instance": (
+        {'arn': 'arn:aws:timestream-influxdb:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
