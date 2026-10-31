@@ -750,6 +750,11 @@
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; availability zones are not a CloudFormation resource."
     },
+    "aws_core__aws_backup_backup_selection": {
+      "cfn": [
+        "AWS::Backup::BackupSelection"
+      ]
+    },
     "aws_core__aws_backup_framework": {
       "cfn": [
         "AWS::Backup::Framework"
@@ -1385,6 +1390,11 @@
         "AWS::EC2::VerifiedAccessGroup"
       ]
     },
+    "aws_core__aws_ecr_public_repository": {
+      "cfn": [
+        "AWS::ECR::PublicRepository"
+      ]
+    },
     "aws_core__aws_ecr_repository": {
       "cfn": [
         "AWS::ECR::Repository"
@@ -1641,6 +1651,11 @@
     "aws_core__aws_glue_schema": {
       "cfn": [
         "AWS::Glue::Schema"
+      ]
+    },
+    "aws_core__aws_grafana_workspace": {
+      "cfn": [
+        "AWS::Grafana::Workspace"
       ]
     },
     "aws_core__aws_greengrass_connector_definition": {
@@ -2178,6 +2193,11 @@
         "AWS::Logs::MetricFilter"
       ]
     },
+    "aws_core__aws_logs_query_definition": {
+      "cfn": [
+        "AWS::Logs::QueryDefinition"
+      ]
+    },
     "aws_core__aws_logs_scheduled_query": {
       "cfn": [
         "AWS::Logs::ScheduledQuery"
@@ -2448,6 +2468,41 @@
         "AWS::Outposts::Site"
       ]
     },
+    "aws_core__aws_pinpoint_app": {
+      "cfn": [
+        "AWS::Pinpoint::App"
+      ]
+    },
+    "aws_core__aws_pinpoint_campaign": {
+      "cfn": [
+        "AWS::Pinpoint::Campaign"
+      ]
+    },
+    "aws_core__aws_pinpoint_email_template": {
+      "cfn": [
+        "AWS::Pinpoint::EmailTemplate"
+      ]
+    },
+    "aws_core__aws_pinpoint_in_app_template": {
+      "cfn": [
+        "AWS::Pinpoint::InAppTemplate"
+      ]
+    },
+    "aws_core__aws_pinpoint_push_template": {
+      "cfn": [
+        "AWS::Pinpoint::PushTemplate"
+      ]
+    },
+    "aws_core__aws_pinpoint_segment": {
+      "cfn": [
+        "AWS::Pinpoint::Segment"
+      ]
+    },
+    "aws_core__aws_pinpoint_sms_template": {
+      "cfn": [
+        "AWS::Pinpoint::SmsTemplate"
+      ]
+    },
     "aws_core__aws_policy_statement": {
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
@@ -2699,6 +2754,11 @@
     "aws_core__aws_region": {
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; regions are not a CloudFormation resource."
+    },
+    "aws_core__aws_rekognition_dataset": {
+      "cfn": [
+        "AWS::Rekognition::Dataset"
+      ]
     },
     "aws_core__aws_rekognition_project": {
       "cfn": [
@@ -3089,6 +3149,26 @@
         "AWS::ServiceDiscovery::Service"
       ]
     },
+    "aws_core__aws_ses_mail_manager_addon_instance": {
+      "cfn": [
+        "AWS::SES::MailManagerAddonInstance"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_addon_subscription": {
+      "cfn": [
+        "AWS::SES::MailManagerAddonSubscription"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_address_list": {
+      "cfn": [
+        "AWS::SES::MailManagerAddressList"
+      ]
+    },
+    "aws_core__aws_ses_tenant": {
+      "cfn": [
+        "AWS::SES::Tenant"
+      ]
+    },
     "aws_core__aws_signer_signing_profile": {
       "cfn": [
         "AWS::Signer::SigningProfile"
@@ -3316,6 +3396,26 @@
     "aws_core__aws_wellarchitected_workload": {
       "cfn": [
         "AWS::WellArchitected::Workload"
+      ]
+    },
+    "aws_core__aws_workspaces_connection_alias": {
+      "cfn": [
+        "AWS::WorkSpaces::ConnectionAlias"
+      ]
+    },
+    "aws_core__aws_workspaces_directory": {
+      "cfn": [
+        "AWS::WorkSpaces::Directory"
+      ]
+    },
+    "aws_core__aws_workspaces_workspace": {
+      "cfn": [
+        "AWS::WorkSpaces::Workspace"
+      ]
+    },
+    "aws_core__aws_workspaces_workspace_ip_group": {
+      "cfn": [
+        "AWS::WorkSpaces::WorkspaceIpGroup"
       ]
     },
     "aws_core__aws_xray_group": {

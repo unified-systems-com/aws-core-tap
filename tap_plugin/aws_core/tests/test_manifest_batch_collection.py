@@ -2208,6 +2208,86 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'GroupARN': 'arn:aws:xray:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_pinpoint_app": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_campaign": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_email_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_in_app_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_push_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_segment": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_sms_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_backup_backup_selection": (
+        {'SelectionId': 'gen-1', 'SelectionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ecr_public_repository": (
+        {'repositoryArn': 'arn:aws:ecr-public:us-east-1:123456789012:res/gen-1', 'repositoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_grafana_workspace": (
+        {'id': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_logs_query_definition": (
+        {'queryDefinitionId': 'gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_dataset": (
+        {'DatasetArn': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_mail_manager_addon_instance": (
+        {'AddonInstanceArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_mail_manager_addon_subscription": (
+        {'AddonSubscriptionArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_mail_manager_address_list": (
+        {'AddressListArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_tenant": (
+        {'TenantArn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TenantName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_workspaces_connection_alias": (
+        {'AliasId': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_workspaces_directory": (
+        {'DirectoryId': 'gen-1', 'DirectoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_workspaces_workspace": (
+        {'WorkspaceId': 'gen-1', 'WorkspaceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_workspaces_workspace_ip_group": (
+        {'groupId': 'gen-1', 'groupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

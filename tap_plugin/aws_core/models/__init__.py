@@ -548,8 +548,48 @@ from tap_plugin.aws_core.models.securityhub_aggregator_v2 import SecurityhubAggr
 from tap_plugin.aws_core.models.securityhub_automation_rule_v2 import SecurityhubAutomationRuleV2
 from tap_plugin.aws_core.models.securityhub_connector_v2 import SecurityhubConnectorV2
 from tap_plugin.aws_core.models.xray_group import XrayGroup
+from tap_plugin.aws_core.models.pinpoint_app import PinpointApp
+from tap_plugin.aws_core.models.pinpoint_campaign import PinpointCampaign
+from tap_plugin.aws_core.models.pinpoint_email_template import PinpointEmailTemplate
+from tap_plugin.aws_core.models.pinpoint_in_app_template import PinpointInAppTemplate
+from tap_plugin.aws_core.models.pinpoint_push_template import PinpointPushTemplate
+from tap_plugin.aws_core.models.pinpoint_segment import PinpointSegment
+from tap_plugin.aws_core.models.pinpoint_sms_template import PinpointSmsTemplate
+from tap_plugin.aws_core.models.backup_backup_selection import BackupBackupSelection
+from tap_plugin.aws_core.models.ecr_public_repository import EcrPublicRepository
+from tap_plugin.aws_core.models.grafana_workspace import GrafanaWorkspace
+from tap_plugin.aws_core.models.logs_query_definition import LogsQueryDefinition
+from tap_plugin.aws_core.models.rekognition_dataset import RekognitionDataset
+from tap_plugin.aws_core.models.ses_mail_manager_addon_instance import SesMailManagerAddonInstance
+from tap_plugin.aws_core.models.ses_mail_manager_addon_subscription import SesMailManagerAddonSubscription
+from tap_plugin.aws_core.models.ses_mail_manager_address_list import SesMailManagerAddressList
+from tap_plugin.aws_core.models.ses_tenant import SesTenant
+from tap_plugin.aws_core.models.workspaces_connection_alias import WorkspacesConnectionAlias
+from tap_plugin.aws_core.models.workspaces_directory import WorkspacesDirectory
+from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
+from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
 
 __all__ = [
+    "WorkspacesWorkspaceIpGroup",
+    "WorkspacesWorkspace",
+    "WorkspacesDirectory",
+    "WorkspacesConnectionAlias",
+    "SesTenant",
+    "SesMailManagerAddressList",
+    "SesMailManagerAddonSubscription",
+    "SesMailManagerAddonInstance",
+    "RekognitionDataset",
+    "LogsQueryDefinition",
+    "GrafanaWorkspace",
+    "EcrPublicRepository",
+    "BackupBackupSelection",
+    "PinpointSmsTemplate",
+    "PinpointSegment",
+    "PinpointPushTemplate",
+    "PinpointInAppTemplate",
+    "PinpointEmailTemplate",
+    "PinpointCampaign",
+    "PinpointApp",
     "XrayGroup",
     "SecurityhubConnectorV2",
     "SecurityhubAutomationRuleV2",
