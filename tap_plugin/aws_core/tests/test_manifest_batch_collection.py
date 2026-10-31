@@ -2811,6 +2811,340 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     ),
     "aws_core__aws_cloudformation_hook_version": (
         {'Arn': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'TypeName': 'gen-1'},
+    "aws_core__aws_backup_logically_air_gapped_backup_vault": (
+        {'BackupVaultArn': 'arn:aws:backup:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_fsx_data_repository_association": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_fsx_file_system": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_fsx_snapshot": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fsx_storage_virtual_machine": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_fsx_volume": (
+        {'ResourceARN': 'arn:aws:fsx:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_greengrassv2_component_version": (
+        {'arn': 'arn:aws:greengrassv2:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_quicksight_analysis": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_dlp_setting": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_group": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_limits_profile": (
+        {'arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'profileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_refresh_schedule": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_quicksight_topic_v2": (
+        {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_qev2_idc_application": (
+        {'Qev2IdcApplicationArn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'Qev2IdcApplicationName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_aggregator_v2": (
+        {'AggregatorV2Arn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_securityhub_automation_rule_v2": (
+        {'RuleArn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1', 'RuleName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_connector_v2": (
+        {'ConnectorArn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_xray_group": (
+        {'GroupARN': 'arn:aws:xray:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_app": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_campaign": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_email_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_in_app_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_push_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_segment": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_pinpoint_sms_template": (
+        {'Arn': 'arn:aws:pinpoint:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_backup_backup_selection": (
+        {'SelectionId': 'gen-1', 'SelectionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ecr_public_repository": (
+        {'repositoryArn': 'arn:aws:ecr-public:us-east-1:123456789012:res/gen-1', 'repositoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_grafana_workspace": (
+        {'id': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_logs_query_definition": (
+        {'queryDefinitionId': 'gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_dataset": (
+        {'DatasetArn': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_mail_manager_addon_instance": (
+        {'AddonInstanceArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_mail_manager_addon_subscription": (
+        {'AddonSubscriptionArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_mail_manager_address_list": (
+        {'AddressListArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ses_tenant": (
+        {'TenantArn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TenantName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_workspaces_connection_alias": (
+        {'AliasId': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_workspaces_directory": (
+        {'DirectoryId': 'gen-1', 'DirectoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_workspaces_workspace": (
+        {'WorkspaceId': 'gen-1', 'WorkspaceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_workspaces_workspace_ip_group": (
+        {'groupId': 'gen-1', 'groupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_extension_association": (
+        {'Arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_codecommit_repository": (
+        {'Arn': 'arn:aws:codecommit:us-east-1:123456789012:res/gen-1', 'repositoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchservice_domain": (
+        {'ARN': 'arn:aws:opensearch:us-east-1:123456789012:res/gen-1', 'DomainName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rbin_rule": (
+        {'RuleArn': 'arn:aws:rbin:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_redshift_cluster": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ClusterIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_collection": (
+        {'CollectionARN': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1', 'CollectionId': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_stream_processor": (
+        {'StreamProcessorArn': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_archive": (
+        {'ArchiveArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'ArchiveName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_ingress_point": (
+        {'IngressPointArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'IngressPointName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_relay": (
+        {'RelayArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'RelayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_rule_set": (
+        {'RuleSetArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'RuleSetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_traffic_policy": (
+        {'TrafficPolicyArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'TrafficPolicyName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_hub_v2": (
+        {'HubV2Arn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_synthetics_canary": (
+        {'_arn': 'arn:aws:synthetics:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_xray_sampling_rule": (
+        {'RuleARN': 'arn:aws:xray:us-east-1:123456789012:res/gen-1', 'RuleName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_application": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_configuration_profile": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_deployment_strategy": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_environment": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_experiment_definition": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudwatch_insight_rule": (
+        {'_arn': 'arn:aws:cloudwatch:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_directconnect_lag": (
+        {'_arn': 'arn:aws:directconnect:us-east-1:123456789012:res/gen-1', 'lagName': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_lex_bot": (
+        {'_arn': 'arn:aws:lexv2-models:us-east-1:123456789012:res/gen-1', 'botName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_lex_bot_alias": (
+        {'_arn': 'arn:aws:lexv2-models:us-east-1:123456789012:res/gen-1', 'botAliasName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_cluster_parameter_group": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ParameterGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_cluster_subnet_group": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ClusterSubnetGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_event_subscription": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'CustSubscriptionId': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_snapshot": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'SnapshotIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_snapshot_copy_grant": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'SnapshotCopyGrantName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_snapshot_schedule": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ScheduleIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_usage_limit": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ses_configuration_set": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'ConfigurationSetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_contact_list": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'ContactListName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_custom_verification_email_template": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_dedicated_ip_pool": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'PoolName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_email_identity": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'IdentityName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_multi_region_endpoint": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'EndpointName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_template": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_apigateway_domain_name_access_association": (
+        {'domainNameAccessAssociationArn': 'arn:aws:apigateway:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_cloudwatch_omni_dashboard": (
+        {'arn': 'arn:aws:cloudwatchomni:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53profiles_profile_association": (
+        {'_arn': 'arn:aws:route53profiles:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3_access_grant": (
+        {'AccessGrantArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', '_tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_s3_access_grants_instance": (
+        {'AccessGrantsInstanceArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', '_tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_s3_access_grants_location": (
+        {'AccessGrantsLocationArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', '_tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_s3_storage_lens": (
+        {'StorageLensArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Id': 'gen-1', '_tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3_storage_lens_group": (
+        {'StorageLensGroupArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', '_tags': {'owner': 'net-team'}},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_vpc_endpoint": (

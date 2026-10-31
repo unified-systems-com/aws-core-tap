@@ -943,6 +943,150 @@
     "AWS::RAM::SourceAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by ResourceShareArn, SourceId, with no identity or ARN of its own: botocore 1.43.121 ram ListSourceAssociations returns a resource share, a sourceId and a status. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::ApiGateway::BasePathMappingV2": {
+      "state": "excluded",
+      "reason": "A link between a custom domain name and an API stage (botocore apigateway GetBasePathMappings returns basePath, restApiId and stage, and needs the domain name; the BasePathMappingArn the CloudFormation schema names is not in the answer). It is a relationship between nodes, an edge candidate once both ends are modelled; the precedent is AWS::ApiGateway::BasePathMapping."
+    },
+    "AWS::ApiGateway::Deployment": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and DeploymentId with no ARN of its own in the answer: botocore apigateway GetDeployments (restApiId required; items id, description, createdDate, apiSummary) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method. The stage already carries deployment_id (aws_apigateway_stage)."
+    },
+    "AWS::ApiGateway::DocumentationPart": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and DocumentationPartId with no ARN of its own in the answer: botocore apigateway GetDocumentationParts (restApiId required; items id, location, properties) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::DocumentationVersion": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and DocumentationVersion with no ARN of its own in the answer: botocore apigateway GetDocumentationVersions (restApiId required; items version, createdDate, description) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::GatewayResponse": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and the response type with no ARN of its own in the answer: botocore apigateway GetGatewayResponses (restApiId required; items responseType, statusCode, responseParameters, responseTemplates) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::Model": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and the model name with no ARN of its own in the answer: botocore apigateway GetModels (restApiId required; items id, name, description, schema, contentType) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::RequestValidator": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and RequestValidatorId with no ARN of its own in the answer: botocore apigateway GetRequestValidators (restApiId required; items id, name, validateRequestBody, validateRequestParameters) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::Resource": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and ResourceId with no ARN of its own in the answer: botocore apigateway GetResources (restApiId required; items id, parentId, pathPart, path, resourceMethods) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::UsagePlanKey": {
+      "state": "excluded",
+      "reason": "A link between an API key and a usage plan, identified by the key's id under the plan: botocore apigateway GetUsagePlanKeys needs usagePlanId and returns id, type, name and the key value. It is a relationship between two modelled nodes (aws_apigateway_api_key, aws_apigateway_usage_plan), an edge candidate, not a resource."
+    },
+    "AWS::AppConfig::HostedConfigurationVersion": {
+      "state": "excluded",
+      "reason": "A numbered version of the content held by a configuration profile, listed per profile (botocore appconfig ListHostedConfigurationVersions needs ApplicationId and ConfigurationProfileId). Its ARN in the AWS Service Authorization Reference is the profile's own (application/<id>/configurationprofile/<id>, no version part), so it cannot key a version, and the version is the profile's content, not a resource."
+    },
+    "AWS::CloudWatch::OTelEnrichment": {
+      "state": "excluded",
+      "reason": "The account's OTel metric enrichment switch, identified by AccountId (botocore cloudwatch GetOTelEnrichment takes no input and returns the include and exclude filters): a singleton setting of the account, not a resource."
+    },
+    "AWS::CloudWatch::ResourceMetricsConfiguration": {
+      "state": "not-enumerable",
+      "reason": "The detailed monitoring metric selections of one AWS resource, identified by that resource's ARN: botocore 1.43.121 cloudwatch defines GetResourceMetricsConfiguration, which needs a ResourceArn, and no operation that lists them, so the configured resources cannot be found by enumeration."
+    },
+    "AWS::ECR::PullTimeUpdateExclusion": {
+      "state": "excluded",
+      "reason": "An entry in an account's list of IAM principals excluded from pull-time updates, identified by the principal's ARN with no ARN or attributes of its own: botocore ecr ListPullTimeUpdateExclusions returns bare principal ARN strings. It is a setting of the registry, not a resource."
+    },
+    "AWS::Logs::Transformer": {
+      "state": "excluded",
+      "reason": "The log transformer configuration of one log group, identified by the group's identifier with no ARN of its own: botocore logs GetTransformer takes logGroupIdentifier and returns the transformer configuration. It is a setting of aws_cloudwatch_log_group, not a resource."
+    },
+    "AWS::M2::Deployment": {
+      "state": "excluded",
+      "reason": "A record of one deployment of a Mainframe Modernization application to an environment, identified by ApplicationId and DeploymentId with no ARN of its own: botocore m2 ListDeployments needs applicationId and the AWS Service Authorization Reference defines ARNs for m2 applications and environments only. It is an event on the application, not a resource."
+    },
+    "AWS::Pinpoint::ADMChannel": {
+      "state": "excluded",
+      "reason": "The ADM push channel of one Pinpoint application: one per application (botocore pinpoint GetAdmChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (ClientId and ClientSecret)."
+    },
+    "AWS::Pinpoint::APNSChannel": {
+      "state": "excluded",
+      "reason": "The APNS push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (BundleId, Certificate, PrivateKey, TeamId, TokenKey and TokenKeyId)."
+    },
+    "AWS::Pinpoint::APNSSandboxChannel": {
+      "state": "excluded",
+      "reason": "The APNSSandbox push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsSandboxChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (the same APNs certificate, private key and token key members)."
+    },
+    "AWS::Pinpoint::APNSVoipChannel": {
+      "state": "excluded",
+      "reason": "The APNSVoip push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsVoipChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (the same APNs certificate, private key and token key members)."
+    },
+    "AWS::Pinpoint::APNSVoipSandboxChannel": {
+      "state": "excluded",
+      "reason": "The APNSVoipSandbox push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsVoipSandboxChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (the same APNs certificate, private key and token key members)."
+    },
+    "AWS::Pinpoint::BaiduChannel": {
+      "state": "excluded",
+      "reason": "The Baidu push channel of one Pinpoint application: one per application (botocore pinpoint GetBaiduChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (ApiKey and SecretKey)."
+    },
+    "AWS::Pinpoint::EmailChannel": {
+      "state": "excluded",
+      "reason": "The Email channel of one Pinpoint application: one per application (botocore pinpoint GetEmailChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application (aws_pinpoint_app), not a resource."
+    },
+    "AWS::Pinpoint::GCMChannel": {
+      "state": "excluded",
+      "reason": "The GCM push channel of one Pinpoint application: one per application (botocore pinpoint GetGcmChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (ApiKey and ServiceJson)."
+    },
+    "AWS::Pinpoint::SMSChannel": {
+      "state": "excluded",
+      "reason": "The SMS channel of one Pinpoint application: one per application (botocore pinpoint GetSmsChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application (aws_pinpoint_app), not a resource."
+    },
+    "AWS::Pinpoint::VoiceChannel": {
+      "state": "excluded",
+      "reason": "The Voice channel of one Pinpoint application: one per application (botocore pinpoint GetVoiceChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application (aws_pinpoint_app), not a resource."
+    },
+    "AWS::QuickSight::Assignment": {
+      "state": "excluded",
+      "reason": "An IAM policy assignment: a link attaching a policy (PolicyArn) to QuickSight users and groups (Identities), listed per namespace by name only (botocore quicksight ListIAMPolicyAssignments returns AssignmentName and AssignmentStatus). It is a relationship between nodes, an edge candidate, not a resource."
+    },
+    "AWS::QuickSight::Customization": {
+      "state": "excluded",
+      "reason": "The account customization of one namespace of one account (botocore quicksight DescribeAccountCustomization takes AwsAccountId and Namespace and returns the default theme): a singleton setting of the account, not a resource."
+    },
+    "AWS::Redshift::EndpointAuthorization": {
+      "state": "excluded",
+      "reason": "A grant letting another account create a Redshift-managed VPC endpoint to a cluster, identified by ClusterIdentifier and Account with no ARN of its own (botocore redshift DescribeEndpointAuthorization returns Grantor, Grantee, ClusterIdentifier, AllowedVPCs). It is a link between a cluster and an account, an edge candidate, not a resource."
+    },
+    "AWS::SES::ConfigurationSetEventDestination": {
+      "state": "excluded",
+      "reason": "An event destination of one configuration set, identified by the set's name and its own id with no ARN of its own (the AWS Service Authorization Reference lists no event-destination resource). It is content of aws_ses_configuration_set, not a resource."
+    },
+    "AWS::SES::EmailIdentityCertificate": {
+      "state": "excluded",
+      "reason": "A link between an SES email identity and an ACM certificate (CloudFormation properties EmailIdentity, FromAddress, CertificateArn), with no ARN of its own. It is a relationship between nodes, an edge candidate, not a resource."
+    },
+    "AWS::SecurityHub::DelegatedAdmin": {
+      "state": "excluded",
+      "reason": "The designation of the organization's delegated Security Hub administrator account, identified by DelegatedAdminIdentifier with properties AdminAccountId and Status only. It is a setting of the organization, not a resource."
+    },
+    "AWS::SecurityHub::ProductSubscription": {
+      "state": "excluded",
+      "reason": "A link between the Security Hub account and a product integration (CloudFormation properties ProductArn and ProductSubscriptionArn); botocore securityhub ListEnabledProductsForImport returns bare ARN strings with no attributes. It is a relationship between the hub and a product, an edge candidate, not a resource."
+    },
+    "AWS::SecurityHub::SecurityControl": {
+      "state": "excluded",
+      "reason": "A customization (Parameters, LastUpdateReason) of an AWS-defined security control: botocore securityhub ListSecurityControlDefinitions lists the catalog of AWS-defined controls. It is a setting layered on a catalog entry, not a resource."
+    },
+    "AWS::WAFv2::LoggingConfiguration": {
+      "state": "excluded",
+      "reason": "The logging configuration of one web ACL, identified by the web ACL's ARN (CloudFormation primary identifier ResourceArn) with no ARN of its own: botocore wafv2 ListLoggingConfigurations returns the ResourceArn of the web ACL, its destinations and redaction. It is a setting of aws_wafv2_web_acl, not a resource."
+    },
+    "AWS::WAFv2::WebACLAssociation": {
+      "state": "excluded",
+      "reason": "A link between a web ACL and the resource it protects (CloudFormation identifier ResourceArn and WebACLArn), with no ARN of its own and no list handler. It is a relationship between nodes, an edge candidate, not a resource."
+    },
+    "AWS::XRay::TransactionSearchConfig": {
+      "state": "excluded",
+      "reason": "The account's X-Ray transaction search indexing setting, identified by AccountId (IndexingPercentage, CloudWatchLogsConfiguration): a singleton setting of the account, not a resource."
     }
   },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
@@ -1002,6 +1146,29 @@
     ],
     "S3ObjectLambda": [
       "s3control"
+    ],
+    "CloudWatch": [
+      "cloudwatch",
+      "cloudwatchomni"
+    ],
+    "ECR": [
+      "ecr",
+      "ecr-public"
+    ],
+    "Lex": [
+      "lex-models",
+      "lex-runtime",
+      "lexv2-models",
+      "lexv2-runtime"
+    ],
+    "S3": [
+      "s3",
+      "s3control"
+    ],
+    "SES": [
+      "ses",
+      "sesv2",
+      "mailmanager"
     ]
   },
   "type_map": {
@@ -1072,6 +1239,7 @@
     "aws_core__aws_apigateway_domain_name": {
       "cfn": [
         "AWS::ApiGateway::DomainName",
+        "AWS::ApiGateway::DomainNameV2",
         "AWS::ApiGatewayV2::DomainName"
       ]
     },
@@ -4520,6 +4688,426 @@
       "cfn": [
         "AWS::StorageGateway::NFSFileShare",
         "AWS::StorageGateway::SMBFileShare"
+      ]
+    },
+    "aws_core__aws_apigateway_domain_name_access_association": {
+      "cfn": [
+        "AWS::ApiGateway::DomainNameAccessAssociation"
+      ]
+    },
+    "aws_core__aws_appconfig_application": {
+      "cfn": [
+        "AWS::AppConfig::Application"
+      ]
+    },
+    "aws_core__aws_appconfig_configuration_profile": {
+      "cfn": [
+        "AWS::AppConfig::ConfigurationProfile"
+      ]
+    },
+    "aws_core__aws_appconfig_deployment_strategy": {
+      "cfn": [
+        "AWS::AppConfig::DeploymentStrategy"
+      ]
+    },
+    "aws_core__aws_appconfig_environment": {
+      "cfn": [
+        "AWS::AppConfig::Environment"
+      ]
+    },
+    "aws_core__aws_appconfig_experiment_definition": {
+      "cfn": [
+        "AWS::AppConfig::ExperimentDefinition"
+      ]
+    },
+    "aws_core__aws_appconfig_extension_association": {
+      "cfn": [
+        "AWS::AppConfig::ExtensionAssociation"
+      ]
+    },
+    "aws_core__aws_backup_backup_selection": {
+      "cfn": [
+        "AWS::Backup::BackupSelection"
+      ]
+    },
+    "aws_core__aws_backup_logically_air_gapped_backup_vault": {
+      "cfn": [
+        "AWS::Backup::LogicallyAirGappedBackupVault"
+      ]
+    },
+    "aws_core__aws_cloudwatch_insight_rule": {
+      "cfn": [
+        "AWS::CloudWatch::InsightRule"
+      ]
+    },
+    "aws_core__aws_cloudwatch_omni_dashboard": {
+      "cfn": [
+        "AWS::CloudWatch::OmniDashboard"
+      ]
+    },
+    "aws_core__aws_codecommit_repository": {
+      "cfn": [
+        "AWS::CodeCommit::Repository"
+      ]
+    },
+    "aws_core__aws_directconnect_lag": {
+      "cfn": [
+        "AWS::DirectConnect::Lag"
+      ]
+    },
+    "aws_core__aws_ecr_public_repository": {
+      "cfn": [
+        "AWS::ECR::PublicRepository"
+      ]
+    },
+    "aws_core__aws_fsx_data_repository_association": {
+      "cfn": [
+        "AWS::FSx::DataRepositoryAssociation"
+      ]
+    },
+    "aws_core__aws_fsx_file_system": {
+      "cfn": [
+        "AWS::FSx::FileSystem"
+      ]
+    },
+    "aws_core__aws_fsx_snapshot": {
+      "cfn": [
+        "AWS::FSx::Snapshot"
+      ]
+    },
+    "aws_core__aws_fsx_storage_virtual_machine": {
+      "cfn": [
+        "AWS::FSx::StorageVirtualMachine"
+      ]
+    },
+    "aws_core__aws_fsx_volume": {
+      "cfn": [
+        "AWS::FSx::Volume"
+      ]
+    },
+    "aws_core__aws_grafana_workspace": {
+      "cfn": [
+        "AWS::Grafana::Workspace"
+      ]
+    },
+    "aws_core__aws_greengrassv2_component_version": {
+      "cfn": [
+        "AWS::GreengrassV2::ComponentVersion"
+      ]
+    },
+    "aws_core__aws_lex_bot": {
+      "cfn": [
+        "AWS::Lex::Bot"
+      ]
+    },
+    "aws_core__aws_lex_bot_alias": {
+      "cfn": [
+        "AWS::Lex::BotAlias"
+      ]
+    },
+    "aws_core__aws_logs_query_definition": {
+      "cfn": [
+        "AWS::Logs::QueryDefinition"
+      ]
+    },
+    "aws_core__aws_opensearchservice_domain": {
+      "cfn": [
+        "AWS::OpenSearchService::Domain"
+      ]
+    },
+    "aws_core__aws_pinpoint_app": {
+      "cfn": [
+        "AWS::Pinpoint::App"
+      ]
+    },
+    "aws_core__aws_pinpoint_campaign": {
+      "cfn": [
+        "AWS::Pinpoint::Campaign"
+      ]
+    },
+    "aws_core__aws_pinpoint_email_template": {
+      "cfn": [
+        "AWS::Pinpoint::EmailTemplate"
+      ]
+    },
+    "aws_core__aws_pinpoint_in_app_template": {
+      "cfn": [
+        "AWS::Pinpoint::InAppTemplate"
+      ]
+    },
+    "aws_core__aws_pinpoint_push_template": {
+      "cfn": [
+        "AWS::Pinpoint::PushTemplate"
+      ]
+    },
+    "aws_core__aws_pinpoint_segment": {
+      "cfn": [
+        "AWS::Pinpoint::Segment"
+      ]
+    },
+    "aws_core__aws_pinpoint_sms_template": {
+      "cfn": [
+        "AWS::Pinpoint::SmsTemplate"
+      ]
+    },
+    "aws_core__aws_quicksight_analysis": {
+      "cfn": [
+        "AWS::QuickSight::Analysis"
+      ]
+    },
+    "aws_core__aws_quicksight_dlp_setting": {
+      "cfn": [
+        "AWS::QuickSight::DLPSetting"
+      ]
+    },
+    "aws_core__aws_quicksight_group": {
+      "cfn": [
+        "AWS::QuickSight::Group"
+      ]
+    },
+    "aws_core__aws_quicksight_limits_profile": {
+      "cfn": [
+        "AWS::QuickSight::LimitsProfile"
+      ]
+    },
+    "aws_core__aws_quicksight_refresh_schedule": {
+      "cfn": [
+        "AWS::QuickSight::RefreshSchedule"
+      ]
+    },
+    "aws_core__aws_quicksight_topic_v2": {
+      "cfn": [
+        "AWS::QuickSight::TopicV2"
+      ]
+    },
+    "aws_core__aws_rbin_rule": {
+      "cfn": [
+        "AWS::Rbin::Rule"
+      ]
+    },
+    "aws_core__aws_redshift_cluster": {
+      "cfn": [
+        "AWS::Redshift::Cluster"
+      ]
+    },
+    "aws_core__aws_redshift_cluster_parameter_group": {
+      "cfn": [
+        "AWS::Redshift::ClusterParameterGroup"
+      ]
+    },
+    "aws_core__aws_redshift_cluster_subnet_group": {
+      "cfn": [
+        "AWS::Redshift::ClusterSubnetGroup"
+      ]
+    },
+    "aws_core__aws_redshift_event_subscription": {
+      "cfn": [
+        "AWS::Redshift::EventSubscription"
+      ]
+    },
+    "aws_core__aws_redshift_qev2_idc_application": {
+      "cfn": [
+        "AWS::Redshift::QEV2IdcApplication"
+      ]
+    },
+    "aws_core__aws_redshift_snapshot": {
+      "cfn": [
+        "AWS::Redshift::Snapshot"
+      ]
+    },
+    "aws_core__aws_redshift_snapshot_copy_grant": {
+      "cfn": [
+        "AWS::Redshift::SnapshotCopyGrant"
+      ]
+    },
+    "aws_core__aws_redshift_snapshot_schedule": {
+      "cfn": [
+        "AWS::Redshift::SnapshotSchedule"
+      ]
+    },
+    "aws_core__aws_redshift_usage_limit": {
+      "cfn": [
+        "AWS::Redshift::UsageLimit"
+      ]
+    },
+    "aws_core__aws_rekognition_collection": {
+      "cfn": [
+        "AWS::Rekognition::Collection"
+      ]
+    },
+    "aws_core__aws_rekognition_dataset": {
+      "cfn": [
+        "AWS::Rekognition::Dataset"
+      ]
+    },
+    "aws_core__aws_rekognition_stream_processor": {
+      "cfn": [
+        "AWS::Rekognition::StreamProcessor"
+      ]
+    },
+    "aws_core__aws_route53profiles_profile_association": {
+      "cfn": [
+        "AWS::Route53Profiles::ProfileAssociation"
+      ]
+    },
+    "aws_core__aws_s3_access_grant": {
+      "cfn": [
+        "AWS::S3::AccessGrant"
+      ]
+    },
+    "aws_core__aws_s3_access_grants_instance": {
+      "cfn": [
+        "AWS::S3::AccessGrantsInstance"
+      ]
+    },
+    "aws_core__aws_s3_access_grants_location": {
+      "cfn": [
+        "AWS::S3::AccessGrantsLocation"
+      ]
+    },
+    "aws_core__aws_s3_storage_lens": {
+      "cfn": [
+        "AWS::S3::StorageLens"
+      ]
+    },
+    "aws_core__aws_s3_storage_lens_group": {
+      "cfn": [
+        "AWS::S3::StorageLensGroup"
+      ]
+    },
+    "aws_core__aws_securityhub_aggregator_v2": {
+      "cfn": [
+        "AWS::SecurityHub::AggregatorV2"
+      ]
+    },
+    "aws_core__aws_securityhub_automation_rule_v2": {
+      "cfn": [
+        "AWS::SecurityHub::AutomationRuleV2"
+      ]
+    },
+    "aws_core__aws_securityhub_connector_v2": {
+      "cfn": [
+        "AWS::SecurityHub::ConnectorV2"
+      ]
+    },
+    "aws_core__aws_securityhub_hub_v2": {
+      "cfn": [
+        "AWS::SecurityHub::HubV2"
+      ]
+    },
+    "aws_core__aws_ses_configuration_set": {
+      "cfn": [
+        "AWS::SES::ConfigurationSet"
+      ]
+    },
+    "aws_core__aws_ses_contact_list": {
+      "cfn": [
+        "AWS::SES::ContactList"
+      ]
+    },
+    "aws_core__aws_ses_custom_verification_email_template": {
+      "cfn": [
+        "AWS::SES::CustomVerificationEmailTemplate"
+      ]
+    },
+    "aws_core__aws_ses_dedicated_ip_pool": {
+      "cfn": [
+        "AWS::SES::DedicatedIpPool"
+      ]
+    },
+    "aws_core__aws_ses_email_identity": {
+      "cfn": [
+        "AWS::SES::EmailIdentity"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_addon_instance": {
+      "cfn": [
+        "AWS::SES::MailManagerAddonInstance"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_addon_subscription": {
+      "cfn": [
+        "AWS::SES::MailManagerAddonSubscription"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_address_list": {
+      "cfn": [
+        "AWS::SES::MailManagerAddressList"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_archive": {
+      "cfn": [
+        "AWS::SES::MailManagerArchive"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_ingress_point": {
+      "cfn": [
+        "AWS::SES::MailManagerIngressPoint"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_relay": {
+      "cfn": [
+        "AWS::SES::MailManagerRelay"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_rule_set": {
+      "cfn": [
+        "AWS::SES::MailManagerRuleSet"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_traffic_policy": {
+      "cfn": [
+        "AWS::SES::MailManagerTrafficPolicy"
+      ]
+    },
+    "aws_core__aws_ses_multi_region_endpoint": {
+      "cfn": [
+        "AWS::SES::MultiRegionEndpoint"
+      ]
+    },
+    "aws_core__aws_ses_template": {
+      "cfn": [
+        "AWS::SES::Template"
+      ]
+    },
+    "aws_core__aws_ses_tenant": {
+      "cfn": [
+        "AWS::SES::Tenant"
+      ]
+    },
+    "aws_core__aws_synthetics_canary": {
+      "cfn": [
+        "AWS::Synthetics::Canary"
+      ]
+    },
+    "aws_core__aws_workspaces_connection_alias": {
+      "cfn": [
+        "AWS::WorkSpaces::ConnectionAlias"
+      ]
+    },
+    "aws_core__aws_workspaces_directory": {
+      "cfn": [
+        "AWS::WorkSpaces::Directory"
+      ]
+    },
+    "aws_core__aws_workspaces_workspace": {
+      "cfn": [
+        "AWS::WorkSpaces::Workspace"
+      ]
+    },
+    "aws_core__aws_workspaces_workspace_ip_group": {
+      "cfn": [
+        "AWS::WorkSpaces::WorkspaceIpGroup"
+      ]
+    },
+    "aws_core__aws_xray_group": {
+      "cfn": [
+        "AWS::XRay::Group"
+      ]
+    },
+    "aws_core__aws_xray_sampling_rule": {
+      "cfn": [
+        "AWS::XRay::SamplingRule"
       ]
     }
   },

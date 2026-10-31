@@ -3146,7 +3146,9 @@ def build_custom_fn_registry() -> CustomFnRegistry:
     registry is the single source. An unregistered ``custom_fn`` still
     classifies-and-skips rather than crashing the run.
     """
+    from .customfns_longtail import LONGTAIL_FNS  # imported here: that module imports helpers from this one
+
     registry = CustomFnRegistry()
-    for name, fn in _CUSTOM_FNS.items():
+    for name, fn in {**_CUSTOM_FNS, **LONGTAIL_FNS}.items():
         registry.register(name, fn)
     return registry

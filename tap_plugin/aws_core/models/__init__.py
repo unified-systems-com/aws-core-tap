@@ -876,6 +876,176 @@ __all__ = [
     "BedrockDataAutomationProject",
     "BedrockDataAutomationLibrary",
     "BedrockBlueprint",
+from tap_plugin.aws_core.models.backup_logically_air_gapped_backup_vault import BackupLogicallyAirGappedBackupVault
+from tap_plugin.aws_core.models.fsx_data_repository_association import FsxDataRepositoryAssociation
+from tap_plugin.aws_core.models.fsx_file_system import FsxFileSystem
+from tap_plugin.aws_core.models.fsx_snapshot import FsxSnapshot
+from tap_plugin.aws_core.models.fsx_storage_virtual_machine import FsxStorageVirtualMachine
+from tap_plugin.aws_core.models.fsx_volume import FsxVolume
+from tap_plugin.aws_core.models.greengrassv2_component_version import Greengrassv2ComponentVersion
+from tap_plugin.aws_core.models.quicksight_analysis import QuicksightAnalysis
+from tap_plugin.aws_core.models.quicksight_dlp_setting import QuicksightDlpSetting
+from tap_plugin.aws_core.models.quicksight_group import QuicksightGroup
+from tap_plugin.aws_core.models.quicksight_limits_profile import QuicksightLimitsProfile
+from tap_plugin.aws_core.models.quicksight_refresh_schedule import QuicksightRefreshSchedule
+from tap_plugin.aws_core.models.quicksight_topic_v2 import QuicksightTopicV2
+from tap_plugin.aws_core.models.redshift_qev2_idc_application import RedshiftQev2IdcApplication
+from tap_plugin.aws_core.models.securityhub_aggregator_v2 import SecurityhubAggregatorV2
+from tap_plugin.aws_core.models.securityhub_automation_rule_v2 import SecurityhubAutomationRuleV2
+from tap_plugin.aws_core.models.securityhub_connector_v2 import SecurityhubConnectorV2
+from tap_plugin.aws_core.models.xray_group import XrayGroup
+from tap_plugin.aws_core.models.pinpoint_app import PinpointApp
+from tap_plugin.aws_core.models.pinpoint_campaign import PinpointCampaign
+from tap_plugin.aws_core.models.pinpoint_email_template import PinpointEmailTemplate
+from tap_plugin.aws_core.models.pinpoint_in_app_template import PinpointInAppTemplate
+from tap_plugin.aws_core.models.pinpoint_push_template import PinpointPushTemplate
+from tap_plugin.aws_core.models.pinpoint_segment import PinpointSegment
+from tap_plugin.aws_core.models.pinpoint_sms_template import PinpointSmsTemplate
+from tap_plugin.aws_core.models.backup_backup_selection import BackupBackupSelection
+from tap_plugin.aws_core.models.ecr_public_repository import EcrPublicRepository
+from tap_plugin.aws_core.models.grafana_workspace import GrafanaWorkspace
+from tap_plugin.aws_core.models.logs_query_definition import LogsQueryDefinition
+from tap_plugin.aws_core.models.rekognition_dataset import RekognitionDataset
+from tap_plugin.aws_core.models.ses_mail_manager_addon_instance import SesMailManagerAddonInstance
+from tap_plugin.aws_core.models.ses_mail_manager_addon_subscription import SesMailManagerAddonSubscription
+from tap_plugin.aws_core.models.ses_mail_manager_address_list import SesMailManagerAddressList
+from tap_plugin.aws_core.models.ses_tenant import SesTenant
+from tap_plugin.aws_core.models.workspaces_connection_alias import WorkspacesConnectionAlias
+from tap_plugin.aws_core.models.workspaces_directory import WorkspacesDirectory
+from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
+from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
+from tap_plugin.aws_core.models.appconfig_extension_association import AppconfigExtensionAssociation
+from tap_plugin.aws_core.models.codecommit_repository import CodecommitRepository
+from tap_plugin.aws_core.models.opensearchservice_domain import OpensearchserviceDomain
+from tap_plugin.aws_core.models.rbin_rule import RbinRule
+from tap_plugin.aws_core.models.redshift_cluster import RedshiftCluster
+from tap_plugin.aws_core.models.rekognition_collection import RekognitionCollection
+from tap_plugin.aws_core.models.rekognition_stream_processor import RekognitionStreamProcessor
+from tap_plugin.aws_core.models.ses_mail_manager_archive import SesMailManagerArchive
+from tap_plugin.aws_core.models.ses_mail_manager_ingress_point import SesMailManagerIngressPoint
+from tap_plugin.aws_core.models.ses_mail_manager_relay import SesMailManagerRelay
+from tap_plugin.aws_core.models.ses_mail_manager_rule_set import SesMailManagerRuleSet
+from tap_plugin.aws_core.models.ses_mail_manager_traffic_policy import SesMailManagerTrafficPolicy
+from tap_plugin.aws_core.models.securityhub_hub_v2 import SecurityhubHubV2
+from tap_plugin.aws_core.models.synthetics_canary import SyntheticsCanary
+from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
+from tap_plugin.aws_core.models.appconfig_application import AppconfigApplication
+from tap_plugin.aws_core.models.appconfig_configuration_profile import AppconfigConfigurationProfile
+from tap_plugin.aws_core.models.appconfig_deployment_strategy import AppconfigDeploymentStrategy
+from tap_plugin.aws_core.models.appconfig_environment import AppconfigEnvironment
+from tap_plugin.aws_core.models.appconfig_experiment_definition import AppconfigExperimentDefinition
+from tap_plugin.aws_core.models.cloudwatch_insight_rule import CloudwatchInsightRule
+from tap_plugin.aws_core.models.directconnect_lag import DirectconnectLag
+from tap_plugin.aws_core.models.lex_bot import LexBot
+from tap_plugin.aws_core.models.lex_bot_alias import LexBotAlias
+from tap_plugin.aws_core.models.redshift_cluster_parameter_group import RedshiftClusterParameterGroup
+from tap_plugin.aws_core.models.redshift_cluster_subnet_group import RedshiftClusterSubnetGroup
+from tap_plugin.aws_core.models.redshift_event_subscription import RedshiftEventSubscription
+from tap_plugin.aws_core.models.redshift_snapshot import RedshiftSnapshot
+from tap_plugin.aws_core.models.redshift_snapshot_copy_grant import RedshiftSnapshotCopyGrant
+from tap_plugin.aws_core.models.redshift_snapshot_schedule import RedshiftSnapshotSchedule
+from tap_plugin.aws_core.models.redshift_usage_limit import RedshiftUsageLimit
+from tap_plugin.aws_core.models.ses_configuration_set import SesConfigurationSet
+from tap_plugin.aws_core.models.ses_contact_list import SesContactList
+from tap_plugin.aws_core.models.ses_custom_verification_email_template import SesCustomVerificationEmailTemplate
+from tap_plugin.aws_core.models.ses_dedicated_ip_pool import SesDedicatedIpPool
+from tap_plugin.aws_core.models.ses_email_identity import SesEmailIdentity
+from tap_plugin.aws_core.models.ses_multi_region_endpoint import SesMultiRegionEndpoint
+from tap_plugin.aws_core.models.ses_template import SesTemplate
+from tap_plugin.aws_core.models.apigateway_domain_name_access_association import ApigatewayDomainNameAccessAssociation
+from tap_plugin.aws_core.models.cloudwatch_omni_dashboard import CloudwatchOmniDashboard
+from tap_plugin.aws_core.models.route53profiles_profile_association import Route53profilesProfileAssociation
+from tap_plugin.aws_core.models.s3_access_grant import S3AccessGrant
+from tap_plugin.aws_core.models.s3_access_grants_instance import S3AccessGrantsInstance
+from tap_plugin.aws_core.models.s3_access_grants_location import S3AccessGrantsLocation
+from tap_plugin.aws_core.models.s3_storage_lens import S3StorageLens
+from tap_plugin.aws_core.models.s3_storage_lens_group import S3StorageLensGroup
+
+__all__ = [
+    "S3StorageLensGroup",
+    "S3StorageLens",
+    "S3AccessGrantsLocation",
+    "S3AccessGrantsInstance",
+    "S3AccessGrant",
+    "Route53profilesProfileAssociation",
+    "CloudwatchOmniDashboard",
+    "ApigatewayDomainNameAccessAssociation",
+    "SesTemplate",
+    "SesMultiRegionEndpoint",
+    "SesEmailIdentity",
+    "SesDedicatedIpPool",
+    "SesCustomVerificationEmailTemplate",
+    "SesContactList",
+    "SesConfigurationSet",
+    "RedshiftUsageLimit",
+    "RedshiftSnapshotSchedule",
+    "RedshiftSnapshotCopyGrant",
+    "RedshiftSnapshot",
+    "RedshiftEventSubscription",
+    "RedshiftClusterSubnetGroup",
+    "RedshiftClusterParameterGroup",
+    "LexBotAlias",
+    "LexBot",
+    "DirectconnectLag",
+    "CloudwatchInsightRule",
+    "AppconfigExperimentDefinition",
+    "AppconfigEnvironment",
+    "AppconfigDeploymentStrategy",
+    "AppconfigConfigurationProfile",
+    "AppconfigApplication",
+    "XraySamplingRule",
+    "SyntheticsCanary",
+    "SecurityhubHubV2",
+    "SesMailManagerTrafficPolicy",
+    "SesMailManagerRuleSet",
+    "SesMailManagerRelay",
+    "SesMailManagerIngressPoint",
+    "SesMailManagerArchive",
+    "RekognitionStreamProcessor",
+    "RekognitionCollection",
+    "RedshiftCluster",
+    "RbinRule",
+    "OpensearchserviceDomain",
+    "CodecommitRepository",
+    "AppconfigExtensionAssociation",
+    "WorkspacesWorkspaceIpGroup",
+    "WorkspacesWorkspace",
+    "WorkspacesDirectory",
+    "WorkspacesConnectionAlias",
+    "SesTenant",
+    "SesMailManagerAddressList",
+    "SesMailManagerAddonSubscription",
+    "SesMailManagerAddonInstance",
+    "RekognitionDataset",
+    "LogsQueryDefinition",
+    "GrafanaWorkspace",
+    "EcrPublicRepository",
+    "BackupBackupSelection",
+    "PinpointSmsTemplate",
+    "PinpointSegment",
+    "PinpointPushTemplate",
+    "PinpointInAppTemplate",
+    "PinpointEmailTemplate",
+    "PinpointCampaign",
+    "PinpointApp",
+    "XrayGroup",
+    "SecurityhubConnectorV2",
+    "SecurityhubAutomationRuleV2",
+    "SecurityhubAggregatorV2",
+    "RedshiftQev2IdcApplication",
+    "QuicksightTopicV2",
+    "QuicksightRefreshSchedule",
+    "QuicksightLimitsProfile",
+    "QuicksightGroup",
+    "QuicksightDlpSetting",
+    "QuicksightAnalysis",
+    "Greengrassv2ComponentVersion",
+    "FsxVolume",
+    "FsxStorageVirtualMachine",
+    "FsxSnapshot",
+    "FsxFileSystem",
+    "FsxDataRepositoryAssociation",
+    "BackupLogicallyAirGappedBackupVault",
     "QuicksightVpcConnection",
     "QuicksightTopic",
     "QuicksightTheme",
