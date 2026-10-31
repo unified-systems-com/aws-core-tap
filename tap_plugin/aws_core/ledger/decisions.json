@@ -635,8 +635,17 @@
     "AmazonMQ": [
       "mq"
     ],
+    "Bedrock": [
+      "bedrock",
+      "bedrock-agent",
+      "bedrock-data-automation"
+    ],
     "CertificateManager": [
       "acm"
+    ],
+    "CloudHSM": [
+      "cloudhsm",
+      "cloudhsmv2"
     ],
     "Cognito": [
       "cognito-idp",
