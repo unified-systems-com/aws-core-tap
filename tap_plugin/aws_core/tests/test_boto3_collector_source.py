@@ -238,3 +238,49 @@ class TestPerFanout:
             {"list_names": {"Names": ["n1"]}, "list_things": lambda Name: {"Things": [{"Id": Name}]}}
         )
         assert [i["Id"] for i in iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry())] == ["n1"]
+
+
+class TestPerFanoutSchema:
+    """The manifest schema accepts a fan-out source and refuses it under containment."""
+
+    @staticmethod
+    def _validator():
+        import json
+
+        import jsonschema
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import SCHEMA_PATH
+
+        schema = json.loads(SCHEMA_PATH.read_text())
+        return jsonschema.Draft202012Validator({"$ref": "#/$defs/entry", "$defs": schema["$defs"]})
+
+    @staticmethod
+    def _entry():
+        import copy
+
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+        entry = copy.deepcopy(next(e for e in manifest_entries() if "containment" not in e and "aws_op" in e["source"]))
+        entry["source"] = {
+            "aws_op": "GetTables",
+            "per": {"aws_op": "GetDatabases", "items_path": "DatabaseList[]"},
+            "bind": {"DatabaseName": "Name"},
+        }
+        return entry
+
+    def test_fanout_source_is_valid(self):
+        assert self._validator().is_valid(self._entry())
+
+    def test_fanout_without_bind_is_invalid(self):
+        entry = self._entry()
+        del entry["source"]["bind"]
+        assert not self._validator().is_valid(entry)
+
+    def test_fanout_under_containment_is_refused(self):
+        import copy
+
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+        contained = next(e for e in manifest_entries() if "containment" in e and "aws_op" in e["source"])
+        entry = copy.deepcopy(contained)
+        entry["source"] = self._entry()["source"]
+        assert not self._validator().is_valid(entry)
