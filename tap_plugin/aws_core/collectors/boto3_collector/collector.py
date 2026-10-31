@@ -566,6 +566,7 @@ class Boto3Collector(CollectorBase):
                             walk=walk,
                             truncated=listing.truncated if listing else None,
                             account_id=account_id,
+                            scope={"partition": partition, "region": region, "account": account_id},
                         )
                     )
                     listed = True

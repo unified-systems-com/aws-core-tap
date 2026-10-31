@@ -63,6 +63,13 @@
           "minLength": 1
         },
         "sensitivity": { "$ref": "#/$defs/sensitivity" },
+        "derive": {
+          "description": "Item keys the engine builds before projection, each from a template: '{partition}', '{region}' and '{account}' are the scope being collected and any other '{Path}' is a path on the item (req-aws-collector-source-8). For a resource the listing names but gives no ARN, e.g. {\"_arn\": \"arn:{partition}:glue:{region}:{account}:job/{Name}\"}; natural_key, fields and the tags lane then read '_arn' like any member. A missing value fails the item loudly. The built keys are not stored in configuration. Keys start with an underscore so they cannot shadow a member AWS returns.",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^_[A-Za-z][A-Za-z0-9_]*$" },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
         "name_tag": {
           "description": "The tag whose value names the node (usually 'Name'), when the resource carries one. EC2-family resources have no name of their own; the human-set Name tag is the name every AWS console shows. Read from the entry's tags block (source 'field'), so it needs no extra call; when the resource has no such tag the projected 'name' field stands.",
           "type": "string",
@@ -157,8 +164,17 @@
       "type": "object",
       "description": "The call that lists the parents of a `per` fan-out; itself `per` another (with `bind`) when the resource sits two levels down.",
       "additionalProperties": false,
-      "required": ["aws_op", "items_path"],
+      "oneOf": [
+        { "required": ["aws_op", "items_path"], "not": { "required": ["values"] } },
+        { "required": ["values"], "not": { "anyOf": [{ "required": ["aws_op"] }, { "required": ["per"] }] } }
+      ],
       "properties": {
+        "values": {
+          "description": "A literal list of parents (strings), for a request that needs a value no call lists, e.g. App Auto Scaling's ServiceNamespace; bound to a request parameter with '' like any scalar parent.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
         "aws_op": { "type": "string", "minLength": 1 },
         "items_path": { "type": "string", "minLength": 1 },
         "service": { "type": "string", "minLength": 1 },

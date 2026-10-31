@@ -34,6 +34,7 @@ consumer passes only its own.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Iterator
 from typing import Any
 
@@ -137,6 +138,75 @@ def iter_listing(client: Any, method: str, items_path: str, walk: ListingWalk, *
     else:
         walk.reached_end(count)
 
+#: The request parameter that carries a response continuation key forward, where it is not the key
+#: itself (``NextMarker`` comes back, ``Marker`` goes in).
+_MARKER_REQUEST: dict[str, str] = {"NextMarker": "Marker", "NextContinuationToken": "ContinuationToken"}
+
+#: A ceiling on the calls one unpaginated listing may make, so a service that keeps returning a
+#: marker cannot spin the collector forever.
+_MAX_UNPAGINATED_CALLS = 1000
+
+
+def _request_marker(client: Any, op_name: str, response_key: str) -> str | None:
+    """The request parameter that continues a listing whose response carried ``response_key``.
+
+    Read off the operation's input shape when the client has one, so a marker is only ever sent to an
+    operation that accepts it; ``None`` when the operation takes no such parameter (the listing cannot
+    be continued, and stays reported as truncated).
+    """
+    wanted = _MARKER_REQUEST.get(response_key, response_key)
+    try:
+        members = client.meta.service_model.operation_model(op_name).input_shape.members
+    except AttributeError:
+        return wanted
+    return wanted if wanted in members else None
+
+def _items_of(page: Any, items_path: str, single: bool) -> Iterator[Any]:
+    """The items ``items_path`` finds in one response page; one structure is one item when ``single``."""
+    found = eval_path(page, items_path)
+    if found is None:
+        return
+    if single and isinstance(found, dict):
+        yield found
+        return
+    yield from found
+
+
+def _walk_unpaginated(
+    client: Any,
+    op_name: str,
+    method: str,
+    items_path: str,
+    kwargs: dict[str, Any],
+    truncated: list[str] | None,
+    single: bool = False,
+) -> Iterator[Any]:
+    """Yield the items of an operation botocore has no paginator for, following its own marker.
+
+    A response that carries a continuation marker is called again with that marker until it does not,
+    so a listing with a second page reads it (``req-aws-collector-source-2``). A marker the operation
+    cannot be sent back on, a marker that repeats, or a run past the call ceiling stops the walk and is
+    appended to ``truncated`` as before, so a caller that must know the listing did not end can tell.
+    """
+    call = dict(kwargs)
+    seen: set[str] = set()
+    for _ in range(_MAX_UNPAGINATED_CALLS):
+        response = getattr(client, method)(**call)
+        yield from _items_of(without_response_metadata(response), items_path, single)
+        key = continuation_of(response)
+        if key is None:
+            return
+        request_key = _request_marker(client, op_name, key) if key != "IsTruncated" else None
+        token = response.get(key) if request_key else None
+        if request_key is None or not isinstance(token, str) or token in seen:
+            if truncated is not None:
+                truncated.append(key)
+            return
+        seen.add(token)
+        call[request_key] = token
+    if truncated is not None:
+        truncated.append("call-ceiling")
+
 
 def iter_aws_op(
     client: Any,
@@ -146,6 +216,7 @@ def iter_aws_op(
     walk: ListingWalk | None = None,
     truncated: list[str] | None = None,
     params: dict[str, Any] | None = None,
+    single: bool = False,
 ) -> Iterator[Any]:
     """Yield raw items from a boto3 operation, generically.
 
@@ -168,6 +239,8 @@ def iter_aws_op(
             exclusive with ``walk``.
         params: Request parameters for the call (the values a ``per`` fan-out bound from its parent);
             ``None`` for the argument-free listings every other entry uses.
+        single: A path that resolves to one structure (no ``[]``) yields that structure as the one
+            item, for a ``per`` child that is a ``Describe``; without it such a path yields nothing.
     """
     method = xform_name(op_name)
     kwargs = params or {}
@@ -176,12 +249,9 @@ def iter_aws_op(
         return
     if client.can_paginate(method):
         for page in client.get_paginator(method).paginate(**kwargs):
-            yield from eval_path(without_response_metadata(page), items_path)
+            yield from _items_of(without_response_metadata(page), items_path, single)
         return
-    response = getattr(client, method)(**kwargs)
-    if truncated is not None and (marker := continuation_of(response)) is not None:
-        truncated.append(marker)
-    yield from eval_path(without_response_metadata(response), items_path)
+    yield from _walk_unpaginated(client, op_name, method, items_path, kwargs, truncated, single)
 
 
 #: The slot a fanned-out child item carries its parent under, so ``fields`` can read the parent
@@ -191,12 +261,25 @@ PARENT_SLOT = "_parent"
 
 def _iter_parents(per: dict[str, Any], default_service: str, client_for: Callable[[str], Any]) -> Iterator[Any]:
     """Yield the items of a ``per`` block, each carrying its own parent when it has one."""
+    if "values" in per:
+        yield from per["values"]
+        return
     client = client_for(per.get("service", default_service))
     if "per" in per:
         for grand in _iter_parents(per["per"], per.get("service", default_service), client_for):
             yield from _children(client, per, grand)
         return
     yield from iter_aws_op(client, per["aws_op"], per["items_path"], params=dict(per.get("params", {})))
+
+
+def _child_items(client: Any, spec: dict[str, Any], params: dict[str, Any]) -> Iterator[Any]:
+    """The items one child call returns; a path that lands on one structure is that one item.
+
+    A ``Describe``/``Get`` answers with a single object, not a list, so ``items_path`` names it
+    without a ``[]``. (A path that ends in ``[]`` is a list as ever.)
+    """
+    for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params, single=True):
+        yield item
 
 
 def _children(client: Any, spec: dict[str, Any], parent: Any) -> Iterator[Any]:
@@ -206,7 +289,7 @@ def _children(client: Any, spec: dict[str, Any], parent: Any) -> Iterator[Any]:
     if missing:
         raise SourceError(f"{spec['aws_op']}: a parent item has no value for {', '.join(missing)} (bind path unresolved)")
     params = {**spec.get("params", {}), **bound}
-    for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params):
+    for item in _child_items(client, spec, params):
         if not isinstance(item, dict):
             raise SourceError(f"{spec['aws_op']}: a fan-out item must be a structure to carry its parent, got {type(item).__name__}")
         yield {**item, PARENT_SLOT: parent}
@@ -254,7 +337,7 @@ def _account_value(value: Any, account_id: str | None) -> Any:
     return account_id
 
 
-def iter_source(
+def _iter_raw(
     entry: dict[str, Any],
     *,
     client_for: Callable[[str], Any],
@@ -264,7 +347,7 @@ def iter_source(
     truncated: list[str] | None = None,
     account_id: str | None = None,
 ) -> Iterator[Any]:
-    """Drive a manifest entry's ``source``, yielding raw items.
+    """Drive a manifest entry's ``source``, yielding raw items, before any ``derive``.
 
     The single place the engine resolves ``source``; everything downstream
     sees one uniform item iterable (``req-aws-collector-source-1``).
@@ -301,3 +384,70 @@ def iter_source(
         yield from fn(fn_context, client_for=client_for, walk=walk)
         return
     yield from fn(fn_context, client_for=client_for)
+
+
+#: A ``{name}`` in a ``derive`` template: ``partition``, ``region`` and ``account`` are the scope
+#: being collected, anything else is a path on the item.
+_TEMPLATE_FIELD = re.compile(r"\{([^{}]+)\}")
+SCOPE_FIELDS: tuple[str, ...] = ("partition", "region", "account")
+
+
+def render_template(template: str, item: Any, scope: dict[str, str | None]) -> str:
+    """``template`` with each ``{name}`` filled from the scope or the item, or a :class:`SourceError`.
+
+    A value that is missing or empty fails the item loudly: a half-built identifier, an ARN with a
+    hole in it, would be worse than a type that reads as not collected.
+    """
+
+    def fill(match: re.Match[str]) -> str:
+        name = match.group(1)
+        value = scope.get(name) if name in SCOPE_FIELDS else eval_path(item, name)
+        if value in (None, "", []) or isinstance(value, (dict, list)):
+            raise SourceError(f"derive template {template!r}: no value for {{{name}}}")
+        return str(value)
+
+    return _TEMPLATE_FIELD.sub(fill, template)
+
+
+def derived_keys(entry: dict[str, Any]) -> tuple[str, ...]:
+    """The item keys an entry's ``derive`` block adds."""
+    return tuple(entry.get("derive") or ())
+
+
+def iter_source(
+    entry: dict[str, Any],
+    *,
+    client_for: Callable[[str], Any],
+    custom_fns: CustomFnRegistry,
+    fn_context: Any = None,
+    walk: ListingWalk | None = None,
+    truncated: list[str] | None = None,
+    account_id: str | None = None,
+    scope: dict[str, str | None] | None = None,
+) -> Iterator[Any]:
+    """Drive a manifest entry's ``source`` and add its ``derive`` keys, yielding the items.
+
+    ``derive`` maps a new item key to a template (``arn:{partition}:glue:{region}:{account}:job/{Name}``),
+    for a resource the listing names but does not give an ARN, so that ``natural_key``, ``fields`` and
+    the tags lane can read the built identifier like any other member (``req-aws-collector-source-8``).
+    ``scope`` carries the ``partition``, ``region`` and ``account`` those templates fill from; an
+    ``account_id`` given without it stands for the account alone.
+    """
+    derive = entry.get("derive")
+    items = _iter_raw(
+        entry,
+        client_for=client_for,
+        custom_fns=custom_fns,
+        fn_context=fn_context,
+        walk=walk,
+        truncated=truncated,
+        account_id=account_id,
+    )
+    if not derive:
+        yield from items
+        return
+    facts = {"account": account_id, **(scope or {})}
+    for item in items:
+        if not isinstance(item, dict):
+            raise SourceError(f"{entry['entity_type']}: derive needs structure items, got {type(item).__name__}")
+        yield {**item, **{key: render_template(template, item, facts) for key, template in derive.items()}}
