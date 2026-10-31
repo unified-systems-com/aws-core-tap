@@ -2288,6 +2288,66 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'groupId': 'gen-1', 'groupName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_appconfig_extension_association": (
+        {'Arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_codecommit_repository": (
+        {'Arn': 'arn:aws:codecommit:us-east-1:123456789012:res/gen-1', 'repositoryName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchservice_domain": (
+        {'ARN': 'arn:aws:opensearch:us-east-1:123456789012:res/gen-1', 'DomainName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rbin_rule": (
+        {'RuleArn': 'arn:aws:rbin:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_redshift_cluster": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ClusterIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_collection": (
+        {'CollectionARN': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1', 'CollectionId': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_stream_processor": (
+        {'StreamProcessorArn': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_archive": (
+        {'ArchiveArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'ArchiveName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_ingress_point": (
+        {'IngressPointArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'IngressPointName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_relay": (
+        {'RelayArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'RelayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_rule_set": (
+        {'RuleSetArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'RuleSetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_mail_manager_traffic_policy": (
+        {'TrafficPolicyArn': 'arn:aws:mailmanager:us-east-1:123456789012:res/gen-1', 'TrafficPolicyName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securityhub_hub_v2": (
+        {'HubV2Arn': 'arn:aws:securityhub:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_synthetics_canary": (
+        {'_arn': 'arn:aws:synthetics:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_xray_sampling_rule": (
+        {'RuleARN': 'arn:aws:xray:us-east-1:123456789012:res/gen-1', 'RuleName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

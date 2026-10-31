@@ -691,6 +691,11 @@
         "AWS::AppConfig::Extension"
       ]
     },
+    "aws_core__aws_appconfig_extension_association": {
+      "cfn": [
+        "AWS::AppConfig::ExtensionAssociation"
+      ]
+    },
     "aws_core__aws_appstream_app_block": {
       "cfn": [
         "AWS::AppStream::AppBlock"
@@ -917,6 +922,11 @@
     "aws_core__aws_codebuild_project": {
       "cfn": [
         "AWS::CodeBuild::Project"
+      ]
+    },
+    "aws_core__aws_codecommit_repository": {
+      "cfn": [
+        "AWS::CodeCommit::Repository"
       ]
     },
     "aws_core__aws_codepipeline_pipeline": {
@@ -2438,6 +2448,11 @@
         "AWS::OpenSearchService::Application"
       ]
     },
+    "aws_core__aws_opensearchservice_domain": {
+      "cfn": [
+        "AWS::OpenSearchService::Domain"
+      ]
+    },
     "aws_core__aws_organization": {
       "cfn": [
         "AWS::Organizations::Organization"
@@ -2632,6 +2647,11 @@
         "AWS::RAM::Permission"
       ]
     },
+    "aws_core__aws_rbin_rule": {
+      "cfn": [
+        "AWS::Rbin::Rule"
+      ]
+    },
     "aws_core__aws_rds_db_cluster": {
       "cfn": [
         "AWS::RDS::DBCluster",
@@ -2721,6 +2741,11 @@
         "AWS::RDS::OptionGroup"
       ]
     },
+    "aws_core__aws_redshift_cluster": {
+      "cfn": [
+        "AWS::Redshift::Cluster"
+      ]
+    },
     "aws_core__aws_redshift_integration": {
       "cfn": [
         "AWS::Redshift::Integration"
@@ -2755,6 +2780,11 @@
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; regions are not a CloudFormation resource."
     },
+    "aws_core__aws_rekognition_collection": {
+      "cfn": [
+        "AWS::Rekognition::Collection"
+      ]
+    },
     "aws_core__aws_rekognition_dataset": {
       "cfn": [
         "AWS::Rekognition::Dataset"
@@ -2763,6 +2793,11 @@
     "aws_core__aws_rekognition_project": {
       "cfn": [
         "AWS::Rekognition::Project"
+      ]
+    },
+    "aws_core__aws_rekognition_stream_processor": {
+      "cfn": [
+        "AWS::Rekognition::StreamProcessor"
       ]
     },
     "aws_core__aws_resiliencehub_app": {
@@ -3109,6 +3144,11 @@
         "AWS::SecurityHub::Hub"
       ]
     },
+    "aws_core__aws_securityhub_hub_v2": {
+      "cfn": [
+        "AWS::SecurityHub::HubV2"
+      ]
+    },
     "aws_core__aws_securityhub_insight": {
       "cfn": [
         "AWS::SecurityHub::Insight"
@@ -3162,6 +3202,31 @@
     "aws_core__aws_ses_mail_manager_address_list": {
       "cfn": [
         "AWS::SES::MailManagerAddressList"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_archive": {
+      "cfn": [
+        "AWS::SES::MailManagerArchive"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_ingress_point": {
+      "cfn": [
+        "AWS::SES::MailManagerIngressPoint"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_relay": {
+      "cfn": [
+        "AWS::SES::MailManagerRelay"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_rule_set": {
+      "cfn": [
+        "AWS::SES::MailManagerRuleSet"
+      ]
+    },
+    "aws_core__aws_ses_mail_manager_traffic_policy": {
+      "cfn": [
+        "AWS::SES::MailManagerTrafficPolicy"
       ]
     },
     "aws_core__aws_ses_tenant": {
@@ -3232,6 +3297,11 @@
     "aws_core__aws_subnet": {
       "cfn": [
         "AWS::EC2::Subnet"
+      ]
+    },
+    "aws_core__aws_synthetics_canary": {
+      "cfn": [
+        "AWS::Synthetics::Canary"
       ]
     },
     "aws_core__aws_synthetics_group": {
@@ -3421,6 +3491,11 @@
     "aws_core__aws_xray_group": {
       "cfn": [
         "AWS::XRay::Group"
+      ]
+    },
+    "aws_core__aws_xray_sampling_rule": {
+      "cfn": [
+        "AWS::XRay::SamplingRule"
       ]
     }
   },

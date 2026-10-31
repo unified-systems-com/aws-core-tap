@@ -24190,6 +24190,666 @@
         "shape": "list_kv",
         "why": "Resource tags — DescribeTags by the object's ARN; the listing carries none."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_appconfig_extension_association",
+      "service": "appconfig",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "appconfig_extension_associations_described"
+      },
+      "why": "Enumerate AppConfig Extension Association objects with GetExtensionAssociation — an inventory of the account's extension associations and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetExtensionAssociation response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore appconfig GetExtensionAssociation item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "appconfig_extension_association_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_codecommit_repository",
+      "service": "codecommit",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "codecommit_repositories_described"
+      },
+      "why": "Enumerate CodeCommit Repository objects with BatchGetRepositories — an inventory of the account's repositorys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the BatchGetRepositories response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore codecommit BatchGetRepositories item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "repositoryName",
+        "codecommit_repository_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_opensearchservice_domain",
+      "service": "opensearch",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "opensearch_domains_described"
+      },
+      "why": "Enumerate OpenSearchService Domain objects with DescribeDomain — an inventory of the account's domains and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeDomain response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore opensearch DescribeDomain item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ARN",
+      "fields": {
+        "name": "DomainName",
+        "opensearchservice_domain_arn": "ARN"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTags",
+        "params": {
+          "ARN": {
+            "from": "ARN"
+          }
+        },
+        "path": "TagList",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_rbin_rule",
+      "service": "rbin",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "rbin_rules_described"
+      },
+      "why": "Enumerate Rbin Rule objects with ListRules — an inventory of the account's rules and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListRules response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore rbin ListRules item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "RuleArn",
+      "fields": {
+        "rbin_rule_arn": "RuleArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "RuleArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_redshift_cluster",
+      "service": "redshift",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "redshift_clusters_described"
+      },
+      "why": "Enumerate Redshift Cluster objects with DescribeClusters — an inventory of the account's clusters and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeClusters returns credential members (PendingModifiedValues) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): botocore marks PendingModifiedValues.MasterUserPassword sensitive in the redshift DescribeClusters item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "PendingModifiedValues.MasterUserPassword",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "MasterPasswordSecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "MasterPasswordSecretKmsKeyId",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "ClusterIdentifier",
+        "redshift_cluster_arn": "_arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_rekognition_collection",
+      "service": "rekognition",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "rekognition_collections_described"
+      },
+      "why": "Enumerate Rekognition Collection objects with DescribeCollection — an inventory of the account's collections and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeCollection response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore rekognition DescribeCollection item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "CollectionARN",
+      "fields": {
+        "name": "CollectionId",
+        "rekognition_collection_arn": "CollectionARN"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "CollectionARN"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_rekognition_stream_processor",
+      "service": "rekognition",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "rekognition_stream_processors_described"
+      },
+      "why": "Enumerate Rekognition Stream Processor objects with DescribeStreamProcessor — an inventory of the account's stream processors and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeStreamProcessor response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore rekognition DescribeStreamProcessor item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "StreamProcessorArn",
+      "fields": {
+        "name": "Name",
+        "rekognition_stream_processor_arn": "StreamProcessorArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "StreamProcessorArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_mail_manager_archive",
+      "service": "mailmanager",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "mailmanager_archives_described"
+      },
+      "why": "Enumerate SES Mail Manager Archive objects with GetArchive — an inventory of the account's mail manager archives and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetArchive response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore mailmanager GetArchive item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "ArchiveArn",
+      "fields": {
+        "name": "ArchiveName",
+        "ses_mail_manager_archive_arn": "ArchiveArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "ArchiveArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_mail_manager_ingress_point",
+      "service": "mailmanager",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "mailmanager_ingress_points_described"
+      },
+      "why": "Enumerate SES Mail Manager Ingress Point objects with GetIngressPoint — an inventory of the account's mail manager ingress points and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetIngressPoint response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): botocore marks IngressPointAuthConfiguration.TlsAuthConfiguration.TrustStore.CAContent, IngressPointAuthConfiguration.TlsAuthConfiguration.TrustStore.CrlContent sensitive in the mailmanager GetIngressPoint item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "IngressPointAuthConfiguration.TlsAuthConfiguration.TrustStore.CAContent",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "IngressPointAuthConfiguration.TlsAuthConfiguration.TrustStore.CrlContent",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "IngressPointAuthConfiguration.SecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "IngressPointArn",
+      "fields": {
+        "name": "IngressPointName",
+        "ses_mail_manager_ingress_point_arn": "IngressPointArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "IngressPointArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_mail_manager_relay",
+      "service": "mailmanager",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "mailmanager_relays_described"
+      },
+      "why": "Enumerate SES Mail Manager Relay objects with GetRelay — an inventory of the account's mail manager relays and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetRelay response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore mailmanager GetRelay item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Authentication.SecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "RelayArn",
+      "fields": {
+        "name": "RelayName",
+        "ses_mail_manager_relay_arn": "RelayArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "RelayArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_mail_manager_rule_set",
+      "service": "mailmanager",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "mailmanager_rule_sets_described"
+      },
+      "why": "Enumerate SES Mail Manager Rule Set objects with GetRuleSet — an inventory of the account's mail manager rule sets and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetRuleSet response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): botocore marks Rules[].Actions[].Bounce.Sender, Rules[].Actions[].Bounce.DiagnosticMessage, Rules[].Actions[].Bounce.Message sensitive in the mailmanager GetRuleSet item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Rules[].Actions[].Bounce.Sender",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Rules[].Actions[].Bounce.DiagnosticMessage",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Rules[].Actions[].Bounce.Message",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "RuleSetArn",
+      "fields": {
+        "name": "RuleSetName",
+        "ses_mail_manager_rule_set_arn": "RuleSetArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "RuleSetArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_mail_manager_traffic_policy",
+      "service": "mailmanager",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "mailmanager_traffic_policies_described"
+      },
+      "why": "Enumerate SES Mail Manager Traffic Policy objects with GetTrafficPolicy — an inventory of the account's mail manager traffic policys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetTrafficPolicy response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore mailmanager GetTrafficPolicy item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "TrafficPolicyArn",
+      "fields": {
+        "name": "TrafficPolicyName",
+        "ses_mail_manager_traffic_policy_arn": "TrafficPolicyArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "TrafficPolicyArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_securityhub_hub_v2",
+      "service": "securityhub",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "securityhub_hub_v2_described"
+      },
+      "why": "Enumerate SecurityHub Hub V2 objects with DescribeSecurityHubV2 — an inventory of the account's hub v2s and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeSecurityHubV2 response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore securityhub DescribeSecurityHubV2 item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "HubV2Arn",
+      "fields": {
+        "securityhub_hub_v2_arn": "HubV2Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "HubV2Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_synthetics_canary",
+      "service": "synthetics",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "synthetics_canaries_described"
+      },
+      "why": "Enumerate Synthetics Canary objects with DescribeCanaries — an inventory of the account's canarys and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeCanaries response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore synthetics DescribeCanaries item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "synthetics_canary_arn": "_arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_xray_sampling_rule",
+      "service": "xray",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "xray_sampling_rules_described"
+      },
+      "why": "Enumerate XRay Sampling Rule objects with GetSamplingRules — an inventory of the account's sampling rules and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetSamplingRules response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore xray GetSamplingRules item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "RuleARN",
+      "fields": {
+        "name": "RuleName",
+        "xray_sampling_rule_arn": "RuleARN"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "RuleARN"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
     }
   ]
 }

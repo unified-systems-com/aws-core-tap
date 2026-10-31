@@ -568,8 +568,38 @@ from tap_plugin.aws_core.models.workspaces_connection_alias import WorkspacesCon
 from tap_plugin.aws_core.models.workspaces_directory import WorkspacesDirectory
 from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
 from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
+from tap_plugin.aws_core.models.appconfig_extension_association import AppconfigExtensionAssociation
+from tap_plugin.aws_core.models.codecommit_repository import CodecommitRepository
+from tap_plugin.aws_core.models.opensearchservice_domain import OpensearchserviceDomain
+from tap_plugin.aws_core.models.rbin_rule import RbinRule
+from tap_plugin.aws_core.models.redshift_cluster import RedshiftCluster
+from tap_plugin.aws_core.models.rekognition_collection import RekognitionCollection
+from tap_plugin.aws_core.models.rekognition_stream_processor import RekognitionStreamProcessor
+from tap_plugin.aws_core.models.ses_mail_manager_archive import SesMailManagerArchive
+from tap_plugin.aws_core.models.ses_mail_manager_ingress_point import SesMailManagerIngressPoint
+from tap_plugin.aws_core.models.ses_mail_manager_relay import SesMailManagerRelay
+from tap_plugin.aws_core.models.ses_mail_manager_rule_set import SesMailManagerRuleSet
+from tap_plugin.aws_core.models.ses_mail_manager_traffic_policy import SesMailManagerTrafficPolicy
+from tap_plugin.aws_core.models.securityhub_hub_v2 import SecurityhubHubV2
+from tap_plugin.aws_core.models.synthetics_canary import SyntheticsCanary
+from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
 
 __all__ = [
+    "XraySamplingRule",
+    "SyntheticsCanary",
+    "SecurityhubHubV2",
+    "SesMailManagerTrafficPolicy",
+    "SesMailManagerRuleSet",
+    "SesMailManagerRelay",
+    "SesMailManagerIngressPoint",
+    "SesMailManagerArchive",
+    "RekognitionStreamProcessor",
+    "RekognitionCollection",
+    "RedshiftCluster",
+    "RbinRule",
+    "OpensearchserviceDomain",
+    "CodecommitRepository",
+    "AppconfigExtensionAssociation",
     "WorkspacesWorkspaceIpGroup",
     "WorkspacesWorkspace",
     "WorkspacesDirectory",
