@@ -788,6 +788,94 @@ __all__ = [
     "ConnectContactFlowModuleAlias",
     "CodebuildSourceCredential",
     "BatchQuotaShare",
+from tap_plugin.aws_core.models.bedrock_blueprint import BedrockBlueprint
+from tap_plugin.aws_core.models.bedrock_data_automation_library import BedrockDataAutomationLibrary
+from tap_plugin.aws_core.models.bedrock_data_automation_project import BedrockDataAutomationProject
+from tap_plugin.aws_core.models.bedrock_flow import BedrockFlow
+from tap_plugin.aws_core.models.bedrock_flow_alias import BedrockFlowAlias
+from tap_plugin.aws_core.models.bedrock_prompt import BedrockPrompt
+from tap_plugin.aws_core.models.bedrock_retrieval_instruction import BedrockRetrievalInstruction
+from tap_plugin.aws_core.models.bedrock_application_inference_profile import BedrockApplicationInferenceProfile
+from tap_plugin.aws_core.models.bedrock_intelligent_prompt_router import BedrockIntelligentPromptRouter
+from tap_plugin.aws_core.models.cloudformation_stack import CloudformationStack
+from tap_plugin.aws_core.models.cloudformation_generated_template import CloudformationGeneratedTemplate
+from tap_plugin.aws_core.models.cloudformation_stack_set import CloudformationStackSet
+from tap_plugin.aws_core.models.cloudformation_change_set import CloudformationChangeSet
+from tap_plugin.aws_core.models.cloudhsm_cluster import CloudhsmCluster
+from tap_plugin.aws_core.models.dlm_lifecycle_policy import DlmLifecyclePolicy
+from tap_plugin.aws_core.models.directoryservice_directory import DirectoryserviceDirectory
+from tap_plugin.aws_core.models.datasync_location import DatasyncLocation
+from tap_plugin.aws_core.models.licensemanager_linux_subscription_provider import LicensemanagerLinuxSubscriptionProvider
+from tap_plugin.aws_core.models.ram_resource_share import RamResourceShare
+from tap_plugin.aws_core.models.rolesanywhere_crl import RolesanywhereCrl
+from tap_plugin.aws_core.models.rds_blue_green_deployment import RdsBlueGreenDeployment
+from tap_plugin.aws_core.models.rum_app_monitor import RumAppMonitor
+from tap_plugin.aws_core.models.sagemaker_data_quality_job_definition import SagemakerDataQualityJobDefinition
+from tap_plugin.aws_core.models.sagemaker_model_bias_job_definition import SagemakerModelBiasJobDefinition
+from tap_plugin.aws_core.models.sagemaker_model_explainability_job_definition import SagemakerModelExplainabilityJobDefinition
+from tap_plugin.aws_core.models.sagemaker_model_quality_job_definition import SagemakerModelQualityJobDefinition
+from tap_plugin.aws_core.models.sagemaker_mlflow_tracking_server import SagemakerMlflowTrackingServer
+from tap_plugin.aws_core.models.serverlessrepo_application import ServerlessrepoApplication
+from tap_plugin.aws_core.models.storagegateway_file_share import StoragegatewayFileShare
+from tap_plugin.aws_core.models.opensearchserverless_vpc_endpoint import OpensearchserverlessVpcEndpoint
+from tap_plugin.aws_core.models.apigatewayv2_routing_rule import Apigatewayv2RoutingRule
+from tap_plugin.aws_core.models.lakeformation_resource import LakeformationResource
+from tap_plugin.aws_core.models.networkmanager_global_network import NetworkmanagerGlobalNetwork
+from tap_plugin.aws_core.models.networkmanager_core_network import NetworkmanagerCoreNetwork
+from tap_plugin.aws_core.models.networkmanager_device import NetworkmanagerDevice
+from tap_plugin.aws_core.models.networkmanager_link import NetworkmanagerLink
+from tap_plugin.aws_core.models.networkmanager_site import NetworkmanagerSite
+from tap_plugin.aws_core.models.networkmanager_attachment import NetworkmanagerAttachment
+from tap_plugin.aws_core.models.networkmanager_connect_peer import NetworkmanagerConnectPeer
+from tap_plugin.aws_core.models.networkmanager_transit_gateway_peering import NetworkmanagerTransitGatewayPeering
+from tap_plugin.aws_core.models.cloudformation_resource_version import CloudformationResourceVersion
+from tap_plugin.aws_core.models.cloudformation_module_version import CloudformationModuleVersion
+from tap_plugin.aws_core.models.cloudformation_hook_version import CloudformationHookVersion
+
+__all__ = [
+    "CloudformationHookVersion",
+    "CloudformationModuleVersion",
+    "CloudformationResourceVersion",
+    "NetworkmanagerTransitGatewayPeering",
+    "NetworkmanagerConnectPeer",
+    "NetworkmanagerAttachment",
+    "NetworkmanagerSite",
+    "NetworkmanagerLink",
+    "NetworkmanagerDevice",
+    "NetworkmanagerCoreNetwork",
+    "NetworkmanagerGlobalNetwork",
+    "LakeformationResource",
+    "Apigatewayv2RoutingRule",
+    "OpensearchserverlessVpcEndpoint",
+    "StoragegatewayFileShare",
+    "ServerlessrepoApplication",
+    "SagemakerMlflowTrackingServer",
+    "SagemakerModelQualityJobDefinition",
+    "SagemakerModelExplainabilityJobDefinition",
+    "SagemakerModelBiasJobDefinition",
+    "SagemakerDataQualityJobDefinition",
+    "RumAppMonitor",
+    "RdsBlueGreenDeployment",
+    "RolesanywhereCrl",
+    "RamResourceShare",
+    "LicensemanagerLinuxSubscriptionProvider",
+    "DatasyncLocation",
+    "DirectoryserviceDirectory",
+    "DlmLifecyclePolicy",
+    "CloudhsmCluster",
+    "CloudformationChangeSet",
+    "CloudformationStackSet",
+    "CloudformationGeneratedTemplate",
+    "CloudformationStack",
+    "BedrockIntelligentPromptRouter",
+    "BedrockApplicationInferenceProfile",
+    "BedrockRetrievalInstruction",
+    "BedrockPrompt",
+    "BedrockFlowAlias",
+    "BedrockFlow",
+    "BedrockDataAutomationProject",
+    "BedrockDataAutomationLibrary",
+    "BedrockBlueprint",
     "QuicksightVpcConnection",
     "QuicksightTopic",
     "QuicksightTheme",

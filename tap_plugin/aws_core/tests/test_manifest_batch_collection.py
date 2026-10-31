@@ -2641,6 +2641,176 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     ),
     "aws_core__aws_timestream_influx_db_instance": (
         {'arn': 'arn:aws:timestream-influxdb:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    "aws_core__aws_bedrock_blueprint": (
+        {'blueprintArn': 'arn:aws:bedrock-data-automation:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_bedrock_data_automation_library": (
+        {'libraryArn': 'arn:aws:bedrock-data-automation:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_bedrock_data_automation_project": (
+        {'projectArn': 'arn:aws:bedrock-data-automation:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_bedrock_flow": (
+        {'arn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_flow_alias": (
+        {'arn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_prompt": (
+        {'arn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_retrieval_instruction": (
+        {'retrievalInstructionArn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_bedrock_application_inference_profile": (
+        {'inferenceProfileArn': 'arn:aws:bedrock:us-east-1:123456789012:res/gen-1', 'inferenceProfileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_intelligent_prompt_router": (
+        {'promptRouterArn': 'arn:aws:bedrock:us-east-1:123456789012:res/gen-1', 'promptRouterName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_stack": (
+        {'StackId': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'StackName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_generated_template": (
+        {'GeneratedTemplateId': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'GeneratedTemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_stack_set": (
+        {'StackSetId': 'gen-1', 'StackSetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_change_set": (
+        {'ChangeSetId': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'ChangeSetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudhsm_cluster": (
+        {'ClusterId': 'gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_dlm_lifecycle_policy": (
+        {'PolicyId': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_directoryservice_directory": (
+        {'DirectoryId': 'gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_datasync_location": (
+        {'LocationArn': 'arn:aws:datasync:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_licensemanager_linux_subscription_provider": (
+        {'SubscriptionProviderArn': 'arn:aws:license-manager-linux-subscriptions:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_ram_resource_share": (
+        {'resourceShareArn': 'arn:aws:ram:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rolesanywhere_crl": (
+        {'crlArn': 'arn:aws:rolesanywhere:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rds_blue_green_deployment": (
+        {'BlueGreenDeploymentIdentifier': 'gen-1', 'BlueGreenDeploymentName': 'gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rum_app_monitor": (
+        {'Id': 'gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_data_quality_job_definition": (
+        {'MonitoringJobDefinitionArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'MonitoringJobDefinitionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model_bias_job_definition": (
+        {'MonitoringJobDefinitionArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'MonitoringJobDefinitionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model_explainability_job_definition": (
+        {'MonitoringJobDefinitionArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'MonitoringJobDefinitionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model_quality_job_definition": (
+        {'MonitoringJobDefinitionArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'MonitoringJobDefinitionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_mlflow_tracking_server": (
+        {'TrackingServerArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'TrackingServerName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_serverlessrepo_application": (
+        {'ApplicationId': 'arn:aws:serverlessrepo:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_storagegateway_file_share": (
+        {'FileShareARN': 'arn:aws:storagegateway:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_opensearchserverless_vpc_endpoint": (
+        {'id': 'gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_apigatewayv2_routing_rule": (
+        {'RoutingRuleArn': 'arn:aws:apigatewayv2:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_lakeformation_resource": (
+        {'ResourceArn': 'arn:aws:lakeformation:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_networkmanager_global_network": (
+        {'GlobalNetworkArn': 'arn:aws:networkmanager:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_core_network": (
+        {'CoreNetworkArn': 'arn:aws:networkmanager:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_device": (
+        {'DeviceArn': 'arn:aws:networkmanager:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_link": (
+        {'LinkArn': 'arn:aws:networkmanager:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_site": (
+        {'SiteArn': 'arn:aws:networkmanager:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_attachment": (
+        {'AttachmentId': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_connect_peer": (
+        {'ConnectPeerId': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkmanager_transit_gateway_peering": (
+        {'PeeringId': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_cloudformation_resource_version": (
+        {'Arn': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'TypeName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_module_version": (
+        {'Arn': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'TypeName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_hook_version": (
+        {'Arn': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'TypeName': 'gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_vpc_endpoint": (
