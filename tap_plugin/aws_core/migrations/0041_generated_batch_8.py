@@ -746,7 +746,7 @@ class Migration(migrations.Migration):
             bases=(simple_history.models.HistoricalChanges, models.Model),
         ),
         migrations.CreateModel(
-            name="HistoricalLicensemanagerusersubscriptionsLicenseServerEndpoint",
+            name="HistoricalLicensemanagerUsersubLicenseServerEndpoint",
             fields=[
                 (
                     "id",
@@ -774,7 +774,7 @@ class Migration(migrations.Migration):
                 ),
                 ("name", models.CharField(blank=True, default="", max_length=255)),
                 (
-                    "licensemanagerusersubscriptions_license_server_endpoint_arn",
+                    "licensemanager_usersub_license_server_endpoint_arn",
                     models.CharField(blank=True, default="", max_length=2048),
                 ),
                 ("configuration", models.JSONField(blank=True, default=dict)),
@@ -811,8 +811,8 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "verbose_name": "historical licensemanagerusersubscriptions license server endpoint",
-                "verbose_name_plural": "historical licensemanagerusersubscriptions license server endpoints",
+                "verbose_name": "historical licensemanager usersub license server endpoint",
+                "verbose_name_plural": "historical licensemanager usersub license server endpoints",
                 "ordering": ("-history_date", "-history_id"),
                 "get_latest_by": ("history_date", "history_id"),
             },
@@ -2922,7 +2922,7 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name="LicensemanagerusersubscriptionsLicenseServerEndpoint",
+            name="LicensemanagerUsersubLicenseServerEndpoint",
             fields=[
                 (
                     "id",
@@ -2953,7 +2953,7 @@ class Migration(migrations.Migration):
                 ),
                 ("name", models.CharField(blank=True, default="", max_length=255)),
                 (
-                    "licensemanagerusersubscriptions_license_server_endpoint_arn",
+                    "licensemanager_usersub_license_server_endpoint_arn",
                     models.CharField(blank=True, default="", max_length=2048),
                 ),
                 ("configuration", models.JSONField(blank=True, default=dict)),
@@ -2968,14 +2968,14 @@ class Migration(migrations.Migration):
                 ),
             ],
             options={
-                "db_table": "aws_core__aws_licensemanagerusersubscriptions_license_server_endpoint",
+                "db_table": "aws_core__aws_licensemanager_usersub_license_server_endpoint",
                 "abstract": False,
                 "indexes": [
                     models.Index(
                         fields=[
-                            "licensemanagerusersubscriptions_license_server_endpoint_arn"
+                            "licensemanager_usersub_license_server_endpoint_arn"
                         ],
-                        name="nk_aws_core__aws_licen_7687cff",
+                        name="nk_aws_core__aws_licen_873718b",
                     )
                 ],
             },

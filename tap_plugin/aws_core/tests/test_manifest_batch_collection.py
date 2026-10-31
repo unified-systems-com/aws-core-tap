@@ -1504,7 +1504,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'StreamARN': 'arn:aws:kinesisvideo:us-east-1:123456789012:res/gen-1', 'StreamName': 'gen-1'},
         {'name': 'gen-1'},
     ),
-    "aws_core__aws_licensemanagerusersubscriptions_license_server_endpoint": (
+    "aws_core__aws_licensemanager_usersub_license_server_endpoint": (
         {'LicenseServerEndpointArn': 'arn:aws:license-manager-user-subscriptions:us-east-1:123456789012:res/gen-1'},
         {},
     ),

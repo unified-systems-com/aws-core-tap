@@ -15394,7 +15394,7 @@
       }
     },
     {
-      "entity_type": "aws_core__aws_licensemanagerusersubscriptions_license_server_endpoint",
+      "entity_type": "aws_core__aws_licensemanager_usersub_license_server_endpoint",
       "service": "license-manager-user-subscriptions",
       "scope": "regional",
       "source": {
@@ -15418,7 +15418,7 @@
       "items_path": "LicenseServerEndpoints[]",
       "natural_key": "LicenseServerEndpointArn",
       "fields": {
-        "licensemanagerusersubscriptions_license_server_endpoint_arn": "LicenseServerEndpointArn"
+        "licensemanager_usersub_license_server_endpoint_arn": "LicenseServerEndpointArn"
       },
       "tags": {
         "source": "service",

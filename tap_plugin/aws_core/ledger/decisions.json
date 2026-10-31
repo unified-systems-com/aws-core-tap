@@ -1888,7 +1888,7 @@
         "AWS::LicenseManager::LicenseConfiguration"
       ]
     },
-    "aws_core__aws_licensemanagerusersubscriptions_license_server_endpoint": {
+    "aws_core__aws_licensemanager_usersub_license_server_endpoint": {
       "cfn": [
         "AWS::LicenseManagerUserSubscriptions::LicenseServerEndpoint"
       ]

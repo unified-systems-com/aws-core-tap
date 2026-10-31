@@ -372,7 +372,7 @@ from tap_plugin.aws_core.models.kinesisanalytics_application import Kinesisanaly
 from tap_plugin.aws_core.models.kinesisanalyticsv2_application import Kinesisanalyticsv2Application
 from tap_plugin.aws_core.models.kinesisvideo_signaling_channel import KinesisvideoSignalingChannel
 from tap_plugin.aws_core.models.kinesisvideo_stream import KinesisvideoStream
-from tap_plugin.aws_core.models.licensemanagerusersubscriptions_license_server_endpoint import LicensemanagerusersubscriptionsLicenseServerEndpoint
+from tap_plugin.aws_core.models.licensemanager_usersub_license_server_endpoint import LicensemanagerUsersubLicenseServerEndpoint
 from tap_plugin.aws_core.models.msk_cluster import MskCluster
 from tap_plugin.aws_core.models.msk_vpc_connection import MskVpcConnection
 from tap_plugin.aws_core.models.managedblockchain_accessor import ManagedblockchainAccessor
@@ -543,7 +543,7 @@ __all__ = [
     "ManagedblockchainAccessor",
     "MskVpcConnection",
     "MskCluster",
-    "LicensemanagerusersubscriptionsLicenseServerEndpoint",
+    "LicensemanagerUsersubLicenseServerEndpoint",
     "KinesisvideoStream",
     "KinesisvideoSignalingChannel",
     "Kinesisanalyticsv2Application",
