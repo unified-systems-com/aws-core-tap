@@ -3140,6 +3140,10 @@
     "AWS::VerifiedPermissions::PolicyStoreAlias": {
       "taggable": false,
       "citation": "botocore 1.43.121 verifiedpermissions ListTagsForResource: 'In Verified Permissions, policy stores can be tagged', so a policy store alias has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
+    },
+    "AWS::Lambda::Alias": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions', so an alias has no tags; the CloudFormation schema also says taggable is false"
     }
   }
 }

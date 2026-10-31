@@ -20770,16 +20770,8 @@
         "lambda_alias_arn": "AliasArn"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTags",
-        "params": {
-          "Resource": {
-            "from": "AliasArn"
-          }
-        },
-        "path": "Tags",
-        "shape": "map",
-        "why": "Resource tags — ListTags by the object's ARN; the listing carries none."
+        "source": "none",
+        "why": "Lambda does not support tags on function aliases: the lambda ListTags operation documents its Resource parameter as 'Lambda does not support adding tags to function aliases or versions' (botocore 1.43.121)."
       }
     },
     {
