@@ -3572,6 +3572,14 @@
     }
   },
   "tag_findings": {
+    "AWS::CloudFormation::ModuleVersion": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 cloudformation defines no tag operations and RegisterType takes no Tags, and the CloudFormation schema declares no tagging block, so a registered module type version has no tags"
+    },
+    "AWS::CloudFormation::ResourceVersion": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 cloudformation defines no tag operations and RegisterType takes no Tags, and the CloudFormation schema declares no tagging block, so a registered resource type version has no tags"
+    },
     "AWS::Config::ConfigRule": {
       "taggable": true,
       "citation": "botocore 1.43.121 config ListTagsForResource lists ConfigRule among the supported resources, so a rule has tags; the CloudFormation schema says taggable is false"
@@ -3616,6 +3624,10 @@
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
     },
+    "AWS::LakeFormation::Resource": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 lakeformation defines no TagResource, UntagResource or ListTagsForResource operation (its LF-Tag operations assign data-access tags to catalog resources, not to a registered location), and the CloudFormation schema declares no tagging block, so a registered resource has no tags"
+    },
     "AWS::Lambda::Alias": {
       "taggable": false,
       "citation": "botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions', so an alias has no tags; the CloudFormation schema also says taggable is false"
@@ -3631,6 +3643,10 @@
     "AWS::ResourceGroups::TagSyncTask": {
       "taggable": false,
       "citation": "botocore 1.43.121 resource-groups GetTags and Tag operate on 'a resource group' only, so a tag sync task has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
+    },
+    "AWS::SageMaker::ExperimentTrialComponent": {
+      "taggable": true,
+      "citation": "the CloudFormation schema lists a Tags property for it but declares no tagging block; it describes the same trial components as AWS::SageMaker::TrialComponent (taggable, with sagemaker:AddTags and sagemaker:ListTags), whose tags the aws_sagemaker_trial_component entry reads with ListTags (botocore 1.43.121)"
     },
     "AWS::Scheduler::Schedule": {
       "taggable": false,
