@@ -367,3 +367,46 @@ def test_every_declared_operation_is_a_read():
         {op for e in manifest_entries() for op in _ops_of(e["source"]) if not op.startswith(_READ_VERBS)}
     )
     assert writes == [], f"operations that do not start with a read verb: {writes}"
+
+
+class TestAccountParam:
+    """``$account_id`` in a source's params stands for the account being collected."""
+
+    _ENTRY = {
+        "service": "quicksight",
+        "items_path": "DashboardSummaryList[]",
+        "source": {"aws_op": "ListDashboards", "params": {"AwsAccountId": "$account_id"}},
+    }
+
+    def test_the_account_id_reaches_the_call(self):
+        client = _CallLog({"list_dashboards": {"DashboardSummaryList": [{"Arn": "a"}]}})
+        items = list(
+            iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry(), account_id="123456789012")
+        )
+        assert items == [{"Arn": "a"}]
+        assert client.calls == [("list_dashboards", {"AwsAccountId": "123456789012"})]
+
+    def test_a_missing_account_id_fails_the_listing_before_any_call(self):
+        client = _CallLog({"list_dashboards": {"DashboardSummaryList": []}})
+        with pytest.raises(SourceError, match="account id"):
+            list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert client.calls == []
+
+    def test_it_also_reaches_a_parent_call(self):
+        entry = {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "ListThings",
+                "per": {"aws_op": "ListNames", "items_path": "Names[]", "params": {"Owner": "$account_id"}},
+                "bind": {"Name": ""},
+            },
+        }
+        client = _CallLog({"list_names": {"Names": ["n1"]}, "list_things": {"Things": [{"Id": "t"}]}})
+        list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry(), account_id="111122223333"))
+        assert ("list_names", {"Owner": "111122223333"}) in client.calls
+
+    def test_a_plain_source_with_params_is_valid_in_the_schema(self):
+        entry = TestPerFanoutSchema._entry()
+        entry["source"] = {"aws_op": "ListDashboards", "params": {"AwsAccountId": "$account_id"}}
+        assert TestPerFanoutSchema._validator().is_valid(entry)

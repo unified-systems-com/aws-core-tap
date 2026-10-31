@@ -228,6 +228,32 @@ def iter_fanout(
         yield from _children(client, {**source, "items_path": entry["items_path"]}, parent)
 
 
+#: A literal ``params`` value that stands for the account being collected: a list call that asks
+#: for the account id (QuickSight's ``AwsAccountId``) names it here instead of hard-coding one.
+ACCOUNT_PARAM = "$account_id"
+
+
+def _with_account(node: Any, account_id: str | None) -> Any:
+    """``node`` with every ``ACCOUNT_PARAM`` in a ``params`` mapping replaced by the account id."""
+    if isinstance(node, dict):
+        out = {}
+        for key, value in node.items():
+            if key == "params" and isinstance(value, dict):
+                out[key] = {name: _account_value(v, account_id) for name, v in value.items()}
+            else:
+                out[key] = _with_account(value, account_id)
+        return out
+    return node
+
+
+def _account_value(value: Any, account_id: str | None) -> Any:
+    if value != ACCOUNT_PARAM:
+        return value
+    if not account_id:
+        raise SourceError("a source asks for the account id but the collector has none")
+    return account_id
+
+
 def iter_source(
     entry: dict[str, Any],
     *,
@@ -236,6 +262,7 @@ def iter_source(
     fn_context: Any = None,
     walk: ListingWalk | None = None,
     truncated: list[str] | None = None,
+    account_id: str | None = None,
 ) -> Iterator[Any]:
     """Drive a manifest entry's ``source``, yielding raw items.
 
@@ -251,17 +278,20 @@ def iter_source(
         walk: The listing walk to fill in, passed only for an entry that declares account-scoped
             containment (tap-plugin-aws-core#43). A ``custom_fn`` behind such an entry MUST accept it
             (``walk=``) and report on it; the manifest test holds that line.
+        account_id: The account being collected, substituted for ``ACCOUNT_PARAM`` in ``params``.
         truncated: See :func:`iter_aws_op`. A ``custom_fn`` reports nothing here
             (tap-plugin-aws-core#49): the engine cannot see inside one, so a region-scoped
             completeness claim is an ``aws_op`` entry only.
     """
-    source = entry["source"]
+    source = _with_account(entry["source"], account_id)
     if "per" in source:
-        yield from iter_fanout(entry, client_for=client_for)
+        yield from iter_fanout({**entry, "source": source}, client_for=client_for)
         return
     if "aws_op" in source:
         client = client_for(entry["service"])
-        yield from iter_aws_op(client, source["aws_op"], entry["items_path"], walk=walk, truncated=truncated)
+        yield from iter_aws_op(
+            client, source["aws_op"], entry["items_path"], walk=walk, truncated=truncated, params=source.get("params")
+        )
         return
     fn = custom_fns.get(source["custom_fn"])
     # Pass client_for through so regional custom_fns can build region-bound

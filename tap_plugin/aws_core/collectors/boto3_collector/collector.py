@@ -565,6 +565,7 @@ class Boto3Collector(CollectorBase):
                             fn_context=session,
                             walk=walk,
                             truncated=listing.truncated if listing else None,
+                            account_id=account_id,
                         )
                     )
                     listed = True
