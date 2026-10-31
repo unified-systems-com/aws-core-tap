@@ -8,7 +8,7 @@ from tap_grid.models import BaseModel
 
 
 class ConnectView(BaseModel):
-    """An AWS Connect View, listed by ListViews. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS Connect View, listed by ListViews. Only its identity and tags are collected (the name is sensitive per botocore, so the node is named by its ARN); the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_connect_view"
     ENTITY_NAME: ClassVar[str] = "AWS Connect View"

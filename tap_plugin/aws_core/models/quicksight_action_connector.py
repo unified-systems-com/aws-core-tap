@@ -8,7 +8,7 @@ from tap_grid.models import BaseModel
 
 
 class QuicksightActionConnector(BaseModel):
-    """An AWS QuickSight Action Connector, listed by ListActionConnectors. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS QuickSight Action Connector, listed by ListActionConnectors. Only its identity and tags are collected (the name is sensitive per botocore, so the node is named by its ARN); the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_quicksight_action_connector"
     ENTITY_NAME: ClassVar[str] = "AWS QuickSight Action Connector"

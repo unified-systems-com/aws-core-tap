@@ -20231,7 +20231,7 @@
       },
       "why": "Enumerate Connect View objects with ListViews — an inventory of the account's views and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListViews response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListViews response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity and tags are typed fields or read by the tag lane, so they are unaffected. The name is not collected: botocore marks Name sensitive, so the node is named by its ARN.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks Name sensitive in the connect ListViews item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
@@ -21869,7 +21869,7 @@
       },
       "why": "Enumerate QuickSight Action Connector objects with ListActionConnectors — an inventory of the account's action connectors and how each is tagged.",
       "persist_configuration": false,
-      "persist_configuration_why": "Off: the ListActionConnectors response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "persist_configuration_why": "Off: the ListActionConnectors response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity and tags are typed fields or read by the tag lane, so they are unaffected. The name is not collected: botocore marks Name sensitive, so the node is named by its ARN.",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks Name sensitive in the quicksight ListActionConnectors item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
