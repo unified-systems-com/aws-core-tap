@@ -1464,6 +1464,386 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'ruleArn': 'arn:aws:iot:us-east-1:123456789012:res/gen-1', 'ruleName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_iotsitewise_asset": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_asset_model": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_computation_model": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_workspace": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iottwinmaker_workspace": (
+        {'arn': 'arn:aws:iottwinmaker:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_kinesis_stream": (
+        {'StreamARN': 'arn:aws:kinesis:us-east-1:123456789012:res/gen-1', 'StreamName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisanalytics_application": (
+        {'ApplicationARN': 'arn:aws:kinesisanalytics:us-east-1:123456789012:res/gen-1', 'ApplicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisanalyticsv2_application": (
+        {'ApplicationARN': 'arn:aws:kinesisanalyticsv2:us-east-1:123456789012:res/gen-1', 'ApplicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisvideo_signaling_channel": (
+        {'ChannelARN': 'arn:aws:kinesisvideo:us-east-1:123456789012:res/gen-1', 'ChannelName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_kinesisvideo_stream": (
+        {'StreamARN': 'arn:aws:kinesisvideo:us-east-1:123456789012:res/gen-1', 'StreamName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_licensemanager_usersub_license_server_endpoint": (
+        {'LicenseServerEndpointArn': 'arn:aws:license-manager-user-subscriptions:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_msk_cluster": (
+        {'ClusterArn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1', 'ClusterName': 'gen-1', 'Tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_msk_vpc_connection": (
+        {'VpcConnectionArn': 'arn:aws:kafka:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_managedblockchain_accessor": (
+        {'Arn': 'arn:aws:managedblockchain:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_memorydb_acl": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_cluster": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_multi_region_cluster": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'MultiRegionClusterName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_parameter_group": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_subnet_group": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_memorydb_user": (
+        {'ARN': 'arn:aws:memorydb:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_db_cluster_parameter_group": (
+        {'DBClusterParameterGroupArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'DBClusterParameterGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_db_parameter_group": (
+        {'DBParameterGroupArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'DBParameterGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_db_subnet_group": (
+        {'DBSubnetGroupArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'DBSubnetGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_neptune_event_subscription": (
+        {'EventSubscriptionArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_neptune_global_cluster": (
+        {'GlobalClusterArn': 'arn:aws:neptune:us-east-1:123456789012:res/gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_networkfirewall_container_association": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_firewall_policy": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_rule_group": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_networkfirewall_tls_inspection_configuration": (
+        {'Arn': 'arn:aws:network-firewall:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchserverless_collection": (
+        {'arn': 'arn:aws:opensearchserverless:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchserverless_collection_group": (
+        {'arn': 'arn:aws:opensearchserverless:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_opensearchservice_application": (
+        {'arn': 'arn:aws:opensearch:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_quicksight_approval_policy": (
+        {'PolicyArn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rds_db_proxy_endpoint": (
+        {'DBProxyEndpointArn': 'arn:aws:rds:us-east-1:123456789012:res/gen-1', 'DBProxyEndpointName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rds_db_security_group": (
+        {'DBSecurityGroupArn': 'arn:aws:rds:us-east-1:123456789012:res/gen-1', 'DBSecurityGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rds_db_shard_group": (
+        {'DBShardGroupArn': 'arn:aws:rds:us-east-1:123456789012:res/gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_redshiftserverless_namespace": (
+        {'namespaceArn': 'arn:aws:redshift-serverless:us-east-1:123456789012:res/gen-1', 'namespaceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshiftserverless_snapshot": (
+        {'snapshotArn': 'arn:aws:redshift-serverless:us-east-1:123456789012:res/gen-1', 'snapshotName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshiftserverless_workgroup": (
+        {'workgroupArn': 'arn:aws:redshift-serverless:us-east-1:123456789012:res/gen-1', 'workgroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rekognition_project": (
+        {'ProjectArn': 'arn:aws:rekognition:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_rolesanywhere_profile": (
+        {'profileArn': 'arn:aws:rolesanywhere:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_rolesanywhere_trust_anchor": (
+        {'trustAnchorArn': 'arn:aws:rolesanywhere:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53profiles_profile": (
+        {'Arn': 'arn:aws:route53profiles:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53resolver_firewall_domain_list": (
+        {'Arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53resolver_firewall_rule_group_association": (
+        {'Arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53resolver_outpost_resolver": (
+        {'Arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53resolver_resolver_endpoint": (
+        {'Arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53resolver_resolver_rule": (
+        {'Arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_app_image_config": (
+        {'AppImageConfigArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'AppImageConfigName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_device": (
+        {'DeviceArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'DeviceName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_device_fleet": (
+        {'DeviceFleetArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'DeviceFleetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_domain": (
+        {'DomainArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'DomainName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_experiment": (
+        {'ExperimentArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'ExperimentName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_feature_group": (
+        {'FeatureGroupArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'FeatureGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_model_card": (
+        {'ModelCardArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'ModelCardName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_pipeline": (
+        {'PipelineArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'PipelineName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_studio_lifecycle_config": (
+        {'StudioLifecycleConfigArn': 'arn:aws:sagemaker:us-east-1:123456789012:res/gen-1', 'StudioLifecycleConfigName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_scheduler_schedule": (
+        {'Arn': 'arn:aws:scheduler:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_scheduler_schedule_group": (
+        {'Arn': 'arn:aws:scheduler:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_securitylake_data_lake": (
+        {'dataLakeArn': 'arn:aws:securitylake:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_servicecatalogappregistry_application": (
+        {'arn': 'arn:aws:servicecatalog-appregistry:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicecatalogappregistry_attribute_group": (
+        {'arn': 'arn:aws:servicecatalog-appregistry:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicediscovery_service": (
+        {'Arn': 'arn:aws:servicediscovery:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_stepfunctions_activity": (
+        {'activityArn': 'arn:aws:stepfunctions:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_stepfunctions_state_machine": (
+        {'stateMachineArn': 'arn:aws:stepfunctions:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_synthetics_group": (
+        {'Arn': 'arn:aws:synthetics:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_timestream_database": (
+        {'Arn': 'arn:aws:timestream-write:us-east-1:123456789012:res/gen-1', 'DatabaseName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_timestream_table": (
+        {'Arn': 'arn:aws:timestream-write:us-east-1:123456789012:res/gen-1', 'TableName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_transfer_certificate": (
+        {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_transfer_connector": (
+        {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_transfer_profile": (
+        {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_transfer_workflow": (
+        {'Arn': 'arn:aws:transfer:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_verifiedpermissions_policy_store": (
+        {'arn': 'arn:aws:verifiedpermissions:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_verifiedpermissions_policy_store_alias": (
+        {'aliasArn': 'arn:aws:verifiedpermissions:us-east-1:123456789012:res/gen-1', 'aliasName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_certificate": (
+        {'CertificateArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_data_migration": (
+        {'DataMigrationArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'DataMigrationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_data_provider": (
+        {'DataProviderArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'DataProviderName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_endpoint": (
+        {'EndpointArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_instance_profile": (
+        {'InstanceProfileArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'InstanceProfileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_migration_project": (
+        {'MigrationProjectArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1', 'MigrationProjectName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dms_replication_config": (
+        {'ReplicationConfigArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_replication_instance": (
+        {'ReplicationInstanceArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_dms_replication_task": (
+        {'ReplicationTaskArn': 'arn:aws:dms:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_docdb_global_cluster": (
+        {'GlobalClusterArn': 'arn:aws:docdb:us-east-1:123456789012:res/gen-1', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_elasticbeanstalk_application": (
+        {'ApplicationArn': 'arn:aws:elasticbeanstalk:us-east-1:123456789012:res/gen-1', 'ApplicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticbeanstalk_application_version": (
+        {'ApplicationVersionArn': 'arn:aws:elasticbeanstalk:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_elasticbeanstalk_environment": (
+        {'EnvironmentArn': 'arn:aws:elasticbeanstalk:us-east-1:123456789012:res/gen-1', 'EnvironmentName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_lambda_capacity_provider": (
+        {'CapacityProviderArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_mediaconvert_job_template": (
+        {'Arn': 'arn:aws:mediaconvert:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_mediaconvert_preset": (
+        {'Arn': 'arn:aws:mediaconvert:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_mediaconvert_queue": (
+        {'Arn': 'arn:aws:mediaconvert:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_lens": (
+        {'LensArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'LensName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_profile": (
+        {'ProfileArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'ProfileName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_review_template": (
+        {'TemplateArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_workload": (
+        {'WorkloadArn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'WorkloadName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

@@ -1063,6 +1063,51 @@
         "AWS::Detective::Graph"
       ]
     },
+    "aws_core__aws_dms_certificate": {
+      "cfn": [
+        "AWS::DMS::Certificate"
+      ]
+    },
+    "aws_core__aws_dms_data_migration": {
+      "cfn": [
+        "AWS::DMS::DataMigration"
+      ]
+    },
+    "aws_core__aws_dms_data_provider": {
+      "cfn": [
+        "AWS::DMS::DataProvider"
+      ]
+    },
+    "aws_core__aws_dms_endpoint": {
+      "cfn": [
+        "AWS::DMS::Endpoint"
+      ]
+    },
+    "aws_core__aws_dms_instance_profile": {
+      "cfn": [
+        "AWS::DMS::InstanceProfile"
+      ]
+    },
+    "aws_core__aws_dms_migration_project": {
+      "cfn": [
+        "AWS::DMS::MigrationProject"
+      ]
+    },
+    "aws_core__aws_dms_replication_config": {
+      "cfn": [
+        "AWS::DMS::ReplicationConfig"
+      ]
+    },
+    "aws_core__aws_dms_replication_instance": {
+      "cfn": [
+        "AWS::DMS::ReplicationInstance"
+      ]
+    },
+    "aws_core__aws_dms_replication_task": {
+      "cfn": [
+        "AWS::DMS::ReplicationTask"
+      ]
+    },
     "aws_core__aws_docdb_db_cluster_parameter_group": {
       "cfn": [
         "AWS::DocDB::DBClusterParameterGroup"
@@ -1076,6 +1121,11 @@
     "aws_core__aws_docdb_event_subscription": {
       "cfn": [
         "AWS::DocDB::EventSubscription"
+      ]
+    },
+    "aws_core__aws_docdb_global_cluster": {
+      "cfn": [
+        "AWS::DocDB::GlobalCluster"
       ]
     },
     "aws_core__aws_drs_launch_configuration_template": {
@@ -1301,6 +1351,21 @@
     "aws_core__aws_elasticache_user_group": {
       "cfn": [
         "AWS::ElastiCache::UserGroup"
+      ]
+    },
+    "aws_core__aws_elasticbeanstalk_application": {
+      "cfn": [
+        "AWS::ElasticBeanstalk::Application"
+      ]
+    },
+    "aws_core__aws_elasticbeanstalk_application_version": {
+      "cfn": [
+        "AWS::ElasticBeanstalk::ApplicationVersion"
+      ]
+    },
+    "aws_core__aws_elasticbeanstalk_environment": {
+      "cfn": [
+        "AWS::ElasticBeanstalk::Environment"
       ]
     },
     "aws_core__aws_elasticsearch_domain": {
@@ -1697,6 +1762,31 @@
         "AWS::IoTSiteWise::Application"
       ]
     },
+    "aws_core__aws_iotsitewise_asset": {
+      "cfn": [
+        "AWS::IoTSiteWise::Asset"
+      ]
+    },
+    "aws_core__aws_iotsitewise_asset_model": {
+      "cfn": [
+        "AWS::IoTSiteWise::AssetModel"
+      ]
+    },
+    "aws_core__aws_iotsitewise_computation_model": {
+      "cfn": [
+        "AWS::IoTSiteWise::ComputationModel"
+      ]
+    },
+    "aws_core__aws_iotsitewise_workspace": {
+      "cfn": [
+        "AWS::IoTSiteWise::Workspace"
+      ]
+    },
+    "aws_core__aws_iottwinmaker_workspace": {
+      "cfn": [
+        "AWS::IoTTwinMaker::Workspace"
+      ]
+    },
     "aws_core__aws_kafkaconnect_connector": {
       "cfn": [
         "AWS::KafkaConnect::Connector"
@@ -1717,6 +1807,31 @@
         "AWS::Kinesis::Channel"
       ]
     },
+    "aws_core__aws_kinesis_stream": {
+      "cfn": [
+        "AWS::Kinesis::Stream"
+      ]
+    },
+    "aws_core__aws_kinesisanalytics_application": {
+      "cfn": [
+        "AWS::KinesisAnalytics::Application"
+      ]
+    },
+    "aws_core__aws_kinesisanalyticsv2_application": {
+      "cfn": [
+        "AWS::KinesisAnalyticsV2::Application"
+      ]
+    },
+    "aws_core__aws_kinesisvideo_signaling_channel": {
+      "cfn": [
+        "AWS::KinesisVideo::SignalingChannel"
+      ]
+    },
+    "aws_core__aws_kinesisvideo_stream": {
+      "cfn": [
+        "AWS::KinesisVideo::Stream"
+      ]
+    },
     "aws_core__aws_kms_alias": {
       "cfn": [
         "AWS::KMS::Alias"
@@ -1731,6 +1846,11 @@
     "aws_core__aws_lambda": {
       "cfn": [
         "AWS::Lambda::Function"
+      ]
+    },
+    "aws_core__aws_lambda_capacity_provider": {
+      "cfn": [
+        "AWS::Lambda::CapacityProvider"
       ]
     },
     "aws_core__aws_lambda_code_signing_config": {
@@ -1766,6 +1886,11 @@
     "aws_core__aws_licensemanager_license_configuration": {
       "cfn": [
         "AWS::LicenseManager::LicenseConfiguration"
+      ]
+    },
+    "aws_core__aws_licensemanager_usersub_license_server_endpoint": {
+      "cfn": [
+        "AWS::LicenseManagerUserSubscriptions::LicenseServerEndpoint"
       ]
     },
     "aws_core__aws_logs_delivery": {
@@ -1818,9 +1943,59 @@
         "AWS::M2::Environment"
       ]
     },
+    "aws_core__aws_managedblockchain_accessor": {
+      "cfn": [
+        "AWS::ManagedBlockchain::Accessor"
+      ]
+    },
+    "aws_core__aws_mediaconvert_job_template": {
+      "cfn": [
+        "AWS::MediaConvert::JobTemplate"
+      ]
+    },
+    "aws_core__aws_mediaconvert_preset": {
+      "cfn": [
+        "AWS::MediaConvert::Preset"
+      ]
+    },
+    "aws_core__aws_mediaconvert_queue": {
+      "cfn": [
+        "AWS::MediaConvert::Queue"
+      ]
+    },
+    "aws_core__aws_memorydb_acl": {
+      "cfn": [
+        "AWS::MemoryDB::ACL"
+      ]
+    },
+    "aws_core__aws_memorydb_cluster": {
+      "cfn": [
+        "AWS::MemoryDB::Cluster"
+      ]
+    },
+    "aws_core__aws_memorydb_multi_region_cluster": {
+      "cfn": [
+        "AWS::MemoryDB::MultiRegionCluster"
+      ]
+    },
+    "aws_core__aws_memorydb_parameter_group": {
+      "cfn": [
+        "AWS::MemoryDB::ParameterGroup"
+      ]
+    },
     "aws_core__aws_memorydb_snapshot": {
       "cfn": [
         "AWS::MemoryDB::Snapshot"
+      ]
+    },
+    "aws_core__aws_memorydb_subnet_group": {
+      "cfn": [
+        "AWS::MemoryDB::SubnetGroup"
+      ]
+    },
+    "aws_core__aws_memorydb_user": {
+      "cfn": [
+        "AWS::MemoryDB::User"
       ]
     },
     "aws_core__aws_mgn_connector": {
@@ -1848,6 +2023,11 @@
         "AWS::MGN::Wave"
       ]
     },
+    "aws_core__aws_msk_cluster": {
+      "cfn": [
+        "AWS::MSK::Cluster"
+      ]
+    },
     "aws_core__aws_msk_configuration": {
       "cfn": [
         "AWS::MSK::Configuration"
@@ -1858,9 +2038,39 @@
         "AWS::MSK::Replicator"
       ]
     },
+    "aws_core__aws_msk_vpc_connection": {
+      "cfn": [
+        "AWS::MSK::VpcConnection"
+      ]
+    },
     "aws_core__aws_nat_gateway": {
       "cfn": [
         "AWS::EC2::NatGateway"
+      ]
+    },
+    "aws_core__aws_neptune_db_cluster_parameter_group": {
+      "cfn": [
+        "AWS::Neptune::DBClusterParameterGroup"
+      ]
+    },
+    "aws_core__aws_neptune_db_parameter_group": {
+      "cfn": [
+        "AWS::Neptune::DBParameterGroup"
+      ]
+    },
+    "aws_core__aws_neptune_db_subnet_group": {
+      "cfn": [
+        "AWS::Neptune::DBSubnetGroup"
+      ]
+    },
+    "aws_core__aws_neptune_event_subscription": {
+      "cfn": [
+        "AWS::Neptune::EventSubscription"
+      ]
+    },
+    "aws_core__aws_neptune_global_cluster": {
+      "cfn": [
+        "AWS::Neptune::GlobalCluster"
       ]
     },
     "aws_core__aws_network_acl": {
@@ -1871,6 +2081,26 @@
     "aws_core__aws_network_firewall": {
       "cfn": [
         "AWS::NetworkFirewall::Firewall"
+      ]
+    },
+    "aws_core__aws_networkfirewall_container_association": {
+      "cfn": [
+        "AWS::NetworkFirewall::ContainerAssociation"
+      ]
+    },
+    "aws_core__aws_networkfirewall_firewall_policy": {
+      "cfn": [
+        "AWS::NetworkFirewall::FirewallPolicy"
+      ]
+    },
+    "aws_core__aws_networkfirewall_rule_group": {
+      "cfn": [
+        "AWS::NetworkFirewall::RuleGroup"
+      ]
+    },
+    "aws_core__aws_networkfirewall_tls_inspection_configuration": {
+      "cfn": [
+        "AWS::NetworkFirewall::TLSInspectionConfiguration"
       ]
     },
     "aws_core__aws_networkfirewall_vpc_endpoint_association": {
@@ -1891,6 +2121,21 @@
     "aws_core__aws_oam_sink": {
       "cfn": [
         "AWS::Oam::Sink"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_collection": {
+      "cfn": [
+        "AWS::OpenSearchServerless::Collection"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_collection_group": {
+      "cfn": [
+        "AWS::OpenSearchServerless::CollectionGroup"
+      ]
+    },
+    "aws_core__aws_opensearchservice_application": {
+      "cfn": [
+        "AWS::OpenSearchService::Application"
       ]
     },
     "aws_core__aws_organization": {
@@ -1927,6 +2172,11 @@
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
     },
+    "aws_core__aws_quicksight_approval_policy": {
+      "cfn": [
+        "AWS::QuickSight::ApprovalPolicy"
+      ]
+    },
     "aws_core__aws_ram_permission": {
       "cfn": [
         "AWS::RAM::Permission"
@@ -1962,6 +2212,21 @@
     "aws_core__aws_rds_db_proxy": {
       "cfn": [
         "AWS::RDS::DBProxy"
+      ]
+    },
+    "aws_core__aws_rds_db_proxy_endpoint": {
+      "cfn": [
+        "AWS::RDS::DBProxyEndpoint"
+      ]
+    },
+    "aws_core__aws_rds_db_security_group": {
+      "cfn": [
+        "AWS::RDS::DBSecurityGroup"
+      ]
+    },
+    "aws_core__aws_rds_db_shard_group": {
+      "cfn": [
+        "AWS::RDS::DBShardGroup"
       ]
     },
     "aws_core__aws_rds_db_snapshot": {
@@ -2011,9 +2276,29 @@
         "AWS::Redshift::RedshiftIdcApplication"
       ]
     },
+    "aws_core__aws_redshiftserverless_namespace": {
+      "cfn": [
+        "AWS::RedshiftServerless::Namespace"
+      ]
+    },
+    "aws_core__aws_redshiftserverless_snapshot": {
+      "cfn": [
+        "AWS::RedshiftServerless::Snapshot"
+      ]
+    },
+    "aws_core__aws_redshiftserverless_workgroup": {
+      "cfn": [
+        "AWS::RedshiftServerless::Workgroup"
+      ]
+    },
     "aws_core__aws_region": {
       "cfn": [],
       "reason": "Reference data kept by the catalog refresh skill; regions are not a CloudFormation resource."
+    },
+    "aws_core__aws_rekognition_project": {
+      "cfn": [
+        "AWS::Rekognition::Project"
+      ]
     },
     "aws_core__aws_resiliencehub_app": {
       "cfn": [
@@ -2050,6 +2335,16 @@
         "AWS::ResourceGroups::TagSyncTask"
       ]
     },
+    "aws_core__aws_rolesanywhere_profile": {
+      "cfn": [
+        "AWS::RolesAnywhere::Profile"
+      ]
+    },
+    "aws_core__aws_rolesanywhere_trust_anchor": {
+      "cfn": [
+        "AWS::RolesAnywhere::TrustAnchor"
+      ]
+    },
     "aws_core__aws_route53_resolver_firewall_rule_group": {
       "cfn": [
         "AWS::Route53Resolver::FirewallRuleGroup"
@@ -2058,6 +2353,36 @@
     "aws_core__aws_route53_zone": {
       "cfn": [
         "AWS::Route53::HostedZone"
+      ]
+    },
+    "aws_core__aws_route53profiles_profile": {
+      "cfn": [
+        "AWS::Route53Profiles::Profile"
+      ]
+    },
+    "aws_core__aws_route53resolver_firewall_domain_list": {
+      "cfn": [
+        "AWS::Route53Resolver::FirewallDomainList"
+      ]
+    },
+    "aws_core__aws_route53resolver_firewall_rule_group_association": {
+      "cfn": [
+        "AWS::Route53Resolver::FirewallRuleGroupAssociation"
+      ]
+    },
+    "aws_core__aws_route53resolver_outpost_resolver": {
+      "cfn": [
+        "AWS::Route53Resolver::OutpostResolver"
+      ]
+    },
+    "aws_core__aws_route53resolver_resolver_endpoint": {
+      "cfn": [
+        "AWS::Route53Resolver::ResolverEndpoint"
+      ]
+    },
+    "aws_core__aws_route53resolver_resolver_rule": {
+      "cfn": [
+        "AWS::Route53Resolver::ResolverRule"
       ]
     },
     "aws_core__aws_route_table": {
@@ -2085,6 +2410,11 @@
         "AWS::SageMaker::Algorithm"
       ]
     },
+    "aws_core__aws_sagemaker_app_image_config": {
+      "cfn": [
+        "AWS::SageMaker::AppImageConfig"
+      ]
+    },
     "aws_core__aws_sagemaker_cluster": {
       "cfn": [
         "AWS::SageMaker::Cluster"
@@ -2105,6 +2435,21 @@
         "AWS::SageMaker::ComputeQuota"
       ]
     },
+    "aws_core__aws_sagemaker_device": {
+      "cfn": [
+        "AWS::SageMaker::Device"
+      ]
+    },
+    "aws_core__aws_sagemaker_device_fleet": {
+      "cfn": [
+        "AWS::SageMaker::DeviceFleet"
+      ]
+    },
+    "aws_core__aws_sagemaker_domain": {
+      "cfn": [
+        "AWS::SageMaker::Domain"
+      ]
+    },
     "aws_core__aws_sagemaker_endpoint": {
       "cfn": [
         "AWS::SageMaker::Endpoint"
@@ -2113,6 +2458,16 @@
     "aws_core__aws_sagemaker_endpoint_config": {
       "cfn": [
         "AWS::SageMaker::EndpointConfig"
+      ]
+    },
+    "aws_core__aws_sagemaker_experiment": {
+      "cfn": [
+        "AWS::SageMaker::Experiment"
+      ]
+    },
+    "aws_core__aws_sagemaker_feature_group": {
+      "cfn": [
+        "AWS::SageMaker::FeatureGroup"
       ]
     },
     "aws_core__aws_sagemaker_hub": {
@@ -2145,6 +2500,11 @@
         "AWS::SageMaker::Model"
       ]
     },
+    "aws_core__aws_sagemaker_model_card": {
+      "cfn": [
+        "AWS::SageMaker::ModelCard"
+      ]
+    },
     "aws_core__aws_sagemaker_model_package": {
       "cfn": [
         "AWS::SageMaker::ModelPackage"
@@ -2175,6 +2535,11 @@
         "AWS::SageMaker::PartnerApp"
       ]
     },
+    "aws_core__aws_sagemaker_pipeline": {
+      "cfn": [
+        "AWS::SageMaker::Pipeline"
+      ]
+    },
     "aws_core__aws_sagemaker_processing_job": {
       "cfn": [
         "AWS::SageMaker::ProcessingJob"
@@ -2183,6 +2548,11 @@
     "aws_core__aws_sagemaker_project": {
       "cfn": [
         "AWS::SageMaker::Project"
+      ]
+    },
+    "aws_core__aws_sagemaker_studio_lifecycle_config": {
+      "cfn": [
+        "AWS::SageMaker::StudioLifecycleConfig"
       ]
     },
     "aws_core__aws_sagemaker_trial_component": {
@@ -2198,6 +2568,16 @@
     "aws_core__aws_sagemaker_workteam": {
       "cfn": [
         "AWS::SageMaker::Workteam"
+      ]
+    },
+    "aws_core__aws_scheduler_schedule": {
+      "cfn": [
+        "AWS::Scheduler::Schedule"
+      ]
+    },
+    "aws_core__aws_scheduler_schedule_group": {
+      "cfn": [
+        "AWS::Scheduler::ScheduleGroup"
       ]
     },
     "aws_core__aws_secrets_manager_secret": {
@@ -2254,6 +2634,11 @@
         "AWS::SecurityHub::Standard"
       ]
     },
+    "aws_core__aws_securitylake_data_lake": {
+      "cfn": [
+        "AWS::SecurityLake::DataLake"
+      ]
+    },
     "aws_core__aws_securitylake_subscriber": {
       "cfn": [
         "AWS::SecurityLake::Subscriber"
@@ -2262,6 +2647,21 @@
     "aws_core__aws_service_control_policy": {
       "cfn": [
         "AWS::Organizations::Policy"
+      ]
+    },
+    "aws_core__aws_servicecatalogappregistry_application": {
+      "cfn": [
+        "AWS::ServiceCatalogAppRegistry::Application"
+      ]
+    },
+    "aws_core__aws_servicecatalogappregistry_attribute_group": {
+      "cfn": [
+        "AWS::ServiceCatalogAppRegistry::AttributeGroup"
+      ]
+    },
+    "aws_core__aws_servicediscovery_service": {
+      "cfn": [
+        "AWS::ServiceDiscovery::Service"
       ]
     },
     "aws_core__aws_signer_signing_profile": {
@@ -2289,6 +2689,16 @@
         "AWS::SSM::Parameter"
       ]
     },
+    "aws_core__aws_stepfunctions_activity": {
+      "cfn": [
+        "AWS::StepFunctions::Activity"
+      ]
+    },
+    "aws_core__aws_stepfunctions_state_machine": {
+      "cfn": [
+        "AWS::StepFunctions::StateMachine"
+      ]
+    },
     "aws_core__aws_storagegateway_tape": {
       "cfn": [
         "AWS::StorageGateway::Tape"
@@ -2309,6 +2719,11 @@
         "AWS::EC2::Subnet"
       ]
     },
+    "aws_core__aws_synthetics_group": {
+      "cfn": [
+        "AWS::Synthetics::Group"
+      ]
+    },
     "aws_core__aws_tag_policy_rule": {
       "cfn": [],
       "reason": "One key's entry in a tag policy document, not an AWS resource; only the policy can be tagged."
@@ -2318,9 +2733,34 @@
         "AWS::ElasticLoadBalancingV2::TargetGroup"
       ]
     },
+    "aws_core__aws_timestream_database": {
+      "cfn": [
+        "AWS::Timestream::Database"
+      ]
+    },
     "aws_core__aws_timestream_scheduled_query": {
       "cfn": [
         "AWS::Timestream::ScheduledQuery"
+      ]
+    },
+    "aws_core__aws_timestream_table": {
+      "cfn": [
+        "AWS::Timestream::Table"
+      ]
+    },
+    "aws_core__aws_transfer_certificate": {
+      "cfn": [
+        "AWS::Transfer::Certificate"
+      ]
+    },
+    "aws_core__aws_transfer_connector": {
+      "cfn": [
+        "AWS::Transfer::Connector"
+      ]
+    },
+    "aws_core__aws_transfer_profile": {
+      "cfn": [
+        "AWS::Transfer::Profile"
       ]
     },
     "aws_core__aws_transfer_server": {
@@ -2331,6 +2771,11 @@
     "aws_core__aws_transfer_web_app": {
       "cfn": [
         "AWS::Transfer::WebApp"
+      ]
+    },
+    "aws_core__aws_transfer_workflow": {
+      "cfn": [
+        "AWS::Transfer::Workflow"
       ]
     },
     "aws_core__aws_transit_gateway": {
@@ -2351,6 +2796,16 @@
     "aws_core__aws_translate_terminology": {
       "cfn": [
         "AWS::Translate::Terminology"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_policy_store": {
+      "cfn": [
+        "AWS::VerifiedPermissions::PolicyStore"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_policy_store_alias": {
+      "cfn": [
+        "AWS::VerifiedPermissions::PolicyStoreAlias"
       ]
     },
     "aws_core__aws_vpc": {
@@ -2392,9 +2847,49 @@
       "cfn": [
         "AWS::WellArchitected::AgentProfile"
       ]
+    },
+    "aws_core__aws_wellarchitected_lens": {
+      "cfn": [
+        "AWS::WellArchitected::Lens"
+      ]
+    },
+    "aws_core__aws_wellarchitected_profile": {
+      "cfn": [
+        "AWS::WellArchitected::Profile"
+      ]
+    },
+    "aws_core__aws_wellarchitected_review_template": {
+      "cfn": [
+        "AWS::WellArchitected::ReviewTemplate"
+      ]
+    },
+    "aws_core__aws_wellarchitected_workload": {
+      "cfn": [
+        "AWS::WellArchitected::Workload"
+      ]
     }
   },
   "tag_findings": {
+    "AWS::Config::ConfigRule": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 config ListTagsForResource lists ConfigRule among the supported resources, so a rule has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::Config::ConfigurationRecorder": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 config ListTagsForResource lists ConfigurationRecorder among the supported resources, so a recorder has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::ElasticBeanstalk::Application": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 elasticbeanstalk ListTagsForResource: 'Elastic Beanstalk supports tagging of all of its resources', so an application has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::ElasticBeanstalk::ApplicationVersion": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 elasticbeanstalk ListTagsForResource: 'Elastic Beanstalk supports tagging of all of its resources', so an application version has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::Events::Endpoint": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 events ListTagsForResource: 'In EventBridge, rules and event buses can be tagged', so a global endpoint has no tags; the CloudFormation schema agrees (tagging.taggable is false)."
+    },
     "AWS::IAM::InstanceProfile": {
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagInstanceProfile, UntagInstanceProfile and ListInstanceProfileTags, so an instance profile has tags; the CloudFormation schema is silent"
@@ -2414,6 +2909,22 @@
     "AWS::IAM::VirtualMFADevice": {
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
+    },
+    "AWS::Logs::LogAnomalyDetector": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 logs ListTagsForResource and TagResource: 'Currently, log groups and destinations support tagging', so an anomaly detector has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
+    },
+    "AWS::ResourceGroups::TagSyncTask": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 resource-groups GetTags and Tag operate on 'a resource group' only, so a tag sync task has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
+    },
+    "AWS::Scheduler::Schedule": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 scheduler TagResource: 'You can only assign tags to schedule groups', so a schedule has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
+    },
+    "AWS::VerifiedPermissions::PolicyStoreAlias": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 verifiedpermissions ListTagsForResource: 'In Verified Permissions, policy stores can be tagged', so a policy store alias has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
     }
   }
 }

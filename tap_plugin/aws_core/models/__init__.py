@@ -362,8 +362,198 @@ from tap_plugin.aws_core.models.iot_stream import IotStream
 from tap_plugin.aws_core.models.iot_thing_group import IotThingGroup
 from tap_plugin.aws_core.models.iot_thing_type import IotThingType
 from tap_plugin.aws_core.models.iot_topic_rule import IotTopicRule
+from tap_plugin.aws_core.models.iotsitewise_asset import IotsitewiseAsset
+from tap_plugin.aws_core.models.iotsitewise_asset_model import IotsitewiseAssetModel
+from tap_plugin.aws_core.models.iotsitewise_computation_model import IotsitewiseComputationModel
+from tap_plugin.aws_core.models.iotsitewise_workspace import IotsitewiseWorkspace
+from tap_plugin.aws_core.models.iottwinmaker_workspace import IottwinmakerWorkspace
+from tap_plugin.aws_core.models.kinesis_stream import KinesisStream
+from tap_plugin.aws_core.models.kinesisanalytics_application import KinesisanalyticsApplication
+from tap_plugin.aws_core.models.kinesisanalyticsv2_application import Kinesisanalyticsv2Application
+from tap_plugin.aws_core.models.kinesisvideo_signaling_channel import KinesisvideoSignalingChannel
+from tap_plugin.aws_core.models.kinesisvideo_stream import KinesisvideoStream
+from tap_plugin.aws_core.models.licensemanager_usersub_license_server_endpoint import LicensemanagerUsersubLicenseServerEndpoint
+from tap_plugin.aws_core.models.msk_cluster import MskCluster
+from tap_plugin.aws_core.models.msk_vpc_connection import MskVpcConnection
+from tap_plugin.aws_core.models.managedblockchain_accessor import ManagedblockchainAccessor
+from tap_plugin.aws_core.models.memorydb_acl import MemorydbAcl
+from tap_plugin.aws_core.models.memorydb_cluster import MemorydbCluster
+from tap_plugin.aws_core.models.memorydb_multi_region_cluster import MemorydbMultiRegionCluster
+from tap_plugin.aws_core.models.memorydb_parameter_group import MemorydbParameterGroup
+from tap_plugin.aws_core.models.memorydb_subnet_group import MemorydbSubnetGroup
+from tap_plugin.aws_core.models.memorydb_user import MemorydbUser
+from tap_plugin.aws_core.models.neptune_db_cluster_parameter_group import NeptuneDbClusterParameterGroup
+from tap_plugin.aws_core.models.neptune_db_parameter_group import NeptuneDbParameterGroup
+from tap_plugin.aws_core.models.neptune_db_subnet_group import NeptuneDbSubnetGroup
+from tap_plugin.aws_core.models.neptune_event_subscription import NeptuneEventSubscription
+from tap_plugin.aws_core.models.neptune_global_cluster import NeptuneGlobalCluster
+from tap_plugin.aws_core.models.networkfirewall_container_association import NetworkfirewallContainerAssociation
+from tap_plugin.aws_core.models.networkfirewall_firewall_policy import NetworkfirewallFirewallPolicy
+from tap_plugin.aws_core.models.networkfirewall_rule_group import NetworkfirewallRuleGroup
+from tap_plugin.aws_core.models.networkfirewall_tls_inspection_configuration import NetworkfirewallTlsInspectionConfiguration
+from tap_plugin.aws_core.models.opensearchserverless_collection import OpensearchserverlessCollection
+from tap_plugin.aws_core.models.opensearchserverless_collection_group import OpensearchserverlessCollectionGroup
+from tap_plugin.aws_core.models.opensearchservice_application import OpensearchserviceApplication
+from tap_plugin.aws_core.models.quicksight_approval_policy import QuicksightApprovalPolicy
+from tap_plugin.aws_core.models.rds_db_proxy_endpoint import RdsDbProxyEndpoint
+from tap_plugin.aws_core.models.rds_db_security_group import RdsDbSecurityGroup
+from tap_plugin.aws_core.models.rds_db_shard_group import RdsDbShardGroup
+from tap_plugin.aws_core.models.redshiftserverless_namespace import RedshiftserverlessNamespace
+from tap_plugin.aws_core.models.redshiftserverless_snapshot import RedshiftserverlessSnapshot
+from tap_plugin.aws_core.models.redshiftserverless_workgroup import RedshiftserverlessWorkgroup
+from tap_plugin.aws_core.models.rekognition_project import RekognitionProject
+from tap_plugin.aws_core.models.rolesanywhere_profile import RolesanywhereProfile
+from tap_plugin.aws_core.models.rolesanywhere_trust_anchor import RolesanywhereTrustAnchor
+from tap_plugin.aws_core.models.route53profiles_profile import Route53profilesProfile
+from tap_plugin.aws_core.models.route53resolver_firewall_domain_list import Route53resolverFirewallDomainList
+from tap_plugin.aws_core.models.route53resolver_firewall_rule_group_association import Route53resolverFirewallRuleGroupAssociation
+from tap_plugin.aws_core.models.route53resolver_outpost_resolver import Route53resolverOutpostResolver
+from tap_plugin.aws_core.models.route53resolver_resolver_endpoint import Route53resolverResolverEndpoint
+from tap_plugin.aws_core.models.route53resolver_resolver_rule import Route53resolverResolverRule
+from tap_plugin.aws_core.models.sagemaker_app_image_config import SagemakerAppImageConfig
+from tap_plugin.aws_core.models.sagemaker_device import SagemakerDevice
+from tap_plugin.aws_core.models.sagemaker_device_fleet import SagemakerDeviceFleet
+from tap_plugin.aws_core.models.sagemaker_domain import SagemakerDomain
+from tap_plugin.aws_core.models.sagemaker_experiment import SagemakerExperiment
+from tap_plugin.aws_core.models.sagemaker_feature_group import SagemakerFeatureGroup
+from tap_plugin.aws_core.models.sagemaker_model_card import SagemakerModelCard
+from tap_plugin.aws_core.models.sagemaker_pipeline import SagemakerPipeline
+from tap_plugin.aws_core.models.sagemaker_studio_lifecycle_config import SagemakerStudioLifecycleConfig
+from tap_plugin.aws_core.models.scheduler_schedule import SchedulerSchedule
+from tap_plugin.aws_core.models.scheduler_schedule_group import SchedulerScheduleGroup
+from tap_plugin.aws_core.models.securitylake_data_lake import SecuritylakeDataLake
+from tap_plugin.aws_core.models.servicecatalogappregistry_application import ServicecatalogappregistryApplication
+from tap_plugin.aws_core.models.servicecatalogappregistry_attribute_group import ServicecatalogappregistryAttributeGroup
+from tap_plugin.aws_core.models.servicediscovery_service import ServicediscoveryService
+from tap_plugin.aws_core.models.stepfunctions_activity import StepfunctionsActivity
+from tap_plugin.aws_core.models.stepfunctions_state_machine import StepfunctionsStateMachine
+from tap_plugin.aws_core.models.synthetics_group import SyntheticsGroup
+from tap_plugin.aws_core.models.timestream_database import TimestreamDatabase
+from tap_plugin.aws_core.models.timestream_table import TimestreamTable
+from tap_plugin.aws_core.models.transfer_certificate import TransferCertificate
+from tap_plugin.aws_core.models.transfer_connector import TransferConnector
+from tap_plugin.aws_core.models.transfer_profile import TransferProfile
+from tap_plugin.aws_core.models.transfer_workflow import TransferWorkflow
+from tap_plugin.aws_core.models.verifiedpermissions_policy_store import VerifiedpermissionsPolicyStore
+from tap_plugin.aws_core.models.verifiedpermissions_policy_store_alias import VerifiedpermissionsPolicyStoreAlias
+from tap_plugin.aws_core.models.dms_certificate import DmsCertificate
+from tap_plugin.aws_core.models.dms_data_migration import DmsDataMigration
+from tap_plugin.aws_core.models.dms_data_provider import DmsDataProvider
+from tap_plugin.aws_core.models.dms_endpoint import DmsEndpoint
+from tap_plugin.aws_core.models.dms_instance_profile import DmsInstanceProfile
+from tap_plugin.aws_core.models.dms_migration_project import DmsMigrationProject
+from tap_plugin.aws_core.models.dms_replication_config import DmsReplicationConfig
+from tap_plugin.aws_core.models.dms_replication_instance import DmsReplicationInstance
+from tap_plugin.aws_core.models.dms_replication_task import DmsReplicationTask
+from tap_plugin.aws_core.models.docdb_global_cluster import DocdbGlobalCluster
+from tap_plugin.aws_core.models.elasticbeanstalk_application import ElasticbeanstalkApplication
+from tap_plugin.aws_core.models.elasticbeanstalk_application_version import ElasticbeanstalkApplicationVersion
+from tap_plugin.aws_core.models.elasticbeanstalk_environment import ElasticbeanstalkEnvironment
+from tap_plugin.aws_core.models.lambda_capacity_provider import LambdaCapacityProvider
+from tap_plugin.aws_core.models.mediaconvert_job_template import MediaconvertJobTemplate
+from tap_plugin.aws_core.models.mediaconvert_preset import MediaconvertPreset
+from tap_plugin.aws_core.models.mediaconvert_queue import MediaconvertQueue
+from tap_plugin.aws_core.models.wellarchitected_lens import WellarchitectedLens
+from tap_plugin.aws_core.models.wellarchitected_profile import WellarchitectedProfile
+from tap_plugin.aws_core.models.wellarchitected_review_template import WellarchitectedReviewTemplate
+from tap_plugin.aws_core.models.wellarchitected_workload import WellarchitectedWorkload
 
 __all__ = [
+    "WellarchitectedWorkload",
+    "WellarchitectedReviewTemplate",
+    "WellarchitectedProfile",
+    "WellarchitectedLens",
+    "MediaconvertQueue",
+    "MediaconvertPreset",
+    "MediaconvertJobTemplate",
+    "LambdaCapacityProvider",
+    "ElasticbeanstalkEnvironment",
+    "ElasticbeanstalkApplicationVersion",
+    "ElasticbeanstalkApplication",
+    "DocdbGlobalCluster",
+    "DmsReplicationTask",
+    "DmsReplicationInstance",
+    "DmsReplicationConfig",
+    "DmsMigrationProject",
+    "DmsInstanceProfile",
+    "DmsEndpoint",
+    "DmsDataProvider",
+    "DmsDataMigration",
+    "DmsCertificate",
+    "VerifiedpermissionsPolicyStoreAlias",
+    "VerifiedpermissionsPolicyStore",
+    "TransferWorkflow",
+    "TransferProfile",
+    "TransferConnector",
+    "TransferCertificate",
+    "TimestreamTable",
+    "TimestreamDatabase",
+    "SyntheticsGroup",
+    "StepfunctionsStateMachine",
+    "StepfunctionsActivity",
+    "ServicediscoveryService",
+    "ServicecatalogappregistryAttributeGroup",
+    "ServicecatalogappregistryApplication",
+    "SecuritylakeDataLake",
+    "SchedulerScheduleGroup",
+    "SchedulerSchedule",
+    "SagemakerStudioLifecycleConfig",
+    "SagemakerPipeline",
+    "SagemakerModelCard",
+    "SagemakerFeatureGroup",
+    "SagemakerExperiment",
+    "SagemakerDomain",
+    "SagemakerDeviceFleet",
+    "SagemakerDevice",
+    "SagemakerAppImageConfig",
+    "Route53resolverResolverRule",
+    "Route53resolverResolverEndpoint",
+    "Route53resolverOutpostResolver",
+    "Route53resolverFirewallRuleGroupAssociation",
+    "Route53resolverFirewallDomainList",
+    "Route53profilesProfile",
+    "RolesanywhereTrustAnchor",
+    "RolesanywhereProfile",
+    "RekognitionProject",
+    "RedshiftserverlessWorkgroup",
+    "RedshiftserverlessSnapshot",
+    "RedshiftserverlessNamespace",
+    "RdsDbShardGroup",
+    "RdsDbSecurityGroup",
+    "RdsDbProxyEndpoint",
+    "QuicksightApprovalPolicy",
+    "OpensearchserviceApplication",
+    "OpensearchserverlessCollectionGroup",
+    "OpensearchserverlessCollection",
+    "NetworkfirewallTlsInspectionConfiguration",
+    "NetworkfirewallRuleGroup",
+    "NetworkfirewallFirewallPolicy",
+    "NetworkfirewallContainerAssociation",
+    "NeptuneGlobalCluster",
+    "NeptuneEventSubscription",
+    "NeptuneDbSubnetGroup",
+    "NeptuneDbParameterGroup",
+    "NeptuneDbClusterParameterGroup",
+    "MemorydbUser",
+    "MemorydbSubnetGroup",
+    "MemorydbParameterGroup",
+    "MemorydbMultiRegionCluster",
+    "MemorydbCluster",
+    "MemorydbAcl",
+    "ManagedblockchainAccessor",
+    "MskVpcConnection",
+    "MskCluster",
+    "LicensemanagerUsersubLicenseServerEndpoint",
+    "KinesisvideoStream",
+    "KinesisvideoSignalingChannel",
+    "Kinesisanalyticsv2Application",
+    "KinesisanalyticsApplication",
+    "KinesisStream",
+    "IottwinmakerWorkspace",
+    "IotsitewiseWorkspace",
+    "IotsitewiseComputationModel",
+    "IotsitewiseAssetModel",
+    "IotsitewiseAsset",
     "IotTopicRule",
     "IotThingType",
     "IotThingGroup",
