@@ -207,10 +207,9 @@ def _children(client: Any, spec: dict[str, Any], parent: Any) -> Iterator[Any]:
         raise SourceError(f"{spec['aws_op']}: a parent item has no value for {', '.join(missing)} (bind path unresolved)")
     params = {**spec.get("params", {}), **bound}
     for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params):
-        if isinstance(item, dict):
-            yield {**item, PARENT_SLOT: parent}
-        else:
-            yield item
+        if not isinstance(item, dict):
+            raise SourceError(f"{spec['aws_op']}: a fan-out item must be a structure to carry its parent, got {type(item).__name__}")
+        yield {**item, PARENT_SLOT: parent}
 
 
 def iter_fanout(

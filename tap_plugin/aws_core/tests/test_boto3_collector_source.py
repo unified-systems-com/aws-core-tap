@@ -336,3 +336,34 @@ def test_literal_params_reach_the_call_alongside_the_bound_one():
     items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
     assert items[0]["Id"] == "[('Filter', 'f'), ('Name', 'n1')]"
     assert ("list_names", {"Scope": "ALL"}) in client.calls
+
+
+def test_a_scalar_final_item_fails_the_listing():
+    entry = {
+        "service": "x",
+        "items_path": "Things[]",
+        "source": {"aws_op": "ListThings", "per": {"aws_op": "ListNames", "items_path": "Names[]"}, "bind": {"Name": ""}},
+    }
+    client = _CallLog({"list_names": {"Names": ["n1"]}, "list_things": {"Things": ["bare"]}})
+    with pytest.raises(SourceError, match="structure"):
+        list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+
+_READ_VERBS = ("List", "Describe", "Get", "Search", "BatchGet", "Query", "Scan")
+
+
+def _ops_of(source):
+    if "aws_op" in source:
+        yield source["aws_op"]
+    if "per" in source:
+        yield from _ops_of(source["per"])
+
+
+def test_every_declared_operation_is_a_read():
+    """Manifest data names the calls the collector makes under its credentials; none may be a write."""
+    from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+    writes = sorted(
+        {op for e in manifest_entries() for op in _ops_of(e["source"]) if not op.startswith(_READ_VERBS)}
+    )
+    assert writes == [], f"operations that do not start with a read verb: {writes}"
