@@ -824,9 +824,19 @@
       "cfn": [],
       "reason": "AWS-owned foundation models; no CloudFormation resource type."
     },
+    "aws_core__aws_certificatemanager_acme_domain_validation": {
+      "cfn": [
+        "AWS::CertificateManager::AcmeDomainValidation"
+      ]
+    },
     "aws_core__aws_certificatemanager_acme_endpoint": {
       "cfn": [
         "AWS::CertificateManager::AcmeEndpoint"
+      ]
+    },
+    "aws_core__aws_certificatemanager_acme_external_account_binding": {
+      "cfn": [
+        "AWS::CertificateManager::AcmeExternalAccountBinding"
       ]
     },
     "aws_core__aws_cloudfront_distribution": {
@@ -1009,14 +1019,124 @@
         "AWS::Config::StoredQuery"
       ]
     },
+    "aws_core__aws_connect_agent_status": {
+      "cfn": [
+        "AWS::Connect::AgentStatus"
+      ]
+    },
+    "aws_core__aws_connect_contact_flow": {
+      "cfn": [
+        "AWS::Connect::ContactFlow"
+      ]
+    },
+    "aws_core__aws_connect_contact_flow_module": {
+      "cfn": [
+        "AWS::Connect::ContactFlowModule"
+      ]
+    },
+    "aws_core__aws_connect_data_table": {
+      "cfn": [
+        "AWS::Connect::DataTable"
+      ]
+    },
+    "aws_core__aws_connect_evaluation_form": {
+      "cfn": [
+        "AWS::Connect::EvaluationForm"
+      ]
+    },
+    "aws_core__aws_connect_hours_of_operation": {
+      "cfn": [
+        "AWS::Connect::HoursOfOperation"
+      ]
+    },
     "aws_core__aws_connect_instance": {
       "cfn": [
         "AWS::Connect::Instance"
       ]
     },
+    "aws_core__aws_connect_integration_association": {
+      "cfn": [
+        "AWS::Connect::IntegrationAssociation"
+      ]
+    },
+    "aws_core__aws_connect_metric": {
+      "cfn": [
+        "AWS::Connect::Metric"
+      ]
+    },
+    "aws_core__aws_connect_notification": {
+      "cfn": [
+        "AWS::Connect::Notification"
+      ]
+    },
+    "aws_core__aws_connect_phone_number": {
+      "cfn": [
+        "AWS::Connect::PhoneNumber"
+      ]
+    },
+    "aws_core__aws_connect_prompt": {
+      "cfn": [
+        "AWS::Connect::Prompt"
+      ]
+    },
+    "aws_core__aws_connect_queue": {
+      "cfn": [
+        "AWS::Connect::Queue"
+      ]
+    },
+    "aws_core__aws_connect_quick_connect": {
+      "cfn": [
+        "AWS::Connect::QuickConnect"
+      ]
+    },
+    "aws_core__aws_connect_routing_profile": {
+      "cfn": [
+        "AWS::Connect::RoutingProfile"
+      ]
+    },
+    "aws_core__aws_connect_rule": {
+      "cfn": [
+        "AWS::Connect::Rule"
+      ]
+    },
+    "aws_core__aws_connect_security_profile": {
+      "cfn": [
+        "AWS::Connect::SecurityProfile"
+      ]
+    },
+    "aws_core__aws_connect_task_template": {
+      "cfn": [
+        "AWS::Connect::TaskTemplate"
+      ]
+    },
+    "aws_core__aws_connect_test_case": {
+      "cfn": [
+        "AWS::Connect::TestCase"
+      ]
+    },
     "aws_core__aws_connect_traffic_distribution_group": {
       "cfn": [
         "AWS::Connect::TrafficDistributionGroup"
+      ]
+    },
+    "aws_core__aws_connect_user": {
+      "cfn": [
+        "AWS::Connect::User"
+      ]
+    },
+    "aws_core__aws_connect_user_hierarchy_group": {
+      "cfn": [
+        "AWS::Connect::UserHierarchyGroup"
+      ]
+    },
+    "aws_core__aws_connect_view": {
+      "cfn": [
+        "AWS::Connect::View"
+      ]
+    },
+    "aws_core__aws_connect_workspace": {
+      "cfn": [
+        "AWS::Connect::Workspace"
       ]
     },
     "aws_core__aws_controltower_enabled_baseline": {
@@ -1443,6 +1563,11 @@
         "AWS::EventSchemas::Registry"
       ]
     },
+    "aws_core__aws_eventschemas_schema": {
+      "cfn": [
+        "AWS::EventSchemas::Schema"
+      ]
+    },
     "aws_core__aws_fms_policy": {
       "cfn": [
         "AWS::FMS::Policy"
@@ -1473,9 +1598,19 @@
         "AWS::Greengrass::ConnectorDefinition"
       ]
     },
+    "aws_core__aws_greengrass_connector_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::ConnectorDefinitionVersion"
+      ]
+    },
     "aws_core__aws_greengrass_core_definition": {
       "cfn": [
         "AWS::Greengrass::CoreDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_core_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::CoreDefinitionVersion"
       ]
     },
     "aws_core__aws_greengrass_device_definition": {
@@ -1483,9 +1618,19 @@
         "AWS::Greengrass::DeviceDefinition"
       ]
     },
+    "aws_core__aws_greengrass_device_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::DeviceDefinitionVersion"
+      ]
+    },
     "aws_core__aws_greengrass_function_definition": {
       "cfn": [
         "AWS::Greengrass::FunctionDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_function_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::FunctionDefinitionVersion"
       ]
     },
     "aws_core__aws_greengrass_group": {
@@ -1493,9 +1638,19 @@
         "AWS::Greengrass::Group"
       ]
     },
+    "aws_core__aws_greengrass_group_version": {
+      "cfn": [
+        "AWS::Greengrass::GroupVersion"
+      ]
+    },
     "aws_core__aws_greengrass_logger_definition": {
       "cfn": [
         "AWS::Greengrass::LoggerDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_logger_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::LoggerDefinitionVersion"
       ]
     },
     "aws_core__aws_greengrass_resource_definition": {
@@ -1503,9 +1658,19 @@
         "AWS::Greengrass::ResourceDefinition"
       ]
     },
+    "aws_core__aws_greengrass_resource_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::ResourceDefinitionVersion"
+      ]
+    },
     "aws_core__aws_greengrass_subscription_definition": {
       "cfn": [
         "AWS::Greengrass::SubscriptionDefinition"
+      ]
+    },
+    "aws_core__aws_greengrass_subscription_definition_version": {
+      "cfn": [
+        "AWS::Greengrass::SubscriptionDefinitionVersion"
       ]
     },
     "aws_core__aws_guardduty_custom_detection_rule_association": {
@@ -1848,6 +2013,11 @@
         "AWS::Lambda::Function"
       ]
     },
+    "aws_core__aws_lambda_alias": {
+      "cfn": [
+        "AWS::Lambda::Alias"
+      ]
+    },
     "aws_core__aws_lambda_capacity_provider": {
       "cfn": [
         "AWS::Lambda::CapacityProvider"
@@ -1948,6 +2118,16 @@
         "AWS::ManagedBlockchain::Accessor"
       ]
     },
+    "aws_core__aws_managedblockchain_member": {
+      "cfn": [
+        "AWS::ManagedBlockchain::Member"
+      ]
+    },
+    "aws_core__aws_managedblockchain_node": {
+      "cfn": [
+        "AWS::ManagedBlockchain::Node"
+      ]
+    },
     "aws_core__aws_mediaconvert_job_template": {
       "cfn": [
         "AWS::MediaConvert::JobTemplate"
@@ -2023,6 +2203,11 @@
         "AWS::MGN::Wave"
       ]
     },
+    "aws_core__aws_msk_channel": {
+      "cfn": [
+        "AWS::MSK::Channel"
+      ]
+    },
     "aws_core__aws_msk_cluster": {
       "cfn": [
         "AWS::MSK::Cluster"
@@ -2036,6 +2221,11 @@
     "aws_core__aws_msk_replicator": {
       "cfn": [
         "AWS::MSK::Replicator"
+      ]
+    },
+    "aws_core__aws_msk_topic": {
+      "cfn": [
+        "AWS::MSK::Topic"
       ]
     },
     "aws_core__aws_msk_vpc_connection": {
@@ -2217,6 +2407,11 @@
     "aws_core__aws_rds_db_proxy_endpoint": {
       "cfn": [
         "AWS::RDS::DBProxyEndpoint"
+      ]
+    },
+    "aws_core__aws_rds_db_proxy_target_group": {
+      "cfn": [
+        "AWS::RDS::DBProxyTargetGroup"
       ]
     },
     "aws_core__aws_rds_db_security_group": {
@@ -2485,6 +2680,11 @@
         "AWS::SageMaker::Image"
       ]
     },
+    "aws_core__aws_sagemaker_image_version": {
+      "cfn": [
+        "AWS::SageMaker::ImageVersion"
+      ]
+    },
     "aws_core__aws_sagemaker_inference_component": {
       "cfn": [
         "AWS::SageMaker::InferenceComponent"
@@ -2748,6 +2948,11 @@
         "AWS::Timestream::Table"
       ]
     },
+    "aws_core__aws_transfer_agreement": {
+      "cfn": [
+        "AWS::Transfer::Agreement"
+      ]
+    },
     "aws_core__aws_transfer_certificate": {
       "cfn": [
         "AWS::Transfer::Certificate"
@@ -2758,6 +2963,11 @@
         "AWS::Transfer::Connector"
       ]
     },
+    "aws_core__aws_transfer_host_key": {
+      "cfn": [
+        "AWS::Transfer::HostKey"
+      ]
+    },
     "aws_core__aws_transfer_profile": {
       "cfn": [
         "AWS::Transfer::Profile"
@@ -2766,6 +2976,11 @@
     "aws_core__aws_transfer_server": {
       "cfn": [
         "AWS::Transfer::Server"
+      ]
+    },
+    "aws_core__aws_transfer_user": {
+      "cfn": [
+        "AWS::Transfer::User"
       ]
     },
     "aws_core__aws_transfer_web_app": {

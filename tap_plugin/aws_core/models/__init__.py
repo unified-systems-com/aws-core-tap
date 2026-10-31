@@ -457,8 +457,94 @@ from tap_plugin.aws_core.models.wellarchitected_lens import WellarchitectedLens
 from tap_plugin.aws_core.models.wellarchitected_profile import WellarchitectedProfile
 from tap_plugin.aws_core.models.wellarchitected_review_template import WellarchitectedReviewTemplate
 from tap_plugin.aws_core.models.wellarchitected_workload import WellarchitectedWorkload
+from tap_plugin.aws_core.models.certificatemanager_acme_domain_validation import CertificatemanagerAcmeDomainValidation
+from tap_plugin.aws_core.models.certificatemanager_acme_external_account_binding import CertificatemanagerAcmeExternalAccountBinding
+from tap_plugin.aws_core.models.connect_agent_status import ConnectAgentStatus
+from tap_plugin.aws_core.models.connect_contact_flow import ConnectContactFlow
+from tap_plugin.aws_core.models.connect_contact_flow_module import ConnectContactFlowModule
+from tap_plugin.aws_core.models.connect_data_table import ConnectDataTable
+from tap_plugin.aws_core.models.connect_evaluation_form import ConnectEvaluationForm
+from tap_plugin.aws_core.models.connect_hours_of_operation import ConnectHoursOfOperation
+from tap_plugin.aws_core.models.connect_integration_association import ConnectIntegrationAssociation
+from tap_plugin.aws_core.models.connect_metric import ConnectMetric
+from tap_plugin.aws_core.models.connect_notification import ConnectNotification
+from tap_plugin.aws_core.models.connect_phone_number import ConnectPhoneNumber
+from tap_plugin.aws_core.models.connect_prompt import ConnectPrompt
+from tap_plugin.aws_core.models.connect_queue import ConnectQueue
+from tap_plugin.aws_core.models.connect_quick_connect import ConnectQuickConnect
+from tap_plugin.aws_core.models.connect_routing_profile import ConnectRoutingProfile
+from tap_plugin.aws_core.models.connect_rule import ConnectRule
+from tap_plugin.aws_core.models.connect_security_profile import ConnectSecurityProfile
+from tap_plugin.aws_core.models.connect_task_template import ConnectTaskTemplate
+from tap_plugin.aws_core.models.connect_test_case import ConnectTestCase
+from tap_plugin.aws_core.models.connect_user import ConnectUser
+from tap_plugin.aws_core.models.connect_user_hierarchy_group import ConnectUserHierarchyGroup
+from tap_plugin.aws_core.models.connect_view import ConnectView
+from tap_plugin.aws_core.models.connect_workspace import ConnectWorkspace
+from tap_plugin.aws_core.models.eventschemas_schema import EventschemasSchema
+from tap_plugin.aws_core.models.greengrass_connector_definition_version import GreengrassConnectorDefinitionVersion
+from tap_plugin.aws_core.models.greengrass_core_definition_version import GreengrassCoreDefinitionVersion
+from tap_plugin.aws_core.models.greengrass_device_definition_version import GreengrassDeviceDefinitionVersion
+from tap_plugin.aws_core.models.greengrass_function_definition_version import GreengrassFunctionDefinitionVersion
+from tap_plugin.aws_core.models.greengrass_group_version import GreengrassGroupVersion
+from tap_plugin.aws_core.models.greengrass_logger_definition_version import GreengrassLoggerDefinitionVersion
+from tap_plugin.aws_core.models.greengrass_resource_definition_version import GreengrassResourceDefinitionVersion
+from tap_plugin.aws_core.models.greengrass_subscription_definition_version import GreengrassSubscriptionDefinitionVersion
+from tap_plugin.aws_core.models.lambda_alias import LambdaAlias
+from tap_plugin.aws_core.models.msk_channel import MskChannel
+from tap_plugin.aws_core.models.msk_topic import MskTopic
+from tap_plugin.aws_core.models.managedblockchain_member import ManagedblockchainMember
+from tap_plugin.aws_core.models.managedblockchain_node import ManagedblockchainNode
+from tap_plugin.aws_core.models.rds_db_proxy_target_group import RdsDbProxyTargetGroup
+from tap_plugin.aws_core.models.sagemaker_image_version import SagemakerImageVersion
+from tap_plugin.aws_core.models.transfer_agreement import TransferAgreement
+from tap_plugin.aws_core.models.transfer_host_key import TransferHostKey
+from tap_plugin.aws_core.models.transfer_user import TransferUser
 
 __all__ = [
+    "TransferUser",
+    "TransferHostKey",
+    "TransferAgreement",
+    "SagemakerImageVersion",
+    "RdsDbProxyTargetGroup",
+    "ManagedblockchainNode",
+    "ManagedblockchainMember",
+    "MskTopic",
+    "MskChannel",
+    "LambdaAlias",
+    "GreengrassSubscriptionDefinitionVersion",
+    "GreengrassResourceDefinitionVersion",
+    "GreengrassLoggerDefinitionVersion",
+    "GreengrassGroupVersion",
+    "GreengrassFunctionDefinitionVersion",
+    "GreengrassDeviceDefinitionVersion",
+    "GreengrassCoreDefinitionVersion",
+    "GreengrassConnectorDefinitionVersion",
+    "EventschemasSchema",
+    "ConnectWorkspace",
+    "ConnectView",
+    "ConnectUserHierarchyGroup",
+    "ConnectUser",
+    "ConnectTestCase",
+    "ConnectTaskTemplate",
+    "ConnectSecurityProfile",
+    "ConnectRule",
+    "ConnectRoutingProfile",
+    "ConnectQuickConnect",
+    "ConnectQueue",
+    "ConnectPrompt",
+    "ConnectPhoneNumber",
+    "ConnectNotification",
+    "ConnectMetric",
+    "ConnectIntegrationAssociation",
+    "ConnectHoursOfOperation",
+    "ConnectEvaluationForm",
+    "ConnectDataTable",
+    "ConnectContactFlowModule",
+    "ConnectContactFlow",
+    "ConnectAgentStatus",
+    "CertificatemanagerAcmeExternalAccountBinding",
+    "CertificatemanagerAcmeDomainValidation",
     "WellarchitectedWorkload",
     "WellarchitectedReviewTemplate",
     "WellarchitectedProfile",
