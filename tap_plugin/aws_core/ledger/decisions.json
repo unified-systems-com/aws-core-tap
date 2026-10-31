@@ -36,13 +36,37 @@
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by RestApiId, ResourceId, HttpMethod, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
     },
+    "AWS::ApiGatewayV2::ApiGatewayManagedOverrides": {
+      "state": "excluded",
+      "reason": "The overrides (properties Stage, Integration and Route) applied to the stage, integration and route that API Gateway itself created for a quick-create API, identified by the ApiId with no ARN of its own: the CloudFormation schema says tagging.taggable is false and exposes no ARN property. It is a setting of its parent API, not a resource."
+    },
     "AWS::ApiGatewayV2::ApiMapping": {
       "state": "excluded",
       "reason": "A link between resources, identified by ApiMappingId, DomainName, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
+    "AWS::ApiGatewayV2::Deployment": {
+      "state": "excluded",
+      "reason": "A part of an API, identified by ApiId, DeploymentId with no ARN of its own: the botocore apigatewayv2 GetDeployments answer carries DeploymentId, DeploymentStatus and Description and no ARN member, and the CloudFormation schema says tagging.taggable is false and exposes no ARN property. It is content of its parent API, not a resource, like AWS::ApiGatewayV2::Route."
+    },
+    "AWS::ApiGatewayV2::Integration": {
+      "state": "excluded",
+      "reason": "A part of an API, identified by ApiId, IntegrationId with no ARN of its own: the botocore apigatewayv2 GetIntegrations answer carries IntegrationId, IntegrationType and IntegrationUri and no ARN member, and the CloudFormation schema says tagging.taggable is false and exposes no ARN property. It is content of its parent API, not a resource, like AWS::ApiGatewayV2::Route."
+    },
+    "AWS::ApiGatewayV2::IntegrationResponse": {
+      "state": "excluded",
+      "reason": "A part of an API, identified by ApiId, IntegrationId, IntegrationResponseId with no ARN of its own: the botocore apigatewayv2 GetIntegrationResponses answer carries IntegrationResponseId and IntegrationResponseKey and no ARN member, and the CloudFormation schema says tagging.taggable is false and exposes no ARN property. It is content of its parent API, not a resource, like AWS::ApiGatewayV2::Route."
+    },
+    "AWS::ApiGatewayV2::Model": {
+      "state": "excluded",
+      "reason": "A part of an API, identified by ApiId, ModelId with no ARN of its own: the botocore apigatewayv2 GetModels answer carries ModelId, Name and Schema and no ARN member, and the CloudFormation schema says tagging.taggable is false and exposes no ARN property. It is content of its parent API, not a resource, like AWS::ApiGatewayV2::Route."
+    },
     "AWS::ApiGatewayV2::Route": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by ApiId, RouteId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::ApiGatewayV2::RouteResponse": {
+      "state": "excluded",
+      "reason": "A part of an API, identified by ApiId, RouteId, RouteResponseId with no ARN of its own: the botocore apigatewayv2 GetRouteResponses answer carries RouteResponseId and RouteResponseKey and no ARN member, and the CloudFormation schema says tagging.taggable is false and exposes no ARN property. It is content of its parent API, not a resource, like AWS::ApiGatewayV2::Route."
     },
     "AWS::AppStream::ApplicationEntitlementAssociation": {
       "state": "excluded",
@@ -60,9 +84,17 @@
       "state": "excluded",
       "reason": "A link between resources, identified by StackName, UserName, AuthenticationType, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
+    "AWS::Bedrock::EnforcedGuardrailConfiguration": {
+      "state": "excluded",
+      "reason": "The account-level setting that applies a guardrail to model invocations, identified by a ConfigId with no ARN of its own: botocore 1.43.121 bedrock PutEnforcedGuardrailConfiguration is documented as 'Sets the account-level enforced guardrail configuration' and ListEnforcedGuardrailsConfiguration returns the configId, the guardrail's ARN and the model enforcement. It is a setting of the account, not a resource."
+    },
     "AWS::Bedrock::KnowledgeBasePolicy": {
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by KnowledgeBaseId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::Bedrock::ResourcePolicy": {
+      "state": "excluded",
+      "reason": "A resource-based policy attached to another Bedrock resource, identified by that resource's ARN (ResourceArn) with no ARN of its own: botocore 1.43.121 bedrock defines GetResourcePolicy (by resourceArn) and no operation that lists policies. It is content of the resource it is attached to, not a resource."
     },
     "AWS::CertificateManager::Account": {
       "state": "excluded",
@@ -71,6 +103,22 @@
     "AWS::CloudFormation::CustomResource": {
       "state": "excluded",
       "reason": "A CloudFormation orchestration construct that runs a custom provisioning step; no AWS resource of its own stands behind it, and its identifier is a CloudFormation-generated id."
+    },
+    "AWS::CloudFormation::HookDefaultVersion": {
+      "state": "excluded",
+      "reason": "Which version of a registered Hook type is the default (SetTypeDefaultVersion), identified by the type version's ARN with no identity of its own: it is state of the Hook type (the default flag that ListTypeVersions reports as IsDefaultVersion on AWS::CloudFormation::HookVersion), not a resource."
+    },
+    "AWS::CloudFormation::HookTypeConfig": {
+      "state": "excluded",
+      "reason": "The configuration document of a registered Hook type (SetTypeConfiguration, read with BatchDescribeTypeConfigurations), identified by a configuration ARN that belongs to the type it configures. It is a setting of the Hook, whose configuration may hold operator-set values, not a resource."
+    },
+    "AWS::CloudFormation::ModuleDefaultVersion": {
+      "state": "excluded",
+      "reason": "Which version of a registered module is the default (SetTypeDefaultVersion), identified by the module version's ARN with no identity of its own: it is state of the module (the default flag that ListTypeVersions reports as IsDefaultVersion on AWS::CloudFormation::ModuleVersion), not a resource."
+    },
+    "AWS::CloudFormation::ResourceDefaultVersion": {
+      "state": "excluded",
+      "reason": "Which version of a registered resource type is the default (SetTypeDefaultVersion), identified by the type version's ARN with no identity of its own: it is state of the resource type (the default flag that ListTypeVersions reports as IsDefaultVersion on AWS::CloudFormation::ResourceVersion), not a resource."
     },
     "AWS::CloudFormation::WaitCondition": {
       "state": "excluded",
@@ -328,9 +376,17 @@
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
     },
+    "AWS::IoT::Logging": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of an account and region, identified by AccountId, with no ARN of its own: botocore 1.43.121 iot GetV2LoggingOptions returns the account's one logging role, default level and event configuration, and no identifier. It is a property of what it configures, not a resource."
+    },
     "AWS::IoT::PolicyPrincipalAttachment": {
       "state": "excluded",
       "reason": "A link between resources, identified by PolicyName, Principal, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::IoT::ResourceSpecificLogging": {
+      "state": "excluded",
+      "reason": "A setting or sub-configuration of a thing group, identified by TargetId, with no ARN of its own: botocore 1.43.121 iot ListV2LoggingLevels returns each target's logLevel under logTarget (targetType, targetName), and no identifier of its own. It is a property of what it configures, not a resource."
     },
     "AWS::IoT::ThingPrincipalAttachment": {
       "state": "excluded",
@@ -364,6 +420,10 @@
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
     },
+    "AWS::LakeFormation::PrincipalPermissions": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by PrincipalIdentifier, ResourceIdentifier, with no identity or ARN of its own: botocore 1.43.121 lakeformation ListPermissions returns each grant as a principal, a resource and the permissions between them. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
     "AWS::LakeFormation::TagAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by ResourceIdentifier, TagsIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
@@ -392,9 +452,29 @@
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
     },
+    "AWS::NetworkManager::CoreNetworkPrefixListAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by CoreNetworkId, PrefixListArn, with no identity or ARN of its own: botocore 1.43.121 networkmanager ListCoreNetworkPrefixListAssociations returns only CoreNetworkId, PrefixListArn and PrefixListAlias. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::NetworkManager::CustomerGatewayAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by GlobalNetworkId, CustomerGatewayArn, with no identity or ARN of its own: botocore 1.43.121 networkmanager GetCustomerGatewayAssociations returns a customer gateway ARN, a device, a link and a state. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
     "AWS::NetworkManager::LinkAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by GlobalNetworkId, DeviceId, LinkId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::NetworkManager::TransitGatewayRegistration": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by GlobalNetworkId, TransitGatewayArn, with no identity or ARN of its own: botocore 1.43.121 networkmanager GetTransitGatewayRegistrations returns a global network, a transit gateway ARN and a state. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::OpenSearchServerless::CollectionIndex": {
+      "state": "not-enumerable",
+      "reason": "An index inside a collection is a data-plane object: botocore 1.43.121 opensearchserverless defines GetIndex (which needs the collection id and the index name) and no operation that lists indexes, so an index cannot be found by enumeration through the control-plane API."
+    },
+    "AWS::OpenSearchServerless::Index": {
+      "state": "not-enumerable",
+      "reason": "An index inside a collection is a data-plane object, identified by its name and the collection endpoint: botocore 1.43.121 opensearchserverless defines GetIndex (by collection id and index name) and no operation that lists indexes, so an index cannot be found by enumeration through the control-plane API."
     },
     "AWS::Organizations::ResourcePolicy": {
       "state": "excluded",
@@ -415,6 +495,22 @@
     "AWS::QBusiness::Permission": {
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by ApplicationId, StatementId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::RAM::PermissionAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ResourceShareArn, PermissionArn, with no identity or ARN of its own: botocore 1.43.121 ram ListPermissionAssociations returns a permission's ARN, version and the resource share it is associated with. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::RAM::PrincipalAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ResourceShareArn, Principal, with no identity or ARN of its own: botocore 1.43.121 ram GetResourceShareAssociations (associationType PRINCIPAL) returns a resource share, an associated entity and a status. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::RAM::ResourceAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ResourceShareArn, ResourceArn, with no identity or ARN of its own: botocore 1.43.121 ram GetResourceShareAssociations (associationType RESOURCE) returns a resource share, an associated entity and a status. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::RAM::SourceAssociation": {
+      "state": "excluded",
+      "reason": "A link between resources, identified by ResourceShareArn, SourceId, with no identity or ARN of its own: botocore 1.43.121 ram ListSourceAssociations returns a resource share, a sourceId and a status. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
     "AWS::RDS::DBSecurityGroupIngress": {
       "state": "excluded",
@@ -686,6 +782,11 @@
         "AWS::ApiGatewayV2::PortalProduct"
       ]
     },
+    "aws_core__aws_apigatewayv2_routing_rule": {
+      "cfn": [
+        "AWS::ApiGatewayV2::RoutingRule"
+      ]
+    },
     "aws_core__aws_appconfig_extension": {
       "cfn": [
         "AWS::AppConfig::Extension"
@@ -820,9 +921,39 @@
         "AWS::Batch::ServiceEnvironment"
       ]
     },
+    "aws_core__aws_bedrock_application_inference_profile": {
+      "cfn": [
+        "AWS::Bedrock::ApplicationInferenceProfile"
+      ]
+    },
     "aws_core__aws_bedrock_automated_reasoning_policy": {
       "cfn": [
         "AWS::Bedrock::AutomatedReasoningPolicy"
+      ]
+    },
+    "aws_core__aws_bedrock_blueprint": {
+      "cfn": [
+        "AWS::Bedrock::Blueprint"
+      ]
+    },
+    "aws_core__aws_bedrock_data_automation_library": {
+      "cfn": [
+        "AWS::Bedrock::DataAutomationLibrary"
+      ]
+    },
+    "aws_core__aws_bedrock_data_automation_project": {
+      "cfn": [
+        "AWS::Bedrock::DataAutomationProject"
+      ]
+    },
+    "aws_core__aws_bedrock_flow": {
+      "cfn": [
+        "AWS::Bedrock::Flow"
+      ]
+    },
+    "aws_core__aws_bedrock_flow_alias": {
+      "cfn": [
+        "AWS::Bedrock::FlowAlias"
       ]
     },
     "aws_core__aws_bedrock_guardrail": {
@@ -830,9 +961,24 @@
         "AWS::Bedrock::Guardrail"
       ]
     },
+    "aws_core__aws_bedrock_intelligent_prompt_router": {
+      "cfn": [
+        "AWS::Bedrock::IntelligentPromptRouter"
+      ]
+    },
     "aws_core__aws_bedrock_model": {
       "cfn": [],
       "reason": "AWS-owned foundation models; no CloudFormation resource type."
+    },
+    "aws_core__aws_bedrock_prompt": {
+      "cfn": [
+        "AWS::Bedrock::Prompt"
+      ]
+    },
+    "aws_core__aws_bedrock_retrieval_instruction": {
+      "cfn": [
+        "AWS::Bedrock::RetrievalInstruction"
+      ]
     },
     "aws_core__aws_certificatemanager_acme_domain_validation": {
       "cfn": [
@@ -849,9 +995,49 @@
         "AWS::CertificateManager::AcmeExternalAccountBinding"
       ]
     },
+    "aws_core__aws_cloudformation_change_set": {
+      "cfn": [
+        "AWS::CloudFormation::ChangeSet"
+      ]
+    },
+    "aws_core__aws_cloudformation_generated_template": {
+      "cfn": [
+        "AWS::CloudFormation::GeneratedTemplate"
+      ]
+    },
+    "aws_core__aws_cloudformation_hook_version": {
+      "cfn": [
+        "AWS::CloudFormation::HookVersion"
+      ]
+    },
+    "aws_core__aws_cloudformation_module_version": {
+      "cfn": [
+        "AWS::CloudFormation::ModuleVersion"
+      ]
+    },
+    "aws_core__aws_cloudformation_resource_version": {
+      "cfn": [
+        "AWS::CloudFormation::ResourceVersion"
+      ]
+    },
+    "aws_core__aws_cloudformation_stack": {
+      "cfn": [
+        "AWS::CloudFormation::Stack"
+      ]
+    },
+    "aws_core__aws_cloudformation_stack_set": {
+      "cfn": [
+        "AWS::CloudFormation::StackSet"
+      ]
+    },
     "aws_core__aws_cloudfront_distribution": {
       "cfn": [
         "AWS::CloudFront::Distribution"
+      ]
+    },
+    "aws_core__aws_cloudhsm_cluster": {
+      "cfn": [
+        "AWS::CloudHSM::Cluster"
       ]
     },
     "aws_core__aws_cloudtrail_channel": {
@@ -1169,6 +1355,21 @@
         "AWS::DataSync::Agent"
       ]
     },
+    "aws_core__aws_datasync_location": {
+      "cfn": [
+        "AWS::DataSync::LocationAzureBlob",
+        "AWS::DataSync::LocationEFS",
+        "AWS::DataSync::LocationFSxLustre",
+        "AWS::DataSync::LocationFSxONTAP",
+        "AWS::DataSync::LocationFSxOpenZFS",
+        "AWS::DataSync::LocationFSxWindows",
+        "AWS::DataSync::LocationHDFS",
+        "AWS::DataSync::LocationNFS",
+        "AWS::DataSync::LocationObjectStorage",
+        "AWS::DataSync::LocationS3",
+        "AWS::DataSync::LocationSMB"
+      ]
+    },
     "aws_core__aws_datasync_task": {
       "cfn": [
         "AWS::DataSync::Task"
@@ -1191,6 +1392,17 @@
     "aws_core__aws_detective_graph": {
       "cfn": [
         "AWS::Detective::Graph"
+      ]
+    },
+    "aws_core__aws_directoryservice_directory": {
+      "cfn": [
+        "AWS::DirectoryService::MicrosoftAD",
+        "AWS::DirectoryService::SimpleAD"
+      ]
+    },
+    "aws_core__aws_dlm_lifecycle_policy": {
+      "cfn": [
+        "AWS::DLM::LifecyclePolicy"
       ]
     },
     "aws_core__aws_dms_certificate": {
@@ -2058,6 +2270,11 @@
         "AWS::KMS::ReplicaKey"
       ]
     },
+    "aws_core__aws_lakeformation_resource": {
+      "cfn": [
+        "AWS::LakeFormation::Resource"
+      ]
+    },
     "aws_core__aws_lambda": {
       "cfn": [
         "AWS::Lambda::Function"
@@ -2106,6 +2323,11 @@
     "aws_core__aws_licensemanager_license_configuration": {
       "cfn": [
         "AWS::LicenseManager::LicenseConfiguration"
+      ]
+    },
+    "aws_core__aws_licensemanager_linux_subscription_provider": {
+      "cfn": [
+        "AWS::LicenseManagerLinuxSubscriptions::SubscriptionProvider"
       ]
     },
     "aws_core__aws_licensemanager_usersub_license_server_endpoint": {
@@ -2348,6 +2570,50 @@
         "AWS::NetworkFirewall::VpcEndpointAssociation"
       ]
     },
+    "aws_core__aws_networkmanager_attachment": {
+      "cfn": [
+        "AWS::NetworkManager::ConnectAttachment",
+        "AWS::NetworkManager::DirectConnectGatewayAttachment",
+        "AWS::NetworkManager::SiteToSiteVpnAttachment",
+        "AWS::NetworkManager::TransitGatewayRouteTableAttachment",
+        "AWS::NetworkManager::VpcAttachment"
+      ]
+    },
+    "aws_core__aws_networkmanager_connect_peer": {
+      "cfn": [
+        "AWS::NetworkManager::ConnectPeer"
+      ]
+    },
+    "aws_core__aws_networkmanager_core_network": {
+      "cfn": [
+        "AWS::NetworkManager::CoreNetwork"
+      ]
+    },
+    "aws_core__aws_networkmanager_device": {
+      "cfn": [
+        "AWS::NetworkManager::Device"
+      ]
+    },
+    "aws_core__aws_networkmanager_global_network": {
+      "cfn": [
+        "AWS::NetworkManager::GlobalNetwork"
+      ]
+    },
+    "aws_core__aws_networkmanager_link": {
+      "cfn": [
+        "AWS::NetworkManager::Link"
+      ]
+    },
+    "aws_core__aws_networkmanager_site": {
+      "cfn": [
+        "AWS::NetworkManager::Site"
+      ]
+    },
+    "aws_core__aws_networkmanager_transit_gateway_peering": {
+      "cfn": [
+        "AWS::NetworkManager::TransitGatewayPeering"
+      ]
+    },
     "aws_core__aws_notifications_event_rule": {
       "cfn": [
         "AWS::Notifications::EventRule"
@@ -2376,6 +2642,11 @@
     "aws_core__aws_opensearchserverless_collection_group": {
       "cfn": [
         "AWS::OpenSearchServerless::CollectionGroup"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_vpc_endpoint": {
+      "cfn": [
+        "AWS::OpenSearchServerless::VpcEndpoint"
       ]
     },
     "aws_core__aws_opensearchservice_application": {
@@ -2510,6 +2781,16 @@
     "aws_core__aws_ram_permission": {
       "cfn": [
         "AWS::RAM::Permission"
+      ]
+    },
+    "aws_core__aws_ram_resource_share": {
+      "cfn": [
+        "AWS::RAM::ResourceShare"
+      ]
+    },
+    "aws_core__aws_rds_blue_green_deployment": {
+      "cfn": [
+        "AWS::RDS::Deployment"
       ]
     },
     "aws_core__aws_rds_db_cluster": {
@@ -2670,6 +2951,11 @@
         "AWS::ResourceGroups::TagSyncTask"
       ]
     },
+    "aws_core__aws_rolesanywhere_crl": {
+      "cfn": [
+        "AWS::RolesAnywhere::CRL"
+      ]
+    },
     "aws_core__aws_rolesanywhere_profile": {
       "cfn": [
         "AWS::RolesAnywhere::Profile"
@@ -2725,6 +3011,11 @@
         "AWS::EC2::RouteTable"
       ]
     },
+    "aws_core__aws_rum_app_monitor": {
+      "cfn": [
+        "AWS::RUM::AppMonitor"
+      ]
+    },
     "aws_core__aws_s3_access_point": {
       "cfn": [
         "AWS::S3::AccessPoint"
@@ -2768,6 +3059,11 @@
     "aws_core__aws_sagemaker_compute_quota": {
       "cfn": [
         "AWS::SageMaker::ComputeQuota"
+      ]
+    },
+    "aws_core__aws_sagemaker_data_quality_job_definition": {
+      "cfn": [
+        "AWS::SageMaker::DataQualityJobDefinition"
       ]
     },
     "aws_core__aws_sagemaker_device": {
@@ -2835,14 +3131,29 @@
         "AWS::SageMaker::MlflowApp"
       ]
     },
+    "aws_core__aws_sagemaker_mlflow_tracking_server": {
+      "cfn": [
+        "AWS::SageMaker::MlflowTrackingServer"
+      ]
+    },
     "aws_core__aws_sagemaker_model": {
       "cfn": [
         "AWS::SageMaker::Model"
       ]
     },
+    "aws_core__aws_sagemaker_model_bias_job_definition": {
+      "cfn": [
+        "AWS::SageMaker::ModelBiasJobDefinition"
+      ]
+    },
     "aws_core__aws_sagemaker_model_card": {
       "cfn": [
         "AWS::SageMaker::ModelCard"
+      ]
+    },
+    "aws_core__aws_sagemaker_model_explainability_job_definition": {
+      "cfn": [
+        "AWS::SageMaker::ModelExplainabilityJobDefinition"
       ]
     },
     "aws_core__aws_sagemaker_model_package": {
@@ -2853,6 +3164,11 @@
     "aws_core__aws_sagemaker_model_package_group": {
       "cfn": [
         "AWS::SageMaker::ModelPackageGroup"
+      ]
+    },
+    "aws_core__aws_sagemaker_model_quality_job_definition": {
+      "cfn": [
+        "AWS::SageMaker::ModelQualityJobDefinition"
       ]
     },
     "aws_core__aws_sagemaker_monitoring_schedule": {
@@ -2897,6 +3213,7 @@
     },
     "aws_core__aws_sagemaker_trial_component": {
       "cfn": [
+        "AWS::SageMaker::ExperimentTrialComponent",
         "AWS::SageMaker::TrialComponent"
       ]
     },
@@ -2984,6 +3301,11 @@
         "AWS::SecurityLake::Subscriber"
       ]
     },
+    "aws_core__aws_serverlessrepo_application": {
+      "cfn": [
+        "AWS::ServerlessRepo::Application"
+      ]
+    },
     "aws_core__aws_service_control_policy": {
       "cfn": [
         "AWS::Organizations::Policy"
@@ -3047,6 +3369,12 @@
     "aws_core__aws_stepfunctions_state_machine_version": {
       "cfn": [
         "AWS::StepFunctions::StateMachineVersion"
+      ]
+    },
+    "aws_core__aws_storagegateway_file_share": {
+      "cfn": [
+        "AWS::StorageGateway::NFSFileShare",
+        "AWS::StorageGateway::SMBFileShare"
       ]
     },
     "aws_core__aws_storagegateway_tape": {
@@ -3242,6 +3570,10 @@
     "AWS::Config::ConfigurationRecorder": {
       "taggable": true,
       "citation": "botocore 1.43.121 config ListTagsForResource lists ConfigurationRecorder among the supported resources, so a recorder has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::DirectoryService::MicrosoftAD": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 ds AddTagsToResource and ListTagsForResource address a directory by DirectoryId ('Lists all tags on a directory'), and DescribeDirectories returns every directory type, so a Microsoft AD directory has tags; the CloudFormation schema says taggable is false"
     },
     "AWS::ElasticBeanstalk::Application": {
       "taggable": true,
