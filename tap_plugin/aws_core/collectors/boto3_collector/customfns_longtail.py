@@ -278,6 +278,155 @@ def securityhub_hub_v2_described(session: Any, *, client_for: Any) -> Iterator[d
         yield hub
 
 
+def _arn_listing(
+    client_for: Any,
+    service: str,
+    list_method: str,
+    list_key: str,
+    resource: str,
+    *,
+    arn_service: str | None = None,
+    key: str | None = None,
+    parent: tuple[str, str, str, str] | None = None,
+    parent_fields: dict[str, str] | None = None,
+    account_key: str | None = None,
+    label: str = "objects",
+    **kwargs: Any,
+) -> Iterator[dict[str, Any]]:
+    """The items of a list call that carries an id or name and no ARN; each gets ``_arn``.
+
+    ``resource`` is the resource part of the ARN as the AWS Service Authorization Reference states it for
+    the type (``application/{Id}``), filled from the item; the partition and region come from the client, and
+    the account from ``sts:GetCallerIdentity`` or, when the item carries its owner (``account_key``), from the
+    item. ``key`` wraps a list of bare strings as ``{key: string}``. ``parent`` is ``(list_method, list_key,
+    id_member, request_param)``: the list call is asked once per parent, ``parent_fields`` copies parent
+    members onto each child (``{item_name: parent_member}``), and a parent whose children cannot be read is
+    a gap raised after the rest are yielded (:func:`..customfns._undescribed`).
+    """
+    client = client_for(service)
+    region = _client_region(client)
+    partition = partition_of_region(region)
+    arn_service = arn_service or service
+    account = "" if account_key else _arn_context(client_for, client)[2]
+    parents: list[dict[str, Any] | None] = [None]
+    if parent:
+        parents = [p for page in _pages(client, parent[0]) for p in page.get(parent[1]) or [] if isinstance(p, dict) and p.get(parent[2])]
+    failed: list[str] = []
+    for owner in parents:
+        request = dict(kwargs)
+        extra: dict[str, Any] = {}
+        if owner is not None and parent:
+            request[parent[3]] = owner[parent[2]]
+            extra = {name: owner.get(member) for name, member in (parent_fields or {}).items()}
+        try:
+            entries = [entry for page in _pages(client, list_method, **request) for entry in page.get(list_key) or []]
+        except BotoCoreError, ClientError:
+            failed.append(str(owner[parent[2]]) if owner is not None and parent else list_method)
+            continue
+        for entry in entries:
+            item = {key: entry} if key and isinstance(entry, str) else dict(entry) if isinstance(entry, dict) else None
+            if item is None:
+                continue
+            item.update(extra)
+            holder = str(item.get(account_key) or "") if account_key else account
+            try:
+                rid = resource.format(**item)
+            except KeyError, IndexError:
+                continue
+            if holder:
+                yield {**item, "_arn": build_arn(partition, arn_service, region, holder, rid)}
+    if failed:
+        raise _undescribed(label, failed)
+
+
+def _reader(name: str, doc: str, **spec: Any) -> Any:
+    """A registered reader over :func:`_arn_listing` with the given arguments."""
+
+    def read(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+        yield from _arn_listing(client_for, **spec)
+
+    read.__name__ = name
+    read.__doc__ = doc
+    return read
+
+
+_APPCONFIG_APPS = ("list_applications", "Items", "Id", "ApplicationId")
+_LEX_BOTS = ("list_bots", "botSummaries", "botId", "botId")
+
+# The ARN resource part of each type is the one the AWS Service Authorization Reference gives
+# (servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, read 2026-10-31); the Steampipe
+# aws plugin builds the same ARNs the same way (table_aws_appconfig_application.go, table_aws_redshift_subnet_group.go).
+_ARN_READERS = (
+    _reader("appconfig_applications_described", "AppConfig applications (regional).",
+            service="appconfig", list_method="list_applications", list_key="Items", resource="application/{Id}", label="AppConfig applications"),
+    _reader("appconfig_deployment_strategies_described", "AppConfig deployment strategies (regional): the account's and the predefined ones the call also returns.",
+            service="appconfig", list_method="list_deployment_strategies", list_key="Items", resource="deploymentstrategy/{Id}", label="AppConfig deployment strategies"),
+    _reader("appconfig_environments_described", "AppConfig environments (regional), asked once per application.",
+            service="appconfig", list_method="list_environments", list_key="Items", parent=_APPCONFIG_APPS,
+            resource="application/{ApplicationId}/environment/{Id}", label="AppConfig applications whose environments"),
+    _reader("appconfig_configuration_profiles_described", "AppConfig configuration profiles (regional), asked once per application.",
+            service="appconfig", list_method="list_configuration_profiles", list_key="Items", parent=_APPCONFIG_APPS,
+            resource="application/{ApplicationId}/configurationprofile/{Id}", label="AppConfig applications whose configuration profiles"),
+    _reader("appconfig_experiment_definitions_described", "AppConfig experiment definitions (regional).",
+            service="appconfig", list_method="list_experiment_definitions", list_key="Items",
+            resource="application/{ApplicationId}/experimentdefinition/{Id}", label="AppConfig experiment definitions"),
+    _reader("redshift_subnet_groups_described", "Redshift cluster subnet groups (regional).",
+            service="redshift", list_method="describe_cluster_subnet_groups", list_key="ClusterSubnetGroups",
+            resource="subnetgroup:{ClusterSubnetGroupName}", label="Redshift subnet groups"),
+    _reader("redshift_parameter_groups_described", "Redshift cluster parameter groups (regional): the account's and the default ones.",
+            service="redshift", list_method="describe_cluster_parameter_groups", list_key="ParameterGroups",
+            resource="parametergroup:{ParameterGroupName}", label="Redshift parameter groups"),
+    _reader("redshift_event_subscriptions_described", "Redshift event subscriptions (regional).",
+            service="redshift", list_method="describe_event_subscriptions", list_key="EventSubscriptionsList",
+            resource="eventsubscription:{CustSubscriptionId}", label="Redshift event subscriptions"),
+    _reader("redshift_snapshot_schedules_described", "Redshift snapshot schedules (regional).",
+            service="redshift", list_method="describe_snapshot_schedules", list_key="SnapshotSchedules",
+            resource="snapshotschedule:{ScheduleIdentifier}", label="Redshift snapshot schedules"),
+    _reader("redshift_snapshot_copy_grants_described", "Redshift snapshot copy grants (regional).",
+            service="redshift", list_method="describe_snapshot_copy_grants", list_key="SnapshotCopyGrants",
+            resource="snapshotcopygrant:{SnapshotCopyGrantName}", label="Redshift snapshot copy grants"),
+    _reader("redshift_usage_limits_described", "Redshift usage limits (regional).",
+            service="redshift", list_method="describe_usage_limits", list_key="UsageLimits",
+            resource="usagelimit:{UsageLimitId}", label="Redshift usage limits"),
+    _reader("redshift_cluster_snapshots_described", "Redshift cluster snapshots (regional), automated and manual.",
+            service="redshift", list_method="describe_cluster_snapshots", list_key="Snapshots",
+            resource="snapshot:{ClusterIdentifier}/{SnapshotIdentifier}", label="Redshift snapshots"),
+    _reader("ses_configuration_sets_described", "SES configuration sets (regional); the list returns bare names.",
+            service="sesv2", arn_service="ses", list_method="list_configuration_sets", list_key="ConfigurationSets", key="ConfigurationSetName",
+            resource="configuration-set/{ConfigurationSetName}", label="SES configuration sets"),
+    _reader("ses_contact_lists_described", "SES contact lists (regional).",
+            service="sesv2", arn_service="ses", list_method="list_contact_lists", list_key="ContactLists",
+            resource="contact-list/{ContactListName}", label="SES contact lists"),
+    _reader("ses_custom_verification_email_templates_described", "SES custom verification email templates (regional).",
+            service="sesv2", arn_service="ses", list_method="list_custom_verification_email_templates", list_key="CustomVerificationEmailTemplates",
+            resource="custom-verification-email-template/{TemplateName}", label="SES custom verification email templates"),
+    _reader("ses_dedicated_ip_pools_described", "SES dedicated IP pools (regional); the list returns bare names.",
+            service="sesv2", arn_service="ses", list_method="list_dedicated_ip_pools", list_key="DedicatedIpPools", key="PoolName",
+            resource="dedicated-ip-pool/{PoolName}", label="SES dedicated IP pools"),
+    _reader("ses_email_identities_described", "SES email identities (regional): domains and addresses.",
+            service="sesv2", arn_service="ses", list_method="list_email_identities", list_key="EmailIdentities",
+            resource="identity/{IdentityName}", label="SES email identities"),
+    _reader("ses_templates_described", "SES email templates (regional).",
+            service="sesv2", arn_service="ses", list_method="list_email_templates", list_key="TemplatesMetadata",
+            resource="template/{TemplateName}", label="SES templates"),
+    _reader("ses_multi_region_endpoints_described", "SES multi-region endpoints (regional).",
+            service="sesv2", arn_service="ses", list_method="list_multi_region_endpoints", list_key="MultiRegionEndpoints",
+            resource="multi-region-endpoint/{EndpointName}", label="SES multi-region endpoints"),
+    _reader("lex_bots_described", "Lex V2 bots (regional).",
+            service="lexv2-models", arn_service="lex", list_method="list_bots", list_key="botSummaries",
+            resource="bot/{botId}", label="Lex bots"),
+    _reader("lex_bot_aliases_described", "Lex V2 bot aliases (regional), asked once per bot; botId is copied from the bot.",
+            service="lexv2-models", arn_service="lex", list_method="list_bot_aliases", list_key="botAliasSummaries", parent=_LEX_BOTS,
+            parent_fields={"botId": "botId"}, resource="bot-alias/{botId}/{botAliasId}", label="Lex bots whose aliases"),
+    _reader("directconnect_lags_described", "Direct Connect link aggregation groups (regional); the owner account comes from the item.",
+            service="directconnect", list_method="describe_lags", list_key="lags", account_key="ownerAccount",
+            resource="dxlag/{lagId}", label="Direct Connect LAGs"),
+    _reader("cloudwatch_insight_rules_described", "CloudWatch Contributor Insights rules (regional).",
+            service="cloudwatch", list_method="describe_insight_rules", list_key="InsightRules",
+            resource="insight-rule/{Name}", label="CloudWatch insight rules"),
+)
+
+
 LONGTAIL_FNS: dict[str, Any] = {
     "opensearch_domains_described": opensearch_domains_described,
     "redshift_clusters_described": redshift_clusters_described,
@@ -295,3 +444,4 @@ LONGTAIL_FNS: dict[str, Any] = {
     "xray_sampling_rules_described": xray_sampling_rules_described,
     "securityhub_hub_v2_described": securityhub_hub_v2_described,
 }
+LONGTAIL_FNS.update({fn.__name__: fn for fn in _ARN_READERS})

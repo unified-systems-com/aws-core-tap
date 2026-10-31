@@ -583,8 +583,54 @@ from tap_plugin.aws_core.models.ses_mail_manager_traffic_policy import SesMailMa
 from tap_plugin.aws_core.models.securityhub_hub_v2 import SecurityhubHubV2
 from tap_plugin.aws_core.models.synthetics_canary import SyntheticsCanary
 from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
+from tap_plugin.aws_core.models.appconfig_application import AppconfigApplication
+from tap_plugin.aws_core.models.appconfig_configuration_profile import AppconfigConfigurationProfile
+from tap_plugin.aws_core.models.appconfig_deployment_strategy import AppconfigDeploymentStrategy
+from tap_plugin.aws_core.models.appconfig_environment import AppconfigEnvironment
+from tap_plugin.aws_core.models.appconfig_experiment_definition import AppconfigExperimentDefinition
+from tap_plugin.aws_core.models.cloudwatch_insight_rule import CloudwatchInsightRule
+from tap_plugin.aws_core.models.directconnect_lag import DirectconnectLag
+from tap_plugin.aws_core.models.lex_bot import LexBot
+from tap_plugin.aws_core.models.lex_bot_alias import LexBotAlias
+from tap_plugin.aws_core.models.redshift_cluster_parameter_group import RedshiftClusterParameterGroup
+from tap_plugin.aws_core.models.redshift_cluster_subnet_group import RedshiftClusterSubnetGroup
+from tap_plugin.aws_core.models.redshift_event_subscription import RedshiftEventSubscription
+from tap_plugin.aws_core.models.redshift_snapshot import RedshiftSnapshot
+from tap_plugin.aws_core.models.redshift_snapshot_copy_grant import RedshiftSnapshotCopyGrant
+from tap_plugin.aws_core.models.redshift_snapshot_schedule import RedshiftSnapshotSchedule
+from tap_plugin.aws_core.models.redshift_usage_limit import RedshiftUsageLimit
+from tap_plugin.aws_core.models.ses_configuration_set import SesConfigurationSet
+from tap_plugin.aws_core.models.ses_contact_list import SesContactList
+from tap_plugin.aws_core.models.ses_custom_verification_email_template import SesCustomVerificationEmailTemplate
+from tap_plugin.aws_core.models.ses_dedicated_ip_pool import SesDedicatedIpPool
+from tap_plugin.aws_core.models.ses_email_identity import SesEmailIdentity
+from tap_plugin.aws_core.models.ses_multi_region_endpoint import SesMultiRegionEndpoint
+from tap_plugin.aws_core.models.ses_template import SesTemplate
 
 __all__ = [
+    "SesTemplate",
+    "SesMultiRegionEndpoint",
+    "SesEmailIdentity",
+    "SesDedicatedIpPool",
+    "SesCustomVerificationEmailTemplate",
+    "SesContactList",
+    "SesConfigurationSet",
+    "RedshiftUsageLimit",
+    "RedshiftSnapshotSchedule",
+    "RedshiftSnapshotCopyGrant",
+    "RedshiftSnapshot",
+    "RedshiftEventSubscription",
+    "RedshiftClusterSubnetGroup",
+    "RedshiftClusterParameterGroup",
+    "LexBotAlias",
+    "LexBot",
+    "DirectconnectLag",
+    "CloudwatchInsightRule",
+    "AppconfigExperimentDefinition",
+    "AppconfigEnvironment",
+    "AppconfigDeploymentStrategy",
+    "AppconfigConfigurationProfile",
+    "AppconfigApplication",
     "XraySamplingRule",
     "SyntheticsCanary",
     "SecurityhubHubV2",

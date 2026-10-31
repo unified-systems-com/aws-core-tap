@@ -218,3 +218,51 @@ class TestUnwrapped:
         client = _Client(describe_security_hub_v2={"HubV2Arn": "arn:aws:securityhub:us-east-1:123456789012:hubv2/default", "SubscribedAt": "t"})
         [hub] = _run(securityhub_hub_v2_described, securityhub=client)
         assert hub["HubV2Arn"].endswith("hubv2/default")
+
+
+class TestArnListings:
+    def test_an_application_gets_the_documented_arn(self) -> None:
+        client = _Client(list_applications={"Items": [{"Id": "abc1234", "Name": "web"}]})
+        [app] = _run(LONGTAIL_FNS["appconfig_applications_described"], appconfig=client)
+        assert app["_arn"] == "arn:aws:appconfig:us-east-1:123456789012:application/abc1234"
+
+    def test_environments_are_asked_once_per_application(self) -> None:
+        client = _Client(
+            list_applications={"Items": [{"Id": "a1"}, {"Id": "a2"}]},
+            list_environments=lambda ApplicationId: {"Items": [{"ApplicationId": ApplicationId, "Id": f"e-{ApplicationId}", "Name": "prod"}]},
+        )
+        envs = _run(LONGTAIL_FNS["appconfig_environments_described"], appconfig=client)
+        assert [e["_arn"].rsplit(":", 1)[1] for e in envs] == ["application/a1/environment/e-a1", "application/a2/environment/e-a2"]
+
+    def test_an_application_whose_environments_cannot_be_read_is_a_gap(self) -> None:
+        def environments(ApplicationId: str) -> Any:
+            return _denied("ListEnvironments") if ApplicationId == "a2" else {"Items": [{"ApplicationId": ApplicationId, "Id": "e"}]}
+
+        client = _Client(list_applications={"Items": [{"Id": "a1"}, {"Id": "a2"}]}, list_environments=environments)
+        yielded, gap = _run_to_the_gap(LONGTAIL_FNS["appconfig_environments_described"], appconfig=client)
+        assert len(yielded) == 1 and "a2" in gap
+
+    def test_bare_names_are_wrapped_and_the_ses_arn_service_is_ses(self) -> None:
+        client = _Client(list_configuration_sets={"ConfigurationSets": ["default"]})
+        [cs] = _run(LONGTAIL_FNS["ses_configuration_sets_described"], sesv2=client)
+        assert cs["ConfigurationSetName"] == "default"
+        assert cs["_arn"] == "arn:aws:ses:us-east-1:123456789012:configuration-set/default"
+
+    def test_a_bot_alias_carries_its_bot_id_into_the_arn(self) -> None:
+        client = _Client(
+            list_bots={"botSummaries": [{"botId": "B1"}]},
+            list_bot_aliases=lambda botId: {"botAliasSummaries": [{"botAliasId": "A1", "botAliasName": "live"}]},
+        )
+        [alias] = _run(LONGTAIL_FNS["lex_bot_aliases_described"], **{"lexv2-models": client})
+        assert alias["_arn"] == "arn:aws:lex:us-east-1:123456789012:bot-alias/B1/A1" and alias["botId"] == "B1"
+
+    def test_the_lag_account_comes_from_the_item_not_from_sts(self) -> None:
+        client = _Client(describe_lags={"lags": [{"lagId": "dxlag-1", "ownerAccount": "999999999999"}]})
+        sts = _Client(get_caller_identity=_denied("GetCallerIdentity"))
+        [lag] = list(LONGTAIL_FNS["directconnect_lags_described"](None, client_for=_factory(directconnect=client, sts=sts)))
+        assert lag["_arn"] == "arn:aws:directconnect:us-east-1:999999999999:dxlag/dxlag-1"
+
+    def test_an_item_missing_the_key_the_arn_needs_is_left_out(self) -> None:
+        client = _Client(describe_cluster_subnet_groups={"ClusterSubnetGroups": [{"ClusterSubnetGroupName": "g"}, {"Description": "no name"}]})
+        groups = _run(LONGTAIL_FNS["redshift_subnet_groups_described"], redshift=client)
+        assert [g["_arn"].rsplit(":", 1)[1] for g in groups] == ["g"]

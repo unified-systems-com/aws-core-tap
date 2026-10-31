@@ -2348,6 +2348,98 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'RuleARN': 'arn:aws:xray:us-east-1:123456789012:res/gen-1', 'RuleName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_appconfig_application": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_configuration_profile": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_deployment_strategy": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_environment": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_appconfig_experiment_definition": (
+        {'_arn': 'arn:aws:appconfig:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudwatch_insight_rule": (
+        {'_arn': 'arn:aws:cloudwatch:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_directconnect_lag": (
+        {'_arn': 'arn:aws:directconnect:us-east-1:123456789012:res/gen-1', 'lagName': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_lex_bot": (
+        {'_arn': 'arn:aws:lexv2-models:us-east-1:123456789012:res/gen-1', 'botName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_lex_bot_alias": (
+        {'_arn': 'arn:aws:lexv2-models:us-east-1:123456789012:res/gen-1', 'botAliasName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_cluster_parameter_group": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ParameterGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_cluster_subnet_group": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ClusterSubnetGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_event_subscription": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'CustSubscriptionId': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_snapshot": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'SnapshotIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_snapshot_copy_grant": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'SnapshotCopyGrantName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_snapshot_schedule": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'ScheduleIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_usage_limit": (
+        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {},
+    ),
+    "aws_core__aws_ses_configuration_set": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'ConfigurationSetName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_contact_list": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'ContactListName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_custom_verification_email_template": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_dedicated_ip_pool": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'PoolName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_email_identity": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'IdentityName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_multi_region_endpoint": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'EndpointName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_ses_template": (
+        {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

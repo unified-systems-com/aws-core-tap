@@ -686,6 +686,31 @@
         "AWS::ApiGatewayV2::PortalProduct"
       ]
     },
+    "aws_core__aws_appconfig_application": {
+      "cfn": [
+        "AWS::AppConfig::Application"
+      ]
+    },
+    "aws_core__aws_appconfig_configuration_profile": {
+      "cfn": [
+        "AWS::AppConfig::ConfigurationProfile"
+      ]
+    },
+    "aws_core__aws_appconfig_deployment_strategy": {
+      "cfn": [
+        "AWS::AppConfig::DeploymentStrategy"
+      ]
+    },
+    "aws_core__aws_appconfig_environment": {
+      "cfn": [
+        "AWS::AppConfig::Environment"
+      ]
+    },
+    "aws_core__aws_appconfig_experiment_definition": {
+      "cfn": [
+        "AWS::AppConfig::ExperimentDefinition"
+      ]
+    },
     "aws_core__aws_appconfig_extension": {
       "cfn": [
         "AWS::AppConfig::Extension"
@@ -907,6 +932,11 @@
     "aws_core__aws_cloudwatch_dashboard": {
       "cfn": [
         "AWS::CloudWatch::Dashboard"
+      ]
+    },
+    "aws_core__aws_cloudwatch_insight_rule": {
+      "cfn": [
+        "AWS::CloudWatch::InsightRule"
       ]
     },
     "aws_core__aws_cloudwatch_log_group": {
@@ -1211,6 +1241,11 @@
     "aws_core__aws_detective_graph": {
       "cfn": [
         "AWS::Detective::Graph"
+      ]
+    },
+    "aws_core__aws_directconnect_lag": {
+      "cfn": [
+        "AWS::DirectConnect::Lag"
       ]
     },
     "aws_core__aws_dms_certificate": {
@@ -2153,6 +2188,16 @@
         "AWS::Lambda::LayerVersion"
       ]
     },
+    "aws_core__aws_lex_bot": {
+      "cfn": [
+        "AWS::Lex::Bot"
+      ]
+    },
+    "aws_core__aws_lex_bot_alias": {
+      "cfn": [
+        "AWS::Lex::BotAlias"
+      ]
+    },
     "aws_core__aws_licensemanager_license": {
       "cfn": [
         "AWS::LicenseManager::License"
@@ -2746,6 +2791,21 @@
         "AWS::Redshift::Cluster"
       ]
     },
+    "aws_core__aws_redshift_cluster_parameter_group": {
+      "cfn": [
+        "AWS::Redshift::ClusterParameterGroup"
+      ]
+    },
+    "aws_core__aws_redshift_cluster_subnet_group": {
+      "cfn": [
+        "AWS::Redshift::ClusterSubnetGroup"
+      ]
+    },
+    "aws_core__aws_redshift_event_subscription": {
+      "cfn": [
+        "AWS::Redshift::EventSubscription"
+      ]
+    },
     "aws_core__aws_redshift_integration": {
       "cfn": [
         "AWS::Redshift::Integration"
@@ -2759,6 +2819,26 @@
     "aws_core__aws_redshift_redshift_idc_application": {
       "cfn": [
         "AWS::Redshift::RedshiftIdcApplication"
+      ]
+    },
+    "aws_core__aws_redshift_snapshot": {
+      "cfn": [
+        "AWS::Redshift::Snapshot"
+      ]
+    },
+    "aws_core__aws_redshift_snapshot_copy_grant": {
+      "cfn": [
+        "AWS::Redshift::SnapshotCopyGrant"
+      ]
+    },
+    "aws_core__aws_redshift_snapshot_schedule": {
+      "cfn": [
+        "AWS::Redshift::SnapshotSchedule"
+      ]
+    },
+    "aws_core__aws_redshift_usage_limit": {
+      "cfn": [
+        "AWS::Redshift::UsageLimit"
       ]
     },
     "aws_core__aws_redshiftserverless_namespace": {
@@ -3189,6 +3269,31 @@
         "AWS::ServiceDiscovery::Service"
       ]
     },
+    "aws_core__aws_ses_configuration_set": {
+      "cfn": [
+        "AWS::SES::ConfigurationSet"
+      ]
+    },
+    "aws_core__aws_ses_contact_list": {
+      "cfn": [
+        "AWS::SES::ContactList"
+      ]
+    },
+    "aws_core__aws_ses_custom_verification_email_template": {
+      "cfn": [
+        "AWS::SES::CustomVerificationEmailTemplate"
+      ]
+    },
+    "aws_core__aws_ses_dedicated_ip_pool": {
+      "cfn": [
+        "AWS::SES::DedicatedIpPool"
+      ]
+    },
+    "aws_core__aws_ses_email_identity": {
+      "cfn": [
+        "AWS::SES::EmailIdentity"
+      ]
+    },
     "aws_core__aws_ses_mail_manager_addon_instance": {
       "cfn": [
         "AWS::SES::MailManagerAddonInstance"
@@ -3227,6 +3332,16 @@
     "aws_core__aws_ses_mail_manager_traffic_policy": {
       "cfn": [
         "AWS::SES::MailManagerTrafficPolicy"
+      ]
+    },
+    "aws_core__aws_ses_multi_region_endpoint": {
+      "cfn": [
+        "AWS::SES::MultiRegionEndpoint"
+      ]
+    },
+    "aws_core__aws_ses_template": {
+      "cfn": [
+        "AWS::SES::Template"
       ]
     },
     "aws_core__aws_ses_tenant": {
