@@ -32,9 +32,45 @@
       "state": "excluded",
       "reason": "A link between resources, identified by DomainName, BasePath, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
+    "AWS::ApiGateway::BasePathMappingV2": {
+      "state": "excluded",
+      "reason": "A link between a custom domain name and an API stage (botocore apigateway GetBasePathMappings returns basePath, restApiId and stage, and needs the domain name; the BasePathMappingArn the CloudFormation schema names is not in the answer). It is a relationship between nodes, an edge candidate once both ends are modelled; the precedent is AWS::ApiGateway::BasePathMapping."
+    },
+    "AWS::ApiGateway::Deployment": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and DeploymentId with no ARN of its own in the answer: botocore apigateway GetDeployments (restApiId required; items id, description, createdDate, apiSummary) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method. The stage already carries deployment_id (aws_apigateway_stage)."
+    },
+    "AWS::ApiGateway::DocumentationPart": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and DocumentationPartId with no ARN of its own in the answer: botocore apigateway GetDocumentationParts (restApiId required; items id, location, properties) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::DocumentationVersion": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and DocumentationVersion with no ARN of its own in the answer: botocore apigateway GetDocumentationVersions (restApiId required; items version, createdDate, description) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::GatewayResponse": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and the response type with no ARN of its own in the answer: botocore apigateway GetGatewayResponses (restApiId required; items responseType, statusCode, responseParameters, responseTemplates) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
     "AWS::ApiGateway::Method": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by RestApiId, ResourceId, HttpMethod, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::ApiGateway::Model": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and the model name with no ARN of its own in the answer: botocore apigateway GetModels (restApiId required; items id, name, description, schema, contentType) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::RequestValidator": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and RequestValidatorId with no ARN of its own in the answer: botocore apigateway GetRequestValidators (restApiId required; items id, name, validateRequestBody, validateRequestParameters) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::Resource": {
+      "state": "excluded",
+      "reason": "Content of a REST API, identified by RestApiId and ResourceId with no ARN of its own in the answer: botocore apigateway GetResources (restApiId required; items id, parentId, pathPart, path, resourceMethods) cannot be called without the REST API's id, and the CloudFormation schema's primary identifier is composite. It is a part of the API's definition, not a resource; the precedent is AWS::ApiGateway::Method."
+    },
+    "AWS::ApiGateway::UsagePlanKey": {
+      "state": "excluded",
+      "reason": "A link between an API key and a usage plan, identified by the key's id under the plan: botocore apigateway GetUsagePlanKeys needs usagePlanId and returns id, type, name and the key value. It is a relationship between two modelled nodes (aws_apigateway_api_key, aws_apigateway_usage_plan), an edge candidate, not a resource."
     },
     "AWS::ApiGatewayV2::ApiMapping": {
       "state": "excluded",
@@ -43,6 +79,10 @@
     "AWS::ApiGatewayV2::Route": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by ApiId, RouteId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::AppConfig::HostedConfigurationVersion": {
+      "state": "excluded",
+      "reason": "A numbered version of the content held by a configuration profile, listed per profile (botocore appconfig ListHostedConfigurationVersions needs ApplicationId and ConfigurationProfileId). Its ARN in the AWS Service Authorization Reference is the profile's own (application/<id>/configurationprofile/<id>, no version part), so it cannot key a version, and the version is the profile's content, not a resource."
     },
     "AWS::AppStream::ApplicationEntitlementAssociation": {
       "state": "excluded",
@@ -83,6 +123,14 @@
     "AWS::CloudTrail::ResourcePolicy": {
       "state": "excluded",
       "reason": "A CloudTrail resource policy has no list operation and no ARN of its own: it is the policy document of a channel, event data store or dashboard, identified by that resource's ARN. It is content of its resource, not a resource."
+    },
+    "AWS::CloudWatch::OTelEnrichment": {
+      "state": "excluded",
+      "reason": "The account's OTel metric enrichment switch, identified by AccountId (botocore cloudwatch GetOTelEnrichment takes no input and returns the include and exclude filters): a singleton setting of the account, not a resource."
+    },
+    "AWS::CloudWatch::ResourceMetricsConfiguration": {
+      "state": "not-enumerable",
+      "reason": "The detailed monitoring metric selections of one AWS resource, identified by that resource's ARN: botocore 1.43.121 cloudwatch defines GetResourceMetricsConfiguration, which needs a ResourceArn, and no operation that lists them, so the configured resources cannot be found by enumeration."
     },
     "AWS::CodeStarConnections::SyncConfiguration": {
       "state": "excluded",
@@ -244,6 +292,10 @@
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by EcrRepositoryPrefix, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
     },
+    "AWS::ECR::PullTimeUpdateExclusion": {
+      "state": "excluded",
+      "reason": "An entry in an account's list of IAM principals excluded from pull-time updates, identified by the principal's ARN with no ARN or attributes of its own: botocore ecr ListPullTimeUpdateExclusions returns bare principal ARN strings. It is a setting of the registry, not a resource."
+    },
     "AWS::ECR::RegistryPolicy": {
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by RegistryId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
@@ -392,6 +444,14 @@
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by AccountId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
     },
+    "AWS::Logs::Transformer": {
+      "state": "excluded",
+      "reason": "The log transformer configuration of one log group, identified by the group's identifier with no ARN of its own: botocore logs GetTransformer takes logGroupIdentifier and returns the transformer configuration. It is a setting of aws_cloudwatch_log_group, not a resource."
+    },
+    "AWS::M2::Deployment": {
+      "state": "excluded",
+      "reason": "A record of one deployment of a Mainframe Modernization application to an environment, identified by ApplicationId and DeploymentId with no ARN of its own: botocore m2 ListDeployments needs applicationId and the AWS Service Authorization Reference defines ARNs for m2 applications and environments only. It is an event on the application, not a resource."
+    },
     "AWS::NetworkManager::LinkAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by GlobalNetworkId, DeviceId, LinkId, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
@@ -400,13 +460,53 @@
       "state": "excluded",
       "reason": "The resource policy of the organization (who may delegate policy management), identified by Id: a policy document attached to another resource, the organization. DescribeResourcePolicy reads it; aws_organization is the node it belongs to."
     },
+    "AWS::Pinpoint::ADMChannel": {
+      "state": "excluded",
+      "reason": "The ADM push channel of one Pinpoint application: one per application (botocore pinpoint GetAdmChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (ClientId and ClientSecret)."
+    },
+    "AWS::Pinpoint::APNSChannel": {
+      "state": "excluded",
+      "reason": "The APNS push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (BundleId, Certificate, PrivateKey, TeamId, TokenKey and TokenKeyId)."
+    },
+    "AWS::Pinpoint::APNSSandboxChannel": {
+      "state": "excluded",
+      "reason": "The APNSSandbox push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsSandboxChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (the same APNs certificate, private key and token key members)."
+    },
+    "AWS::Pinpoint::APNSVoipChannel": {
+      "state": "excluded",
+      "reason": "The APNSVoip push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsVoipChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (the same APNs certificate, private key and token key members)."
+    },
+    "AWS::Pinpoint::APNSVoipSandboxChannel": {
+      "state": "excluded",
+      "reason": "The APNSVoipSandbox push channel of one Pinpoint application: one per application (botocore pinpoint GetApnsVoipSandboxChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (the same APNs certificate, private key and token key members)."
+    },
     "AWS::Pinpoint::ApplicationSettings": {
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
     },
+    "AWS::Pinpoint::BaiduChannel": {
+      "state": "excluded",
+      "reason": "The Baidu push channel of one Pinpoint application: one per application (botocore pinpoint GetBaiduChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (ApiKey and SecretKey)."
+    },
+    "AWS::Pinpoint::EmailChannel": {
+      "state": "excluded",
+      "reason": "The Email channel of one Pinpoint application: one per application (botocore pinpoint GetEmailChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application (aws_pinpoint_app), not a resource."
+    },
     "AWS::Pinpoint::EventStream": {
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
+    },
+    "AWS::Pinpoint::GCMChannel": {
+      "state": "excluded",
+      "reason": "The GCM push channel of one Pinpoint application: one per application (botocore pinpoint GetGcmChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application and its CloudFormation properties are credentials (ApiKey and ServiceJson)."
+    },
+    "AWS::Pinpoint::SMSChannel": {
+      "state": "excluded",
+      "reason": "The SMS channel of one Pinpoint application: one per application (botocore pinpoint GetSmsChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application (aws_pinpoint_app), not a resource."
+    },
+    "AWS::Pinpoint::VoiceChannel": {
+      "state": "excluded",
+      "reason": "The Voice channel of one Pinpoint application: one per application (botocore pinpoint GetVoiceChannel takes ApplicationId only), identified by the application id with no ARN of its own. It is a setting of the application (aws_pinpoint_app), not a resource."
     },
     "AWS::PinpointEmail::ConfigurationSetEventDestination": {
       "state": "excluded",
@@ -416,6 +516,14 @@
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by ApplicationId, StatementId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
     },
+    "AWS::QuickSight::Assignment": {
+      "state": "excluded",
+      "reason": "An IAM policy assignment: a link attaching a policy (PolicyArn) to QuickSight users and groups (Identities), listed per namespace by name only (botocore quicksight ListIAMPolicyAssignments returns AssignmentName and AssignmentStatus). It is a relationship between nodes, an edge candidate, not a resource."
+    },
+    "AWS::QuickSight::Customization": {
+      "state": "excluded",
+      "reason": "The account customization of one namespace of one account (botocore quicksight DescribeAccountCustomization takes AwsAccountId and Namespace and returns the default theme): a singleton setting of the account, not a resource."
+    },
     "AWS::RDS::DBSecurityGroupIngress": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
@@ -423,6 +531,10 @@
     "AWS::Redshift::ClusterSecurityGroupIngress": {
       "state": "excluded",
       "reason": "A route, rule or entry that lives inside another resource, identified by Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of its parent resource, not a resource."
+    },
+    "AWS::Redshift::EndpointAuthorization": {
+      "state": "excluded",
+      "reason": "A grant letting another account create a Redshift-managed VPC endpoint to a cluster, identified by ClusterIdentifier and Account with no ARN of its own (botocore redshift DescribeEndpointAuthorization returns Grantor, Grantee, ClusterIdentifier, AllowedVPCs). It is a link between a cluster and an account, an edge candidate, not a resource."
     },
     "AWS::ResourceExplorer2::DefaultViewAssociation": {
       "state": "excluded",
@@ -459,6 +571,14 @@
     "AWS::S3Outposts::BucketPolicy": {
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by Bucket, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::SES::ConfigurationSetEventDestination": {
+      "state": "excluded",
+      "reason": "An event destination of one configuration set, identified by the set's name and its own id with no ARN of its own (the AWS Service Authorization Reference lists no event-destination resource). It is content of aws_ses_configuration_set, not a resource."
+    },
+    "AWS::SES::EmailIdentityCertificate": {
+      "state": "excluded",
+      "reason": "A link between an SES email identity and an ACM certificate (CloudFormation properties EmailIdentity, FromAddress, CertificateArn), with no ARN of its own. It is a relationship between nodes, an edge candidate, not a resource."
     },
     "AWS::SES::ReceiptRule": {
       "state": "excluded",
@@ -500,6 +620,10 @@
       "state": "excluded",
       "reason": "A secret target attachment has no identity or ARN of its own: it links a secret to the database or cluster it holds credentials for. It is a relationship between two nodes and becomes an edge once the target is modelled."
     },
+    "AWS::SecurityHub::DelegatedAdmin": {
+      "state": "excluded",
+      "reason": "The designation of the organization's delegated Security Hub administrator account, identified by DelegatedAdminIdentifier with properties AdminAccountId and Status only. It is a setting of the organization, not a resource."
+    },
     "AWS::SecurityHub::OrganizationConfiguration": {
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by OrganizationConfigurationIdentifier, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
@@ -507,6 +631,14 @@
     "AWS::SecurityHub::PolicyAssociation": {
       "state": "excluded",
       "reason": "A link between resources, identified by AssociationIdentifier, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
+    },
+    "AWS::SecurityHub::ProductSubscription": {
+      "state": "excluded",
+      "reason": "A link between the Security Hub account and a product integration (CloudFormation properties ProductArn and ProductSubscriptionArn); botocore securityhub ListEnabledProductsForImport returns bare ARN strings with no attributes. It is a relationship between the hub and a product, an edge candidate, not a resource."
+    },
+    "AWS::SecurityHub::SecurityControl": {
+      "state": "excluded",
+      "reason": "A customization (Parameters, LastUpdateReason) of an AWS-defined security control: botocore securityhub ListSecurityControlDefinitions lists the catalog of AWS-defined controls. It is a setting layered on a catalog entry, not a resource."
     },
     "AWS::ServiceCatalog::PortfolioProductAssociation": {
       "state": "excluded",
@@ -528,9 +660,21 @@
       "state": "excluded",
       "reason": "A link between resources, identified by Id, with no identity or ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a relationship between nodes, an edge candidate once both ends are modelled, not a resource."
     },
+    "AWS::WAFv2::LoggingConfiguration": {
+      "state": "excluded",
+      "reason": "The logging configuration of one web ACL, identified by the web ACL's ARN (CloudFormation primary identifier ResourceArn) with no ARN of its own: botocore wafv2 ListLoggingConfigurations returns the ResourceArn of the web ACL, its destinations and redaction. It is a setting of aws_wafv2_web_acl, not a resource."
+    },
+    "AWS::WAFv2::WebACLAssociation": {
+      "state": "excluded",
+      "reason": "A link between a web ACL and the resource it protects (CloudFormation identifier ResourceArn and WebACLArn), with no ARN of its own and no list handler. It is a relationship between nodes, an edge candidate, not a resource."
+    },
     "AWS::XRay::ResourcePolicy": {
       "state": "excluded",
       "reason": "A policy document or permission statement attached to another resource, identified by PolicyName, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+    },
+    "AWS::XRay::TransactionSearchConfig": {
+      "state": "excluded",
+      "reason": "The account's X-Ray transaction search indexing setting, identified by AccountId (IndexingPercentage, CloudWatchLogsConfiguration): a singleton setting of the account, not a resource."
     }
   },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
@@ -542,9 +686,17 @@
     "CertificateManager": [
       "acm"
     ],
+    "CloudWatch": [
+      "cloudwatch",
+      "cloudwatchomni"
+    ],
     "Cognito": [
       "cognito-idp",
       "cognito-identity"
+    ],
+    "ECR": [
+      "ecr",
+      "ecr-public"
     ],
     "ElasticLoadBalancingV2": [
       "elbv2"
@@ -567,6 +719,12 @@
     "KinesisFirehose": [
       "firehose"
     ],
+    "Lex": [
+      "lex-models",
+      "lex-runtime",
+      "lexv2-models",
+      "lexv2-runtime"
+    ],
     "MSK": [
       "kafka"
     ],
@@ -579,8 +737,17 @@
     "Route53RecoveryControl": [
       "route53-recovery-control-config"
     ],
+    "S3": [
+      "s3",
+      "s3control"
+    ],
     "S3ObjectLambda": [
       "s3control"
+    ],
+    "SES": [
+      "ses",
+      "sesv2",
+      "mailmanager"
     ]
   },
   "type_map": {
