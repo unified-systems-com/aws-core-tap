@@ -2440,6 +2440,38 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'_arn': 'arn:aws:sesv2:us-east-1:123456789012:res/gen-1', 'TemplateName': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_apigateway_domain_name_access_association": (
+        {'domainNameAccessAssociationArn': 'arn:aws:apigateway:us-east-1:123456789012:res/gen-1', 'tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_cloudwatch_omni_dashboard": (
+        {'arn': 'arn:aws:cloudwatchomni:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53profiles_profile_association": (
+        {'_arn': 'arn:aws:route53profiles:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3_access_grant": (
+        {'AccessGrantArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', '_tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_s3_access_grants_instance": (
+        {'AccessGrantsInstanceArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', '_tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_s3_access_grants_location": (
+        {'AccessGrantsLocationArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', '_tags': {'owner': 'net-team'}},
+        {},
+    ),
+    "aws_core__aws_s3_storage_lens": (
+        {'StorageLensArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Id': 'gen-1', '_tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3_storage_lens_group": (
+        {'StorageLensGroupArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', '_tags': {'owner': 'net-team'}},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

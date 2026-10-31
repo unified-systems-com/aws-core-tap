@@ -421,9 +421,59 @@ _ARN_READERS = (
     _reader("directconnect_lags_described", "Direct Connect link aggregation groups (regional); the owner account comes from the item.",
             service="directconnect", list_method="describe_lags", list_key="lags", account_key="ownerAccount",
             resource="dxlag/{lagId}", label="Direct Connect LAGs"),
+    _reader("route53profiles_profile_associations_described", "Route 53 Profile associations (regional).",
+            service="route53profiles", list_method="list_profile_associations", list_key="ProfileAssociations",
+            resource="profile-association/{Id}", label="Route 53 Profile associations"),
     _reader("cloudwatch_insight_rules_described", "CloudWatch Contributor Insights rules (regional).",
             service="cloudwatch", list_method="describe_insight_rules", list_key="InsightRules",
             resource="insight-rule/{Name}", label="CloudWatch insight rules"),
+)
+
+
+def _s3control_listing(client_for: Any, list_method: str, list_key: str, arn_key: str) -> Iterator[dict[str, Any]]:
+    """The items of an S3 Control list call, each with its tags in ``_tags``.
+
+    Every S3 Control call takes the account id, and so does its ``ListTagsForResource`` (``AccountId`` and
+    ``ResourceArn``), which the engine's side-call tag lane cannot supply: the tags are read here and ride in
+    ``_tags``. A tag read that fails leaves ``_tags_unread`` true and ``_tags`` empty, as the Backup readers do.
+    """
+    client = client_for("s3control")
+    account = _account_id(client_for)
+    if not account:
+        raise SourceError("the caller's account id could not be read (sts:GetCallerIdentity), and S3 Control needs it")
+    for page in _pages(client, list_method, AccountId=account):
+        for item in page.get(list_key) or []:
+            arn = item.get(arn_key)
+            if not arn:
+                continue
+            try:
+                tags = {t["Key"]: t.get("Value") or "" for t in without_response_metadata(client.list_tags_for_resource(AccountId=account, ResourceArn=arn)).get("Tags") or []}
+                unread = False
+            except BotoCoreError, ClientError:
+                tags, unread = {}, True
+            yield {**item, "_tags": tags, "_tags_unread": unread}
+
+
+def _s3control_reader(name: str, doc: str, list_method: str, list_key: str, arn_key: str) -> Any:
+    def read(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+        yield from _s3control_listing(client_for, list_method, list_key, arn_key)
+
+    read.__name__ = name
+    read.__doc__ = doc
+    return read
+
+
+_S3CONTROL_READERS = (
+    _s3control_reader("s3_access_grants_instances_described", "S3 Access Grants instances (regional).",
+                      "list_access_grants_instances", "AccessGrantsInstancesList", "AccessGrantsInstanceArn"),
+    _s3control_reader("s3_access_grants_locations_described", "S3 Access Grants locations (regional).",
+                      "list_access_grants_locations", "AccessGrantsLocationsList", "AccessGrantsLocationArn"),
+    _s3control_reader("s3_access_grants_described", "S3 access grants (regional).",
+                      "list_access_grants", "AccessGrantsList", "AccessGrantArn"),
+    _s3control_reader("s3_storage_lens_groups_described", "S3 Storage Lens groups (regional).",
+                      "list_storage_lens_groups", "StorageLensGroupList", "StorageLensGroupArn"),
+    _s3control_reader("s3_storage_lens_configurations_described", "S3 Storage Lens configurations.",
+                      "list_storage_lens_configurations", "StorageLensConfigurationList", "StorageLensArn"),
 )
 
 
@@ -444,4 +494,4 @@ LONGTAIL_FNS: dict[str, Any] = {
     "xray_sampling_rules_described": xray_sampling_rules_described,
     "securityhub_hub_v2_described": securityhub_hub_v2_described,
 }
-LONGTAIL_FNS.update({fn.__name__: fn for fn in _ARN_READERS})
+LONGTAIL_FNS.update({fn.__name__: fn for fn in (*_ARN_READERS, *_S3CONTROL_READERS)})

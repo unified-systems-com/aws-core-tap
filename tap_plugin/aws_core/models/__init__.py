@@ -606,8 +606,24 @@ from tap_plugin.aws_core.models.ses_dedicated_ip_pool import SesDedicatedIpPool
 from tap_plugin.aws_core.models.ses_email_identity import SesEmailIdentity
 from tap_plugin.aws_core.models.ses_multi_region_endpoint import SesMultiRegionEndpoint
 from tap_plugin.aws_core.models.ses_template import SesTemplate
+from tap_plugin.aws_core.models.apigateway_domain_name_access_association import ApigatewayDomainNameAccessAssociation
+from tap_plugin.aws_core.models.cloudwatch_omni_dashboard import CloudwatchOmniDashboard
+from tap_plugin.aws_core.models.route53profiles_profile_association import Route53profilesProfileAssociation
+from tap_plugin.aws_core.models.s3_access_grant import S3AccessGrant
+from tap_plugin.aws_core.models.s3_access_grants_instance import S3AccessGrantsInstance
+from tap_plugin.aws_core.models.s3_access_grants_location import S3AccessGrantsLocation
+from tap_plugin.aws_core.models.s3_storage_lens import S3StorageLens
+from tap_plugin.aws_core.models.s3_storage_lens_group import S3StorageLensGroup
 
 __all__ = [
+    "S3StorageLensGroup",
+    "S3StorageLens",
+    "S3AccessGrantsLocation",
+    "S3AccessGrantsInstance",
+    "S3AccessGrant",
+    "Route53profilesProfileAssociation",
+    "CloudwatchOmniDashboard",
+    "ApigatewayDomainNameAccessAssociation",
     "SesTemplate",
     "SesMultiRegionEndpoint",
     "SesEmailIdentity",

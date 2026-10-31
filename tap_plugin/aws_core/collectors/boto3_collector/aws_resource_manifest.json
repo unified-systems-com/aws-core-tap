@@ -25768,6 +25768,295 @@
         "shape": "list_kv",
         "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_apigateway_domain_name_access_association",
+      "service": "apigateway",
+      "scope": "regional",
+      "source": {
+        "aws_op": "GetDomainNameAccessAssociations"
+      },
+      "why": "Enumerate ApiGateway Domain Name Access Association objects with GetDomainNameAccessAssociations — an inventory of the account's domain name access associations and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetDomainNameAccessAssociations response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore apigateway GetDomainNameAccessAssociations item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "domainNameAccessAssociationArn",
+      "fields": {
+        "apigateway_domain_name_access_association_arn": "domainNameAccessAssociationArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_cloudwatch_omni_dashboard",
+      "service": "cloudwatchomni",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListOmniDashboards",
+        "per": {
+          "aws_op": "ListSpaces",
+          "items_path": "items[]"
+        },
+        "bind": {
+          "spaceId": "spaceId"
+        }
+      },
+      "why": "Enumerate CloudWatch Omni Dashboard objects with ListOmniDashboards — an inventory of the account's omni dashboards and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListOmniDashboards response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore cloudwatchomni ListOmniDashboards item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "items[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "cloudwatch_omni_dashboard_arn": "arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_route53profiles_profile_association",
+      "service": "route53profiles",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "route53profiles_profile_associations_described"
+      },
+      "why": "Enumerate Route53Profiles Profile Association objects with ListProfileAssociations — an inventory of the account's profile associations and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListProfileAssociations response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore route53profiles ListProfileAssociations item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ProfileAssociations[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "route53profiles_profile_association_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_s3_access_grant",
+      "service": "s3control",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "s3_access_grants_described"
+      },
+      "why": "Enumerate S3 Access Grant objects with ListAccessGrants — an inventory of the account's access grants and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAccessGrants response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore s3control ListAccessGrants item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AccessGrantsList[]",
+      "natural_key": "AccessGrantArn",
+      "fields": {
+        "s3_access_grant_arn": "AccessGrantArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_s3_access_grants_instance",
+      "service": "s3control",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "s3_access_grants_instances_described"
+      },
+      "why": "Enumerate S3 Access Grants Instance objects with ListAccessGrantsInstances — an inventory of the account's access grants instances and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAccessGrantsInstances response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore s3control ListAccessGrantsInstances item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AccessGrantsInstancesList[]",
+      "natural_key": "AccessGrantsInstanceArn",
+      "fields": {
+        "s3_access_grants_instance_arn": "AccessGrantsInstanceArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_s3_access_grants_location",
+      "service": "s3control",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "s3_access_grants_locations_described"
+      },
+      "why": "Enumerate S3 Access Grants Location objects with ListAccessGrantsLocations — an inventory of the account's access grants locations and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAccessGrantsLocations response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore s3control ListAccessGrantsLocations item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AccessGrantsLocationsList[]",
+      "natural_key": "AccessGrantsLocationArn",
+      "fields": {
+        "s3_access_grants_location_arn": "AccessGrantsLocationArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_s3_storage_lens",
+      "service": "s3control",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "s3_storage_lens_configurations_described"
+      },
+      "why": "Enumerate S3 Storage Lens objects with ListStorageLensConfigurations — an inventory of the account's storage lenss and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListStorageLensConfigurations response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore s3control ListStorageLensConfigurations item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "StorageLensConfigurationList[]",
+      "natural_key": "StorageLensArn",
+      "fields": {
+        "name": "Id",
+        "s3_storage_lens_arn": "StorageLensArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_s3_storage_lens_group",
+      "service": "s3control",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "s3_storage_lens_groups_described"
+      },
+      "why": "Enumerate S3 Storage Lens Group objects with ListStorageLensGroups — an inventory of the account's storage lens groups and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListStorageLensGroups response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore s3control ListStorageLensGroups item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "StorageLensGroupList[]",
+      "natural_key": "StorageLensGroupArn",
+      "fields": {
+        "name": "Name",
+        "s3_storage_lens_group_arn": "StorageLensGroupArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "The list answer carries the tags inline; no extra call."
+      }
     }
   ]
 }

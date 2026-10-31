@@ -651,7 +651,13 @@
     "aws_core__aws_apigateway_domain_name": {
       "cfn": [
         "AWS::ApiGateway::DomainName",
+        "AWS::ApiGateway::DomainNameV2",
         "AWS::ApiGatewayV2::DomainName"
+      ]
+    },
+    "aws_core__aws_apigateway_domain_name_access_association": {
+      "cfn": [
+        "AWS::ApiGateway::DomainNameAccessAssociation"
       ]
     },
     "aws_core__aws_apigateway_http_api": {
@@ -947,6 +953,11 @@
     "aws_core__aws_cloudwatch_metric_stream": {
       "cfn": [
         "AWS::CloudWatch::MetricStream"
+      ]
+    },
+    "aws_core__aws_cloudwatch_omni_dashboard": {
+      "cfn": [
+        "AWS::CloudWatch::OmniDashboard"
       ]
     },
     "aws_core__aws_codebuild_project": {
@@ -2940,6 +2951,11 @@
         "AWS::Route53Profiles::Profile"
       ]
     },
+    "aws_core__aws_route53profiles_profile_association": {
+      "cfn": [
+        "AWS::Route53Profiles::ProfileAssociation"
+      ]
+    },
     "aws_core__aws_route53resolver_firewall_domain_list": {
       "cfn": [
         "AWS::Route53Resolver::FirewallDomainList"
@@ -2970,6 +2986,21 @@
         "AWS::EC2::RouteTable"
       ]
     },
+    "aws_core__aws_s3_access_grant": {
+      "cfn": [
+        "AWS::S3::AccessGrant"
+      ]
+    },
+    "aws_core__aws_s3_access_grants_instance": {
+      "cfn": [
+        "AWS::S3::AccessGrantsInstance"
+      ]
+    },
+    "aws_core__aws_s3_access_grants_location": {
+      "cfn": [
+        "AWS::S3::AccessGrantsLocation"
+      ]
+    },
     "aws_core__aws_s3_access_point": {
       "cfn": [
         "AWS::S3::AccessPoint"
@@ -2978,6 +3009,16 @@
     "aws_core__aws_s3_bucket": {
       "cfn": [
         "AWS::S3::Bucket"
+      ]
+    },
+    "aws_core__aws_s3_storage_lens": {
+      "cfn": [
+        "AWS::S3::StorageLens"
+      ]
+    },
+    "aws_core__aws_s3_storage_lens_group": {
+      "cfn": [
+        "AWS::S3::StorageLensGroup"
       ]
     },
     "aws_core__aws_sagemaker_ai_workload_config": {

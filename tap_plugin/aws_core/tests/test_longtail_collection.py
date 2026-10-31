@@ -262,6 +262,29 @@ class TestArnListings:
         [lag] = list(LONGTAIL_FNS["directconnect_lags_described"](None, client_for=_factory(directconnect=client, sts=sts)))
         assert lag["_arn"] == "arn:aws:directconnect:us-east-1:999999999999:dxlag/dxlag-1"
 
+    def test_a_profile_association_gets_the_documented_arn(self) -> None:
+        client = _Client(list_profile_associations={"ProfileAssociations": [{"Id": "rpassoc-1", "Name": "a"}]})
+        [assoc] = _run(LONGTAIL_FNS["route53profiles_profile_associations_described"], route53profiles=client)
+        assert assoc["_arn"] == "arn:aws:route53profiles:us-east-1:123456789012:profile-association/rpassoc-1"
+
+    def test_s3_control_tags_are_read_with_the_account_and_ride_in_the_item(self) -> None:
+        client = _Client(
+            list_storage_lens_groups={"StorageLensGroupList": [{"Name": "g", "StorageLensGroupArn": "arn:aws:s3:us-east-1:123456789012:storage-lens-group/g"}]},
+            list_tags_for_resource={"Tags": [{"Key": "owner", "Value": "net-team"}]},
+        )
+        [group] = _run(LONGTAIL_FNS["s3_storage_lens_groups_described"], s3control=client)
+        assert group["_tags"] == {"owner": "net-team"} and group["_tags_unread"] is False
+        assert client.calls[0] == ("list_storage_lens_groups", {"AccountId": "123456789012"})
+        assert client.calls[1][1]["AccountId"] == "123456789012"
+
+    def test_an_s3_control_tag_read_that_fails_is_marked_unread_not_empty(self) -> None:
+        client = _Client(
+            list_access_grants={"AccessGrantsList": [{"AccessGrantArn": "arn:aws:s3:us-east-1:123456789012:access-grants/default/grant/x"}]},
+            list_tags_for_resource=_denied("ListTagsForResource"),
+        )
+        [grant] = _run(LONGTAIL_FNS["s3_access_grants_described"], s3control=client)
+        assert grant["_tags"] == {} and grant["_tags_unread"] is True
+
     def test_an_item_missing_the_key_the_arn_needs_is_left_out(self) -> None:
         client = _Client(describe_cluster_subnet_groups={"ClusterSubnetGroups": [{"ClusterSubnetGroupName": "g"}, {"Description": "no name"}]})
         groups = _run(LONGTAIL_FNS["redshift_subnet_groups_described"], redshift=client)
