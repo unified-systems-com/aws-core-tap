@@ -165,7 +165,9 @@
         "params": { "type": "object" },
         "per": { "$ref": "#/$defs/per" },
         "bind": { "$ref": "#/$defs/bind" }
-      }
+      },
+      "if": { "required": ["per"] },
+      "then": { "required": ["bind"] }
     },
     "source": {
       "type": "object",

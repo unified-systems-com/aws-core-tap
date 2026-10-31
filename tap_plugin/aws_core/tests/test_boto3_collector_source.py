@@ -284,3 +284,22 @@ class TestPerFanoutSchema:
         entry = copy.deepcopy(contained)
         entry["source"] = self._entry()["source"]
         assert not self._validator().is_valid(entry)
+
+    def test_middle_per_without_bind_is_invalid(self):
+        entry = self._entry()
+        entry["source"]["per"] = {
+            "aws_op": "ListKids",
+            "items_path": "Kids[]",
+            "per": {"aws_op": "ListRoots", "items_path": "Roots[]"},
+        }
+        assert not self._validator().is_valid(entry)
+
+
+def test_parent_slot_is_not_stored_in_configuration():
+    from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+    from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
+
+    entry = next(e for e in manifest_entries() if e["entity_type"] == "aws_core__aws_vpc")
+    item = {"VpcId": "vpc-1", "CidrBlock": "10.0.0.0/16", "_parent": {"Secret": "nope"}}
+    node = project_item({**entry, "persist_configuration": True}, item)
+    assert "_parent" not in str(node.configuration)
