@@ -500,8 +500,40 @@ from tap_plugin.aws_core.models.sagemaker_image_version import SagemakerImageVer
 from tap_plugin.aws_core.models.transfer_agreement import TransferAgreement
 from tap_plugin.aws_core.models.transfer_host_key import TransferHostKey
 from tap_plugin.aws_core.models.transfer_user import TransferUser
+from tap_plugin.aws_core.models.quicksight_action_connector import QuicksightActionConnector
+from tap_plugin.aws_core.models.quicksight_agent import QuicksightAgent
+from tap_plugin.aws_core.models.quicksight_brand import QuicksightBrand
+from tap_plugin.aws_core.models.quicksight_custom_permissions import QuicksightCustomPermissions
+from tap_plugin.aws_core.models.quicksight_dashboard import QuicksightDashboard
+from tap_plugin.aws_core.models.quicksight_data_set import QuicksightDataSet
+from tap_plugin.aws_core.models.quicksight_data_source import QuicksightDataSource
+from tap_plugin.aws_core.models.quicksight_flow import QuicksightFlow
+from tap_plugin.aws_core.models.quicksight_folder import QuicksightFolder
+from tap_plugin.aws_core.models.quicksight_knowledge_base import QuicksightKnowledgeBase
+from tap_plugin.aws_core.models.quicksight_o_auth_client_application import QuicksightOAuthClientApplication
+from tap_plugin.aws_core.models.quicksight_space import QuicksightSpace
+from tap_plugin.aws_core.models.quicksight_template import QuicksightTemplate
+from tap_plugin.aws_core.models.quicksight_theme import QuicksightTheme
+from tap_plugin.aws_core.models.quicksight_topic import QuicksightTopic
+from tap_plugin.aws_core.models.quicksight_vpc_connection import QuicksightVpcConnection
 
 __all__ = [
+    "QuicksightVpcConnection",
+    "QuicksightTopic",
+    "QuicksightTheme",
+    "QuicksightTemplate",
+    "QuicksightSpace",
+    "QuicksightOAuthClientApplication",
+    "QuicksightKnowledgeBase",
+    "QuicksightFolder",
+    "QuicksightFlow",
+    "QuicksightDataSource",
+    "QuicksightDataSet",
+    "QuicksightDashboard",
+    "QuicksightCustomPermissions",
+    "QuicksightBrand",
+    "QuicksightAgent",
+    "QuicksightActionConnector",
     "TransferUser",
     "TransferHostKey",
     "TransferAgreement",

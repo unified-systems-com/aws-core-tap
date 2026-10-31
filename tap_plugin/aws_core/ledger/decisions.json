@@ -2362,9 +2362,89 @@
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
     },
+    "aws_core__aws_quicksight_action_connector": {
+      "cfn": [
+        "AWS::QuickSight::ActionConnector"
+      ]
+    },
+    "aws_core__aws_quicksight_agent": {
+      "cfn": [
+        "AWS::QuickSight::Agent"
+      ]
+    },
     "aws_core__aws_quicksight_approval_policy": {
       "cfn": [
         "AWS::QuickSight::ApprovalPolicy"
+      ]
+    },
+    "aws_core__aws_quicksight_brand": {
+      "cfn": [
+        "AWS::QuickSight::Brand"
+      ]
+    },
+    "aws_core__aws_quicksight_custom_permissions": {
+      "cfn": [
+        "AWS::QuickSight::CustomPermissions"
+      ]
+    },
+    "aws_core__aws_quicksight_dashboard": {
+      "cfn": [
+        "AWS::QuickSight::Dashboard"
+      ]
+    },
+    "aws_core__aws_quicksight_data_set": {
+      "cfn": [
+        "AWS::QuickSight::DataSet"
+      ]
+    },
+    "aws_core__aws_quicksight_data_source": {
+      "cfn": [
+        "AWS::QuickSight::DataSource"
+      ]
+    },
+    "aws_core__aws_quicksight_flow": {
+      "cfn": [
+        "AWS::QuickSight::Flow"
+      ]
+    },
+    "aws_core__aws_quicksight_folder": {
+      "cfn": [
+        "AWS::QuickSight::Folder"
+      ]
+    },
+    "aws_core__aws_quicksight_knowledge_base": {
+      "cfn": [
+        "AWS::QuickSight::KnowledgeBase"
+      ]
+    },
+    "aws_core__aws_quicksight_o_auth_client_application": {
+      "cfn": [
+        "AWS::QuickSight::OAuthClientApplication"
+      ]
+    },
+    "aws_core__aws_quicksight_space": {
+      "cfn": [
+        "AWS::QuickSight::Space"
+      ]
+    },
+    "aws_core__aws_quicksight_template": {
+      "cfn": [
+        "AWS::QuickSight::Template"
+      ]
+    },
+    "aws_core__aws_quicksight_theme": {
+      "cfn": [
+        "AWS::QuickSight::Theme"
+      ]
+    },
+    "aws_core__aws_quicksight_topic": {
+      "cfn": [
+        "AWS::QuickSight::Topic"
+      ]
+    },
+    "aws_core__aws_quicksight_vpc_connection": {
+      "cfn": [
+        "AWS::QuickSight::VPCConnection"
       ]
     },
     "aws_core__aws_ram_permission": {
@@ -3125,6 +3205,10 @@
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
     },
+    "AWS::Lambda::Alias": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions', so an alias has no tags; the CloudFormation schema also says taggable is false"
+    },
     "AWS::Logs::LogAnomalyDetector": {
       "taggable": false,
       "citation": "botocore 1.43.121 logs ListTagsForResource and TagResource: 'Currently, log groups and destinations support tagging', so an anomaly detector has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
@@ -3140,10 +3224,6 @@
     "AWS::VerifiedPermissions::PolicyStoreAlias": {
       "taggable": false,
       "citation": "botocore 1.43.121 verifiedpermissions ListTagsForResource: 'In Verified Permissions, policy stores can be tagged', so a policy store alias has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
-    },
-    "AWS::Lambda::Alias": {
-      "taggable": false,
-      "citation": "botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions', so an alias has no tags; the CloudFormation schema also says taggable is false"
     }
   }
 }
