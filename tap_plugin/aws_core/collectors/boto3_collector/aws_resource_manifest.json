@@ -21856,6 +21856,799 @@
         "source": "none",
         "why": "Step Functions tags apply to state machines and activities only: the stepfunctions ListTagsForResource and TagResource operations document their resourceArn as 'the Step Functions state machine or activity' (botocore 1.43.121), so an alias or version has no tags."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_action_connector",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListActionConnectors",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Action Connector objects with ListActionConnectors — an inventory of the account's action connectors and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListActionConnectors response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks Name sensitive in the quicksight ListActionConnectors item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Name",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ActionConnectorSummaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "quicksight_action_connector_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_agent",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAgents",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Agent objects with ListAgents — an inventory of the account's agents and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAgents response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListAgents item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "AgentSummaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_agent_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_brand",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListBrands",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Brand objects with ListBrands — an inventory of the account's brands and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListBrands response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListBrands item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Brands[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "BrandName",
+        "quicksight_brand_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_custom_permissions",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListCustomPermissions",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Custom Permissions objects with ListCustomPermissions — an inventory of the account's custom permissionss and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListCustomPermissions response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListCustomPermissions item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "CustomPermissionsList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "CustomPermissionsName",
+        "quicksight_custom_permissions_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_dashboard",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListDashboards",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Dashboard objects with ListDashboards — an inventory of the account's dashboards and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListDashboards response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListDashboards item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DashboardSummaryList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_dashboard_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_data_set",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListDataSets",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Data Set objects with ListDataSets — an inventory of the account's data sets and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListDataSets response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListDataSets item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DataSetSummaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_data_set_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_data_source",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListDataSources",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Data Source objects with ListDataSources — an inventory of the account's data sources and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: ListDataSources returns credential members (AlternateDataSourceParameters, CredentialStatus, DataSourceParameters) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListDataSources item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "DataSourceParameters.SnowflakeParameters.OAuthParameters.TokenProviderUrl",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "DataSourceParameters.DatabricksParameters.OAuthParameters.TokenProviderUrl",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "DataSourceParameters.StarburstParameters.OAuthParameters.TokenProviderUrl",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "DataSourceParameters.WebCrawlerParameters.PasswordFieldXpath",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "DataSourceParameters.WebCrawlerParameters.PasswordButtonXpath",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AlternateDataSourceParameters[].SnowflakeParameters.OAuthParameters.TokenProviderUrl",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AlternateDataSourceParameters[].DatabricksParameters.OAuthParameters.TokenProviderUrl",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AlternateDataSourceParameters[].StarburstParameters.OAuthParameters.TokenProviderUrl",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AlternateDataSourceParameters[].WebCrawlerParameters.PasswordFieldXpath",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AlternateDataSourceParameters[].WebCrawlerParameters.PasswordButtonXpath",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "SecretArn",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "CredentialStatus",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DataSources[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_data_source_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_flow",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListFlows",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Flow objects with ListFlows — an inventory of the account's flows and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListFlows response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListFlows item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "FlowSummaryList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_flow_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_folder",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListFolders",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Folder objects with ListFolders — an inventory of the account's folders and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListFolders response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListFolders item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "FolderSummaryList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_folder_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_knowledge_base",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListKnowledgeBases",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Knowledge Base objects with ListKnowledgeBases — an inventory of the account's knowledge bases and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListKnowledgeBases response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks PrimaryOwnerUsername sensitive in the quicksight ListKnowledgeBases item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "PrimaryOwnerUsername",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "KnowledgeBaseSummaries[]",
+      "natural_key": "KnowledgeBaseArn",
+      "fields": {
+        "name": "Name",
+        "quicksight_knowledge_base_arn": "KnowledgeBaseArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "KnowledgeBaseArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_o_auth_client_application",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListOAuthClientApplications",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight O Auth Client Application objects with ListOAuthClientApplications — an inventory of the account's o auth client applications and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListOAuthClientApplications response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListOAuthClientApplications item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "OAuthClientApplications[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_o_auth_client_application_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_space",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListSpaces",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Space objects with ListSpaces — an inventory of the account's spaces and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListSpaces response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks description sensitive in the quicksight ListSpaces item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "SpaceSummaries[]",
+      "natural_key": "spaceArn",
+      "fields": {
+        "name": "name",
+        "quicksight_space_arn": "spaceArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "spaceArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_template",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListTemplates",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Template objects with ListTemplates — an inventory of the account's templates and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListTemplates response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListTemplates item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "TemplateSummaryList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_template_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_theme",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListThemes",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Theme objects with ListThemes — an inventory of the account's themes and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListThemes response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListThemes item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ThemeSummaryList[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_theme_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_topic",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListTopics",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight Topic objects with ListTopics — an inventory of the account's topics and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListTopics response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListTopics item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "TopicsSummaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_topic_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_quicksight_vpc_connection",
+      "service": "quicksight",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListVPCConnections",
+        "params": {
+          "AwsAccountId": "$account_id"
+        }
+      },
+      "why": "Enumerate QuickSight VPC Connection objects with ListVPCConnections — an inventory of the account's vpc connections and how each is tagged.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListVPCConnections response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore quicksight ListVPCConnections item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "VPCConnectionSummaries[]",
+      "natural_key": "Arn",
+      "fields": {
+        "name": "Name",
+        "quicksight_vpc_connection_arn": "Arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "Arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
+      }
     }
   ]
 }
