@@ -721,6 +721,16 @@
         "AWS::AppStream::Stack"
       ]
     },
+    "aws_core__aws_aps_anomaly_detector": {
+      "cfn": [
+        "AWS::APS::AnomalyDetector"
+      ]
+    },
+    "aws_core__aws_aps_rule_groups_namespace": {
+      "cfn": [
+        "AWS::APS::RuleGroupsNamespace"
+      ]
+    },
     "aws_core__aws_aps_scraper": {
       "cfn": [
         "AWS::APS::Scraper"
@@ -1423,9 +1433,19 @@
         "AWS::EFS::MountTarget"
       ]
     },
+    "aws_core__aws_eks_capability": {
+      "cfn": [
+        "AWS::EKS::Capability"
+      ]
+    },
     "aws_core__aws_eks_cluster": {
       "cfn": [
         "AWS::EKS::Cluster"
+      ]
+    },
+    "aws_core__aws_eks_pod_identity_association": {
+      "cfn": [
+        "AWS::EKS::PodIdentityAssociation"
       ]
     },
     "aws_core__aws_elastic_ip": {
@@ -1942,9 +1962,39 @@
         "AWS::IoTSiteWise::ComputationModel"
       ]
     },
+    "aws_core__aws_iotsitewise_pipeline": {
+      "cfn": [
+        "AWS::IoTSiteWise::Pipeline"
+      ]
+    },
+    "aws_core__aws_iotsitewise_task": {
+      "cfn": [
+        "AWS::IoTSiteWise::Task"
+      ]
+    },
     "aws_core__aws_iotsitewise_workspace": {
       "cfn": [
         "AWS::IoTSiteWise::Workspace"
+      ]
+    },
+    "aws_core__aws_iottwinmaker_component_type": {
+      "cfn": [
+        "AWS::IoTTwinMaker::ComponentType"
+      ]
+    },
+    "aws_core__aws_iottwinmaker_entity": {
+      "cfn": [
+        "AWS::IoTTwinMaker::Entity"
+      ]
+    },
+    "aws_core__aws_iottwinmaker_scene": {
+      "cfn": [
+        "AWS::IoTTwinMaker::Scene"
+      ]
+    },
+    "aws_core__aws_iottwinmaker_sync_job": {
+      "cfn": [
+        "AWS::IoTTwinMaker::SyncJob"
       ]
     },
     "aws_core__aws_iottwinmaker_workspace": {
@@ -2298,6 +2348,11 @@
         "AWS::NetworkFirewall::VpcEndpointAssociation"
       ]
     },
+    "aws_core__aws_notifications_event_rule": {
+      "cfn": [
+        "AWS::Notifications::EventRule"
+      ]
+    },
     "aws_core__aws_notifications_notification_configuration": {
       "cfn": [
         "AWS::Notifications::NotificationConfiguration"
@@ -2361,6 +2416,11 @@
     "aws_core__aws_policy_statement": {
       "cfn": [],
       "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
+    },
+    "aws_core__aws_qbusiness_data_accessor": {
+      "cfn": [
+        "AWS::QBusiness::DataAccessor"
+      ]
     },
     "aws_core__aws_quicksight_approval_policy": {
       "cfn": [
@@ -2899,6 +2959,16 @@
         "AWS::StepFunctions::StateMachine"
       ]
     },
+    "aws_core__aws_stepfunctions_state_machine_alias": {
+      "cfn": [
+        "AWS::StepFunctions::StateMachineAlias"
+      ]
+    },
+    "aws_core__aws_stepfunctions_state_machine_version": {
+      "cfn": [
+        "AWS::StepFunctions::StateMachineVersion"
+      ]
+    },
     "aws_core__aws_storagegateway_tape": {
       "cfn": [
         "AWS::StorageGateway::Tape"
@@ -3125,6 +3195,10 @@
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
     },
+    "AWS::Lambda::Alias": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions', so an alias has no tags; the CloudFormation schema also says taggable is false"
+    },
     "AWS::Logs::LogAnomalyDetector": {
       "taggable": false,
       "citation": "botocore 1.43.121 logs ListTagsForResource and TagResource: 'Currently, log groups and destinations support tagging', so an anomaly detector has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
@@ -3141,9 +3215,17 @@
       "taggable": false,
       "citation": "botocore 1.43.121 verifiedpermissions ListTagsForResource: 'In Verified Permissions, policy stores can be tagged', so a policy store alias has no tags of its own; the CloudFormation schema agrees (tagging.taggable is false)."
     },
-    "AWS::Lambda::Alias": {
+    "AWS::StepFunctions::StateMachineAlias": {
       "taggable": false,
-      "citation": "botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions', so an alias has no tags; the CloudFormation schema also says taggable is false"
+      "citation": "botocore 1.43.121 stepfunctions ListTagsForResource and TagResource document resourceArn as the state machine or activity; the CloudFormation schema also says taggable is false"
+    },
+    "AWS::StepFunctions::StateMachineVersion": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 stepfunctions ListTagsForResource and TagResource document resourceArn as the state machine or activity; the CloudFormation schema also says taggable is false"
+    },
+    "AWS::Notifications::EventRule": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 notifications ListTagsForResource and TagResource: 'This is only supported for NotificationConfigurations'; the CloudFormation schema also says taggable is false"
     }
   }
 }

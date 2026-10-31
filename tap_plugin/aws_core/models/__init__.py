@@ -500,8 +500,36 @@ from tap_plugin.aws_core.models.sagemaker_image_version import SagemakerImageVer
 from tap_plugin.aws_core.models.transfer_agreement import TransferAgreement
 from tap_plugin.aws_core.models.transfer_host_key import TransferHostKey
 from tap_plugin.aws_core.models.transfer_user import TransferUser
+from tap_plugin.aws_core.models.aps_anomaly_detector import ApsAnomalyDetector
+from tap_plugin.aws_core.models.aps_rule_groups_namespace import ApsRuleGroupsNamespace
+from tap_plugin.aws_core.models.eks_capability import EksCapability
+from tap_plugin.aws_core.models.eks_pod_identity_association import EksPodIdentityAssociation
+from tap_plugin.aws_core.models.iotsitewise_pipeline import IotsitewisePipeline
+from tap_plugin.aws_core.models.iotsitewise_task import IotsitewiseTask
+from tap_plugin.aws_core.models.iottwinmaker_component_type import IottwinmakerComponentType
+from tap_plugin.aws_core.models.iottwinmaker_entity import IottwinmakerEntity
+from tap_plugin.aws_core.models.iottwinmaker_scene import IottwinmakerScene
+from tap_plugin.aws_core.models.iottwinmaker_sync_job import IottwinmakerSyncJob
+from tap_plugin.aws_core.models.notifications_event_rule import NotificationsEventRule
+from tap_plugin.aws_core.models.qbusiness_data_accessor import QbusinessDataAccessor
+from tap_plugin.aws_core.models.stepfunctions_state_machine_alias import StepfunctionsStateMachineAlias
+from tap_plugin.aws_core.models.stepfunctions_state_machine_version import StepfunctionsStateMachineVersion
 
 __all__ = [
+    "StepfunctionsStateMachineVersion",
+    "StepfunctionsStateMachineAlias",
+    "QbusinessDataAccessor",
+    "NotificationsEventRule",
+    "IottwinmakerSyncJob",
+    "IottwinmakerScene",
+    "IottwinmakerEntity",
+    "IottwinmakerComponentType",
+    "IotsitewiseTask",
+    "IotsitewisePipeline",
+    "EksPodIdentityAssociation",
+    "EksCapability",
+    "ApsRuleGroupsNamespace",
+    "ApsAnomalyDetector",
     "TransferUser",
     "TransferHostKey",
     "TransferAgreement",
