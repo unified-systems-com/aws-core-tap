@@ -2136,6 +2136,350 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_ec2_application_status_check": (
+        {'ApplicationStatusCheckId': 'app-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_application_status_check_id': 'app-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_capacity_manager_data_export": (
+        {'CapacityManagerDataExportId': 'cap-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_capacity_manager_data_export_id': 'cap-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_carrier_gateway": (
+        {'CarrierGatewayId': 'car-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_carrier_gateway_id': 'car-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_client_vpn_endpoint": (
+        {'ClientVpnEndpointId': 'cli-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_client_vpn_endpoint_id': 'cli-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_customer_gateway": (
+        {'CustomerGatewayId': 'cus-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_customer_gateway_id': 'cus-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_dhcp_options": (
+        {'DhcpOptionsId': 'dhc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_dhcp_options_id': 'dhc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_fleet": (
+        {'FleetId': 'fle-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_fleet_id': 'fle-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_egress_only_internet_gateway": (
+        {'EgressOnlyInternetGatewayId': 'egr-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_egress_only_internet_gateway_id': 'egr-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_flow_log": (
+        {'FlowLogId': 'flo-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_flow_log_id': 'flo-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_fpga_image": (
+        {'FpgaImageId': 'fpg-0a1b2c3d4e5f60718', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ec2_fpga_image_id': 'fpg-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_host": (
+        {'HostId': 'hos-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_host_id': 'hos-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam": (
+        {'IpamArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam_pool": (
+        {'IpamPoolArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_pool_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam_pool_cidr": (
+        {'IpamPoolCidrId': 'ipa-0a1b2c3d4e5f60718'},
+        {'ec2_ipam_pool_cidr_id': 'ipa-0a1b2c3d4e5f60718'},
+    ),
+    "aws_core__aws_ec2_ipam_prefix_list_resolver": (
+        {'IpamPrefixListResolverArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_prefix_list_resolver_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam_prefix_list_resolver_target": (
+        {'IpamPrefixListResolverTargetArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_prefix_list_resolver_target_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam_resource_discovery": (
+        {'IpamResourceDiscoveryArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_resource_discovery_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam_resource_discovery_association": (
+        {'IpamResourceDiscoveryAssociationArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_resource_discovery_association_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipam_scope": (
+        {'IpamScopeArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipam_scope_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_ipv4_pool": (
+        {'PoolId': 'poo-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_ipv4_pool_id': 'poo-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_instance_event_window": (
+        {'InstanceEventWindowId': 'ins-0a1b2c3d4e5f60718', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ec2_instance_event_window_id': 'ins-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_key_pair": (
+        {'KeyPairId': 'key-0a1b2c3d4e5f60718', 'KeyName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ec2_key_pair_id': 'key-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_launch_template": (
+        {'LaunchTemplateId': 'lau-0a1b2c3d4e5f60718', 'LaunchTemplateName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ec2_launch_template_id': 'lau-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_local_gateway_route_table_vpc_association": (
+        {'LocalGatewayRouteTableVpcAssociationId': 'loc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_local_gateway_route_table_vpc_association_id': 'loc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_lgw_route_table_vif_group_association": (
+        {'LocalGatewayRouteTableVirtualInterfaceGroupAssociationId': 'loc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_lgw_route_table_vif_group_association_id': 'loc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_network_insights_access_scope_analysis": (
+        {'NetworkInsightsAccessScopeAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_network_insights_access_scope_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_network_insights_analysis": (
+        {'NetworkInsightsAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_network_insights_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_network_interface": (
+        {'NetworkInterfaceId': 'net-0a1b2c3d4e5f60718', 'TagSet': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_network_interface_id': 'net-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_prefix_list": (
+        {'PrefixListArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'PrefixListName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ec2_prefix_list_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_route_server": (
+        {'RouteServerId': 'rou-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_route_server_id': 'rou-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_route_server_endpoint": (
+        {'RouteServerEndpointId': 'rou-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_route_server_endpoint_id': 'rou-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_route_server_peer": (
+        {'RouteServerPeerId': 'rou-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_route_server_peer_id': 'rou-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_security_group_rule": (
+        {'SecurityGroupRuleArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_security_group_rule_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_spot_fleet": (
+        {'SpotFleetRequestId': 'spo-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_spot_fleet_id': 'spo-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_traffic_mirror_filter": (
+        {'TrafficMirrorFilterId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_traffic_mirror_filter_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_traffic_mirror_filter_rule": (
+        {'TrafficMirrorFilterRuleId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_traffic_mirror_filter_rule_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_traffic_mirror_session": (
+        {'TrafficMirrorSessionId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_traffic_mirror_session_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_traffic_mirror_target": (
+        {'TrafficMirrorTargetId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_traffic_mirror_target_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_connect": (
+        {'TransitGatewayAttachmentId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_connect_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_connect_peer": (
+        {'TransitGatewayConnectPeerId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_connect_peer_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_metering_policy": (
+        {'TransitGatewayMeteringPolicyId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_metering_policy_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_peering_attachment": (
+        {'TransitGatewayAttachmentId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_peering_attachment_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_policy_table": (
+        {'TransitGatewayPolicyTableId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_policy_table_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_route_table": (
+        {'TransitGatewayRouteTableId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_route_table_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_transit_gateway_vpc_attachment": (
+        {'TransitGatewayAttachmentId': 'tra-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_transit_gateway_vpc_attachment_id': 'tra-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_vpc_block_public_access_exclusion": (
+        {'ExclusionId': 'exc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_vpc_block_public_access_exclusion_id': 'exc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_vpc_encryption_control": (
+        {'VpcEncryptionControlId': 'vpc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_vpc_encryption_control_id': 'vpc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_vpc_endpoint_connection_notification": (
+        {'ConnectionNotificationId': 'con-0a1b2c3d4e5f60718'},
+        {'ec2_vpc_endpoint_connection_notification_id': 'con-0a1b2c3d4e5f60718'},
+    ),
+    "aws_core__aws_ec2_vpc_peering_connection": (
+        {'VpcPeeringConnectionId': 'vpc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_vpc_peering_connection_id': 'vpc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_vpn_concentrator": (
+        {'VpnConcentratorId': 'vpn-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_vpn_concentrator_id': 'vpn-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_vpn_connection": (
+        {'VpnConnectionId': 'vpn-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_vpn_connection_id': 'vpn-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_vpn_gateway": (
+        {'VpnGatewayId': 'vpn-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_vpn_gateway_id': 'vpn-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_verified_access_endpoint": (
+        {'VerifiedAccessEndpointId': 'ver-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_verified_access_endpoint_id': 'ver-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_verified_access_instance": (
+        {'VerifiedAccessInstanceId': 'ver-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_verified_access_instance_id': 'ver-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_verified_access_trust_provider": (
+        {'VerifiedAccessTrustProviderId': 'ver-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'ec2_verified_access_trust_provider_id': 'ver-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_autoscaling_launch_configuration": (
+        {'LaunchConfigurationARN': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'LaunchConfigurationName': 'gen-1'},
+        {'autoscaling_launch_configuration_arn': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_autoscaling_scaling_policy": (
+        {'PolicyARN': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'PolicyName': 'gen-1'},
+        {'autoscaling_scaling_policy_arn': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_autoscaling_scheduled_action": (
+        {'ScheduledActionARN': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'ScheduledActionName': 'gen-1'},
+        {'autoscaling_scheduled_action_arn': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_cassandra_keyspace": (
+        {'resourceArn': 'arn:aws:keyspaces:us-east-1:123456789012:res/gen-1', 'keyspaceName': 'gen-1'},
+        {'cassandra_keyspace_arn': 'arn:aws:keyspaces:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_cassandra_table": (
+        {'resourceArn': 'arn:aws:keyspaces:us-east-1:123456789012:res/gen-1', 'tableName': 'gen-1'},
+        {'cassandra_table_arn': 'arn:aws:keyspaces:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ecs_capacity_provider": (
+        {'capacityProviderArn': 'arn:aws:ecs:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'ecs_capacity_provider_arn': 'arn:aws:ecs:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_parameter_group": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'CacheParameterGroupName': 'gen-1'},
+        {'elasticache_parameter_group_arn': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_security_group": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'CacheSecurityGroupName': 'gen-1'},
+        {'elasticache_security_group_arn': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticache_subnet_group": (
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'CacheSubnetGroupName': 'gen-1'},
+        {'elasticache_subnet_group_arn': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_fms_applications_list": (
+        {'ListArn': 'arn:aws:fms:us-east-1:123456789012:res/gen-1', 'ListName': 'gen-1'},
+        {'fms_applications_list_arn': 'arn:aws:fms:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_fms_protocols_list": (
+        {'ListArn': 'arn:aws:fms:us-east-1:123456789012:res/gen-1', 'ListName': 'gen-1'},
+        {'fms_protocols_list_arn': 'arn:aws:fms:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_inspectorv2_cis_scan_configuration": (
+        {'scanConfigurationArn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'scanName': 'gen-1', 'tags': {'owner': 'net-team'}},
+        {'inspectorv2_cis_scan_configuration_arn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_inspectorv2_code_security_scan_configuration": (
+        {'scanConfigurationArn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'inspectorv2_code_security_scan_configuration_arn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_lambda_function_version": (
+        {'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
+        {'lambda_function_version_arn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
+    ),
+    "aws_core__aws_licensemanager_license_asset_rule_set": (
+        {'LicenseAssetRulesetArn': 'arn:aws:license-manager:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'licensemanager_license_asset_rule_set_arn': 'arn:aws:license-manager:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_licensemanager_report_generator": (
+        {'LicenseManagerReportGeneratorArn': 'arn:aws:license-manager:us-east-1:123456789012:res/gen-1', 'ReportGeneratorName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'licensemanager_report_generator_arn': 'arn:aws:license-manager:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53resolver_firewall_config": (
+        {'Id': 'id-0a1b2c3d4e5f60718'},
+        {'route53resolver_firewall_config_id': 'id-0a1b2c3d4e5f60718'},
+    ),
+    "aws_core__aws_route53resolver_resolver_config": (
+        {'Id': 'id-0a1b2c3d4e5f60718'},
+        {'route53resolver_resolver_config_id': 'id-0a1b2c3d4e5f60718'},
+    ),
+    "aws_core__aws_route53resolver_resolver_dnssec_config": (
+        {'Id': 'id-0a1b2c3d4e5f60718'},
+        {'route53resolver_resolver_dnssec_config_id': 'id-0a1b2c3d4e5f60718'},
+    ),
+    "aws_core__aws_route53resolver_resolver_query_log_config": (
+        {'Arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'route53resolver_resolver_query_log_config_arn': 'arn:aws:route53resolver:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3objectlambda_access_point": (
+        {'ObjectLambdaAccessPointArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'s3objectlambda_access_point_arn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3outposts_endpoint": (
+        {'EndpointArn': 'arn:aws:s3outposts:us-east-1:123456789012:res/gen-1'},
+        {'s3outposts_endpoint_arn': 'arn:aws:s3outposts:us-east-1:123456789012:res/gen-1'},
+    ),
+    "aws_core__aws_wafregional_byte_match_set": (
+        {'ByteMatchSetId': 'byt-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_byte_match_set_id': 'byt-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_geo_match_set": (
+        {'GeoMatchSetId': 'geo-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_geo_match_set_id': 'geo-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_ip_set": (
+        {'IPSetId': 'ips-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_ip_set_id': 'ips-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_regex_pattern_set": (
+        {'RegexPatternSetId': 'reg-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_regex_pattern_set_id': 'reg-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_size_constraint_set": (
+        {'SizeConstraintSetId': 'siz-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_size_constraint_set_id': 'siz-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_sql_injection_match_set": (
+        {'SqlInjectionMatchSetId': 'sql-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_sql_injection_match_set_id': 'sql-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_xss_match_set": (
+        {'XssMatchSetId': 'xss-0a1b2c3d4e5f60718', 'Name': 'gen-1'},
+        {'wafregional_xss_match_set_id': 'xss-0a1b2c3d4e5f60718', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_wellarchitected_agent_context": (
+        {'id': 'id-0a1b2c3d4e5f60718'},
+        {'wellarchitected_agent_context_id': 'id-0a1b2c3d4e5f60718'},
+    ),
+    "aws_core__aws_wellarchitected_agent_goal": (
+        {'id': 'id-0a1b2c3d4e5f60718'},
+        {'wellarchitected_agent_goal_id': 'id-0a1b2c3d4e5f60718'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
@@ -2210,6 +2554,7 @@ class TestBatchTypes:
         assert (tags["from"], tags["shape"]) in (
             ("Tags[]", "list_kv"),
             ("TagList", "list_kv"),
+            ("TagSet[]", "list_kv"),
             ("tags[]", "list_kv_lower"),
             ("_tags", "map"),
             ("tags", "map"),
