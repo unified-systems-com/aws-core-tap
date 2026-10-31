@@ -199,6 +199,14 @@ class TestPerFanout:
         with pytest.raises(RuntimeError, match="b"):
             list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
 
+    def test_a_parent_missing_the_bound_value_fails_the_listing_before_the_call(self):
+        client = _CallLog(
+            {"get_databases": {"DatabaseList": [{"Other": "x"}]}, "get_tables": {"Tables": []}}
+        )
+        with pytest.raises(SourceError, match="DatabaseName"):
+            list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert not [c for c in client.calls if c[0] == "get_tables"]
+
     def test_two_levels_bind_the_grandparent_through_the_parent_slot(self):
         entry = {
             "service": "x",

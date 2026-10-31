@@ -201,7 +201,11 @@ def _iter_parents(per: dict[str, Any], default_service: str, client_for: Callabl
 
 def _children(client: Any, spec: dict[str, Any], parent: Any) -> Iterator[Any]:
     """One call of ``spec`` for ``parent``: its ``bind`` pulls the request parameters off the parent."""
-    params = {**spec.get("params", {}), **{name: eval_path(parent, path) for name, path in spec["bind"].items()}}
+    bound = {name: eval_path(parent, path) for name, path in spec["bind"].items()}
+    missing = [name for name, value in bound.items() if value in (None, "", [])]
+    if missing:
+        raise SourceError(f"{spec['aws_op']}: a parent item has no value for {', '.join(missing)} (bind path unresolved)")
+    params = {**spec.get("params", {}), **bound}
     for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params):
         if isinstance(item, dict):
             yield {**item, PARENT_SLOT: parent}
