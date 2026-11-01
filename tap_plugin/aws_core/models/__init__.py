@@ -784,8 +784,86 @@ from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
 from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
 from tap_plugin.aws_core.models.xray_group import XrayGroup
 from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
+from tap_plugin.aws_core.models.appstream_directory_config import AppstreamDirectoryConfig
+from tap_plugin.aws_core.models.appstream_entitlement import AppstreamEntitlement
+from tap_plugin.aws_core.models.applicationautoscaling_scalable_target import ApplicationautoscalingScalableTarget
+from tap_plugin.aws_core.models.applicationautoscaling_scaling_policy import ApplicationautoscalingScalingPolicy
+from tap_plugin.aws_core.models.autoscaling_lifecycle_hook import AutoscalingLifecycleHook
+from tap_plugin.aws_core.models.emr_cluster import EmrCluster
+from tap_plugin.aws_core.models.emr_security_configuration import EmrSecurityConfiguration
+from tap_plugin.aws_core.models.emr_studio import EmrStudio
+from tap_plugin.aws_core.models.ecr_repository_creation_template import EcrRepositoryCreationTemplate
+from tap_plugin.aws_core.models.ecs_task_definition import EcsTaskDefinition
+from tap_plugin.aws_core.models.eks_certificate_authority import EksCertificateAuthority
+from tap_plugin.aws_core.models.fsx_s3_access_point_attachment import FsxS3AccessPointAttachment
+from tap_plugin.aws_core.models.iot_custom_metric import IotCustomMetric
+from tap_plugin.aws_core.models.iot_dimension import IotDimension
+from tap_plugin.aws_core.models.iot_role_alias import IotRoleAlias
+from tap_plugin.aws_core.models.iot_software_package import IotSoftwarePackage
+from tap_plugin.aws_core.models.iot_software_package_version import IotSoftwarePackageVersion
+from tap_plugin.aws_core.models.kinesisfirehose_delivery_stream import KinesisfirehoseDeliveryStream
+from tap_plugin.aws_core.models.location_api_key import LocationApiKey
+from tap_plugin.aws_core.models.location_geofence_collection import LocationGeofenceCollection
+from tap_plugin.aws_core.models.location_map import LocationMap
+from tap_plugin.aws_core.models.location_place_index import LocationPlaceIndex
+from tap_plugin.aws_core.models.location_route_calculator import LocationRouteCalculator
+from tap_plugin.aws_core.models.location_tracker import LocationTracker
+from tap_plugin.aws_core.models.logs_integration import LogsIntegration
+from tap_plugin.aws_core.models.opensearch_data_source import OpensearchDataSource
+from tap_plugin.aws_core.models.opensearchserverless_access_policy import OpensearchserverlessAccessPolicy
+from tap_plugin.aws_core.models.opensearchserverless_lifecycle_policy import OpensearchserverlessLifecyclePolicy
+from tap_plugin.aws_core.models.opensearchserverless_security_policy import OpensearchserverlessSecurityPolicy
+from tap_plugin.aws_core.models.opensearchserverless_security_config import OpensearchserverlessSecurityConfig
+from tap_plugin.aws_core.models.pinpointemail_configuration_set import PinpointemailConfigurationSet
+from tap_plugin.aws_core.models.pinpointemail_identity import PinpointemailIdentity
+from tap_plugin.aws_core.models.resourceexplorer2_view import Resourceexplorer2View
+from tap_plugin.aws_core.models.ses_receipt_filter import SesReceiptFilter
+from tap_plugin.aws_core.models.ses_receipt_rule_set import SesReceiptRuleSet
+from tap_plugin.aws_core.models.textract_adapter import TextractAdapter
+from tap_plugin.aws_core.models.verifiedpermissions_identity_source import VerifiedpermissionsIdentitySource
+from tap_plugin.aws_core.models.verifiedpermissions_policy import VerifiedpermissionsPolicy
+from tap_plugin.aws_core.models.verifiedpermissions_policy_template import VerifiedpermissionsPolicyTemplate
 
 __all__ = [
+    "VerifiedpermissionsPolicyTemplate",
+    "VerifiedpermissionsPolicy",
+    "VerifiedpermissionsIdentitySource",
+    "TextractAdapter",
+    "SesReceiptRuleSet",
+    "SesReceiptFilter",
+    "Resourceexplorer2View",
+    "PinpointemailIdentity",
+    "PinpointemailConfigurationSet",
+    "OpensearchserverlessSecurityConfig",
+    "OpensearchserverlessSecurityPolicy",
+    "OpensearchserverlessLifecyclePolicy",
+    "OpensearchserverlessAccessPolicy",
+    "OpensearchDataSource",
+    "LogsIntegration",
+    "LocationTracker",
+    "LocationRouteCalculator",
+    "LocationPlaceIndex",
+    "LocationMap",
+    "LocationGeofenceCollection",
+    "LocationApiKey",
+    "KinesisfirehoseDeliveryStream",
+    "IotSoftwarePackageVersion",
+    "IotSoftwarePackage",
+    "IotRoleAlias",
+    "IotDimension",
+    "IotCustomMetric",
+    "FsxS3AccessPointAttachment",
+    "EksCertificateAuthority",
+    "EcsTaskDefinition",
+    "EcrRepositoryCreationTemplate",
+    "EmrStudio",
+    "EmrSecurityConfiguration",
+    "EmrCluster",
+    "AutoscalingLifecycleHook",
+    "ApplicationautoscalingScalingPolicy",
+    "ApplicationautoscalingScalableTarget",
+    "AppstreamEntitlement",
+    "AppstreamDirectoryConfig",
     "AccessAnalyzerArchiveRule",
     "AcmCertificate",
     "AcmPrivateCa",
