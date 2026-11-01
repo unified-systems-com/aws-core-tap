@@ -5302,6 +5302,26 @@
         "AWS::Backup::RestoreTestingSelection"
       ]
     },
+    "aws_core__aws_bedrock_guardrail_version": {
+      "cfn": [
+        "AWS::Bedrock::GuardrailVersion"
+      ]
+    },
+    "aws_core__aws_bedrock_prompt_version": {
+      "cfn": [
+        "AWS::Bedrock::PromptVersion"
+      ]
+    },
+    "aws_core__aws_bedrock_automated_reasoning_policy_version": {
+      "cfn": [
+        "AWS::Bedrock::AutomatedReasoningPolicyVersion"
+      ]
+    },
+    "aws_core__aws_lex_bot_version": {
+      "cfn": [
+        "AWS::Lex::BotVersion"
+      ]
+    },
     "aws_core__aws_ec2_network_performance_metric_subscription": {
       "cfn": [
         "AWS::EC2::NetworkPerformanceMetricSubscription"
@@ -6119,6 +6139,22 @@
     "AWS::Inspector::AssessmentTarget": {
       "taggable": false,
       "citation": "botocore 1.43.121 inspector ListTagsForResource and SetTagsForResource act on an assessment template only ('Lists all tags associated with an assessment template'), and CreateAssessmentTarget takes no tags, so an assessment target has no tags; the CloudFormation schema declares no tagging block"
+    },
+    "AWS::Bedrock::GuardrailVersion": {
+      "taggable": false,
+      "citation": "The CloudFormation schema for AWS::Bedrock::GuardrailVersion declares tagging.taggable false and has no Tags property; the Service Authorization Reference defines no ARN for a guardrail version (only guardrail/${GuardrailId}), so there is nothing to tag"
+    },
+    "AWS::Bedrock::PromptVersion": {
+      "taggable": true,
+      "citation": "The CloudFormation schema for AWS::Bedrock::PromptVersion declares tagging.taggable true with a Tags property and the bedrock:ListTagsForResource permission; its primary identifier is the version Arn (arn:...:prompt/<id>:<version>), the Service Authorization Reference resource prompt-version"
+    },
+    "AWS::Bedrock::AutomatedReasoningPolicyVersion": {
+      "taggable": true,
+      "citation": "The CloudFormation schema for AWS::Bedrock::AutomatedReasoningPolicyVersion declares tagging.taggable true with a Tags property and the bedrock:ListTagsForResource permission; the Service Authorization Reference defines the resource automated-reasoning-policy-version"
+    },
+    "AWS::Lex::BotVersion": {
+      "taggable": false,
+      "citation": "The CloudFormation schema for AWS::Lex::BotVersion declares tagging.taggable false and has no Tags property"
     }
   }
 }
