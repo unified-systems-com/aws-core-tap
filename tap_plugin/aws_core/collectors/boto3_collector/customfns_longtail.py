@@ -312,6 +312,7 @@ def _arn_listing(
     if parent:
         parents = [p for page in _pages(client, parent[0]) for p in page.get(parent[1]) or [] if isinstance(p, dict) and p.get(parent[2])]
     failed: list[str] = []
+    unbuilt: list[str] = []
     for owner in parents:
         request = dict(kwargs)
         extra: dict[str, Any] = {}
@@ -331,10 +332,15 @@ def _arn_listing(
             holder = str(item.get(account_key) or "") if account_key else account
             try:
                 rid = resource.format(**item)
-            except KeyError, IndexError:
+            except (KeyError, IndexError):
+                rid = ""
+            if not rid or not holder:
+                # an item the ARN cannot be built for is a gap, not an absence: say so after the rest
+                unbuilt.append(str(item.get("Id") or item.get("Name") or item.get(key or "") or "?"))
                 continue
-            if holder:
-                yield {**item, "_arn": build_arn(partition, arn_service, region, holder, rid)}
+            yield {**item, "_arn": build_arn(partition, arn_service, region, holder, rid)}
+    if unbuilt:
+        failed.append(f"{len(unbuilt)} item(s) with no field the ARN needs ({', '.join(unbuilt[:3])})")
     if failed:
         raise _undescribed(label, failed)
 

@@ -285,7 +285,36 @@ class TestArnListings:
         [grant] = _run(LONGTAIL_FNS["s3_access_grants_described"], s3control=client)
         assert grant["_tags"] == {} and grant["_tags_unread"] is True
 
-    def test_an_item_missing_the_key_the_arn_needs_is_left_out(self) -> None:
+    def test_an_item_missing_the_key_the_arn_needs_is_a_loud_gap(self) -> None:
         client = _Client(describe_cluster_subnet_groups={"ClusterSubnetGroups": [{"ClusterSubnetGroupName": "g"}, {"Description": "no name"}]})
-        groups = _run(LONGTAIL_FNS["redshift_subnet_groups_described"], redshift=client)
-        assert [g["_arn"].rsplit(":", 1)[1] for g in groups] == ["g"]
+        fn = LONGTAIL_FNS["redshift_subnet_groups_described"]
+        seen: list[dict[str, Any]] = []
+        with pytest.raises(SourceError, match="could not be described"):
+            for item in fn(None, client_for=_factory(redshift=client)):
+                seen.append(item)
+        # what could be built is yielded first, so the engine keeps it and reports the gap
+        assert [g["_arn"].rsplit(":", 1)[1] for g in seen] == ["g"]
+
+
+def test_an_item_the_arn_cannot_be_built_for_is_a_loud_gap_not_an_absence() -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector.customfns_longtail import _arn_listing
+
+    client = _Client(
+        list_environments=lambda **kw: {
+            "Items": [{"ApplicationId": "app1", "Id": "env1"}, {"Id": "env2"}]  # the second carries no ApplicationId
+        },
+        list_applications={"Items": [{"Id": "app1"}]},
+    )
+    seen: list[dict[str, Any]] = []
+    with pytest.raises(SourceError, match="could not be described"):
+        for item in _arn_listing(
+            _factory(appconfig=client),
+            "appconfig",
+            "list_environments",
+            "Items",
+            "application/{ApplicationId}/environment/{Id}",
+            label="AppConfig environments",
+        ):
+            seen.append(item)
+    # the item that could be built was yielded before the gap was raised
+    assert [i["_arn"] for i in seen] == ["arn:aws:appconfig:us-east-1:123456789012:application/app1/environment/env1"]
