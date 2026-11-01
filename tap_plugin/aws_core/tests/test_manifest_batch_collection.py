@@ -2136,6 +2136,158 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_glue_job": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:job/gen-1'},
+        {'glue_job_arn': 'arn:aws:glue:us-east-1:123456789012:job/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_crawler": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:crawler/gen-1'},
+        {'glue_crawler_arn': 'arn:aws:glue:us-east-1:123456789012:crawler/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_trigger": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:trigger/gen-1'},
+        {'glue_trigger_arn': 'arn:aws:glue:us-east-1:123456789012:trigger/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_data_quality_ruleset": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:dataQualityRuleset/gen-1'},
+        {'glue_data_quality_ruleset_arn': 'arn:aws:glue:us-east-1:123456789012:dataQualityRuleset/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_database": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:database/gen-1'},
+        {'glue_database_arn': 'arn:aws:glue:us-east-1:123456789012:database/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_dev_endpoint": (
+        {'EndpointName': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:devEndpoint/gen-1'},
+        {'glue_dev_endpoint_arn': 'arn:aws:glue:us-east-1:123456789012:devEndpoint/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_ml_transform": (
+        {'Name': 'gen-1', 'TransformId': 'tfm-0a1', '_arn': 'arn:aws:glue:us-east-1:123456789012:mlTransform/tfm-0a1'},
+        {'glue_ml_transform_arn': 'arn:aws:glue:us-east-1:123456789012:mlTransform/tfm-0a1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_session": (
+        {'Id': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:session/gen-1'},
+        {'glue_session_arn': 'arn:aws:glue:us-east-1:123456789012:session/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_connection": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:connection/gen-1'},
+        {'glue_connection_arn': 'arn:aws:glue:us-east-1:123456789012:connection/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_workflow": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:workflow/gen-1'},
+        {'glue_workflow_arn': 'arn:aws:glue:us-east-1:123456789012:workflow/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_blueprint": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:blueprint/gen-1'},
+        {'glue_blueprint_arn': 'arn:aws:glue:us-east-1:123456789012:blueprint/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_security_configuration": (
+        {'Name': 'gen-1'},
+        {'glue_security_configuration_name': 'gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_athena_work_group": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:athena:us-east-1:123456789012:workgroup/gen-1'},
+        {'athena_work_group_arn': 'arn:aws:athena:us-east-1:123456789012:workgroup/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_athena_data_catalog": (
+        {'CatalogName': 'gen-1', '_arn': 'arn:aws:athena:us-east-1:123456789012:datacatalog/gen-1'},
+        {'athena_data_catalog_arn': 'arn:aws:athena:us-east-1:123456789012:datacatalog/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_athena_capacity_reservation": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:athena:us-east-1:123456789012:capacity-reservation/gen-1'},
+        {'athena_capacity_reservation_arn': 'arn:aws:athena:us-east-1:123456789012:capacity-reservation/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_backup_restore_testing_selection": (
+        {'RestoreTestingPlanName': 'plan-1', 'RestoreTestingSelectionName': 'gen-1', '_key': 'plan-1/gen-1'},
+        {'backup_restore_testing_selection_key': 'plan-1/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ec2_network_performance_metric_subscription": (
+        {'Source': 'us-east-1', 'Destination': 'eu-west-1', 'Metric': 'aggregate-latency', 'Statistic': 'p50', '_key': 'us-east-1/eu-west-1/aggregate-latency/p50'},
+        {'ec2_network_performance_metric_subscription_key': 'us-east-1/eu-west-1/aggregate-latency/p50'},
+    ),
+    "aws_core__aws_fms_resource_set": (
+        {'Id': 'rs-1', 'Name': 'gen-1', '_arn': 'arn:aws:fms:us-east-1:123456789012:resource-set/rs-1'},
+        {'fms_resource_set_arn': 'arn:aws:fms:us-east-1:123456789012:resource-set/rs-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendra_index": (
+        {'Id': 'idx-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1'},
+        {'kendra_index_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendra_data_source": (
+        {'Id': 'x-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/data-source/x-1'},
+        {'kendra_data_source_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/data-source/x-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendra_faq": (
+        {'Id': 'x-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/faq/x-1'},
+        {'kendra_faq_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/faq/x-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendra_featured_results_set": (
+        {'FeaturedResultsSetId': 'x-1', 'FeaturedResultsSetName': 'gen-1', '_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/featured-results-set/x-1'},
+        {'kendra_featured_results_set_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/featured-results-set/x-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendra_query_suggestions_block_list": (
+        {'Id': 'x-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/query-suggestions-block-list/x-1'},
+        {'kendra_query_suggestions_block_list_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/query-suggestions-block-list/x-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendra_thesaurus": (
+        {'Id': 'x-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/thesaurus/x-1'},
+        {'kendra_thesaurus_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/thesaurus/x-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_kendraranking_execution_plan": (
+        {'Id': 'ep-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra-ranking:us-east-1:123456789012:rescore-execution-plan/ep-1'},
+        {'kendraranking_execution_plan_arn': 'arn:aws:kendra-ranking:us-east-1:123456789012:rescore-execution-plan/ep-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_lakeformation_data_cells_filter": (
+        {'TableCatalogId': '123456789012', 'DatabaseName': 'db', 'TableName': 'tbl', 'Name': 'gen-1', '_key': '123456789012/db/tbl/gen-1'},
+        {'lakeformation_data_cells_filter_key': '123456789012/db/tbl/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_lakeformation_tag": (
+        {'TagKey': 'gen-1'},
+        {'lakeformation_tag_key': 'gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3outposts_bucket": (
+        {'Bucket': 'gen-1', 'BucketArn': 'arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1/bucket/gen-1', 'OutpostId': 'op-1', '_account': '123456789012'},
+        {'s3outposts_bucket_arn': 'arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1/bucket/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_s3outposts_access_point": (
+        {'Name': 'gen-1', 'AccessPointArn': 'arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1/accesspoint/gen-1'},
+        {'s3outposts_access_point_arn': 'arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1/accesspoint/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ssm_document": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:ssm:us-east-1:123456789012:document/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ssm_document_arn': 'arn:aws:ssm:us-east-1:123456789012:document/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_ssm_resource_data_sync": (
+        {'SyncName': 'gen-1', '_arn': 'arn:aws:ssm:us-east-1:123456789012:resource-data-sync/gen-1'},
+        {'ssm_resource_data_sync_arn': 'arn:aws:ssm:us-east-1:123456789012:resource-data-sync/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_space": (
+        {'DomainId': 'd-1', 'SpaceName': 'gen-1', '_arn': 'arn:aws:sagemaker:us-east-1:123456789012:space/d-1/gen-1'},
+        {'sagemaker_space_arn': 'arn:aws:sagemaker:us-east-1:123456789012:space/d-1/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_user_profile": (
+        {'DomainId': 'd-1', 'UserProfileName': 'gen-1', '_arn': 'arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-1/gen-1'},
+        {'sagemaker_user_profile_arn': 'arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-1/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_sagemaker_inference_experiment": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:sagemaker:us-east-1:123456789012:inference-experiment/gen-1'},
+        {'sagemaker_inference_experiment_arn': 'arn:aws:sagemaker:us-east-1:123456789012:inference-experiment/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_transcribe_vocabulary": (
+        {'VocabularyName': 'gen-1', '_arn': 'arn:aws:transcribe:us-east-1:123456789012:vocabulary/gen-1'},
+        {'transcribe_vocabulary_arn': 'arn:aws:transcribe:us-east-1:123456789012:vocabulary/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_transcribe_medical_vocabulary": (
+        {'VocabularyName': 'gen-1', '_arn': 'arn:aws:transcribe:us-east-1:123456789012:medical-vocabulary/gen-1'},
+        {'transcribe_medical_vocabulary_arn': 'arn:aws:transcribe:us-east-1:123456789012:medical-vocabulary/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_transcribe_vocabulary_filter": (
+        {'VocabularyFilterName': 'gen-1', '_arn': 'arn:aws:transcribe:us-east-1:123456789012:vocabulary-filter/gen-1'},
+        {'transcribe_vocabulary_filter_arn': 'arn:aws:transcribe:us-east-1:123456789012:vocabulary-filter/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_transcribe_call_analytics_category": (
+        {'CategoryName': 'gen-1', '_arn': 'arn:aws:transcribe:us-east-1:123456789012:analytics-category/gen-1'},
+        {'transcribe_call_analytics_category_arn': 'arn:aws:transcribe:us-east-1:123456789012:analytics-category/gen-1', 'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

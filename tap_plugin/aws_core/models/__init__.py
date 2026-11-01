@@ -784,8 +784,84 @@ from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
 from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
 from tap_plugin.aws_core.models.xray_group import XrayGroup
 from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
+from tap_plugin.aws_core.models.glue_job import GlueJob
+from tap_plugin.aws_core.models.glue_crawler import GlueCrawler
+from tap_plugin.aws_core.models.glue_trigger import GlueTrigger
+from tap_plugin.aws_core.models.glue_data_quality_ruleset import GlueDataQualityRuleset
+from tap_plugin.aws_core.models.glue_database import GlueDatabase
+from tap_plugin.aws_core.models.glue_dev_endpoint import GlueDevEndpoint
+from tap_plugin.aws_core.models.glue_ml_transform import GlueMlTransform
+from tap_plugin.aws_core.models.glue_session import GlueSession
+from tap_plugin.aws_core.models.glue_connection import GlueConnection
+from tap_plugin.aws_core.models.glue_workflow import GlueWorkflow
+from tap_plugin.aws_core.models.glue_blueprint import GlueBlueprint
+from tap_plugin.aws_core.models.glue_security_configuration import GlueSecurityConfiguration
+from tap_plugin.aws_core.models.athena_work_group import AthenaWorkGroup
+from tap_plugin.aws_core.models.athena_data_catalog import AthenaDataCatalog
+from tap_plugin.aws_core.models.athena_capacity_reservation import AthenaCapacityReservation
+from tap_plugin.aws_core.models.backup_restore_testing_selection import BackupRestoreTestingSelection
+from tap_plugin.aws_core.models.ec2_network_performance_metric_subscription import Ec2NetworkPerformanceMetricSubscription
+from tap_plugin.aws_core.models.fms_resource_set import FmsResourceSet
+from tap_plugin.aws_core.models.kendra_index import KendraIndex
+from tap_plugin.aws_core.models.kendra_data_source import KendraDataSource
+from tap_plugin.aws_core.models.kendra_faq import KendraFaq
+from tap_plugin.aws_core.models.kendra_featured_results_set import KendraFeaturedResultsSet
+from tap_plugin.aws_core.models.kendra_query_suggestions_block_list import KendraQuerySuggestionsBlockList
+from tap_plugin.aws_core.models.kendra_thesaurus import KendraThesaurus
+from tap_plugin.aws_core.models.kendraranking_execution_plan import KendrarankingExecutionPlan
+from tap_plugin.aws_core.models.lakeformation_data_cells_filter import LakeformationDataCellsFilter
+from tap_plugin.aws_core.models.lakeformation_tag import LakeformationTag
+from tap_plugin.aws_core.models.s3outposts_bucket import S3outpostsBucket
+from tap_plugin.aws_core.models.s3outposts_access_point import S3outpostsAccessPoint
+from tap_plugin.aws_core.models.ssm_document import SsmDocument
+from tap_plugin.aws_core.models.ssm_resource_data_sync import SsmResourceDataSync
+from tap_plugin.aws_core.models.sagemaker_space import SagemakerSpace
+from tap_plugin.aws_core.models.sagemaker_user_profile import SagemakerUserProfile
+from tap_plugin.aws_core.models.sagemaker_inference_experiment import SagemakerInferenceExperiment
+from tap_plugin.aws_core.models.transcribe_vocabulary import TranscribeVocabulary
+from tap_plugin.aws_core.models.transcribe_medical_vocabulary import TranscribeMedicalVocabulary
+from tap_plugin.aws_core.models.transcribe_vocabulary_filter import TranscribeVocabularyFilter
+from tap_plugin.aws_core.models.transcribe_call_analytics_category import TranscribeCallAnalyticsCategory
 
 __all__ = [
+    "TranscribeCallAnalyticsCategory",
+    "TranscribeVocabularyFilter",
+    "TranscribeMedicalVocabulary",
+    "TranscribeVocabulary",
+    "SagemakerInferenceExperiment",
+    "SagemakerUserProfile",
+    "SagemakerSpace",
+    "SsmResourceDataSync",
+    "SsmDocument",
+    "S3outpostsAccessPoint",
+    "S3outpostsBucket",
+    "LakeformationTag",
+    "LakeformationDataCellsFilter",
+    "KendrarankingExecutionPlan",
+    "KendraThesaurus",
+    "KendraQuerySuggestionsBlockList",
+    "KendraFeaturedResultsSet",
+    "KendraFaq",
+    "KendraDataSource",
+    "KendraIndex",
+    "FmsResourceSet",
+    "Ec2NetworkPerformanceMetricSubscription",
+    "BackupRestoreTestingSelection",
+    "AthenaCapacityReservation",
+    "AthenaDataCatalog",
+    "AthenaWorkGroup",
+    "GlueSecurityConfiguration",
+    "GlueBlueprint",
+    "GlueWorkflow",
+    "GlueConnection",
+    "GlueSession",
+    "GlueMlTransform",
+    "GlueDevEndpoint",
+    "GlueDatabase",
+    "GlueDataQualityRuleset",
+    "GlueTrigger",
+    "GlueCrawler",
+    "GlueJob",
     "AccessAnalyzerArchiveRule",
     "AcmCertificate",
     "AcmPrivateCa",

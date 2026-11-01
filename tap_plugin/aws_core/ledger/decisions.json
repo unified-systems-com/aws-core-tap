@@ -1087,6 +1087,10 @@
     "AWS::XRay::TransactionSearchConfig": {
       "state": "excluded",
       "reason": "The account's X-Ray transaction search indexing setting, identified by AccountId (IndexingPercentage, CloudWatchLogsConfiguration): a singleton setting of the account, not a resource."
+    },
+    "AWS::Inspector::ResourceGroup": {
+      "state": "not-enumerable",
+      "reason": "botocore 1.43.121 inspector defines CreateResourceGroup and DescribeResourceGroups (which takes a list of group ARNs) and no operation that lists resource groups; a group's ARN appears only as resourceGroupArn on an assessment target, so a group cannot be found by enumeration of its own."
     }
   },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
@@ -5109,6 +5113,196 @@
       "cfn": [
         "AWS::XRay::SamplingRule"
       ]
+    },
+    "aws_core__aws_glue_job": {
+      "cfn": [
+        "AWS::Glue::Job"
+      ]
+    },
+    "aws_core__aws_glue_crawler": {
+      "cfn": [
+        "AWS::Glue::Crawler"
+      ]
+    },
+    "aws_core__aws_glue_trigger": {
+      "cfn": [
+        "AWS::Glue::Trigger"
+      ]
+    },
+    "aws_core__aws_glue_data_quality_ruleset": {
+      "cfn": [
+        "AWS::Glue::DataQualityRuleset"
+      ]
+    },
+    "aws_core__aws_glue_database": {
+      "cfn": [
+        "AWS::Glue::Database"
+      ]
+    },
+    "aws_core__aws_glue_dev_endpoint": {
+      "cfn": [
+        "AWS::Glue::DevEndpoint"
+      ]
+    },
+    "aws_core__aws_glue_ml_transform": {
+      "cfn": [
+        "AWS::Glue::MLTransform"
+      ]
+    },
+    "aws_core__aws_glue_session": {
+      "cfn": [
+        "AWS::Glue::Session"
+      ]
+    },
+    "aws_core__aws_glue_connection": {
+      "cfn": [
+        "AWS::Glue::Connection"
+      ]
+    },
+    "aws_core__aws_glue_workflow": {
+      "cfn": [
+        "AWS::Glue::Workflow"
+      ]
+    },
+    "aws_core__aws_glue_blueprint": {
+      "cfn": [
+        "AWS::Glue::Blueprint"
+      ]
+    },
+    "aws_core__aws_glue_security_configuration": {
+      "cfn": [
+        "AWS::Glue::SecurityConfiguration"
+      ]
+    },
+    "aws_core__aws_athena_work_group": {
+      "cfn": [
+        "AWS::Athena::WorkGroup"
+      ]
+    },
+    "aws_core__aws_athena_data_catalog": {
+      "cfn": [
+        "AWS::Athena::DataCatalog"
+      ]
+    },
+    "aws_core__aws_athena_capacity_reservation": {
+      "cfn": [
+        "AWS::Athena::CapacityReservation"
+      ]
+    },
+    "aws_core__aws_backup_restore_testing_selection": {
+      "cfn": [
+        "AWS::Backup::RestoreTestingSelection"
+      ]
+    },
+    "aws_core__aws_ec2_network_performance_metric_subscription": {
+      "cfn": [
+        "AWS::EC2::NetworkPerformanceMetricSubscription"
+      ]
+    },
+    "aws_core__aws_fms_resource_set": {
+      "cfn": [
+        "AWS::FMS::ResourceSet"
+      ]
+    },
+    "aws_core__aws_kendra_index": {
+      "cfn": [
+        "AWS::Kendra::Index"
+      ]
+    },
+    "aws_core__aws_kendra_data_source": {
+      "cfn": [
+        "AWS::Kendra::DataSource"
+      ]
+    },
+    "aws_core__aws_kendra_faq": {
+      "cfn": [
+        "AWS::Kendra::Faq"
+      ]
+    },
+    "aws_core__aws_kendra_featured_results_set": {
+      "cfn": [
+        "AWS::Kendra::FeaturedResultsSet"
+      ]
+    },
+    "aws_core__aws_kendra_query_suggestions_block_list": {
+      "cfn": [
+        "AWS::Kendra::QuerySuggestionsBlockList"
+      ]
+    },
+    "aws_core__aws_kendra_thesaurus": {
+      "cfn": [
+        "AWS::Kendra::Thesaurus"
+      ]
+    },
+    "aws_core__aws_kendraranking_execution_plan": {
+      "cfn": [
+        "AWS::KendraRanking::ExecutionPlan"
+      ]
+    },
+    "aws_core__aws_lakeformation_data_cells_filter": {
+      "cfn": [
+        "AWS::LakeFormation::DataCellsFilter"
+      ]
+    },
+    "aws_core__aws_lakeformation_tag": {
+      "cfn": [
+        "AWS::LakeFormation::Tag"
+      ]
+    },
+    "aws_core__aws_s3outposts_bucket": {
+      "cfn": [
+        "AWS::S3Outposts::Bucket"
+      ]
+    },
+    "aws_core__aws_s3outposts_access_point": {
+      "cfn": [
+        "AWS::S3Outposts::AccessPoint"
+      ]
+    },
+    "aws_core__aws_ssm_document": {
+      "cfn": [
+        "AWS::SSM::Document"
+      ]
+    },
+    "aws_core__aws_ssm_resource_data_sync": {
+      "cfn": [
+        "AWS::SSM::ResourceDataSync"
+      ]
+    },
+    "aws_core__aws_sagemaker_space": {
+      "cfn": [
+        "AWS::SageMaker::Space"
+      ]
+    },
+    "aws_core__aws_sagemaker_user_profile": {
+      "cfn": [
+        "AWS::SageMaker::UserProfile"
+      ]
+    },
+    "aws_core__aws_sagemaker_inference_experiment": {
+      "cfn": [
+        "AWS::SageMaker::InferenceExperiment"
+      ]
+    },
+    "aws_core__aws_transcribe_vocabulary": {
+      "cfn": [
+        "AWS::Transcribe::Vocabulary"
+      ]
+    },
+    "aws_core__aws_transcribe_medical_vocabulary": {
+      "cfn": [
+        "AWS::Transcribe::MedicalVocabulary"
+      ]
+    },
+    "aws_core__aws_transcribe_vocabulary_filter": {
+      "cfn": [
+        "AWS::Transcribe::VocabularyFilter"
+      ]
+    },
+    "aws_core__aws_transcribe_call_analytics_category": {
+      "cfn": [
+        "AWS::Transcribe::CallAnalyticsCategory"
+      ]
     }
   },
   "tag_findings": {
@@ -5267,6 +5461,14 @@
     "AWS::SageMaker::ExperimentTrialComponent": {
       "taggable": true,
       "citation": "the CloudFormation schema lists a Tags property for it but declares no tagging block; it describes the same trial components as AWS::SageMaker::TrialComponent (taggable, with sagemaker:AddTags and sagemaker:ListTags), whose tags the aws_sagemaker_trial_component entry reads with ListTags (botocore 1.43.121)"
+    },
+    "AWS::Glue::Database": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 glue CreateDatabase takes a Tags member and GetTags reads tags by resource ARN, so a database has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::Glue::DevEndpoint": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 glue CreateDevEndpoint takes a Tags member and GetTags reads tags by resource ARN, so a development endpoint has tags; the CloudFormation schema is silent"
     }
   }
 }
