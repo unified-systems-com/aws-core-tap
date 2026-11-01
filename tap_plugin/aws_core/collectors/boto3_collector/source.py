@@ -269,9 +269,17 @@ def _iter_parents(per: dict[str, Any], default_service: str, client_for: Callabl
         for grand in _iter_parents(per["per"], per.get("service", default_service), client_for):
             yield from _children(client, per, grand, final=False)
         return
-    for item in iter_aws_op(client, per["aws_op"], per["items_path"], params=dict(per.get("params", {}))):
+    truncated: list[str] = []
+    for item in iter_aws_op(client, per["aws_op"], per["items_path"], params=dict(per.get("params", {})), truncated=truncated):
         if not per.get("where") or _passes(item, per["where"]):
             yield item
+    _refuse_truncated(per["aws_op"], truncated)
+
+
+def _refuse_truncated(op: str, truncated: list[str]) -> None:
+    """A fan-out call whose listing stopped short fails the whole listing, never a short list that looks complete."""
+    if truncated:
+        raise SourceError(f"{op}: the listing did not reach its end ({truncated[0]}); a fan-out cannot be called complete")
 
 
 def _child_items(client: Any, spec: dict[str, Any], params: dict[str, Any]) -> Iterator[Any]:
@@ -280,8 +288,10 @@ def _child_items(client: Any, spec: dict[str, Any], params: dict[str, Any]) -> I
     A ``Describe``/``Get`` answers with a single object, not a list, so ``items_path`` names it
     without a ``[]``. (A path that ends in ``[]`` is a list as ever.)
     """
-    for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params, single=True):
+    truncated: list[str] = []
+    for item in iter_aws_op(client, spec["aws_op"], spec["items_path"], params=params, single=True, truncated=truncated):
         yield item
+    _refuse_truncated(spec["aws_op"], truncated)
 
 
 SELF_SLOT = "_self"

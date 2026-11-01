@@ -642,3 +642,37 @@ class TestWhere:
         assert TestPerFanoutSchema._validator().is_valid(entry)
         entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn"}]}
         assert not TestPerFanoutSchema._validator().is_valid(entry)
+
+
+class TestFanoutTruncation:
+    """A parent or child call that cannot be followed to its end fails the listing (fail closed)."""
+
+    @staticmethod
+    def _entry():
+        return {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "ListThings",
+                "per": {"aws_op": "ListOwners", "items_path": "Owners[]"},
+                "bind": {"Owner": "Id"},
+            },
+        }
+
+    def test_a_parent_listing_that_repeats_its_marker_fails(self):
+        client = _CallLog(
+            {"list_owners": {"Owners": [{"Id": "a"}], "NextToken": "same"}, "list_things": {"Things": [{"N": 1}]}}
+        )
+        with pytest.raises(SourceError, match="did not reach its end"):
+            list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+    def test_a_child_listing_that_repeats_its_marker_fails(self):
+        client = _CallLog(
+            {"list_owners": {"Owners": [{"Id": "a"}]}, "list_things": {"Things": [{"N": 1}], "NextToken": "same"}}
+        )
+        with pytest.raises(SourceError, match="did not reach its end"):
+            list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+    def test_a_listing_that_ends_is_not_refused(self):
+        client = _CallLog({"list_owners": {"Owners": [{"Id": "a"}]}, "list_things": {"Things": [{"N": 1}]}})
+        assert list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))

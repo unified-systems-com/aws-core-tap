@@ -71,7 +71,7 @@ def _list_then_get(
                 continue
             try:
                 described = without_response_metadata(getattr(client, get_method)(**{get_param: ident}))
-            except BotoCoreError, ClientError:
+            except (BotoCoreError, ClientError):
                 failed.append(ident)
                 continue
             if isinstance(described, dict) and described.get(arn_key):
@@ -99,7 +99,7 @@ def opensearch_domains_described(session: Any, *, client_for: Any) -> Iterator[d
             continue
         try:
             status = without_response_metadata(client.describe_domain(DomainName=name)).get("DomainStatus")
-        except BotoCoreError, ClientError:
+        except (BotoCoreError, ClientError):
             failed.append(name)
             continue
         if isinstance(status, dict) and status.get("ARN"):
@@ -152,7 +152,7 @@ def codecommit_repositories_described(session: Any, *, client_for: Any) -> Itera
         batch = names[start : start + _CODECOMMIT_BATCH]
         try:
             answer = without_response_metadata(client.batch_get_repositories(repositoryNames=batch))
-        except BotoCoreError, ClientError:
+        except (BotoCoreError, ClientError):
             failed.extend(batch)
             continue
         got = set()
@@ -320,7 +320,7 @@ def _arn_listing(
             extra = {name: owner.get(member) for name, member in (parent_fields or {}).items()}
         try:
             entries = [entry for page in _pages(client, list_method, **request) for entry in page.get(list_key) or []]
-        except BotoCoreError, ClientError:
+        except (BotoCoreError, ClientError):
             failed.append(str(owner[parent[2]]) if owner is not None and parent else list_method)
             continue
         for entry in entries:
@@ -449,7 +449,7 @@ def _s3control_listing(client_for: Any, list_method: str, list_key: str, arn_key
             try:
                 tags = {t["Key"]: t.get("Value") or "" for t in without_response_metadata(client.list_tags_for_resource(AccountId=account, ResourceArn=arn)).get("Tags") or []}
                 unread = False
-            except BotoCoreError, ClientError:
+            except (BotoCoreError, ClientError):
                 tags, unread = {}, True
             yield {**item, "_tags": tags, "_tags_unread": unread}
 
