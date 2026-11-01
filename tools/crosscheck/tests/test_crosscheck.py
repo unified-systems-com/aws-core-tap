@@ -196,6 +196,13 @@ class TestCartoReader:
             {"kind": "standalone", "class": "RdsToSubnetMatchLink", "target": "AWSEC2Subnet", "rel": "ATTACHED_TO", "direction": "OUTWARD"}
         ]
 
+    def test_a_tree_with_no_aws_schemas_is_refused(self, tmp_path):
+        with pytest.raises(ValueError):
+            carto_reader.read_models(tmp_path)
+        _w(tmp_path / "cartography/models/aws/empty.py", "x = 1\n")
+        with pytest.raises(ValueError):
+            carto_reader.read_models(tmp_path)
+
     def test_nothing_is_executed(self, carto, tmp_path):
         marker = tmp_path / "ran"
         _w(carto / "cartography/models/aws/evil.py", f"open({str(marker)!r}, 'w')\n")
@@ -219,6 +226,23 @@ class TestCommitOf:
         _w(d / "HEAD", self.SHA + "\n")
         assert carto_reader.commit_of(tmp_path / "detached") == self.SHA
         assert carto_reader.commit_of(tmp_path / "nothing") == "unknown"
+
+    def test_a_head_pointing_outside_refs_or_at_a_non_commit_reports_unknown(self, tmp_path):
+        secret = tmp_path / "secret.txt"
+        secret.write_text("hunter2\n")
+        for head in (f"ref: ../../secret.txt", "ref: refs/../../secret.txt", "not-a-sha"):
+            g = tmp_path / "r/.git"
+            _w(g / "HEAD", head + "\n")
+            assert carto_reader.commit_of(tmp_path / "r") == "unknown"
+        _w(tmp_path / "s/.git", f"gitdir: {tmp_path}\n")  # a gitdir pointing at an arbitrary directory
+        _w(tmp_path / "HEAD", "ref: refs/heads/x\n")
+        _w(tmp_path / "refs/heads/x", "hunter2\n")  # exists, but is not a commit id
+        assert carto_reader.commit_of(tmp_path / "s") == "unknown"
+
+    def test_the_source_digest_changes_when_an_analysed_file_changes(self, carto):
+        before = carto_reader.tree_digest(carto, ["cartography/models/**/*.py"])
+        (carto / "cartography/models/aws/rds.py").write_text((carto / "cartography/models/aws/rds.py").read_text() + "# edit\n")
+        assert carto_reader.tree_digest(carto, ["cartography/models/**/*.py"]) != before
 
     def test_a_worktree_reads_shared_refs_from_the_main_git_directory(self, tmp_path):
         main = tmp_path / "main/.git"
@@ -355,6 +379,34 @@ class TestMetrics:
         r = crosscheck.security(attrs, models["nodes"], tap, weighting.load(wfile(tmp_path, [])), {})
         assert r["rows"][0]["verdict"] == "not-evidenced"
 
+    def test_a_hand_written_reader_is_credited_only_with_its_own_reads(self, carto, tmp_path):
+        plug = make_plugin(tmp_path / "p4", persist=True)
+        pkg = plug / "tap_plugin/aws_core/collectors/boto3_collector"
+        _w(pkg / "readers.py", """
+            def rds_reader(c):
+                return _helper(c)
+
+            def _helper(c):
+                return c.get_widget()
+
+            def other_reader(c):
+                return c.get_gadget()
+        """)
+        m = json.loads((pkg / "aws_resource_manifest.json").read_text())
+        e = m["entries"][0]
+        e.pop("hydrate")
+        e["source"] = {"custom_fn": "rds_reader"}
+        (pkg / "aws_resource_manifest.json").write_text(json.dumps(m))
+        models, tap = carto_reader.read_models(carto), tap_reader.read(plug)
+
+        def verdict(op):
+            tp = {"type": "aws_core__aws_rds_instance", "field": None, "read_op": op}
+            attrs = {"attributes": [{"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": tp}]}
+            return crosscheck.security(attrs, models["nodes"], tap, weighting.load(wfile(tmp_path, [])), {})["rows"][0]["verdict"]
+
+        assert verdict("GetWidget") == "configuration-only"  # made by the named reader, through a helper it calls
+        assert verdict("GetGadget") == "not-evidenced"  # made only by a different reader
+
     def test_configuration_storing_types_hold_unnamed_attributes_in_the_blob(self, carto, tmp_path):
         plug = make_plugin(tmp_path / "p2", persist=True)
         models, tap = carto_reader.read_models(carto), tap_reader.read(plug)
@@ -443,6 +495,20 @@ class TestDriftAndCli:
     def test_the_gate_without_a_baseline_is_refused_not_passed(self, carto, plugin, tmp_path):
         with pytest.raises(SystemExit) as e:
             crosscheck.main(["--cartography", str(carto), "--plugin", str(plugin), "--fail-on-regression"])
+        assert e.value.code == 2
+
+    def test_an_incomparable_baseline_fails_the_gate_closed(self, carto, plugin, tmp_path):
+        w = wfile(tmp_path, [{"carto_label": "AWS*", "weight": 1, "why": "x"}])
+        base = tmp_path / "base"
+        crosscheck.main(["--cartography", str(carto), "--plugin", str(plugin), "--weights", str(w), "--out", str(base)])
+        rep = json.loads((base / "report.json").read_text())
+        rep["schema_version"] = 0
+        (base / "report.json").write_text(json.dumps(rep))
+        assert crosscheck.main(["--cartography", str(carto), "--plugin", str(plugin), "--weights", str(w), "--baseline", str(base / "report.json"), "--fail-on-regression"]) == 1
+
+    def test_an_empty_reference_is_an_argument_error(self, plugin, tmp_path):
+        with pytest.raises(SystemExit) as e:
+            crosscheck.main(["--cartography", str(tmp_path), "--plugin", str(plugin)])
         assert e.value.code == 2
 
     def test_no_regression_exits_zero(self, carto, plugin, tmp_path):

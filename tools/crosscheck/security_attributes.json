@@ -370,7 +370,7 @@
    "tap": {
     "type": "aws_core__aws_secrets_manager_secret",
     "field": null,
-    "read_op": "DescribeSecret"
+    "read_op": "ListSecrets"
    }
   },
   {

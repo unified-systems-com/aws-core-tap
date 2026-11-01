@@ -39,8 +39,32 @@ def _base_names(cls: ast.ClassDef) -> list[str]:
     return [b.id if isinstance(b, ast.Name) else getattr(b, "attr", "") for b in cls.bases]
 
 
+_SHA = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
+
+
 def commit_of(root: Path) -> str:
-    """The checkout's HEAD commit, read from the .git files directly (no git process), or 'unknown'."""
+    """The checkout's HEAD commit, read from the .git files directly (no git process), or 'unknown'.
+
+    Only a value shaped like a commit id is ever returned, and a ref must live under refs/, so a hostile tree
+    cannot make the report quote some other file.
+    """
+    sha = _commit_of(root)
+    return sha if _SHA.match(sha) else "unknown"
+
+
+def tree_digest(root: Path, patterns: list[str]) -> str:
+    """A digest of the files a run actually analysed, so an edit that leaves the commit unchanged still shows."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for pat in patterns:
+        for p in sorted(root.glob(pat)):
+            if p.is_file():
+                h.update(str(p.relative_to(root)).encode() + b"\0" + p.read_bytes() + b"\0")
+    return h.hexdigest()
+
+
+def _commit_of(root: Path) -> str:
     try:
         git = root / ".git"
         if git.is_file():  # a worktree or submodule: ".git" is a file pointing at the real directory
@@ -51,6 +75,8 @@ def commit_of(root: Path) -> str:
         if not head.startswith("ref:"):
             return head
         ref = head.split(":", 1)[1].strip()
+        if not ref.startswith("refs/") or ".." in ref.split("/"):
+            return "unknown"
         common = git
         if (git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
             common = (git / (git / "commondir").read_text().strip()).resolve()
@@ -189,6 +215,8 @@ def read_models(root: Path) -> dict[str, Any]:
             if n["label"]:
                 all_labels.add(n["label"])
             all_labels.update(n["extra_labels"])
+    if not (models / "aws").is_dir():
+        raise ValueError(f"{root} has no cartography/models/aws: this does not look like a Cartography checkout")
     nodes: dict[str, dict] = {}
     standalone: list[dict] = []
     for p in sorted((models / "aws").rglob("*.py")):
@@ -201,6 +229,8 @@ def read_models(root: Path) -> dict[str, Any]:
             have = {(r["rel"], r["target"], r["direction"], r["kind"]) for r in m["rels"]}
             m["rels"] += [r for r in n["rels"] if (r["rel"], r["target"], r["direction"], r["kind"]) not in have]
             m["files"].append(n["file"])
+    if not nodes:
+        raise ValueError(f"no AWS node schemas found under {models / 'aws'}: refusing to score against an empty reference")
     for r in standalone:  # attach each to its source node, once
         n = nodes.get(r["source"])
         key = (r["rel"], r["target"], r["direction"], r["kind"])

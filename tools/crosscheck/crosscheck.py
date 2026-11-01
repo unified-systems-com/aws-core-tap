@@ -235,7 +235,6 @@ def security(attrs: dict, nodes, tap, w, res) -> dict:
     """Verdicts, best to worst: typed (a column the collector fills), configuration-only (no column, but the
     read is one we make and the type keeps its whole configuration), column-unfilled (a model column the manifest
     never maps), not-evidenced (nothing shows we read it), type-not-collected, and the two stale kinds."""
-    custom_ops = set(tap["custom_ops"])
     rows = []
     for a in attrs["attributes"]:
         label, prop = a["carto"]["label"], a["carto"]["property"]
@@ -253,8 +252,8 @@ def security(attrs: dict, nodes, tap, w, res) -> dict:
             m = t["manifest"]
             keeps = bool(m and m["persist_configuration"])
             # The read must belong to this type: named in its own manifest entry, or made by the hand-written reader
-            # that serves it. A same-named call made for another service or type does not count.
-            made = bool(m and read_op and (norm(read_op) in m["ops"] or (m["custom_fn"] and norm(read_op) in custom_ops)))
+            # (and the helpers it calls) that the entry names. A same-named call made for another type does not count.
+            made = bool(m and read_op and norm(read_op) in m["ops"])
             verdict = "configuration-only" if keeps and made else "not-evidenced"
         if not carto_ok:
             verdict = "stale-reference-property"
@@ -356,11 +355,12 @@ def run(carto_root: Path, plugin_root: Path, weights_path: Path) -> dict:
             "cartography": {
                 "commit": carto_reader.commit_of(carto_root),
                 "aws_node_labels": len(nodes),
+                "source_sha256": carto_reader.tree_digest(carto_root, ["cartography/models/**/*.py", "cartography/intel/aws/**/*.py"]),
                 "unresolved_relationships": sorted(
                     f"{label}:{r['class']}" for label, n in nodes.items() for r in n["rels"] if r["target"] is None
                 ),
             },
-            "aws_core": {"commit": tap_reader.commit_of(plugin_root), "types": len(tap["types"])},
+            "aws_core": {"commit": tap_reader.commit_of(plugin_root), "types": len(tap["types"]), "source_sha256": tap["digest"]},
             "weighting": {"name": w.name, "version": w.version, "status": w.status, "chain": list(w.chain), "sha256": w.sha256},
             "label_map_sha256": _sha(lmap_p),
             "security_attributes_sha256": _sha(attr_p),
@@ -487,7 +487,10 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if a.fail_on_regression and not a.baseline:
         ap.error("--fail-on-regression needs --baseline: without one there is nothing to compare, and the gate would pass vacuously")
-    rep = run(a.cartography, a.plugin, a.weights)
+    try:
+        rep = run(a.cartography, a.plugin, a.weights)
+    except (ValueError, OSError) as e:
+        ap.error(str(e))
     d = drift(rep, json.loads(a.baseline.read_text())) if a.baseline else None
     if d:
         rep["drift"] = d
@@ -497,6 +500,9 @@ def main(argv: list[str] | None = None) -> int:
         (a.out / "report.json").write_text(text)
         (a.out / "report.md").write_text(markdown(rep, d))
     sys.stdout.write(markdown(rep, d))
+    if a.fail_on_regression and d and not d["comparable"]:
+        sys.stderr.write("crosscheck: the baseline has a different schema_version, so no regression check was possible; failing closed\n")
+        return 1
     return 1 if (a.fail_on_regression and d and d["new_gaps"]) else 0
 
 
