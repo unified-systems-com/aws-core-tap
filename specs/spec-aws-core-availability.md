@@ -112,11 +112,11 @@ Status: `Proposed`
 | --- | --- |
 | `offered` | A credentialed call to the operation succeeded, or failed in a way that proves the operation exists |
 | `access-denied-present` | The call was refused for permission; the operation exists (a positive signal) |
-| `endpoint-absent` | The endpoint hostname does not resolve, or connections to it fail |
+| `endpoint-absent` | The standard regional endpoint hostname does not resolve (a definitive DNS answer of no such name), or the connection is actively refused. A timeout, a reset mid-handshake or any other transient failure is never this verdict; see `unreachable-unknown` |
 | `operation-absent` | The endpoint answers but names the operation unknown (`UnknownOperationException`, `InvalidAction`, `UnsupportedOperation`, HTTP 404 "unknown operation") |
 | `service-unsupported-in-region` | The service answers that it does not support the region or partition ("not supported in this region", "not supported in GovCloud") |
 | `account-not-enabled` | The service answers that the account has not opted in, subscribed or activated the feature (`OptInRequired`, `SubscriptionRequiredException`, `UninitializedAccountException`, "not enabled for this account") |
-| `unreachable-unknown` | Connect or read timed out; neither present nor absent |
+| `unreachable-unknown` | Connect or read timed out, or the connection failed in a way that is not a definitive absence; neither present nor absent. Precedence: where a failure fits both this and `endpoint-absent`, this one wins |
 | `declared-only` | Declared or derived evidence exists and no empirical evidence |
 | `unknown` | No evidence |
 
@@ -132,6 +132,9 @@ Status: `Proposed`
 1. A positive empirical result outranks any declared or derived layer.
 2. A negative DNS result outranks declared data for the service-level verdict (botocore listed four services that
    have no endpoint). A resolving name proves nothing; `inspector` resolves and times out.
+   Only the standard regional hostname, the one the SDK calls, decides service-level absence. The FIPS and dual-stack
+   forms are recorded as separate evidence fields per variant; a variant that does not resolve is not service absence,
+   because a service can offer one form and not another.
 3. A derived layer's presence is positive evidence (the GovCloud CloudFormation specification was right 99.5% of the
    time when it listed a type). Its absence is not negative evidence: it lacked 117 types whose call path worked.
 4. Where layers disagree, the stronger layer decides and the weaker is kept under `disagreements`.
