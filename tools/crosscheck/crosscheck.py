@@ -368,7 +368,7 @@ def run(carto_root: Path, plugin_root: Path, weights_path: Path) -> dict:
                     f"{label}:{r['class']}" for label, n in nodes.items() for r in n["rels"] if r["target"] is None
                 ),
             },
-            "aws_core": {"commit": tap_reader.commit_of(plugin_root), "types": len(tap["types"]), "source_sha256": tap["digest"]},
+            "aws_core": {"commit": carto_reader.commit_of(plugin_root), "types": len(tap["types"]), "source_sha256": tap["digest"]},
             "weighting": {"name": w.name, "version": w.version, "status": w.status, "chain": list(w.chain), "sha256": w.sha256},
             "label_map_sha256": _sha(lmap_p),
             "security_attributes_sha256": _sha(attr_p),

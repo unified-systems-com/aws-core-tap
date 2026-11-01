@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from carto_reader import commit_of, norm, tree_digest  # noqa: F401  (commit_of is re-exported for the CLI)
+from carto_reader import norm, tree_digest
 
 _READ_PREFIX = re.compile(r"^(Describe|List|Get|BatchGet|Lookup|Search)")
 
