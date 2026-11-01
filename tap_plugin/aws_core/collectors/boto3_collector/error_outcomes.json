@@ -1,0 +1,257 @@
+{
+  "description": "Reviewed rows naming an AWS error as a result other than a failed call (req-aws-collector-outcome). not_configured: the feature is not set up in this account, so the listing is empty-by-absence and is NOT an authoritative complete-empty observation (it licenses no retirement). unsupported_in_partition: the partition does not offer the service or operation. Rows were authored from the 2026-11-01 GovCloud (us-gov-west-1) wave-0 smoke run. A not_configured row must name its service, error code and operation or entity type: it is never a broad catch. The unsupported_in_partition rows are a stopgap until availability is derived from data; replace them, do not extend them casually.",
+  "rows": [
+    {
+      "outcome": "not_configured",
+      "service": "drs",
+      "operations": [
+        "DescribeLaunchConfigurationTemplates",
+        "DescribeReplicationConfigurationTemplates",
+        "DescribeSourceNetworks"
+      ],
+      "error_code": "UninitializedAccountException",
+      "why": "Elastic Disaster Recovery has not been initialised in this account and Region: the API answers 'Account not initialized' to every read until the first initialisation. Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "mgn",
+      "operations": [
+        "DescribeLaunchConfigurationTemplates",
+        "DescribeReplicationConfigurationTemplates",
+        "ListWaves"
+      ],
+      "error_code": "UninitializedAccountException",
+      "why": "Application Migration Service has not been initialised in this account and Region: the API answers 'Account not initialized' to every read until the first initialisation. Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "s3control",
+      "operations": [
+        "ListAccessGrants",
+        "ListAccessGrantsLocations"
+      ],
+      "error_code": "AccessGrantsInstanceNotExistsError",
+      "why": "S3 Access Grants has no instance in this account and Region; grants and locations hang off the instance, so none can exist. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListAnalyses",
+        "ListDashboards",
+        "ListFolders",
+        "ListTemplates",
+        "ListThemes"
+      ],
+      "error_code": "UnsupportedUserEditionException",
+      "why": "The account has no QuickSight subscription, which this error reports for the authoring listings ('not subscribed for QuickSight'). Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListAgents",
+        "ListKnowledgeBases",
+        "ListSpaces"
+      ],
+      "error_code": "PreconditionNotMetException",
+      "why": "The account has no QuickSight subscription ('does not have QuickSight subscription'). Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListCustomPermissions",
+        "ListNamespaces",
+        "ListOAuthClientApplications",
+        "ListVPCConnections"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account has no QuickSight subscription, so its account settings and default namespace are not found. Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "securityhub",
+      "operations": [
+        "DescribeSecurityHubV2"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account is not subscribed to Security Hub V2 ('You are not subscribed to HubV2'); the hub does not exist. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "securityhub",
+      "operations": [
+        "ListAggregatorsV2",
+        "ListAutomationRulesV2"
+      ],
+      "error_code": "ConflictException",
+      "message_contains": "not enabled",
+      "why": "Security Hub V2 is not enabled for the account ('Security Hub V2 is not enabled'); the V2 aggregators and rules cannot exist. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "securitylake",
+      "operations": [
+        "ListSubscribers"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "message_contains": "isn't enabled",
+      "why": "Security Lake is not enabled for the account in any Region, so it has no subscribers. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "ecs",
+      "operations": [
+        "ListGateways"
+      ],
+      "error_code": "UnsupportedFeatureException",
+      "message_contains": "not enabled",
+      "why": "ECS service gateways are not enabled for this account ('Service gateway is not enabled for this account'). Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "fsx",
+      "operations": [
+        "DescribeFileCaches"
+      ],
+      "error_code": "BadRequest",
+      "message_contains": "not enabled",
+      "why": "The FSx File Cache feature is not enabled for this account ('The requested feature is not enabled for this AWS account'). Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "exception": "ConnectTimeoutError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint accepts no connection within the connect timeout outside the commercial partition (Inspector classic in GovCloud waited five minutes on this). Inferred to mean not offered; a transient timeout would read the same, so the result is recorded as unsupported, not as empty."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "UnknownOperationException",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint exists but does not know the operation in this partition."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "InvalidAction",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint rejects the action as not valid for this web service in this partition."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "UnsupportedOperation",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The operation is answered as not available in this Region or partition."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "OperationNotSupportedException",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The operation is answered as not supported in this Region or partition."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "404",
+      "message_contains": "unknown operation",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The gateway answers 404 'Unknown Operation' for an operation the partition's endpoint does not have."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "404",
+      "message_contains": "no method found matching route",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The gateway answers 404 for a route the partition's endpoint does not have."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "InvalidRequestException",
+      "message_contains": "not supported in this region",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service answers that the operation is not supported in this Region."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "InvalidRequestException",
+      "message_contains": "not supported yet",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "IoT SiteWise answers that the feature is not supported yet in this partition."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "BadRequestException",
+      "message_contains": "not supported in this region",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service answers that the API is not supported in this Region."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "ValidationException",
+      "message_contains": "not supported in govcloud",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service answers that the operation is not supported in GovCloud."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "InvalidInputException",
+      "message_contains": "unknown operation",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "CodeBuild answers 'Unknown operation' for an operation the partition's endpoint does not have."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "*",
+      "error_code": "InvalidParameterValueException",
+      "message_contains": "currently unavailable",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "MemoryDB answers that the API operation is currently unavailable in this partition."
+    }
+  ]
+}

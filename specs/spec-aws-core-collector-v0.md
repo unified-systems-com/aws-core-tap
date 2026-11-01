@@ -99,6 +99,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
 | req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
+| req-aws-collector-outcome | [Listing Outcomes And Client Posture](#listing-outcomes-and-client-posture) | Approved for Development | A listing that yields nothing for a named reason that is not a failed call (`not_configured`, `unsupported_in_partition`, `throttled`) is a recorded result and never a complete-empty observation; one `Config` for timeouts and retries |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source, and each Organizations placement and attachment read, was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
@@ -318,7 +319,9 @@ Seam](#fan-out-hydrate-seam) rather than hand-rolling pagination/error handling.
 | req-aws-collector-source-6 | Parent Fan-Out | Approved for Development | `source` may be `{aws_op, per, bind}`: `per` is the call (itself possibly `per` another) that lists the parents, `bind` maps this operation's request parameters to paths on one parent (`""` is the parent itself), and the operation runs once per parent. Each child item carries its parent under `_parent` for `fields` to read. A parent whose call raises fails the whole listing, so the type reads as not collected, never as a short list that looks complete. A `per` that has its own `per` must carry a `bind`. The final listing's items must be structures (a scalar item has no slot for `_parent`, so one fails the listing); every declared operation, parent calls included, must start with a read verb (`tests/test_boto3_collector_source.py::test_every_declared_operation_is_a_read`); `_parent` is stripped before the item is stored as `configuration` (for a `per` entry only; `raw_item` keeps it in memory for edge and authority reads and is never stored). Either level may carry literal `params`, fixed request arguments the parent does not supply. A `per` may instead be `{values: [...]}`, a literal list of string parents for a request no call can supply the value of (App Auto Scaling's `ServiceNamespace`), bound with `""`. A middle level that lists bare names carries each as `{"_self": name, "_parent": the level above}`, so the next level binds both (`_self`, `_parent`); only the last level's items must be structures. A `bind` key may be dotted (`SchemaId.SchemaArn`) to build a nested request structure, and a bind value may be `{path, list: true}` for a list-typed parameter. A scalar parent (a bare name or ARN from the list) is described by a final operation whose `items_path` names one structure without `[]` (a `Describe`/`Get`): that structure is the one item.  An entry with `per` cannot declare `containment`. The collector reads the whole listing before it emits any node, so a failing parent skips the entry with no partial output (`collector.py`, `items = list(iter_source(...))`). | `source.py::iter_fanout`; `tests/test_boto3_collector_source.py::TestPerFanout`. Opens the types whose list call needs a parent id (a table inside a database, a device inside a fleet). |
 | req-aws-collector-source-7 | Account Parameter | Approved for Development | A plain `aws_op` source may carry literal `params`, and any `params` value in a source (plain or `per`) equal to the string `$account_id` is replaced by the account being collected. A source that names it when the collector has no account id fails the listing. | `source.py::_with_account`; `tests/test_boto3_collector_source.py::TestAccountParam`. Opens the list calls that ask for the account (QuickSight `AwsAccountId`). |
 | req-aws-collector-source-8 | Derived Item Keys | Approved for Development | An entry may carry `derive`, a map of item key (must start with `_`, so it cannot shadow an AWS member) to a template. `{partition}`, `{region}` and `{account}` are the scope being collected; any other `{Path}` is a path on the item. The built keys are added to each item before projection, so `natural_key`, `fields` and the tags lane read them like any member; they are not stored in `configuration`. A missing value fails the listing. For a resource a listing names but gives no ARN, with the ARN format cited per service from botocore or IAM documentation. | `source.py::iter_source`, `render_template`; `tests/test_boto3_collector_source.py::TestDerive`. Prior art: Steampipe builds the Glue job ARN from partition, region, account and name; Cartography's `build_arn`. |
-| req-aws-collector-source-9 | Item Filter | Approved for Development | A plain `aws_op` source, a `per` level, or the final `per` call may carry `where`, a list of conditions every item must satisfy: a `path` on the item and one of `equals`, `not_equals`, `in`, `prefix`, `contains`. For a listing that mixes kinds of one resource with no request filter (Comprehend's document-classifier and entity-recognizer endpoints), or that returns a mutable working copy beside the numbered versions (`not_equals: DRAFT` on a version listing). A tags-lane `service` param may carry `list: true` to send the value as a one-element list. | `source.py::_passes`; `tests/test_boto3_collector_source.py::TestWhere`. |
+| req-aws-collector-source-9 | Item Filter | Approved for Development | A plain `aws_op` source, a `per` level, or the final `per` call may carry `where`, a list of conditions every item must satisfy: a `path` on the item and one of `equals`, `not_equals`, `in`, `prefix`, `not_prefix`, `contains`. For a listing that mixes kinds of one resource with no request filter (Comprehend's document-classifier and entity-recognizer endpoints), or that returns a mutable working copy beside the numbered versions (`not_equals: DRAFT` on a version listing). A tags-lane `service` param may carry `list: true` to send the value as a one-element list. | `source.py::_passes`; `tests/test_boto3_collector_source.py::TestWhere`. |
+| req-aws-collector-source-10 | Request Forms The API Insists On | Approved for Development | A listing the API refuses without a parameter carries it in `params` (`DescribeVpcBlockPublicAccessExclusions` takes `MaxResults`, which it requires when no `ExclusionIds` are given); a listing the API cannot make account-wide fans out per parent (`ListAssets` of IoT SiteWise requires an asset model, so it runs per `ListAssetModels` item of type `ASSET_MODEL`, as AWS documents). | `tests/test_boto3_collector_outcomes.py::TestRequestFixes`. Both found by the 2026-11-01 GovCloud wave-0 run. |
+| req-aws-collector-source-11 | AWS-Owned Registry Not The Account's | Approved for Development | The EventSchemas registry `aws.events` (and any registry whose name starts `aws.`) is AWS's, its schemas carry no `SchemaArn` and it no `RegistryArn`; both entries filter it out (`where` `not_prefix: aws.`) and say so in `why`. This is the only AWS-owned-default filtering the manifest does; any other is a separate decision. | `TestRequestFixes::test_the_aws_owned_registry_is_not_read_as_the_accounts`, `::test_the_schemas_of_the_aws_owned_registry_are_not_listed`. |
 
 ### Field Projection
 ----
@@ -1077,7 +1080,7 @@ resilience shape, implemented as TAP code against `record_warn`.
 | req-aws-collector-regions-1 | Per-Region / Global Split | Approved for Development | Regional entries sweep configured regions; global entries collect once. | |
 | req-aws-collector-regions-5 | Secret-Scoped Region Set | Approved for Development | The swept region set is `data.regions_allowed` if non-empty, else `[data.region]`, else the run fails visibly. | Operator-owned scope; `req-aws-core-secret-aws-static-4`. |
 | req-aws-collector-regions-2 | Classify-And-Skip | Approved for Development | Expected permission/region errors record a `warn` and skip; the run continues. | |
-| req-aws-collector-regions-3 | Bounded Throttle Backoff | Approved for Development | Throttling retries with bounded backoff; unbroken throttle fails per protocol. | |
+| req-aws-collector-regions-3 | Bounded Throttle Backoff | Approved for Development | Throttling retries with bounded backoff; unbroken throttle fails per protocol. | Realised by `req-aws-collector-outcome-4` and `-6`: the adaptive retry budget, then the named `throttled` outcome. |
 | req-aws-collector-regions-4 | No Data Corruption On Skip | Approved for Development | A skipped region/resource never alters previously collected data. | v0 has no deletes; reaping must honor this. |
 
 ### AWS Partitions
@@ -1141,6 +1144,61 @@ choice follows from it.
 | req-aws-collector-partition-4 | Global Services In Partition | Implemented | Global-service clients bind to a region of the run's partition; the partition's home region is the only fallback literal. | `TestGovCloudEndpoints`, `test_no_hardcoded_commercial_partition_or_region_in_collector_code`. Offline against botocore's endpoint data; no live GovCloud run observed. The falsifiers are outside the guard. |
 | req-aws-collector-partition-5 | CloudFront Degrades In GovCloud | Implemented | A service the partition does not offer is recorded as not available and never called. | `test_run_lands_govcloud_shaped_nodes_and_says_cloudfront_is_not_offered` |
 | req-aws-collector-partition-6 | FIPS Opt-In | Implemented | `use_fips_endpoint` true/false is pinned on the session and reaches every client; absent defers to botocore's environment/shared-config resolution; the effective value is reported. | `TestGovCloudEndpoints`, `TestSelfTestReportsPartition` |
+
+### Listing Outcomes And Client Posture
+----
+RID: `req-aws-collector-outcome`
+
+Status: `Approved for Development`
+
+A listing that raised is not always a failed call. Four results are kept apart, and only the
+first is a failure:
+
+- **failed** — any error no reviewed row names. Recorded as `ENTRY_SKIPPED` (a warning), as before.
+- **`not_configured`** — the feature is not set up in this account (DRS and MGN never initialised, no
+  QuickSight subscription, S3 Access Grants without an instance, Security Hub V2 or Security Lake not
+  enabled). Zero rows, an `ENTRY_NOT_CONFIGURED` info, no warning.
+- **`unsupported_in_partition`** — the partition does not offer the service or the operation
+  (`EndpointConnectionError`, `ConnectTimeoutError`, `UnknownOperationException`, `InvalidAction`,
+  `UnsupportedOperation`, a 404 Unknown Operation, "not supported in this region"). Zero rows, the
+  existing `SERVICE_NOT_AVAILABLE_IN_PARTITION` info (carrying `outcome`), no warning. A service whose
+  endpoint could not be reached is learned once per (service, region) and its other entries are settled
+  without a call.
+- **`throttled`** — the service rate-limited past the client's retries. A distinct `ENTRY_THROTTLED`
+  warning; never read as empty.
+
+#### Implementation
+
+- **Data, not code, not a broad catch.** `error_outcomes.json` (schema `error_outcomes.schema.json`,
+  validated at load by `outcomes.load_rows`) holds one reviewed row per case with a `why`. A
+  `not_configured` row must name its service, its error code and its operations or entity types. The
+  `unsupported_in_partition` rows apply outside the commercial partition only (`not_in_partitions`) and
+  are a stopgap until availability is derived from data; they are small and meant to be replaced.
+  Throttling is classified from the error code alone.
+- **Never an authoritative empty listing.** `Listing.outcome` (region-scoped containment) and
+  `ListingWalk.not_observed` (account-scoped) record the outcome; the surface is then
+  `enumeration_complete: false`, `admitted: false`, with the named reason, so
+  `tap_grid.completeness` derives `reconcilable` false and no candidate is derived: an account that
+  has not set a feature up must never license retiring what the grid holds for it. The credential was
+  allowed to ask for `not_configured` (`scope_authorized: true`); for the other two it is not determinable.
+- **One client `Config`.** `credentials.client_config` is the only place connect timeout (5 s: a regional
+  endpoint answers in well under a second), read timeout (60 s) and retry posture (`adaptive`, 8 attempts:
+  client-side rate limiting absorbs a fan-out's burst, and the budget stays finite) are set. Every client
+  the collector builds takes it, and it is the session's default client config so a client a `custom_fn`
+  builds directly has it too. botocore has no separate budget for connection errors, so an endpoint that
+  never answers costs at most ~8 connect timeouts plus backoff per (service, region), about a minute,
+  where botocore's defaults cost ~312 s per entry (Inspector classic, GovCloud, measured).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-outcome-1 | Reviewed Data Rows | Approved for Development | An error is a `not_configured` or `unsupported_in_partition` result only where a row of `error_outcomes.json` matches its service, error code or exception, operation or entity type, and message text; every row has a `why`, and a `not_configured` row cannot omit its service, code or operation. An unmatched error fails the listing as before. | `tests/test_boto3_collector_outcomes.py::TestTheShippedRows`, `::TestClassify` |
+| req-aws-collector-outcome-2 | Empty Plus Info | Approved for Development | A matching listing yields zero rows and an info (`ENTRY_NOT_CONFIGURED`, or `SERVICE_NOT_AVAILABLE_IN_PARTITION` with `outcome`), never an `ENTRY_SKIPPED` warning. | `::TestCollectorRun::test_a_mapped_error_is_empty_plus_an_info_and_not_a_complete_listing` |
+| req-aws-collector-outcome-3 | Not A Complete Empty Observation | Approved for Development | A named outcome makes the listing's completeness surface `enumeration_complete: false` and `admitted: false` with the reason, region-scoped and account-scoped alike, so it licenses no retirement. | `::TestCompletenessConsequence` |
+| req-aws-collector-outcome-4 | Throttling Is Named | Approved for Development | A throttling error that outlasts the client's retries is `throttled`: an `ENTRY_THROTTLED` warning and an incomplete surface, never an empty one. | `::TestCollectorRun::test_a_throttled_listing_is_a_named_warning_and_not_an_empty_one` |
+| req-aws-collector-outcome-5 | Unreachable Learned Once | Approved for Development | An unreachable endpoint (outside commercial) is recorded `unsupported_in_partition` and the service's remaining entries in that region are settled without a call. | `::TestCollectorRun::test_an_unreachable_service_is_learned_once_not_once_per_entry` |
+| req-aws-collector-outcome-6 | One Client Config | Approved for Development | Every collection client has an explicit connect timeout, read timeout and finite adaptive retry budget from `credentials.client_config`; no module builds its own retry `Config`. | `::TestClientConfig` |
 
 ### GRIFT Batch Assembly
 ----

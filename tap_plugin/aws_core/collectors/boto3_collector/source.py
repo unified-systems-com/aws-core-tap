@@ -315,7 +315,7 @@ def _bound_value(parent: Any, path: Any) -> Any:
 
 
 def _passes(item: Any, where: list[dict[str, Any]]) -> bool:
-    """``item`` satisfies every condition of a ``where`` block (``equals``, ``not_equals``, ``in``, ``prefix``, ``contains``)."""
+    """``item`` satisfies every condition of a ``where`` block (``equals``, ``not_equals``, ``in``, ``prefix``, ``not_prefix``, ``contains``)."""
     for cond in where:
         value = eval_path(item, cond["path"])
         if "equals" in cond and value != cond["equals"]:
@@ -325,6 +325,8 @@ def _passes(item: Any, where: list[dict[str, Any]]) -> bool:
         if "in" in cond and value not in cond["in"]:
             return False
         if "prefix" in cond and not (isinstance(value, str) and value.startswith(cond["prefix"])):
+            return False
+        if "not_prefix" in cond and isinstance(value, str) and value.startswith(cond["not_prefix"]):
             return False
         if "contains" in cond and not (isinstance(value, str) and cond["contains"] in value):
             return False
