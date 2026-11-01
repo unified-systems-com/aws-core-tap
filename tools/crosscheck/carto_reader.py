@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import ast
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -41,14 +40,31 @@ def _base_names(cls: ast.ClassDef) -> list[str]:
 
 
 def commit_of(root: Path) -> str:
-    """The clone's HEAD commit, or 'unknown' when it is not a git checkout."""
+    """The checkout's HEAD commit, read from the .git files directly (no git process), or 'unknown'."""
     try:
-        out = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True, timeout=30
-        )
-        return out.stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return "unknown"
+        git = root / ".git"
+        if git.is_file():  # a worktree or submodule: ".git" is a file pointing at the real directory
+            line = git.read_text().strip()
+            if line.startswith("gitdir:"):
+                git = (root / line.split(":", 1)[1].strip()).resolve()
+        head = (git / "HEAD").read_text().strip()
+        if not head.startswith("ref:"):
+            return head
+        ref = head.split(":", 1)[1].strip()
+        common = git
+        if (git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
+            common = (git / (git / "commondir").read_text().strip()).resolve()
+        for base in (git, common):
+            if (base / ref).is_file():
+                return (base / ref).read_text().strip()
+        packed = common / "packed-refs"
+        if packed.is_file():
+            for line in packed.read_text().splitlines():
+                if line.endswith(" " + ref) and not line.startswith(("#", "^")):
+                    return line.split()[0]
+    except OSError:
+        pass
+    return "unknown"
 
 
 def _index(models_dir: Path) -> tuple[dict[str, ast.ClassDef], dict[str, Any]]:

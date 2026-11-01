@@ -24,7 +24,6 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))  # sibling modules; the script is run isolated (-I), which drops its own directory

@@ -8,23 +8,12 @@ from __future__ import annotations
 import ast
 import json
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
-from carto_reader import norm
+from carto_reader import commit_of, norm  # noqa: F401  (commit_of is re-exported for the CLI)
 
 _READ_PREFIX = re.compile(r"^(Describe|List|Get|BatchGet|Lookup|Search)")
-
-
-def commit_of(root: Path) -> str:
-    try:
-        out = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True, timeout=30
-        )
-        return out.stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return "unknown"
 
 
 def _classvar(cls: ast.ClassDef, name: str) -> Any:

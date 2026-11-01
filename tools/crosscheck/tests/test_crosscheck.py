@@ -189,6 +189,33 @@ class TestCartoReader:
         assert not marker.exists()
 
 
+class TestCommitOf:
+    SHA = "a" * 40
+
+    def test_loose_ref_packed_ref_detached_and_unknown(self, tmp_path):
+        g = tmp_path / "loose/.git"
+        _w(g / "HEAD", "ref: refs/heads/main\n")
+        _w(g / "refs/heads/main", self.SHA + "\n")
+        assert carto_reader.commit_of(tmp_path / "loose") == self.SHA
+        p = tmp_path / "packed/.git"
+        _w(p / "HEAD", "ref: refs/heads/main\n")
+        _w(p / "packed-refs", f"# pack-refs\n{self.SHA} refs/heads/main\n^{'b' * 40}\n")
+        assert carto_reader.commit_of(tmp_path / "packed") == self.SHA
+        d = tmp_path / "detached/.git"
+        _w(d / "HEAD", self.SHA + "\n")
+        assert carto_reader.commit_of(tmp_path / "detached") == self.SHA
+        assert carto_reader.commit_of(tmp_path / "nothing") == "unknown"
+
+    def test_a_worktree_reads_shared_refs_from_the_main_git_directory(self, tmp_path):
+        main = tmp_path / "main/.git"
+        _w(main / "refs/heads/feat", self.SHA + "\n")
+        wt = main / "worktrees/w"
+        _w(wt / "HEAD", "ref: refs/heads/feat\n")
+        _w(wt / "commondir", "../..\n")
+        _w(tmp_path / "w/.git", f"gitdir: {wt}\n")
+        assert carto_reader.commit_of(tmp_path / "w") == self.SHA
+
+
 class TestTapReader:
     def test_reads_types_manifest_edges_ops_and_ledger(self, plugin):
         t = tap_reader.read(plugin)
