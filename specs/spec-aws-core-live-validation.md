@@ -55,6 +55,7 @@ Tracked by `unified-systems-com/aws-core-tap#107`.
 | req-aws-core-livevalidation-catalog | [Seed Catalog](#seed-catalog) | Proposed | Per-type seeding facts, as data |
 | req-aws-core-livevalidation-waves | [Waves](#waves) | Proposed | A planner turns weights, ledger state and the catalog into ordered waves |
 | req-aws-core-livevalidation-verdict | [Verdict And Promotion](#verdict-and-promotion) | Proposed | What a pass is; what moves a ledger row |
+| req-aws-core-livevalidation-lifecycle | [Lifecycle](#lifecycle) | Proposed | Delete in AWS, collect again, and confirm the grid retires it and what it contains, with negative controls |
 | req-aws-core-livevalidation-safety | [Safety](#safety) | Proposed | Identities, regions, cost, teardown, state |
 
 ### Three Layers
@@ -144,8 +145,12 @@ service, outside the wheel. Rules:
    projection check compares. The collector never reads the state; the state is the known truth, not an input.
 3. **Named for the seeder.** IAM roles, users, policies and instance profiles are named `seed-*`, the only
    names the seeder may create.
-4. **Awkward on purpose.** A module includes the cases the oracle names: an untagged resource, odd tag keys, a
-   second region, a public setting.
+4. **Awkward on purpose, and bounded.** A module includes the cases the oracle names: an untagged resource, odd tag
+   keys, a second region, a public setting. A public setting is **inert**: it exists only to be read, and nothing is
+   reachable through it. Concretely, a security-group rule open to the internet on a high port while the group is
+   attached to nothing; never a public bucket policy or ACL, never a public IP address, never a resource that holds
+   data or listens. It is created and destroyed within the wave, and a module that would make anything reachable is
+   refused by review, not tuned.
 5. **Provider.** The Cloud Control provider (`awscc`) generates resources from the CloudFormation schemas, so its
    type names are our key space. Where it is unavailable in GovCloud, the `aws` provider is used and the catalog
    carries the mapping. This is an open question.
@@ -211,6 +216,44 @@ decisions with the run record cited; it is made by a person reading the record, 
 validated at the call path only stays `collected-unverified` with the evidence noted. A failed type stays as
 it is and the failure becomes an issue.
 
+### Lifecycle
+----
+RID: `req-aws-core-livevalidation-lifecycle`
+
+Status: `Proposed`
+
+The seed waves also test deletion, because a collector that never notices a deleted thing leaves the grid asserting
+what no longer exists. This is a layer beyond projection: it needs the **full collector run that submits to the grid**
+(the engine-path harness used for projection writes nothing there), the grid's reconciliation (`spec-grid-reconcile.md`:
+retirement ends an observation, not the thing; it needs evidence, a per-type falsifier and an operator-armed
+authority that is off by default) and containment cascade (`spec-grid-cascade-corpus.md`).
+
+Preconditions: the test stack only; reconcile authority armed for this collector on that stack with a stated budget,
+and disarmed afterwards; the wave applied and collected so the grid holds its nodes and edges (checked against the
+expected inventory). Types in scope are those that declare containment, a completeness surface and a falsifier
+(`req-aws-core-contained-type-triple`): VPC, subnet, security group, EC2 instance, and the account-contained IAM and
+S3 types, all in wave 1.
+
+Cases, each recorded pass or fail with its evidence:
+
+| Case | Action | Expected |
+| --- | --- | --- |
+| Leaf with edges | Destroy the instance alone (`terraform destroy -target`), collect again | The instance's observation ends with recorded evidence; every edge incident to it ends; its subnet, security group, instance profile and volume are untouched |
+| Contained child | Destroy a subnet that is empty, collect again | The subnet retires; the VPC and its sibling subnet are untouched |
+| Account-contained | Destroy a role (with its attachments), then a bucket | Each retires; the account node and the other roles and buckets are untouched |
+| Subtree | Destroy the rest of the VPC's contents, then the VPC | The VPC retires after its children, in AWS's dependency order; nothing outside it moves |
+| History | Read a retired node | The row remains with a terminal observation lifetime; it is not removed |
+| Return | Create an object with the same natural key again, collect | A new observation lifetime, not a contradiction |
+
+Negative controls, which matter as much: **absence of evidence must retire nothing.** (1) A run whose listing for a
+type is refused (use a type the read-only identity is denied, from the wave 0 record) retires none of that type. (2) A
+run restricted to a subset of types retires nothing of the types it did not read (this settles the subset-run open
+question below). (3) A run with reconcile authority off retires nothing. (4) A truncated or throttled listing retires
+nothing. Each is run with a seeded object present, so a wrong retirement would be visible.
+
+Cascade is reported separately from retirement: for each retirement, the nodes and edges that went with it, listed
+against the containment declarations, so a missing or an extra cascade is a named finding.
+
 ### Safety
 ----
 RID: `req-aws-core-livevalidation-safety`
@@ -245,3 +288,6 @@ Status: `Proposed`
 3. **Organization.** Is the account an AWS Organizations member? Organization-level types are `blocked` if not.
 4. **Budget.** A cost ceiling per wave and per day.
 5. **Where verified evidence lives.** In the ledger decisions as a citation, or as files under `ledger/`.
+6. **Firing a full run on the test stack.** How a complete collector run, with its collection job and collector node, is
+   started on the local stack so that it submits to the grid; and which operator arms reconcile authority and the budget
+   to use.
