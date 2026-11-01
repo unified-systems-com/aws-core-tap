@@ -56,7 +56,7 @@ def resolve_labels(nodes: dict[str, dict], tap_types: set[str], lmap: dict) -> d
 _CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 
 
-def _clean(s: Any) -> str:
+def _clean(s: object) -> str:
     """Text taken from an analysed tree is untrusted: control characters (terminal escapes) are replaced before it is printed."""
     return _CTRL.sub("?", str(s))
 
