@@ -1,0 +1,13 @@
+{
+ "_description": "Defects found in Cartography, each with the evidence that lets its team reproduce it. An entry is added only after a person has verified it (a static-check lead in the report is not yet a finding). Status: open, reported (with the issue URL), fixed-upstream.",
+ "findings": [
+  {
+   "id": "vpn-gateway-edge-unimplemented",
+   "lead_id": "dangling-target:AWSEC2RouteTable:CONNECTED_TO:AWSVpnGateway",
+   "status": "acknowledged-upstream",
+   "found_in_commit": "2560d4d55794",
+   "summary": "RouteTableToVpnGatewayRel targets AWSVpnGateway, which no schema defines, so the CONNECTED_TO edge from a route table to a VPN gateway can never materialise.",
+   "evidence": "cartography/models/aws/ec2/route_tables.py lines 117-123: '# TODO implement AWSVpnGateways' and 'No edge can materialize until AWSVpnGateway nodes are implemented.' Cartography documents this itself, so it is a known gap rather than a bug to report; recorded so the lead is not raised again."
+  }
+ ]
+}

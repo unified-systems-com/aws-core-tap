@@ -1,0 +1,245 @@
+{
+  "name": "fedramp-additions",
+  "version": 1,
+  "status": "draft",
+  "extends": "cartography-set-v1.json",
+  "description": "PROPOSED, not yet adopted. Adds weight for types aws_core already collects that Cartography either does not model or models only in part, and that a FedRAMP-authorised AWS environment is assessed on, citing the NIST 800-53 control family each supports. Its rules come first, so they override the base weighting for the types they name. Its cfn_type rules also name services neither side models yet (Shield, Macie, Audit Manager), which is how the report shows them as open work in the coverage ledger.",
+  "default_weight": 0,
+  "rules": [
+    {
+      "cfn_type": "AWS::Shield::*",
+      "weight": 5,
+      "why": "Shield: DDoS protection (SC-5)"
+    },
+    {
+      "cfn_type": "AWS::Macie::*",
+      "weight": 5,
+      "why": "Macie: sensitive-data discovery (RA-5, SI-12)"
+    },
+    {
+      "cfn_type": "AWS::AuditManager::*",
+      "weight": 3,
+      "why": "Audit Manager: evidence collection (CA-2, CA-7)"
+    },
+    {
+      "cfn_type": "AWS::WAFv2::*",
+      "weight": 5,
+      "why": "WAFv2 (SC-7)"
+    },
+    {
+      "cfn_type": "AWS::WAFRegional::*",
+      "weight": 3,
+      "why": "WAF classic regional"
+    },
+    {
+      "cfn_type": "AWS::NetworkFirewall::*",
+      "weight": 5,
+      "why": "Network Firewall (SC-7)"
+    },
+    {
+      "cfn_type": "AWS::AccessAnalyzer::*",
+      "weight": 5,
+      "why": "Access Analyzer (AC-3, CA-7)"
+    },
+    {
+      "cfn_type": "AWS::InspectorV2::*",
+      "weight": 5,
+      "why": "Inspector (RA-5)"
+    },
+    {
+      "cfn_type": "AWS::Inspector::*",
+      "weight": 3,
+      "why": "Inspector classic"
+    },
+    {
+      "cfn_type": "AWS::Backup::*",
+      "weight": 5,
+      "why": "Backup (CP-9)"
+    },
+    {
+      "cfn_type": "AWS::Detective::*",
+      "weight": 3,
+      "why": "Detective (IR-4)"
+    },
+    {
+      "cfn_type": "AWS::FMS::*",
+      "weight": 3,
+      "why": "Firewall Manager"
+    },
+    {
+      "cfn_type": "AWS::CloudHSM::*",
+      "weight": 3,
+      "why": "CloudHSM (SC-12)"
+    },
+    {
+      "cfn_type": "AWS::ACMPCA::*",
+      "weight": 3,
+      "why": "Private CA (SC-17)"
+    },
+    {
+      "cfn_type": "AWS::DirectoryService::*",
+      "weight": 3,
+      "why": "Directory Service (IA-2)"
+    },
+    {
+      "cfn_type": "AWS::Route53Resolver::*",
+      "weight": 3,
+      "why": "DNS firewall and resolver logging (SC-20, AU-2)"
+    },
+    {
+      "cfn_type": "AWS::SSM::PatchBaseline",
+      "weight": 3,
+      "why": "Patch baselines (SI-2)"
+    },
+    {
+      "cfn_type": "AWS::SSM::MaintenanceWindow*",
+      "weight": 3,
+      "why": "Patch windows (SI-2)"
+    },
+    {
+      "cfn_type": "AWS::StepFunctions::*",
+      "weight": 1,
+      "why": "Step Functions"
+    },
+    {
+      "cfn_type": "AWS::CodePipeline::*",
+      "weight": 1,
+      "why": "CodePipeline (CM-3)"
+    },
+    {
+      "cfn_type": "AWS::EC2::VPCEndpoint*",
+      "weight": 3,
+      "why": "VPC endpoints (SC-7)"
+    },
+    {
+      "cfn_type": "AWS::EC2::TransitGateway*",
+      "weight": 3,
+      "why": "Transit gateway (SC-7)"
+    },
+    {
+      "cfn_type": "AWS::EC2::ClientVpn*",
+      "weight": 3,
+      "why": "Client VPN (AC-17)"
+    },
+    {
+      "tap_type": "aws_core__aws_wafv2_*",
+      "weight": 5,
+      "why": "WAFv2 web ACLs and rule groups: the application-layer boundary protection"
+    },
+    {
+      "tap_type": "aws_core__aws_networkfirewall_*",
+      "weight": 5,
+      "why": "Network Firewall: boundary protection (SC-7)"
+    },
+    {
+      "tap_type": "aws_core__aws_ec2_flow_log",
+      "weight": 5,
+      "why": "VPC flow logs: network audit record (AU-2, SI-4)"
+    },
+    {
+      "tap_type": "aws_core__aws_access_analyzer*",
+      "weight": 5,
+      "why": "IAM Access Analyzer: external-access findings (AC-3, CA-7)"
+    },
+    {
+      "tap_type": "aws_core__aws_iam_policy",
+      "weight": 5,
+      "why": "IAM policy documents: the permissions the access model rests on (AC-6)"
+    },
+    {
+      "tap_type": "aws_core__aws_iam_oidc_provider",
+      "weight": 3,
+      "why": "OIDC federation trust"
+    },
+    {
+      "tap_type": "aws_core__aws_cloudtrail_event_data_store",
+      "weight": 3,
+      "why": "CloudTrail Lake: audit retention (AU-11)"
+    },
+    {
+      "tap_type": "aws_core__aws_cloudtrail_*",
+      "weight": 3,
+      "why": "Other CloudTrail types"
+    },
+    {
+      "tap_type": "aws_core__aws_config_*",
+      "weight": 5,
+      "why": "AWS Config rules, aggregators and conformance packs: continuous monitoring (CA-7, CM-6)"
+    },
+    {
+      "tap_type": "aws_core__aws_securityhub_*",
+      "weight": 5,
+      "why": "Security Hub configuration and findings"
+    },
+    {
+      "tap_type": "aws_core__aws_guardduty_*",
+      "weight": 5,
+      "why": "GuardDuty detectors, filters and findings (SI-4)"
+    },
+    {
+      "tap_type": "aws_core__aws_inspector*",
+      "weight": 3,
+      "why": "Inspector scans (RA-5)"
+    },
+    {
+      "tap_type": "aws_core__aws_backup_*",
+      "weight": 5,
+      "why": "AWS Backup plans, vaults and frameworks (CP-9)"
+    },
+    {
+      "tap_type": "aws_core__aws_fms_*",
+      "weight": 3,
+      "why": "Firewall Manager policies across accounts"
+    },
+    {
+      "tap_type": "aws_core__aws_cloudhsm_cluster",
+      "weight": 3,
+      "why": "CloudHSM: key custody (SC-12)"
+    },
+    {
+      "tap_type": "aws_core__aws_acm_private_ca",
+      "weight": 3,
+      "why": "Private CA: certificate issuance (SC-17)"
+    },
+    {
+      "tap_type": "aws_core__aws_directoryservice_directory",
+      "weight": 3,
+      "why": "Managed directories (IA-2)"
+    },
+    {
+      "tap_type": "aws_core__aws_ssm_patch_baseline",
+      "weight": 3,
+      "why": "Patch baselines (SI-2)"
+    },
+    {
+      "tap_type": "aws_core__aws_ssm_maintenance_window",
+      "weight": 3,
+      "why": "Patch maintenance windows (SI-2)"
+    },
+    {
+      "tap_type": "aws_core__aws_route53resolver_*",
+      "weight": 3,
+      "why": "DNS firewall and resolver logging (SC-20, AU-2)"
+    },
+    {
+      "tap_type": "aws_core__aws_logs_*",
+      "weight": 3,
+      "why": "CloudWatch Logs delivery, destinations and subscriptions (AU-6, AU-9)"
+    },
+    {
+      "tap_type": "aws_core__aws_detective_graph",
+      "weight": 1,
+      "why": "Detective investigation graph"
+    },
+    {
+      "tap_type": "aws_core__aws_stepfunctions_*",
+      "weight": 1,
+      "why": "Step Functions: workflow definitions that can carry privileges"
+    },
+    {
+      "tap_type": "aws_core__aws_codepipeline_*",
+      "weight": 1,
+      "why": "CodePipeline: the change path (CM-3)"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+# crosscheck
+
+Compares `aws_core` with Cartography's AWS data model, statically and deterministically, and writes a
+report. It is a canary for drift and a way to find what we have not built; it is not part of the plugin
+wheel and imports neither project. Specification: `specs/spec-aws-core-crosscheck.md`.
+
+```
+python3 -I tools/crosscheck/crosscheck.py --cartography ~/src/cartography \
+    [--weights tools/crosscheck/weights/cartography-set-v1.json] \
+    [--out DIR] [--baseline DIR/report.json] [--fail-on-regression]
+```
+
+It needs only the Python this repository uses (3.14) and nothing installed. `--cartography` is a clone of
+`cartography-cncf/cartography` (it is only read, by parsing; nothing in it is run). The same inputs give
+the same `report.json`, so keep one from a known-good run and pass it as `--baseline`: the report then lists
+the gaps that appeared and the ones that closed, and `--fail-on-regression` turns a new gap into exit code 1.
+
+## What it measures
+
+| Metric | Question |
+| --- | --- |
+| Coverage | Of the labels Cartography models, how many do we collect? |
+| Accuracy | On the types both collect, how many of Cartography's properties do we hold as typed fields? (Compared as AWS API keys, since field names differ; types that store their whole configuration are counted separately.) |
+| Linkage | Of Cartography's relationships between comparable types, how many have a matching edge between the same two types of ours? |
+| Operations | Which AWS API reads does Cartography make that we do not? |
+| Security attributes | A reviewed list (`security_attributes.json`) of encryption, exposure, logging and similar attributes: typed, held only in the configuration blob, absent, or stale. |
+| Tags | Do both read tags for a type? |
+| Identity | Do both key a type on an ARN? |
+| Containment | Account membership (we use a dimension, not an edge) and regional containment. |
+| Ledger | Under the weighting, how much of the coverage ledger is collected, decided, or open. |
+| Cartography candidate defects | Leads found by static checks, and the findings people have verified (`cartography_findings.json`). |
+
+Every figure is also given weighted. A static comparison cannot say whether a collected value is right;
+that is what a live account decides (`specs/spec-aws-core-collection-oracle.md`).
+
+## Weightings
+
+A weighting is a JSON file in `weights/` (schema: `weights/weights.schema.json`), separate from the script.
+Rules are tried in order and the first match wins. A rule selects by Cartography label (`carto_label`), by
+aws_core type (`tap_type`), by security attribute (`attribute`) or by CloudFormation type in the coverage
+ledger (`cfn_type`), and carries a weight and a reason. A file may `extend` another and its rules then come
+first. To make a weighting for a new situation, copy one, change the rules, and pass `--weights`. Nothing in
+`crosscheck.py` has to change.
+
+| File | Use |
+| --- | --- |
+| `cartography-set-v1.json` | Cartography's own modelled set, with the long-established core services at 5, supporting services and Bedrock at 3, the rest of its set at 1. Draft. |
+| `fedramp-additions-v1.json` | Proposed overlay for a FedRAMP boundary. Draft. |
+
+## Keeping the mapping honest
+
+- `label_map.json` maps Cartography labels to our types where their names differ. An empty list means a
+  reviewed gap; a label in neither the map nor name-matched is reported as unmapped, so a new Cartography
+  label shows up as work rather than disappearing.
+- `security_attributes.json` needs all three names for each entry. A name that stops existing is reported as
+  stale, and the tests check every entry against this repository's own models.
+- The tests run with `python3 -m pytest tools/crosscheck/tests` (needs pytest).
+
+## Limits
+
+- Only what Cartography declares in `cartography/models/aws` is read. Its non-model code is not.
+- Relationships are compared by the pair of types, undirected, not by name or direction.
+- Our edges are read from the manifest, the models' edge declarations and the edge definitions; an edge
+  definition lists sources and targets as a cross product, which can overstate what we emit.
+- Operations match on the normalised name; Cartography's service is known only where a file uses one client.
+- A relationship whose target this reader cannot resolve is left out and named under `inputs.cartography.unresolved_relationships` (three today).

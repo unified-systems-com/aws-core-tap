@@ -1,0 +1,186 @@
+{
+ "_description": "Reviewed mapping from Cartography AWS node labels to aws_core entity types. 'maps_to' is a list (a Cartography label can span several of ours). 'artifact' marks a Cartography node that is a sub-structure or a derived node rather than an AWS resource; 'reason' says why. A label absent here and not name-matched is reported as unmapped. Status of a label: mapped (a type of ours), known-gap (an empty list: reviewed, we do not collect it), artifact (a sub-structure), unmapped (not yet reviewed; the run lists it).",
+ "aliases": {
+  "AWSAPIGatewayRestAPI": [
+   "aws_core__aws_apigateway_rest_api"
+  ],
+  "AWSAPIGatewayV2API": [
+   "aws_core__aws_apigateway_http_api"
+  ],
+  "AWSAutoScalingGroup": [
+   "aws_core__aws_autoscaling_auto_scaling_group"
+  ],
+  "AWSCloudWatchLogMetricFilter": [
+   "aws_core__aws_logs_metric_filter"
+  ],
+  "AWSCloudWatchMetricAlarm": [
+   "aws_core__aws_cloudwatch_alarm"
+  ],
+  "AWSConfigurationRecorder": [
+   "aws_core__aws_config_recorder"
+  ],
+  "AWSDBSubnetGroup": [
+   "aws_core__aws_rds_db_subnet_group"
+  ],
+  "AWSDNSZone": [
+   "aws_core__aws_route53_zone"
+  ],
+  "AWSEBSSnapshot": [],
+  "AWSEC2Image": [],
+  "AWSEC2KeyPair": [],
+  "AWSEC2LaunchTemplate": [
+   "aws_core__aws_ec2_launch_template"
+  ],
+  "AWSEC2NetworkAcl": [
+   "aws_core__aws_network_acl"
+  ],
+  "AWSEC2NetworkInterface": [
+   "aws_core__aws_ec2_network_interface"
+  ],
+  "AWSEC2Reservation": [],
+  "AWSEC2ReservedInstance": [],
+  "AWSEC2RouteTable": [
+   "aws_core__aws_route_table"
+  ],
+  "AWSEC2SecurityGroup": [
+   "aws_core__aws_security_group"
+  ],
+  "AWSEC2Subnet": [
+   "aws_core__aws_subnet"
+  ],
+  "AWSECRRepository": [
+   "aws_core__aws_ecr_repository"
+  ],
+  "AWSELBListener": [
+   "aws_core__aws_elb_listener"
+  ],
+  "AWSELBV2Listener": [],
+  "AWSELBV2TargetGroup": [
+   "aws_core__aws_target_group"
+  ],
+  "AWSESDomain": [
+   "aws_core__aws_opensearchservice_domain"
+  ],
+  "AWSElasticIPAddress": [
+   "aws_core__aws_elastic_ip"
+  ],
+  "AWSGroup": [
+   "aws_core__aws_iam_group"
+  ],
+  "AWSIdentityCenter": [
+   "aws_core__aws_identity_center_instance"
+  ],
+  "AWSInlinePolicy": [],
+  "AWSInstanceProfile": [
+   "aws_core__aws_iam_instance_profile"
+  ],
+  "AWSKMSGrant": [],
+  "AWSLambdaFunctionAlias": [
+   "aws_core__aws_lambda_alias"
+  ],
+  "AWSLambdaLayer": [
+   "aws_core__aws_lambda_layer_version"
+  ],
+  "AWSLaunchConfiguration": [
+   "aws_core__aws_autoscaling_launch_configuration"
+  ],
+  "AWSLaunchTemplate": [
+   "aws_core__aws_ec2_launch_template"
+  ],
+  "AWSLoadBalancer": [
+   "aws_core__aws_elb"
+  ],
+  "AWSLoadBalancerV2": [
+   "aws_core__aws_alb"
+  ],
+  "AWSManagedPolicy": [
+   "aws_core__aws_iam_policy"
+  ],
+  "AWSMfaDevice": [
+   "aws_core__aws_iam_virtual_mfa_device"
+  ],
+  "AWSNetworkInterface": [
+   "aws_core__aws_ec2_network_interface"
+  ],
+  "AWSOrganization": [
+   "aws_core__aws_organization"
+  ],
+  "AWSOrganizationRoot": [],
+  "AWSOrganizationalUnit": [
+   "aws_core__aws_organizational_unit"
+  ],
+  "AWSPeeringConnection": [
+   "aws_core__aws_ec2_vpc_peering_connection"
+  ],
+  "AWSPermissionSet": [
+   "aws_core__aws_identity_center_permission_set"
+  ],
+  "AWSRDSCluster": [
+   "aws_core__aws_rds_db_cluster"
+  ],
+  "AWSRDSSnapshot": [
+   "aws_core__aws_rds_db_snapshot"
+  ],
+  "AWSRole": [
+   "aws_core__aws_iam_role"
+  ],
+  "AWSS3AccountPublicAccessBlock": [],
+  "AWSSAMLProvider": [
+   "aws_core__aws_iam_saml_provider"
+  ],
+  "AWSSNSTopicSubscription": [
+   "aws_core__aws_sns_subscription"
+  ],
+  "AWSSSMInstanceInformation": [],
+  "AWSSSOGroup": [
+   "aws_core__aws_identity_center_group"
+  ],
+  "AWSSSOUser": [
+   "aws_core__aws_identity_center_user"
+  ],
+  "AWSSageMakerTrainingJob": [],
+  "AWSSageMakerTransformJob": [],
+  "AWSSecurityHub": [
+   "aws_core__aws_securityhub_hub"
+  ],
+  "AWSServerCertificate": [
+   "aws_core__aws_iam_server_certificate"
+  ],
+  "AWSServiceControlPolicy": [
+   "aws_core__aws_organizations_policy"
+  ],
+  "AWSTransitGatewayRouteTable": [
+   "aws_core__aws_ec2_transit_gateway_route_table"
+  ],
+  "AWSUser": [
+   "aws_core__aws_iam_user"
+  ]
+ },
+ "artifacts": {
+  "AWSAccount": "the account itself; ours is aws_core__aws_account (matched separately as containment)",
+  "AWSCidrBlock": "derived sub-node of VPC/subnet",
+  "AWSDNSRecord": "record inside a hosted zone (high-volume record; ruled out by #107 ruling 1 pattern, not yet ruled for Route 53 records)",
+  "AWSDynamoDBArchivalSummary": "sub-structure of a table",
+  "AWSDynamoDBBillingModeSummary": "sub-structure of a table",
+  "AWSDynamoDBGlobalSecondaryIndex": "sub-structure of a table",
+  "AWSDynamoDBRestoreSummary": "sub-structure of a table",
+  "AWSDynamoDBSSEDescription": "sub-structure of a table",
+  "AWSEC2Ipv6Address": "sub-structure of a network interface or subnet",
+  "AWSEC2PrivateIp": "sub-structure of a network interface",
+  "AWSECSContainerDefinition": "sub-structure of a task definition",
+  "AWSFederatedPrincipal": "derived node from policy parsing",
+  "AWSIpPermissionInbound": "derived sub-node of a security group rule",
+  "AWSIpRange": "derived sub-node of a security group rule",
+  "AWSIpRule": "derived sub-node of a security group rule",
+  "AWSNameServer": "derived sub-node of a DNS zone",
+  "AWSPrincipal": "derived node from policy parsing",
+  "AWSPublicSSMParameter": "AWS-published public parameters, not account resources",
+  "AWSRootPrincipal": "derived node from policy parsing",
+  "AWSS3Acl": "sub-structure of a bucket",
+  "AWSS3PolicyStatement": "sub-structure of a bucket policy",
+  "AWSServiceControlPolicyStatement": "sub-structure of a policy",
+  "AWSServicePrincipal": "derived node from policy parsing",
+  "AWSTag": "Cartography models each tag key/value as a node; we store tags as a field on the tagged row",
+  "Ip": "derived node"
+ }
+}

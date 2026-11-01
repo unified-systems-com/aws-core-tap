@@ -1,0 +1,473 @@
+{
+ "_description": "Security-relevant attributes compared between Cartography and aws_core. An entry is added only with all three names written down: the Cartography label and property, and the aws_core type and typed field (null when aws_core has no typed field for it). A name that no longer exists on either side is reported as stale, never silently dropped. The field is typed when it is a column on the row; a type that stores its whole configuration also holds the value inside that blob, which the report counts separately.",
+ "attributes": [
+  {
+   "id": "rds-instance.publicly-accessible",
+   "concept": "Public reachability of an RDS instance",
+   "carto": {
+    "label": "AWSRDSInstance",
+    "property": "publicly_accessible"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_instance",
+    "field": "publicly_accessible"
+   }
+  },
+  {
+   "id": "rds-instance.encrypted",
+   "concept": "Storage encryption of an RDS instance",
+   "carto": {
+    "label": "AWSRDSInstance",
+    "property": "storage_encrypted"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_instance",
+    "field": "encrypted"
+   }
+  },
+  {
+   "id": "rds-instance.deletion-protection",
+   "concept": "Deletion protection on an RDS instance",
+   "carto": {
+    "label": "AWSRDSInstance",
+    "property": "deletion_protection"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_instance",
+    "field": "deletion_protection"
+   }
+  },
+  {
+   "id": "rds-instance.iam-auth",
+   "concept": "IAM database authentication on an RDS instance",
+   "carto": {
+    "label": "AWSRDSInstance",
+    "property": "iam_database_authentication_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_instance",
+    "field": "iam_database_auth_enabled"
+   }
+  },
+  {
+   "id": "rds-instance.backup-retention",
+   "concept": "Automated backup retention of an RDS instance",
+   "carto": {
+    "label": "AWSRDSInstance",
+    "property": "backup_retention_period"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_instance",
+    "field": "backup_retention_days"
+   }
+  },
+  {
+   "id": "rds-instance.kms-key",
+   "concept": "KMS key of an RDS instance",
+   "carto": {
+    "label": "AWSRDSInstance",
+    "property": "kms_key_id"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_instance",
+    "field": null
+   }
+  },
+  {
+   "id": "rds-cluster.encrypted",
+   "concept": "Storage encryption of an RDS cluster",
+   "carto": {
+    "label": "AWSRDSCluster",
+    "property": "storage_encrypted"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_db_cluster",
+    "field": "storage_encrypted"
+   }
+  },
+  {
+   "id": "rds-cluster.deletion-protection",
+   "concept": "Deletion protection on an RDS cluster",
+   "carto": {
+    "label": "AWSRDSCluster",
+    "property": "deletion_protection"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_db_cluster",
+    "field": "deletion_protection"
+   }
+  },
+  {
+   "id": "rds-cluster.backup-retention",
+   "concept": "Backup retention of an RDS cluster",
+   "carto": {
+    "label": "AWSRDSCluster",
+    "property": "backup_retention_period"
+   },
+   "tap": {
+    "type": "aws_core__aws_rds_db_cluster",
+    "field": "backup_retention_days"
+   }
+  },
+  {
+   "id": "s3-bucket.default-encryption",
+   "concept": "Default encryption of an S3 bucket",
+   "carto": {
+    "label": "AWSS3Bucket",
+    "property": "default_encryption"
+   },
+   "tap": {
+    "type": "aws_core__aws_s3_bucket",
+    "field": "encryption"
+   }
+  },
+  {
+   "id": "s3-bucket.versioning",
+   "concept": "Versioning of an S3 bucket",
+   "carto": {
+    "label": "AWSS3Bucket",
+    "property": "versioning_status"
+   },
+   "tap": {
+    "type": "aws_core__aws_s3_bucket",
+    "field": "versioning"
+   }
+  },
+  {
+   "id": "s3-bucket.public-access-block",
+   "concept": "Public access block of an S3 bucket",
+   "carto": {
+    "label": "AWSS3Bucket",
+    "property": "block_public_policy"
+   },
+   "tap": {
+    "type": "aws_core__aws_s3_bucket",
+    "field": "public_access_blocked"
+   }
+  },
+  {
+   "id": "s3-bucket.access-logging",
+   "concept": "Server access logging of an S3 bucket",
+   "carto": {
+    "label": "AWSS3Bucket",
+    "property": "logging_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_s3_bucket",
+    "field": null
+   }
+  },
+  {
+   "id": "s3-bucket.mfa-delete",
+   "concept": "MFA delete on an S3 bucket",
+   "carto": {
+    "label": "AWSS3Bucket",
+    "property": "mfa_delete"
+   },
+   "tap": {
+    "type": "aws_core__aws_s3_bucket",
+    "field": null
+   }
+  },
+  {
+   "id": "ebs-volume.encrypted",
+   "concept": "Encryption of an EBS volume",
+   "carto": {
+    "label": "AWSEBSVolume",
+    "property": "encrypted"
+   },
+   "tap": {
+    "type": "aws_core__aws_ebs_volume",
+    "field": "encrypted"
+   }
+  },
+  {
+   "id": "ec2-instance.public-ip",
+   "concept": "Public IP address of an EC2 instance",
+   "carto": {
+    "label": "AWSEC2Instance",
+    "property": "publicipaddress"
+   },
+   "tap": {
+    "type": "aws_core__aws_ec2_instance",
+    "field": "public_ip"
+   }
+  },
+  {
+   "id": "ec2-instance.imds-tokens",
+   "concept": "IMDS token requirement (IMDSv2) of an EC2 instance",
+   "carto": {
+    "label": "AWSEC2Instance",
+    "property": "metadatahttptokens"
+   },
+   "tap": {
+    "type": "aws_core__aws_ec2_instance",
+    "field": null
+   }
+  },
+  {
+   "id": "kms-key.enabled",
+   "concept": "Whether a KMS key is enabled",
+   "carto": {
+    "label": "AWSKMSKey",
+    "property": "enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_kms_key",
+    "field": "key_state"
+   }
+  },
+  {
+   "id": "cloudtrail.multi-region",
+   "concept": "Whether a trail covers all regions",
+   "carto": {
+    "label": "AWSCloudTrailTrail",
+    "property": "is_multi_region_trail"
+   },
+   "tap": {
+    "type": "aws_core__aws_cloudtrail_trail",
+    "field": "is_multi_region"
+   }
+  },
+  {
+   "id": "cloudtrail.log-validation",
+   "concept": "Log file validation on a trail",
+   "carto": {
+    "label": "AWSCloudTrailTrail",
+    "property": "log_file_validation_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_cloudtrail_trail",
+    "field": "log_file_validation_enabled"
+   }
+  },
+  {
+   "id": "cloudtrail.kms-key",
+   "concept": "KMS key of a trail",
+   "carto": {
+    "label": "AWSCloudTrailTrail",
+    "property": "kms_key_id"
+   },
+   "tap": {
+    "type": "aws_core__aws_cloudtrail_trail",
+    "field": null
+   }
+  },
+  {
+   "id": "sqs-queue.kms-key",
+   "concept": "KMS key of an SQS queue",
+   "carto": {
+    "label": "AWSSQSQueue",
+    "property": "kms_master_key_id"
+   },
+   "tap": {
+    "type": "aws_core__aws_sqs_queue",
+    "field": null
+   }
+  },
+  {
+   "id": "sns-topic.kms-key",
+   "concept": "KMS key of an SNS topic",
+   "carto": {
+    "label": "AWSSNSTopic",
+    "property": "kmsmasterkeyid"
+   },
+   "tap": {
+    "type": "aws_core__aws_sns_topic",
+    "field": "kms_master_key_id"
+   }
+  },
+  {
+   "id": "redshift.encrypted",
+   "concept": "Encryption of a Redshift cluster",
+   "carto": {
+    "label": "AWSRedshiftCluster",
+    "property": "encrypted"
+   },
+   "tap": {
+    "type": "aws_core__aws_redshift_cluster",
+    "field": null
+   }
+  },
+  {
+   "id": "redshift.publicly-accessible",
+   "concept": "Public reachability of a Redshift cluster",
+   "carto": {
+    "label": "AWSRedshiftCluster",
+    "property": "publicly_accessible"
+   },
+   "tap": {
+    "type": "aws_core__aws_redshift_cluster",
+    "field": null
+   }
+  },
+  {
+   "id": "opensearch.encryption-at-rest",
+   "concept": "Encryption at rest of a search domain",
+   "carto": {
+    "label": "AWSESDomain",
+    "property": "encryption_at_rest_options_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_opensearchservice_domain",
+    "field": null
+   }
+  },
+  {
+   "id": "eks.endpoint-public",
+   "concept": "Public API endpoint of an EKS cluster",
+   "carto": {
+    "label": "AWSEKSCluster",
+    "property": "endpoint_public_access"
+   },
+   "tap": {
+    "type": "aws_core__aws_eks_cluster",
+    "field": null
+   }
+  },
+  {
+   "id": "eks.audit-logging",
+   "concept": "Control-plane logging of an EKS cluster",
+   "carto": {
+    "label": "AWSEKSCluster",
+    "property": "audit_logging"
+   },
+   "tap": {
+    "type": "aws_core__aws_eks_cluster",
+    "field": null
+   }
+  },
+  {
+   "id": "secret.rotation",
+   "concept": "Rotation of a Secrets Manager secret",
+   "carto": {
+    "label": "AWSSecretsManagerSecret",
+    "property": "rotation_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_secrets_manager_secret",
+    "field": "rotation_enabled"
+   }
+  },
+  {
+   "id": "secret.kms-key",
+   "concept": "KMS key of a Secrets Manager secret",
+   "carto": {
+    "label": "AWSSecretsManagerSecret",
+    "property": "kms_key_id"
+   },
+   "tap": {
+    "type": "aws_core__aws_secrets_manager_secret",
+    "field": null
+   }
+  },
+  {
+   "id": "elasticache.at-rest-encryption",
+   "concept": "At-rest encryption of an ElastiCache cluster",
+   "carto": {
+    "label": "AWSElasticacheCluster",
+    "property": "at_rest_encryption_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_elasticache_cluster",
+    "field": null
+   }
+  },
+  {
+   "id": "elasticache.transit-encryption",
+   "concept": "In-transit encryption of an ElastiCache cluster",
+   "carto": {
+    "label": "AWSElasticacheCluster",
+    "property": "transit_encryption_enabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_elasticache_cluster",
+    "field": null
+   }
+  },
+  {
+   "id": "efs.encrypted",
+   "concept": "Encryption of an EFS file system",
+   "carto": {
+    "label": "AWSEfsFileSystem",
+    "property": "encrypted"
+   },
+   "tap": {
+    "type": "aws_core__aws_efs_file_system",
+    "field": "encrypted"
+   }
+  },
+  {
+   "id": "efs.kms-key",
+   "concept": "KMS key of an EFS file system",
+   "carto": {
+    "label": "AWSEfsFileSystem",
+    "property": "kms_key_id"
+   },
+   "tap": {
+    "type": "aws_core__aws_efs_file_system",
+    "field": "kms_key_id"
+   }
+  },
+  {
+   "id": "cloudfront.web-acl",
+   "concept": "WAF web ACL on a CloudFront distribution",
+   "carto": {
+    "label": "AWSCloudFrontDistribution",
+    "property": "web_acl_id"
+   },
+   "tap": {
+    "type": "aws_core__aws_cloudfront_distribution",
+    "field": null
+   }
+  },
+  {
+   "id": "apigateway-stage.tracing",
+   "concept": "Tracing on an API Gateway stage",
+   "carto": {
+    "label": "AWSAPIGatewayStage",
+    "property": "tracingenabled"
+   },
+   "tap": {
+    "type": "aws_core__aws_apigateway_stage",
+    "field": "tracing_enabled"
+   }
+  },
+  {
+   "id": "apigateway-stage.web-acl",
+   "concept": "WAF web ACL on an API Gateway stage",
+   "carto": {
+    "label": "AWSAPIGatewayStage",
+    "property": "webaclarn"
+   },
+   "tap": {
+    "type": "aws_core__aws_apigateway_stage",
+    "field": "web_acl_arn"
+   }
+  },
+  {
+   "id": "lambda.kms-key",
+   "concept": "KMS key of a Lambda function",
+   "carto": {
+    "label": "AWSLambda",
+    "property": "kmskeyarn"
+   },
+   "tap": {
+    "type": "aws_core__aws_lambda",
+    "field": null
+   }
+  },
+  {
+   "id": "guardduty.detector-status",
+   "concept": "Status of a GuardDuty detector",
+   "carto": {
+    "label": "AWSGuardDutyDetector",
+    "property": "status"
+   },
+   "tap": {
+    "type": "aws_core__aws_guardduty_detector",
+    "field": "status"
+   }
+  }
+ ]
+}

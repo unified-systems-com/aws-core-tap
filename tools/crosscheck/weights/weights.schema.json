@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Crosscheck weighting",
+  "description": "A weighting says how much each thing matters when the crosscheck scores aws_core against a reference. It is data, separate from the script, so different situations can use different weightings. Rules are tried in order and the first match wins; a thing no rule matches gets default_weight. A file may extend another: the parent's rules follow the child's.",
+  "type": "object",
+  "required": [
+    "name",
+    "version",
+    "description",
+    "default_weight",
+    "rules"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "reviewed"
+      ],
+      "description": "Whether a human has reviewed the weights; the report repeats it."
+    },
+    "extends": {
+      "type": "string",
+      "description": "File name (in this directory) of the weighting this one builds on."
+    },
+    "default_weight": {
+      "type": "number",
+      "minimum": 0
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "weight",
+          "why"
+        ],
+        "additionalProperties": false,
+        "minProperties": 3,
+        "maxProperties": 3,
+        "properties": {
+          "carto_label": {
+            "type": "string",
+            "description": "fnmatch pattern over a Cartography node label."
+          },
+          "tap_type": {
+            "type": "string",
+            "description": "fnmatch pattern over an aws_core entity type."
+          },
+          "attribute": {
+            "type": "string",
+            "description": "fnmatch pattern over a security-attribute id."
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cfn_type": {
+            "type": "string",
+            "description": "fnmatch pattern over a CloudFormation type name in the coverage ledger (for example AWS::WAFv2::*). It reaches services neither side models yet."
+          }
+        }
+      }
+    }
+  }
+}
