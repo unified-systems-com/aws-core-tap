@@ -28,8 +28,13 @@ not a new tool.
   (206 node schemas forming 175 labels, 471 relationships) and the use of boto3 in `cartography/intel/aws`.
 - Run 2026-11-01: the reader and comparator against that clone and this repository, repeatedly, with
   byte-identical output, under both shipped weightings. Not run against a live account.
-- Not read, and described only from general knowledge that has to be confirmed before an adapter is
-  written: every reference in the candidate table other than Cartography.
+- Read and run 2026-11-01, for the Terraform AWS provider: its file layout, one resource and one registry file;
+  `terraform providers schema -json` for provider v6.71.0 (1,746 resources); and a tree-sitter pass over 4,588 Go
+  files at commit `6979502b5176` (top-level attribute names agree with the dump on 1,200 of 1,233 resources).
+- Read and run 2026-11-01, for the CloudFormation resource specifications: the `us-gov-west-1` file (1,030
+  types) against a live run. Detail in `spec-aws-core-availability.md`.
+- Not read, and described only from general knowledge that has to be confirmed before an adapter is written: every
+  other reference in the candidate table (Cloud Custodian, Steampipe, CloudQuery, the first-party type lists).
 - Designed, not observed: the mapping from Cartography labels to our types, the security-attribute list and
   the weight values are first judgements and unreviewed, except the 29 labels the operator reviewed on
   2026-11-01.
@@ -39,7 +44,7 @@ not a new tool.
 |    |              |                                                                 |
 | :---: | ---       | ---                                                             |
 | 1. | Deterministic | The same inputs give byte-identical reports, so two runs can be diffed |
-| 2. | Inert         | No project is imported or run; nothing is written but the report |
+| 2. | Inert         | The comparator imports and runs no reference project and writes nothing but its report; the one bounded exception is a separate dump step (see Inert Readers) |
 | 3. | Separable     | What matters is a data file, not code, and several can coexist |
 | 4. | Honest        | A thing the comparison cannot see is counted and named, never a pass |
 | 5. | Attributable  | A flaw found in a reference is recorded with evidence, apart from our gaps |
@@ -76,6 +81,14 @@ execute anything. Text taken from an analysed tree is untrusted: control charact
 reaches a terminal or `report.md`, a commit is reported only if it is shaped like one and read from a ref under
 `refs/`, and the report records a digest of the files actually analysed. A tree with nothing to analyse is
 refused, not scored as empty. It lives in `tools/crosscheck`, outside the wheel.
+
+**Bounded exception: a data-producing dump step.** A reference whose model is only available by running its own
+tool (the Terraform provider's schema dump) may have it produced by a separate step, never by the comparator. The
+step runs once, in a fresh empty directory, with a pinned version, the dependency lock file's checksums enforced
+(`-lockfile=readonly`), every `AWS_*` variable removed, a throwaway `HOME` and the shared AWS config and credentials
+files pointed at nothing, so it can reach no credential; it performs no operation but the one that writes the data
+file, whose version and sha256 it prints. The comparator reads the file as data and stays inert. Nothing else is
+excepted.
 
 ### Metrics
 ----
@@ -224,8 +237,8 @@ RID: `req-aws-core-crosscheck-candidates`
 
 Status: `Proposed`
 
-Nothing below has been read; each entry is what the source is expected to give and must be confirmed before an
-adapter is written.
+Each row says what was read or run, and where. A row that records no reading is what the source is expected to give,
+unconfirmed, and must be confirmed before an adapter is written.
 
 | Reference | Expected static source | Would give | Open point |
 | --- | --- | --- | --- |
@@ -259,7 +272,8 @@ RID: `req-aws-core-crosscheck-addref`
 Status: `Proposed`
 
 1. **Provenance first.** Record the source, licence, version or commit. If the model can only be obtained by
-   running the tool, stop and raise it; the inert rule has no exception.
+   running the tool, stop and raise it: the only exception to the inert rule is the bounded dump step described under
+   Inert Readers, and any other needs a change to this specification.
 2. **Write the reader** to the normal form, with synthetic-tree tests that include a hostile-text case, a
    proof that nothing in the tree is executed, and a refusal of an empty tree.
 3. **Seed the label map** by automatic name matching, commit it, and list what remains unmapped.
