@@ -70,9 +70,9 @@ Status: `Implemented`
 | Accuracy | On mapped pairs, Cartography properties (infrastructure keys excluded) whose AWS API key is a typed field of ours, over all such properties; types storing their configuration are reported separately |
 | Linkage | Cartography relationships between two mapped labels (the account link excluded) that have an edge between the same two types of ours |
 | Operations | Cartography's AWS read operations that appear in our manifest or readers, by normalised name |
-| Security attributes | Entries of a reviewed list, each typed, configuration-only, absent, stale or not collected |
+| Security attributes | Entries of a reviewed list, each typed (a column the manifest fills), configuration-only (no column; the named read is one we make and the type keeps its configuration), column-unfilled, not-evidenced, stale or not collected |
 | Tags, identity, containment | Whether both read tags, whether both key on an ARN, and how account and regional containment compare |
-| Ledger | Under the weighting, the share of in-scope ledger types collected, decided, or unclassified |
+| Ledger | Under the weighting, the share of in-scope ledger types collected (verified or not), decided (collected, excluded or not enumerable), or unclassified; modeled-only rows are neither |
 
 A relationship with an endpoint that is unmapped, a known gap or an artifact is `not-comparable` and counted
 as such, so a high percentage cannot hide a narrow comparison.
@@ -119,7 +119,7 @@ RID: `req-aws-core-crosscheck-drift`
 
 Status: `Implemented`
 
-With a baseline, the report adds the headline figures that changed, the gaps that are new, the gaps that
+A gap is anything the run counts as a shortfall: an uncollected label, a missing or declared-only edge, a reference operation we lack, an unclassified weighted ledger row, any security attribute that is not typed (the verdict is part of its id), an untyped reference property, a tag or identity difference. With a baseline, the report adds the headline figures that changed, the gaps that are new, the gaps that
 closed, and which inputs changed. A change in the Cartography commit or the weighting is shown as an input
 change, so a move caused by the reference is told apart from one caused by us. `--fail-on-regression` exits 1
 when a gap is new.

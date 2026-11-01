@@ -51,6 +51,11 @@ def make_carto(root: Path) -> Path:
             publicly_accessible: PropertyRef = PropertyRef("PubliclyAccessible")
             region: PropertyRef = PropertyRef("Region", set_in_kwargs=True)
             lastupdated: PropertyRef = PropertyRef("lastupdated", set_in_kwargs=True)
+        class RdsToSubnetMatchLink(CartographyRelSchema):
+            target_node_label: str = "AWSEC2Subnet"
+            source_node_label: str = "AWSRDSInstance"
+            rel_label: str = "ATTACHED_TO"
+            direction: LinkDirection = LinkDirection.OUTWARD
         class RdsSchema(CartographyNodeSchema):
             label: str = "AWSRDSInstance"
             properties: RdsProps = RdsProps()
@@ -106,7 +111,7 @@ def make_plugin(root: Path, rds_fields=None, persist=False) -> Path:
         class Rds:
             ENTITY_TYPE: ClassVar[str] = "aws_core__aws_rds_instance"
             NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_instance_arn",)
-            FIELD_CRUD_SCHEMA: ClassVar[dict] = {"name": {}, "engine": {}, "db_instance_arn": {}, "tags": {}}
+            FIELD_CRUD_SCHEMA: ClassVar[dict] = {"name": {}, "engine": {}, "db_instance_arn": {}, "status": {}, "tags": {}}
     ''')
     _w(pkg / "models/subnet.py", '''
         class Subnet:
@@ -123,15 +128,18 @@ def make_plugin(root: Path, rds_fields=None, persist=False) -> Path:
         "natural_key": "DBInstanceArn",
         "fields": rds_fields or {"engine": "Engine", "db_instance_arn": "DBInstanceArn"},
         "tags": {"source": "field"},
+        "hydrate": [{"key": "x", "op": "GetThing"}],
         "edges": [{"value_path": "SubnetId", "target_type": "aws_core__aws_subnet", "edge_type": "RESIDES_IN_SUBNET__aws_core", "direction": "outbound"}],
     }
     _w(pkg / "collectors/boto3_collector/aws_resource_manifest.json", json.dumps({"manifest_version": 1, "entries": [entry]}))
-    _w(pkg / "collectors/boto3_collector/custom.py", "def f(c):\n    c.list_tags_for_resource()\n")
+    _w(pkg / "collectors/boto3_collector/custom.py", "def f(c):\n    c.list_tags_for_resource()\n    _pages(c, \"list_subscriptions\")\n")
     _w(pkg / "edges/RESIDES_IN_SUBNET.edge.json", json.dumps({"slug": "RESIDES_IN_SUBNET__aws_core", "sources": ["aws_core__aws_rds_instance"], "targets": ["aws_core__aws_subnet"]}))
     _w(pkg / "ledger/aws_coverage_ledger.json", json.dumps({"rows": [
         {"type_name": "AWS::RDS::DBInstance", "tier": "both", "entity_types": ["aws_core__aws_rds_instance"], "state": "collected-unverified"},
         {"type_name": "AWS::RDS::CustomDBEngineVersion", "tier": "both", "entity_types": [], "state": "unclassified"},
         {"type_name": "AWS::RDS::DBProxy", "tier": "both", "entity_types": [], "state": "excluded"},
+        {"type_name": "AWS::RDS::DBCluster", "tier": "both", "entity_types": [], "state": "collected-verified"},
+        {"type_name": "AWS::RDS::DBSubnetGroup", "tier": "both", "entity_types": [], "state": "modeled"},
         {"type_name": "AWS::Macie::Session", "tier": "commercial-only", "entity_types": [], "state": "unclassified"},
         {"type_name": "AWS::Other::Thing", "tier": "both", "entity_types": [], "state": "unclassified"},
     ]}))
@@ -150,7 +158,7 @@ def plugin(tmp_path):
 
 def wfile(tmp_path, rules, **kw):
     d = {"name": "t", "version": 1, "description": "d", "default_weight": 0, "rules": rules, **kw}
-    p = tmp_path / kw.pop("fname", "w.json") if False else tmp_path / "w.json"
+    p = tmp_path / "w.json"
     p.write_text(json.dumps(d))
     return p
 
@@ -181,6 +189,12 @@ class TestCartoReader:
     def test_operations_are_normalised_and_paginators_count(self, carto):
         ops = carto_reader.read_ops(carto)
         assert ops == {("rds", "describedbinstances"), ("rds", "describedbclusters"), ("rds", "describedbsnapshots")}
+
+    def test_a_standalone_match_link_joins_its_source_node(self, carto):
+        rels = carto_reader.read_models(carto)["nodes"]["AWSRDSInstance"]["rels"]
+        assert [r for r in rels if r["kind"] == "standalone"] == [
+            {"kind": "standalone", "class": "RdsToSubnetMatchLink", "target": "AWSEC2Subnet", "rel": "ATTACHED_TO", "direction": "OUTWARD"}
+        ]
 
     def test_nothing_is_executed(self, carto, tmp_path):
         marker = tmp_path / "ran"
@@ -222,7 +236,10 @@ class TestTapReader:
         assert set(t["types"]) == {"aws_core__aws_rds_instance", "aws_core__aws_subnet"}
         assert t["types"]["aws_core__aws_rds_instance"]["manifest"]["edges"][0]["target"] == "aws_core__aws_subnet"
         assert ("rds", "describedbinstances") in {tuple(o) for o in t["ops"]}
-        assert ("?", "listtagsforresource") in {tuple(o) for o in t["ops"]}
+        ops = {tuple(o) for o in t["ops"]}
+        assert ("?", "listtagsforresource") in ops
+        assert ("rds", "getthing") in ops  # a hydration op, keyed `op`
+        assert ("?", "listsubscriptions") in ops  # a literal read name handed to a listing helper
         assert t["ledger_state"]["aws_core__aws_rds_instance"] == "collected-unverified"
 
 
@@ -258,6 +275,11 @@ class TestWeighting:
     def test_a_malformed_rule_is_refused(self, tmp_path, rule):
         with pytest.raises(weighting.WeightingError):
             weighting.load(wfile(tmp_path, [rule]))
+
+    @pytest.mark.parametrize("default", [-1, "x", True])
+    def test_a_bad_default_weight_is_refused(self, tmp_path, default):
+        with pytest.raises(weighting.WeightingError):
+            weighting.load(wfile(tmp_path, [{"carto_label": "a", "weight": 1, "why": "x"}], default_weight=default))
 
     def test_a_cycle_is_refused(self, tmp_path):
         (tmp_path / "a.json").write_text(json.dumps({"name": "a", "version": 1, "description": "d", "default_weight": 0, "extends": "a.json", "rules": []}))
@@ -297,7 +319,8 @@ class TestMetrics:
 
     def test_security_attribute_verdicts_include_stale_names(self, carto, plugin, tmp_path, monkeypatch):
         attrs = {"attributes": [
-            {"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": {"type": "aws_core__aws_rds_instance", "field": None}},
+            {"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": {"type": "aws_core__aws_rds_instance", "field": None, "read_op": "DescribeDBInstances"}},
+            {"id": "f", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "engine"}, "tap": {"type": "aws_core__aws_rds_instance", "field": "status"}},
             {"id": "b", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "engine"}, "tap": {"type": "aws_core__aws_rds_instance", "field": "engine"}},
             {"id": "c", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "nope"}, "tap": {"type": "aws_core__aws_rds_instance", "field": "engine"}},
             {"id": "d", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "engine"}, "tap": {"type": "aws_core__aws_rds_instance", "field": "gone"}},
@@ -307,14 +330,19 @@ class TestMetrics:
         tap = tap_reader.read(plugin)
         w = weighting.load(wfile(tmp_path, []))
         got = {r["id"]: r["verdict"] for r in crosscheck.security(attrs, models["nodes"], tap, w, {})["rows"]}
-        assert got == {"a": "absent", "b": "typed", "c": "stale-reference-property", "d": "stale-tap-field", "e": "type-not-collected"}
+        assert got == {"a": "not-evidenced", "f": "column-unfilled", "b": "typed", "c": "stale-reference-property", "d": "stale-tap-field", "e": "type-not-collected"}
 
     def test_configuration_storing_types_hold_unnamed_attributes_in_the_blob(self, carto, tmp_path):
         plug = make_plugin(tmp_path / "p2", persist=True)
         models, tap = carto_reader.read_models(carto), tap_reader.read(plug)
-        attrs = {"attributes": [{"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": {"type": "aws_core__aws_rds_instance", "field": None}}]}
-        r = crosscheck.security(attrs, models["nodes"], tap, weighting.load(wfile(tmp_path, [])), {})
-        assert r["rows"][0]["verdict"] == "configuration-only"
+        def verdict(read_op):
+            tp = {"type": "aws_core__aws_rds_instance", "field": None, **({"read_op": read_op} if read_op else {})}
+            attrs = {"attributes": [{"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": tp}]}
+            return crosscheck.security(attrs, models["nodes"], tap, weighting.load(wfile(tmp_path, [])), {})["rows"][0]["verdict"]
+
+        assert verdict("GetThing") == "configuration-only"  # a read we make (here a hydration op) on a type that keeps its configuration
+        assert verdict("DescribeNeverCalled") == "not-evidenced"  # storing the blob proves nothing if the read is never made
+        assert verdict(None) == "not-evidenced"
 
     def test_the_report_is_deterministic(self, carto, plugin, tmp_path):
         w = wfile(tmp_path, [{"carto_label": "AWS*", "weight": 2, "why": "all"}])
@@ -337,8 +365,9 @@ class TestLedgerView:
             {"cfn_type": "AWS::Macie::*", "weight": 5, "why": "x"},
         ])
         lv = crosscheck.run(carto, plugin, w)["ledger"]
-        assert lv["weighted_by_state"] == {"collected-unverified": 2.0, "excluded": 2.0, "unclassified": 4.0}
-        assert lv["collected_pct"] == 25.0 and lv["decided_pct"] == 50.0
+        assert lv["weighted_by_state"] == {"collected-unverified": 2.0, "collected-verified": 2.0, "excluded": 2.0, "modeled": 2.0, "unclassified": 4.0}
+        # verified counts as collected; a model with no collector yet counts as neither collected nor decided
+        assert lv["collected_pct"] == 33.3 and lv["decided_pct"] == 50.0
         assert [x["type"] for x in lv["open_unclassified"]] == ["AWS::RDS::CustomDBEngineVersion"]  # Other::Thing weighs 0
         assert [x["type"] for x in lv["weighted_out_of_scope_unclassified"]] == ["AWS::Macie::Session"]
 
@@ -365,6 +394,28 @@ class TestDriftAndCli:
         d = json.loads((tmp_path / "now/report.json").read_text())["drift"]
         assert any(g.startswith("edge:AWSRDSInstance>PART_OF_SUBNET") for g in d["new_gaps"])
         assert any(g.startswith("op:rds:describedbinstances") for g in d["new_gaps"])
+
+    def test_losing_emission_but_keeping_the_definition_is_still_a_new_gap(self, carto, tmp_path):
+        w = wfile(tmp_path, [{"carto_label": "AWS*", "weight": 1, "why": "x"}])
+        plug = make_plugin(tmp_path / "plug")
+        base = tmp_path / "base"
+        crosscheck.main(["--cartography", str(carto), "--plugin", str(plug), "--weights", str(w), "--out", str(base)])
+        man = plug / "tap_plugin/aws_core/collectors/boto3_collector/aws_resource_manifest.json"
+        m = json.loads(man.read_text())
+        m["entries"][0]["edges"] = []  # the edge definition file stays
+        man.write_text(json.dumps(m))
+        code = crosscheck.main(["--cartography", str(carto), "--plugin", str(plug), "--weights", str(w), "--baseline", str(base / "report.json"), "--out", str(tmp_path / "now"), "--fail-on-regression"])
+        assert code == 1
+        now = json.loads((tmp_path / "now/report.json").read_text())
+        assert next(e for e in now["linkage"]["rows"] if e["rel"] == "PART_OF_SUBNET")["status"] == "declared-only"
+
+    def test_a_typed_attribute_that_degrades_is_a_new_gap(self, carto, tmp_path):
+        before = {"security_attributes": {"rows": [{"id": "x", "verdict": "typed"}]}}
+        after = {"security_attributes": {"rows": [{"id": "x", "verdict": "stale-tap-field"}]}}
+        for r in (before, after):
+            r.update(coverage={"gaps": []}, linkage={"rows": []}, operations={"reference_only_operations": []}, ledger={}, accuracy={"rows": []}, tags={"reference_only": []}, identity={"differs": []})
+        assert crosscheck.gap_ids(before) == []
+        assert crosscheck.gap_ids(after) == ["security:x:stale-tap-field"]
 
     def test_no_regression_exits_zero(self, carto, plugin, tmp_path):
         w = wfile(tmp_path, [{"carto_label": "AWS*", "weight": 1, "why": "x"}])

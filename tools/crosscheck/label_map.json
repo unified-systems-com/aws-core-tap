@@ -27,7 +27,6 @@
   ],
   "AWSEBSSnapshot": [],
   "AWSEC2Image": [],
-  "AWSEC2KeyPair": [],
   "AWSEC2LaunchTemplate": [
    "aws_core__aws_ec2_launch_template"
   ],
@@ -51,10 +50,10 @@
   "AWSECRRepository": [
    "aws_core__aws_ecr_repository"
   ],
-  "AWSELBListener": [
+  "AWSELBListener": [],
+  "AWSELBV2Listener": [
    "aws_core__aws_elb_listener"
   ],
-  "AWSELBV2Listener": [],
   "AWSELBV2TargetGroup": [
    "aws_core__aws_target_group"
   ],

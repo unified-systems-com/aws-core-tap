@@ -88,9 +88,10 @@ def coverage(nodes, res, tap, w) -> dict:
 
 def _tap_keys(t: dict) -> tuple[set[str], bool]:
     m = t["manifest"]
-    typed = {norm(re.sub(r"\[\]", "", v)) for v in (m["field_sources"].values() if m else [])} | {norm(f) for f in t["fields"]}
-    # Hand-written types carry no manifest; their configuration is the model's own business, so it is not counted.
-    return typed, bool(m and m["persist_configuration"])
+    if m:  # a model column the manifest never fills holds nothing, so only mapped fields count
+        return {norm(re.sub(r"\[\]", "", v)) for v in m["field_sources"].values()}, bool(m["persist_configuration"])
+    # Hand-written types carry no manifest; their columns are the model's own business.
+    return {norm(f) for f in t["fields"]}, False
 
 
 def accuracy(nodes, res, tap, w) -> dict:
@@ -186,6 +187,8 @@ def ledger_view(tap: dict, w: weighting.Weighting) -> dict:
     for r, x in rows:
         by_state[r["state"]] += x
     total = sum(by_state.values())
+    collected = by_state.get("collected-unverified", 0.0) + by_state.get("collected-verified", 0.0)
+    decided = collected + by_state.get("excluded", 0.0) + by_state.get("not-enumerable", 0.0)  # modeled has no collector yet
     open_rows = sorted(
         ({"type": r["type_name"], "state": r["state"], "weight": x} for r, x in rows if r["state"] == "unclassified"),
         key=lambda r: (-r["weight"], r["type"]),
@@ -204,8 +207,8 @@ def ledger_view(tap: dict, w: weighting.Weighting) -> dict:
         "weighted_types": len(rows),
         "weighted_total": total,
         "weighted_by_state": dict(sorted(by_state.items())),
-        "collected_pct": _pct(by_state.get("collected-unverified", 0.0), total),
-        "decided_pct": _pct(total - by_state.get("unclassified", 0.0), total),
+        "collected_pct": _pct(collected, total),
+        "decided_pct": _pct(decided, total),
         "open_unclassified": open_rows,
         "note": "Counts rows in both commercial and GovCloud only; weighted_out_of_scope_unclassified lists weighted rows the ledger puts outside that scope on botocore's partition data, which is worth checking against AWS's own GovCloud service lists. decided = collected, excluded or not enumerable, each with a written reason in the ledger; unclassified is the open work.",
     }
@@ -229,10 +232,14 @@ def operations(carto_ops: set[tuple[str, str]], tap_ops: list[list[str]]) -> dic
 
 
 def security(attrs: dict, nodes, tap, w, res) -> dict:
+    """Verdicts, best to worst: typed (a column the collector fills), configuration-only (no column, but the
+    read is one we make and the type keeps its whole configuration), column-unfilled (a model column the manifest
+    never maps), not-evidenced (nothing shows we read it), type-not-collected, and the two stale kinds."""
+    ours_ops = {o for _, o in tap["ops"]}
     rows = []
     for a in attrs["attributes"]:
         label, prop = a["carto"]["label"], a["carto"]["property"]
-        ty, fld = a["tap"]["type"], a["tap"]["field"]
+        ty, fld, read_op = a["tap"]["type"], a["tap"]["field"], a["tap"].get("read_op")
         carto_ok = label in nodes and prop in nodes[label]["properties"]
         t = tap["types"].get(ty)
         if t is None:
@@ -240,9 +247,11 @@ def security(attrs: dict, nodes, tap, w, res) -> dict:
         elif fld and fld not in t["fields"]:
             verdict = "stale-tap-field"
         elif fld:
-            verdict = "typed"
+            m = t["manifest"]
+            verdict = "typed" if (m is None or fld in m["field_sources"]) else "column-unfilled"
         else:
-            verdict = "configuration-only" if (t["manifest"] and t["manifest"]["persist_configuration"]) else "absent"
+            keeps = bool(t["manifest"] and t["manifest"]["persist_configuration"])
+            verdict = "configuration-only" if keeps and read_op and norm(read_op) in ours_ops else "not-evidenced"
         if not carto_ok:
             verdict = "stale-reference-property"
         base = w.concept(label, (ty,))
@@ -390,11 +399,17 @@ def headline(r: dict) -> dict:
 
 
 def gap_ids(r: dict) -> list[str]:
+    """Everything the run counts as a shortfall, with a stable id, so a baseline diff shows what got worse."""
     ids = [f"coverage:{g['label']}" for g in r["coverage"]["gaps"]]
-    ids += [f"edge:{e['from']}>{e['rel']}>{e['to']}" for e in r["linkage"]["rows"] if e["status"] == "missing"]
+    # declared-only is a gap too: the edge definition survives but nothing emits it
+    ids += [f"edge:{e['from']}>{e['rel']}>{e['to']}" for e in r["linkage"]["rows"] if e["status"] in ("missing", "declared-only")]
     ids += [f"op:{o['service']}:{o['operation']}" for o in r["operations"]["reference_only_operations"]]
     ids += [f"ledger-open:{x['type']}" for x in r["ledger"].get("open_unclassified", [])]
-    ids += [f"security:{a['id']}" for a in r["security_attributes"]["rows"] if a["verdict"] in ("absent", "type-not-collected")]
+    # the verdict is in the id, so a drop from typed to configuration-only (or to stale) is a new gap
+    ids += [f"security:{a['id']}:{a['verdict']}" for a in r["security_attributes"]["rows"] if a["verdict"] != "typed"]
+    ids += [f"accuracy:{a['label']}>{a['type']}:{p}" for a in r["accuracy"]["rows"] for p in a["not_typed"]]
+    ids += [f"tags:{x}" for x in r["tags"]["reference_only"]]
+    ids += [f"identity:{x['label']}>{x['type']}" for x in r["identity"]["differs"]]
     return sorted(set(ids))
 
 

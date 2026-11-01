@@ -23,12 +23,14 @@ the gaps that appeared and the ones that closed, and `--fail-on-regression` turn
 | Accuracy | On the types both collect, how many of Cartography's properties do we hold as typed fields? (Compared as AWS API keys, since field names differ; types that store their whole configuration are counted separately.) |
 | Linkage | Of Cartography's relationships between comparable types, how many have a matching edge between the same two types of ours? |
 | Operations | Which AWS API reads does Cartography make that we do not? |
-| Security attributes | A reviewed list (`security_attributes.json`) of encryption, exposure, logging and similar attributes: typed, held only in the configuration blob, absent, or stale. |
+| Security attributes | A reviewed list (`security_attributes.json`) of encryption, exposure, logging and similar attributes. Verdicts: `typed` (a column the manifest fills), `configuration-only` (no column, but we make the named read and the type keeps its configuration), `column-unfilled` (a model column the manifest never maps), `not-evidenced`, `type-not-collected`, or stale. |
 | Tags | Do both read tags for a type? |
 | Identity | Do both key a type on an ARN? |
 | Containment | Account membership (we use a dimension, not an edge) and regional containment. |
 | Ledger | Under the weighting, how much of the coverage ledger is collected, decided, or open. |
 | Cartography candidate defects | Leads found by static checks, and the findings people have verified (`cartography_findings.json`). |
+
+A baseline diff counts as a gap anything in the run's shortfall list: an uncollected label, a missing or declared-only edge, an operation we lack, an open ledger row, any non-typed security verdict (so typed becoming configuration-only is new), an untyped reference property, a tag, identity or ownership difference.
 
 Every figure is also given weighted. A static comparison cannot say whether a collected value is right;
 that is what a live account decides (`specs/spec-aws-core-collection-oracle.md`).

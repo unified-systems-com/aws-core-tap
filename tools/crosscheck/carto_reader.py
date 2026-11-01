@@ -80,6 +80,32 @@ def _index(models_dir: Path) -> tuple[dict[str, ast.ClassDef], dict[str, Any]]:
     return classes, consts
 
 
+def _standalone_rels(path: Path, consts: dict[str, Any]) -> list[dict]:
+    """Relationship schemas declared on their own (match-links) name both ends: source_node_label and target_node_label."""
+    out = []
+    for cls in (c for c in ast.parse(path.read_text()).body if isinstance(c, ast.ClassDef)):
+        d = _defaults(cls)
+        if "CartographyRelSchema" not in _base_names(cls) or "source_node_label" not in d:
+            continue
+
+        def lab(key: str) -> Any:
+            v = d.get(key)
+            return consts.get(v.id) if isinstance(v, ast.Name) else _const(v)
+
+        dirn = d.get("direction")
+        out.append(
+            {
+                "kind": "standalone",
+                "class": cls.name,
+                "source": lab("source_node_label"),
+                "target": lab("target_node_label"),
+                "rel": _const(d.get("rel_label")),
+                "direction": dirn.attr if isinstance(dirn, ast.Attribute) else None,
+            }
+        )
+    return out
+
+
 def _extract_file(path: Path, gclasses: dict[str, ast.ClassDef], consts: dict[str, Any], root: Path) -> list[dict]:
     tree = ast.parse(path.read_text())
     local = {c.name: c for c in tree.body if isinstance(c, ast.ClassDef)}
@@ -164,7 +190,9 @@ def read_models(root: Path) -> dict[str, Any]:
                 all_labels.add(n["label"])
             all_labels.update(n["extra_labels"])
     nodes: dict[str, dict] = {}
+    standalone: list[dict] = []
     for p in sorted((models / "aws").rglob("*.py")):
+        standalone += _standalone_rels(p, consts)
         for n in _extract_file(p, gclasses, consts, root):
             m = nodes.setdefault(n["label"], {"label": n["label"], "properties": {}, "rels": [], "files": []})
             for k, v in n["properties"].items():
@@ -173,6 +201,11 @@ def read_models(root: Path) -> dict[str, Any]:
             have = {(r["rel"], r["target"], r["direction"], r["kind"]) for r in m["rels"]}
             m["rels"] += [r for r in n["rels"] if (r["rel"], r["target"], r["direction"], r["kind"]) not in have]
             m["files"].append(n["file"])
+    for r in standalone:  # attach each to its source node, once
+        n = nodes.get(r["source"])
+        key = (r["rel"], r["target"], r["direction"], r["kind"])
+        if n is not None and key not in {(x["rel"], x["target"], x["direction"], x["kind"]) for x in n["rels"]}:
+            n["rels"].append({k: r[k] for k in ("kind", "class", "target", "rel", "direction")})
     return {"nodes": nodes, "all_labels": sorted(all_labels)}
 
 

@@ -31,7 +31,7 @@ def _ops_in(node: Any, service: str, out: set[tuple[str, str]]) -> None:
     if isinstance(node, dict):
         service = node.get("service", service)
         for k, v in node.items():
-            if k == "aws_op" and isinstance(v, str):
+            if k in ("aws_op", "op") and isinstance(v, str) and _READ_PREFIX.match(v):
                 out.add((norm(service), norm(v)))
             else:
                 _ops_in(v, service, out)
@@ -40,14 +40,21 @@ def _ops_in(node: Any, service: str, out: set[tuple[str, str]]) -> None:
             _ops_in(v, service, out)
 
 
+_SNAKE_READ = re.compile(r"^(describe|list|get|batch_get|lookup|search)_[a-z0-9_]+$")
+
+
 def _custom_ops(collector_dir: Path) -> set[tuple[str, str]]:
     """Reads made by hand-written readers (service unknown): any `x.DescribeFoo`-style snake_case call."""
     ops: set[tuple[str, str]] = set()
-    snake = re.compile(r"^(describe|list|get|batch_get|lookup|search)_")
+    snake = _SNAKE_READ
     for p in sorted(collector_dir.glob("*.py")):
         for n in ast.walk(ast.parse(p.read_text())):
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and snake.match(n.func.attr):
                 ops.add(("?", norm(n.func.attr)))
+            if isinstance(n, ast.Call):  # a literal read name handed to a listing helper: _pages(client, "list_x")
+                for a in n.args:
+                    if isinstance(a, ast.Constant) and isinstance(a.value, str) and snake.match(a.value):
+                        ops.add(("?", norm(a.value)))
             if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "get_paginator":
                 if n.args and isinstance(n.args[0], ast.Constant) and isinstance(n.args[0].value, str):
                     ops.add(("?", norm(n.args[0].value)))

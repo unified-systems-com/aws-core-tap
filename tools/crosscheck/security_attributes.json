@@ -1,5 +1,5 @@
 {
- "_description": "Security-relevant attributes compared between Cartography and aws_core. An entry is added only with all three names written down: the Cartography label and property, and the aws_core type and typed field (null when aws_core has no typed field for it). A name that no longer exists on either side is reported as stale, never silently dropped. The field is typed when it is a column on the row; a type that stores its whole configuration also holds the value inside that blob, which the report counts separately.",
+ "_description": "Security-relevant attributes compared between Cartography and aws_core. An entry is added only with all three names written down: the Cartography label and property, and the aws_core type and typed field (null when aws_core has no typed field for it). A name that no longer exists on either side is reported as stale, never silently dropped. The field is typed when it is a column on the row; a type that stores its whole configuration also holds the value inside that blob, which the report counts separately. When the aws_core field is null, read_op names the AWS operation that returns the attribute; the report credits configuration-only only if aws_core makes that call and the type keeps its configuration.",
  "attributes": [
   {
    "id": "rds-instance.publicly-accessible",
@@ -70,7 +70,8 @@
    },
    "tap": {
     "type": "aws_core__aws_rds_instance",
-    "field": null
+    "field": null,
+    "read_op": "DescribeDBInstances"
    }
   },
   {
@@ -154,7 +155,8 @@
    },
    "tap": {
     "type": "aws_core__aws_s3_bucket",
-    "field": null
+    "field": null,
+    "read_op": "GetBucketLogging"
    }
   },
   {
@@ -166,7 +168,8 @@
    },
    "tap": {
     "type": "aws_core__aws_s3_bucket",
-    "field": null
+    "field": null,
+    "read_op": "GetBucketVersioning"
    }
   },
   {
@@ -202,7 +205,8 @@
    },
    "tap": {
     "type": "aws_core__aws_ec2_instance",
-    "field": null
+    "field": null,
+    "read_op": "DescribeInstances"
    }
   },
   {
@@ -250,7 +254,8 @@
    },
    "tap": {
     "type": "aws_core__aws_cloudtrail_trail",
-    "field": null
+    "field": null,
+    "read_op": "DescribeTrails"
    }
   },
   {
@@ -262,7 +267,8 @@
    },
    "tap": {
     "type": "aws_core__aws_sqs_queue",
-    "field": null
+    "field": null,
+    "read_op": "GetQueueAttributes"
    }
   },
   {
@@ -286,7 +292,8 @@
    },
    "tap": {
     "type": "aws_core__aws_redshift_cluster",
-    "field": null
+    "field": null,
+    "read_op": "DescribeClusters"
    }
   },
   {
@@ -298,7 +305,8 @@
    },
    "tap": {
     "type": "aws_core__aws_redshift_cluster",
-    "field": null
+    "field": null,
+    "read_op": "DescribeClusters"
    }
   },
   {
@@ -310,7 +318,8 @@
    },
    "tap": {
     "type": "aws_core__aws_opensearchservice_domain",
-    "field": null
+    "field": null,
+    "read_op": "DescribeDomains"
    }
   },
   {
@@ -322,7 +331,8 @@
    },
    "tap": {
     "type": "aws_core__aws_eks_cluster",
-    "field": null
+    "field": null,
+    "read_op": "DescribeCluster"
    }
   },
   {
@@ -334,7 +344,8 @@
    },
    "tap": {
     "type": "aws_core__aws_eks_cluster",
-    "field": null
+    "field": null,
+    "read_op": "DescribeCluster"
    }
   },
   {
@@ -358,7 +369,8 @@
    },
    "tap": {
     "type": "aws_core__aws_secrets_manager_secret",
-    "field": null
+    "field": null,
+    "read_op": "DescribeSecret"
    }
   },
   {
@@ -370,7 +382,8 @@
    },
    "tap": {
     "type": "aws_core__aws_elasticache_cluster",
-    "field": null
+    "field": null,
+    "read_op": "DescribeCacheClusters"
    }
   },
   {
@@ -382,7 +395,8 @@
    },
    "tap": {
     "type": "aws_core__aws_elasticache_cluster",
-    "field": null
+    "field": null,
+    "read_op": "DescribeCacheClusters"
    }
   },
   {
@@ -418,7 +432,8 @@
    },
    "tap": {
     "type": "aws_core__aws_cloudfront_distribution",
-    "field": null
+    "field": null,
+    "read_op": "GetDistribution"
    }
   },
   {
@@ -454,7 +469,8 @@
    },
    "tap": {
     "type": "aws_core__aws_lambda",
-    "field": null
+    "field": null,
+    "read_op": "GetFunction"
    }
   },
   {

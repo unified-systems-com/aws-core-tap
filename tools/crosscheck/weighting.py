@@ -67,6 +67,8 @@ def _check(d: Any, where: str) -> None:
     for key in ("name", "version", "description", "default_weight", "rules"):
         if key not in d:
             raise WeightingError(f"{where}: missing {key!r}")
+    if isinstance(d["default_weight"], bool) or not isinstance(d["default_weight"], (int, float)) or d["default_weight"] < 0:
+        raise WeightingError(f"{where}: default_weight must be a non-negative number")
     if not isinstance(d["rules"], list):
         raise WeightingError(f"{where}: rules must be a list")
     for i, r in enumerate(d["rules"]):
