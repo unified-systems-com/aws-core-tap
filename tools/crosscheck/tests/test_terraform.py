@@ -616,3 +616,129 @@ class TestCommittedAliasFile:
         for tf, ours in amap["aliases"].items():
             assert re.fullmatch(r"aws_[a-z0-9_]+", tf), tf
             assert set(ours) <= types, (tf, sorted(set(ours) - types))
+
+
+# ---------------------------------------------------------------- untrusted trees and safe text
+
+import os  # noqa: E402
+import subprocess  # noqa: E402
+
+import untrusted  # noqa: E402
+
+DUMP_SCRIPT = Path(__file__).resolve().parents[1] / "terraform_dump.sh"
+
+
+class TestUntrusted:
+    def test_md_safe_leaves_no_markdown_or_terminal_structure(self):
+        hostile = "line one\n# forged heading\n![x](http://evil/p.png) <script>alert(1)</script> `code` | a | b \x1b]52;c;AAAA\x07 [l](u)"
+        out = untrusted.md_safe(hostile)
+        assert "\n" not in out and "\x1b" not in out and "\x07" not in out
+        assert not any(c in out for c in "`<>[]|\\")
+        assert "forged heading" in out  # the words survive; only the structure is gone
+
+    def test_md_safe_truncates(self):
+        assert len(untrusted.md_safe("x" * 5000)) <= 300
+
+    def test_the_conformance_report_uses_it(self):
+        assert tf_conformance._clean is untrusted.md_safe
+
+    def test_a_symlinked_file_is_refused_and_never_read(self, tmp_path):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        secret = outside / "secret.go"
+        secret.write_text("package secret // DISTINCTIVE-MARKER\n")
+        root = tmp_path / "provider"
+        (root / "names").mkdir(parents=True)
+        pkg = root / "internal" / "service" / "kms"
+        pkg.mkdir(parents=True)
+        os.symlink(secret, pkg / "linked.go")
+        with pytest.raises(untrusted.UntrustedTreeError):
+            untrusted.files_in(root, pkg, "*.go")
+        with pytest.raises(untrusted.UntrustedTreeError):
+            untrusted.read_bytes(root, pkg / "linked.go")
+
+    def test_a_symlinked_package_directory_is_refused(self, tmp_path):
+        pytest.importorskip("tree_sitter")
+        pytest.importorskip("tree_sitter_go")
+        import terraform_source
+
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "x.go").write_text("package x\n")
+        root = tmp_path / "provider"
+        (root / "names").mkdir(parents=True)
+        svc = root / "internal" / "service"
+        svc.mkdir(parents=True)
+        os.symlink(outside, svc / "sneaky")
+        with pytest.raises(untrusted.UntrustedTreeError):
+            terraform_source.read(root)
+
+    def test_a_symlinked_names_directory_is_refused(self, tmp_path):
+        pytest.importorskip("tree_sitter")
+        pytest.importorskip("tree_sitter_go")
+        import terraform_source
+
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        root = tmp_path / "provider"
+        (root / "internal" / "service").mkdir(parents=True)
+        os.symlink(outside, root / "names")
+        with pytest.raises(untrusted.UntrustedTreeError):
+            terraform_source.read(root)
+
+
+class TestDumpScript:
+    """terraform_dump.sh against a stub `terraform`: what the provider process would be able to see."""
+
+    def _stub(self, tmp_path):
+        bindir = tmp_path / "bin"
+        bindir.mkdir()
+        log = tmp_path / "log"
+        log.mkdir()
+        stub = bindir / "terraform"
+        stub.write_text(
+            "#!/usr/bin/env bash\n"
+            f'n=$(ls "{log}" | wc -l)\n'
+            f'{{ echo "ARGS: $*"; env; }} > "{log}/call$n.txt"\n'
+            'if [ "$1" = "providers" ]; then echo \'{"provider_schemas":{}}\'; fi\n'
+        )
+        stub.chmod(0o755)
+        return bindir, log
+
+    def _run(self, tmp_path, extra_env=None, args=None):
+        bindir, log = self._stub(tmp_path)
+        env = {"PATH": f"{bindir}:{os.environ['PATH']}", "HOME": str(tmp_path / "realhome"), **(extra_env or {})}
+        out = tmp_path / "out.json"
+        proc = subprocess.run(["bash", str(DUMP_SCRIPT), *(args or []), str(out)], env=env, capture_output=True, text=True, check=False)
+        return proc, log
+
+    def test_the_provider_process_sees_no_credentials_and_a_throwaway_home(self, tmp_path):
+        proc, log = self._run(
+            tmp_path,
+            {"AWS_ACCESS_KEY_ID": "AKIAFAKE", "AWS_SECRET_ACCESS_KEY": "s3cret", "AWS_PROFILE": "p", "GITHUB_TOKEN": "tok", "TF_VAR_x": "v", "TF_CLI_CONFIG_FILE": "/etc/x"},
+        )
+        assert proc.returncode == 0, proc.stderr
+        calls = sorted(log.glob("call*.txt"))
+        assert len(calls) == 2
+        for call in calls:
+            text = call.read_text()
+            names = {line.split("=", 1)[0] for line in text.splitlines() if "=" in line and not line.startswith("ARGS")}
+            assert not [n for n in names if n.startswith("AWS_") or n in ("GITHUB_TOKEN", "TF_CLI_CONFIG_FILE") or n.startswith("TF_VAR")], names
+            home = next(line.split("=", 1)[1] for line in text.splitlines() if line.startswith("HOME="))
+            assert "realhome" not in home
+            assert "AKIAFAKE" not in text and "s3cret" not in text
+        assert "-lockfile=readonly" in calls[0].read_text()
+        assert "providers schema -json" in calls[1].read_text()
+
+    def test_a_version_with_no_committed_lock_file_is_refused(self, tmp_path):
+        proc, log = self._run(tmp_path, args=["-v", "0.0.1"])
+        assert proc.returncode == 1 and "refusing to run an unverified provider" in proc.stderr
+        assert list(log.glob("call*.txt")) == []  # terraform was never started
+
+    def test_every_committed_lock_file_names_its_version(self):
+        locks = sorted((DUMP_SCRIPT.parent / "terraform_locks").glob("*.lock.hcl"))
+        assert locks
+        for lock in locks:
+            version = lock.name[: -len(".lock.hcl")]
+            text = lock.read_text()
+            assert f'version     = "{version}"' in text and 'hashes = [' in text and "h1:" in text

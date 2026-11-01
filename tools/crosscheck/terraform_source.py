@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from carto_reader import commit_of
+from untrusted import UntrustedTreeError, check_dir, files_in, read_bytes, resolve_root
 
 
 class MissingDependency(RuntimeError):
@@ -143,10 +144,10 @@ def _pkg_key(import_path: str) -> str | None:
 
 def _load_names(root: Path, h: Any, parser: Any) -> dict[str, str]:
     consts: dict[str, str] = {}
-    for f in sorted((root / "names").glob("*.go")):
+    for f in files_in(root, root / "names", "*.go"):
         if f.name.endswith("_test.go"):
             continue
-        data = f.read_bytes()
+        data = read_bytes(root, f)
         h.update(str(f.relative_to(root)).encode() + b"\0" + data + b"\0")
         tree = parser.parse(data)
         _collect_consts(tree.root_node, data, consts)
@@ -258,16 +259,22 @@ class _Source:
 
     # ------------------------------------------------------------ indexing
     def load(self) -> None:
+        self.root = resolve_root(self.root)
         svc_root = self.root / "internal" / "service"
         if not svc_root.is_dir():
             raise ValueError(f"{self.root} has no internal/service: this does not look like the Terraform AWS provider")
         self.names = _load_names(self.root, self.h, self.parser)
-        for d in sorted(p for p in svc_root.iterdir() if p.is_dir()):
+        for d in sorted(svc_root.iterdir()):
+            if d.is_symlink():
+                raise UntrustedTreeError(f"refusing {d.name}: a symlink among the service packages")
+            if not d.is_dir():
+                continue
+            check_dir(self.root, d)
             pkg = _Pkg("internal/service/" + d.name)
-            for f in sorted(d.glob("*.go")):
+            for f in files_in(self.root, d, "*.go"):
                 if f.name.endswith("_test.go"):
                     continue
-                data = f.read_bytes()
+                data = read_bytes(self.root, f)
                 self.h.update(str(f.relative_to(self.root)).encode() + b"\0" + data + b"\0")
                 tree = self.parser.parse(data)
                 self.files += 1

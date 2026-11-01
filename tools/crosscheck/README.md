@@ -82,7 +82,9 @@ python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --t
 
 | File | Role |
 | --- | --- |
-| `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies; unsets `AWS_*`. |
+| `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies. Runs Terraform with an empty environment (`env -i`), a throwaway `HOME` and the dependency lock file in `terraform_locks/` enforced (`-lockfile=readonly`); a version with no committed lock file is refused. |
+| `terraform_locks/` | One reviewed lock file per supported provider version, with checksums for darwin and linux on amd64 and arm64. To add a version, run `terraform providers lock` in a throwaway directory, review the hashes, commit the file. |
+| `untrusted.py` | Reading a tree we did not write: no symlinks, nothing outside the root; and text made safe for Markdown and terminals. Used by the source reader and the report. |
 | `terraform_reader.py` | Reads that file (never runs Terraform) into resources, flattened attributes with flags, taggability and identity. |
 | `terraform_source.py` | Parses the provider's Go source with tree-sitter (never builds or runs it): registry, schema attribute names, attribute to API field from `d.Set`, read operations. |
 | `tf_conformance.py` | The comparison and its `report.json` / `report.md`. |

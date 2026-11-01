@@ -35,15 +35,12 @@ import tap_reader  # noqa: E402
 import terraform_reader  # noqa: E402
 import weighting  # noqa: E402
 from carto_reader import norm  # noqa: E402
+from untrusted import md_safe  # noqa: E402
 
 SCHEMA_VERSION = 1
 IGNORED_ATTRS = {"id", "region", "timeouts"}  # added to every resource by the provider framework at runtime
 TAG_ATTRS = {"tags", "tags_all"}  # compared by the tags metric of the main crosscheck, not here
-_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f  ]")
-
-
-def _clean(s: object) -> str:
-    return _CTRL.sub("?", str(s))
+_clean = md_safe  # text from an analysed tree is placed in the report: no control characters, no Markdown or HTML structure
 
 
 def _pct(a: float, b: float) -> float | None:
