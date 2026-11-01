@@ -1095,6 +1095,110 @@
     "AWS::CloudFormation::Macro": {
       "state": "not-enumerable",
       "reason": "botocore 1.43.121 cloudformation defines no operation that lists or describes macros (no operation name contains Macro or Transform): a macro is a Lambda-backed template transform registered by the AWS::CloudFormation::Macro resource and reachable only by name from a template, and the CloudFormation schema declares no list handler for it, so there is no source that enumerates the account's macros."
+    },
+    "AWS::IoT::Thing": {
+      "state": "excluded",
+      "reason": "An IoT thing (a registered device): a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::IoT::Job": {
+      "state": "excluded",
+      "reason": "An IoT job (a rollout record): a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::SSM::OpsItem": {
+      "state": "excluded",
+      "reason": "An OpsCenter work item: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::Bedrock::Session": {
+      "state": "excluded",
+      "reason": "A Bedrock agent session: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::Logs::LogStream": {
+      "state": "excluded",
+      "reason": "A CloudWatch Logs log stream: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::SageMaker::Action": {
+      "state": "excluded",
+      "reason": "A SageMaker lineage action: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::SageMaker::Artifact": {
+      "state": "excluded",
+      "reason": "A SageMaker lineage artifact: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::SageMaker::Context": {
+      "state": "excluded",
+      "reason": "A SageMaker lineage context: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::AppConfig::Deployment": {
+      "state": "excluded",
+      "reason": "An AppConfig deployment (one record per rollout of a configuration): a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::AppConfig::ExperimentRun": {
+      "state": "excluded",
+      "reason": "An AppConfig experiment run: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::GreengrassV2::Deployment": {
+      "state": "excluded",
+      "reason": "A Greengrass deployment (one record per rollout): a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::PI::PerfReports": {
+      "state": "excluded",
+      "reason": "A Performance Insights analysis report: a high-volume or history record, one per device, run, event or rollout, which accumulates without bound over an account's life. The inventory this plugin keeps is the resources that persist, not these records, so the type is excluded rather than listed on every run. Decided on aws-core-tap#107 (2026-11-01); it is reopened if a use for the records appears."
+    },
+    "AWS::DataZone::Connection": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::DataSource": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::DomainUnit": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::Environment": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::EnvironmentActions": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::EnvironmentProfile": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::FormType": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::GroupProfile": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::Owner": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::PolicyGrant": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::Project": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::ProjectProfile": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::SubscriptionTarget": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
+    },
+    "AWS::DataZone::UserProfile": {
+      "state": "excluded",
+      "reason": "Content inside a DataZone domain: it is identified by identifiers that are only unique within a domain, with no ARN of its own, and it describes how the domain's data is organised and shared rather than an AWS resource of the account. The domain itself is the resource. Decided on aws-core-tap#107 (2026-11-01); it is reopened if domain content is wanted in the grid."
     }
   },
   "description": "Reviewed decisions for the AWS coverage ledger (specs/spec-aws-core-coverage-ledger.md). service_map: a CloudFormation service whose botocore service the name does not give. type_map: each aws_core entity type and the CloudFormation type(s) it models, or the reason it has none; every model must appear. classification: CloudFormation type -> excluded or not-enumerable with a written reason; a type in neither type_map nor here is unclassified.",
