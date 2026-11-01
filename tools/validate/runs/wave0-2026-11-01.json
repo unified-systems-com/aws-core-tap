@@ -228,7 +228,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_apigatewayv2_portal_product",
    "error_class": "UnauthorizedException",
-   "error_message": "An error occurred (UnauthorizedException) when calling the ListPortalProducts operation: Unauthorized",
    "failed_calls": [
     "apigatewayv2.ListPortalProducts:denied"
    ],
@@ -312,7 +311,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_appconfig_experiment_definition",
    "error_class": "SourceError",
-   "error_message": "1 AppConfig experiment definitions could not be described and are missing from this run: list_experiment_definitions",
    "failed_calls": [
     "appconfig.ListExperimentDefinitions:denied"
    ],
@@ -513,7 +511,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_aps_scraper",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListScrapers operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "amp.ListScrapers:denied"
    ],
@@ -544,7 +541,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_athena_capacity_reservation",
    "error_class": "ThrottlingException",
-   "error_message": "An error occurred (ThrottlingException) when calling the ListCapacityReservations operation (reached max retries: 4): Rate exceeded",
    "failed_calls": [
     "athena.ListCapacityReservations:throttled"
    ],
@@ -758,7 +754,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_backup_restore_testing_plan",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListRestoreTestingPlans operation: Insufficient privileges to perform this action.",
    "failed_calls": [
     "backup.ListRestoreTestingPlans:denied"
    ],
@@ -776,7 +771,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_backup_restore_testing_selection",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListRestoreTestingPlans operation: Insufficient privileges to perform this action.",
    "failed_calls": [
     "backup.ListRestoreTestingPlans:denied"
    ],
@@ -963,7 +957,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_bedrock_automated_reasoning_policy",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListAutomatedReasoningPolicies operation: Your account is not authorized to invoke this API operation.",
    "failed_calls": [
     "bedrock.ListAutomatedReasoningPolicies:denied"
    ],
@@ -981,7 +974,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_bedrock_automated_reasoning_policy_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListAutomatedReasoningPolicies operation: Your account is not authorized to invoke this API operation.",
    "failed_calls": [
     "bedrock.ListAutomatedReasoningPolicies:denied"
    ],
@@ -1012,7 +1004,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_bedrock_data_automation_library",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListDataAutomationLibraries operation: library feature is not supported in this region",
    "failed_calls": [
     "bedrock-data-automation.ListDataAutomationLibraries:denied"
    ],
@@ -1173,7 +1164,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_bedrock_retrieval_instruction",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListRetrievalInstructions operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: bedrock:Lis",
    "failed_calls": [
     "bedrock-agent.ListRetrievalInstructions:denied"
    ],
@@ -1539,7 +1529,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_cloudwatch_log_alarm",
    "error_class": "ValidationError",
-   "error_message": "An error occurred (ValidationError) when calling the DescribeAlarms operation: 1 validation error detected: Value '[LogAlarm]' at 'alarmTypes' failed to satisfy constraint: Member must satisfy constra",
    "failed_calls": [
     "cloudwatch.DescribeAlarms:error"
    ],
@@ -1583,7 +1572,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_cloudwatch_omni_dashboard",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://cloudwatch-omni.us-gov-west-1.api.aws/service/CloudWatchOmniFrontend/operation/ListSpaces\"",
    "failed_calls": [
     "cloudwatchomni.ListSpaces:error"
    ],
@@ -1601,7 +1589,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_codebuild_fleet",
    "error_class": "InvalidInputException",
-   "error_message": "An error occurred (InvalidInputException) when calling the ListFleets operation: Unknown operation ListFleets",
    "failed_calls": [
     "codebuild.ListFleets:error"
    ],
@@ -1918,7 +1905,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_comprehend_flywheel",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListFlywheels operation: UNSUPPORTED_OPERATION: This operation is not supported in this region",
    "failed_calls": [
     "comprehend.ListFlywheels:error"
    ],
@@ -1949,7 +1935,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_config_connector",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConnectors operation: The ListConnectors API is not currently supported in this region.",
    "failed_calls": [
     "config.ListConnectors:denied"
    ],
@@ -2305,7 +2290,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_connect_traffic_distribution_group",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListTrafficDistributionGroups operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: connect",
    "failed_calls": [
     "connect.ListTrafficDistributionGroups:denied"
    ],
@@ -2531,7 +2515,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_datazone_domain",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://datazone.us-gov-west-1.api.aws/v2/domains\"",
    "failed_calls": [
     "datazone.ListDomains:error"
    ],
@@ -2653,7 +2636,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_dms_data_migration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeDataMigrations operation: Feature is not accessible",
    "failed_calls": [
     "dms.DescribeDataMigrations:denied"
    ],
@@ -2671,7 +2653,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_dms_data_provider",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeDataProviders operation: Feature is not accessible",
    "failed_calls": [
     "dms.DescribeDataProviders:denied"
    ],
@@ -2702,7 +2683,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_dms_instance_profile",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeInstanceProfiles operation: Feature is not accessible",
    "failed_calls": [
     "dms.DescribeInstanceProfiles:denied"
    ],
@@ -2720,7 +2700,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_dms_migration_project",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeMigrationProjects operation: Feature is not accessible",
    "failed_calls": [
     "dms.DescribeMigrationProjects:denied"
    ],
@@ -2738,7 +2717,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_dms_replication_config",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeReplicationConfigs operation: Feature is not accessible",
    "failed_calls": [
     "dms.DescribeReplicationConfigs:denied"
    ],
@@ -2834,7 +2812,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_drs_launch_configuration_template",
    "error_class": "UninitializedAccountException",
-   "error_message": "An error occurred (UninitializedAccountException) when calling the DescribeLaunchConfigurationTemplates operation: Account not initialized",
    "failed_calls": [
     "drs.DescribeLaunchConfigurationTemplates:error"
    ],
@@ -2852,7 +2829,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_drs_recovery_plan",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListRecoveryPlans operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: drs:ListRecoveryPla",
    "failed_calls": [
     "drs.ListRecoveryPlans:denied"
    ],
@@ -2870,7 +2846,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_drs_replication_configuration_template",
    "error_class": "UninitializedAccountException",
-   "error_message": "An error occurred (UninitializedAccountException) when calling the DescribeReplicationConfigurationTemplates operation: Account not initialized",
    "failed_calls": [
     "drs.DescribeReplicationConfigurationTemplates:error"
    ],
@@ -2888,7 +2863,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_drs_source_network",
    "error_class": "UninitializedAccountException",
-   "error_message": "An error occurred (UninitializedAccountException) when calling the DescribeSourceNetworks operation: Account not initialized",
    "failed_calls": [
     "drs.DescribeSourceNetworks:error"
    ],
@@ -2984,7 +2958,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_capacity_manager_data_export",
    "error_class": "UnsupportedOperation",
-   "error_message": "An error occurred (UnsupportedOperation) when calling the DescribeCapacityManagerDataExports operation: The functionality you requested is not available in this region.",
    "failed_calls": [
     "ec2.DescribeCapacityManagerDataExports:error"
    ],
@@ -3028,7 +3001,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_carrier_gateway",
    "error_class": "UnsupportedOperation",
-   "error_message": "An error occurred (UnsupportedOperation) when calling the DescribeCarrierGateways operation: The functionality you requested is not available in this region.",
    "failed_calls": [
     "ec2.DescribeCarrierGateways:error"
    ],
@@ -3215,7 +3187,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_ipam_internet_registry_association",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the DescribeIpamInternetRegistryAssociations operation: The action DescribeIpamInternetRegistryAssociations is not valid for this web service.",
    "failed_calls": [
     "ec2.DescribeIpamInternetRegistryAssociations:error"
    ],
@@ -3493,7 +3464,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_network_performance_metric_subscription",
    "error_class": "UnsupportedOperation",
-   "error_message": "An error occurred (UnsupportedOperation) when calling the DescribeAwsNetworkPerformanceMetricSubscriptions operation: The functionality you requested is not available in this region.",
    "failed_calls": [
     "ec2.DescribeAwsNetworkPerformanceMetricSubscriptions:error"
    ],
@@ -3537,7 +3507,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_route_server",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the DescribeRouteServers operation: The action DescribeRouteServers is not valid for this web service.",
    "failed_calls": [
     "ec2.DescribeRouteServers:error"
    ],
@@ -3555,7 +3524,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_route_server_endpoint",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the DescribeRouteServerEndpoints operation: The action DescribeRouteServerEndpoints is not valid for this web service.",
    "failed_calls": [
     "ec2.DescribeRouteServerEndpoints:error"
    ],
@@ -3573,7 +3541,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_route_server_peer",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the DescribeRouteServerPeers operation: The action DescribeRouteServerPeers is not valid for this web service.",
    "failed_calls": [
     "ec2.DescribeRouteServerPeers:error"
    ],
@@ -3591,7 +3558,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_secondary_network",
    "error_class": "UnsupportedOperation",
-   "error_message": "An error occurred (UnsupportedOperation) when calling the DescribeSecondaryNetworks operation: The functionality you requested is not supported in this region.",
    "failed_calls": [
     "ec2.DescribeSecondaryNetworks:error"
    ],
@@ -3843,7 +3809,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ec2_vpc_block_public_access_exclusion",
    "error_class": "MissingParameter",
-   "error_message": "An error occurred (MissingParameter) when calling the DescribeVpcBlockPublicAccessExclusions operation: One of the following parameters must be provided: ExclusionIds, MaxResults",
    "failed_calls": [
     "ec2.DescribeVpcBlockPublicAccessExclusions:error"
    ],
@@ -3939,7 +3904,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ecr_public_repository",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://api.ecr-public.us-gov-west-1.amazonaws.com/\"",
    "failed_calls": [
     "ecr-public.DescribeRepositories:error"
    ],
@@ -4020,7 +3984,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ecs_daemon",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListDaemons operation: Managed daemons are not enabled for this account",
    "failed_calls": [
     "ecs.ListDaemons:denied"
    ],
@@ -4038,7 +4001,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ecs_daemon_task_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListDaemonTaskDefinitions operation: Managed daemons are not enabled for this account",
    "failed_calls": [
     "ecs.ListDaemonTaskDefinitions:denied"
    ],
@@ -4056,7 +4018,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ecs_gateway",
    "error_class": "UnsupportedFeatureException",
-   "error_message": "An error occurred (UnsupportedFeatureException) when calling the ListGateways operation: Service gateway is not enabled for this account",
    "failed_calls": [
     "ecs.ListGateways:error"
    ],
@@ -4343,7 +4304,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_elasticache_security_group",
    "error_class": "InvalidParameterValue",
-   "error_message": "An error occurred (InvalidParameterValue) when calling the DescribeCacheSecurityGroups operation: Use of cache security groups is not permitted in this API version for your account.",
    "failed_calls": [
     "elasticache.DescribeCacheSecurityGroups:error"
    ],
@@ -4595,7 +4555,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_emrcontainers_job_template",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListJobTemplates operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: emr-containers:ListJ",
    "failed_calls": [
     "emr-containers.ListJobTemplates:denied"
    ],
@@ -4613,7 +4572,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_emrcontainers_security_configuration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListSecurityConfigurations operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: emr-contai",
    "failed_calls": [
     "emr-containers.ListSecurityConfigurations:denied"
    ],
@@ -4657,7 +4615,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_eventbridge_api_destination",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListApiDestinations operation: Operation is disabled in this region.",
    "failed_calls": [
     "events.ListApiDestinations:error"
    ],
@@ -4688,7 +4645,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_eventbridge_connection",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListConnections operation: Operation is disabled in this region.",
    "failed_calls": [
     "events.ListConnections:error"
    ],
@@ -4732,7 +4688,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_events_endpoint",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListEndpoints operation: Operation is disabled in this region.",
    "failed_calls": [
     "events.ListEndpoints:error"
    ],
@@ -4793,7 +4748,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_fms_applications_list",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListAppsLists operation: No default admin could be found for account <account> in Region us-gov-west-1",
    "failed_calls": [
     "fms.ListAppsLists:denied"
    ],
@@ -4811,7 +4765,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_fms_policy",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListPolicies operation: No default admin could be found for account <account> in Region us-gov-west-1",
    "failed_calls": [
     "fms.ListPolicies:denied"
    ],
@@ -4829,7 +4782,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_fms_protocols_list",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListProtocolsLists operation: No default admin could be found for account <account> in Region us-gov-west-1",
    "failed_calls": [
     "fms.ListProtocolsLists:denied"
    ],
@@ -4847,7 +4799,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_fms_resource_set",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListResourceSets operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: fms:ListResourceSets",
    "failed_calls": [
     "fms.ListResourceSets:denied"
    ],
@@ -4891,7 +4842,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_fsx_file_cache",
    "error_class": "BadRequest",
-   "error_message": "An error occurred (BadRequest) when calling the DescribeFileCaches operation: The requested feature is not enabled for this AWS account.",
    "failed_calls": [
     "fsx.DescribeFileCaches:error"
    ],
@@ -4922,7 +4872,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_fsx_s3_access_point_attachment",
    "error_class": "UnsupportedOperation",
-   "error_message": "An error occurred (UnsupportedOperation) when calling the DescribeS3AccessPointAttachments operation: This operation is unsupported.",
    "failed_calls": [
     "fsx.DescribeS3AccessPointAttachments:error"
    ],
@@ -4979,7 +4928,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_blueprint",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListBlueprints operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:ListBlueprints be",
    "failed_calls": [
     "glue.ListBlueprints:denied"
    ],
@@ -5010,7 +4958,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_connection",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the GetConnections operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:GetConnections on",
    "failed_calls": [
     "glue.GetConnections:denied"
    ],
@@ -5028,7 +4975,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_connection_type",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConnectionTypes operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:ListConnecti",
    "failed_calls": [
     "glue.ListConnectionTypes:denied"
    ],
@@ -5059,7 +5005,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_custom_entity_type",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCustomEntityTypes operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:ListCustom",
    "failed_calls": [
     "glue.ListCustomEntityTypes:denied"
    ],
@@ -5077,7 +5022,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_data_quality_ruleset",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListDataQualityRulesets operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:ListData",
    "failed_calls": [
     "glue.ListDataQualityRulesets:denied"
    ],
@@ -5108,7 +5052,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_dev_endpoint",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the GetDevEndpoints operation: GetDevEndpoints operation is currently disabled.",
    "failed_calls": [
     "glue.GetDevEndpoints:denied"
    ],
@@ -5126,7 +5069,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_integration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeIntegrations operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:DescribeInt",
    "failed_calls": [
     "glue.DescribeIntegrations:denied"
    ],
@@ -5144,7 +5086,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_integration_resource_property",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListIntegrationResourceProperties operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glu",
    "failed_calls": [
     "glue.ListIntegrationResourceProperties:denied"
    ],
@@ -5279,7 +5220,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_glue_usage_profile",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListUsageProfiles operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: glue:ListUsageProfi",
    "failed_calls": [
     "glue.ListUsageProfiles:denied"
    ],
@@ -5323,7 +5263,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_connector_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConnectorDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListConnectorDefinitions:denied"
    ],
@@ -5341,7 +5280,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_connector_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConnectorDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListConnectorDefinitions:denied"
    ],
@@ -5359,7 +5297,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_core_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCoreDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListCoreDefinitions:denied"
    ],
@@ -5377,7 +5314,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_core_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCoreDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListCoreDefinitions:denied"
    ],
@@ -5395,7 +5331,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_device_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListDeviceDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListDeviceDefinitions:denied"
    ],
@@ -5413,7 +5348,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_device_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListDeviceDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListDeviceDefinitions:denied"
    ],
@@ -5431,7 +5365,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_function_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListFunctionDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListFunctionDefinitions:denied"
    ],
@@ -5449,7 +5382,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_function_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListFunctionDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListFunctionDefinitions:denied"
    ],
@@ -5467,7 +5399,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_group",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListGroups operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListGroups:denied"
    ],
@@ -5485,7 +5416,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_group_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListGroups operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListGroups:denied"
    ],
@@ -5503,7 +5433,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_logger_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListLoggerDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListLoggerDefinitions:denied"
    ],
@@ -5521,7 +5450,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_logger_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListLoggerDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListLoggerDefinitions:denied"
    ],
@@ -5539,7 +5467,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_resource_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListResourceDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListResourceDefinitions:denied"
    ],
@@ -5557,7 +5484,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_resource_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListResourceDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListResourceDefinitions:denied"
    ],
@@ -5575,7 +5501,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_subscription_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListSubscriptionDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListSubscriptionDefinitions:denied"
    ],
@@ -5593,7 +5518,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_greengrass_subscription_definition_version",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListSubscriptionDefinitions operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "greengrass.ListSubscriptionDefinitions:denied"
    ],
@@ -5703,7 +5627,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_guardduty_threat_entity_set",
    "error_class": "BadRequestException",
-   "error_message": "An error occurred (BadRequestException) when calling the ListThreatEntitySets operation: The request is rejected because the caller is not authorized to call this API.",
    "failed_calls": [
     "guardduty.ListThreatEntitySets:error"
    ],
@@ -5735,7 +5658,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_guardduty_trusted_entity_set",
    "error_class": "BadRequestException",
-   "error_message": "An error occurred (BadRequestException) when calling the ListTrustedEntitySets operation: The request is rejected because the caller is not authorized to call this API.",
    "failed_calls": [
     "guardduty.ListTrustedEntitySets:error"
    ],
@@ -5871,7 +5793,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_identity_center_application",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListApplications operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: sso:ListApplications",
    "failed_calls": [
     "sso-admin.ListApplications:denied"
    ],
@@ -5890,7 +5811,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_identity_center_application_assignment",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListApplications operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: sso:ListApplications",
    "failed_calls": [
     "sso-admin.ListApplications:denied"
    ],
@@ -5949,7 +5869,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_inspectorv2_cis_scan_configuration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCisScanConfigurations operation: Invoking account is not enabled.",
    "failed_calls": [
     "inspector2.ListCisScanConfigurations:denied"
    ],
@@ -5967,7 +5886,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_inspectorv2_code_security_integration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCodeSecurityIntegrations operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "inspector2.ListCodeSecurityIntegrations:denied"
    ],
@@ -5985,7 +5903,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_inspectorv2_code_security_scan_configuration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCodeSecurityScanConfigurations operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "inspector2.ListCodeSecurityScanConfigurations:denied"
    ],
@@ -6003,7 +5920,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_inspectorv2_connector",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConnectors operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "inspector2.ListConnectors:denied"
    ],
@@ -6047,7 +5963,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_internetmonitor_monitor",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://internetmonitor.us-gov-west-1.amazonaws.com/v20210603/Monitors\"",
    "failed_calls": [
     "internetmonitor.ListMonitors:error"
    ],
@@ -6143,7 +6058,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iot_custom_metric",
    "error_class": "UnauthorizedException",
-   "error_message": "An error occurred (UnauthorizedException) when calling the ListCustomMetrics operation: This feature is no longer available to new customers. For more information, see https://docs.aws.amazon.com/iot-",
    "failed_calls": [
     "iot.ListCustomMetrics:denied"
    ],
@@ -6161,7 +6075,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iot_dimension",
    "error_class": "UnauthorizedException",
-   "error_message": "An error occurred (UnauthorizedException) when calling the ListDimensions operation: This feature is no longer available to new customers. For more information, see https://docs.aws.amazon.com/iot-dev",
    "failed_calls": [
     "iot.ListDimensions:denied"
    ],
@@ -6231,7 +6144,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iot_ota_update",
    "error_class": "404",
-   "error_message": "An error occurred (404) when calling the ListOTAUpdates operation: No method found matching route.",
    "failed_calls": [
     "iot.ListOTAUpdates:error"
    ],
@@ -6301,7 +6213,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iot_security_profile",
    "error_class": "UnauthorizedException",
-   "error_message": "An error occurred (UnauthorizedException) when calling the ListSecurityProfiles operation: This feature is no longer available to new customers. For more information, see https://docs.aws.amazon.com/i",
    "failed_calls": [
     "iot.ListSecurityProfiles:denied"
    ],
@@ -6345,7 +6256,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iot_stream",
    "error_class": "404",
-   "error_message": "An error occurred (404) when calling the ListStreams operation: No method found matching route.",
    "failed_calls": [
     "iot.ListStreams:error"
    ],
@@ -6428,7 +6338,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_access_policy",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListAccessPolicies operation: At least an Identity or a Resource needs to be provided for ListAccessPolicy request.",
    "failed_calls": [
     "iotsitewise.ListAccessPolicies:error"
    ],
@@ -6446,7 +6355,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_application",
    "error_class": "404",
-   "error_message": "An error occurred (404) when calling the ListApplications operation: Unknown Operation",
    "failed_calls": [
     "iotsitewise.ListApplications:error"
    ],
@@ -6464,7 +6372,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_asset",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListAssets operation: AssetModelID is required when listing ALL assets.",
    "failed_calls": [
     "iotsitewise.ListAssets:error"
    ],
@@ -6495,7 +6402,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_computation_model",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListComputationModels operation: Feature not supported yet.",
    "failed_calls": [
     "iotsitewise.ListComputationModels:error"
    ],
@@ -6526,7 +6432,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_dataset",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListDatasets operation: Feature not supported yet.",
    "failed_calls": [
     "iotsitewise.ListDatasets:error"
    ],
@@ -6557,7 +6462,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_pipeline",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListWorkspaces operation: This feature is not supported yet",
    "failed_calls": [
     "iotsitewise.ListWorkspaces:error"
    ],
@@ -6601,7 +6505,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_task",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListWorkspaces operation: This feature is not supported yet",
    "failed_calls": [
     "iotsitewise.ListWorkspaces:error"
    ],
@@ -6619,7 +6522,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_iotsitewise_workspace",
    "error_class": "InvalidRequestException",
-   "error_message": "An error occurred (InvalidRequestException) when calling the ListWorkspaces operation: This feature is not supported yet",
    "failed_calls": [
     "iotsitewise.ListWorkspaces:error"
    ],
@@ -6819,7 +6721,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_kendraranking_execution_plan",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://kendra-ranking.us-gov-west-1.api.aws/\"",
    "failed_calls": [
     "kendra-ranking.ListRescoreExecutionPlans:error"
    ],
@@ -6915,7 +6816,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_kinesisvideo_signaling_channel",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://kinesisvideo.us-gov-west-1.amazonaws.com/listSignalingChannels\"",
    "failed_calls": [
     "kinesisvideo.ListSignalingChannels:error"
    ],
@@ -6933,7 +6833,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_kinesisvideo_stream",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://kinesisvideo.us-gov-west-1.amazonaws.com/listStreams\"",
    "failed_calls": [
     "kinesisvideo.ListStreams:error"
    ],
@@ -7042,7 +6941,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_lambda_capacity_provider",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListCapacityProviders operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "lambda.ListCapacityProviders:denied"
    ],
@@ -7087,7 +6985,6 @@
    "calls": 3,
    "entity_type": "aws_core__aws_lambda_function_url",
    "error_class": "SourceError",
-   "error_message": "2 Lambda functions whose URLs could not be described and are missing from this run: aws-controltower-NotificationForwarder, cleanup-expired-iam-certs",
    "failed_calls": [
     "lambda.ListFunctionUrlConfigs:denied"
    ],
@@ -7170,7 +7067,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_license",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListLicenses operation: Service role not found. Consult setup procedures in License Manager User Guide and create the required role for the s",
    "failed_calls": [
     "license-manager.ListLicenses:denied"
    ],
@@ -7188,7 +7084,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_license_asset_group",
    "error_class": "AuthorizationException",
-   "error_message": "An error occurred (AuthorizationException) when calling the ListLicenseAssetGroups operation: Access Denied for customer <account>",
    "failed_calls": [
     "license-manager.ListLicenseAssetGroups:error"
    ],
@@ -7206,7 +7101,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_license_asset_rule_set",
    "error_class": "AuthorizationException",
-   "error_message": "An error occurred (AuthorizationException) when calling the ListLicenseAssetRulesets operation: Access Denied for customer <account>",
    "failed_calls": [
     "license-manager.ListLicenseAssetRulesets:error"
    ],
@@ -7224,7 +7118,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_license_configuration",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListLicenseConfigurations operation: Service role not found. Consult setup procedures in License Manager User Guide and create the required r",
    "failed_calls": [
     "license-manager.ListLicenseConfigurations:denied"
    ],
@@ -7242,7 +7135,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_linux_subscription_provider",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListRegisteredSubscriptionProviders operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: l",
    "failed_calls": [
     "license-manager-linux-subscriptions.ListRegisteredSubscriptionProviders:denied"
    ],
@@ -7260,7 +7152,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_report_generator",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListLicenseManagerReportGenerators operation: Service role not found. Consult setup procedures in License Manager User Guide and create the r",
    "failed_calls": [
     "license-manager.ListLicenseManagerReportGenerators:denied"
    ],
@@ -7278,7 +7169,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_licensemanager_usersub_license_server_endpoint",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListLicenseServerEndpoints operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: license-ma",
    "failed_calls": [
     "license-manager-user-subscriptions.ListLicenseServerEndpoints:denied"
    ],
@@ -7296,7 +7186,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_location_api_key",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListKeys operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "location.ListKeys:denied"
    ],
@@ -7314,7 +7203,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_location_geofence_collection",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListGeofenceCollections operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: geo:ListGeofe",
    "failed_calls": [
     "location.ListGeofenceCollections:denied"
    ],
@@ -7345,7 +7233,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_location_place_index",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListPlaceIndexes operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: geo:ListPlaceIndexes",
    "failed_calls": [
     "location.ListPlaceIndexes:denied"
    ],
@@ -7363,7 +7250,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_location_route_calculator",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListRouteCalculators operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: geo:ListRouteCal",
    "failed_calls": [
     "location.ListRouteCalculators:denied"
    ],
@@ -7381,7 +7267,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_location_tracker",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListTrackers operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: geo:ListTrackers on reso",
    "failed_calls": [
     "location.ListTrackers:denied"
    ],
@@ -7451,7 +7336,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_logs_integration",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListIntegrations operation: ",
    "failed_calls": [
     "logs.ListIntegrations:error"
    ],
@@ -7469,7 +7353,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_logs_log_anomaly_detector",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListLogAnomalyDetectors operation: ",
    "failed_calls": [
     "logs.ListLogAnomalyDetectors:error"
    ],
@@ -7513,7 +7396,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_logs_scheduled_query",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListScheduledQueries operation: ",
    "failed_calls": [
     "logs.ListScheduledQueries:error"
    ],
@@ -7570,7 +7452,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_managedblockchain_accessor",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListAccessors operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: managedblockchain:ListA",
    "failed_calls": [
     "managedblockchain.ListAccessors:denied"
    ],
@@ -7679,7 +7560,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_memorydb_multi_region_cluster",
    "error_class": "InvalidParameterValueException",
-   "error_message": "An error occurred (InvalidParameterValueException) when calling the DescribeMultiRegionClusters operation: This API operation is currently unavailable.",
    "failed_calls": [
     "memorydb.DescribeMultiRegionClusters:error"
    ],
@@ -7749,7 +7629,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_mgn_connector",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConnectors operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: mgn:ListConnectors on ",
    "failed_calls": [
     "mgn.ListConnectors:denied"
    ],
@@ -7767,7 +7646,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_mgn_launch_configuration_template",
    "error_class": "UninitializedAccountException",
-   "error_message": "An error occurred (UninitializedAccountException) when calling the DescribeLaunchConfigurationTemplates operation: Account not initialized",
    "failed_calls": [
     "mgn.DescribeLaunchConfigurationTemplates:error"
    ],
@@ -7785,7 +7663,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_mgn_network_migration_definition",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListNetworkMigrationDefinitions operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: mgn:L",
    "failed_calls": [
     "mgn.ListNetworkMigrationDefinitions:denied"
    ],
@@ -7803,7 +7680,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_mgn_replication_configuration_template",
    "error_class": "UninitializedAccountException",
-   "error_message": "An error occurred (UninitializedAccountException) when calling the DescribeReplicationConfigurationTemplates operation: Account not initialized",
    "failed_calls": [
     "mgn.DescribeReplicationConfigurationTemplates:error"
    ],
@@ -7821,7 +7697,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_mgn_wave",
    "error_class": "UninitializedAccountException",
-   "error_message": "An error occurred (UninitializedAccountException) when calling the ListWaves operation: Account not initialized",
    "failed_calls": [
     "mgn.ListWaves:error"
    ],
@@ -7878,7 +7753,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_msk_replicator",
    "error_class": "BadRequestException",
-   "error_message": "An error occurred (BadRequestException) when calling the ListReplicators operation: Amazon MSK Replicator API is not supported in this Region.",
    "failed_calls": [
     "kafka.ListReplicators:error"
    ],
@@ -8039,7 +7913,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_networkfirewall_container_association",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListContainerAssociations operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: network-fir",
    "failed_calls": [
     "network-firewall.ListContainerAssociations:denied"
    ],
@@ -8096,7 +7969,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_networkfirewall_vpc_endpoint_association",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListVpcEndpointAssociations operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: network-f",
    "failed_calls": [
     "network-firewall.ListVpcEndpointAssociations:denied"
    ],
@@ -8218,7 +8090,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_notifications_event_rule",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://notifications.us-gov-west-1.api.aws/notification-configurations\"",
    "failed_calls": [
     "notifications.ListNotificationConfigurations:error"
    ],
@@ -8236,7 +8107,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_notifications_notification_configuration",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://notifications.us-gov-west-1.api.aws/notification-configurations\"",
    "failed_calls": [
     "notifications.ListNotificationConfigurations:error"
    ],
@@ -8540,7 +8410,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_pinpointemail_configuration_set",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConfigurationSets operation: On October 30, 2026, AWS will end support for Amazon Pinpoint Email, for email sending please use the Amazon",
    "failed_calls": [
     "pinpoint-email.ListConfigurationSets:denied"
    ],
@@ -8558,7 +8427,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_pinpointemail_identity",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListEmailIdentities operation: On October 30, 2026, AWS will end support for Amazon Pinpoint Email, for email sending please use the Amazon S",
    "failed_calls": [
     "pinpoint-email.ListEmailIdentities:denied"
    ],
@@ -8589,7 +8457,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_application",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8607,7 +8474,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_data_accessor",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8625,7 +8491,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_data_source",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8643,7 +8508,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_index",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8661,7 +8525,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_plugin",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8679,7 +8542,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_retriever",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8697,7 +8559,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_qbusiness_web_experience",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://qbusiness.us-gov-west-1.api.aws/applications\"",
    "failed_calls": [
     "qbusiness.ListApplications:error"
    ],
@@ -8715,7 +8576,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_action_connector",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListActionConnectors operation: Access denied during the operation. Please check your permissions",
    "failed_calls": [
     "quicksight.ListActionConnectors:denied"
    ],
@@ -8733,7 +8593,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_agent",
    "error_class": "PreconditionNotMetException",
-   "error_message": "An error occurred (PreconditionNotMetException) when calling the ListAgents operation: Account: <account> does not have QuickSight subscription.",
    "failed_calls": [
     "quicksight.ListAgents:error"
    ],
@@ -8751,7 +8610,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_analysis",
    "error_class": "UnsupportedUserEditionException",
-   "error_message": "An error occurred (UnsupportedUserEditionException) when calling the ListAnalyses operation: Account <account> is not subscribed for QuickSight",
    "failed_calls": [
     "quicksight.ListAnalyses:denied"
    ],
@@ -8769,7 +8627,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_approval_policy",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListApprovalPolicies operation: Governance approval workflows is not enabled for this account",
    "failed_calls": [
     "quicksight.ListApprovalPolicies:denied"
    ],
@@ -8787,7 +8644,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_brand",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListBrands operation: Account Not Found",
    "failed_calls": [
     "quicksight.ListBrands:denied"
    ],
@@ -8805,7 +8661,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_custom_permissions",
    "error_class": "ResourceNotFoundException",
-   "error_message": "An error occurred (ResourceNotFoundException) when calling the ListCustomPermissions operation: Namespace default not found in account <account>. AWS account ID: <account>, Namespace: default.",
    "failed_calls": [
     "quicksight.ListCustomPermissions:error"
    ],
@@ -8823,7 +8678,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_dashboard",
    "error_class": "UnsupportedUserEditionException",
-   "error_message": "An error occurred (UnsupportedUserEditionException) when calling the ListDashboards operation: Account <account> is not subscribed for QuickSight",
    "failed_calls": [
     "quicksight.ListDashboards:denied"
    ],
@@ -8880,7 +8734,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_flow",
    "error_class": "404",
-   "error_message": "An error occurred (404) when calling the ListFlows operation: <UnknownOperationException/>\n",
    "failed_calls": [
     "quicksight.ListFlows:error"
    ],
@@ -8898,7 +8751,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_folder",
    "error_class": "UnsupportedUserEditionException",
-   "error_message": "An error occurred (UnsupportedUserEditionException) when calling the ListFolders operation: Account <account> is not subscribed for QuickSight",
    "failed_calls": [
     "quicksight.ListFolders:denied"
    ],
@@ -8916,7 +8768,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_group",
    "error_class": "ResourceNotFoundException",
-   "error_message": "An error occurred (ResourceNotFoundException) when calling the ListNamespaces operation: Account settings not found ",
    "failed_calls": [
     "quicksight.ListNamespaces:error"
    ],
@@ -8934,7 +8785,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_knowledge_base",
    "error_class": "PreconditionNotMetException",
-   "error_message": "An error occurred (PreconditionNotMetException) when calling the ListKnowledgeBases operation: Account: <account> does not have QuickSight subscription.",
    "failed_calls": [
     "quicksight.ListKnowledgeBases:error"
    ],
@@ -8965,7 +8815,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_o_auth_client_application",
    "error_class": "ResourceNotFoundException",
-   "error_message": "An error occurred (ResourceNotFoundException) when calling the ListOAuthClientApplications operation: Account <account> is not subscribed to QuickSight",
    "failed_calls": [
     "quicksight.ListOAuthClientApplications:error"
    ],
@@ -8996,7 +8845,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_space",
    "error_class": "PreconditionNotMetException",
-   "error_message": "An error occurred (PreconditionNotMetException) when calling the ListSpaces operation: Account: <account> does not have QuickSight subscription.",
    "failed_calls": [
     "quicksight.ListSpaces:error"
    ],
@@ -9014,7 +8862,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_template",
    "error_class": "UnsupportedUserEditionException",
-   "error_message": "An error occurred (UnsupportedUserEditionException) when calling the ListTemplates operation: Account <account> is not subscribed for QuickSight",
    "failed_calls": [
     "quicksight.ListTemplates:denied"
    ],
@@ -9032,7 +8879,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_theme",
    "error_class": "UnsupportedUserEditionException",
-   "error_message": "An error occurred (UnsupportedUserEditionException) when calling the ListThemes operation: Account <account> is not subscribed for QuickSight",
    "failed_calls": [
     "quicksight.ListThemes:denied"
    ],
@@ -9050,7 +8896,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_topic",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListTopics operation: Could not find namespace for account",
    "failed_calls": [
     "quicksight.ListTopics:denied"
    ],
@@ -9068,7 +8913,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_topic_v2",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListTopicsV2 operation: Could not find namespace for account",
    "failed_calls": [
     "quicksight.ListTopicsV2:denied"
    ],
@@ -9086,7 +8930,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_quicksight_vpc_connection",
    "error_class": "ResourceNotFoundException",
-   "error_message": "An error occurred (ResourceNotFoundException) when calling the ListVPCConnections operation: Account information for account <account> is not found.",
    "failed_calls": [
     "quicksight.ListVPCConnections:error"
    ],
@@ -9351,7 +9194,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_rds_integration",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the DescribeIntegrations operation: DescribeIntegrations is not available in this region.",
    "failed_calls": [
     "rds.DescribeIntegrations:error"
    ],
@@ -9408,7 +9250,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_redshift_cluster_security_group",
    "error_class": "InvalidParameterValue",
-   "error_message": "An error occurred (InvalidParameterValue) when calling the DescribeClusterSecurityGroups operation: Amazon Redshift has discontinued cluster security groups. For security group configuration, associat",
    "failed_calls": [
     "redshift.DescribeClusterSecurityGroups:error"
    ],
@@ -9621,7 +9462,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_rekognition_dataset",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeProjects operation: ",
    "failed_calls": [
     "rekognition.DescribeProjects:denied"
    ],
@@ -9639,7 +9479,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_rekognition_project",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeProjects operation: ",
    "failed_calls": [
     "rekognition.DescribeProjects:denied"
    ],
@@ -9657,7 +9496,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_rekognition_stream_processor",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListStreamProcessors operation: ",
    "failed_calls": [
     "rekognition.ListStreamProcessors:denied"
    ],
@@ -9701,7 +9539,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_resiliencehubv2_policy",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListPolicies operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "resiliencehubv2.ListPolicies:denied"
    ],
@@ -9719,7 +9556,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_resiliencehubv2_service",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListServices operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "resiliencehubv2.ListServices:denied"
    ],
@@ -9737,7 +9573,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_resiliencehubv2_service_function",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListServices operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "resiliencehubv2.ListServices:denied"
    ],
@@ -9755,7 +9590,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_resiliencehubv2_system",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListSystems operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "resiliencehubv2.ListSystems:denied"
    ],
@@ -9773,7 +9607,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_resiliencehubv2_user_journey",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListSystems operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "resiliencehubv2.ListSystems:denied"
    ],
@@ -9830,7 +9663,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_resourcegroups_tag_sync_task",
    "error_class": "ForbiddenException",
-   "error_message": "An error occurred (ForbiddenException) when calling the ListTagSyncTasks operation: Unable to determine service/operation name to be authorized",
    "failed_calls": [
     "resource-groups.ListTagSyncTasks:denied"
    ],
@@ -10057,7 +9889,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_route53resolver_outpost_resolver",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListOutpostResolvers operation: Account is not authorized to perform this operation.",
    "failed_calls": [
     "route53resolver.ListOutpostResolvers:denied"
    ],
@@ -10168,7 +9999,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_s3_access_grant",
    "error_class": "AccessGrantsInstanceNotExistsError",
-   "error_message": "An error occurred (AccessGrantsInstanceNotExistsError) when calling the ListAccessGrants operation: Access Grants Instance does not exist",
    "failed_calls": [
     "s3control.ListAccessGrants:error"
    ],
@@ -10200,7 +10030,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_s3_access_grants_location",
    "error_class": "AccessGrantsInstanceNotExistsError",
-   "error_message": "An error occurred (AccessGrantsInstanceNotExistsError) when calling the ListAccessGrantsLocations operation: Access Grants Instance does not exist",
    "failed_calls": [
     "s3control.ListAccessGrantsLocations:error"
    ],
@@ -10323,7 +10152,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_ai_workload_config",
    "error_class": "InternalFailure",
-   "error_message": "An error occurred (InternalFailure) when calling the ListAIWorkloadConfigs operation (reached max retries: 4): ",
    "failed_calls": [
     "sagemaker.ListAIWorkloadConfigs:error"
    ],
@@ -10367,7 +10195,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_cluster",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListClusters operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListClusters:error"
    ],
@@ -10385,7 +10212,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_cluster_scheduler_config",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListClusterSchedulerConfigs operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListClusterSchedulerConfigs:error"
    ],
@@ -10416,7 +10242,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_compute_quota",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListComputeQuotas operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListComputeQuotas:error"
    ],
@@ -10447,7 +10272,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_device",
    "error_class": "ThrottlingException",
-   "error_message": "An error occurred (ThrottlingException) when calling the ListDevices operation (reached max retries: 4): Rate exceeded",
    "failed_calls": [
     "sagemaker.ListDevices:throttled"
    ],
@@ -10465,7 +10289,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_device_fleet",
    "error_class": "ThrottlingException",
-   "error_message": "An error occurred (ThrottlingException) when calling the ListDeviceFleets operation (reached max retries: 4): Rate exceeded",
    "failed_calls": [
     "sagemaker.ListDeviceFleets:throttled"
    ],
@@ -10522,7 +10345,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_experiment",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListExperiments operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListExperiments:error"
    ],
@@ -10540,7 +10362,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_feature_group",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListFeatureGroups operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListFeatureGroups:error"
    ],
@@ -10572,7 +10393,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_human_task_ui",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListHumanTaskUis operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListHumanTaskUis:error"
    ],
@@ -10629,7 +10449,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_inference_experiment",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListInferenceExperiments operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListInferenceExperiments:error"
    ],
@@ -10647,7 +10466,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_mlflow_app",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListMlflowApps operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListMlflowApps:error"
    ],
@@ -10808,7 +10626,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_partner_app",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListPartnerApps operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListPartnerApps:error"
    ],
@@ -10891,7 +10708,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_trial_component",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListTrialComponents operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListTrialComponents:error"
    ],
@@ -10922,7 +10738,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_workforce",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListWorkforces operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListWorkforces:error"
    ],
@@ -10940,7 +10755,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_sagemaker_workteam",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListWorkteams operation: The requested operation is not supported in the called region.",
    "failed_calls": [
     "sagemaker.ListWorkteams:error"
    ],
@@ -11023,7 +10837,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_aggregator_v2",
    "error_class": "ConflictException",
-   "error_message": "An error occurred (ConflictException) when calling the ListAggregatorsV2 operation: Security Hub V2 is not enabled for <account>",
    "failed_calls": [
     "securityhub.ListAggregatorsV2:error"
    ],
@@ -11041,7 +10854,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_automation_rule",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListAutomationRules operation: Account <account> is not authorized to perform this operation",
    "failed_calls": [
     "securityhub.ListAutomationRules:denied"
    ],
@@ -11059,7 +10871,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_automation_rule_v2",
    "error_class": "ConflictException",
-   "error_message": "An error occurred (ConflictException) when calling the ListAutomationRulesV2 operation: Security Hub V2 is not enabled for <account>",
    "failed_calls": [
     "securityhub.ListAutomationRulesV2:error"
    ],
@@ -11077,7 +10888,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_configuration_policy",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListConfigurationPolicies operation: Must be a Security Hub delegated administrator with Central Configuration enabled",
    "failed_calls": [
     "securityhub.ListConfigurationPolicies:denied"
    ],
@@ -11095,7 +10905,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_connector",
    "error_class": "ValidationException",
-   "error_message": "An error occurred (ValidationException) when calling the ListConnectors operation: Bad Request",
    "failed_calls": [
     "securityhub.ListConnectors:error"
    ],
@@ -11113,7 +10922,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_connector_v2",
    "error_class": "ValidationException",
-   "error_message": "An error occurred (ValidationException) when calling the ListConnectorsV2 operation: Bad Request",
    "failed_calls": [
     "securityhub.ListConnectorsV2:error"
    ],
@@ -11144,7 +10952,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securityhub_hub_v2",
    "error_class": "ResourceNotFoundException",
-   "error_message": "An error occurred (ResourceNotFoundException) when calling the DescribeSecurityHubV2 operation: You are not subscribed to HubV2",
    "failed_calls": [
     "securityhub.DescribeSecurityHubV2:error"
    ],
@@ -11188,7 +10995,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_securitylake_subscriber",
    "error_class": "ResourceNotFoundException",
-   "error_message": "An error occurred (ResourceNotFoundException) when calling the ListSubscribers operation: The request failed because Security Lake isn't enabled for your account in any Regions. Enable Security Lake f",
    "failed_calls": [
     "securitylake.ListSubscribers:error"
    ],
@@ -11544,7 +11350,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ses_receipt_filter",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the ListReceiptFilters operation: Unknown",
    "failed_calls": [
     "ses.ListReceiptFilters:error"
    ],
@@ -11562,7 +11367,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ses_receipt_rule_set",
    "error_class": "InvalidAction",
-   "error_message": "An error occurred (InvalidAction) when calling the ListReceiptRuleSets operation: Unknown",
    "failed_calls": [
     "ses.ListReceiptRuleSets:error"
    ],
@@ -11671,7 +11475,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_ssm_cloud_connector",
    "error_class": "UnknownOperationException",
-   "error_message": "An error occurred (UnknownOperationException) when calling the ListCloudConnectors operation: ",
    "failed_calls": [
     "ssm.ListCloudConnectors:error"
    ],
@@ -11910,7 +11713,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_textract_adapter",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListAdapters operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: textract:ListAdapters on",
    "failed_calls": [
     "textract.ListAdapters:denied"
    ],
@@ -11928,7 +11730,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_timestream_database",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeEndpoints operation: Only existing Timestream for LiveAnalytics customers can access the service. Reach out to AWS support, for more ",
    "failed_calls": [
     "timestream-write.DescribeEndpoints:denied",
     "timestream-write.ListDatabases:denied"
@@ -11947,7 +11748,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_timestream_influx_db_backup",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://timestream-influxdb.us-gov-west-1.amazonaws.com/\"",
    "failed_calls": [
     "timestream-influxdb.ListDbBackups:error"
    ],
@@ -11965,7 +11765,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_timestream_influx_db_cluster",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://timestream-influxdb.us-gov-west-1.amazonaws.com/\"",
    "failed_calls": [
     "timestream-influxdb.ListDbClusters:error"
    ],
@@ -11983,7 +11782,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_timestream_influx_db_instance",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://timestream-influxdb.us-gov-west-1.amazonaws.com/\"",
    "failed_calls": [
     "timestream-influxdb.ListDbInstances:error"
    ],
@@ -12001,7 +11799,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_timestream_scheduled_query",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeEndpoints operation: Only existing Timestream for LiveAnalytics customers can access the service. Reach out to AWS support, for more ",
    "failed_calls": [
     "timestream-query.DescribeEndpoints:denied",
     "timestream-query.ListScheduledQueries:denied"
@@ -12020,7 +11817,6 @@
    "calls": 2,
    "entity_type": "aws_core__aws_timestream_table",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the DescribeEndpoints operation: Only existing Timestream for LiveAnalytics customers can access the service. Reach out to AWS support, for more ",
    "failed_calls": [
     "timestream-write.DescribeEndpoints:denied",
     "timestream-write.ListTables:denied"
@@ -12039,7 +11835,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_transcribe_call_analytics_category",
    "error_class": "BadRequestException",
-   "error_message": "An error occurred (BadRequestException) when calling the ListCallAnalyticsCategories operation: Call Analytics isn't supported in this region. Check the region that you're using and try your request a",
    "failed_calls": [
     "transcribe.ListCallAnalyticsCategories:error"
    ],
@@ -12239,7 +12034,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_translate_parallel_data",
    "error_class": "NotAuthorizedException",
-   "error_message": "An error occurred (NotAuthorizedException) when calling the ListParallelData operation: Your account has been block-listed for access to Amazon Translate. Please contact AWS Support: https://aws.amazo",
    "failed_calls": [
     "translate.ListParallelData:error"
    ],
@@ -12309,7 +12103,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_verifiedpermissions_policy_store_alias",
    "error_class": "AccessDeniedException",
-   "error_message": "An error occurred (AccessDeniedException) when calling the ListPolicyStoreAliases operation: User: arn:aws-us-gov:iam::<account>:user/collector-readonly is not authorized to perform: verifiedpermis",
    "failed_calls": [
     "verifiedpermissions.ListPolicyStoreAliases:denied"
    ],
@@ -12561,7 +12354,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_wellarchitected_agent_context",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://wellarchitected-agent.us-gov-west-1.amazonaws.com/api/v1/agent-profiles\"",
    "failed_calls": [
     "wellarchitected.ListAgentProfiles:error"
    ],
@@ -12579,7 +12371,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_wellarchitected_agent_goal",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://wellarchitected-agent.us-gov-west-1.amazonaws.com/api/v1/agent-profiles\"",
    "failed_calls": [
     "wellarchitected.ListAgentProfiles:error"
    ],
@@ -12597,7 +12388,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_wellarchitected_agent_profile",
    "error_class": "EndpointConnectionError",
-   "error_message": "Could not connect to the endpoint URL: \"https://wellarchitected-agent.us-gov-west-1.amazonaws.com/api/v1/agent-profiles\"",
    "failed_calls": [
     "wellarchitected.ListAgentProfiles:error"
    ],
@@ -12628,7 +12418,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_wellarchitected_profile",
    "error_class": "ValidationException",
-   "error_message": "An error occurred (ValidationException) when calling the ListProfiles operation: [Validation] This operation is not supported in GovCloud.",
    "failed_calls": [
     "wellarchitected.ListProfiles:error"
    ],
@@ -12672,7 +12461,6 @@
    "calls": 1,
    "entity_type": "aws_core__aws_workspaces_connection_alias",
    "error_class": "OperationNotSupportedException",
-   "error_message": "An error occurred (OperationNotSupportedException) when calling the DescribeConnectionAliases operation: The DescribeConnectionAliases operation isn't supported in this Region.",
    "failed_calls": [
     "workspaces.DescribeConnectionAliases:error"
    ],
@@ -12754,7 +12542,7 @@
   "entries": 898,
   "identity": "read-only collector identity",
   "kind": "call-path smoke, read-only",
-  "note": "Counts, operation names and error codes only; no resource content. Entries that failed on the first pass were re-run to capture failed operations and messages; the re-run replaces the first result. Account identifiers are removed.",
+  "note": "Counts, operation names and error codes only; no resource content and no error messages (they can name resources). Entries that failed on the first pass were re-run to capture the failed operations; the re-run replaces the first result. Account identifiers are removed.",
   "partition": "aws-us-gov",
   "regions": [
    "us-gov-west-1"

@@ -41,17 +41,20 @@ from tap_plugin.aws_core.collectors.boto3_collector.partition import service_una
 from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectionError, project_item
 from tap_plugin.aws_core.collectors.boto3_collector.source import SourceError, iter_source
 
-READ_VERB = re.compile(r"^(Describe|List|Get|BatchGet|Search|Lookup|Head|Query)")
+import sys
+
+# exec() from `manage.py shell -c` has no usable __file__; the repository is mounted at this path in the container.
+sys.path.insert(0, "/app/_dev-plugins/aws_core/tools/validate")
+from readguard import NonReadCall, check  # noqa: E402
 
 
-class NonReadCall(Exception):
-    """Raised by the guard before any call whose operation name is not a read verb."""
-
-
-def _guard(model=None, **_kw):
+def _guard(model=None, params=None, **_kw):
+    """Refuse a call before it is made: not a read verb, returns secrets, or asks the service to reveal one."""
     name = getattr(model, "name", "")
-    if not READ_VERB.match(name):
-        raise NonReadCall(f"{getattr(getattr(model, 'service_model', None), 'service_name', '?')}.{name}")
+    try:
+        check(name, params)
+    except NonReadCall as exc:
+        raise NonReadCall(f"{getattr(getattr(model, 'service_model', None), 'service_name', '?')}.{name}: {exc}") from None
 
 
 def _scrub(text):
@@ -90,7 +93,7 @@ def main():
     ledger = CallLedger()
     session = build_session(data)
     ledger.attach(session)
-    session.events.register("before-call", _guard)
+    session.events.register("before-parameter-build", _guard)  # the API parameters, before they are serialised
     account = caller_account_id(session, regions[0], timeout_seconds=30)
     mismatch = account_mismatch_error(data, account)
     if mismatch:
@@ -146,7 +149,8 @@ def main():
                         rec.setdefault("tag_error_class", _classify(exc)[1])
             except Exception as exc:  # noqa: BLE001 - every failure is a result, none stops the wave
                 rec["outcome"], rec["error_class"] = _classify(exc)
-                rec["error_message"] = _scrub(str(exc)[:200])
+                if os.environ.get("WAVE0_MESSAGES"):  # local debugging only: messages can name resources, so they are never recorded by default
+                    rec["error_message"] = _scrub(str(exc)[:200])
             new = ledger.entries[before:]
             rec["calls"] = len(new)
             rec["failed_calls"] = sorted({f"{c['service']}.{c['operation']}:{c['outcome']}" for c in new if c["outcome"] not in ("ok", "absent")})
