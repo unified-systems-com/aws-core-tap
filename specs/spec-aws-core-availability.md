@@ -21,7 +21,7 @@ credential; it is designed to grow by adding evidence, not by editing verdicts.
   lists 192 services; `datazone`, `internetmonitor`, `kendra-ranking` and `kinesisvideo` are listed, `ecr-public` and
   `cloudwatch-omni` are not. botocore's endpoint rule sets contain no availability data for those services.
 - **Ran** 2026-11-01: a read-only call-path smoke over 898 manifest-driven types in `us-gov-west-1`
-  (`tools/validate/runs/wave0-2026-11-01.json`, PR #161): 681 types had a working call path, 54 were unsupported
+  (`tools/validate/runs/wave0-2026-11-01.json`, PR #161): 683 types had a working call path (rows or none), 54 were unsupported
   (endpoint missing, unknown operation, invalid action, unsupported operation), 161 other.
 - **Ran** 2026-11-01: DNS lookups of 8 public endpoint hostnames in `us-gov-west-1`. `datazone`, `ecr-public`,
   `internetmonitor`, `kendra-ranking` and `kinesisvideo` have no record; `ec2`, `logs` and `inspector` resolve. The
