@@ -25,9 +25,13 @@ from tap_plugin.aws_core.models.appconfig_environment import AppconfigEnvironmen
 from tap_plugin.aws_core.models.appconfig_experiment_definition import AppconfigExperimentDefinition
 from tap_plugin.aws_core.models.appconfig_extension import AppconfigExtension
 from tap_plugin.aws_core.models.appconfig_extension_association import AppconfigExtensionAssociation
+from tap_plugin.aws_core.models.applicationautoscaling_scalable_target import ApplicationautoscalingScalableTarget
+from tap_plugin.aws_core.models.applicationautoscaling_scaling_policy import ApplicationautoscalingScalingPolicy
 from tap_plugin.aws_core.models.appstream_app_block import AppstreamAppBlock
 from tap_plugin.aws_core.models.appstream_app_block_builder import AppstreamAppBlockBuilder
 from tap_plugin.aws_core.models.appstream_application import AppstreamApplication
+from tap_plugin.aws_core.models.appstream_directory_config import AppstreamDirectoryConfig
+from tap_plugin.aws_core.models.appstream_entitlement import AppstreamEntitlement
 from tap_plugin.aws_core.models.appstream_fleet import AppstreamFleet
 from tap_plugin.aws_core.models.appstream_image_builder import AppstreamImageBuilder
 from tap_plugin.aws_core.models.appstream_stack import AppstreamStack
@@ -35,8 +39,12 @@ from tap_plugin.aws_core.models.aps_anomaly_detector import ApsAnomalyDetector
 from tap_plugin.aws_core.models.aps_rule_groups_namespace import ApsRuleGroupsNamespace
 from tap_plugin.aws_core.models.aps_scraper import ApsScraper
 from tap_plugin.aws_core.models.aps_workspace import ApsWorkspace
+from tap_plugin.aws_core.models.athena_capacity_reservation import AthenaCapacityReservation
+from tap_plugin.aws_core.models.athena_data_catalog import AthenaDataCatalog
+from tap_plugin.aws_core.models.athena_work_group import AthenaWorkGroup
 from tap_plugin.aws_core.models.autoscaling_auto_scaling_group import AutoscalingAutoScalingGroup
 from tap_plugin.aws_core.models.autoscaling_launch_configuration import AutoscalingLaunchConfiguration
+from tap_plugin.aws_core.models.autoscaling_lifecycle_hook import AutoscalingLifecycleHook
 from tap_plugin.aws_core.models.autoscaling_scaling_policy import AutoscalingScalingPolicy
 from tap_plugin.aws_core.models.autoscaling_scheduled_action import AutoscalingScheduledAction
 from tap_plugin.aws_core.models.availability_zone import AvailabilityZone
@@ -76,6 +84,7 @@ from tap_plugin.aws_core.models.backup_logically_air_gapped_backup_vault import 
 from tap_plugin.aws_core.models.backup_plan import BackupPlan
 from tap_plugin.aws_core.models.backup_report_plan import BackupReportPlan
 from tap_plugin.aws_core.models.backup_restore_testing_plan import BackupRestoreTestingPlan
+from tap_plugin.aws_core.models.backup_restore_testing_selection import BackupRestoreTestingSelection
 from tap_plugin.aws_core.models.backup_tiering_configuration import BackupTieringConfiguration
 from tap_plugin.aws_core.models.backup_vault import BackupVault
 from tap_plugin.aws_core.models.backupgateway_hypervisor import BackupgatewayHypervisor
@@ -253,6 +262,7 @@ from tap_plugin.aws_core.models.ec2_network_insights_access_scope_analysis impor
 from tap_plugin.aws_core.models.ec2_network_insights_analysis import Ec2NetworkInsightsAnalysis
 from tap_plugin.aws_core.models.ec2_network_insights_path import Ec2NetworkInsightsPath
 from tap_plugin.aws_core.models.ec2_network_interface import Ec2NetworkInterface
+from tap_plugin.aws_core.models.ec2_network_performance_metric_subscription import Ec2NetworkPerformanceMetricSubscription
 from tap_plugin.aws_core.models.ec2_placement_group import Ec2PlacementGroup
 from tap_plugin.aws_core.models.ec2_prefix_list import Ec2PrefixList
 from tap_plugin.aws_core.models.ec2_route_server import Ec2RouteServer
@@ -286,6 +296,7 @@ from tap_plugin.aws_core.models.ec2_vpn_connection import Ec2VpnConnection
 from tap_plugin.aws_core.models.ec2_vpn_gateway import Ec2VpnGateway
 from tap_plugin.aws_core.models.ecr_public_repository import EcrPublicRepository
 from tap_plugin.aws_core.models.ecr_repository import EcrRepository
+from tap_plugin.aws_core.models.ecr_repository_creation_template import EcrRepositoryCreationTemplate
 from tap_plugin.aws_core.models.ecs_capacity_provider import EcsCapacityProvider
 from tap_plugin.aws_core.models.ecs_cluster import EcsCluster
 from tap_plugin.aws_core.models.ecs_container import EcsContainer
@@ -294,10 +305,12 @@ from tap_plugin.aws_core.models.ecs_daemon_task_definition import EcsDaemonTaskD
 from tap_plugin.aws_core.models.ecs_gateway import EcsGateway
 from tap_plugin.aws_core.models.ecs_service import EcsService
 from tap_plugin.aws_core.models.ecs_task import EcsTask
+from tap_plugin.aws_core.models.ecs_task_definition import EcsTaskDefinition
 from tap_plugin.aws_core.models.efs_access_point import EfsAccessPoint
 from tap_plugin.aws_core.models.efs_file_system import EfsFileSystem
 from tap_plugin.aws_core.models.efs_mount_target import EfsMountTarget
 from tap_plugin.aws_core.models.eks_capability import EksCapability
+from tap_plugin.aws_core.models.eks_certificate_authority import EksCertificateAuthority
 from tap_plugin.aws_core.models.eks_cluster import EksCluster
 from tap_plugin.aws_core.models.eks_pod_identity_association import EksPodIdentityAssociation
 from tap_plugin.aws_core.models.elastic_ip import ElasticIp
@@ -318,6 +331,9 @@ from tap_plugin.aws_core.models.elasticbeanstalk_environment import Elasticbeans
 from tap_plugin.aws_core.models.elasticsearch_domain import ElasticsearchDomain
 from tap_plugin.aws_core.models.elb import Elb
 from tap_plugin.aws_core.models.elb_listener import ElbListener
+from tap_plugin.aws_core.models.emr_cluster import EmrCluster
+from tap_plugin.aws_core.models.emr_security_configuration import EmrSecurityConfiguration
+from tap_plugin.aws_core.models.emr_studio import EmrStudio
 from tap_plugin.aws_core.models.emrcontainers_endpoint import EmrcontainersEndpoint
 from tap_plugin.aws_core.models.emrcontainers_job_template import EmrcontainersJobTemplate
 from tap_plugin.aws_core.models.emrcontainers_security_configuration import EmrcontainersSecurityConfiguration
@@ -335,18 +351,32 @@ from tap_plugin.aws_core.models.eventschemas_schema import EventschemasSchema
 from tap_plugin.aws_core.models.fms_applications_list import FmsApplicationsList
 from tap_plugin.aws_core.models.fms_policy import FmsPolicy
 from tap_plugin.aws_core.models.fms_protocols_list import FmsProtocolsList
+from tap_plugin.aws_core.models.fms_resource_set import FmsResourceSet
 from tap_plugin.aws_core.models.fsx_backup import FsxBackup
 from tap_plugin.aws_core.models.fsx_data_repository_association import FsxDataRepositoryAssociation
 from tap_plugin.aws_core.models.fsx_file_cache import FsxFileCache
 from tap_plugin.aws_core.models.fsx_file_system import FsxFileSystem
+from tap_plugin.aws_core.models.fsx_s3_access_point_attachment import FsxS3AccessPointAttachment
 from tap_plugin.aws_core.models.fsx_snapshot import FsxSnapshot
 from tap_plugin.aws_core.models.fsx_storage_virtual_machine import FsxStorageVirtualMachine
 from tap_plugin.aws_core.models.fsx_volume import FsxVolume
+from tap_plugin.aws_core.models.glue_blueprint import GlueBlueprint
 from tap_plugin.aws_core.models.glue_catalog import GlueCatalog
+from tap_plugin.aws_core.models.glue_connection import GlueConnection
+from tap_plugin.aws_core.models.glue_crawler import GlueCrawler
+from tap_plugin.aws_core.models.glue_data_quality_ruleset import GlueDataQualityRuleset
+from tap_plugin.aws_core.models.glue_database import GlueDatabase
+from tap_plugin.aws_core.models.glue_dev_endpoint import GlueDevEndpoint
 from tap_plugin.aws_core.models.glue_integration import GlueIntegration
 from tap_plugin.aws_core.models.glue_integration_resource_property import GlueIntegrationResourceProperty
+from tap_plugin.aws_core.models.glue_job import GlueJob
+from tap_plugin.aws_core.models.glue_ml_transform import GlueMlTransform
 from tap_plugin.aws_core.models.glue_registry import GlueRegistry
 from tap_plugin.aws_core.models.glue_schema import GlueSchema
+from tap_plugin.aws_core.models.glue_security_configuration import GlueSecurityConfiguration
+from tap_plugin.aws_core.models.glue_session import GlueSession
+from tap_plugin.aws_core.models.glue_trigger import GlueTrigger
+from tap_plugin.aws_core.models.glue_workflow import GlueWorkflow
 from tap_plugin.aws_core.models.grafana_workspace import GrafanaWorkspace
 from tap_plugin.aws_core.models.greengrass_connector_definition import GreengrassConnectorDefinition
 from tap_plugin.aws_core.models.greengrass_connector_definition_version import GreengrassConnectorDefinitionVersion
@@ -396,6 +426,8 @@ from tap_plugin.aws_core.models.iot_ca_certificate import IotCaCertificate
 from tap_plugin.aws_core.models.iot_certificate import IotCertificate
 from tap_plugin.aws_core.models.iot_certificate_provider import IotCertificateProvider
 from tap_plugin.aws_core.models.iot_command import IotCommand
+from tap_plugin.aws_core.models.iot_custom_metric import IotCustomMetric
+from tap_plugin.aws_core.models.iot_dimension import IotDimension
 from tap_plugin.aws_core.models.iot_domain_configuration import IotDomainConfiguration
 from tap_plugin.aws_core.models.iot_fleet_metric import IotFleetMetric
 from tap_plugin.aws_core.models.iot_job_template import IotJobTemplate
@@ -403,8 +435,11 @@ from tap_plugin.aws_core.models.iot_mitigation_action import IotMitigationAction
 from tap_plugin.aws_core.models.iot_ota_update import IotOtaUpdate
 from tap_plugin.aws_core.models.iot_policy import IotPolicy
 from tap_plugin.aws_core.models.iot_provisioning_template import IotProvisioningTemplate
+from tap_plugin.aws_core.models.iot_role_alias import IotRoleAlias
 from tap_plugin.aws_core.models.iot_scheduled_audit import IotScheduledAudit
 from tap_plugin.aws_core.models.iot_security_profile import IotSecurityProfile
+from tap_plugin.aws_core.models.iot_software_package import IotSoftwarePackage
+from tap_plugin.aws_core.models.iot_software_package_version import IotSoftwarePackageVersion
 from tap_plugin.aws_core.models.iot_stream import IotStream
 from tap_plugin.aws_core.models.iot_thing_group import IotThingGroup
 from tap_plugin.aws_core.models.iot_thing_type import IotThingType
@@ -426,16 +461,26 @@ from tap_plugin.aws_core.models.iottwinmaker_workspace import IottwinmakerWorksp
 from tap_plugin.aws_core.models.kafkaconnect_connector import KafkaconnectConnector
 from tap_plugin.aws_core.models.kafkaconnect_custom_plugin import KafkaconnectCustomPlugin
 from tap_plugin.aws_core.models.kafkaconnect_worker_configuration import KafkaconnectWorkerConfiguration
+from tap_plugin.aws_core.models.kendra_data_source import KendraDataSource
+from tap_plugin.aws_core.models.kendra_faq import KendraFaq
+from tap_plugin.aws_core.models.kendra_featured_results_set import KendraFeaturedResultsSet
+from tap_plugin.aws_core.models.kendra_index import KendraIndex
+from tap_plugin.aws_core.models.kendra_query_suggestions_block_list import KendraQuerySuggestionsBlockList
+from tap_plugin.aws_core.models.kendra_thesaurus import KendraThesaurus
+from tap_plugin.aws_core.models.kendraranking_execution_plan import KendrarankingExecutionPlan
 from tap_plugin.aws_core.models.kinesis_channel import KinesisChannel
 from tap_plugin.aws_core.models.kinesis_stream import KinesisStream
 from tap_plugin.aws_core.models.kinesis_stream_consumer import KinesisStreamConsumer
 from tap_plugin.aws_core.models.kinesisanalytics_application import KinesisanalyticsApplication
 from tap_plugin.aws_core.models.kinesisanalyticsv2_application import Kinesisanalyticsv2Application
+from tap_plugin.aws_core.models.kinesisfirehose_delivery_stream import KinesisfirehoseDeliveryStream
 from tap_plugin.aws_core.models.kinesisvideo_signaling_channel import KinesisvideoSignalingChannel
 from tap_plugin.aws_core.models.kinesisvideo_stream import KinesisvideoStream
 from tap_plugin.aws_core.models.kms_alias import KmsAlias
 from tap_plugin.aws_core.models.kms_key import KmsKey
+from tap_plugin.aws_core.models.lakeformation_data_cells_filter import LakeformationDataCellsFilter
 from tap_plugin.aws_core.models.lakeformation_resource import LakeformationResource
+from tap_plugin.aws_core.models.lakeformation_tag import LakeformationTag
 from tap_plugin.aws_core.models.lambda_alias import LambdaAlias
 from tap_plugin.aws_core.models.lambda_capacity_provider import LambdaCapacityProvider
 from tap_plugin.aws_core.models.lambda_code_signing_config import LambdaCodeSigningConfig
@@ -453,10 +498,17 @@ from tap_plugin.aws_core.models.licensemanager_license_configuration import Lice
 from tap_plugin.aws_core.models.licensemanager_linux_subscription_provider import LicensemanagerLinuxSubscriptionProvider
 from tap_plugin.aws_core.models.licensemanager_report_generator import LicensemanagerReportGenerator
 from tap_plugin.aws_core.models.licensemanager_usersub_license_server_endpoint import LicensemanagerUsersubLicenseServerEndpoint
+from tap_plugin.aws_core.models.location_api_key import LocationApiKey
+from tap_plugin.aws_core.models.location_geofence_collection import LocationGeofenceCollection
+from tap_plugin.aws_core.models.location_map import LocationMap
+from tap_plugin.aws_core.models.location_place_index import LocationPlaceIndex
+from tap_plugin.aws_core.models.location_route_calculator import LocationRouteCalculator
+from tap_plugin.aws_core.models.location_tracker import LocationTracker
 from tap_plugin.aws_core.models.logs_delivery import LogsDelivery
 from tap_plugin.aws_core.models.logs_delivery_destination import LogsDeliveryDestination
 from tap_plugin.aws_core.models.logs_delivery_source import LogsDeliverySource
 from tap_plugin.aws_core.models.logs_destination import LogsDestination
+from tap_plugin.aws_core.models.logs_integration import LogsIntegration
 from tap_plugin.aws_core.models.logs_log_anomaly_detector import LogsLogAnomalyDetector
 from tap_plugin.aws_core.models.logs_metric_filter import LogsMetricFilter
 from tap_plugin.aws_core.models.logs_query_definition import LogsQueryDefinition
@@ -514,8 +566,13 @@ from tap_plugin.aws_core.models.notifications_event_rule import NotificationsEve
 from tap_plugin.aws_core.models.notifications_notification_configuration import NotificationsNotificationConfiguration
 from tap_plugin.aws_core.models.oam_link import OamLink
 from tap_plugin.aws_core.models.oam_sink import OamSink
+from tap_plugin.aws_core.models.opensearch_data_source import OpensearchDataSource
+from tap_plugin.aws_core.models.opensearchserverless_access_policy import OpensearchserverlessAccessPolicy
 from tap_plugin.aws_core.models.opensearchserverless_collection import OpensearchserverlessCollection
 from tap_plugin.aws_core.models.opensearchserverless_collection_group import OpensearchserverlessCollectionGroup
+from tap_plugin.aws_core.models.opensearchserverless_lifecycle_policy import OpensearchserverlessLifecyclePolicy
+from tap_plugin.aws_core.models.opensearchserverless_security_config import OpensearchserverlessSecurityConfig
+from tap_plugin.aws_core.models.opensearchserverless_security_policy import OpensearchserverlessSecurityPolicy
 from tap_plugin.aws_core.models.opensearchserverless_vpc_endpoint import OpensearchserverlessVpcEndpoint
 from tap_plugin.aws_core.models.opensearchservice_application import OpensearchserviceApplication
 from tap_plugin.aws_core.models.opensearchservice_domain import OpensearchserviceDomain
@@ -529,6 +586,8 @@ from tap_plugin.aws_core.models.pinpoint_in_app_template import PinpointInAppTem
 from tap_plugin.aws_core.models.pinpoint_push_template import PinpointPushTemplate
 from tap_plugin.aws_core.models.pinpoint_segment import PinpointSegment
 from tap_plugin.aws_core.models.pinpoint_sms_template import PinpointSmsTemplate
+from tap_plugin.aws_core.models.pinpointemail_configuration_set import PinpointemailConfigurationSet
+from tap_plugin.aws_core.models.pinpointemail_identity import PinpointemailIdentity
 from tap_plugin.aws_core.models.polly_lexicon import PollyLexicon
 from tap_plugin.aws_core.models.qbusiness_data_accessor import QbusinessDataAccessor
 from tap_plugin.aws_core.models.quicksight_action_connector import QuicksightActionConnector
@@ -599,6 +658,7 @@ from tap_plugin.aws_core.models.resiliencehubv2_policy import Resiliencehubv2Pol
 from tap_plugin.aws_core.models.resiliencehubv2_service import Resiliencehubv2Service
 from tap_plugin.aws_core.models.resiliencehubv2_system import Resiliencehubv2System
 from tap_plugin.aws_core.models.resourceexplorer2_index import Resourceexplorer2Index
+from tap_plugin.aws_core.models.resourceexplorer2_view import Resourceexplorer2View
 from tap_plugin.aws_core.models.resourcegroups_group import ResourcegroupsGroup
 from tap_plugin.aws_core.models.resourcegroups_tag_sync_task import ResourcegroupsTagSyncTask
 from tap_plugin.aws_core.models.rolesanywhere_crl import RolesanywhereCrl
@@ -632,6 +692,8 @@ from tap_plugin.aws_core.models.s3_bucket import S3Bucket
 from tap_plugin.aws_core.models.s3_storage_lens import S3StorageLens
 from tap_plugin.aws_core.models.s3_storage_lens_group import S3StorageLensGroup
 from tap_plugin.aws_core.models.s3objectlambda_access_point import S3objectlambdaAccessPoint
+from tap_plugin.aws_core.models.s3outposts_access_point import S3outpostsAccessPoint
+from tap_plugin.aws_core.models.s3outposts_bucket import S3outpostsBucket
 from tap_plugin.aws_core.models.s3outposts_endpoint import S3outpostsEndpoint
 from tap_plugin.aws_core.models.sagemaker_ai_workload_config import SagemakerAiWorkloadConfig
 from tap_plugin.aws_core.models.sagemaker_algorithm import SagemakerAlgorithm
@@ -653,6 +715,7 @@ from tap_plugin.aws_core.models.sagemaker_human_task_ui import SagemakerHumanTas
 from tap_plugin.aws_core.models.sagemaker_image import SagemakerImage
 from tap_plugin.aws_core.models.sagemaker_image_version import SagemakerImageVersion
 from tap_plugin.aws_core.models.sagemaker_inference_component import SagemakerInferenceComponent
+from tap_plugin.aws_core.models.sagemaker_inference_experiment import SagemakerInferenceExperiment
 from tap_plugin.aws_core.models.sagemaker_mlflow_app import SagemakerMlflowApp
 from tap_plugin.aws_core.models.sagemaker_mlflow_tracking_server import SagemakerMlflowTrackingServer
 from tap_plugin.aws_core.models.sagemaker_model import SagemakerModel
@@ -669,8 +732,10 @@ from tap_plugin.aws_core.models.sagemaker_partner_app import SagemakerPartnerApp
 from tap_plugin.aws_core.models.sagemaker_pipeline import SagemakerPipeline
 from tap_plugin.aws_core.models.sagemaker_processing_job import SagemakerProcessingJob
 from tap_plugin.aws_core.models.sagemaker_project import SagemakerProject
+from tap_plugin.aws_core.models.sagemaker_space import SagemakerSpace
 from tap_plugin.aws_core.models.sagemaker_studio_lifecycle_config import SagemakerStudioLifecycleConfig
 from tap_plugin.aws_core.models.sagemaker_trial_component import SagemakerTrialComponent
+from tap_plugin.aws_core.models.sagemaker_user_profile import SagemakerUserProfile
 from tap_plugin.aws_core.models.sagemaker_workforce import SagemakerWorkforce
 from tap_plugin.aws_core.models.sagemaker_workteam import SagemakerWorkteam
 from tap_plugin.aws_core.models.scheduler_schedule import SchedulerSchedule
@@ -713,6 +778,8 @@ from tap_plugin.aws_core.models.ses_mail_manager_relay import SesMailManagerRela
 from tap_plugin.aws_core.models.ses_mail_manager_rule_set import SesMailManagerRuleSet
 from tap_plugin.aws_core.models.ses_mail_manager_traffic_policy import SesMailManagerTrafficPolicy
 from tap_plugin.aws_core.models.ses_multi_region_endpoint import SesMultiRegionEndpoint
+from tap_plugin.aws_core.models.ses_receipt_filter import SesReceiptFilter
+from tap_plugin.aws_core.models.ses_receipt_rule_set import SesReceiptRuleSet
 from tap_plugin.aws_core.models.ses_template import SesTemplate
 from tap_plugin.aws_core.models.ses_tenant import SesTenant
 from tap_plugin.aws_core.models.signer_signing_profile import SignerSigningProfile
@@ -721,9 +788,11 @@ from tap_plugin.aws_core.models.sns_topic import SnsTopic
 from tap_plugin.aws_core.models.sqs_queue import SqsQueue
 from tap_plugin.aws_core.models.ssm_association import SsmAssociation
 from tap_plugin.aws_core.models.ssm_cloud_connector import SsmCloudConnector
+from tap_plugin.aws_core.models.ssm_document import SsmDocument
 from tap_plugin.aws_core.models.ssm_maintenance_window import SsmMaintenanceWindow
 from tap_plugin.aws_core.models.ssm_parameter import SsmParameter
 from tap_plugin.aws_core.models.ssm_patch_baseline import SsmPatchBaseline
+from tap_plugin.aws_core.models.ssm_resource_data_sync import SsmResourceDataSync
 from tap_plugin.aws_core.models.stepfunctions_activity import StepfunctionsActivity
 from tap_plugin.aws_core.models.stepfunctions_state_machine import StepfunctionsStateMachine
 from tap_plugin.aws_core.models.stepfunctions_state_machine_alias import StepfunctionsStateMachineAlias
@@ -736,12 +805,17 @@ from tap_plugin.aws_core.models.subnet import Subnet
 from tap_plugin.aws_core.models.synthetics_canary import SyntheticsCanary
 from tap_plugin.aws_core.models.synthetics_group import SyntheticsGroup
 from tap_plugin.aws_core.models.target_group import TargetGroup
+from tap_plugin.aws_core.models.textract_adapter import TextractAdapter
 from tap_plugin.aws_core.models.timestream_database import TimestreamDatabase
 from tap_plugin.aws_core.models.timestream_influx_db_backup import TimestreamInfluxDbBackup
 from tap_plugin.aws_core.models.timestream_influx_db_cluster import TimestreamInfluxDbCluster
 from tap_plugin.aws_core.models.timestream_influx_db_instance import TimestreamInfluxDbInstance
 from tap_plugin.aws_core.models.timestream_scheduled_query import TimestreamScheduledQuery
 from tap_plugin.aws_core.models.timestream_table import TimestreamTable
+from tap_plugin.aws_core.models.transcribe_call_analytics_category import TranscribeCallAnalyticsCategory
+from tap_plugin.aws_core.models.transcribe_medical_vocabulary import TranscribeMedicalVocabulary
+from tap_plugin.aws_core.models.transcribe_vocabulary import TranscribeVocabulary
+from tap_plugin.aws_core.models.transcribe_vocabulary_filter import TranscribeVocabularyFilter
 from tap_plugin.aws_core.models.transfer_agreement import TransferAgreement
 from tap_plugin.aws_core.models.transfer_certificate import TransferCertificate
 from tap_plugin.aws_core.models.transfer_connector import TransferConnector
@@ -755,8 +829,11 @@ from tap_plugin.aws_core.models.transit_gateway import TransitGateway
 from tap_plugin.aws_core.models.transit_gateway_attachment import TransitGatewayAttachment
 from tap_plugin.aws_core.models.translate_parallel_data import TranslateParallelData
 from tap_plugin.aws_core.models.translate_terminology import TranslateTerminology
+from tap_plugin.aws_core.models.verifiedpermissions_identity_source import VerifiedpermissionsIdentitySource
+from tap_plugin.aws_core.models.verifiedpermissions_policy import VerifiedpermissionsPolicy
 from tap_plugin.aws_core.models.verifiedpermissions_policy_store import VerifiedpermissionsPolicyStore
 from tap_plugin.aws_core.models.verifiedpermissions_policy_store_alias import VerifiedpermissionsPolicyStoreAlias
+from tap_plugin.aws_core.models.verifiedpermissions_policy_template import VerifiedpermissionsPolicyTemplate
 from tap_plugin.aws_core.models.vpc import Vpc
 from tap_plugin.aws_core.models.vpc_endpoint import VpcEndpoint
 from tap_plugin.aws_core.models.vpc_endpoint_service import VpcEndpointService
@@ -784,84 +861,8 @@ from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
 from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
 from tap_plugin.aws_core.models.xray_group import XrayGroup
 from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
-from tap_plugin.aws_core.models.glue_job import GlueJob
-from tap_plugin.aws_core.models.glue_crawler import GlueCrawler
-from tap_plugin.aws_core.models.glue_trigger import GlueTrigger
-from tap_plugin.aws_core.models.glue_data_quality_ruleset import GlueDataQualityRuleset
-from tap_plugin.aws_core.models.glue_database import GlueDatabase
-from tap_plugin.aws_core.models.glue_dev_endpoint import GlueDevEndpoint
-from tap_plugin.aws_core.models.glue_ml_transform import GlueMlTransform
-from tap_plugin.aws_core.models.glue_session import GlueSession
-from tap_plugin.aws_core.models.glue_connection import GlueConnection
-from tap_plugin.aws_core.models.glue_workflow import GlueWorkflow
-from tap_plugin.aws_core.models.glue_blueprint import GlueBlueprint
-from tap_plugin.aws_core.models.glue_security_configuration import GlueSecurityConfiguration
-from tap_plugin.aws_core.models.athena_work_group import AthenaWorkGroup
-from tap_plugin.aws_core.models.athena_data_catalog import AthenaDataCatalog
-from tap_plugin.aws_core.models.athena_capacity_reservation import AthenaCapacityReservation
-from tap_plugin.aws_core.models.backup_restore_testing_selection import BackupRestoreTestingSelection
-from tap_plugin.aws_core.models.ec2_network_performance_metric_subscription import Ec2NetworkPerformanceMetricSubscription
-from tap_plugin.aws_core.models.fms_resource_set import FmsResourceSet
-from tap_plugin.aws_core.models.kendra_index import KendraIndex
-from tap_plugin.aws_core.models.kendra_data_source import KendraDataSource
-from tap_plugin.aws_core.models.kendra_faq import KendraFaq
-from tap_plugin.aws_core.models.kendra_featured_results_set import KendraFeaturedResultsSet
-from tap_plugin.aws_core.models.kendra_query_suggestions_block_list import KendraQuerySuggestionsBlockList
-from tap_plugin.aws_core.models.kendra_thesaurus import KendraThesaurus
-from tap_plugin.aws_core.models.kendraranking_execution_plan import KendrarankingExecutionPlan
-from tap_plugin.aws_core.models.lakeformation_data_cells_filter import LakeformationDataCellsFilter
-from tap_plugin.aws_core.models.lakeformation_tag import LakeformationTag
-from tap_plugin.aws_core.models.s3outposts_bucket import S3outpostsBucket
-from tap_plugin.aws_core.models.s3outposts_access_point import S3outpostsAccessPoint
-from tap_plugin.aws_core.models.ssm_document import SsmDocument
-from tap_plugin.aws_core.models.ssm_resource_data_sync import SsmResourceDataSync
-from tap_plugin.aws_core.models.sagemaker_space import SagemakerSpace
-from tap_plugin.aws_core.models.sagemaker_user_profile import SagemakerUserProfile
-from tap_plugin.aws_core.models.sagemaker_inference_experiment import SagemakerInferenceExperiment
-from tap_plugin.aws_core.models.transcribe_vocabulary import TranscribeVocabulary
-from tap_plugin.aws_core.models.transcribe_medical_vocabulary import TranscribeMedicalVocabulary
-from tap_plugin.aws_core.models.transcribe_vocabulary_filter import TranscribeVocabularyFilter
-from tap_plugin.aws_core.models.transcribe_call_analytics_category import TranscribeCallAnalyticsCategory
 
 __all__ = [
-    "TranscribeCallAnalyticsCategory",
-    "TranscribeVocabularyFilter",
-    "TranscribeMedicalVocabulary",
-    "TranscribeVocabulary",
-    "SagemakerInferenceExperiment",
-    "SagemakerUserProfile",
-    "SagemakerSpace",
-    "SsmResourceDataSync",
-    "SsmDocument",
-    "S3outpostsAccessPoint",
-    "S3outpostsBucket",
-    "LakeformationTag",
-    "LakeformationDataCellsFilter",
-    "KendrarankingExecutionPlan",
-    "KendraThesaurus",
-    "KendraQuerySuggestionsBlockList",
-    "KendraFeaturedResultsSet",
-    "KendraFaq",
-    "KendraDataSource",
-    "KendraIndex",
-    "FmsResourceSet",
-    "Ec2NetworkPerformanceMetricSubscription",
-    "BackupRestoreTestingSelection",
-    "AthenaCapacityReservation",
-    "AthenaDataCatalog",
-    "AthenaWorkGroup",
-    "GlueSecurityConfiguration",
-    "GlueBlueprint",
-    "GlueWorkflow",
-    "GlueConnection",
-    "GlueSession",
-    "GlueMlTransform",
-    "GlueDevEndpoint",
-    "GlueDatabase",
-    "GlueDataQualityRuleset",
-    "GlueTrigger",
-    "GlueCrawler",
-    "GlueJob",
     "AccessAnalyzerArchiveRule",
     "AcmCertificate",
     "AcmPrivateCa",
@@ -887,9 +888,13 @@ __all__ = [
     "AppconfigExperimentDefinition",
     "AppconfigExtension",
     "AppconfigExtensionAssociation",
+    "ApplicationautoscalingScalableTarget",
+    "ApplicationautoscalingScalingPolicy",
     "AppstreamAppBlock",
     "AppstreamAppBlockBuilder",
     "AppstreamApplication",
+    "AppstreamDirectoryConfig",
+    "AppstreamEntitlement",
     "AppstreamFleet",
     "AppstreamImageBuilder",
     "AppstreamStack",
@@ -897,8 +902,12 @@ __all__ = [
     "ApsRuleGroupsNamespace",
     "ApsScraper",
     "ApsWorkspace",
+    "AthenaCapacityReservation",
+    "AthenaDataCatalog",
+    "AthenaWorkGroup",
     "AutoscalingAutoScalingGroup",
     "AutoscalingLaunchConfiguration",
+    "AutoscalingLifecycleHook",
     "AutoscalingScalingPolicy",
     "AutoscalingScheduledAction",
     "AvailabilityZone",
@@ -938,6 +947,7 @@ __all__ = [
     "BackupPlan",
     "BackupReportPlan",
     "BackupRestoreTestingPlan",
+    "BackupRestoreTestingSelection",
     "BackupTieringConfiguration",
     "BackupVault",
     "BackupgatewayHypervisor",
@@ -1115,6 +1125,7 @@ __all__ = [
     "Ec2NetworkInsightsAnalysis",
     "Ec2NetworkInsightsPath",
     "Ec2NetworkInterface",
+    "Ec2NetworkPerformanceMetricSubscription",
     "Ec2PlacementGroup",
     "Ec2PrefixList",
     "Ec2RouteServer",
@@ -1148,6 +1159,7 @@ __all__ = [
     "Ec2VpnGateway",
     "EcrPublicRepository",
     "EcrRepository",
+    "EcrRepositoryCreationTemplate",
     "EcsCapacityProvider",
     "EcsCluster",
     "EcsContainer",
@@ -1156,10 +1168,12 @@ __all__ = [
     "EcsGateway",
     "EcsService",
     "EcsTask",
+    "EcsTaskDefinition",
     "EfsAccessPoint",
     "EfsFileSystem",
     "EfsMountTarget",
     "EksCapability",
+    "EksCertificateAuthority",
     "EksCluster",
     "EksPodIdentityAssociation",
     "ElasticIp",
@@ -1180,6 +1194,9 @@ __all__ = [
     "ElasticsearchDomain",
     "Elb",
     "ElbListener",
+    "EmrCluster",
+    "EmrSecurityConfiguration",
+    "EmrStudio",
     "EmrcontainersEndpoint",
     "EmrcontainersJobTemplate",
     "EmrcontainersSecurityConfiguration",
@@ -1197,18 +1214,32 @@ __all__ = [
     "FmsApplicationsList",
     "FmsPolicy",
     "FmsProtocolsList",
+    "FmsResourceSet",
     "FsxBackup",
     "FsxDataRepositoryAssociation",
     "FsxFileCache",
     "FsxFileSystem",
+    "FsxS3AccessPointAttachment",
     "FsxSnapshot",
     "FsxStorageVirtualMachine",
     "FsxVolume",
+    "GlueBlueprint",
     "GlueCatalog",
+    "GlueConnection",
+    "GlueCrawler",
+    "GlueDataQualityRuleset",
+    "GlueDatabase",
+    "GlueDevEndpoint",
     "GlueIntegration",
     "GlueIntegrationResourceProperty",
+    "GlueJob",
+    "GlueMlTransform",
     "GlueRegistry",
     "GlueSchema",
+    "GlueSecurityConfiguration",
+    "GlueSession",
+    "GlueTrigger",
+    "GlueWorkflow",
     "GrafanaWorkspace",
     "GreengrassConnectorDefinition",
     "GreengrassConnectorDefinitionVersion",
@@ -1258,6 +1289,8 @@ __all__ = [
     "IotCertificate",
     "IotCertificateProvider",
     "IotCommand",
+    "IotCustomMetric",
+    "IotDimension",
     "IotDomainConfiguration",
     "IotFleetMetric",
     "IotJobTemplate",
@@ -1265,8 +1298,11 @@ __all__ = [
     "IotOtaUpdate",
     "IotPolicy",
     "IotProvisioningTemplate",
+    "IotRoleAlias",
     "IotScheduledAudit",
     "IotSecurityProfile",
+    "IotSoftwarePackage",
+    "IotSoftwarePackageVersion",
     "IotStream",
     "IotThingGroup",
     "IotThingType",
@@ -1288,16 +1324,26 @@ __all__ = [
     "KafkaconnectConnector",
     "KafkaconnectCustomPlugin",
     "KafkaconnectWorkerConfiguration",
+    "KendraDataSource",
+    "KendraFaq",
+    "KendraFeaturedResultsSet",
+    "KendraIndex",
+    "KendraQuerySuggestionsBlockList",
+    "KendraThesaurus",
+    "KendrarankingExecutionPlan",
     "KinesisChannel",
     "KinesisStream",
     "KinesisStreamConsumer",
     "KinesisanalyticsApplication",
     "Kinesisanalyticsv2Application",
+    "KinesisfirehoseDeliveryStream",
     "KinesisvideoSignalingChannel",
     "KinesisvideoStream",
     "KmsAlias",
     "KmsKey",
+    "LakeformationDataCellsFilter",
     "LakeformationResource",
+    "LakeformationTag",
     "LambdaAlias",
     "LambdaCapacityProvider",
     "LambdaCodeSigningConfig",
@@ -1315,10 +1361,17 @@ __all__ = [
     "LicensemanagerLinuxSubscriptionProvider",
     "LicensemanagerReportGenerator",
     "LicensemanagerUsersubLicenseServerEndpoint",
+    "LocationApiKey",
+    "LocationGeofenceCollection",
+    "LocationMap",
+    "LocationPlaceIndex",
+    "LocationRouteCalculator",
+    "LocationTracker",
     "LogsDelivery",
     "LogsDeliveryDestination",
     "LogsDeliverySource",
     "LogsDestination",
+    "LogsIntegration",
     "LogsLogAnomalyDetector",
     "LogsMetricFilter",
     "LogsQueryDefinition",
@@ -1376,8 +1429,13 @@ __all__ = [
     "NotificationsNotificationConfiguration",
     "OamLink",
     "OamSink",
+    "OpensearchDataSource",
+    "OpensearchserverlessAccessPolicy",
     "OpensearchserverlessCollection",
     "OpensearchserverlessCollectionGroup",
+    "OpensearchserverlessLifecyclePolicy",
+    "OpensearchserverlessSecurityConfig",
+    "OpensearchserverlessSecurityPolicy",
     "OpensearchserverlessVpcEndpoint",
     "OpensearchserviceApplication",
     "OpensearchserviceDomain",
@@ -1391,6 +1449,8 @@ __all__ = [
     "PinpointPushTemplate",
     "PinpointSegment",
     "PinpointSmsTemplate",
+    "PinpointemailConfigurationSet",
+    "PinpointemailIdentity",
     "PollyLexicon",
     "QbusinessDataAccessor",
     "QuicksightActionConnector",
@@ -1461,6 +1521,7 @@ __all__ = [
     "Resiliencehubv2Service",
     "Resiliencehubv2System",
     "Resourceexplorer2Index",
+    "Resourceexplorer2View",
     "ResourcegroupsGroup",
     "ResourcegroupsTagSyncTask",
     "RolesanywhereCrl",
@@ -1494,6 +1555,8 @@ __all__ = [
     "S3StorageLens",
     "S3StorageLensGroup",
     "S3objectlambdaAccessPoint",
+    "S3outpostsAccessPoint",
+    "S3outpostsBucket",
     "S3outpostsEndpoint",
     "SagemakerAiWorkloadConfig",
     "SagemakerAlgorithm",
@@ -1515,6 +1578,7 @@ __all__ = [
     "SagemakerImage",
     "SagemakerImageVersion",
     "SagemakerInferenceComponent",
+    "SagemakerInferenceExperiment",
     "SagemakerMlflowApp",
     "SagemakerMlflowTrackingServer",
     "SagemakerModel",
@@ -1531,8 +1595,10 @@ __all__ = [
     "SagemakerPipeline",
     "SagemakerProcessingJob",
     "SagemakerProject",
+    "SagemakerSpace",
     "SagemakerStudioLifecycleConfig",
     "SagemakerTrialComponent",
+    "SagemakerUserProfile",
     "SagemakerWorkforce",
     "SagemakerWorkteam",
     "SchedulerSchedule",
@@ -1575,6 +1641,8 @@ __all__ = [
     "SesMailManagerRuleSet",
     "SesMailManagerTrafficPolicy",
     "SesMultiRegionEndpoint",
+    "SesReceiptFilter",
+    "SesReceiptRuleSet",
     "SesTemplate",
     "SesTenant",
     "SignerSigningProfile",
@@ -1583,9 +1651,11 @@ __all__ = [
     "SqsQueue",
     "SsmAssociation",
     "SsmCloudConnector",
+    "SsmDocument",
     "SsmMaintenanceWindow",
     "SsmParameter",
     "SsmPatchBaseline",
+    "SsmResourceDataSync",
     "StepfunctionsActivity",
     "StepfunctionsStateMachine",
     "StepfunctionsStateMachineAlias",
@@ -1598,12 +1668,17 @@ __all__ = [
     "SyntheticsCanary",
     "SyntheticsGroup",
     "TargetGroup",
+    "TextractAdapter",
     "TimestreamDatabase",
     "TimestreamInfluxDbBackup",
     "TimestreamInfluxDbCluster",
     "TimestreamInfluxDbInstance",
     "TimestreamScheduledQuery",
     "TimestreamTable",
+    "TranscribeCallAnalyticsCategory",
+    "TranscribeMedicalVocabulary",
+    "TranscribeVocabulary",
+    "TranscribeVocabularyFilter",
     "TransferAgreement",
     "TransferCertificate",
     "TransferConnector",
@@ -1617,8 +1692,11 @@ __all__ = [
     "TransitGatewayAttachment",
     "TranslateParallelData",
     "TranslateTerminology",
+    "VerifiedpermissionsIdentitySource",
+    "VerifiedpermissionsPolicy",
     "VerifiedpermissionsPolicyStore",
     "VerifiedpermissionsPolicyStoreAlias",
+    "VerifiedpermissionsPolicyTemplate",
     "Vpc",
     "VpcEndpoint",
     "VpcEndpointService",

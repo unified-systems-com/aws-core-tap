@@ -34125,6 +34125,2105 @@
       "derive": {
         "_arn": "arn:{partition}:transcribe:{region}:{account}:analytics-category/{CategoryName}"
       }
+    },
+    {
+      "entity_type": "aws_core__aws_appstream_directory_config",
+      "service": "appstream",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDirectoryConfigs"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{DirectoryName}"
+      },
+      "why": "Enumerate AppStream directory configs with DescribeDirectoryConfigs - the Active Directory domains and organizational units that fleets and image builders join.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDirectoryConfigs returns credential members (ServiceAccountCredentials) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore appstream DescribeDirectoryConfigs output shape and the CloudFormation schema for AWS::AppStream::DirectoryConfig (2026-10-31); botocore marks ServiceAccountCredentials.AccountName, ServiceAccountCredentials.AccountPassword sensitive in the appstream DescribeDirectoryConfigs item shape; those are declared. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "ServiceAccountCredentials.AccountName",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "ServiceAccountCredentials.AccountPassword",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "DirectoryConfigs[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "DirectoryName",
+        "appstream_directory_config_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::AppStream::DirectoryConfig says tagging.taggable is false, and appstream ListTagsForResource takes a ResourceArn while the AWS Service Authorization Reference (appstream) lists no directory-config resource (app-block, app-block-builder, application, fleet, image, image-builder and stack only), so there is no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_appstream_entitlement",
+      "service": "appstream",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeEntitlements",
+        "per": {
+          "aws_op": "DescribeStacks",
+          "items_path": "Stacks[]"
+        },
+        "bind": {
+          "StackName": "Name"
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{StackName}/{Name}"
+      },
+      "why": "Enumerate AppStream entitlements, stack by stack, with DescribeEntitlements - the rules that decide which users may launch which applications.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeEntitlements response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore appstream DescribeEntitlements output shape and the CloudFormation schema for AWS::AppStream::Entitlement (2026-10-31); the botocore appstream DescribeEntitlements item shape has no member marked sensitive. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entitlements[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "appstream_entitlement_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::AppStream::Entitlement says tagging.taggable is false, and the AWS Service Authorization Reference (appstream) lists no entitlement resource, so an entitlement has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_applicationautoscaling_scalable_target",
+      "service": "application-autoscaling",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeScalableTargets",
+        "per": {
+          "values": [
+            "ecs",
+            "elasticmapreduce",
+            "ec2",
+            "appstream",
+            "dynamodb",
+            "rds",
+            "sagemaker",
+            "custom-resource",
+            "comprehend",
+            "lambda",
+            "cassandra",
+            "kafka",
+            "elasticache",
+            "neptune",
+            "workspaces"
+          ]
+        },
+        "bind": {
+          "ServiceNamespace": ""
+        }
+      },
+      "why": "Enumerate Application Auto Scaling scalable targets with DescribeScalableTargets, one call per service namespace (the ServiceNamespace enum in botocore) - what scales, between which capacities, under which role.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeScalableTargets response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore application-autoscaling DescribeScalableTargets output shape and the CloudFormation schema for AWS::ApplicationAutoScaling::ScalableTarget (2026-10-31); the botocore application-autoscaling DescribeScalableTargets item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "ScalableTargets[]",
+      "natural_key": "ScalableTargetARN",
+      "fields": {
+        "name": "ResourceId",
+        "applicationautoscaling_scalable_target_arn": "ScalableTargetARN"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "ScalableTargetARN"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - ListTagsForResource by the scalable target's ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_applicationautoscaling_scaling_policy",
+      "service": "application-autoscaling",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeScalingPolicies",
+        "per": {
+          "values": [
+            "ecs",
+            "elasticmapreduce",
+            "ec2",
+            "appstream",
+            "dynamodb",
+            "rds",
+            "sagemaker",
+            "custom-resource",
+            "comprehend",
+            "lambda",
+            "cassandra",
+            "kafka",
+            "elasticache",
+            "neptune",
+            "workspaces"
+          ]
+        },
+        "bind": {
+          "ServiceNamespace": ""
+        }
+      },
+      "why": "Enumerate Application Auto Scaling scaling policies with DescribeScalingPolicies, one call per service namespace - the rules that move a scalable target's capacity.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeScalingPolicies response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore application-autoscaling DescribeScalingPolicies output shape and the CloudFormation schema for AWS::ApplicationAutoScaling::ScalingPolicy (2026-10-31); the botocore application-autoscaling DescribeScalingPolicies item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored."
+      },
+      "items_path": "ScalingPolicies[]",
+      "natural_key": "PolicyARN",
+      "fields": {
+        "name": "PolicyName",
+        "applicationautoscaling_scaling_policy_arn": "PolicyARN"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::ApplicationAutoScaling::ScalingPolicy says tagging.taggable is false, and botocore application-autoscaling TagResource documents that 'you cannot tag a scaling policy or scheduled action' (only a scalable target), and ListTagsForResource takes a scalable target's ARN."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_autoscaling_lifecycle_hook",
+      "service": "autoscaling",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeLifecycleHooks",
+        "per": {
+          "aws_op": "DescribeAutoScalingGroups",
+          "items_path": "AutoScalingGroups[]"
+        },
+        "bind": {
+          "AutoScalingGroupName": "AutoScalingGroupName"
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{AutoScalingGroupName}/{LifecycleHookName}"
+      },
+      "why": "Enumerate Auto Scaling lifecycle hooks, group by group, with DescribeLifecycleHooks - the pauses an instance launch or termination waits on, and the notification target and role each uses.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeLifecycleHooks response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore autoscaling DescribeLifecycleHooks output shape and the CloudFormation schema for AWS::AutoScaling::LifecycleHook (2026-10-31); the botocore autoscaling DescribeLifecycleHooks item shape has no member marked sensitive. Declared on reviewer judgement: NotificationMetadata. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "NotificationMetadata",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "LifecycleHooks[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "LifecycleHookName",
+        "autoscaling_lifecycle_hook_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::AutoScaling::LifecycleHook says tagging.taggable is false, and the AWS Service Authorization Reference (autoscaling) lists only the autoScalingGroup and launchConfiguration resources, so a lifecycle hook has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_emr_cluster",
+      "service": "emr",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeCluster",
+        "per": {
+          "aws_op": "ListClusters",
+          "items_path": "Clusters[].Id",
+          "params": {
+            "ClusterStates": [
+              "STARTING",
+              "BOOTSTRAPPING",
+              "RUNNING",
+              "WAITING",
+              "TERMINATING"
+            ]
+          }
+        },
+        "bind": {
+          "ClusterId": ""
+        }
+      },
+      "why": "Enumerate EMR clusters that have not terminated (ListClusters with the non-terminal ClusterStates, then DescribeCluster for the ARN and tags the listing lacks) - what runs, in which subnet, under which roles.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeCluster returns credential members (KerberosAttributes) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore emr DescribeCluster output shape and the CloudFormation schema for AWS::EMR::Cluster (2026-10-31); the botocore emr DescribeCluster item shape has no member marked sensitive. Declared on reviewer judgement: KerberosAttributes.KdcAdminPassword, KerberosAttributes.CrossRealmTrustPrincipalPassword, KerberosAttributes.ADDomainJoinPassword. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "KerberosAttributes.KdcAdminPassword",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "KerberosAttributes.CrossRealmTrustPrincipalPassword",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "KerberosAttributes.ADDomainJoinPassword",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Cluster",
+      "natural_key": "ClusterArn",
+      "fields": {
+        "name": "Name",
+        "emr_cluster_arn": "ClusterArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The DescribeCluster answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_emr_security_configuration",
+      "service": "emr",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListSecurityConfigurations"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{Name}"
+      },
+      "why": "Enumerate EMR security configurations with ListSecurityConfigurations - the named encryption and authentication settings clusters are launched with. Only the name is listed; the configuration body is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListSecurityConfigurations response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore emr ListSecurityConfigurations output shape and the CloudFormation schema for AWS::EMR::SecurityConfiguration (2026-10-31); the botocore emr ListSecurityConfigurations item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored."
+      },
+      "items_path": "SecurityConfigurations[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "emr_security_configuration_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::EMR::SecurityConfiguration says tagging.taggable is false, and botocore emr AddTags documents its target as 'an Amazon EMR resource, such as a cluster or an Amazon EMR Studio' (ResourceId is a cluster identifier or a Studio ID), and the AWS Service Authorization Reference (elasticmapreduce) lists no security-configuration resource."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_emr_studio",
+      "service": "emr",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeStudio",
+        "per": {
+          "aws_op": "ListStudios",
+          "items_path": "Studios[].StudioId"
+        },
+        "bind": {
+          "StudioId": ""
+        }
+      },
+      "why": "Enumerate EMR Studios (ListStudios, then DescribeStudio for the ARN and tags the listing lacks) - the notebook workspaces, their auth mode, roles and network.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeStudio response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore emr DescribeStudio output shape and the CloudFormation schema for AWS::EMR::Studio (2026-10-31); the botocore emr DescribeStudio item shape has no member marked sensitive. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Studio",
+      "natural_key": "StudioArn",
+      "fields": {
+        "name": "Name",
+        "emr_studio_arn": "StudioArn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The DescribeStudio answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ecr_repository_creation_template",
+      "service": "ecr",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeRepositoryCreationTemplates"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{prefix}"
+      },
+      "why": "Enumerate ECR repository creation templates with DescribeRepositoryCreationTemplates - the defaults (encryption, tag mutability, policies) a repository gets when it is created on a matching prefix.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeRepositoryCreationTemplates response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ecr DescribeRepositoryCreationTemplates output shape and the CloudFormation schema for AWS::ECR::RepositoryCreationTemplate (2026-10-31); the botocore ecr DescribeRepositoryCreationTemplates item shape has no member marked sensitive. Declared on reviewer judgement: description, repositoryPolicy, lifecyclePolicy. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "repositoryPolicy",
+            "category": "customer_content",
+            "reason": "Operator-authored repository policy document; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "lifecyclePolicy",
+            "category": "customer_content",
+            "reason": "Operator-authored lifecycle policy document; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "repositoryCreationTemplates[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "prefix",
+        "ecr_repository_creation_template_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::ECR::RepositoryCreationTemplate says tagging.taggable is false, and botocore ecr TagResource documents that 'the only supported resource is an Amazon ECR repository' (the template's resourceTags are applied to the repositories it creates, not to the template), and the AWS Service Authorization Reference (ecr) lists no creation-template resource."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ecs_task_definition",
+      "service": "ecs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeTaskDefinition",
+        "per": {
+          "aws_op": "ListTaskDefinitions",
+          "items_path": "taskDefinitionArns[]",
+          "params": {
+            "status": "ACTIVE"
+          }
+        },
+        "bind": {
+          "taskDefinition": ""
+        }
+      },
+      "why": "Enumerate the ACTIVE ECS task definition revisions (ListTaskDefinitions, then DescribeTaskDefinition for the definition) - the images, roles and network modes tasks run with. Deregistered (INACTIVE) revisions are not listed.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeTaskDefinition returns credential members (containerDefinitions, volumes) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ecs DescribeTaskDefinition output shape and the CloudFormation schema for AWS::ECS::TaskDefinition (2026-10-31); botocore marks containerDefinitions[].repositoryCredentials, containerDefinitions[].environment sensitive in the ecs DescribeTaskDefinition item shape; those are declared. Declared on reviewer judgement: containerDefinitions[].repositoryCredentials.credentialsParameter, volumes[].fsxWindowsFileServerVolumeConfiguration.authorizationConfig.credentialsParameter. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "containerDefinitions[].repositoryCredentials",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "containerDefinitions[].environment",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "containerDefinitions[].repositoryCredentials.credentialsParameter",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "volumes[].fsxWindowsFileServerVolumeConfiguration.authorizationConfig.credentialsParameter",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "taskDefinition",
+      "natural_key": "taskDefinitionArn",
+      "fields": {
+        "name": "family",
+        "ecs_task_definition_arn": "taskDefinitionArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "taskDefinitionArn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags - ListTagsForResource by the task definition's ARN; DescribeTaskDefinition returns them beside the definition, not inside it."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_eks_certificate_authority",
+      "service": "eks",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListCertificateAuthorities",
+        "per": {
+          "aws_op": "ListClusters",
+          "items_path": "clusters[]"
+        },
+        "bind": {
+          "clusterName": ""
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{_parent}/{id}"
+      },
+      "why": "Enumerate the certificate authorities of each EKS cluster (ListCertificateAuthorities per cluster) - a cluster has at most two, the signing CA and a successor during a rotation. Only the listing is read; the certificate data (DescribeCertificateAuthority) is not fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListCertificateAuthorities response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore eks ListCertificateAuthorities output shape and the CloudFormation schema for AWS::EKS::CertificateAuthority (2026-10-31); the botocore eks ListCertificateAuthorities item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored."
+      },
+      "items_path": "certificateAuthorities[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "id",
+        "eks_certificate_authority_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::EKS::CertificateAuthority says tagging.taggable is false, and the AWS Service Authorization Reference (eks) lists no certificate-authority resource, so a cluster certificate authority has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_fsx_s3_access_point_attachment",
+      "service": "fsx",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeS3AccessPointAttachments"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{Name}"
+      },
+      "why": "Enumerate FSx S3 access point attachments with DescribeS3AccessPointAttachments - the S3 access points that expose an OpenZFS or ONTAP volume, and the file-system identity they act as.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeS3AccessPointAttachments response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore fsx DescribeS3AccessPointAttachments output shape and the CloudFormation schema for AWS::FSx::S3AccessPointAttachment (2026-10-31); the botocore fsx DescribeS3AccessPointAttachments item shape has no member marked sensitive. Declared on reviewer judgement: OpenZFSConfiguration.FileSystemIdentity, OntapConfiguration.FileSystemIdentity. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "OpenZFSConfiguration.FileSystemIdentity",
+            "category": "customer_content",
+            "reason": "The POSIX user the access point acts as: operator-chosen identity values.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "OntapConfiguration.FileSystemIdentity",
+            "category": "customer_content",
+            "reason": "The UNIX or Windows user the access point acts as: operator-chosen identity values.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "S3AccessPointAttachments[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "fsx_s3_access_point_attachment_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::FSx::S3AccessPointAttachment says tagging.taggable is false, and the AWS Service Authorization Reference (fsx) lists no S3 access point attachment resource (association, backup, file-cache, file-system, snapshot, storage-virtual-machine, task and volume only), and fsx ListTagsForResource takes the ARN of a listed FSx resource."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_iot_custom_metric",
+      "service": "iot",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeCustomMetric",
+        "per": {
+          "aws_op": "ListCustomMetrics",
+          "items_path": "metricNames[]"
+        },
+        "bind": {
+          "metricName": ""
+        }
+      },
+      "why": "Enumerate IoT Device Defender custom metrics (ListCustomMetrics, then DescribeCustomMetric for the ARN the listing lacks) - the metrics security profiles can alarm on.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeCustomMetric response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iot DescribeCustomMetric output shape and the CloudFormation schema for AWS::IoT::CustomMetric (2026-10-31); the botocore iot DescribeCustomMetric item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": ".",
+      "natural_key": "metricArn",
+      "fields": {
+        "name": "metricName",
+        "iot_custom_metric_arn": "metricArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "metricArn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv",
+        "why": "Resource tags - ListTagsForResource by the object's ARN; the Describe answer carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_iot_dimension",
+      "service": "iot",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDimension",
+        "per": {
+          "aws_op": "ListDimensions",
+          "items_path": "dimensionNames[]"
+        },
+        "bind": {
+          "name": ""
+        }
+      },
+      "why": "Enumerate IoT Device Defender dimensions (ListDimensions, then DescribeDimension for the ARN the listing lacks) - the topic filters that scope a security profile's behaviours.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeDimension response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iot DescribeDimension output shape and the CloudFormation schema for AWS::IoT::Dimension (2026-10-31); the botocore iot DescribeDimension item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": ".",
+      "natural_key": "arn",
+      "fields": {
+        "name": "name",
+        "iot_dimension_arn": "arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "arn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv",
+        "why": "Resource tags - ListTagsForResource by the object's ARN; the Describe answer carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_iot_role_alias",
+      "service": "iot",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeRoleAlias",
+        "per": {
+          "aws_op": "ListRoleAliases",
+          "items_path": "roleAliases[]"
+        },
+        "bind": {
+          "roleAlias": ""
+        }
+      },
+      "why": "Enumerate IoT role aliases (ListRoleAliases, then DescribeRoleAlias for the ARN the listing lacks) - the aliases that let a device certificate obtain temporary credentials for an IAM role.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the DescribeRoleAlias response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iot DescribeRoleAlias output shape and the CloudFormation schema for AWS::IoT::RoleAlias (2026-10-31); the botocore iot DescribeRoleAlias item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "roleAliasDescription",
+      "natural_key": "roleAliasArn",
+      "fields": {
+        "name": "roleAlias",
+        "iot_role_alias_arn": "roleAliasArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "roleAliasArn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv",
+        "why": "Resource tags - ListTagsForResource by the object's ARN; the Describe answer carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_iot_software_package",
+      "service": "iot",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPackages"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:iot:{region}:{account}:package/{packageName}"
+      },
+      "why": "Enumerate IoT software packages with ListPackages - the named collections of firmware or software versions that jobs deploy.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPackages response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iot ListPackages output shape and the CloudFormation schema for AWS::IoT::SoftwarePackage (2026-10-31); the botocore iot ListPackages item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "packageSummaries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "packageName",
+        "iot_software_package_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv",
+        "why": "Resource tags - ListTagsForResource by the object's ARN; the Describe answer carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_iot_software_package_version",
+      "service": "iot",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPackageVersions",
+        "per": {
+          "aws_op": "ListPackages",
+          "items_path": "packageSummaries[]"
+        },
+        "bind": {
+          "packageName": "packageName"
+        }
+      },
+      "derive": {
+        "_arn": "arn:{partition}:iot:{region}:{account}:package/{packageName}/version/{versionName}"
+      },
+      "why": "Enumerate the versions of every IoT software package (ListPackageVersions per package) - which firmware or software revisions exist and their status.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPackageVersions response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iot ListPackageVersions output shape and the CloudFormation schema for AWS::IoT::SoftwarePackageVersion (2026-10-31); the botocore iot ListPackageVersions item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "packageVersionSummaries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "versionName",
+        "iot_software_package_version_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv",
+        "why": "Resource tags - ListTagsForResource by the object's ARN; the Describe answer carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_kinesisfirehose_delivery_stream",
+      "service": "firehose",
+      "scope": "regional",
+      "source": {
+        "aws_op": "DescribeDeliveryStream",
+        "per": {
+          "aws_op": "ListDeliveryStreams",
+          "items_path": "DeliveryStreamNames[]",
+          "params": {
+            "Limit": 10000
+          }
+        },
+        "bind": {
+          "DeliveryStreamName": ""
+        }
+      },
+      "why": "Enumerate Firehose delivery streams (ListDeliveryStreams at its 10000 maximum page, then DescribeDeliveryStream for the ARN the listing lacks) - where data is delivered, from which source, under which role.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: DescribeDeliveryStream returns credential members (Destinations) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore firehose DescribeDeliveryStream output shape and the CloudFormation schema for AWS::KinesisFirehose::DeliveryStream (2026-10-31); botocore marks Destinations[].RedshiftDestinationDescription.Username, Destinations[].HttpEndpointDestinationDescription.EndpointConfiguration.Url, Destinations[].HttpEndpointDestinationDescription.RequestConfiguration.CommonAttributes[].AttributeName, Destinations[].HttpEndpointDestinationDescription.RequestConfiguration.CommonAttributes[].AttributeValue, Destinations[].SnowflakeDestinationDescription.AccountUrl, Destinations[].SnowflakeDestinationDescription.User, Destinations[].SnowflakeDestinationDescription.Database, Destinations[].SnowflakeDestinationDescription.Schema, Destinations[].SnowflakeDestinationDescription.Table, Destinations[].SnowflakeDestinationDescription.SnowflakeRoleConfiguration.SnowflakeRole, Destinations[].SnowflakeDestinationDescription.MetaDataColumnName, Destinations[].SnowflakeDestinationDescription.ContentColumnName, Destinations[].SnowflakeDestinationDescription.SnowflakeVpcConfiguration.PrivateLinkVpceId sensitive in the firehose DescribeDeliveryStream item shape; those are declared. Declared on reviewer judgement: Source.DatabaseSourceDescription.DatabaseSourceAuthenticationConfiguration.SecretsManagerConfiguration, Destinations[].RedshiftDestinationDescription.SecretsManagerConfiguration, Destinations[].SplunkDestinationDescription.HECToken, Destinations[].SplunkDestinationDescription.SecretsManagerConfiguration, Destinations[].HttpEndpointDestinationDescription.SecretsManagerConfiguration, Destinations[].SnowflakeDestinationDescription.SecretsManagerConfiguration. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Destinations[].RedshiftDestinationDescription.Username",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].HttpEndpointDestinationDescription.EndpointConfiguration.Url",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].HttpEndpointDestinationDescription.RequestConfiguration.CommonAttributes[].AttributeName",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].HttpEndpointDestinationDescription.RequestConfiguration.CommonAttributes[].AttributeValue",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.AccountUrl",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.User",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.Database",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.Schema",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.Table",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.SnowflakeRoleConfiguration.SnowflakeRole",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.MetaDataColumnName",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.ContentColumnName",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.SnowflakeVpcConfiguration.PrivateLinkVpceId",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Source.DatabaseSourceDescription.DatabaseSourceAuthenticationConfiguration.SecretsManagerConfiguration",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Destinations[].RedshiftDestinationDescription.SecretsManagerConfiguration",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Destinations[].SplunkDestinationDescription.HECToken",
+            "category": "credential",
+            "reason": "Name suggests secret material (secret, password, token or key); botocore does not mark the member sensitive, so it is declared on reviewer judgement.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Destinations[].SplunkDestinationDescription.SecretsManagerConfiguration",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Destinations[].HttpEndpointDestinationDescription.SecretsManagerConfiguration",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Destinations[].SnowflakeDestinationDescription.SecretsManagerConfiguration",
+            "category": "other",
+            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DeliveryStreamDescription",
+      "natural_key": "DeliveryStreamARN",
+      "fields": {
+        "name": "DeliveryStreamName",
+        "kinesisfirehose_delivery_stream_arn": "DeliveryStreamARN"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForDeliveryStream",
+        "params": {
+          "DeliveryStreamName": {
+            "from": "DeliveryStreamName"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags - ListTagsForDeliveryStream by the stream's name; the Describe answer carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_location_api_key",
+      "service": "location",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListKeys"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:geo:{region}:{account}:api-key/{KeyName}"
+      },
+      "why": "Enumerate Amazon Location Service api keys with ListKeys. Only the listing is read; an API key's value is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListKeys response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore location ListKeys output shape and the CloudFormation schema for AWS::Location::APIKey (2026-10-31); botocore marks ExpireTime, CreateTime, UpdateTime sensitive in the location ListKeys item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "ExpireTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "CreateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "UpdateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "KeyName",
+        "location_api_key_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_location_geofence_collection",
+      "service": "location",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListGeofenceCollections"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:geo:{region}:{account}:geofence-collection/{CollectionName}"
+      },
+      "why": "Enumerate Amazon Location Service geofence collections with ListGeofenceCollections. Only the listing is read; an API key's value is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListGeofenceCollections response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore location ListGeofenceCollections output shape and the CloudFormation schema for AWS::Location::GeofenceCollection (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListGeofenceCollections item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "CreateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "UpdateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "CollectionName",
+        "location_geofence_collection_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_location_map",
+      "service": "location",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListMaps"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:geo:{region}:{account}:map/{MapName}"
+      },
+      "why": "Enumerate Amazon Location Service maps with ListMaps. Only the listing is read; an API key's value is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListMaps response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore location ListMaps output shape and the CloudFormation schema for AWS::Location::Map (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListMaps item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "CreateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "UpdateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "MapName",
+        "location_map_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_location_place_index",
+      "service": "location",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPlaceIndexes"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:geo:{region}:{account}:place-index/{IndexName}"
+      },
+      "why": "Enumerate Amazon Location Service place indexs with ListPlaceIndexes. Only the listing is read; an API key's value is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPlaceIndexes response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore location ListPlaceIndexes output shape and the CloudFormation schema for AWS::Location::PlaceIndex (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListPlaceIndexes item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "CreateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "UpdateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "IndexName",
+        "location_place_index_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_location_route_calculator",
+      "service": "location",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListRouteCalculators"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:geo:{region}:{account}:route-calculator/{CalculatorName}"
+      },
+      "why": "Enumerate Amazon Location Service route calculators with ListRouteCalculators. Only the listing is read; an API key's value is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListRouteCalculators response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore location ListRouteCalculators output shape and the CloudFormation schema for AWS::Location::RouteCalculator (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListRouteCalculators item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "CreateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "UpdateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "CalculatorName",
+        "location_route_calculator_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_location_tracker",
+      "service": "location",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListTrackers"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:geo:{region}:{account}:tracker/{TrackerName}"
+      },
+      "why": "Enumerate Amazon Location Service trackers with ListTrackers. Only the listing is read; an API key's value is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListTrackers response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore location ListTrackers output shape and the CloudFormation schema for AWS::Location::Tracker (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListTrackers item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "CreateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "UpdateTime",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Entries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "TrackerName",
+        "location_tracker_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_logs_integration",
+      "service": "logs",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListIntegrations"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{integrationName}"
+      },
+      "why": "Enumerate CloudWatch Logs integrations with ListIntegrations - the link from CloudWatch Logs to OpenSearch Service (at most one per account), its type and status.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListIntegrations response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore logs ListIntegrations output shape and the CloudFormation schema for AWS::Logs::Integration (2026-10-31); the botocore logs ListIntegrations item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored."
+      },
+      "items_path": "integrationSummaries[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "integrationName",
+        "logs_integration_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Logs::Integration says tagging.taggable is false, and the AWS Service Authorization Reference (logs) lists no integration resource, so a CloudWatch Logs integration has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_opensearch_data_source",
+      "service": "opensearch",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListDataSources",
+        "per": {
+          "aws_op": "ListDomainNames",
+          "items_path": "DomainNames[]",
+          "params": {
+            "EngineType": "OpenSearch"
+          }
+        },
+        "bind": {
+          "DomainName": "DomainName"
+        }
+      },
+      "derive": {
+        "_arn": "arn:{partition}:es:{region}:{account}:domain/{_parent.DomainName}/datasource/{Name}"
+      },
+      "why": "Enumerate the direct-query data sources of each OpenSearch domain (ListDataSources per domain from ListDomainNames, OpenSearch engine only) - the S3 Glue Data Catalog connections a domain queries and the role each uses.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListDataSources response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore opensearch ListDataSources output shape and the CloudFormation schema for AWS::OpenSearch::DataSource (2026-10-31); the botocore opensearch ListDataSources item shape has no member marked sensitive. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "DataSources[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "Name",
+        "opensearch_data_source_arn": "_arn"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::OpenSearch::DataSource says tagging.taggable is false, and the AWS Service Authorization Reference (es) lists no domain data source resource that opensearch ListTags could address (its 'datasource' resource is the direct-query data source, a different API)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_opensearchserverless_access_policy",
+      "service": "opensearchserverless",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAccessPolicies",
+        "per": {
+          "values": [
+            "data"
+          ]
+        },
+        "bind": {
+          "type": ""
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{type}/{name}"
+      },
+      "why": "Enumerate OpenSearch Serverless data access policies with ListAccessPolicies, one call per policy type (the type enum in botocore) - who and what a collection's data access rules allow. Only the summary is listed; the policy document is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAccessPolicies response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore opensearchserverless ListAccessPolicies output shape and the CloudFormation schema for AWS::OpenSearchServerless::AccessPolicy (2026-10-31); the botocore opensearchserverless ListAccessPolicies item shape has no member marked sensitive. Declared on reviewer judgement: description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "accessPolicySummaries[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "name",
+        "opensearchserverless_access_policy_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::OpenSearchServerless::AccessPolicy says tagging.taggable is false, and the AWS Service Authorization Reference (aoss) lists only the Collection, CollectionGroup, Dashboards, IngestionJob and IngestionStream resources, so a policy has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_opensearchserverless_lifecycle_policy",
+      "service": "opensearchserverless",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListLifecyclePolicies",
+        "per": {
+          "values": [
+            "retention"
+          ]
+        },
+        "bind": {
+          "type": ""
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{type}/{name}"
+      },
+      "why": "Enumerate OpenSearch Serverless lifecycle policies with ListLifecyclePolicies, one call per policy type (the type enum in botocore) - who and what a collection's lifecycle rules allow. Only the summary is listed; the policy document is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListLifecyclePolicies response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore opensearchserverless ListLifecyclePolicies output shape and the CloudFormation schema for AWS::OpenSearchServerless::LifecyclePolicy (2026-10-31); the botocore opensearchserverless ListLifecyclePolicies item shape has no member marked sensitive. Declared on reviewer judgement: description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "lifecyclePolicySummaries[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "name",
+        "opensearchserverless_lifecycle_policy_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::OpenSearchServerless::LifecyclePolicy says tagging.taggable is false, and the AWS Service Authorization Reference (aoss) lists only the Collection, CollectionGroup, Dashboards, IngestionJob and IngestionStream resources, so a policy has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_opensearchserverless_security_policy",
+      "service": "opensearchserverless",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListSecurityPolicies",
+        "per": {
+          "values": [
+            "encryption",
+            "network"
+          ]
+        },
+        "bind": {
+          "type": ""
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{type}/{name}"
+      },
+      "why": "Enumerate OpenSearch Serverless encryption and network policies with ListSecurityPolicies, one call per policy type (the type enum in botocore) - who and what a collection's encryption and network rules allow. Only the summary is listed; the policy document is never fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListSecurityPolicies response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore opensearchserverless ListSecurityPolicies output shape and the CloudFormation schema for AWS::OpenSearchServerless::SecurityPolicy (2026-10-31); the botocore opensearchserverless ListSecurityPolicies item shape has no member marked sensitive. Declared on reviewer judgement: description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "securityPolicySummaries[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "name",
+        "opensearchserverless_security_policy_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::OpenSearchServerless::SecurityPolicy says tagging.taggable is false, and the AWS Service Authorization Reference (aoss) lists only the Collection, CollectionGroup, Dashboards, IngestionJob and IngestionStream resources, so a policy has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_opensearchserverless_security_config",
+      "service": "opensearchserverless",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListSecurityConfigs",
+        "per": {
+          "values": [
+            "saml",
+            "iamidentitycenter",
+            "iamfederation"
+          ]
+        },
+        "bind": {
+          "type": ""
+        }
+      },
+      "derive": {
+        "_key": "{account}/{region}/{id}"
+      },
+      "why": "Enumerate OpenSearch Serverless security configurations with ListSecurityConfigs, one call per type (the type enum in botocore: SAML, IAM Identity Center, IAM federation) - the identity providers that can sign in to the collections. Only the summary is listed.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListSecurityConfigs response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore opensearchserverless ListSecurityConfigs output shape and the CloudFormation schema for AWS::OpenSearchServerless::SecurityConfig (2026-10-31); the botocore opensearchserverless ListSecurityConfigs item shape has no member marked sensitive. Declared on reviewer judgement: description. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "Operator-authored description text; botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "securityConfigSummaries[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "id",
+        "opensearchserverless_security_config_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::OpenSearchServerless::SecurityConfig says tagging.taggable is false, and the AWS Service Authorization Reference (aoss) lists only the Collection, CollectionGroup, Dashboards, IngestionJob and IngestionStream resources, so a security configuration has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_pinpointemail_configuration_set",
+      "service": "pinpoint-email",
+      "scope": "regional",
+      "source": {
+        "aws_op": "GetConfigurationSet",
+        "per": {
+          "aws_op": "ListConfigurationSets",
+          "items_path": "ConfigurationSets[]"
+        },
+        "bind": {
+          "ConfigurationSetName": ""
+        }
+      },
+      "derive": {
+        "_arn": "arn:{partition}:ses:{region}:{account}:configuration-set/{ConfigurationSetName}"
+      },
+      "why": "Enumerate Pinpoint Email configuration sets (ListConfigurationSets, then GetConfigurationSet for the settings and tags the listing lacks) - the rule groups applied to the email a Pinpoint project sends.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetConfigurationSet response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore pinpoint-email GetConfigurationSet output shape and the CloudFormation schema for AWS::PinpointEmail::ConfigurationSet (2026-10-31); the botocore pinpoint-email GetConfigurationSet item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Tags[]",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": ".",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "ConfigurationSetName",
+        "pinpointemail_configuration_set_arn": "_arn"
+      },
+      "tags": {
+        "source": "field",
+        "from": "Tags[]",
+        "shape": "list_kv",
+        "why": "The GetConfigurationSet answer carries the tags inline; no extra call."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_pinpointemail_identity",
+      "service": "pinpoint-email",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListEmailIdentities"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:ses:{region}:{account}:identity/{IdentityName}"
+      },
+      "why": "Enumerate Pinpoint Email identities with ListEmailIdentities - the verified domains and addresses mail may be sent from, and whether sending is enabled.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListEmailIdentities response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore pinpoint-email ListEmailIdentities output shape and the CloudFormation schema for AWS::PinpointEmail::Identity (2026-10-31); the botocore pinpoint-email ListEmailIdentities item shape has no member marked sensitive. Declared on reviewer judgement: IdentityName. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "IdentityName",
+            "category": "customer_content",
+            "reason": "The verified domain or email address: an email address is personal data. It is the identity and the name, so it is stored by design.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "EmailIdentities[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "IdentityName",
+        "pinpointemail_identity_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "list_kv",
+        "why": "Resource tags - pinpoint-email ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_resourceexplorer2_view",
+      "service": "resource-explorer-2",
+      "scope": "regional",
+      "source": {
+        "aws_op": "GetView",
+        "per": {
+          "aws_op": "ListViews",
+          "items_path": "Views[]"
+        },
+        "bind": {
+          "ViewArn": ""
+        }
+      },
+      "why": "Enumerate Resource Explorer views (ListViews, then GetView for the name and scope the ARN list lacks) - who can search which resources.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the GetView response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore resource-explorer-2 GetView output shape and the CloudFormation schema for AWS::ResourceExplorer2::View (2026-10-31); botocore marks Filters sensitive in the resource-explorer-2 GetView item shape; those are declared. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "Filters",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "View",
+      "natural_key": "ViewArn",
+      "fields": {
+        "name": "ViewName",
+        "resourceexplorer2_view_arn": "ViewArn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "ViewArn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - ListTagsForResource by the view's ARN; GetView returns them beside the view, not inside it."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_receipt_filter",
+      "service": "ses",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListReceiptFilters"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{Name}"
+      },
+      "why": "Enumerate SES IP address receipt filters with ListReceiptFilters - the sender addresses and ranges inbound mail is blocked or allowed from.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListReceiptFilters response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ses ListReceiptFilters output shape and the CloudFormation schema for AWS::SES::ReceiptFilter (2026-10-31); the botocore ses ListReceiptFilters item shape has no member marked sensitive. Declared on reviewer judgement: IpFilter.Cidr. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "IpFilter.Cidr",
+            "category": "customer_content",
+            "reason": "The operator-chosen address range the filter applies to.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Filters[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "ses_receipt_filter_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::SES::ReceiptFilter says tagging.taggable is false, and botocore ses defines no tagging operation and the AWS Service Authorization Reference (ses) lists no receipt filter resource."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ses_receipt_rule_set",
+      "service": "ses",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListReceiptRuleSets"
+      },
+      "derive": {
+        "_key": "{account}/{region}/{Name}"
+      },
+      "why": "Enumerate SES receipt rule sets with ListReceiptRuleSets - the named groups of rules that route inbound mail. Only the names are listed; the rules (DescribeReceiptRuleSet) are not fetched.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListReceiptRuleSets response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore ses ListReceiptRuleSets output shape and the CloudFormation schema for AWS::SES::ReceiptRuleSet (2026-10-31); the botocore ses ListReceiptRuleSets item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored."
+      },
+      "items_path": "RuleSets[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "Name",
+        "ses_receipt_rule_set_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::SES::ReceiptRuleSet says tagging.taggable is false, and botocore ses defines no tagging operation and the AWS Service Authorization Reference (ses) lists no receipt rule set resource."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_textract_adapter",
+      "service": "textract",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAdapters"
+      },
+      "derive": {
+        "_arn": "arn:{partition}:textract:{region}:{account}:/adapters/{AdapterId}"
+      },
+      "why": "Enumerate Textract adapters with ListAdapters - the customised models that tune text extraction for a document type.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAdapters response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore textract ListAdapters output shape and the CloudFormation schema for AWS::Textract::Adapter (2026-10-31); the botocore textract ListAdapters item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "Adapters[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "AdapterName",
+        "textract_adapter_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "ResourceARN": {
+            "from": "_arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags - textract ListTagsForResource by the built ARN; the listing carries none."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_verifiedpermissions_identity_source",
+      "service": "verifiedpermissions",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListIdentitySources",
+        "per": {
+          "aws_op": "ListPolicyStores",
+          "items_path": "policyStores[]"
+        },
+        "bind": {
+          "policyStoreId": "policyStoreId"
+        }
+      },
+      "derive": {
+        "_key": "{policyStoreId}/{identitySourceId}"
+      },
+      "why": "Enumerate the identity sources of each Verified Permissions policy store (ListIdentitySources per store) - the Cognito user pools and OIDC issuers whose tokens a store trusts.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: ListIdentitySources returns credential members (configuration) and the rest of the response is unreviewed, so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore verifiedpermissions ListIdentitySources output shape and the CloudFormation schema for AWS::VerifiedPermissions::IdentitySource (2026-10-31); botocore marks principalEntityType, configuration.cognitoUserPoolConfiguration.groupConfiguration.groupEntityType, configuration.openIdConnectConfiguration.entityIdPrefix, configuration.openIdConnectConfiguration.groupConfiguration.groupClaim, configuration.openIdConnectConfiguration.groupConfiguration.groupEntityType, configuration.openIdConnectConfiguration.tokenSelection.accessTokenOnly.principalIdClaim, configuration.openIdConnectConfiguration.tokenSelection.identityTokenOnly.principalIdClaim sensitive in the verifiedpermissions ListIdentitySources item shape; those are declared. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "principalEntityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "configuration.cognitoUserPoolConfiguration.groupConfiguration.groupEntityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "configuration.openIdConnectConfiguration.entityIdPrefix",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "configuration.openIdConnectConfiguration.groupConfiguration.groupClaim",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "configuration.openIdConnectConfiguration.groupConfiguration.groupEntityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "configuration.openIdConnectConfiguration.tokenSelection.accessTokenOnly.principalIdClaim",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "configuration.openIdConnectConfiguration.tokenSelection.identityTokenOnly.principalIdClaim",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive: a credential.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "identitySources[]",
+      "natural_key": "_key",
+      "fields": {
+        "verifiedpermissions_identity_source_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::VerifiedPermissions::IdentitySource says tagging.taggable is false, and botocore verifiedpermissions ListTagsForResource documents that 'policy stores can be tagged' and the AWS Service Authorization Reference (verifiedpermissions) lists only the policy-store and policy-store-alias resources, so what a store contains has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_verifiedpermissions_policy",
+      "service": "verifiedpermissions",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPolicies",
+        "per": {
+          "aws_op": "ListPolicyStores",
+          "items_path": "policyStores[]"
+        },
+        "bind": {
+          "policyStoreId": "policyStoreId"
+        }
+      },
+      "derive": {
+        "_key": "{policyStoreId}/{policyId}"
+      },
+      "why": "Enumerate the policies of each Verified Permissions policy store (ListPolicies per store) - the Cedar policies that decide access, their type and effect. Policy bodies, principals and resources are never stored.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPolicies response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore verifiedpermissions ListPolicies output shape and the CloudFormation schema for AWS::VerifiedPermissions::Policy (2026-10-31); botocore marks principal.entityType, principal.entityId, resource.entityType, resource.entityId, actions[].actionType, actions[].actionId, definition.static.description, definition.templateLinked.principal.entityType, definition.templateLinked.principal.entityId, definition.templateLinked.resource.entityType, definition.templateLinked.resource.entityId sensitive in the verifiedpermissions ListPolicies item shape; those are declared. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "principal.entityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "principal.entityId",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "resource.entityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "resource.entityId",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "actions[].actionType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "actions[].actionId",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "definition.static.description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "definition.templateLinked.principal.entityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "definition.templateLinked.principal.entityId",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "definition.templateLinked.resource.entityType",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "definition.templateLinked.resource.entityId",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "policies[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "name",
+        "verifiedpermissions_policy_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::VerifiedPermissions::Policy says tagging.taggable is false, and botocore verifiedpermissions ListTagsForResource documents that 'policy stores can be tagged' and the AWS Service Authorization Reference (verifiedpermissions) lists only the policy-store and policy-store-alias resources, so what a store contains has no ARN to tag."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_verifiedpermissions_policy_template",
+      "service": "verifiedpermissions",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPolicyTemplates",
+        "per": {
+          "aws_op": "ListPolicyStores",
+          "items_path": "policyStores[]"
+        },
+        "bind": {
+          "policyStoreId": "policyStoreId"
+        }
+      },
+      "derive": {
+        "_key": "{policyStoreId}/{policyTemplateId}"
+      },
+      "why": "Enumerate the policy templates of each Verified Permissions policy store (ListPolicyTemplates per store) - the parameterised Cedar policies that template-linked policies are made from.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPolicyTemplates response is a generated-type read of identity, name and tags only (no per-type reviewer pass over the rest of the shape), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore verifiedpermissions ListPolicyTemplates output shape and the CloudFormation schema for AWS::VerifiedPermissions::PolicyTemplate (2026-10-31); botocore marks description sensitive in the verifiedpermissions ListPolicyTemplates item shape; those are declared. Nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "policyTemplates[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "name",
+        "verifiedpermissions_policy_template_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::VerifiedPermissions::PolicyTemplate says tagging.taggable is false, and botocore verifiedpermissions ListTagsForResource documents that 'policy stores can be tagged' and the AWS Service Authorization Reference (verifiedpermissions) lists only the policy-store and policy-store-alias resources, so what a store contains has no ARN to tag."
+      }
     }
   ]
 }

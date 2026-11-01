@@ -5303,6 +5303,201 @@
       "cfn": [
         "AWS::Transcribe::CallAnalyticsCategory"
       ]
+    },
+    "aws_core__aws_appstream_directory_config": {
+      "cfn": [
+        "AWS::AppStream::DirectoryConfig"
+      ]
+    },
+    "aws_core__aws_appstream_entitlement": {
+      "cfn": [
+        "AWS::AppStream::Entitlement"
+      ]
+    },
+    "aws_core__aws_applicationautoscaling_scalable_target": {
+      "cfn": [
+        "AWS::ApplicationAutoScaling::ScalableTarget"
+      ]
+    },
+    "aws_core__aws_applicationautoscaling_scaling_policy": {
+      "cfn": [
+        "AWS::ApplicationAutoScaling::ScalingPolicy"
+      ]
+    },
+    "aws_core__aws_autoscaling_lifecycle_hook": {
+      "cfn": [
+        "AWS::AutoScaling::LifecycleHook"
+      ]
+    },
+    "aws_core__aws_emr_cluster": {
+      "cfn": [
+        "AWS::EMR::Cluster"
+      ]
+    },
+    "aws_core__aws_emr_security_configuration": {
+      "cfn": [
+        "AWS::EMR::SecurityConfiguration"
+      ]
+    },
+    "aws_core__aws_emr_studio": {
+      "cfn": [
+        "AWS::EMR::Studio"
+      ]
+    },
+    "aws_core__aws_ecr_repository_creation_template": {
+      "cfn": [
+        "AWS::ECR::RepositoryCreationTemplate"
+      ]
+    },
+    "aws_core__aws_ecs_task_definition": {
+      "cfn": [
+        "AWS::ECS::TaskDefinition"
+      ]
+    },
+    "aws_core__aws_eks_certificate_authority": {
+      "cfn": [
+        "AWS::EKS::CertificateAuthority"
+      ]
+    },
+    "aws_core__aws_fsx_s3_access_point_attachment": {
+      "cfn": [
+        "AWS::FSx::S3AccessPointAttachment"
+      ]
+    },
+    "aws_core__aws_iot_custom_metric": {
+      "cfn": [
+        "AWS::IoT::CustomMetric"
+      ]
+    },
+    "aws_core__aws_iot_dimension": {
+      "cfn": [
+        "AWS::IoT::Dimension"
+      ]
+    },
+    "aws_core__aws_iot_role_alias": {
+      "cfn": [
+        "AWS::IoT::RoleAlias"
+      ]
+    },
+    "aws_core__aws_iot_software_package": {
+      "cfn": [
+        "AWS::IoT::SoftwarePackage"
+      ]
+    },
+    "aws_core__aws_iot_software_package_version": {
+      "cfn": [
+        "AWS::IoT::SoftwarePackageVersion"
+      ]
+    },
+    "aws_core__aws_kinesisfirehose_delivery_stream": {
+      "cfn": [
+        "AWS::KinesisFirehose::DeliveryStream"
+      ]
+    },
+    "aws_core__aws_location_api_key": {
+      "cfn": [
+        "AWS::Location::APIKey"
+      ]
+    },
+    "aws_core__aws_location_geofence_collection": {
+      "cfn": [
+        "AWS::Location::GeofenceCollection"
+      ]
+    },
+    "aws_core__aws_location_map": {
+      "cfn": [
+        "AWS::Location::Map"
+      ]
+    },
+    "aws_core__aws_location_place_index": {
+      "cfn": [
+        "AWS::Location::PlaceIndex"
+      ]
+    },
+    "aws_core__aws_location_route_calculator": {
+      "cfn": [
+        "AWS::Location::RouteCalculator"
+      ]
+    },
+    "aws_core__aws_location_tracker": {
+      "cfn": [
+        "AWS::Location::Tracker"
+      ]
+    },
+    "aws_core__aws_logs_integration": {
+      "cfn": [
+        "AWS::Logs::Integration"
+      ]
+    },
+    "aws_core__aws_opensearch_data_source": {
+      "cfn": [
+        "AWS::OpenSearch::DataSource"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_access_policy": {
+      "cfn": [
+        "AWS::OpenSearchServerless::AccessPolicy"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_lifecycle_policy": {
+      "cfn": [
+        "AWS::OpenSearchServerless::LifecyclePolicy"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_security_policy": {
+      "cfn": [
+        "AWS::OpenSearchServerless::SecurityPolicy"
+      ]
+    },
+    "aws_core__aws_opensearchserverless_security_config": {
+      "cfn": [
+        "AWS::OpenSearchServerless::SecurityConfig"
+      ]
+    },
+    "aws_core__aws_pinpointemail_configuration_set": {
+      "cfn": [
+        "AWS::PinpointEmail::ConfigurationSet"
+      ]
+    },
+    "aws_core__aws_pinpointemail_identity": {
+      "cfn": [
+        "AWS::PinpointEmail::Identity"
+      ]
+    },
+    "aws_core__aws_resourceexplorer2_view": {
+      "cfn": [
+        "AWS::ResourceExplorer2::View"
+      ]
+    },
+    "aws_core__aws_ses_receipt_filter": {
+      "cfn": [
+        "AWS::SES::ReceiptFilter"
+      ]
+    },
+    "aws_core__aws_ses_receipt_rule_set": {
+      "cfn": [
+        "AWS::SES::ReceiptRuleSet"
+      ]
+    },
+    "aws_core__aws_textract_adapter": {
+      "cfn": [
+        "AWS::Textract::Adapter"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_identity_source": {
+      "cfn": [
+        "AWS::VerifiedPermissions::IdentitySource"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_policy": {
+      "cfn": [
+        "AWS::VerifiedPermissions::Policy"
+      ]
+    },
+    "aws_core__aws_verifiedpermissions_policy_template": {
+      "cfn": [
+        "AWS::VerifiedPermissions::PolicyTemplate"
+      ]
     }
   },
   "tag_findings": {

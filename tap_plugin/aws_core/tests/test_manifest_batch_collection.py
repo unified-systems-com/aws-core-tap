@@ -3322,6 +3322,162 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'StorageLensGroupArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', '_tags': {'owner': 'net-team'}},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_appstream_directory_config": (
+        {'DirectoryName': 'corp.example.com', '_key': '123456789012/us-east-1/corp.example.com'},
+        {'name': 'corp.example.com', 'appstream_directory_config_key': '123456789012/us-east-1/corp.example.com'},
+    ),
+    "aws_core__aws_appstream_entitlement": (
+        {'Name': 'ent-1', 'StackName': 'stack-1', '_key': '123456789012/us-east-1/stack-1/ent-1'},
+        {'name': 'ent-1'},
+    ),
+    "aws_core__aws_applicationautoscaling_scalable_target": (
+        {'ScalableTargetARN': 'arn:aws:application-autoscaling:us-east-1:123456789012:scalable-target/1234abcd56ab78cd901ef1234567890ab123', 'ResourceId': 'service/c/s', 'ServiceNamespace': 'ecs'},
+        {'name': 'service/c/s'},
+    ),
+    "aws_core__aws_applicationautoscaling_scaling_policy": (
+        {'PolicyARN': 'arn:aws:autoscaling:us-east-1:123456789012:scalingPolicy:uuid-1:resource/ecs/service/c/s:policyName/p1', 'PolicyName': 'p1'},
+        {'name': 'p1'},
+    ),
+    "aws_core__aws_autoscaling_lifecycle_hook": (
+        {'LifecycleHookName': 'h1', 'AutoScalingGroupName': 'asg-1', '_key': '123456789012/us-east-1/asg-1/h1'},
+        {'name': 'h1'},
+    ),
+    "aws_core__aws_emr_cluster": (
+        {'ClusterArn': 'arn:aws:elasticmapreduce:us-east-1:123456789012:cluster/j-ABC123', 'Id': 'j-ABC123', 'Name': 'etl', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'etl'},
+    ),
+    "aws_core__aws_emr_security_configuration": (
+        {'Name': 'sc-1', '_key': '123456789012/us-east-1/sc-1'},
+        {'name': 'sc-1'},
+    ),
+    "aws_core__aws_emr_studio": (
+        {'StudioArn': 'arn:aws:elasticmapreduce:us-east-1:123456789012:studio/es-1', 'StudioId': 'es-1', 'Name': 'studio', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'studio'},
+    ),
+    "aws_core__aws_ecr_repository_creation_template": (
+        {'prefix': 'ROOT', '_key': '123456789012/us-east-1/ROOT'},
+        {'name': 'ROOT'},
+    ),
+    "aws_core__aws_ecs_task_definition": (
+        {'taskDefinitionArn': 'arn:aws:ecs:us-east-1:123456789012:task-definition/web:3', 'family': 'web', 'revision': 3},
+        {'name': 'web'},
+    ),
+    "aws_core__aws_eks_certificate_authority": (
+        {'id': 'ca-1', 'signingStatus': 'ACTIVE', '_parent': 'prod', '_key': '123456789012/us-east-1/prod/ca-1'},
+        {'name': 'ca-1'},
+    ),
+    "aws_core__aws_fsx_s3_access_point_attachment": (
+        {'Name': 'ap-1', 'Type': 'OPENZFS', '_key': '123456789012/us-east-1/ap-1'},
+        {'name': 'ap-1'},
+    ),
+    "aws_core__aws_iot_custom_metric": (
+        {'metricArn': 'arn:aws:iot:us-east-1:123456789012:custommetric/m1', 'metricName': 'm1', 'metricType': 'number'},
+        {'name': 'm1'},
+    ),
+    "aws_core__aws_iot_dimension": (
+        {'arn': 'arn:aws:iot:us-east-1:123456789012:dimension/d1', 'name': 'd1', 'type': 'TOPIC_FILTER'},
+        {'name': 'd1'},
+    ),
+    "aws_core__aws_iot_role_alias": (
+        {'roleAliasArn': 'arn:aws:iot:us-east-1:123456789012:rolealias/ra1', 'roleAlias': 'ra1', 'roleArn': 'arn:aws:iam::123456789012:role/r'},
+        {'name': 'ra1'},
+    ),
+    "aws_core__aws_iot_software_package": (
+        {'packageName': 'fw', '_arn': 'arn:aws:iot:us-east-1:123456789012:package/fw'},
+        {'name': 'fw'},
+    ),
+    "aws_core__aws_iot_software_package_version": (
+        {'packageName': 'fw', 'versionName': '1.0.0', 'status': 'PUBLISHED', '_arn': 'arn:aws:iot:us-east-1:123456789012:package/fw/version/1.0.0'},
+        {'name': '1.0.0'},
+    ),
+    "aws_core__aws_kinesisfirehose_delivery_stream": (
+        {'DeliveryStreamARN': 'arn:aws:firehose:us-east-1:123456789012:deliverystream/ds1', 'DeliveryStreamName': 'ds1', 'DeliveryStreamStatus': 'ACTIVE'},
+        {'name': 'ds1'},
+    ),
+    "aws_core__aws_location_api_key": (
+        {'KeyName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:api-key/r1'},
+        {'name': 'r1'},
+    ),
+    "aws_core__aws_location_geofence_collection": (
+        {'CollectionName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:geofence-collection/r1'},
+        {'name': 'r1'},
+    ),
+    "aws_core__aws_location_map": (
+        {'MapName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:map/r1'},
+        {'name': 'r1'},
+    ),
+    "aws_core__aws_location_place_index": (
+        {'IndexName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:place-index/r1'},
+        {'name': 'r1'},
+    ),
+    "aws_core__aws_location_route_calculator": (
+        {'CalculatorName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:route-calculator/r1'},
+        {'name': 'r1'},
+    ),
+    "aws_core__aws_location_tracker": (
+        {'TrackerName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:tracker/r1'},
+        {'name': 'r1'},
+    ),
+    "aws_core__aws_logs_integration": (
+        {'integrationName': 'os-1', 'integrationType': 'OPENSEARCH', '_key': '123456789012/us-east-1/os-1'},
+        {'name': 'os-1'},
+    ),
+    "aws_core__aws_opensearch_data_source": (
+        {'Name': 'ds1', 'Status': 'ACTIVE', '_parent': {'DomainName': 'd1', 'EngineType': 'OpenSearch'}, '_arn': 'arn:aws:es:us-east-1:123456789012:domain/d1/datasource/ds1'},
+        {'name': 'ds1'},
+    ),
+    "aws_core__aws_opensearchserverless_access_policy": (
+        {'type': 'data', 'name': 'p1', 'policyVersion': 'v1', '_key': '123456789012/us-east-1/data/p1'},
+        {'name': 'p1'},
+    ),
+    "aws_core__aws_opensearchserverless_lifecycle_policy": (
+        {'type': 'retention', 'name': 'p1', 'policyVersion': 'v1', '_key': '123456789012/us-east-1/retention/p1'},
+        {'name': 'p1'},
+    ),
+    "aws_core__aws_opensearchserverless_security_policy": (
+        {'type': 'encryption', 'name': 'p1', 'policyVersion': 'v1', '_key': '123456789012/us-east-1/encryption/p1'},
+        {'name': 'p1'},
+    ),
+    "aws_core__aws_opensearchserverless_security_config": (
+        {'id': 'saml/123456789012/idp1', 'type': 'saml', 'configVersion': 'v1', '_key': '123456789012/us-east-1/saml/123456789012/idp1'},
+        {'name': 'saml/123456789012/idp1'},
+    ),
+    "aws_core__aws_pinpointemail_configuration_set": (
+        {'ConfigurationSetName': 'cs1', '_arn': 'arn:aws:ses:us-east-1:123456789012:configuration-set/cs1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'cs1'},
+    ),
+    "aws_core__aws_pinpointemail_identity": (
+        {'IdentityName': 'example.com', 'IdentityType': 'DOMAIN', '_arn': 'arn:aws:ses:us-east-1:123456789012:identity/example.com'},
+        {'name': 'example.com'},
+    ),
+    "aws_core__aws_resourceexplorer2_view": (
+        {'ViewArn': 'arn:aws:resource-explorer-2:us-east-1:123456789012:view/v1/uuid-1', 'ViewName': 'v1'},
+        {'name': 'v1'},
+    ),
+    "aws_core__aws_ses_receipt_filter": (
+        {'Name': 'f1', 'IpFilter': {'Policy': 'Block', 'Cidr': '198.51.100.0/24'}, '_key': '123456789012/us-east-1/f1'},
+        {'name': 'f1'},
+    ),
+    "aws_core__aws_ses_receipt_rule_set": (
+        {'Name': 'rs1', '_key': '123456789012/us-east-1/rs1'},
+        {'name': 'rs1'},
+    ),
+    "aws_core__aws_textract_adapter": (
+        {'AdapterId': 'ad1', 'AdapterName': 'invoices', '_arn': 'arn:aws:textract:us-east-1:123456789012:/adapters/ad1'},
+        {'name': 'invoices'},
+    ),
+    "aws_core__aws_verifiedpermissions_identity_source": (
+        {'policyStoreId': 'ps1', 'identitySourceId': 'is1', '_key': 'ps1/is1'},
+        {},
+    ),
+    "aws_core__aws_verifiedpermissions_policy": (
+        {'policyStoreId': 'ps1', 'policyId': 'p1', 'name': 'allow-read', 'policyType': 'STATIC', 'effect': 'Permit', '_key': 'ps1/p1'},
+        {'name': 'allow-read'},
+    ),
+    "aws_core__aws_verifiedpermissions_policy_template": (
+        {'policyStoreId': 'ps1', 'policyTemplateId': 't1', 'name': 'tpl', '_key': 'ps1/t1'},
+        {'name': 'tpl'},
+    ),
 }
 
 
