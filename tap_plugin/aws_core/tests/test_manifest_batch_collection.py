@@ -3478,6 +3478,154 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'policyStoreId': 'ps1', 'policyTemplateId': 't1', 'name': 'tpl', '_key': 'ps1/t1'},
         {'name': 'tpl'},
     ),
+    "aws_core__aws_bedrock_agent": (
+        {'agentArn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1', 'agentName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_agent_alias": (
+        {'_arn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1', 'agentAliasName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_knowledge_base": (
+        {'knowledgeBaseArn': 'arn:aws:bedrock-agent:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_data_source": (
+        {'_id': 'gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_flow_version": (
+        {'_id': 'gen-1'},
+        {},
+    ),
+    "aws_core__aws_cloudformation_type_activation": (
+        {'TypeArn': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'TypeName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudwatch_log_alarm": (
+        {'AlarmArn': 'arn:aws:cloudwatch:us-east-1:123456789012:res/gen-1', 'AlarmName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_codedeploy_application": (
+        {'_arn': 'arn:aws:codedeploy:us-east-1:123456789012:res/gen-1', 'applicationName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_codedeploy_deployment_config": (
+        {'_arn': 'arn:aws:codedeploy:us-east-1:123456789012:res/gen-1', 'deploymentConfigName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_codepipeline_custom_action_type": (
+        {'_arn': 'arn:aws:codepipeline:us-east-1:123456789012:res/gen-1', 'id': {'provider': 'gen-1'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dax_parameter_group": (
+        {'ParameterGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_dax_subnet_group": (
+        {'SubnetGroupName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_guardduty_malware_protection_plan": (
+        {'_arn': 'arn:aws:guardduty:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_iotsitewise_portal": (
+        {'_arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_project": (
+        {'_arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_dashboard": (
+        {'_arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_dataset": (
+        {'arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_gateway": (
+        {'_arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'gatewayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_iotsitewise_access_policy": (
+        {'_arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_qbusiness_application": (
+        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_qbusiness_index": (
+        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_qbusiness_data_source": (
+        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_qbusiness_plugin": (
+        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_qbusiness_retriever": (
+        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_qbusiness_web_experience": (
+        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1'},
+        {},
+    ),
+    "aws_core__aws_redshift_cluster_security_group": (
+        {'ClusterSecurityGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_endpoint_access": (
+        {'EndpointName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_redshift_scheduled_action": (
+        {'ScheduledActionName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehubv2_service_function": (
+        {'_id': 'gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_resiliencehubv2_user_journey": (
+        {'_id': 'gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_route53_traffic_policy": (
+        {'_arn': 'arn:aws:route53:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicecatalog_portfolio": (
+        {'ARN': 'arn:aws:servicecatalog:us-east-1:123456789012:res/gen-1', 'DisplayName': 'gen-1', 'Id': 'port-gen1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_servicecatalog_product": (
+        {'ProductARN': 'arn:aws:servicecatalog:us-east-1:123456789012:res/gen-1', 'ProductViewSummary': {'Name': 'gen-1', 'ProductId': 'prod-gen1'}},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_rule": (
+        {'_arn': 'arn:aws:waf-regional:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_rate_based_rule": (
+        {'_arn': 'arn:aws:waf-regional:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_wafregional_web_acl": (
+        {'_arn': 'arn:aws:waf-regional:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
+    "aws_core__aws_autoscalingplans_scaling_plan": (
+        {'_id': 'gen-1', 'ScalingPlanName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
 }
 
 

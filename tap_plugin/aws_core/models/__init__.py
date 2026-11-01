@@ -861,8 +861,82 @@ from tap_plugin.aws_core.models.workspaces_workspace import WorkspacesWorkspace
 from tap_plugin.aws_core.models.workspaces_workspace_ip_group import WorkspacesWorkspaceIpGroup
 from tap_plugin.aws_core.models.xray_group import XrayGroup
 from tap_plugin.aws_core.models.xray_sampling_rule import XraySamplingRule
+from tap_plugin.aws_core.models.bedrock_agent import BedrockAgent
+from tap_plugin.aws_core.models.bedrock_agent_alias import BedrockAgentAlias
+from tap_plugin.aws_core.models.bedrock_knowledge_base import BedrockKnowledgeBase
+from tap_plugin.aws_core.models.bedrock_data_source import BedrockDataSource
+from tap_plugin.aws_core.models.bedrock_flow_version import BedrockFlowVersion
+from tap_plugin.aws_core.models.cloudformation_type_activation import CloudformationTypeActivation
+from tap_plugin.aws_core.models.cloudwatch_log_alarm import CloudwatchLogAlarm
+from tap_plugin.aws_core.models.codedeploy_application import CodedeployApplication
+from tap_plugin.aws_core.models.codedeploy_deployment_config import CodedeployDeploymentConfig
+from tap_plugin.aws_core.models.codepipeline_custom_action_type import CodepipelineCustomActionType
+from tap_plugin.aws_core.models.dax_parameter_group import DaxParameterGroup
+from tap_plugin.aws_core.models.dax_subnet_group import DaxSubnetGroup
+from tap_plugin.aws_core.models.guardduty_malware_protection_plan import GuarddutyMalwareProtectionPlan
+from tap_plugin.aws_core.models.iotsitewise_portal import IotsitewisePortal
+from tap_plugin.aws_core.models.iotsitewise_project import IotsitewiseProject
+from tap_plugin.aws_core.models.iotsitewise_dashboard import IotsitewiseDashboard
+from tap_plugin.aws_core.models.iotsitewise_dataset import IotsitewiseDataset
+from tap_plugin.aws_core.models.iotsitewise_gateway import IotsitewiseGateway
+from tap_plugin.aws_core.models.iotsitewise_access_policy import IotsitewiseAccessPolicy
+from tap_plugin.aws_core.models.qbusiness_application import QbusinessApplication
+from tap_plugin.aws_core.models.qbusiness_index import QbusinessIndex
+from tap_plugin.aws_core.models.qbusiness_data_source import QbusinessDataSource
+from tap_plugin.aws_core.models.qbusiness_plugin import QbusinessPlugin
+from tap_plugin.aws_core.models.qbusiness_retriever import QbusinessRetriever
+from tap_plugin.aws_core.models.qbusiness_web_experience import QbusinessWebExperience
+from tap_plugin.aws_core.models.redshift_cluster_security_group import RedshiftClusterSecurityGroup
+from tap_plugin.aws_core.models.redshift_endpoint_access import RedshiftEndpointAccess
+from tap_plugin.aws_core.models.redshift_scheduled_action import RedshiftScheduledAction
+from tap_plugin.aws_core.models.resiliencehubv2_service_function import Resiliencehubv2ServiceFunction
+from tap_plugin.aws_core.models.resiliencehubv2_user_journey import Resiliencehubv2UserJourney
+from tap_plugin.aws_core.models.route53_traffic_policy import Route53TrafficPolicy
+from tap_plugin.aws_core.models.servicecatalog_portfolio import ServicecatalogPortfolio
+from tap_plugin.aws_core.models.servicecatalog_product import ServicecatalogProduct
+from tap_plugin.aws_core.models.wafregional_rule import WafregionalRule
+from tap_plugin.aws_core.models.wafregional_rate_based_rule import WafregionalRateBasedRule
+from tap_plugin.aws_core.models.wafregional_web_acl import WafregionalWebAcl
+from tap_plugin.aws_core.models.autoscalingplans_scaling_plan import AutoscalingplansScalingPlan
 
 __all__ = [
+    "AutoscalingplansScalingPlan",
+    "WafregionalWebAcl",
+    "WafregionalRateBasedRule",
+    "WafregionalRule",
+    "ServicecatalogProduct",
+    "ServicecatalogPortfolio",
+    "Route53TrafficPolicy",
+    "Resiliencehubv2UserJourney",
+    "Resiliencehubv2ServiceFunction",
+    "RedshiftScheduledAction",
+    "RedshiftEndpointAccess",
+    "RedshiftClusterSecurityGroup",
+    "QbusinessWebExperience",
+    "QbusinessRetriever",
+    "QbusinessPlugin",
+    "QbusinessDataSource",
+    "QbusinessIndex",
+    "QbusinessApplication",
+    "IotsitewiseAccessPolicy",
+    "IotsitewiseGateway",
+    "IotsitewiseDataset",
+    "IotsitewiseDashboard",
+    "IotsitewiseProject",
+    "IotsitewisePortal",
+    "GuarddutyMalwareProtectionPlan",
+    "DaxSubnetGroup",
+    "DaxParameterGroup",
+    "CodepipelineCustomActionType",
+    "CodedeployDeploymentConfig",
+    "CodedeployApplication",
+    "CloudwatchLogAlarm",
+    "CloudformationTypeActivation",
+    "BedrockFlowVersion",
+    "BedrockDataSource",
+    "BedrockKnowledgeBase",
+    "BedrockAgentAlias",
+    "BedrockAgent",
     "AccessAnalyzerArchiveRule",
     "AcmCertificate",
     "AcmPrivateCa",
