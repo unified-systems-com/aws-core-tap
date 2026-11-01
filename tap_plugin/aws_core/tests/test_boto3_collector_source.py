@@ -642,6 +642,8 @@ class TestWhere:
         assert TestPerFanoutSchema._validator().is_valid(entry)
         entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn"}]}
         assert not TestPerFanoutSchema._validator().is_valid(entry)
+        entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "equals": "a", "prefix": "b"}]}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)  # one predicate per condition
 
 
 class TestFanoutTruncation:

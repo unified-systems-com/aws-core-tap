@@ -178,7 +178,12 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["path"],
-        "minProperties": 2,
+        "oneOf": [
+          { "required": ["equals"] },
+          { "required": ["in"] },
+          { "required": ["prefix"] },
+          { "required": ["contains"] }
+        ],
         "properties": {
           "path": { "type": "string", "minLength": 1 },
           "equals": {},
