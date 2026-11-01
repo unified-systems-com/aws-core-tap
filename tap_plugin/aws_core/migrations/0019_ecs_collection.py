@@ -4,6 +4,7 @@ import django.db.models.deletion
 import simple_history.models
 from django.conf import settings
 from django.db import migrations, models
+from tap_plugin.aws_core.migrations._bulk import BulkCreateModels
 
 
 class Migration(migrations.Migration):
@@ -105,7 +106,8 @@ class Migration(migrations.Migration):
             name="tags",
             field=models.JSONField(blank=True, default=dict),
         ),
-        migrations.CreateModel(
+        BulkCreateModels([
+migrations.CreateModel(
             name="HistoricalEcsContainer",
             fields=[
                 (
@@ -282,4 +284,5 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
+]),
     ]

@@ -3,6 +3,7 @@
 import django.db.models.deletion
 import simple_history.models
 from django.db import migrations, models
+from tap_plugin.aws_core.migrations._bulk import BulkCreateModels
 
 
 class Migration(migrations.Migration):
@@ -14,7 +15,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
+        BulkCreateModels([
+migrations.CreateModel(
             name="HistoricalAlb",
             fields=[
                 ("id", models.BigIntegerField(auto_created=True, blank=True, db_index=True, verbose_name="ID")),
@@ -3331,4 +3333,5 @@ class Migration(migrations.Migration):
             },
             bases=(simple_history.models.HistoricalChanges, models.Model),
         ),
+]),
     ]
