@@ -230,7 +230,7 @@ class TestCommitOf:
     def test_a_head_pointing_outside_refs_or_at_a_non_commit_reports_unknown(self, tmp_path):
         secret = tmp_path / "secret.txt"
         secret.write_text("hunter2\n")
-        for head in (f"ref: ../../secret.txt", "ref: refs/../../secret.txt", "not-a-sha"):
+        for head in ("ref: ../../secret.txt", "ref: refs/../../secret.txt", "not-a-sha"):
             g = tmp_path / "r/.git"
             _w(g / "HEAD", head + "\n")
             assert carto_reader.commit_of(tmp_path / "r") == "unknown"
