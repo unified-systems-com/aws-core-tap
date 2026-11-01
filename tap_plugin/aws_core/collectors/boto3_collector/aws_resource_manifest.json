@@ -39079,6 +39079,228 @@
         "shape": "list_kv_lower",
         "why": "Resource tags — inspector ListTagsForResource by the template's ARN (it lists the tags of an assessment template); the listing carries none."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_bedrock_guardrail_version",
+      "service": "bedrock",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListGuardrails",
+        "per": {
+          "aws_op": "ListGuardrails",
+          "items_path": "guardrails[]"
+        },
+        "bind": {
+          "guardrailIdentifier": "arn"
+        },
+        "where": [
+          {
+            "path": "version",
+            "not_equals": "DRAFT"
+          }
+        ]
+      },
+      "why": "Enumerate the numbered versions of a Bedrock guardrail (guardrailIdentifier lists all versions) with ListGuardrails per parent, dropping the mutable DRAFT row \u2014 an inventory of the account's a versions.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListGuardrails response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): botocore marks name, description sensitive in the bedrock ListGuardrails item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "name",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          }
+        ]
+      },
+      "items_path": "guardrails[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "name",
+        "bedrock_guardrail_version_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Bedrock::GuardrailVersion says tagging.taggable is false."
+      },
+      "derive": {
+        "_key": "{arn}:{version}"
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_bedrock_prompt_version",
+      "service": "bedrock-agent",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListPrompts",
+        "per": {
+          "aws_op": "ListPrompts",
+          "items_path": "promptSummaries[]"
+        },
+        "bind": {
+          "promptIdentifier": "id"
+        },
+        "where": [
+          {
+            "path": "version",
+            "not_equals": "DRAFT"
+          }
+        ]
+      },
+      "why": "Enumerate the numbered versions of a Bedrock prompt (promptIdentifier lists all versions) with ListPrompts per parent, dropping the mutable DRAFT row \u2014 an inventory of the account's a versions.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListPrompts response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore bedrock-agent ListPrompts item shape has no member marked sensitive. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "promptSummaries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "bedrock_prompt_version_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceArn": {
+            "from": "_arn"
+          }
+        },
+        "path": "tags",
+        "shape": "map",
+        "why": "Resource tags \u2014 ListTagsForResource by the prompt version's ARN (AWS::Bedrock::PromptVersion is taggable, its Arn the primary identifier); the listing carries none."
+      },
+      "derive": {
+        "_arn": "arn:{partition}:bedrock:{region}:{account}:prompt/{id}:{version}"
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_bedrock_automated_reasoning_policy_version",
+      "service": "bedrock",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListAutomatedReasoningPolicies",
+        "per": {
+          "aws_op": "ListAutomatedReasoningPolicies",
+          "items_path": "automatedReasoningPolicySummaries[]"
+        },
+        "bind": {
+          "policyArn": "policyArn"
+        },
+        "where": [
+          {
+            "path": "version",
+            "not_equals": "DRAFT"
+          }
+        ]
+      },
+      "why": "Enumerate the numbered versions of a Bedrock automated reasoning policy (policyArn lists its versions) with ListAutomatedReasoningPolicies per parent, dropping the mutable DRAFT row \u2014 an inventory of the account's a versions.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListAutomatedReasoningPolicies response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): botocore marks name, description sensitive in the bedrock ListAutomatedReasoningPolicies item shape; those are declared. Free-text members were not otherwise judged, so nothing beyond identity, name and tags is stored.",
+        "locations": [
+          {
+            "path": "name",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "description",
+            "category": "free_text",
+            "reason": "botocore marks this member sensitive: operator-authored text.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "automatedReasoningPolicySummaries[]",
+      "natural_key": "_arn",
+      "fields": {
+        "name": "name",
+        "automated_reasoning_policy_version_arn": "_arn"
+      },
+      "tags": {
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "resourceARN": {
+            "from": "_arn"
+          }
+        },
+        "path": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags \u2014 ListTagsForResource by the policy version's ARN (AWS::Bedrock::AutomatedReasoningPolicyVersion is taggable); the listing carries none."
+      },
+      "derive": {
+        "_arn": "arn:{partition}:bedrock:{region}:{account}:automated-reasoning-policy/{policyId}:{version}"
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_lex_bot_version",
+      "service": "lexv2-models",
+      "scope": "regional",
+      "source": {
+        "aws_op": "ListBotVersions",
+        "per": {
+          "aws_op": "ListBots",
+          "items_path": "botSummaries[]"
+        },
+        "bind": {
+          "botId": "botId"
+        },
+        "where": [
+          {
+            "path": "botVersion",
+            "not_equals": "DRAFT"
+          }
+        ]
+      },
+      "why": "Enumerate the numbered versions of a Lex V2 bot with ListBotVersions per parent, dropping the mutable DRAFT row \u2014 an inventory of the account's a versions.",
+      "persist_configuration": false,
+      "persist_configuration_why": "Off: the ListBotVersions response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore lexv2-models ListBotVersions item shape has no member marked sensitive. Free-text members were not judged, so nothing beyond identity, name and tags is stored."
+      },
+      "items_path": "botVersionSummaries[]",
+      "natural_key": "_key",
+      "fields": {
+        "name": "botName",
+        "lex_bot_version_key": "_key"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The CloudFormation schema for AWS::Lex::BotVersion says tagging.taggable is false."
+      },
+      "derive": {
+        "_key": "{_parent.botId}:{botVersion}"
+      }
     }
   ]
 }

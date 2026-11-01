@@ -85,6 +85,10 @@ from tap_plugin.aws_core.models.backup_plan import BackupPlan
 from tap_plugin.aws_core.models.backup_report_plan import BackupReportPlan
 from tap_plugin.aws_core.models.backup_restore_testing_plan import BackupRestoreTestingPlan
 from tap_plugin.aws_core.models.backup_restore_testing_selection import BackupRestoreTestingSelection
+from tap_plugin.aws_core.models.bedrock_guardrail_version import BedrockGuardrailVersion
+from tap_plugin.aws_core.models.bedrock_prompt_version import BedrockPromptVersion
+from tap_plugin.aws_core.models.bedrock_automated_reasoning_policy_version import BedrockAutomatedReasoningPolicyVersion
+from tap_plugin.aws_core.models.lex_bot_version import LexBotVersion
 from tap_plugin.aws_core.models.backup_tiering_configuration import BackupTieringConfiguration
 from tap_plugin.aws_core.models.backup_vault import BackupVault
 from tap_plugin.aws_core.models.backupgateway_hypervisor import BackupgatewayHypervisor
@@ -1074,6 +1078,10 @@ __all__ = [
     "BackupReportPlan",
     "BackupRestoreTestingPlan",
     "BackupRestoreTestingSelection",
+    "BedrockGuardrailVersion",
+    "BedrockPromptVersion",
+    "BedrockAutomatedReasoningPolicyVersion",
+    "LexBotVersion",
     "BackupTieringConfiguration",
     "BackupVault",
     "BackupgatewayHypervisor",

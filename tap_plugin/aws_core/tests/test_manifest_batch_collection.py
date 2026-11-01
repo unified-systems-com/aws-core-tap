@@ -2196,6 +2196,22 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Name': 'gen-1', '_arn': 'arn:aws:athena:us-east-1:123456789012:capacity-reservation/gen-1'},
         {'athena_capacity_reservation_arn': 'arn:aws:athena:us-east-1:123456789012:capacity-reservation/gen-1', 'name': 'gen-1'},
     ),
+    "aws_core__aws_bedrock_guardrail_version": (
+        {'id': 'abc123', 'arn': 'arn:aws:bedrock:us-east-1:123456789012:guardrail/abc123', 'version': '1', 'name': 'gen-1', '_key': 'arn:aws:bedrock:us-east-1:123456789012:guardrail/abc123:1'},
+        {'bedrock_guardrail_version_key': 'arn:aws:bedrock:us-east-1:123456789012:guardrail/abc123:1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_prompt_version": (
+        {'id': 'ABCDEFGHIJ', 'version': '2', 'name': 'gen-1', '_arn': 'arn:aws:bedrock:us-east-1:123456789012:prompt/ABCDEFGHIJ:2'},
+        {'bedrock_prompt_version_arn': 'arn:aws:bedrock:us-east-1:123456789012:prompt/ABCDEFGHIJ:2', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_bedrock_automated_reasoning_policy_version": (
+        {'policyId': 'p1', 'version': '3', 'name': 'gen-1', '_arn': 'arn:aws:bedrock:us-east-1:123456789012:automated-reasoning-policy/p1:3'},
+        {'automated_reasoning_policy_version_arn': 'arn:aws:bedrock:us-east-1:123456789012:automated-reasoning-policy/p1:3', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_lex_bot_version": (
+        {'botName': 'gen-1', 'botVersion': '4', '_key': 'BOT1234567:4'},
+        {'lex_bot_version_key': 'BOT1234567:4', 'name': 'gen-1'},
+    ),
     "aws_core__aws_backup_restore_testing_selection": (
         {'RestoreTestingPlanName': 'plan-1', 'RestoreTestingSelectionName': 'gen-1', '_key': 'plan-1/gen-1'},
         {'backup_restore_testing_selection_key': 'plan-1/gen-1', 'name': 'gen-1'},

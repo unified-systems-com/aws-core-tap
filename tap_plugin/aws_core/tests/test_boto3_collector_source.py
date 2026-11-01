@@ -636,6 +636,21 @@ class TestWhere:
         items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
         assert [i["Arn"] for i in items] == ["arn:x:document-classifier-endpoint/a"]
 
+    def test_not_equals_drops_the_matching_item(self):
+        entry = {
+            "service": "lexv2-models",
+            "items_path": "Versions[]",
+            "source": {"aws_op": "ListVersions", "where": [{"path": "Version", "not_equals": "DRAFT"}]},
+        }
+        client = _CallLog({"list_versions": {"Versions": [{"Version": "DRAFT"}, {"Version": "1"}, {"Version": "2"}]}})
+        items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["Version"] for i in items] == ["1", "2"]
+
+    def test_the_schema_takes_not_equals(self):
+        entry = TestPerFanoutSchema._entry()
+        entry["source"] = {"aws_op": "ListVersions", "where": [{"path": "Version", "not_equals": "DRAFT"}]}
+        assert TestPerFanoutSchema._validator().is_valid(entry)
+
     def test_the_schema_takes_where_and_refuses_an_empty_condition(self):
         entry = TestPerFanoutSchema._entry()
         entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "prefix": "arn:"}]}
