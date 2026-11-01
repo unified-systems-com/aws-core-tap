@@ -66,3 +66,30 @@ first. To make a weighting for a new situation, copy one, change the rules, and 
   definition lists sources and targets as a cross product, which can overstate what we emit.
 - Operations match on the normalised name; Cartography's service is known only where a file uses one client.
 - A relationship whose target this reader cannot resolve is left out and named under `inputs.cartography.unresolved_relationships` (three today).
+
+## CloudFormation verifier
+
+`cfn_verifier.py` compares aws_core with AWS's own CloudFormation data. It reads files only: it makes no
+network or AWS call. The files come from `cfn_fetch.sh <dir>` (public downloads of the us-gov-west-1,
+us-gov-east-1 and commercial us-east-1 resource specifications, `curl --fail`, a `manifest.tsv` of URL, HTTP
+status, sha256, size and `ResourceSpecificationVersion`) and from the CloudFormation schema bundle the coverage
+ledger already reads (`cfn_reader.read_bundle` calls the ledger's own `load_cfn_bundle`, so the bundle must lie
+under the working directory or the temporary directory, as for the ledger).
+
+    cfn_fetch.sh /tmp/cfn-specs
+    python3 -I cfn_verifier.py --spec /tmp/cfn-specs/spec-us-gov-west-1.json --spec /tmp/cfn-specs/spec-us-east-1.json \
+        --bundle CloudformationSchema.zip --manifest /tmp/cfn-specs/manifest.tsv \
+        --run-record ../validate/runs/wave0-2026-11-01.json --out out/
+
+It reports availability leads per region (absence is a lead, never a verdict) with the ledger tier and, given a
+run record, the observed outcome and every contradiction among the three; a backtest of the specification
+against the record; top-level property conformance per type (read-only and writable split, weighted by the
+`cfn_type` rules in `--weights`); an identity check (manifest natural key against the schema's
+`primaryIdentifier`) and a tags check (`tags` source and `tag_findings` against `tagging.taggable`); and drift
+with `--baseline` / `--fail-on-regression`, which separates a change in AWS's specification (`reference_inputs_changed`)
+from a change in our code (`our_inputs_changed`). The specification is a reference, not ground truth.
+
+Limits: the backtest and the run-record contradictions count entity types, the run record's unit, where an
+entity type is present if any ledger type it serves is in the specification. Property comparison is top-level
+and by normalised name, so a renamed API field reads as missing; the security ranking is a name heuristic.
+Write-only properties are not counted against us, as they cannot be read back.
