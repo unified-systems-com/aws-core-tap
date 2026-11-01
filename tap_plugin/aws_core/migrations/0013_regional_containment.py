@@ -4,6 +4,7 @@ import django.db.models.deletion
 import simple_history.models
 from django.conf import settings
 from django.db import migrations, models
+from tap_plugin.aws_core.migrations._bulk import BulkCreateModels
 
 
 class Migration(migrations.Migration):
@@ -59,7 +60,8 @@ class Migration(migrations.Migration):
             name='tags',
             field=models.JSONField(blank=True, default=dict),
         ),
-        migrations.CreateModel(
+        BulkCreateModels([
+migrations.CreateModel(
             name='HistoricalAwsAccountRegion',
             fields=[
                 ('id', models.BigIntegerField(auto_created=True, blank=True, db_index=True, verbose_name='ID')),
@@ -110,4 +112,5 @@ class Migration(migrations.Migration):
                 'indexes': [models.Index(fields=['account_id', 'region_code'], name='nk_aws_core__aws_accou_f308e17')],
             },
         ),
+]),
     ]

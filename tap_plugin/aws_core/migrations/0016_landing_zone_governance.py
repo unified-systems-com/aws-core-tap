@@ -4,6 +4,7 @@ import django.db.models.deletion
 import simple_history.models
 from django.conf import settings
 from django.db import migrations, models
+from tap_plugin.aws_core.migrations._bulk import BulkCreateModels
 
 
 class Migration(migrations.Migration):
@@ -99,7 +100,8 @@ class Migration(migrations.Migration):
             name="status",
             field=models.CharField(blank=True, default="", max_length=32),
         ),
-        migrations.CreateModel(
+        BulkCreateModels([
+migrations.CreateModel(
             name="AwsAccessAnalyzer",
             fields=[
                 (
@@ -2095,4 +2097,5 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
+]),
     ]

@@ -4,6 +4,7 @@ import django.db.models.deletion
 import simple_history.models
 from django.conf import settings
 from django.db import migrations, models
+from tap_plugin.aws_core.migrations._bulk import BulkCreateModels
 
 
 class Migration(migrations.Migration):
@@ -15,7 +16,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
+        BulkCreateModels([
+migrations.CreateModel(
             name="ApiGatewayHttpApi",
             fields=[
                 (
@@ -681,4 +683,5 @@ class Migration(migrations.Migration):
                 "abstract": False,
             },
         ),
+]),
     ]

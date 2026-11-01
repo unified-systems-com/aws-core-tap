@@ -63,6 +63,13 @@
           "minLength": 1
         },
         "sensitivity": { "$ref": "#/$defs/sensitivity" },
+        "derive": {
+          "description": "Item keys the engine builds before projection, each from a template: '{partition}', '{region}' and '{account}' are the scope being collected and any other '{Path}' is a path on the item (req-aws-collector-source-8). For a resource the listing names but gives no ARN, e.g. {\"_arn\": \"arn:{partition}:glue:{region}:{account}:job/{Name}\"}; natural_key, fields and the tags lane then read '_arn' like any member. A missing value fails the item loudly. The built keys are not stored in configuration. Keys start with an underscore so they cannot shadow a member AWS returns.",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^_[A-Za-z][A-Za-z0-9_]*$" },
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
         "name_tag": {
           "description": "The tag whose value names the node (usually 'Name'), when the resource carries one. EC2-family resources have no name of their own; the human-set Name tag is the name every AWS console shows. Read from the entry's tags block (source 'field'), so it needs no extra call; when the resource has no such tag the projected 'name' field stands.",
           "type": "string",
@@ -150,21 +157,64 @@
     "bind": {
       "type": "object",
       "minProperties": 1,
-      "description": "Request parameter -> path on the parent item ('' is the parent itself).",
-      "additionalProperties": { "type": "string" }
+      "description": "Request parameter -> path on the parent item ('' is the parent itself; '_self' is a bare-string middle-level parent, '_parent' the level above). A dotted name (SchemaId.SchemaArn) builds a nested request structure; {path, list: true} wraps the value in a one-element list for a list-typed parameter.",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": { "path": { "type": "string" }, "list": { "const": true } }
+          }
+        ]
+      }
+    },
+    "where": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Keep only the items that satisfy every condition (req-aws-collector-source-9): a path on the item and one of equals, in, prefix, contains.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "oneOf": [
+          { "required": ["equals"] },
+          { "required": ["in"] },
+          { "required": ["prefix"] },
+          { "required": ["contains"] }
+        ],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "equals": {},
+          "in": { "type": "array", "minItems": 1 },
+          "prefix": { "type": "string", "minLength": 1 },
+          "contains": { "type": "string", "minLength": 1 }
+        }
+      }
     },
     "per": {
       "type": "object",
       "description": "The call that lists the parents of a `per` fan-out; itself `per` another (with `bind`) when the resource sits two levels down.",
       "additionalProperties": false,
-      "required": ["aws_op", "items_path"],
+      "oneOf": [
+        { "required": ["aws_op", "items_path"], "not": { "required": ["values"] } },
+        { "required": ["values"], "not": { "anyOf": [{ "required": ["aws_op"] }, { "required": ["per"] }] } }
+      ],
       "properties": {
+        "values": {
+          "description": "A literal list of parents (strings), for a request that needs a value no call lists, e.g. App Auto Scaling's ServiceNamespace; bound to a request parameter with '' like any scalar parent.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
         "aws_op": { "type": "string", "minLength": 1 },
         "items_path": { "type": "string", "minLength": 1 },
         "service": { "type": "string", "minLength": 1 },
         "params": { "type": "object" },
         "per": { "$ref": "#/$defs/per" },
-        "bind": { "$ref": "#/$defs/bind" }
+        "bind": { "$ref": "#/$defs/bind" },
+        "where": { "$ref": "#/$defs/where" }
       },
       "if": { "required": ["per"] },
       "then": { "required": ["bind"] }
@@ -178,7 +228,8 @@
           "required": ["aws_op"],
           "properties": {
             "aws_op": { "type": "string", "minLength": 1 },
-            "params": { "type": "object", "description": "Literal request parameters; the string \"$account_id\" stands for the account being collected." }
+            "params": { "type": "object", "description": "Literal request parameters; the string \"$account_id\" stands for the account being collected." },
+            "where": { "$ref": "#/$defs/where" }
           }
         },
         {
@@ -190,7 +241,8 @@
             "aws_op": { "type": "string", "minLength": 1 },
             "per": { "$ref": "#/$defs/per" },
             "bind": { "$ref": "#/$defs/bind" },
-            "params": { "type": "object" }
+            "params": { "type": "object" },
+            "where": { "$ref": "#/$defs/where" }
           }
         },
         {
@@ -282,7 +334,10 @@
                     "type": "object",
                     "additionalProperties": false,
                     "required": ["from"],
-                    "properties": { "from": { "type": "string", "minLength": 1 } }
+                    "properties": {
+                      "from": { "type": "string", "minLength": 1 },
+                      "list": { "const": true, "description": "Send the value as a one-element list, for a list-typed request parameter (ELBv2 DescribeTags ResourceArns)." }
+                    }
                   }
                 ]
               }

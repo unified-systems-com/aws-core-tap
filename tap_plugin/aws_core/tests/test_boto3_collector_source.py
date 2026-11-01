@@ -410,3 +410,271 @@ class TestAccountParam:
         entry = TestPerFanoutSchema._entry()
         entry["source"] = {"aws_op": "ListDashboards", "params": {"AwsAccountId": "$account_id"}}
         assert TestPerFanoutSchema._validator().is_valid(entry)
+
+
+class TestUnpaginatedContinuation:
+    """An operation botocore cannot paginate is followed on its own marker (req-aws-collector-source-2)."""
+
+    @staticmethod
+    def _pages(key, request_key=None):
+        def answer(**kw):
+            token = kw.get(request_key or key)
+            return {
+                None: {"Things": [{"Id": "1"}], key: "t2"},
+                "t2": {"Things": [{"Id": "2"}], key: "t3"},
+                "t3": {"Things": [{"Id": "3"}]},
+            }[token]
+
+        return answer
+
+    @pytest.mark.parametrize(
+        ("response_key", "request_key"),
+        [("NextToken", "NextToken"), ("nextToken", "nextToken"), ("NextMarker", "Marker"), ("Marker", "Marker")],
+    )
+    def test_every_page_is_read(self, response_key, request_key):
+        client = _CallLog({"list_things": self._pages(response_key, request_key)})
+        items = list(iter_aws_op(client, "ListThings", "Things[]"))
+        assert [i["Id"] for i in items] == ["1", "2", "3"]
+        assert [c[1].get(request_key) for c in client.calls] == [None, "t2", "t3"]
+
+    def test_a_repeated_marker_stops_and_says_truncated(self):
+        client = _CallLog({"list_things": {"Things": [{"Id": "1"}], "NextToken": "same"}})
+        truncated: list[str] = []
+        items = list(iter_aws_op(client, "ListThings", "Things[]", truncated=truncated))
+        assert len(items) == 2 and truncated == ["NextToken"]
+
+    def test_a_marker_the_operation_cannot_take_stops_and_says_truncated(self):
+        class Model:
+            class input_shape:  # noqa: N801
+                members = {"MaxResults": None}
+
+        class Meta:
+            service_model = type("S", (), {"operation_model": staticmethod(lambda _op: Model)})
+
+        client = _CallLog({"list_things": {"Things": [{"Id": "1"}], "NextToken": "t2"}})
+        client.__dict__["meta"] = Meta
+        truncated: list[str] = []
+        items = list(iter_aws_op(client, "ListThings", "Things[]", truncated=truncated))
+        assert len(items) == 1 and truncated == ["NextToken"] and len(client.calls) == 1
+
+
+class TestValuesParent:
+    """A literal list of parents for a request no call can supply the value of."""
+
+    _ENTRY = {
+        "service": "application-autoscaling",
+        "items_path": "ScalableTargets[]",
+        "source": {
+            "aws_op": "DescribeScalableTargets",
+            "per": {"values": ["ecs", "dynamodb"]},
+            "bind": {"ServiceNamespace": ""},
+        },
+    }
+
+    def test_one_call_per_value(self):
+        client = _CallLog({"describe_scalable_targets": lambda ServiceNamespace: {"ScalableTargets": [{"R": ServiceNamespace}]}})
+        items = list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["R"] for i in items] == ["ecs", "dynamodb"]
+        assert [c[1] for c in client.calls] == [{"ServiceNamespace": "ecs"}, {"ServiceNamespace": "dynamodb"}]
+
+    def test_schema_takes_values_and_refuses_them_beside_a_call(self):
+        entry = TestPerFanoutSchema._entry()
+        entry["source"] = self._ENTRY["source"]
+        assert TestPerFanoutSchema._validator().is_valid(entry)
+        entry["source"] = {**self._ENTRY["source"], "per": {"values": ["a"], "aws_op": "X", "items_path": "Y[]"}}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)
+        entry["source"] = {**self._ENTRY["source"], "per": {"values": []}}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)
+
+
+class TestDescribeChild:
+    """A scalar parent and a Describe that answers with one structure."""
+
+    _ENTRY = {
+        "service": "dynamodb",
+        "items_path": "GlobalTableDescription",
+        "source": {
+            "aws_op": "DescribeGlobalTable",
+            "per": {"aws_op": "ListGlobalTables", "items_path": "GlobalTables[].GlobalTableName"},
+            "bind": {"GlobalTableName": ""},
+        },
+    }
+
+    def test_each_scalar_parent_is_described_into_one_structure(self):
+        client = _CallLog(
+            {
+                "list_global_tables": {"GlobalTables": [{"GlobalTableName": "a"}, {"GlobalTableName": "b"}]},
+                "describe_global_table": lambda GlobalTableName: {"GlobalTableDescription": {"GlobalTableArn": f"arn:{GlobalTableName}"}},
+            }
+        )
+        items = list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["GlobalTableArn"] for i in items] == ["arn:a", "arn:b"]
+        assert items[0]["_parent"] == "a"
+
+    def test_an_absent_structure_yields_nothing(self):
+        client = _CallLog({"list_global_tables": {"GlobalTables": [{"GlobalTableName": "a"}]}, "describe_global_table": {}})
+        assert list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry())) == []
+
+
+class TestDerive:
+    """Item keys built from the scope and the item (req-aws-collector-source-8)."""
+
+    _ENTRY = {
+        "entity_type": "aws_core__x",
+        "service": "glue",
+        "items_path": "Jobs[]",
+        "source": {"aws_op": "GetJobs"},
+        "derive": {"_arn": "arn:{partition}:glue:{region}:{account}:job/{Name}"},
+    }
+    _SCOPE = {"partition": "aws-us-gov", "region": "us-gov-west-1", "account": "111122223333"}
+
+    def test_the_arn_is_built_from_scope_and_item(self):
+        client = _CallLog({"get_jobs": {"Jobs": [{"Name": "etl"}]}})
+        [item] = iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry(), account_id="111122223333", scope=self._SCOPE)
+        assert item["_arn"] == "arn:aws-us-gov:glue:us-gov-west-1:111122223333:job/etl"
+
+    def test_a_missing_item_value_fails_the_listing(self):
+        client = _CallLog({"get_jobs": {"Jobs": [{}]}})
+        with pytest.raises(SourceError, match="no value for {Name}"):
+            list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry(), scope=self._SCOPE))
+
+    def test_a_missing_scope_value_fails_the_listing(self):
+        client = _CallLog({"get_jobs": {"Jobs": [{"Name": "x"}]}})
+        with pytest.raises(SourceError, match="no value for {account}"):
+            list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry(), scope={"partition": "aws", "region": "r"}))
+
+    def test_the_built_key_is_not_stored_in_configuration(self):
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+        from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
+
+        entry = next(e for e in manifest_entries() if e["entity_type"] == "aws_core__aws_vpc")
+        item = {"VpcId": "vpc-1", "CidrBlock": "10.0.0.0/16", "_arn": "arn:built"}
+        derived = {**entry, "persist_configuration": True, "derive": {"_arn": "x"}}
+        assert "arn:built" not in str(project_item(derived, item).configuration)
+
+    def test_the_schema_takes_derive_and_refuses_a_key_that_could_shadow_a_member(self):
+        entry = TestPerFanoutSchema._entry()
+        entry["derive"] = {"_arn": "arn:{partition}:x:{region}:{account}:y/{Name}"}
+        assert TestPerFanoutSchema._validator().is_valid(entry)
+        entry["derive"] = {"Arn": "arn:x"}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)
+
+
+class TestMiddleLevelNames:
+    """A middle level that lists bare names carries them as ``_self`` beside ``_parent``."""
+
+    _ENTRY = {
+        "service": "eks",
+        "items_path": "nodegroup",
+        "source": {
+            "aws_op": "DescribeNodegroup",
+            "per": {
+                "aws_op": "ListNodegroups",
+                "items_path": "nodegroups[]",
+                "per": {"aws_op": "ListClusters", "items_path": "clusters[]"},
+                "bind": {"clusterName": ""},
+            },
+            "bind": {"clusterName": "_parent", "nodegroupName": "_self"},
+        },
+    }
+
+    def test_the_last_call_binds_both_the_name_and_the_level_above(self):
+        client = _CallLog(
+            {
+                "list_clusters": {"clusters": ["c1", "c2"]},
+                "list_nodegroups": lambda clusterName: {"nodegroups": [f"{clusterName}-ng"]},
+                "describe_nodegroup": lambda clusterName, nodegroupName: {
+                    "nodegroup": {"nodegroupArn": f"arn:{clusterName}:{nodegroupName}"}
+                },
+            }
+        )
+        items = list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["nodegroupArn"] for i in items] == ["arn:c1:c1-ng", "arn:c2:c2-ng"]
+        assert ("describe_nodegroup", {"clusterName": "c1", "nodegroupName": "c1-ng"}) in client.calls
+
+    def test_a_final_level_of_bare_names_still_fails(self):
+        entry = {
+            "service": "eks",
+            "items_path": "nodegroups[]",
+            "source": {
+                "aws_op": "ListNodegroups",
+                "per": {"aws_op": "ListClusters", "items_path": "clusters[]"},
+                "bind": {"clusterName": ""},
+            },
+        }
+        client = _CallLog({"list_clusters": {"clusters": ["c1"]}, "list_nodegroups": {"nodegroups": ["a"]}})
+        with pytest.raises(SourceError, match="must be a structure"):
+            list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+
+class TestBindForms:
+    def test_a_list_valued_and_a_dotted_parameter(self):
+        entry = {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "BatchGetThings",
+                "per": {"values": ["a"]},
+                "bind": {"Names": {"path": "", "list": True}, "SchemaId.SchemaArn": ""},
+            },
+        }
+        client = _CallLog({"batch_get_things": {"Things": [{"N": 1}]}})
+        list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert client.calls == [("batch_get_things", {"Names": ["a"], "SchemaId": {"SchemaArn": "a"}})]
+
+
+class TestWhere:
+    _ITEMS = {"Endpoints": [{"Arn": "arn:x:document-classifier-endpoint/a"}, {"Arn": "arn:x:entity-recognizer-endpoint/b"}]}
+
+    def test_a_plain_listing_keeps_only_matching_items(self):
+        entry = {
+            "service": "comprehend",
+            "items_path": "Endpoints[]",
+            "source": {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "contains": "document-classifier-endpoint"}]},
+        }
+        client = _CallLog({"list_endpoints": self._ITEMS})
+        items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["Arn"] for i in items] == ["arn:x:document-classifier-endpoint/a"]
+
+    def test_the_schema_takes_where_and_refuses_an_empty_condition(self):
+        entry = TestPerFanoutSchema._entry()
+        entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "prefix": "arn:"}]}
+        assert TestPerFanoutSchema._validator().is_valid(entry)
+        entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn"}]}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)
+        entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "equals": "a", "prefix": "b"}]}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)  # one predicate per condition
+
+
+class TestFanoutTruncation:
+    """A parent or child call that cannot be followed to its end fails the listing (fail closed)."""
+
+    @staticmethod
+    def _entry():
+        return {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "ListThings",
+                "per": {"aws_op": "ListOwners", "items_path": "Owners[]"},
+                "bind": {"Owner": "Id"},
+            },
+        }
+
+    def test_a_parent_listing_that_repeats_its_marker_fails(self):
+        client = _CallLog(
+            {"list_owners": {"Owners": [{"Id": "a"}], "NextToken": "same"}, "list_things": {"Things": [{"N": 1}]}}
+        )
+        with pytest.raises(SourceError, match="did not reach its end"):
+            list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+    def test_a_child_listing_that_repeats_its_marker_fails(self):
+        client = _CallLog(
+            {"list_owners": {"Owners": [{"Id": "a"}]}, "list_things": {"Things": [{"N": 1}], "NextToken": "same"}}
+        )
+        with pytest.raises(SourceError, match="did not reach its end"):
+            list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+    def test_a_listing_that_ends_is_not_refused(self):
+        client = _CallLog({"list_owners": {"Owners": [{"Id": "a"}]}, "list_things": {"Things": [{"N": 1}]}})
+        assert list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
