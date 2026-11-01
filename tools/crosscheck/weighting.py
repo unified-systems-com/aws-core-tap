@@ -63,20 +63,45 @@ class Weighting:
         return fallback if w is None else w
 
 
+_TOP = {"name", "version", "description", "status", "extends", "default_weight", "rules"}
+
+
+def _number(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0
+
+
 def _check(d: Any, where: str) -> None:
+    """Refuse a file that does not follow weights.schema.json, so a typo cannot produce an authoritative-looking score."""
+    if not isinstance(d, dict):
+        raise WeightingError(f"{where}: must be a JSON object")
     for key in ("name", "version", "description", "default_weight", "rules"):
         if key not in d:
             raise WeightingError(f"{where}: missing {key!r}")
-    if isinstance(d["default_weight"], bool) or not isinstance(d["default_weight"], (int, float)) or d["default_weight"] < 0:
+    if set(d) - _TOP:
+        raise WeightingError(f"{where}: unknown top-level key(s) {sorted(set(d) - _TOP)}")
+    for key in ("name", "description"):
+        if not isinstance(d[key], str) or not d[key]:
+            raise WeightingError(f"{where}: {key} must be a non-empty string")
+    if isinstance(d["version"], bool) or not isinstance(d["version"], int) or d["version"] < 1:
+        raise WeightingError(f"{where}: version must be an integer of at least 1")
+    if d.get("status", "draft") not in ("draft", "reviewed"):
+        raise WeightingError(f"{where}: status must be 'draft' or 'reviewed'")
+    if "extends" in d and (not isinstance(d["extends"], str) or not d["extends"] or "/" in d["extends"]):
+        raise WeightingError(f"{where}: extends must be a file name in the same directory")
+    if not _number(d["default_weight"]):
         raise WeightingError(f"{where}: default_weight must be a non-negative number")
     if not isinstance(d["rules"], list):
         raise WeightingError(f"{where}: rules must be a list")
     for i, r in enumerate(d["rules"]):
+        if not isinstance(r, dict):
+            raise WeightingError(f"{where}: rule {i} must be an object")
         sel = [k for k in SELECTORS if k in r]
         extra = set(r) - set(SELECTORS) - {"weight", "why"}
-        if len(sel) != 1 or extra or "weight" not in r or not r.get("why"):
+        if len(sel) != 1 or extra or "weight" not in r or not isinstance(r.get("why"), str) or not r["why"]:
             raise WeightingError(f"{where}: rule {i} needs exactly one selector, a weight and a why (got {sorted(r)})")
-        if not isinstance(r["weight"], (int, float)) or r["weight"] < 0:
+        if not isinstance(r[sel[0]], str) or not r[sel[0]]:
+            raise WeightingError(f"{where}: rule {i} selector must be a non-empty pattern")
+        if not _number(r["weight"]):
             raise WeightingError(f"{where}: rule {i} weight must be a non-negative number")
 
 

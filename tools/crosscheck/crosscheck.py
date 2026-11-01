@@ -235,7 +235,7 @@ def security(attrs: dict, nodes, tap, w, res) -> dict:
     """Verdicts, best to worst: typed (a column the collector fills), configuration-only (no column, but the
     read is one we make and the type keeps its whole configuration), column-unfilled (a model column the manifest
     never maps), not-evidenced (nothing shows we read it), type-not-collected, and the two stale kinds."""
-    ours_ops = {o for _, o in tap["ops"]}
+    custom_ops = set(tap["custom_ops"])
     rows = []
     for a in attrs["attributes"]:
         label, prop = a["carto"]["label"], a["carto"]["property"]
@@ -250,8 +250,12 @@ def security(attrs: dict, nodes, tap, w, res) -> dict:
             m = t["manifest"]
             verdict = "typed" if (m is None or fld in m["field_sources"]) else "column-unfilled"
         else:
-            keeps = bool(t["manifest"] and t["manifest"]["persist_configuration"])
-            verdict = "configuration-only" if keeps and read_op and norm(read_op) in ours_ops else "not-evidenced"
+            m = t["manifest"]
+            keeps = bool(m and m["persist_configuration"])
+            # The read must belong to this type: named in its own manifest entry, or made by the hand-written reader
+            # that serves it. A same-named call made for another service or type does not count.
+            made = bool(m and read_op and (norm(read_op) in m["ops"] or (m["custom_fn"] and norm(read_op) in custom_ops)))
+            verdict = "configuration-only" if keeps and made else "not-evidenced"
         if not carto_ok:
             verdict = "stale-reference-property"
         base = w.concept(label, (ty,))
@@ -481,6 +485,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--baseline", type=Path, default=None, help="an earlier report.json to diff against")
     ap.add_argument("--fail-on-regression", action="store_true", help="exit 1 when a gap appears that the baseline did not have")
     a = ap.parse_args(argv)
+    if a.fail_on_regression and not a.baseline:
+        ap.error("--fail-on-regression needs --baseline: without one there is nothing to compare, and the gate would pass vacuously")
     rep = run(a.cartography, a.plugin, a.weights)
     d = drift(rep, json.loads(a.baseline.read_text())) if a.baseline else None
     if d:

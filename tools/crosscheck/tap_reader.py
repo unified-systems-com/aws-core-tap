@@ -84,9 +84,13 @@ def read(plugin: Path) -> dict[str, Any]:
     ops: set[tuple[str, str]] = set()
     for e in manifest["entries"]:
         t = types.setdefault(e["entity_type"], {"fields": [], "natural_key": [], "model_edges": [], "manifest": None})
-        _ops_in(e, e.get("service", ""), ops)
+        own: set[tuple[str, str]] = set()
+        _ops_in(e, e.get("service", ""), own)
+        ops |= own
         t["manifest"] = {
             "service": e.get("service"),
+            "ops": sorted(o for _, o in own),
+            "custom_fn": "custom_fn" in json.dumps(e.get("source", {})),
             "natural_key": e.get("natural_key"),
             "persist_configuration": e.get("persist_configuration", True),
             "field_sources": e.get("fields", {}),
@@ -97,6 +101,7 @@ def read(plugin: Path) -> dict[str, Any]:
                 for r in e.get("edges", [])
             ],
         }
+    custom = _custom_ops(bdir)
     edge_defs = {}
     for p in sorted((pkg / "edges").glob("*.edge.json")):
         d = json.loads(p.read_text())
@@ -116,6 +121,7 @@ def read(plugin: Path) -> dict[str, Any]:
         ),
         "types": types,
         "edge_defs": edge_defs,
-        "ops": sorted(ops | _custom_ops(bdir)),
+        "ops": sorted(ops | custom),
+        "custom_ops": sorted(o for _, o in custom),
         "ledger_state": states,
     }

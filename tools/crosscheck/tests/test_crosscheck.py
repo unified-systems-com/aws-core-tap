@@ -265,6 +265,15 @@ class TestWeighting:
         w = weighting.load(wfile(tmp_path, [{"attribute": "rds-*", "weight": 9, "why": "z"}]))
         assert w.attribute("rds-x", 1) == 9 and w.attribute("s3-x", 4) == 4
 
+    @pytest.mark.parametrize("extra", [{"status": "approved"}, {"version": "1"}, {"version": True}, {"oops": 1}, {"extends": "../x.json"}, {"name": ""}])
+    def test_a_malformed_top_level_is_refused(self, tmp_path, extra):
+        with pytest.raises(weighting.WeightingError):
+            weighting.load(wfile(tmp_path, [{"carto_label": "a", "weight": 1, "why": "x"}], **extra))
+
+    def test_a_boolean_rule_weight_is_refused(self, tmp_path):
+        with pytest.raises(weighting.WeightingError):
+            weighting.load(wfile(tmp_path, [{"carto_label": "a", "weight": True, "why": "x"}]))
+
     @pytest.mark.parametrize("rule", [
         {"weight": 1, "why": "no selector"},
         {"carto_label": "a", "tap_type": "b", "weight": 1, "why": "two selectors"},
@@ -331,6 +340,20 @@ class TestMetrics:
         w = weighting.load(wfile(tmp_path, []))
         got = {r["id"]: r["verdict"] for r in crosscheck.security(attrs, models["nodes"], tap, w, {})["rows"]}
         assert got == {"a": "not-evidenced", "f": "column-unfilled", "b": "typed", "c": "stale-reference-property", "d": "stale-tap-field", "e": "type-not-collected"}
+
+    def test_a_same_named_read_by_another_type_earns_no_credit(self, carto, tmp_path):
+        plug = make_plugin(tmp_path / "p3", persist=True)
+        man = plug / "tap_plugin/aws_core/collectors/boto3_collector/aws_resource_manifest.json"
+        m = json.loads(man.read_text())
+        m["entries"][0].pop("hydrate")  # the RDS entry no longer makes the read
+        m["entries"].append({"entity_type": "aws_core__aws_subnet", "service": "ec2", "persist_configuration": True, "source": {"aws_op": "DescribeSubnets"},
+                             "natural_key": "SubnetId", "fields": {"subnet_id": "SubnetId"}, "hydrate": [{"key": "x", "op": "GetThing"}]})
+        man.write_text(json.dumps(m))  # an unrelated type makes GetThing
+        models, tap = carto_reader.read_models(carto), tap_reader.read(plug)
+        tp = {"type": "aws_core__aws_rds_instance", "field": None, "read_op": "GetThing"}
+        attrs = {"attributes": [{"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": tp}]}
+        r = crosscheck.security(attrs, models["nodes"], tap, weighting.load(wfile(tmp_path, [])), {})
+        assert r["rows"][0]["verdict"] == "not-evidenced"
 
     def test_configuration_storing_types_hold_unnamed_attributes_in_the_blob(self, carto, tmp_path):
         plug = make_plugin(tmp_path / "p2", persist=True)
@@ -416,6 +439,11 @@ class TestDriftAndCli:
             r.update(coverage={"gaps": []}, linkage={"rows": []}, operations={"reference_only_operations": []}, ledger={}, accuracy={"rows": []}, tags={"reference_only": []}, identity={"differs": []})
         assert crosscheck.gap_ids(before) == []
         assert crosscheck.gap_ids(after) == ["security:x:stale-tap-field"]
+
+    def test_the_gate_without_a_baseline_is_refused_not_passed(self, carto, plugin, tmp_path):
+        with pytest.raises(SystemExit) as e:
+            crosscheck.main(["--cartography", str(carto), "--plugin", str(plugin), "--fail-on-regression"])
+        assert e.value.code == 2
 
     def test_no_regression_exits_zero(self, carto, plugin, tmp_path):
         w = wfile(tmp_path, [{"carto_label": "AWS*", "weight": 1, "why": "x"}])
