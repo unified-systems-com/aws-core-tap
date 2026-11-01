@@ -1,0 +1,4 @@
+# Optional: only the Terraform provider source reader (terraform_source.py, tf_conformance.py) needs these.
+# The rest of crosscheck uses the standard library alone.
+tree-sitter==0.26.0
+tree-sitter-go==0.25.0

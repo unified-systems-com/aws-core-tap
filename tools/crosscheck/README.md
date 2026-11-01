@@ -66,3 +66,29 @@ first. To make a weighting for a new situation, copy one, change the rules, and 
   definition lists sources and targets as a cross product, which can overstate what we emit.
 - Operations match on the normalised name; Cartography's service is known only where a file uses one client.
 - A relationship whose target this reader cannot resolve is left out and named under `inputs.cartography.unresolved_relationships` (three today).
+
+## Terraform AWS provider as a second reference
+
+`tf_conformance.py` compares, for each of our types that maps to a Terraform resource, the AWS API key each typed field is
+filled from (the manifest's `fields`) with the API field the provider fills the same attribute from (`d.Set` in its read
+function), and our read operations with the provider's. Terraform is a reference, not ground truth.
+
+```
+tools/crosscheck/terraform_dump.sh [-v 6.71.0] schema.json     # the only step that runs Terraform: init + providers schema, no credentials
+pip install -r tools/crosscheck/requirements-terraform.txt      # tree-sitter, for the source layer only
+python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --terraform-source ~/src/terraform-provider-aws \
+    --terraform-version 6.71.0 [--out DIR]
+```
+
+| File | Role |
+| --- | --- |
+| `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies; unsets `AWS_*`. |
+| `terraform_reader.py` | Reads that file (never runs Terraform) into resources, flattened attributes with flags, taggability and identity. |
+| `terraform_source.py` | Parses the provider's Go source with tree-sitter (never builds or runs it): registry, schema attribute names, attribute to API field from `d.Set`, read operations. |
+| `tf_conformance.py` | The comparison and its `report.json` / `report.md`. |
+| `terraform_label_map.json` | Terraform resource to our types where names differ (several resources may map to one type; an empty list is a reviewed gap). |
+
+Limits: the source checkout should be the commit of the provider release the dump was made from (the report records both).
+Framework-style resources have no `d.Set`; their API field is inferred from the model struct's Go field name (marked
+`autoflex-convention`). Only top-level attributes are compared; a nested block counts as read when the provider reads its
+parent. `tf_conformance.py` is the only crosscheck module that needs anything beyond the standard library.
