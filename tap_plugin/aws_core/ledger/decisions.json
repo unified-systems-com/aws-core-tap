@@ -5687,6 +5687,136 @@
       "cfn": [
         "AWS::AutoScalingPlans::ScalingPlan"
       ]
+    },
+    "aws_core__aws_athena_named_query": {
+      "cfn": [
+        "AWS::Athena::NamedQuery"
+      ]
+    },
+    "aws_core__aws_cassandra_type": {
+      "cfn": [
+        "AWS::Cassandra::Type"
+      ]
+    },
+    "aws_core__aws_cloudformation_guard_hook": {
+      "cfn": [
+        "AWS::CloudFormation::GuardHook"
+      ]
+    },
+    "aws_core__aws_cloudformation_lambda_hook": {
+      "cfn": [
+        "AWS::CloudFormation::LambdaHook"
+      ]
+    },
+    "aws_core__aws_codebuild_fleet": {
+      "cfn": [
+        "AWS::CodeBuild::Fleet"
+      ]
+    },
+    "aws_core__aws_codebuild_report_group": {
+      "cfn": [
+        "AWS::CodeBuild::ReportGroup"
+      ]
+    },
+    "aws_core__aws_codedeploy_deployment_group": {
+      "cfn": [
+        "AWS::CodeDeploy::DeploymentGroup"
+      ]
+    },
+    "aws_core__aws_comprehend_document_classifier_endpoint": {
+      "cfn": [
+        "AWS::Comprehend::DocumentClassifierEndpoint"
+      ]
+    },
+    "aws_core__aws_comprehend_entity_recognizer_endpoint": {
+      "cfn": [
+        "AWS::Comprehend::EntityRecognizerEndpoint"
+      ]
+    },
+    "aws_core__aws_ecs_task_set": {
+      "cfn": [
+        "AWS::ECS::TaskSet"
+      ]
+    },
+    "aws_core__aws_eks_addon": {
+      "cfn": [
+        "AWS::EKS::Addon"
+      ]
+    },
+    "aws_core__aws_eks_nodegroup": {
+      "cfn": [
+        "AWS::EKS::Nodegroup"
+      ]
+    },
+    "aws_core__aws_eks_fargate_profile": {
+      "cfn": [
+        "AWS::EKS::FargateProfile"
+      ]
+    },
+    "aws_core__aws_eks_access_entry": {
+      "cfn": [
+        "AWS::EKS::AccessEntry"
+      ]
+    },
+    "aws_core__aws_eks_identity_provider_config": {
+      "cfn": [
+        "AWS::EKS::IdentityProviderConfig"
+      ]
+    },
+    "aws_core__aws_elasticloadbalancingv2_listener_rule": {
+      "cfn": [
+        "AWS::ElasticLoadBalancingV2::ListenerRule"
+      ]
+    },
+    "aws_core__aws_elasticloadbalancingv2_trust_store": {
+      "cfn": [
+        "AWS::ElasticLoadBalancingV2::TrustStore"
+      ]
+    },
+    "aws_core__aws_glue_schema_version": {
+      "cfn": [
+        "AWS::Glue::SchemaVersion"
+      ]
+    },
+    "aws_core__aws_glue_table": {
+      "cfn": [
+        "AWS::Glue::Table"
+      ]
+    },
+    "aws_core__aws_glue_usage_profile": {
+      "cfn": [
+        "AWS::Glue::UsageProfile"
+      ]
+    },
+    "aws_core__aws_glue_custom_entity_type": {
+      "cfn": [
+        "AWS::Glue::CustomEntityType"
+      ]
+    },
+    "aws_core__aws_glue_connection_type": {
+      "cfn": [
+        "AWS::Glue::ConnectionType"
+      ]
+    },
+    "aws_core__aws_guardduty_threat_entity_set": {
+      "cfn": [
+        "AWS::GuardDuty::ThreatEntitySet"
+      ]
+    },
+    "aws_core__aws_guardduty_trusted_entity_set": {
+      "cfn": [
+        "AWS::GuardDuty::TrustedEntitySet"
+      ]
+    },
+    "aws_core__aws_inspector_assessment_target": {
+      "cfn": [
+        "AWS::Inspector::AssessmentTarget"
+      ]
+    },
+    "aws_core__aws_inspector_assessment_template": {
+      "cfn": [
+        "AWS::Inspector::AssessmentTemplate"
+      ]
     }
   },
   "tag_findings": {
@@ -5873,6 +6003,18 @@
     "AWS::ServiceCatalog::CloudFormationProduct": {
       "taggable": true,
       "citation": "botocore 1.43.121 servicecatalog DescribeProductAsAdmin returns Tags for the product (and CreateProduct takes Tags), so a product has tags; servicecatalog defines no ListTagsForResource, so the tags are read with DescribeProductAsAdmin"
+    },
+    "AWS::Glue::CustomEntityType": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 glue CreateCustomEntityType takes a Tags member and GetTags reads tags by resource ARN, so a custom entity type has tags; the CloudFormation schema says taggable is false"
+    },
+    "AWS::Inspector::AssessmentTemplate": {
+      "taggable": true,
+      "citation": "botocore 1.43.121 inspector ListTagsForResource ('Lists all tags associated with an assessment template') and SetTagsForResource read and write tags on an assessment template, so a template has tags; the CloudFormation schema declares no tagging block"
+    },
+    "AWS::Inspector::AssessmentTarget": {
+      "taggable": false,
+      "citation": "botocore 1.43.121 inspector ListTagsForResource and SetTagsForResource act on an assessment template only ('Lists all tags associated with an assessment template'), and CreateAssessmentTarget takes no tags, so an assessment target has no tags; the CloudFormation schema declares no tagging block"
     }
   }
 }

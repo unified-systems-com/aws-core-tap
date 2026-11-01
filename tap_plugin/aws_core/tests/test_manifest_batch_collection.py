@@ -2288,6 +2288,110 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'CategoryName': 'gen-1', '_arn': 'arn:aws:transcribe:us-east-1:123456789012:analytics-category/gen-1'},
         {'transcribe_call_analytics_category_arn': 'arn:aws:transcribe:us-east-1:123456789012:analytics-category/gen-1', 'name': 'gen-1'},
     ),
+    "aws_core__aws_athena_named_query": (
+        {'NamedQueryId': 'nq-1', 'Name': 'gen-1'},
+        {'athena_named_query_id': 'nq-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_cassandra_type": (
+        {'keyspaceName': 'ks1', 'typeName': 'gen-1', '_key': '123456789012/us-east-1/ks1/gen-1'},
+        {'cassandra_type_key': '123456789012/us-east-1/ks1/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_cloudformation_guard_hook": (
+        {'TypeArn': 'arn:aws:cloudformation:us-east-1:123456789012:type/hook/Acme-Hooks-Guard', 'TypeName': 'Acme::Hooks::Guard', 'OriginalTypeName': 'AWS::Hooks::GuardHook'},
+        {'cloudformation_guard_hook_arn': 'arn:aws:cloudformation:us-east-1:123456789012:type/hook/Acme-Hooks-Guard', 'name': 'Acme::Hooks::Guard'},
+    ),
+    "aws_core__aws_cloudformation_lambda_hook": (
+        {'TypeArn': 'arn:aws:cloudformation:us-east-1:123456789012:type/hook/Acme-Hooks-Guard', 'TypeName': 'Acme::Hooks::Guard', 'OriginalTypeName': 'AWS::Hooks::LambdaHook'},
+        {'cloudformation_lambda_hook_arn': 'arn:aws:cloudformation:us-east-1:123456789012:type/hook/Acme-Hooks-Guard', 'name': 'Acme::Hooks::Guard'},
+    ),
+    "aws_core__aws_codebuild_fleet": (
+        {'arn': 'arn:aws:codebuild:us-east-1:123456789012:fleet/gen-1:abc', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'codebuild_fleet_arn': 'arn:aws:codebuild:us-east-1:123456789012:fleet/gen-1:abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_codebuild_report_group": (
+        {'arn': 'arn:aws:codebuild:us-east-1:123456789012:report-group/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'codebuild_report_group_arn': 'arn:aws:codebuild:us-east-1:123456789012:report-group/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_codedeploy_deployment_group": (
+        {'applicationName': 'app', 'deploymentGroupName': 'gen-1', '_arn': 'arn:aws:codedeploy:us-east-1:123456789012:deploymentgroup:app/gen-1'},
+        {'codedeploy_deployment_group_arn': 'arn:aws:codedeploy:us-east-1:123456789012:deploymentgroup:app/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_comprehend_document_classifier_endpoint": (
+        {'EndpointArn': 'arn:aws:comprehend:us-east-1:123456789012:document-classifier-endpoint/gen-1', 'ModelArn': 'arn:aws:comprehend:us-east-1:123456789012:document-classifier/m1/version/v1'},
+        {'comprehend_document_classifier_endpoint_arn': 'arn:aws:comprehend:us-east-1:123456789012:document-classifier-endpoint/gen-1'},
+    ),
+    "aws_core__aws_comprehend_entity_recognizer_endpoint": (
+        {'EndpointArn': 'arn:aws:comprehend:us-east-1:123456789012:entity-recognizer-endpoint/gen-1', 'ModelArn': 'arn:aws:comprehend:us-east-1:123456789012:entity-recognizer/m1/version/v1'},
+        {'comprehend_entity_recognizer_endpoint_arn': 'arn:aws:comprehend:us-east-1:123456789012:entity-recognizer-endpoint/gen-1'},
+    ),
+    "aws_core__aws_ecs_task_set": (
+        {'taskSetArn': 'arn:aws:ecs:us-east-1:123456789012:task-set/c/s/ecs-svc/1', 'id': 'ecs-svc/1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'ecs_task_set_arn': 'arn:aws:ecs:us-east-1:123456789012:task-set/c/s/ecs-svc/1', 'name': 'ecs-svc/1'},
+    ),
+    "aws_core__aws_eks_addon": (
+        {'addonName': 'gen-1', 'addonArn': 'arn:aws:eks:us-east-1:123456789012:addon/c/gen-1/abc', 'tags': {'owner': 'net-team'}},
+        {'eks_addon_arn': 'arn:aws:eks:us-east-1:123456789012:addon/c/gen-1/abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_eks_nodegroup": (
+        {'nodegroupName': 'gen-1', 'nodegroupArn': 'arn:aws:eks:us-east-1:123456789012:nodegroup/c/gen-1/abc', 'tags': {'owner': 'net-team'}},
+        {'eks_nodegroup_arn': 'arn:aws:eks:us-east-1:123456789012:nodegroup/c/gen-1/abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_eks_fargate_profile": (
+        {'fargateProfileName': 'gen-1', 'fargateProfileArn': 'arn:aws:eks:us-east-1:123456789012:fargateprofile/c/gen-1/abc', 'tags': {'owner': 'net-team'}},
+        {'eks_fargate_profile_arn': 'arn:aws:eks:us-east-1:123456789012:fargateprofile/c/gen-1/abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_eks_access_entry": (
+        {'principalArn': 'arn:aws:iam::123456789012:role/gen-1', 'accessEntryArn': 'arn:aws:eks:us-east-1:123456789012:access-entry/c/role/123456789012/gen-1/abc', 'tags': {'owner': 'net-team'}},
+        {'eks_access_entry_arn': 'arn:aws:eks:us-east-1:123456789012:access-entry/c/role/123456789012/gen-1/abc', 'name': 'arn:aws:iam::123456789012:role/gen-1'},
+    ),
+    "aws_core__aws_eks_identity_provider_config": (
+        {'identityProviderConfigName': 'gen-1', 'identityProviderConfigArn': 'arn:aws:eks:us-east-1:123456789012:identityproviderconfig/c/oidc/gen-1/abc', 'tags': {'owner': 'net-team'}},
+        {'eks_identity_provider_config_arn': 'arn:aws:eks:us-east-1:123456789012:identityproviderconfig/c/oidc/gen-1/abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_elasticloadbalancingv2_listener_rule": (
+        {'RuleArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3', 'IsDefault': False},
+        {'elasticloadbalancingv2_listener_rule_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3'},
+    ),
+    "aws_core__aws_elasticloadbalancingv2_trust_store": (
+        {'TrustStoreArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:truststore/gen-1/abc', 'Name': 'gen-1'},
+        {'elasticloadbalancingv2_trust_store_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:truststore/gen-1/abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_schema_version": (
+        {'SchemaArn': 'arn:aws:glue:us-east-1:123456789012:schema/gen-1', 'SchemaVersionId': '11111111-2222-3333-4444-555555555555', 'VersionNumber': 1},
+        {'glue_schema_version_id': '11111111-2222-3333-4444-555555555555'},
+    ),
+    "aws_core__aws_glue_table": (
+        {'DatabaseName': 'db', 'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:table/db/gen-1'},
+        {'glue_table_arn': 'arn:aws:glue:us-east-1:123456789012:table/db/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_usage_profile": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:usageProfile/gen-1'},
+        {'glue_usage_profile_arn': 'arn:aws:glue:us-east-1:123456789012:usageProfile/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_custom_entity_type": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:customEntityType/gen-1'},
+        {'glue_custom_entity_type_arn': 'arn:aws:glue:us-east-1:123456789012:customEntityType/gen-1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_glue_connection_type": (
+        {'ConnectionType': 'REST-gen-1', '_arn': 'arn:aws:glue:us-east-1:123456789012:connectionType:REST-gen-1'},
+        {'glue_connection_type_arn': 'arn:aws:glue:us-east-1:123456789012:connectionType:REST-gen-1', 'name': 'REST-gen-1'},
+    ),
+    "aws_core__aws_guardduty_threat_entity_set": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:guardduty:us-east-1:123456789012:detector/d1/threatentityset/s1', '_parent': {'_self': 's1', '_parent': 'd1'}, 'Tags': {'owner': 'net-team'}},
+        {'guardduty_threat_entity_set_arn': 'arn:aws:guardduty:us-east-1:123456789012:detector/d1/threatentityset/s1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_guardduty_trusted_entity_set": (
+        {'Name': 'gen-1', '_arn': 'arn:aws:guardduty:us-east-1:123456789012:detector/d1/trustedentityset/s1', '_parent': {'_self': 's1', '_parent': 'd1'}, 'Tags': {'owner': 'net-team'}},
+        {'guardduty_trusted_entity_set_arn': 'arn:aws:guardduty:us-east-1:123456789012:detector/d1/trustedentityset/s1', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_inspector_assessment_target": (
+        {'arn': 'arn:aws:inspector:us-east-1:123456789012:target/0-abc', 'name': 'gen-1'},
+        {'inspector_assessment_target_arn': 'arn:aws:inspector:us-east-1:123456789012:target/0-abc', 'name': 'gen-1'},
+    ),
+    "aws_core__aws_inspector_assessment_template": (
+        {'arn': 'arn:aws:inspector:us-east-1:123456789012:target/0-abc/template/0-def', 'name': 'gen-1'},
+        {'inspector_assessment_template_arn': 'arn:aws:inspector:us-east-1:123456789012:target/0-abc/template/0-def', 'name': 'gen-1'},
+    ),
     "aws_core__aws_vpc_endpoint": (
         {
             "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",

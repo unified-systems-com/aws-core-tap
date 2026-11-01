@@ -898,8 +898,60 @@ from tap_plugin.aws_core.models.wafregional_rule import WafregionalRule
 from tap_plugin.aws_core.models.wafregional_rate_based_rule import WafregionalRateBasedRule
 from tap_plugin.aws_core.models.wafregional_web_acl import WafregionalWebAcl
 from tap_plugin.aws_core.models.autoscalingplans_scaling_plan import AutoscalingplansScalingPlan
+from tap_plugin.aws_core.models.athena_named_query import AthenaNamedQuery
+from tap_plugin.aws_core.models.cassandra_type import CassandraType
+from tap_plugin.aws_core.models.cloudformation_guard_hook import CloudformationGuardHook
+from tap_plugin.aws_core.models.cloudformation_lambda_hook import CloudformationLambdaHook
+from tap_plugin.aws_core.models.codebuild_fleet import CodebuildFleet
+from tap_plugin.aws_core.models.codebuild_report_group import CodebuildReportGroup
+from tap_plugin.aws_core.models.codedeploy_deployment_group import CodedeployDeploymentGroup
+from tap_plugin.aws_core.models.comprehend_document_classifier_endpoint import ComprehendDocumentClassifierEndpoint
+from tap_plugin.aws_core.models.comprehend_entity_recognizer_endpoint import ComprehendEntityRecognizerEndpoint
+from tap_plugin.aws_core.models.ecs_task_set import EcsTaskSet
+from tap_plugin.aws_core.models.eks_addon import EksAddon
+from tap_plugin.aws_core.models.eks_nodegroup import EksNodegroup
+from tap_plugin.aws_core.models.eks_fargate_profile import EksFargateProfile
+from tap_plugin.aws_core.models.eks_access_entry import EksAccessEntry
+from tap_plugin.aws_core.models.eks_identity_provider_config import EksIdentityProviderConfig
+from tap_plugin.aws_core.models.elasticloadbalancingv2_listener_rule import Elasticloadbalancingv2ListenerRule
+from tap_plugin.aws_core.models.elasticloadbalancingv2_trust_store import Elasticloadbalancingv2TrustStore
+from tap_plugin.aws_core.models.glue_schema_version import GlueSchemaVersion
+from tap_plugin.aws_core.models.glue_table import GlueTable
+from tap_plugin.aws_core.models.glue_usage_profile import GlueUsageProfile
+from tap_plugin.aws_core.models.glue_custom_entity_type import GlueCustomEntityType
+from tap_plugin.aws_core.models.glue_connection_type import GlueConnectionType
+from tap_plugin.aws_core.models.guardduty_threat_entity_set import GuarddutyThreatEntitySet
+from tap_plugin.aws_core.models.guardduty_trusted_entity_set import GuarddutyTrustedEntitySet
+from tap_plugin.aws_core.models.inspector_assessment_target import InspectorAssessmentTarget
+from tap_plugin.aws_core.models.inspector_assessment_template import InspectorAssessmentTemplate
 
 __all__ = [
+    "InspectorAssessmentTemplate",
+    "InspectorAssessmentTarget",
+    "GuarddutyTrustedEntitySet",
+    "GuarddutyThreatEntitySet",
+    "GlueConnectionType",
+    "GlueCustomEntityType",
+    "GlueUsageProfile",
+    "GlueTable",
+    "GlueSchemaVersion",
+    "Elasticloadbalancingv2TrustStore",
+    "Elasticloadbalancingv2ListenerRule",
+    "EksIdentityProviderConfig",
+    "EksAccessEntry",
+    "EksFargateProfile",
+    "EksNodegroup",
+    "EksAddon",
+    "EcsTaskSet",
+    "ComprehendEntityRecognizerEndpoint",
+    "ComprehendDocumentClassifierEndpoint",
+    "CodedeployDeploymentGroup",
+    "CodebuildReportGroup",
+    "CodebuildFleet",
+    "CloudformationLambdaHook",
+    "CloudformationGuardHook",
+    "CassandraType",
+    "AthenaNamedQuery",
     "AutoscalingplansScalingPlan",
     "WafregionalWebAcl",
     "WafregionalRateBasedRule",
