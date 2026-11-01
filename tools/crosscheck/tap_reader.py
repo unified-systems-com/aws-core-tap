@@ -51,7 +51,7 @@ def _fn_ops(collector_dir: Path) -> dict[str, set[str]]:
     direct: dict[str, set[str]] = {}
     calls: dict[str, set[str]] = {}
     for p in sorted(collector_dir.glob("*.py")):
-        for fn in (n for n in ast.parse(p.read_text()).body if isinstance(n, ast.FunctionDef)):
+        for fn in (n for n in ast.walk(ast.parse(p.read_text())) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
             ops, callees = direct.setdefault(fn.name, set()), calls.setdefault(fn.name, set())
             for n in ast.walk(fn):
                 if isinstance(n, ast.Call):
