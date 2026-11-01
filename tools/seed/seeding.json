@@ -1,0 +1,797 @@
+{
+  "description": "Seed catalog (req-aws-core-livevalidation-catalog): per CloudFormation type, what the seed modules create and what the projection check compares. A type with no entry is unseeded, not free. entity_type is the manifest entity type; terraform is the resource type; compares lists manifest field names; tf_attrs maps each compared manifest field to where the expected value lives in the Terraform state (a path into the resource values, or an object: path+strip_suffix, all_true, const); natural_key is the same for the key; tags is tags_all (the state's merged tags) or none (the type cannot carry tags, expected {}); edges lists the manifest edges whose expected target comes from the state (target is a path, or a join over another state resource). Read by tools/seed/expected.py and tools/seed/compare.py.",
+  "types": {
+    "AWS::DynamoDB::Table": {
+      "cfn_type": "AWS::DynamoDB::Table",
+      "entity_type": "aws_core__aws_dynamodb_table",
+      "terraform": "aws_dynamodb_table",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "table_arn",
+        "billing_mode"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "table_arn": "arn",
+        "billing_mode": "billing_mode"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "On-demand table."
+    },
+    "AWS::EC2::Instance": {
+      "cfn_type": "AWS::EC2::Instance",
+      "entity_type": "aws_core__aws_ec2_instance",
+      "terraform": "aws_instance",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::Subnet",
+        "AWS::IAM::InstanceProfile"
+      ],
+      "compares": [
+        "instance_id",
+        "ec2_type",
+        "state",
+        "private_ip",
+        "public_ip",
+        "ami_id"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "instance_id": "id",
+        "ec2_type": "instance_type",
+        "state": "instance_state",
+        "private_ip": "private_ip",
+        "public_ip": "public_ip",
+        "ami_id": "ami"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnet_id"
+        },
+        {
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_subnet",
+              "own": "subnet_id",
+              "other": "id",
+              "target": "vpc_id"
+            }
+          }
+        }
+      ],
+      "description": "One t3.micro, no public address."
+    },
+    "AWS::EC2::InternetGateway": {
+      "cfn_type": "AWS::EC2::InternetGateway",
+      "entity_type": "aws_core__aws_internet_gateway",
+      "terraform": "aws_internet_gateway",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "igw_id"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "igw_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ATTACHED_TO_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "Internet gateway attached to the seed VPC."
+    },
+    "AWS::EC2::NetworkAcl": {
+      "cfn_type": "AWS::EC2::NetworkAcl",
+      "entity_type": "aws_core__aws_network_acl",
+      "terraform": "aws_network_acl",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "network_acl_id"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "network_acl_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "Non-default network ACL."
+    },
+    "AWS::EC2::RouteTable": {
+      "cfn_type": "AWS::EC2::RouteTable",
+      "entity_type": "aws_core__aws_route_table",
+      "terraform": "aws_route_table",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "route_table_id"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "route_table_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "Route table with a default route to the gateway."
+    },
+    "AWS::EC2::SecurityGroup": {
+      "cfn_type": "AWS::EC2::SecurityGroup",
+      "entity_type": "aws_core__aws_security_group",
+      "terraform": "aws_security_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "name",
+        "group_id",
+        "description"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "group_id": "id",
+        "description": "description"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "Two groups; one has a rule open to 0.0.0.0/0 on a high port with nothing attached (the public setting case)."
+    },
+    "AWS::EC2::Subnet": {
+      "cfn_type": "AWS::EC2::Subnet",
+      "entity_type": "aws_core__aws_subnet",
+      "terraform": "aws_subnet",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "subnet_id",
+        "cidr_block",
+        "availability_zone",
+        "public"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "subnet_id": "id",
+        "cidr_block": "cidr_block",
+        "availability_zone": "availability_zone",
+        "public": "map_public_ip_on_launch"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "PARTITIONED_INTO_SUBNET__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "inbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "Two subnets in two zones."
+    },
+    "AWS::EC2::VPC": {
+      "cfn_type": "AWS::EC2::VPC",
+      "entity_type": "aws_core__aws_vpc",
+      "terraform": "aws_vpc",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "vpc_id",
+        "cidr_block"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "vpc_id": "id",
+        "cidr_block": "cidr_block"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Own VPC, 10.99.0.0/16."
+    },
+    "AWS::EC2::Volume": {
+      "cfn_type": "AWS::EC2::Volume",
+      "entity_type": "aws_core__aws_ebs_volume",
+      "terraform": "aws_ebs_volume",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::KMS::Key"
+      ],
+      "compares": [
+        "volume_id",
+        "volume_type",
+        "size_gb",
+        "encrypted"
+      ],
+      "module": "wave1",
+      "natural_key": "id",
+      "tf_attrs": {
+        "volume_id": "id",
+        "volume_type": "type",
+        "size_gb": "size",
+        "encrypted": "encrypted"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "target_type": "aws_core__aws_kms_key",
+          "direction": "outbound",
+          "target": "kms_key_id"
+        }
+      ],
+      "description": "One gp3 volume, 1 GiB, encrypted with the seed key, unattached."
+    },
+    "AWS::Events::Rule": {
+      "cfn_type": "AWS::Events::Rule",
+      "entity_type": "aws_core__aws_eventbridge_rule",
+      "terraform": "aws_cloudwatch_event_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Lambda::Function"
+      ],
+      "compares": [
+        "name",
+        "rule_arn",
+        "state",
+        "schedule_expression",
+        "event_bus_name"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "rule_arn": "arn",
+        "state": "state",
+        "schedule_expression": "schedule_expression",
+        "event_bus_name": "event_bus_name"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "INVOKES_LAMBDA__aws_core",
+          "target_type": "aws_core__aws_lambda",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_cloudwatch_event_target",
+              "own": "name",
+              "other": "rule",
+              "target": "arn"
+            }
+          }
+        }
+      ],
+      "description": "Disabled scheduled rule targeting the function; it never fires."
+    },
+    "AWS::IAM::Group": {
+      "cfn_type": "AWS::IAM::Group",
+      "entity_type": "aws_core__aws_iam_group",
+      "terraform": "aws_iam_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::ManagedPolicy"
+      ],
+      "compares": [
+        "name",
+        "group_arn",
+        "path",
+        "group_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "group_arn": "arn",
+        "path": "path",
+        "group_id": "unique_id"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "ATTACHES_POLICY__aws_core",
+          "target_type": "aws_core__aws_iam_policy",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_iam_group_policy_attachment",
+              "own": "name",
+              "other": "group",
+              "target": "policy_arn"
+            }
+          }
+        }
+      ],
+      "description": "Group; IAM groups cannot be tagged, so tags are expected to be {}."
+    },
+    "AWS::IAM::InstanceProfile": {
+      "cfn_type": "AWS::IAM::InstanceProfile",
+      "entity_type": "aws_core__aws_iam_instance_profile",
+      "terraform": "aws_iam_instance_profile",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "name",
+        "instance_profile_arn",
+        "path",
+        "instance_profile_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "instance_profile_arn": "arn",
+        "path": "path",
+        "instance_profile_id": "unique_id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "CONTAINS_ROLE__aws_core",
+          "target_type": "aws_core__aws_iam_role",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_iam_role",
+              "own": "role",
+              "other": "name",
+              "target": "arn"
+            }
+          }
+        }
+      ],
+      "description": "Instance profile holding the seed role."
+    },
+    "AWS::IAM::ManagedPolicy": {
+      "cfn_type": "AWS::IAM::ManagedPolicy",
+      "entity_type": "aws_core__aws_iam_policy",
+      "terraform": "aws_iam_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "policy_arn",
+        "path",
+        "policy_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "policy_arn": "arn",
+        "path": "path",
+        "policy_id": "policy_id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Customer-managed policy, one harmless statement."
+    },
+    "AWS::IAM::Role": {
+      "cfn_type": "AWS::IAM::Role",
+      "entity_type": "aws_core__aws_iam_role",
+      "terraform": "aws_iam_role",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::ManagedPolicy"
+      ],
+      "compares": [
+        "name",
+        "role_arn",
+        "path",
+        "max_session_duration",
+        "role_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "role_arn": "arn",
+        "path": "path",
+        "max_session_duration": "max_session_duration",
+        "role_id": "unique_id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ATTACHES_POLICY__aws_core",
+          "target_type": "aws_core__aws_iam_policy",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_iam_role_policy_attachment",
+              "own": "name",
+              "other": "role",
+              "target": "policy_arn"
+            }
+          }
+        }
+      ],
+      "description": "Role trusted by ec2 and lambda, with the policy attached."
+    },
+    "AWS::IAM::User": {
+      "cfn_type": "AWS::IAM::User",
+      "entity_type": "aws_core__aws_iam_user",
+      "terraform": "aws_iam_user",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::ManagedPolicy"
+      ],
+      "compares": [
+        "name",
+        "user_arn",
+        "path",
+        "user_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "user_arn": "arn",
+        "path": "path",
+        "user_id": "unique_id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ATTACHES_POLICY__aws_core",
+          "target_type": "aws_core__aws_iam_policy",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_iam_user_policy_attachment",
+              "own": "name",
+              "other": "user",
+              "target": "policy_arn"
+            }
+          }
+        }
+      ],
+      "description": "User with odd tag keys and values (spaces, colons, slashes, unicode letters, an empty value)."
+    },
+    "AWS::KMS::Alias": {
+      "cfn_type": "AWS::KMS::Alias",
+      "entity_type": "aws_core__aws_kms_alias",
+      "terraform": "aws_kms_alias",
+      "cost_class": "free",
+      "needs": [
+        "AWS::KMS::Key"
+      ],
+      "compares": [
+        "name",
+        "alias_arn",
+        "alias_name",
+        "target_key_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "alias_arn": "arn",
+        "alias_name": "name",
+        "target_key_id": "target_key_id"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "ALIASES_KEY__aws_core",
+          "target_type": "aws_core__aws_kms_key",
+          "direction": "outbound",
+          "target": "target_key_arn"
+        }
+      ],
+      "description": "Alias; KMS aliases cannot be tagged, so tags are expected to be {}."
+    },
+    "AWS::KMS::Key": {
+      "cfn_type": "AWS::KMS::Key",
+      "entity_type": "aws_core__aws_kms_key",
+      "terraform": "aws_kms_key",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "key_arn",
+        "key_id",
+        "description"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "key_arn": "arn",
+        "key_id": "key_id",
+        "description": "description"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Symmetric key, rotation on, 7-day deletion window."
+    },
+    "AWS::Lambda::Function": {
+      "cfn_type": "AWS::Lambda::Function",
+      "entity_type": "aws_core__aws_lambda",
+      "terraform": "aws_lambda_function",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::Role",
+        "AWS::Logs::LogGroup"
+      ],
+      "compares": [
+        "name",
+        "function_arn",
+        "runtime",
+        "handler",
+        "memory_size",
+        "timeout"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "function_name",
+        "function_arn": "arn",
+        "runtime": "runtime",
+        "handler": "handler",
+        "memory_size": "memory_size",
+        "timeout": "timeout"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "target_type": "aws_core__aws_iam_role",
+          "direction": "outbound",
+          "target": "role"
+        },
+        {
+          "edge_type": "WRITES_LOGS__aws_core",
+          "target_type": "aws_core__aws_cloudwatch_log_group",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_cloudwatch_log_group",
+              "own": "logging_config.0.log_group",
+              "other": "name",
+              "target": {
+                "path": "arn",
+                "strip_suffix": ":*"
+              }
+            }
+          }
+        }
+      ],
+      "description": "Tiny inline Python function, no tag of its own beyond the defaults."
+    },
+    "AWS::Logs::LogGroup": {
+      "cfn_type": "AWS::Logs::LogGroup",
+      "entity_type": "aws_core__aws_cloudwatch_log_group",
+      "terraform": "aws_cloudwatch_log_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "log_group_arn",
+        "retention_in_days"
+      ],
+      "module": "wave1",
+      "natural_key": {
+        "path": "arn",
+        "strip_suffix": ":*"
+      },
+      "tf_attrs": {
+        "name": "name",
+        "log_group_arn": {
+          "path": "arn",
+          "strip_suffix": ":*"
+        },
+        "retention_in_days": "retention_in_days"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "The function's log group, 1 day retention."
+    },
+    "AWS::S3::Bucket": {
+      "cfn_type": "AWS::S3::Bucket",
+      "entity_type": "aws_core__aws_s3_bucket",
+      "terraform": "aws_s3_bucket",
+      "cost_class": "free",
+      "needs": [
+        "AWS::KMS::Key"
+      ],
+      "compares": [
+        "name",
+        "bucket_arn",
+        "public_access_blocked"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "id",
+        "bucket_arn": "arn",
+        "public_access_blocked": {
+          "all_true": {
+            "terraform": "aws_s3_bucket_public_access_block",
+            "own": "id",
+            "other": "bucket",
+            "flags": [
+              "block_public_acls",
+              "block_public_policy",
+              "ignore_public_acls",
+              "restrict_public_buckets"
+            ]
+          }
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "target_type": "aws_core__aws_kms_key",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_s3_bucket_server_side_encryption_configuration",
+              "own": "id",
+              "other": "bucket",
+              "target": "rule.0.apply_server_side_encryption_by_default.0.kms_master_key_id"
+            }
+          }
+        }
+      ],
+      "description": "Two buckets: A (versioning, KMS default encryption, public access block, odd tag keys) and B (no bucket-level block, defaults only)."
+    },
+    "AWS::SNS::Topic": {
+      "cfn_type": "AWS::SNS::Topic",
+      "entity_type": "aws_core__aws_sns_topic",
+      "terraform": "aws_sns_topic",
+      "cost_class": "free",
+      "needs": [
+        "AWS::KMS::Key"
+      ],
+      "compares": [
+        "topic_arn",
+        "kms_master_key_id"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "topic_arn": "arn",
+        "kms_master_key_id": "kms_master_key_id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "target_type": "aws_core__aws_kms_key",
+          "direction": "outbound",
+          "target": "kms_master_key_id"
+        }
+      ],
+      "description": "Topic encrypted with the seed key."
+    },
+    "AWS::SQS::Queue": {
+      "cfn_type": "AWS::SQS::Queue",
+      "entity_type": "aws_core__aws_sqs_queue",
+      "terraform": "aws_sqs_queue",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "queue_arn",
+        "queue_url",
+        "visibility_timeout",
+        "message_retention_period"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "queue_arn": "arn",
+        "queue_url": "url",
+        "visibility_timeout": "visibility_timeout_seconds",
+        "message_retention_period": "message_retention_seconds"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Queue with no tag of its own beyond the two defaults."
+    },
+    "AWS::SSM::Parameter": {
+      "cfn_type": "AWS::SSM::Parameter",
+      "entity_type": "aws_core__aws_ssm_parameter",
+      "terraform": "aws_ssm_parameter",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "parameter_arn",
+        "type",
+        "tier"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "parameter_arn": "arn",
+        "type": "type",
+        "tier": "tier"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Standard-tier String parameter."
+    },
+    "AWS::SecretsManager::Secret": {
+      "cfn_type": "AWS::SecretsManager::Secret",
+      "entity_type": "aws_core__aws_secrets_manager_secret",
+      "terraform": "aws_secretsmanager_secret",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::KMS::Key"
+      ],
+      "compares": [
+        "name",
+        "secret_arn"
+      ],
+      "module": "wave1",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "secret_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
+          "target_type": "aws_core__aws_kms_key",
+          "direction": "outbound",
+          "target": "kms_key_id"
+        }
+      ],
+      "description": "Secret with no value, immediate deletion."
+    }
+  }
+}
