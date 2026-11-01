@@ -1,0 +1,4 @@
+{
+  "description": "Human verdicts the generator cannot derive from code, keyed by CloudFormation type name: whether retiring one of these should retire others (cascade), and the probe or listing planned for it. A type with no entry reads as undecided in the hit list. Add an entry when a service is worked; delete none without saying why in the commit.",
+  "decisions": {}
+}
