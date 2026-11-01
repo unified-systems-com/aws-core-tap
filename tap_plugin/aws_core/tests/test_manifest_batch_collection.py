@@ -2136,6 +2136,24 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'Arn': 'arn:aws:quicksight:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
+    "aws_core__aws_vpc_endpoint": (
+        {
+            "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
+            "VpcEndpointType": "Interface",
+            "ServiceName": "com.amazonaws.us-east-1.s3",
+            "PrivateDnsEnabled": True,
+            "VpcId": "vpc-0a1",
+            "SubnetIds": ["subnet-0a1", "subnet-0a2"],
+            "PolicyDocument": '{"Statement": []}',
+            "Tags": TAGS,
+        },
+        {
+            "vpc_endpoint_id": "vpce-0a1b2c3d4e5f60718",
+            "endpoint_type": "Interface",
+            "service_name": "com.amazonaws.us-east-1.s3",
+            "private_dns_enabled": True,
+        },
+    ),
     "aws_core__aws_ec2_application_status_check": (
         {'ApplicationStatusCheckId': 'app-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
         {'ec2_application_status_check_id': 'app-0a1b2c3d4e5f60718', 'name': 'gen-1'},
@@ -2479,6 +2497,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "aws_core__aws_wellarchitected_agent_goal": (
         {'id': 'id-0a1b2c3d4e5f60718'},
         {'wellarchitected_agent_goal_id': 'id-0a1b2c3d4e5f60718'},
+    ),
     "aws_core__aws_batch_quota_share": (
         {'quotaShareArn': 'arn:aws:batch:us-east-1:123456789012:res/gen-1', 'quotaShareName': 'gen-1'},
         {'name': 'gen-1'},
@@ -2641,6 +2660,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     ),
     "aws_core__aws_timestream_influx_db_instance": (
         {'arn': 'arn:aws:timestream-influxdb:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_bedrock_blueprint": (
         {'blueprintArn': 'arn:aws:bedrock-data-automation:us-east-1:123456789012:res/gen-1'},
         {},
@@ -2811,6 +2832,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     ),
     "aws_core__aws_cloudformation_hook_version": (
         {'Arn': 'arn:aws:cloudformation:us-east-1:123456789012:res/gen-1', 'TypeName': 'gen-1'},
+        {'name': 'gen-1'},
+    ),
     "aws_core__aws_backup_logically_air_gapped_backup_vault": (
         {'BackupVaultArn': 'arn:aws:backup:us-east-1:123456789012:res/gen-1'},
         {},
@@ -3147,24 +3170,6 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'StorageLensGroupArn': 'arn:aws:s3control:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', '_tags': {'owner': 'net-team'}},
         {'name': 'gen-1'},
     ),
-    "aws_core__aws_vpc_endpoint": (
-        {
-            "VpcEndpointId": "vpce-0a1b2c3d4e5f60718",
-            "VpcEndpointType": "Interface",
-            "ServiceName": "com.amazonaws.us-east-1.s3",
-            "PrivateDnsEnabled": True,
-            "VpcId": "vpc-0a1",
-            "SubnetIds": ["subnet-0a1", "subnet-0a2"],
-            "PolicyDocument": '{"Statement": []}',
-            "Tags": TAGS,
-        },
-        {
-            "vpc_endpoint_id": "vpce-0a1b2c3d4e5f60718",
-            "endpoint_type": "Interface",
-            "service_name": "com.amazonaws.us-east-1.s3",
-            "private_dns_enabled": True,
-        },
-    ),
 }
 
 
@@ -3222,6 +3227,8 @@ class TestBatchTypes:
             ("Tags[]", "list_kv"),
             ("TagList", "list_kv"),
             ("TagSet[]", "list_kv"),
+            ("Tags", "list_kv"),
+            ("tags", "list_kv_lower"),
             ("tags[]", "list_kv_lower"),
             ("_tags", "map"),
             ("tags", "map"),
