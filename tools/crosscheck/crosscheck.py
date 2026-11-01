@@ -53,6 +53,14 @@ def resolve_labels(nodes: dict[str, dict], tap_types: set[str], lmap: dict) -> d
     return res
 
 
+_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def _clean(s: Any) -> str:
+    """Text taken from an analysed tree is untrusted: control characters (terminal escapes) are replaced before it is printed."""
+    return _CTRL.sub("?", str(s))
+
+
 def _pct(a: float, b: float) -> float | None:
     return None if not b else round(100.0 * a / b, 1)
 
@@ -473,7 +481,7 @@ def markdown(r: dict, d: dict | None) -> str:
         out += ["", "## Drift since the baseline", "", f"New gaps: {len(d['new_gaps'])}; closed: {len(d['closed_gaps'])}."]
         out += [f"- new: `{g}`" for g in d["new_gaps"][:30]] + [f"- closed: `{g}`" for g in d["closed_gaps"][:30]]
         out += [f"- {k}: {v[0]} → {v[1]}" for k, v in d["headline_changes"].items()]
-    return "\n".join(out) + "\n"
+    return _clean("\n".join(out)) + "\n"
 
 
 def main(argv: list[str] | None = None) -> int:

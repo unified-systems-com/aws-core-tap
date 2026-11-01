@@ -44,15 +44,20 @@ _SNAKE_READ = re.compile(r"^(describe|list|get|batch_get|lookup|search)_[a-z0-9_
 
 
 def _fn_ops(collector_dir: Path) -> dict[str, set[str]]:
-    """Per hand-written function, the normalised read operations it makes, following calls to sibling functions.
+    """Per hand-written function, the normalised read operations it makes, following calls to other functions.
 
     A manifest entry's `custom_fn` names one of these, so a type is credited only with reads its own reader makes.
+    Functions are indexed by module and name, because helpers such as `_pages` are defined in several modules. A call
+    resolves to the definition in its own module first, then to a definition that is unique across the directory; an
+    ambiguous call is followed nowhere, so a collision can lose credit but never invent it. The result is keyed by the
+    bare name for functions whose name is unique, which is how the manifest refers to them.
     """
-    direct: dict[str, set[str]] = {}
-    calls: dict[str, set[str]] = {}
+    direct: dict[tuple[str, str], set[str]] = {}
+    calls: dict[tuple[str, str], set[str]] = {}
     for p in sorted(collector_dir.glob("*.py")):
+        mod = p.stem
         for fn in (n for n in ast.walk(ast.parse(p.read_text())) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))):
-            ops, callees = direct.setdefault(fn.name, set()), calls.setdefault(fn.name, set())
+            ops, callees = direct.setdefault((mod, fn.name), set()), calls.setdefault((mod, fn.name), set())
             for n in ast.walk(fn):
                 if isinstance(n, ast.Call):
                     f = n.func
@@ -63,23 +68,50 @@ def _fn_ops(collector_dir: Path) -> dict[str, set[str]]:
                     for a in n.args:  # a literal read name handed to a listing helper: _pages(client, "list_x")
                         if isinstance(a, ast.Constant) and isinstance(a.value, str) and _SNAKE_READ.match(a.value):
                             ops.add(norm(a.value))
-    closed: dict[str, set[str]] = {}
-    for name in direct:
-        seen, stack, acc = set(), [name], set()
+    by_name: dict[str, list[tuple[str, str]]] = {}
+    for key in direct:
+        by_name.setdefault(key[1], []).append(key)
+
+    def resolve(mod: str, name: str) -> tuple[str, str] | None:
+        if (mod, name) in direct:
+            return (mod, name)
+        found = by_name.get(name, [])
+        return found[0] if len(found) == 1 else None
+
+    def closure(key: tuple[str, str]) -> set[str]:
+        seen: set[tuple[str, str]] = set()
+        stack, acc = [key], set()
         while stack:
             cur = stack.pop()
-            if cur in seen or cur not in direct:
+            if cur in seen:
                 continue
             seen.add(cur)
             acc |= direct[cur]
-            stack += list(calls[cur])
-        closed[name] = acc
-    return closed
+            for callee in calls[cur]:
+                target = resolve(cur[0], callee)
+                if target is not None:
+                    stack.append(target)
+        return acc
+
+    out: dict[str, set[str]] = {}
+    for name, keys in by_name.items():
+        if len(keys) == 1:  # an ambiguous bare name gets no entry, so a manifest reference to it earns no credit
+            out[name] = closure(keys[0])
+    return out
 
 
 def _custom_ops(collector_dir: Path) -> set[tuple[str, str]]:
     """Every read made by any hand-written reader (service unknown); the inventory for operation parity."""
-    return {("?", o) for ops in _fn_ops(collector_dir).values() for o in ops}
+    ops: set[tuple[str, str]] = set()
+    for p in sorted(collector_dir.glob("*.py")):
+        for n in ast.walk(ast.parse(p.read_text())):
+            if isinstance(n, ast.Call):
+                if isinstance(n.func, ast.Attribute) and _SNAKE_READ.match(n.func.attr):
+                    ops.add(("?", norm(n.func.attr)))
+                for a in n.args:
+                    if isinstance(a, ast.Constant) and isinstance(a.value, str) and _SNAKE_READ.match(a.value):
+                        ops.add(("?", norm(a.value)))
+    return ops
 
 
 def read(plugin: Path) -> dict[str, Any]:

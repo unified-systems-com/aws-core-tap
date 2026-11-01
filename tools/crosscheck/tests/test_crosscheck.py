@@ -254,6 +254,17 @@ class TestCommitOf:
         assert carto_reader.commit_of(tmp_path / "w") == self.SHA
 
 
+class TestHostileText:
+    def test_control_sequences_from_an_analysed_tree_never_reach_the_printed_report(self, carto, plugin, tmp_path, capsys):
+        evil = "AWSEvil\\x1b]52;c;SGVsbG8=\\x07\\x1b[2J"
+        f = carto / "cartography/models/aws/evil.py"
+        f.write_text(f'class P(CartographyNodeProperties):\n    id: PropertyRef = PropertyRef("Id")\nclass S(CartographyNodeSchema):\n    label: str = "{evil}"\n    properties: P = P()\n')
+        w = wfile(tmp_path, [{"carto_label": "AWS*", "weight": 1, "why": "x"}])
+        crosscheck.main(["--cartography", str(carto), "--plugin", str(plugin), "--weights", str(w), "--out", str(tmp_path / "o")])
+        out = capsys.readouterr().out + (tmp_path / "o/report.md").read_text()
+        assert "AWSEvil" in out and "\x1b" not in out and "\x07" not in out
+
+
 class TestTapReader:
     def test_reads_types_manifest_edges_ops_and_ledger(self, plugin):
         t = tap_reader.read(plugin)
@@ -378,6 +389,41 @@ class TestMetrics:
         attrs = {"attributes": [{"id": "a", "concept": "c", "carto": {"label": "AWSRDSInstance", "property": "publicly_accessible"}, "tap": tp}]}
         r = crosscheck.security(attrs, models["nodes"], tap, weighting.load(wfile(tmp_path, [])), {})
         assert r["rows"][0]["verdict"] == "not-evidenced"
+
+    def test_a_helper_name_defined_in_two_modules_cannot_lend_its_reads(self, carto, tmp_path):
+        plug = make_plugin(tmp_path / "p5", persist=True)
+        pkg = plug / "tap_plugin/aws_core/collectors/boto3_collector"
+        _w(pkg / "one.py", """
+            def rds_reader(c):
+                return _pages(c)
+
+            def _pages(c):
+                return c.get_widget()
+        """)
+        _w(pkg / "two.py", """
+            def _pages(c):
+                return c.get_gadget()
+
+            def twin(c):
+                return c.get_gizmo()
+
+            def twin_caller(c):
+                return twin(c)
+        """)
+        _w(pkg / "three.py", """
+            def twin(c):
+                return c.get_other()
+        """)
+        m = json.loads((pkg / "aws_resource_manifest.json").read_text())
+        e = m["entries"][0]
+        e.pop("hydrate")
+        e["source"] = {"custom_fn": "rds_reader"}
+        m["entries"].append({**e, "entity_type": "aws_core__aws_subnet", "source": {"custom_fn": "twin"}, "fields": {"subnet_id": "SubnetId"}, "natural_key": "SubnetId"})
+        (pkg / "aws_resource_manifest.json").write_text(json.dumps(m))
+        types = tap_reader.read(plug)["types"]
+        rds = types["aws_core__aws_rds_instance"]["manifest"]["ops"]
+        assert "getwidget" in rds and "getgadget" not in rds  # the call resolves to the definition in its own module
+        assert not {"getgizmo", "getother"} & set(types["aws_core__aws_subnet"]["manifest"]["ops"])  # an ambiguous name earns nothing
 
     def test_a_hand_written_reader_is_credited_only_with_its_own_reads(self, carto, tmp_path):
         plug = make_plugin(tmp_path / "p4", persist=True)
