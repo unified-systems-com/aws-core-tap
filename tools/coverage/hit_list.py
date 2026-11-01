@@ -108,7 +108,9 @@ def build(plugin: Path, weights_path: Path) -> dict[str, Any]:
                 "config_supported": row["type_name"] in config_types,
                 "falsifier_gap": collected and not has_falsifier,
                 "reconcile_gap": collected and not (is_contained and has_falsifier),
-                "cascade_decision": decisions.get(row["type_name"], "undecided"),
+                "cascade_decision": decisions.get(row["type_name"], {}).get("verdict", "undecided"),
+                "cascade_children_proposed": decisions.get(row["type_name"], {}).get("children", []),
+                "decision_status": decisions.get(row["type_name"], {}).get("status", "undecided"),
             }
         )
     out = []

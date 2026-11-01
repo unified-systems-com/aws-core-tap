@@ -1,4 +1,257 @@
 {
-  "description": "Human verdicts the generator cannot derive from code, keyed by CloudFormation type name: whether retiring one of these should retire others (cascade), and the probe or listing planned for it. A type with no entry reads as undecided in the hit list. Add an entry when a service is worked; delete none without saying why in the commit.",
-  "decisions": {}
+  "description": "Human verdicts the generator cannot derive from code, keyed by CloudFormation type name. verdict is cascade (retiring this type should retire the listed children) or no-cascade. status is proposed-unverified until a live trial shows the behaviour, then verified. Rule (ruled by George in conversation, 2026-11-01): a child cascades when it cannot exist without its parent (identity scoped under it, or its API requires it); not when it is only attached to or referenced by the parent, or may outlive it. A type with no entry reads as undecided. Delete none without saying why in the commit.",
+  "decisions": {
+    "AWS::EC2::VPC": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::NetworkAcl",
+        "AWS::EC2::RouteTable",
+        "AWS::EC2::SecurityGroup",
+        "AWS::EC2::Subnet"
+      ],
+      "does_not_cascade": [
+        "AWS::EC2::InternetGateway"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. An internet gateway exists detached."
+    },
+    "AWS::EC2::Subnet": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::Instance",
+        "AWS::EC2::NatGateway",
+        "AWS::EC2::NetworkInterface"
+      ],
+      "does_not_cascade": [
+        "AWS::EC2::Volume"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. A volume survives an instance unless DeleteOnTermination."
+    },
+    "AWS::EC2::SecurityGroup": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::SecurityGroupEgress",
+        "AWS::EC2::SecurityGroupIngress"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::EC2::TransitGateway": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::TransitGatewayAttachment",
+        "AWS::EC2::TransitGatewayConnect",
+        "AWS::EC2::TransitGatewayMeteringPolicy",
+        "AWS::EC2::TransitGatewayMulticastDomain",
+        "AWS::EC2::TransitGatewayPeeringAttachment",
+        "AWS::EC2::TransitGatewayPolicyTable",
+        "AWS::EC2::TransitGatewayRouteTable",
+        "AWS::EC2::TransitGatewayVpcAttachment"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::EC2::IPAM": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::IPAMPool",
+        "AWS::EC2::IPAMPoolCidr",
+        "AWS::EC2::IPAMResourceDiscoveryAssociation",
+        "AWS::EC2::IPAMScope"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::EC2::TrafficMirrorFilter": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::TrafficMirrorFilterRule"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::EC2::RouteServer": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::EC2::RouteServerEndpoint",
+        "AWS::EC2::RouteServerPeer"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::RDS::DBCluster": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::RDS::DBClusterEndpoint",
+        "AWS::RDS::DBInstance",
+        "AWS::RDS::DBShardGroup"
+      ],
+      "does_not_cascade": [
+        "AWS::RDS::ClusterSnapshot",
+        "AWS::RDS::DBClusterParameterGroup"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. Manual snapshots and parameter groups outlive or are referenced by the cluster."
+    },
+    "AWS::RDS::DBProxy": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::RDS::DBProxyEndpoint",
+        "AWS::RDS::DBProxyTargetGroup"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::SecurityHub::Hub": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::SecurityHub::Standard"
+      ],
+      "does_not_cascade": [
+        "AWS::SecurityHub::ActionTarget",
+        "AWS::SecurityHub::AutomationRule",
+        "AWS::SecurityHub::Insight"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. Whether disabling a hub removes insights, automation rules and action targets is undecided and to be verified live.",
+      "note": "Findings are NOT to cascade (ruled by George, 2026-11-01: keep findings live). The plugin already declares hub -> finding containment, which cascades today; that declaration must change to match, in a separate change."
+    },
+    "AWS::GuardDuty::Detector": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::GuardDuty::Filter",
+        "AWS::GuardDuty::IPSet",
+        "AWS::GuardDuty::Member",
+        "AWS::GuardDuty::PublishingDestination",
+        "AWS::GuardDuty::ThreatEntitySet",
+        "AWS::GuardDuty::ThreatIntelSet",
+        "AWS::GuardDuty::TrustedEntitySet"
+      ],
+      "does_not_cascade": [
+        "AWS::GuardDuty::MalwareProtectionPlan"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. The malware protection plan is account-level.",
+      "note": "Findings are NOT to cascade (ruled by George, 2026-11-01). The plugin already declares detector -> finding containment, which cascades today; that declaration must change to match, in a separate change."
+    },
+    "AWS::IAM::Role": {
+      "verdict": "no-cascade",
+      "children": [],
+      "does_not_cascade": [
+        "AWS::IAM::InstanceProfile"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. Attachments are edges and retire with their endpoint."
+    },
+    "AWS::IAM::User": {
+      "verdict": "no-cascade",
+      "children": [],
+      "does_not_cascade": [
+        "AWS::IAM::VirtualMFADevice"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::IAM::Group": {
+      "verdict": "no-cascade",
+      "children": [],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::Bedrock::Agent": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Bedrock::AgentAlias"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::Bedrock::Flow": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Bedrock::FlowAlias",
+        "AWS::Bedrock::FlowVersion"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::Bedrock::Prompt": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Bedrock::PromptVersion"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::Bedrock::Guardrail": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Bedrock::GuardrailVersion"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::Bedrock::AutomatedReasoningPolicy": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Bedrock::AutomatedReasoningPolicyVersion"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::Bedrock::KnowledgeBase": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Bedrock::DataSource"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "Verify live: unsure whether a knowledge base delete removes its data sources or requires them gone first."
+    },
+    "AWS::ApiGateway::RestApi": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::ApiGateway::Authorizer",
+        "AWS::ApiGateway::Stage"
+      ],
+      "does_not_cascade": [
+        "AWS::ApiGateway::ApiKey",
+        "AWS::ApiGateway::UsagePlan",
+        "AWS::ApiGateway::VpcLink"
+      ],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live."
+    },
+    "AWS::CloudFormation::Stack": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::CloudFormation::ChangeSet"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "From knowledge of AWS delete behaviour; not tried live. Resources the stack created are not children: a retained resource survives, and each retires on its own probe."
+    },
+    "AWS::Config::ConformancePack": {
+      "verdict": "cascade",
+      "children": [
+        "AWS::Config::ConfigRule"
+      ],
+      "does_not_cascade": [],
+      "status": "proposed-unverified",
+      "basis": "Verify live: only rules the pack deployed would cascade, not rules created independently."
+    }
+  }
 }

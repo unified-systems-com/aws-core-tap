@@ -26,9 +26,11 @@
    "reconcilable": 4,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_flow_log"
      ],
@@ -42,9 +44,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_instance"
      ],
@@ -58,9 +62,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_internet_gateway"
      ],
@@ -74,9 +80,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_network_acl"
      ],
@@ -90,9 +98,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -104,9 +114,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_network_interface"
      ],
@@ -120,9 +132,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route_table"
      ],
@@ -136,9 +150,14 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::SecurityGroupEgress",
+      "AWS::EC2::SecurityGroupIngress"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_security_group"
      ],
@@ -152,9 +171,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_security_group_rule"
      ],
@@ -168,9 +189,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_security_group_rule"
      ],
@@ -184,9 +207,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -198,9 +223,15 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::Instance",
+      "AWS::EC2::NatGateway",
+      "AWS::EC2::NetworkInterface"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_subnet"
      ],
@@ -214,11 +245,18 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::NetworkAcl",
+      "AWS::EC2::RouteTable",
+      "AWS::EC2::SecurityGroup",
+      "AWS::EC2::Subnet"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [
       "aws_core__aws_subnet"
      ],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_vpc"
      ],
@@ -232,9 +270,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ebs_volume"
      ],
@@ -248,9 +288,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -262,9 +304,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_client_vpn_endpoint"
      ],
@@ -278,9 +322,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -292,9 +338,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -306,9 +354,20 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::TransitGatewayAttachment",
+      "AWS::EC2::TransitGatewayConnect",
+      "AWS::EC2::TransitGatewayMeteringPolicy",
+      "AWS::EC2::TransitGatewayMulticastDomain",
+      "AWS::EC2::TransitGatewayPeeringAttachment",
+      "AWS::EC2::TransitGatewayPolicyTable",
+      "AWS::EC2::TransitGatewayRouteTable",
+      "AWS::EC2::TransitGatewayVpcAttachment"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_transit_gateway"
      ],
@@ -322,9 +381,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_transit_gateway_attachment"
      ],
@@ -338,9 +399,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -352,9 +415,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_connect"
      ],
@@ -368,9 +433,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_connect_peer"
      ],
@@ -384,9 +451,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_metering_policy"
      ],
@@ -400,9 +469,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -414,9 +485,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_multicast_domain"
      ],
@@ -430,9 +503,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -444,9 +519,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -458,9 +535,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -472,9 +551,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_peering_attachment"
      ],
@@ -488,9 +569,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_policy_table"
      ],
@@ -504,9 +587,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -518,9 +603,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -532,9 +619,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -546,9 +635,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_route_table"
      ],
@@ -562,9 +653,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -576,9 +669,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -590,9 +685,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_transit_gateway_vpc_attachment"
      ],
@@ -606,9 +703,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_vpc_endpoint"
      ],
@@ -622,9 +721,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpc_endpoint_connection_notification"
      ],
@@ -638,9 +739,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_vpc_endpoint_service"
      ],
@@ -654,9 +757,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -668,9 +773,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_application_status_check"
      ],
@@ -684,9 +791,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_capacity_manager_data_export"
      ],
@@ -700,9 +809,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_capacity_reservation"
      ],
@@ -716,9 +827,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_capacity_reservation_fleet"
      ],
@@ -732,9 +845,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_carrier_gateway"
      ],
@@ -748,9 +863,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_customer_gateway"
      ],
@@ -764,9 +881,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_dhcp_options"
      ],
@@ -780,9 +899,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_fleet"
      ],
@@ -796,9 +917,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elastic_ip"
      ],
@@ -812,9 +935,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -826,9 +951,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_egress_only_internet_gateway"
      ],
@@ -842,9 +969,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -856,9 +985,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_fpga_image"
      ],
@@ -872,9 +1003,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -886,9 +1019,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_host"
      ],
@@ -902,9 +1037,16 @@
      "weight": 1.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::IPAMPool",
+      "AWS::EC2::IPAMPoolCidr",
+      "AWS::EC2::IPAMResourceDiscoveryAssociation",
+      "AWS::EC2::IPAMScope"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_ec2_ipam"
      ],
@@ -918,9 +1060,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -932,9 +1076,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_pool"
      ],
@@ -948,9 +1094,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_pool_cidr"
      ],
@@ -964,9 +1112,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_prefix_list_resolver"
      ],
@@ -980,9 +1130,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_prefix_list_resolver_target"
      ],
@@ -996,9 +1148,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_resource_discovery"
      ],
@@ -1012,9 +1166,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_resource_discovery_association"
      ],
@@ -1028,9 +1184,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_scope"
      ],
@@ -1044,9 +1202,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipv4_pool"
      ],
@@ -1060,9 +1220,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_instance_connect_endpoint"
      ],
@@ -1076,9 +1238,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_instance_event_window"
      ],
@@ -1092,9 +1256,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1106,9 +1272,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_external_resource_verification_token"
      ],
@@ -1122,9 +1290,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_ipam_internet_registry_association"
      ],
@@ -1138,9 +1308,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_key_pair"
      ],
@@ -1154,9 +1326,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_launch_template"
      ],
@@ -1170,9 +1344,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1184,9 +1360,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_local_gateway_route_table"
      ],
@@ -1200,9 +1378,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_local_gateway_route_table_vpc_association"
      ],
@@ -1216,9 +1396,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_lgw_route_table_vif_group_association"
      ],
@@ -1232,9 +1414,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_local_gateway_virtual_interface"
      ],
@@ -1248,9 +1432,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_local_gateway_virtual_interface_group"
      ],
@@ -1264,9 +1450,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_nat_gateway"
      ],
@@ -1280,9 +1468,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_network_insights_access_scope"
      ],
@@ -1296,9 +1486,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_network_insights_access_scope_analysis"
      ],
@@ -1312,9 +1504,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_network_insights_analysis"
      ],
@@ -1328,9 +1522,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_network_insights_path"
      ],
@@ -1344,9 +1540,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1358,9 +1556,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1372,9 +1572,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_network_performance_metric_subscription"
      ],
@@ -1388,9 +1590,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_placement_group"
      ],
@@ -1404,9 +1608,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_prefix_list"
      ],
@@ -1420,9 +1626,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1434,9 +1642,14 @@
      "weight": 1.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::RouteServerEndpoint",
+      "AWS::EC2::RouteServerPeer"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_ec2_route_server"
      ],
@@ -1450,9 +1663,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1464,9 +1679,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_route_server_endpoint"
      ],
@@ -1480,9 +1697,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_route_server_peer"
      ],
@@ -1496,9 +1715,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1510,9 +1731,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_secondary_network"
      ],
@@ -1526,9 +1749,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1540,9 +1765,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_spot_fleet"
      ],
@@ -1556,9 +1783,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1570,9 +1799,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1584,9 +1815,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1598,9 +1831,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1612,9 +1847,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1626,9 +1863,13 @@
      "weight": 1.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::EC2::TrafficMirrorFilterRule"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_ec2_traffic_mirror_filter"
      ],
@@ -1642,9 +1883,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_traffic_mirror_filter_rule"
      ],
@@ -1658,9 +1901,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_traffic_mirror_session"
      ],
@@ -1674,9 +1919,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_traffic_mirror_target"
      ],
@@ -1690,9 +1937,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpc_block_public_access_exclusion"
      ],
@@ -1706,9 +1955,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1720,9 +1971,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1734,9 +1987,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1748,9 +2003,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpc_encryption_control"
      ],
@@ -1764,9 +2021,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1778,9 +2037,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpc_peering_connection"
      ],
@@ -1794,9 +2055,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpn_concentrator"
      ],
@@ -1810,9 +2073,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpn_connection"
      ],
@@ -1826,9 +2091,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1840,9 +2107,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_vpn_gateway"
      ],
@@ -1856,9 +2125,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1870,9 +2141,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_verified_access_endpoint"
      ],
@@ -1886,9 +2159,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_verified_access_group"
      ],
@@ -1902,9 +2177,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_verified_access_instance"
      ],
@@ -1918,9 +2195,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ec2_verified_access_trust_provider"
      ],
@@ -1934,9 +2213,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1962,9 +2243,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_cluster_snapshot"
      ],
@@ -1978,9 +2261,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -1992,9 +2277,15 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::RDS::DBClusterEndpoint",
+      "AWS::RDS::DBInstance",
+      "AWS::RDS::DBShardGroup"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_rds_db_cluster"
      ],
@@ -2008,9 +2299,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_cluster_endpoint"
      ],
@@ -2024,9 +2317,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_cluster_parameter_group"
      ],
@@ -2040,9 +2335,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_instance"
      ],
@@ -2056,9 +2353,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_parameter_group"
      ],
@@ -2072,9 +2371,14 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::RDS::DBProxyEndpoint",
+      "AWS::RDS::DBProxyTargetGroup"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_rds_db_proxy"
      ],
@@ -2088,9 +2392,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_proxy_endpoint"
      ],
@@ -2104,9 +2410,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_proxy_target_group"
      ],
@@ -2120,9 +2428,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_security_group"
      ],
@@ -2136,9 +2446,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2150,9 +2462,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_shard_group"
      ],
@@ -2166,9 +2480,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_snapshot"
      ],
@@ -2182,9 +2498,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_db_subnet_group"
      ],
@@ -2198,9 +2516,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_blue_green_deployment"
      ],
@@ -2214,9 +2534,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_event_subscription"
      ],
@@ -2230,9 +2552,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_global_cluster"
      ],
@@ -2246,9 +2570,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_integration"
      ],
@@ -2262,9 +2588,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_rds_option_group"
      ],
@@ -2292,9 +2620,11 @@
    "reconcilable": 2,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_action_target"
      ],
@@ -2308,9 +2638,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_aggregator_v2"
      ],
@@ -2324,9 +2656,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_automation_rule"
      ],
@@ -2340,9 +2674,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_automation_rule_v2"
      ],
@@ -2356,9 +2692,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_configuration_policy"
      ],
@@ -2372,9 +2710,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_connector"
      ],
@@ -2388,9 +2728,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_connector_v2"
      ],
@@ -2404,9 +2746,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2418,9 +2762,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_finding_aggregator"
      ],
@@ -2434,12 +2780,16 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::SecurityHub::Standard"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [
       "aws_core__aws_securityhub_finding",
       "aws_core__aws_securityhub_standards_subscription"
      ],
      "config_supported": false,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_securityhub_hub"
      ],
@@ -2453,9 +2803,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_hub_v2"
      ],
@@ -2469,9 +2821,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_insight"
      ],
@@ -2485,9 +2839,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2499,9 +2855,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2513,9 +2871,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2527,9 +2887,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2541,9 +2903,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_securityhub_standards_subscription"
      ],
@@ -2571,9 +2935,11 @@
    "reconcilable": 8,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2585,9 +2951,11 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [],
+     "cascade_decision": "no-cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_iam_group"
      ],
@@ -2601,9 +2969,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2615,9 +2985,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_instance_profile"
      ],
@@ -2631,9 +3003,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_policy"
      ],
@@ -2647,9 +3021,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_oidc_provider"
      ],
@@ -2663,9 +3039,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2677,9 +3055,11 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [],
+     "cascade_decision": "no-cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_iam_role"
      ],
@@ -2693,9 +3073,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2707,9 +3089,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_saml_provider"
      ],
@@ -2723,9 +3107,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_server_certificate"
      ],
@@ -2739,9 +3125,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2753,9 +3141,11 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [],
+     "cascade_decision": "no-cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_iam_user"
      ],
@@ -2769,9 +3159,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2783,9 +3175,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2797,9 +3191,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_virtual_mfa_device"
      ],
@@ -2827,9 +3223,13 @@
    "reconcilable": 0,
    "rows": [
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Bedrock::AgentAlias"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_bedrock_agent"
      ],
@@ -2843,9 +3243,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_agent_alias"
      ],
@@ -2859,9 +3261,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_application_inference_profile"
      ],
@@ -2875,9 +3279,13 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Bedrock::AutomatedReasoningPolicyVersion"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_bedrock_automated_reasoning_policy"
      ],
@@ -2891,9 +3299,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_automated_reasoning_policy_version"
      ],
@@ -2907,9 +3317,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_blueprint"
      ],
@@ -2923,9 +3335,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_data_automation_library"
      ],
@@ -2939,9 +3353,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_data_automation_project"
      ],
@@ -2955,9 +3371,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_data_source"
      ],
@@ -2971,9 +3389,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -2985,9 +3405,14 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Bedrock::FlowAlias",
+      "AWS::Bedrock::FlowVersion"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_bedrock_flow"
      ],
@@ -3001,9 +3426,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_flow_alias"
      ],
@@ -3017,9 +3444,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_flow_version"
      ],
@@ -3033,9 +3462,13 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Bedrock::GuardrailVersion"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_bedrock_guardrail"
      ],
@@ -3049,9 +3482,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_guardrail_version"
      ],
@@ -3065,9 +3500,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_intelligent_prompt_router"
      ],
@@ -3081,9 +3518,13 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Bedrock::DataSource"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_bedrock_knowledge_base"
      ],
@@ -3097,9 +3538,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3111,9 +3554,13 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Bedrock::PromptVersion"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_bedrock_prompt"
      ],
@@ -3127,9 +3574,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_prompt_version"
      ],
@@ -3143,9 +3592,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3157,9 +3608,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_bedrock_retrieval_instruction"
      ],
@@ -3173,9 +3626,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3201,9 +3656,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3215,9 +3672,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_api_key"
      ],
@@ -3231,9 +3690,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_authorizer"
      ],
@@ -3247,9 +3708,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3261,9 +3724,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3275,9 +3740,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_client_certificate"
      ],
@@ -3291,9 +3758,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3305,9 +3774,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3319,9 +3790,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3333,9 +3806,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_domain_name"
      ],
@@ -3349,9 +3824,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_domain_name_access_association"
      ],
@@ -3365,9 +3842,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_domain_name"
      ],
@@ -3381,9 +3860,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3395,9 +3876,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3409,9 +3892,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3423,9 +3908,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3437,9 +3924,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3451,9 +3940,14 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::ApiGateway::Authorizer",
+      "AWS::ApiGateway::Stage"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_apigateway_rest_api"
      ],
@@ -3467,9 +3961,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_stage"
      ],
@@ -3483,9 +3979,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_usage_plan"
      ],
@@ -3499,9 +3997,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3513,9 +4013,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_vpc_link"
      ],
@@ -3543,9 +4045,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_change_set"
      ],
@@ -3559,9 +4063,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3573,9 +4079,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_generated_template"
      ],
@@ -3589,9 +4097,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_guard_hook"
      ],
@@ -3605,9 +4115,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3619,9 +4131,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3633,9 +4147,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_hook_version"
      ],
@@ -3649,9 +4165,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_lambda_hook"
      ],
@@ -3665,9 +4183,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3679,9 +4199,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3693,9 +4215,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_module_version"
      ],
@@ -3709,9 +4233,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3723,9 +4249,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3737,9 +4265,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3751,9 +4281,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_resource_version"
      ],
@@ -3767,9 +4299,13 @@
      "weight": 3.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::CloudFormation::ChangeSet"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_cloudformation_stack"
      ],
@@ -3783,9 +4319,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_stack_set"
      ],
@@ -3799,9 +4337,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudformation_type_activation"
      ],
@@ -3815,9 +4355,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3829,9 +4371,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3857,9 +4401,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3871,9 +4417,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3885,9 +4433,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_alarm"
      ],
@@ -3901,9 +4451,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_alarm_mute_rule"
      ],
@@ -3917,9 +4469,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3931,9 +4485,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_composite_alarm"
      ],
@@ -3947,9 +4503,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_dashboard"
      ],
@@ -3963,9 +4521,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3977,9 +4537,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -3991,9 +4553,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4005,9 +4569,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_insight_rule"
      ],
@@ -4021,9 +4587,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4035,9 +4603,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_log_alarm"
      ],
@@ -4051,9 +4621,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_metric_stream"
      ],
@@ -4067,9 +4639,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4081,9 +4655,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_omni_dashboard"
      ],
@@ -4097,9 +4673,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4111,9 +4689,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4125,9 +4705,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4153,9 +4735,11 @@
    "reconcilable": 5,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_aggregation_authorization"
      ],
@@ -4169,9 +4753,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_rule"
      ],
@@ -4185,9 +4771,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_aggregator"
      ],
@@ -4201,9 +4789,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_recorder"
      ],
@@ -4217,9 +4807,13 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::Config::ConfigRule"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_config_conformance_pack"
      ],
@@ -4233,9 +4827,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_connector"
      ],
@@ -4249,9 +4845,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_delivery_channel"
      ],
@@ -4265,9 +4863,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_organization_rule"
      ],
@@ -4281,9 +4881,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_organization_conformance_pack"
      ],
@@ -4297,9 +4899,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4311,9 +4915,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_config_stored_query"
      ],
@@ -4341,9 +4947,11 @@
    "reconcilable": 1,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_custom_detection_rule_association"
      ],
@@ -4357,11 +4965,21 @@
      "weight": 5.0
     },
     {
-     "cascade_decision": "undecided",
+     "cascade_children_proposed": [
+      "AWS::GuardDuty::Filter",
+      "AWS::GuardDuty::IPSet",
+      "AWS::GuardDuty::Member",
+      "AWS::GuardDuty::PublishingDestination",
+      "AWS::GuardDuty::ThreatEntitySet",
+      "AWS::GuardDuty::ThreatIntelSet",
+      "AWS::GuardDuty::TrustedEntitySet"
+     ],
+     "cascade_decision": "cascade",
      "cascade_parent_of": [
       "aws_core__aws_guardduty_finding"
      ],
      "config_supported": true,
+     "decision_status": "proposed-unverified",
      "entity_types": [
       "aws_core__aws_guardduty_detector"
      ],
@@ -4375,9 +4993,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_filter"
      ],
@@ -4391,9 +5011,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_ip_set"
      ],
@@ -4407,9 +5029,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_malware_protection_plan"
      ],
@@ -4423,9 +5047,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4437,9 +5063,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_member"
      ],
@@ -4453,9 +5081,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_publishing_destination"
      ],
@@ -4469,9 +5099,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_threat_entity_set"
      ],
@@ -4485,9 +5117,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_threat_intel_set"
      ],
@@ -4501,9 +5135,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_guardduty_trusted_entity_set"
      ],
@@ -4531,9 +5167,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_identity_pool"
      ],
@@ -4547,9 +5185,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4561,9 +5201,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4575,9 +5217,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4589,9 +5233,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4603,9 +5249,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4617,9 +5265,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_user_pool"
      ],
@@ -4633,9 +5283,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_user_pool_client"
      ],
@@ -4649,9 +5301,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_user_pool_domain"
      ],
@@ -4665,9 +5319,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_user_pool_group"
      ],
@@ -4681,9 +5337,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_identity_provider"
      ],
@@ -4697,9 +5355,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4711,9 +5371,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4725,9 +5387,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cognito_user_pool_resource_server"
      ],
@@ -4741,9 +5405,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4755,9 +5421,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4769,9 +5437,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4783,9 +5453,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -4811,9 +5483,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_plan"
      ],
@@ -4827,9 +5501,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_backup_selection"
      ],
@@ -4843,9 +5519,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_vault"
      ],
@@ -4859,9 +5537,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_framework"
      ],
@@ -4875,9 +5555,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_legal_hold"
      ],
@@ -4891,9 +5573,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_logically_air_gapped_backup_vault"
      ],
@@ -4907,9 +5591,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_report_plan"
      ],
@@ -4923,9 +5609,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_restore_testing_plan"
      ],
@@ -4939,9 +5627,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_restore_testing_selection"
      ],
@@ -4955,9 +5645,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_backup_tiering_configuration"
      ],
@@ -4985,9 +5677,11 @@
    "reconcilable": 1,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_access_grant"
      ],
@@ -5001,9 +5695,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_access_grants_instance"
      ],
@@ -5017,9 +5713,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_access_grants_location"
      ],
@@ -5033,9 +5731,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_access_point"
      ],
@@ -5049,9 +5749,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_bucket"
      ],
@@ -5065,9 +5767,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5079,9 +5783,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5093,9 +5799,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5107,9 +5815,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_storage_lens"
      ],
@@ -5123,9 +5833,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_s3_storage_lens_group"
      ],
@@ -5153,9 +5865,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5167,9 +5881,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_delivery"
      ],
@@ -5183,9 +5899,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_delivery_destination"
      ],
@@ -5199,9 +5917,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_delivery_source"
      ],
@@ -5215,9 +5935,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_destination"
      ],
@@ -5231,9 +5953,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_integration"
      ],
@@ -5247,9 +5971,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_log_anomaly_detector"
      ],
@@ -5263,9 +5989,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudwatch_log_group"
      ],
@@ -5279,9 +6007,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5293,9 +6023,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_metric_filter"
      ],
@@ -5309,9 +6041,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_query_definition"
      ],
@@ -5325,9 +6059,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5339,9 +6075,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_scheduled_query"
      ],
@@ -5355,9 +6093,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5369,9 +6109,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_logs_subscription_filter"
      ],
@@ -5385,9 +6127,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5413,9 +6157,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_cluster"
      ],
@@ -5429,9 +6175,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_cluster_parameter_group"
      ],
@@ -5445,9 +6193,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_cluster_security_group"
      ],
@@ -5461,9 +6211,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5475,9 +6227,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_cluster_subnet_group"
      ],
@@ -5491,9 +6245,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_endpoint_access"
      ],
@@ -5507,9 +6263,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5521,9 +6279,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_event_subscription"
      ],
@@ -5537,9 +6297,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_integration"
      ],
@@ -5553,9 +6315,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_qev2_idc_application"
      ],
@@ -5569,9 +6333,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_redshift_idc_application"
      ],
@@ -5585,9 +6351,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_scheduled_action"
      ],
@@ -5601,9 +6369,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_snapshot"
      ],
@@ -5617,9 +6387,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_snapshot_copy_grant"
      ],
@@ -5633,9 +6405,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_snapshot_schedule"
      ],
@@ -5649,9 +6423,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_redshift_usage_limit"
      ],
@@ -5679,9 +6455,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_http_api"
      ],
@@ -5695,9 +6473,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5709,9 +6489,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5723,9 +6505,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_authorizer"
      ],
@@ -5739,9 +6523,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5753,9 +6539,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_domain_name"
      ],
@@ -5769,9 +6557,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5783,9 +6573,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5797,9 +6589,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5811,9 +6605,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigatewayv2_portal_product"
      ],
@@ -5827,9 +6623,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5841,9 +6639,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5855,9 +6655,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigatewayv2_routing_rule"
      ],
@@ -5871,9 +6673,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_stage"
      ],
@@ -5887,9 +6691,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_apigateway_vpc_link"
      ],
@@ -5917,9 +6723,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_capacity_provider"
      ],
@@ -5933,9 +6741,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_cluster"
      ],
@@ -5949,9 +6759,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -5963,9 +6775,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_daemon"
      ],
@@ -5979,9 +6793,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_daemon_task_definition"
      ],
@@ -5995,9 +6811,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6009,9 +6827,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_gateway"
      ],
@@ -6025,9 +6845,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6039,9 +6861,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6053,9 +6877,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_service"
      ],
@@ -6069,9 +6895,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_task_definition"
      ],
@@ -6085,9 +6913,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecs_task_set"
      ],
@@ -6115,9 +6945,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_cluster"
      ],
@@ -6131,9 +6963,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_global_replication_group"
      ],
@@ -6147,9 +6981,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_parameter_group"
      ],
@@ -6163,9 +6999,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_replication_group"
      ],
@@ -6179,9 +7017,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_security_group"
      ],
@@ -6195,9 +7035,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6209,9 +7051,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_serverless_cache"
      ],
@@ -6225,9 +7069,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_serverless_cache_snapshot"
      ],
@@ -6241,9 +7087,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_snapshot"
      ],
@@ -6257,9 +7105,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_subnet_group"
      ],
@@ -6273,9 +7123,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_user"
      ],
@@ -6289,9 +7141,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticache_user_group"
      ],
@@ -6319,9 +7173,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_firewall_config"
      ],
@@ -6335,9 +7191,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_firewall_domain_list"
      ],
@@ -6351,9 +7209,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_resolver_firewall_rule_group"
      ],
@@ -6367,9 +7227,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_firewall_rule_group_association"
      ],
@@ -6383,9 +7245,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_outpost_resolver"
      ],
@@ -6399,9 +7263,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_resolver_config"
      ],
@@ -6415,9 +7281,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_resolver_dnssec_config"
      ],
@@ -6431,9 +7299,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_resolver_endpoint"
      ],
@@ -6447,9 +7317,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_resolver_query_log_config"
      ],
@@ -6463,9 +7335,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6477,9 +7351,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53resolver_resolver_rule"
      ],
@@ -6493,9 +7369,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6521,9 +7399,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_association"
      ],
@@ -6537,9 +7417,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_cloud_connector"
      ],
@@ -6553,9 +7435,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_document"
      ],
@@ -6569,9 +7453,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_maintenance_window"
      ],
@@ -6585,9 +7471,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6599,9 +7487,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6613,9 +7503,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6627,9 +7519,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_parameter"
      ],
@@ -6643,9 +7537,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_patch_baseline"
      ],
@@ -6659,9 +7555,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ssm_resource_data_sync"
      ],
@@ -6675,9 +7573,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6689,9 +7589,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6717,9 +7619,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_networkfirewall_container_association"
      ],
@@ -6733,9 +7637,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_network_firewall"
      ],
@@ -6749,9 +7655,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_networkfirewall_firewall_policy"
      ],
@@ -6765,9 +7673,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6779,9 +7689,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_networkfirewall_rule_group"
      ],
@@ -6795,9 +7707,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_networkfirewall_tls_inspection_configuration"
      ],
@@ -6811,9 +7725,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_networkfirewall_vpc_endpoint_association"
      ],
@@ -6841,9 +7757,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_cidr_collection"
      ],
@@ -6857,9 +7775,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6871,9 +7791,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_delegation_set"
      ],
@@ -6887,9 +7809,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_health_check"
      ],
@@ -6903,9 +7827,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_zone"
      ],
@@ -6919,9 +7845,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6933,9 +7861,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_query_logging_config"
      ],
@@ -6949,9 +7879,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6963,9 +7895,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -6977,9 +7911,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_traffic_policy"
      ],
@@ -6993,9 +7929,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_route53_traffic_policy_instance"
      ],
@@ -7023,9 +7961,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_byte_match_set"
      ],
@@ -7039,9 +7979,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_geo_match_set"
      ],
@@ -7055,9 +7997,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_ip_set"
      ],
@@ -7071,9 +8015,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_rate_based_rule"
      ],
@@ -7087,9 +8033,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_regex_pattern_set"
      ],
@@ -7103,9 +8051,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_rule"
      ],
@@ -7119,9 +8069,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_size_constraint_set"
      ],
@@ -7135,9 +8087,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_sql_injection_match_set"
      ],
@@ -7151,9 +8105,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_web_acl"
      ],
@@ -7167,9 +8123,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7181,9 +8139,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafregional_xss_match_set"
      ],
@@ -7211,9 +8171,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafv2_ip_set"
      ],
@@ -7227,9 +8189,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7241,9 +8205,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafv2_regex_pattern_set"
      ],
@@ -7257,9 +8223,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafv2_rule_group"
      ],
@@ -7273,9 +8241,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_wafv2_web_acl"
      ],
@@ -7289,9 +8259,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7317,9 +8289,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecr_public_repository"
      ],
@@ -7333,9 +8307,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7347,9 +8323,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7361,9 +8339,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7375,9 +8355,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7389,9 +8371,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7403,9 +8387,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecr_repository"
      ],
@@ -7419,9 +8405,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_ecr_repository_creation_template"
      ],
@@ -7435,9 +8423,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7463,9 +8453,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_access_entry"
      ],
@@ -7479,9 +8471,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_addon"
      ],
@@ -7495,9 +8489,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_capability"
      ],
@@ -7511,9 +8507,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_certificate_authority"
      ],
@@ -7527,9 +8525,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_cluster"
      ],
@@ -7543,9 +8543,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_fargate_profile"
      ],
@@ -7559,9 +8561,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_identity_provider_config"
      ],
@@ -7575,9 +8579,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_nodegroup"
      ],
@@ -7591,9 +8597,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eks_pod_identity_association"
      ],
@@ -7621,9 +8629,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudtrail_channel"
      ],
@@ -7637,9 +8647,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudtrail_dashboard"
      ],
@@ -7653,9 +8665,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudtrail_event_data_store"
      ],
@@ -7669,9 +8683,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7683,9 +8699,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudtrail_trail"
      ],
@@ -7713,9 +8731,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspectorv2_cis_scan_configuration"
      ],
@@ -7729,9 +8749,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspectorv2_code_security_integration"
      ],
@@ -7745,9 +8767,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspectorv2_code_security_scan_configuration"
      ],
@@ -7761,9 +8785,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspectorv2_connector"
      ],
@@ -7777,9 +8803,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspectorv2_filter"
      ],
@@ -7807,6 +8835,7 @@
    "reconcilable": 3,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [
       "aws_core__aws_iam_group",
@@ -7820,6 +8849,7 @@
       "aws_core__aws_s3_bucket"
      ],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_account"
      ],
@@ -7833,6 +8863,7 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [
       "aws_core__aws_account",
@@ -7842,6 +8873,7 @@
       "aws_core__aws_service_control_policy"
      ],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_organization"
      ],
@@ -7855,11 +8887,13 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [
       "aws_core__aws_organizational_unit"
      ],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_organizational_unit"
      ],
@@ -7873,12 +8907,14 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [
       "aws_core__aws_policy_statement",
       "aws_core__aws_tag_policy_rule"
      ],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_organizations_policy",
       "aws_core__aws_service_control_policy"
@@ -7893,9 +8929,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7921,9 +8959,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elb_listener"
      ],
@@ -7937,9 +8977,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -7951,9 +8993,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticloadbalancingv2_listener_rule"
      ],
@@ -7967,9 +9011,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_alb"
      ],
@@ -7983,9 +9029,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_target_group"
      ],
@@ -7999,9 +9047,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elasticloadbalancingv2_trust_store"
      ],
@@ -8015,9 +9065,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8043,9 +9095,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eventbridge_api_destination"
      ],
@@ -8059,9 +9113,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eventbridge_archive"
      ],
@@ -8075,9 +9131,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eventbridge_connection"
      ],
@@ -8091,9 +9149,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_events_endpoint"
      ],
@@ -8107,9 +9167,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eventbridge_event_bus"
      ],
@@ -8123,9 +9185,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8137,9 +9201,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_eventbridge_rule"
      ],
@@ -8167,9 +9233,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_autoscaling_auto_scaling_group"
      ],
@@ -8183,9 +9251,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_autoscaling_launch_configuration"
      ],
@@ -8199,9 +9269,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_autoscaling_lifecycle_hook"
      ],
@@ -8215,9 +9287,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_autoscaling_scaling_policy"
      ],
@@ -8231,9 +9305,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_autoscaling_scheduled_action"
      ],
@@ -8247,9 +9323,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8275,9 +9353,11 @@
    "reconcilable": 3,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_identity_center_application"
      ],
@@ -8291,9 +9371,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_identity_center_application_assignment"
      ],
@@ -8307,9 +9389,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_identity_center_account_assignment"
      ],
@@ -8323,6 +9407,7 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [
       "aws_core__aws_identity_center_account_assignment",
@@ -8330,6 +9415,7 @@
       "aws_core__aws_identity_center_permission_set"
      ],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_identity_center_instance"
      ],
@@ -8343,9 +9429,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8357,9 +9445,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_identity_center_permission_set"
      ],
@@ -8387,9 +9477,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8401,9 +9493,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_certificatemanager_acme_domain_validation"
      ],
@@ -8417,9 +9511,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_certificatemanager_acme_endpoint"
      ],
@@ -8433,9 +9529,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_certificatemanager_acme_external_account_binding"
      ],
@@ -8449,9 +9547,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_acm_certificate"
      ],
@@ -8479,9 +9579,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_fms_applications_list"
      ],
@@ -8495,9 +9597,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8509,9 +9613,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_fms_policy"
      ],
@@ -8525,9 +9631,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_fms_protocols_list"
      ],
@@ -8541,9 +9649,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_fms_resource_set"
      ],
@@ -8571,9 +9681,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_kms_alias"
      ],
@@ -8587,9 +9699,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_kms_key"
      ],
@@ -8603,9 +9717,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_kms_key"
      ],
@@ -8633,9 +9749,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8647,9 +9765,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_acm_private_ca"
      ],
@@ -8663,9 +9783,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8677,9 +9799,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8705,9 +9829,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_sns_subscription"
      ],
@@ -8721,9 +9847,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_sns_topic"
      ],
@@ -8737,9 +9865,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8751,9 +9881,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8779,9 +9911,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8793,9 +9927,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8807,9 +9943,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_secrets_manager_secret"
      ],
@@ -8823,9 +9961,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8851,11 +9991,13 @@
    "reconcilable": 1,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [
       "aws_core__aws_access_analyzer_finding"
      ],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_access_analyzer"
      ],
@@ -8869,9 +10011,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_access_analyzer_archive_rule"
      ],
@@ -8899,9 +10043,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8913,9 +10059,11 @@
      "weight": 5.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_dynamodb_table"
      ],
@@ -8943,9 +10091,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_detective_graph"
      ],
@@ -8959,9 +10109,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -8973,9 +10125,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -9001,9 +10155,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_efs_access_point"
      ],
@@ -9017,9 +10173,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_efs_file_system"
      ],
@@ -9033,9 +10191,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_efs_mount_target"
      ],
@@ -9063,9 +10223,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspector_assessment_target"
      ],
@@ -9079,9 +10241,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_inspector_assessment_template"
      ],
@@ -9095,9 +10259,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -9123,9 +10289,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_sqs_queue"
      ],
@@ -9139,9 +10307,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -9153,9 +10323,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [],
      "falsifier_gap": false,
      "has_completeness_surface": false,
@@ -9181,9 +10353,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_directoryservice_directory"
      ],
@@ -9197,9 +10371,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_directoryservice_directory"
      ],
@@ -9227,9 +10403,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_opensearchservice_application"
      ],
@@ -9243,9 +10421,11 @@
      "weight": 3.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_opensearchservice_domain"
      ],
@@ -9273,9 +10453,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_lambda"
      ],
@@ -9303,9 +10485,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_stepfunctions_activity"
      ],
@@ -9319,9 +10503,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_stepfunctions_state_machine"
      ],
@@ -9335,9 +10521,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_stepfunctions_state_machine_alias"
      ],
@@ -9351,9 +10539,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_stepfunctions_state_machine_version"
      ],
@@ -9381,9 +10571,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_cloudhsm_cluster"
      ],
@@ -9411,9 +10603,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_codepipeline_custom_action_type"
      ],
@@ -9427,9 +10621,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_codepipeline_pipeline"
      ],
@@ -9443,9 +10639,11 @@
      "weight": 1.0
     },
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": false,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_codepipeline_webhook"
      ],
@@ -9473,9 +10671,11 @@
    "reconcilable": 0,
    "rows": [
     {
+     "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
      "config_supported": true,
+     "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_elb"
      ],
