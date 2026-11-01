@@ -22,10 +22,10 @@ This specification says what to compare, in what order, against what seed, and w
 - Read 2026-11-01: the collector's run loop in `collector.py` (regions and partition are the only scoping;
   every manifest entry is walked), the coverage ledger specification (`collected-verified` is defined as
   "a live trial has run"), the oracle specification, and the crosscheck weighting files.
-- Told by the operator 2026-11-01 (not observed): the account is git-serious staging, 007036861843, partition
-  `aws-us-gov`, home region `us-gov-west-1`; the collector identity is read-only (`ReadOnlyAccess` and
-  `SecurityAudit`); a separate seeder identity holds `PowerUserAccess` plus IAM limited to names starting
-  `seed-`; the account already holds two VPCs, one not declared in the infrastructure repository.
+- Told by the operator 2026-11-01 (not observed): a GovCloud staging account exists (partition `aws-us-gov`, one home
+  region); the collector runs under a read-only identity; a separate seeder identity creates and tears down; the
+  account already holds networking the infrastructure repository does not declare, so its existing contents are
+  treated as unknown. Account identifiers and policy details are deliberately not recorded in this public file.
 - Not read or run: Terraform and either AWS provider (whether the Cloud Control provider works in GovCloud is
   unchecked), any live response, the completeness and retirement code paths under a subset run, and whether
   the account is an AWS Organizations member.
@@ -41,7 +41,7 @@ Tracked by `unified-systems-com/aws-core-tap#107`.
 | 2. | Prioritised   | What matters most is validated first, by a weighting kept as data |
 | 3. | Evidenced     | Moving a type to `collected-verified` rests on a stored record of what ran |
 | 4. | Honest        | A type that cannot be seeded says so; an unrun type is unobserved, never empty |
-| 5. | Safe          | The collector never writes; only the seeder creates, only `seed-*` IAM, always torn down |
+| 5. | Safe          | The collector never writes; only the seeder creates; teardown touches only what the run created |
 
 ## Requirements
 
@@ -136,7 +136,7 @@ Status: `Proposed`
 Resources are created by Terraform modules under `tools/seed/`, one module per wave and one subdirectory per
 service, outside the wheel. Rules:
 
-1. **Tagged.** Every taggable resource carries `tap-seed = <wave>` through the provider's default tags, so the
+1. **Tagged.** Every taggable resource carries `tap-seed = <wave>` and `tap-seed-run = <run id>` through the provider's default tags, so the
    oracle scopes to the seeded set and the tag path is exercised on every type that has one. Resources that
    cannot carry tags are recorded in the expected inventory by identifier.
 2. **State is the expected inventory.** After apply, a script reads the Terraform state and writes the
@@ -222,11 +222,15 @@ Status: `Proposed`
    or a message.
 2. **Scope.** Seeding is limited to the regions the wave names; every wave names at most the home region and one
    other. The pre-existing contents of the account are unknown and are never modified or destroyed; only
-   resources tagged `tap-seed` or named `seed-*` are destroyed.
+   what the run's own Terraform state created is destroyed (see item 4).
 3. **Cost.** Each wave declares an estimated cost and a duration before apply. A `costly` module has a time box
    after which it is destroyed whether or not the check finished.
-4. **Teardown is part of the wave.** The wave ends with destroy and a verification that nothing tagged
-   `tap-seed` remains; a leftover is reported as the wave's failure.
+4. **Teardown is part of the wave, and bounded by the run.** The wave ends with `terraform destroy` against that
+   run's own state; the state is the allowlist, and nothing is deleted by tag or by name. Before apply and before
+   destroy the run verifies the account and region it is acting in against what the wave declares. A final check
+   lists anything still carrying `tap-seed` and reports it as the wave's failure for a person to resolve; it does
+   not delete it. A resource left by an interrupted earlier run is that run's to clean up, identified by its
+   `tap-seed-run` marker, never swept up by a later one.
 5. **State.** Terraform state is local to the run, not committed, and removed after destroy. It can hold
    secrets, so it is treated as one.
 6. **No guessing at limits.** A wave that hits a quota or an `unsupported-in-partition` error records it; it does
