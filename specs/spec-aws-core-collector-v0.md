@@ -1159,8 +1159,10 @@ first is a failure:
   QuickSight subscription, S3 Access Grants without an instance, Security Hub V2 or Security Lake not
   enabled). Zero rows, an `ENTRY_NOT_CONFIGURED` info, no warning.
 - **`unsupported_in_partition`** — the partition does not offer the service or the operation
-  (`EndpointConnectionError`, `ConnectTimeoutError`, `UnknownOperationException`, `InvalidAction`,
-  `UnsupportedOperation`, a 404 Unknown Operation, "not supported in this region"). Zero rows, the
+  (`EndpointConnectionError`, `UnknownOperationException`, `InvalidAction`,
+  `UnsupportedOperation`, a 404 Unknown Operation, "not supported in this region"). A connect timeout is not on
+  this list: it shows the endpoint was unreachable, which a transient fault also does, so it stays a failed call
+  (bounded by the client's connect timeout). Zero rows, the
   existing `SERVICE_NOT_AVAILABLE_IN_PARTITION` info (carrying `outcome`), no warning. A service whose
   endpoint could not be reached is learned once per (service, region) and its other entries are settled
   without a call.

@@ -124,8 +124,12 @@ class TestClassify:
         found = outcomes.classify(entry, exc, _GOV)
         assert found is not None and found.kind == "unsupported_in_partition"
         assert outcomes.classify(entry, exc, "aws") is None  # commercial offers it: a real failure there
+
+    def test_a_connect_timeout_is_not_called_unsupported(self):
+        # A timeout means the endpoint was unreachable, not that the service is absent: a transient fault reads the same.
+        # It stays a failed call (bounded by the client's connect timeout), and is never read as empty or unsupported.
         timeout = ConnectTimeoutError(endpoint_url="https://inspector.us-gov-west-1.amazonaws.com")
-        assert outcomes.classify(_entry("inspector_assessment_target"), timeout, _GOV).kind == "unsupported_in_partition"
+        assert outcomes.classify(_entry("inspector_assessment_target"), timeout, _GOV) is None
 
     def test_a_read_timeout_is_not_an_unsupported_endpoint(self):
         exc = ReadTimeoutError(endpoint_url="https://x")

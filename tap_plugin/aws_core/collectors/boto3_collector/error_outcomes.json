@@ -131,15 +131,6 @@
     {
       "outcome": "unsupported_in_partition",
       "service": "*",
-      "exception": "ConnectTimeoutError",
-      "not_in_partitions": [
-        "aws"
-      ],
-      "why": "The service endpoint accepts no connection within the connect timeout outside the commercial partition (Inspector classic in GovCloud waited five minutes on this). Inferred to mean not offered; a transient timeout would read the same, so the result is recorded as unsupported, not as empty."
-    },
-    {
-      "outcome": "unsupported_in_partition",
-      "service": "*",
       "error_code": "UnknownOperationException",
       "not_in_partitions": [
         "aws"
