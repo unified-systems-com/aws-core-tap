@@ -558,3 +558,87 @@ class TestDerive:
         assert TestPerFanoutSchema._validator().is_valid(entry)
         entry["derive"] = {"Arn": "arn:x"}
         assert not TestPerFanoutSchema._validator().is_valid(entry)
+
+
+class TestMiddleLevelNames:
+    """A middle level that lists bare names carries them as ``_self`` beside ``_parent``."""
+
+    _ENTRY = {
+        "service": "eks",
+        "items_path": "nodegroup",
+        "source": {
+            "aws_op": "DescribeNodegroup",
+            "per": {
+                "aws_op": "ListNodegroups",
+                "items_path": "nodegroups[]",
+                "per": {"aws_op": "ListClusters", "items_path": "clusters[]"},
+                "bind": {"clusterName": ""},
+            },
+            "bind": {"clusterName": "_parent", "nodegroupName": "_self"},
+        },
+    }
+
+    def test_the_last_call_binds_both_the_name_and_the_level_above(self):
+        client = _CallLog(
+            {
+                "list_clusters": {"clusters": ["c1", "c2"]},
+                "list_nodegroups": lambda clusterName: {"nodegroups": [f"{clusterName}-ng"]},
+                "describe_nodegroup": lambda clusterName, nodegroupName: {
+                    "nodegroup": {"nodegroupArn": f"arn:{clusterName}:{nodegroupName}"}
+                },
+            }
+        )
+        items = list(iter_source(self._ENTRY, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["nodegroupArn"] for i in items] == ["arn:c1:c1-ng", "arn:c2:c2-ng"]
+        assert ("describe_nodegroup", {"clusterName": "c1", "nodegroupName": "c1-ng"}) in client.calls
+
+    def test_a_final_level_of_bare_names_still_fails(self):
+        entry = {
+            "service": "eks",
+            "items_path": "nodegroups[]",
+            "source": {
+                "aws_op": "ListNodegroups",
+                "per": {"aws_op": "ListClusters", "items_path": "clusters[]"},
+                "bind": {"clusterName": ""},
+            },
+        }
+        client = _CallLog({"list_clusters": {"clusters": ["c1"]}, "list_nodegroups": {"nodegroups": ["a"]}})
+        with pytest.raises(SourceError, match="must be a structure"):
+            list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+
+class TestBindForms:
+    def test_a_list_valued_and_a_dotted_parameter(self):
+        entry = {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "BatchGetThings",
+                "per": {"values": ["a"]},
+                "bind": {"Names": {"path": "", "list": True}, "SchemaId.SchemaArn": ""},
+            },
+        }
+        client = _CallLog({"batch_get_things": {"Things": [{"N": 1}]}})
+        list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert client.calls == [("batch_get_things", {"Names": ["a"], "SchemaId": {"SchemaArn": "a"}})]
+
+
+class TestWhere:
+    _ITEMS = {"Endpoints": [{"Arn": "arn:x:document-classifier-endpoint/a"}, {"Arn": "arn:x:entity-recognizer-endpoint/b"}]}
+
+    def test_a_plain_listing_keeps_only_matching_items(self):
+        entry = {
+            "service": "comprehend",
+            "items_path": "Endpoints[]",
+            "source": {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "contains": "document-classifier-endpoint"}]},
+        }
+        client = _CallLog({"list_endpoints": self._ITEMS})
+        items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["Arn"] for i in items] == ["arn:x:document-classifier-endpoint/a"]
+
+    def test_the_schema_takes_where_and_refuses_an_empty_condition(self):
+        entry = TestPerFanoutSchema._entry()
+        entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn", "prefix": "arn:"}]}
+        assert TestPerFanoutSchema._validator().is_valid(entry)
+        entry["source"] = {"aws_op": "ListEndpoints", "where": [{"path": "Arn"}]}
+        assert not TestPerFanoutSchema._validator().is_valid(entry)

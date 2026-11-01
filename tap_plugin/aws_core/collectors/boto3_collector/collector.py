@@ -213,7 +213,8 @@ def resolve_node_tags(
         if "literal" in spec:
             call_kwargs[param_name] = spec["literal"]
         else:
-            call_kwargs[param_name] = eval_path(item, spec["from"])
+            value = eval_path(item, spec["from"])
+            call_kwargs[param_name] = [value] if spec.get("list") and value not in (None, "") else value
     env = hydrate_item(
         client_for(entry["service"]),
         {},

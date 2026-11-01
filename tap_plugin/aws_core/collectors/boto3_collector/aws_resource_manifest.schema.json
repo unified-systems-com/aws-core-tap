@@ -157,8 +157,36 @@
     "bind": {
       "type": "object",
       "minProperties": 1,
-      "description": "Request parameter -> path on the parent item ('' is the parent itself).",
-      "additionalProperties": { "type": "string" }
+      "description": "Request parameter -> path on the parent item ('' is the parent itself; '_self' is a bare-string middle-level parent, '_parent' the level above). A dotted name (SchemaId.SchemaArn) builds a nested request structure; {path, list: true} wraps the value in a one-element list for a list-typed parameter.",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": { "path": { "type": "string" }, "list": { "const": true } }
+          }
+        ]
+      }
+    },
+    "where": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Keep only the items that satisfy every condition (req-aws-collector-source-9): a path on the item and one of equals, in, prefix, contains.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "minProperties": 2,
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "equals": {},
+          "in": { "type": "array", "minItems": 1 },
+          "prefix": { "type": "string", "minLength": 1 },
+          "contains": { "type": "string", "minLength": 1 }
+        }
+      }
     },
     "per": {
       "type": "object",
@@ -180,7 +208,8 @@
         "service": { "type": "string", "minLength": 1 },
         "params": { "type": "object" },
         "per": { "$ref": "#/$defs/per" },
-        "bind": { "$ref": "#/$defs/bind" }
+        "bind": { "$ref": "#/$defs/bind" },
+        "where": { "$ref": "#/$defs/where" }
       },
       "if": { "required": ["per"] },
       "then": { "required": ["bind"] }
@@ -194,7 +223,8 @@
           "required": ["aws_op"],
           "properties": {
             "aws_op": { "type": "string", "minLength": 1 },
-            "params": { "type": "object", "description": "Literal request parameters; the string \"$account_id\" stands for the account being collected." }
+            "params": { "type": "object", "description": "Literal request parameters; the string \"$account_id\" stands for the account being collected." },
+            "where": { "$ref": "#/$defs/where" }
           }
         },
         {
@@ -206,7 +236,8 @@
             "aws_op": { "type": "string", "minLength": 1 },
             "per": { "$ref": "#/$defs/per" },
             "bind": { "$ref": "#/$defs/bind" },
-            "params": { "type": "object" }
+            "params": { "type": "object" },
+            "where": { "$ref": "#/$defs/where" }
           }
         },
         {
@@ -298,7 +329,10 @@
                     "type": "object",
                     "additionalProperties": false,
                     "required": ["from"],
-                    "properties": { "from": { "type": "string", "minLength": 1 } }
+                    "properties": {
+                      "from": { "type": "string", "minLength": 1 },
+                      "list": { "const": true, "description": "Send the value as a one-element list, for a list-typed request parameter (ELBv2 DescribeTags ResourceArns)." }
+                    }
                   }
                 ]
               }
