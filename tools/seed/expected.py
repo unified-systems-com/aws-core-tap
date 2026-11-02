@@ -128,7 +128,9 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
         for other in resources:
             if other.get("type") == j["terraform"] and own is not None and _get(other, j["other"]) == own:
                 got = evaluate(j["target"], other, resources)
-                if got is not None:
+                if isinstance(got, (list, tuple, set)):
+                    out.extend(got)  # a target that is itself a list (a subnet group's subnets) adds its members
+                elif got is not None:
                     out.append(got)
         return sorted(out, key=str)
     raise ExpectedError(f"bad value spec {spec!r}")

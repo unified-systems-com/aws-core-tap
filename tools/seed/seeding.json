@@ -637,6 +637,519 @@
       "edges": [],
       "description": "The function's log group, 1 day retention."
     },
+    "AWS::NetworkFirewall::Firewall": {
+      "cfn_type": "AWS::NetworkFirewall::Firewall",
+      "entity_type": "aws_core__aws_network_firewall",
+      "terraform": "aws_networkfirewall_firewall",
+      "cost_class": "costly",
+      "needs": [
+        "AWS::EC2::Subnet",
+        "AWS::NetworkFirewall::FirewallPolicy"
+      ],
+      "compares": [
+        "firewall_arn",
+        "name"
+      ],
+      "module": "wave2-nfw",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "firewall_arn": "arn",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnet_mapping.0.subnet_id"
+        }
+      ],
+      "description": "One firewall with one endpoint; the only costly resource of the wave."
+    },
+    "AWS::NetworkFirewall::FirewallPolicy": {
+      "cfn_type": "AWS::NetworkFirewall::FirewallPolicy",
+      "entity_type": "aws_core__aws_networkfirewall_firewall_policy",
+      "terraform": "aws_networkfirewall_firewall_policy",
+      "cost_class": "free",
+      "needs": [
+        "AWS::NetworkFirewall::RuleGroup"
+      ],
+      "compares": [
+        "name",
+        "networkfirewall_firewall_policy_arn"
+      ],
+      "module": "wave2-nfw",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "networkfirewall_firewall_policy_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Policy that forwards to the stateful engine and references the rule group."
+    },
+    "AWS::NetworkFirewall::RuleGroup": {
+      "cfn_type": "AWS::NetworkFirewall::RuleGroup",
+      "entity_type": "aws_core__aws_networkfirewall_rule_group",
+      "terraform": "aws_networkfirewall_rule_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "networkfirewall_rule_group_arn"
+      ],
+      "module": "wave2-nfw",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "networkfirewall_rule_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Stateless rule group with one pass rule, capacity 10."
+    },
+    "AWS::NetworkFirewall::VpcEndpointAssociation": {
+      "cfn_type": "AWS::NetworkFirewall::VpcEndpointAssociation",
+      "entity_type": "aws_core__aws_networkfirewall_vpc_endpoint_association",
+      "terraform": "aws_networkfirewall_vpc_endpoint_association",
+      "cost_class": "costly",
+      "needs": [
+        "AWS::NetworkFirewall::Firewall"
+      ],
+      "compares": [
+        "vpc_endpoint_association_arn"
+      ],
+      "module": "wave2-nfw",
+      "natural_key": "vpc_endpoint_association_arn",
+      "tf_attrs": {
+        "vpc_endpoint_association_arn": "vpc_endpoint_association_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "A second endpoint of the firewall in another VPC."
+    },
+    "AWS::RDS::ClusterSnapshot": {
+      "cfn_type": "AWS::RDS::ClusterSnapshot",
+      "entity_type": "aws_core__aws_rds_db_cluster_snapshot",
+      "terraform": "aws_db_cluster_snapshot",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::RDS::DBCluster"
+      ],
+      "compares": [
+        "db_cluster_identifier",
+        "db_cluster_snapshot_arn",
+        "engine",
+        "name",
+        "snapshot_type",
+        "storage_encrypted"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "db_cluster_snapshot_arn",
+      "tf_attrs": {
+        "db_cluster_identifier": "db_cluster_identifier",
+        "db_cluster_snapshot_arn": "db_cluster_snapshot_arn",
+        "engine": "engine",
+        "name": "db_cluster_snapshot_identifier",
+        "snapshot_type": "snapshot_type",
+        "storage_encrypted": "storage_encrypted"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Manual snapshot of the cluster."
+    },
+    "AWS::RDS::DBCluster": {
+      "cfn_type": "AWS::RDS::DBCluster",
+      "entity_type": "aws_core__aws_rds_db_cluster",
+      "terraform": "aws_rds_cluster",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::RDS::DBSubnetGroup"
+      ],
+      "compares": [
+        "backup_retention_days",
+        "db_cluster_arn",
+        "deletion_protection",
+        "engine",
+        "engine_mode",
+        "engine_version",
+        "iam_database_auth_enabled",
+        "name",
+        "storage_encrypted"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "backup_retention_days": "backup_retention_period",
+        "db_cluster_arn": "arn",
+        "deletion_protection": "deletion_protection",
+        "engine": "engine",
+        "engine_mode": "engine_mode",
+        "engine_version": "engine_version",
+        "iam_database_auth_enabled": "iam_database_authentication_enabled",
+        "name": "cluster_identifier",
+        "storage_encrypted": "storage_encrypted"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Aurora PostgreSQL 17 Serverless v2 cluster at 0.5 to 1 ACU, one writer."
+    },
+    "AWS::RDS::DBClusterEndpoint": {
+      "cfn_type": "AWS::RDS::DBClusterEndpoint",
+      "entity_type": "aws_core__aws_rds_db_cluster_endpoint",
+      "terraform": "aws_rds_cluster_endpoint",
+      "cost_class": "free",
+      "needs": [
+        "AWS::RDS::DBCluster"
+      ],
+      "compares": [
+        "dbcluster_endpoint_arn"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "dbcluster_endpoint_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Custom endpoint of type ANY with the writer as its member."
+    },
+    "AWS::RDS::DBClusterParameterGroup": {
+      "cfn_type": "AWS::RDS::DBClusterParameterGroup",
+      "entity_type": "aws_core__aws_rds_db_cluster_parameter_group",
+      "terraform": "aws_rds_cluster_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "db_cluster_parameter_group_arn",
+        "family",
+        "name"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "db_cluster_parameter_group_arn": "arn",
+        "family": "family",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Aurora PostgreSQL 17 cluster parameter group with no parameters changed."
+    },
+    "AWS::RDS::DBInstance": {
+      "cfn_type": "AWS::RDS::DBInstance",
+      "entity_type": "aws_core__aws_rds_instance",
+      "terraform": "aws_db_instance",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::RDS::DBSubnetGroup"
+      ],
+      "compares": [
+        "db_instance_arn",
+        "db_instance_id",
+        "deletion_protection",
+        "encrypted",
+        "engine",
+        "engine_version",
+        "iam_database_auth_enabled",
+        "instance_class",
+        "multi_az",
+        "name",
+        "publicly_accessible"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "db_instance_arn": "arn",
+        "db_instance_id": "identifier",
+        "deletion_protection": "deletion_protection",
+        "encrypted": "storage_encrypted",
+        "engine": "engine",
+        "engine_version": "engine_version",
+        "iam_database_auth_enabled": "iam_database_authentication_enabled",
+        "instance_class": "instance_class",
+        "multi_az": "multi_az",
+        "name": "identifier",
+        "publicly_accessible": "publicly_accessible"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_db_subnet_group",
+              "own": "db_subnet_group_name",
+              "other": "name",
+              "target": "subnet_ids"
+            }
+          }
+        }
+      ],
+      "description": "One db.t4g.micro PostgreSQL 17 instance, 20 GiB, no public address, RDS-managed master secret."
+    },
+    "AWS::RDS::DBParameterGroup": {
+      "cfn_type": "AWS::RDS::DBParameterGroup",
+      "entity_type": "aws_core__aws_rds_db_parameter_group",
+      "terraform": "aws_db_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "db_parameter_group_arn",
+        "family",
+        "name"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "db_parameter_group_arn": "arn",
+        "family": "family",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "PostgreSQL 17 parameter group with no parameters changed."
+    },
+    "AWS::RDS::DBProxy": {
+      "cfn_type": "AWS::RDS::DBProxy",
+      "entity_type": "aws_core__aws_rds_db_proxy",
+      "terraform": "aws_db_proxy",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::Subnet",
+        "AWS::IAM::Role",
+        "AWS::RDS::DBInstance"
+      ],
+      "compares": [
+        "db_proxy_arn",
+        "endpoint",
+        "engine_family",
+        "idle_client_timeout_seconds",
+        "name",
+        "require_tls"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "db_proxy_arn": "arn",
+        "endpoint": "endpoint",
+        "engine_family": "engine_family",
+        "idle_client_timeout_seconds": "idle_client_timeout",
+        "name": "name",
+        "require_tls": "require_tls"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "vpc_subnet_ids"
+        },
+        {
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "target_type": "aws_core__aws_iam_role",
+          "direction": "outbound",
+          "target": "role_arn"
+        }
+      ],
+      "description": "PostgreSQL proxy in front of the instance, reading the master secret through a seed role."
+    },
+    "AWS::RDS::DBProxyEndpoint": {
+      "cfn_type": "AWS::RDS::DBProxyEndpoint",
+      "entity_type": "aws_core__aws_rds_db_proxy_endpoint",
+      "terraform": "aws_db_proxy_endpoint",
+      "cost_class": "free",
+      "needs": [
+        "AWS::RDS::DBProxy"
+      ],
+      "compares": [
+        "name",
+        "rds_db_proxy_endpoint_arn"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "db_proxy_endpoint_name",
+        "rds_db_proxy_endpoint_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "A second read/write endpoint of the proxy."
+    },
+    "AWS::RDS::DBProxyTargetGroup": {
+      "cfn_type": "AWS::RDS::DBProxyTargetGroup",
+      "entity_type": "aws_core__aws_rds_db_proxy_target_group",
+      "terraform": "aws_db_proxy_default_target_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::RDS::DBProxy"
+      ],
+      "compares": [
+        "rds_db_proxy_target_group_arn"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "rds_db_proxy_target_group_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "The proxy's default target group (the provider cannot tag it)."
+    },
+    "AWS::RDS::DBSnapshot": {
+      "cfn_type": "AWS::RDS::DBSnapshot",
+      "entity_type": "aws_core__aws_rds_db_snapshot",
+      "terraform": "aws_db_snapshot",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::RDS::DBInstance"
+      ],
+      "compares": [
+        "db_instance_identifier",
+        "db_snapshot_arn",
+        "encrypted",
+        "engine",
+        "name",
+        "snapshot_type"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "db_snapshot_arn",
+      "tf_attrs": {
+        "db_instance_identifier": "db_instance_identifier",
+        "db_snapshot_arn": "db_snapshot_arn",
+        "encrypted": "encrypted",
+        "engine": "engine",
+        "name": "db_snapshot_identifier",
+        "snapshot_type": "snapshot_type"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Manual snapshot of the instance, destroyed with it."
+    },
+    "AWS::RDS::DBSubnetGroup": {
+      "cfn_type": "AWS::RDS::DBSubnetGroup",
+      "entity_type": "aws_core__aws_rds_db_subnet_group",
+      "terraform": "aws_db_subnet_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "db_subnet_group_arn",
+        "name",
+        "subnet_ids",
+        "vpc_id"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "db_subnet_group_arn": "arn",
+        "name": "name",
+        "subnet_ids": "subnet_ids",
+        "vpc_id": "vpc_id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnet_ids"
+        }
+      ],
+      "description": "Subnet group over the two private subnets."
+    },
+    "AWS::RDS::EventSubscription": {
+      "cfn_type": "AWS::RDS::EventSubscription",
+      "entity_type": "aws_core__aws_rds_event_subscription",
+      "terraform": "aws_db_event_subscription",
+      "cost_class": "free",
+      "needs": [
+        "AWS::SNS::Topic"
+      ],
+      "compares": [
+        "enabled",
+        "event_subscription_arn",
+        "name",
+        "sns_topic_arn",
+        "source_type"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "enabled": "enabled",
+        "event_subscription_arn": "arn",
+        "name": "name",
+        "sns_topic_arn": "sns_topic",
+        "source_type": "source_type"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "NOTIFIES_ON_EVENTS__aws_core",
+          "target_type": "aws_core__aws_sns_topic",
+          "direction": "outbound",
+          "target": "sns_topic"
+        }
+      ],
+      "description": "Subscription of the seed topic to db-instance events."
+    },
+    "AWS::RDS::GlobalCluster": {
+      "cfn_type": "AWS::RDS::GlobalCluster",
+      "entity_type": "aws_core__aws_rds_global_cluster",
+      "terraform": "aws_rds_global_cluster",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "deletion_protection",
+        "engine",
+        "engine_version",
+        "global_cluster_arn",
+        "name",
+        "storage_encrypted"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "deletion_protection": "deletion_protection",
+        "engine": "engine",
+        "engine_version": "engine_version",
+        "global_cluster_arn": "arn",
+        "name": "global_cluster_identifier",
+        "storage_encrypted": "storage_encrypted"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "The container of a global database with no cluster in it."
+    },
+    "AWS::RDS::OptionGroup": {
+      "cfn_type": "AWS::RDS::OptionGroup",
+      "entity_type": "aws_core__aws_rds_option_group",
+      "terraform": "aws_db_option_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "engine_name",
+        "major_engine_version",
+        "name",
+        "option_group_arn"
+      ],
+      "module": "wave2-rds",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "engine_name": "engine_name",
+        "major_engine_version": "major_engine_version",
+        "name": "name",
+        "option_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "MySQL 8.0 option group with no options."
+    },
     "AWS::S3::Bucket": {
       "cfn_type": "AWS::S3::Bucket",
       "entity_type": "aws_core__aws_s3_bucket",
