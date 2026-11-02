@@ -74,6 +74,9 @@ resource "aws_s3_bucket_public_access_block" "c" { # NOSONAR
   restrict_public_buckets = false
 }
 
+# The table is empty and destroyed with the wave. It is encrypted at rest with the AWS-owned key by default; a
+# customer-managed key would be a second key for nothing to protect.
+# nosemgrep: terraform.aws.security.aws-dynamodb-table-unencrypted.aws-dynamodb-table-unencrypted
 resource "aws_dynamodb_table" "seed" {
   name         = "${local.prefix}-table"
   billing_mode = "PAY_PER_REQUEST"

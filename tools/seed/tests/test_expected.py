@@ -1,10 +1,7 @@
 """expected.py against a small synthetic `terraform show -json` document."""
 
 import json
-import shutil
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -179,18 +176,15 @@ def test_a_plan_or_empty_input_is_refused(tmp_path):
         expected.load_state(p)
 
 
-def test_cli_is_deterministic():
-    # The CLI reads only under the tool's own out/ (git-ignored); a subprocess cannot be pointed elsewhere.
-    run_dir = Path(tempfile.mkdtemp(prefix="test-cli-", dir=expected.OUT_ROOT)) if expected.OUT_ROOT.is_dir() else None
-    if run_dir is None:
-        expected.OUT_ROOT.mkdir(parents=True)
-        run_dir = Path(tempfile.mkdtemp(prefix="test-cli-", dir=expected.OUT_ROOT))
-    try:
-        p = run_dir / "show.json"
-        p.write_text(json.dumps(state()))
-        outs = [subprocess.run([sys.executable, "-I", str(SEED / "expected.py"), str(p)], capture_output=True, text=True, check=True).stdout for _ in range(2)]
-        assert outs[0] == outs[1] and json.loads(outs[0])["resources"]
-        bad = subprocess.run([sys.executable, "-I", str(SEED / "expected.py"), str(run_dir / "nope.json")], capture_output=True, text=True)
-        assert bad.returncode == 2
-    finally:
-        shutil.rmtree(run_dir, ignore_errors=True)
+def test_cli_is_deterministic(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "out"  # the CLI reads only under its OUT_ROOT; the test points that at a temporary directory
+    out.mkdir()
+    monkeypatch.setattr(expected, "OUT_ROOT", out)
+    p = out / "show.json"
+    p.write_text(json.dumps(state()))
+    texts = []
+    for _ in range(2):
+        assert expected.main([str(p)]) == 0
+        texts.append(capsys.readouterr().out)
+    assert texts[0] == texts[1] and json.loads(texts[0])["resources"]
+    assert expected.main([str(out / "nope.json")]) == 2

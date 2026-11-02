@@ -30,7 +30,8 @@ resource "aws_cloudwatch_log_group" "fn" {
   depends_on = [terraform_data.guard]
 }
 
-# The function carries no tag of its own beyond the defaults.
+# The function carries no tag of its own beyond the defaults. It is never invoked, so there is nothing to trace.
+# nosemgrep: terraform.aws.security.aws-lambda-x-ray-tracing-not-active.aws-lambda-x-ray-tracing-not-active
 resource "aws_lambda_function" "seed" {
   function_name    = "${local.prefix}-fn"
   role             = aws_iam_role.seed.arn
