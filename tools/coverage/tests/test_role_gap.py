@@ -74,5 +74,21 @@ def test_printed_policy_is_json(capsys):
 
 def test_snake_case_and_the_custom_function_closure():
     assert role_gap.snake_case("ListApplications") == "list_applications"
-    assert "list_applications" in role_gap.custom_fn_strings("identity_center_applications_described")
-    assert role_gap.custom_fn_strings("no_such_function") == set()
+    assert "list_applications" in role_gap.custom_fn_calls("identity_center_applications_described")
+    assert role_gap.custom_fn_calls("no_such_function") == set()
+
+
+def test_a_name_that_is_only_text_is_not_a_call(tmp_path):
+    source = tmp_path / "customfns.py"
+    source.write_text(
+        "def f(client):\n"
+        "    \"\"\"Uses list_comment_only and list_unused.\"\"\"\n"
+        "    unused = 'list_unused'\n"
+        "    client.list_attr(x=1)\n"
+        "    return _pages(client, 'list_arg')\n"
+        "def _pages(client, name):\n"
+        "    return name\n"
+    )
+    assert role_gap.custom_fn_calls("f", source) == {"list_attr", "list_arg"}
+    assert "list_unused" not in role_gap.custom_fn_calls("f", source)
+    assert "list_comment_only" not in role_gap.custom_fn_calls("f", source)

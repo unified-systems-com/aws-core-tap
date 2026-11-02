@@ -69,11 +69,11 @@ def manifest_calls(path: Path = MANIFEST) -> tuple[set[tuple[str, str]], dict[st
     return calls, functions
 
 
-def custom_fn_strings(function: str, path: Path = CUSTOMFNS) -> set[str]:
-    """The string constants in a custom function and in the module-level functions it calls, followed
-    transitively. A boto3 call is written ``_pages(client, "list_applications")`` or
-    ``client.list_applications(...)``, so the snake_case operation name is among them or among its
-    attribute names. Returns the empty set when the function is not defined."""
+def custom_fn_calls(function: str, path: Path = CUSTOMFNS) -> set[str]:
+    """The names a custom function, and the module-level functions it calls (followed transitively), could pass
+    to boto3 as an operation: a string given as an argument of a call (``_pages(client, "list_applications")``)
+    or an attribute that is itself called (``client.list_applications(...)``). A name that only appears in a
+    comment, a docstring or an unused constant is not returned. Empty when the function is not defined."""
     tree = ast.parse(path.read_text(encoding="utf-8"))
     defined = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
     found: set[str] = set()
@@ -84,12 +84,14 @@ def custom_fn_strings(function: str, path: Path = CUSTOMFNS) -> set[str]:
             continue
         seen.add(name)
         for node in ast.walk(defined[name]):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                found.add(node.value)
-            elif isinstance(node, ast.Attribute):
-                found.add(node.attr)
-            elif isinstance(node, ast.Name):
-                pending.append(node.id)
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Attribute):
+                    found.add(node.func.attr)
+                if isinstance(node.func, ast.Name):
+                    pending.append(node.func.id)
+                for arg in node.args:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        found.add(arg.value)
     return found
 
 
@@ -101,7 +103,7 @@ def problems_of(doc: dict, calls: set[tuple[str, str]], functions: dict[str, set
     """What is wrong with the list: a non-read verb, an operation that issues credentials, a duplicate, an
     entry without a reason, or a collection-gap action the manifest no longer makes under that service (the
     action's prefix is mapped to the boto service through ``iam_prefix_of_service``; an entry read by a
-    custom function names it in ``custom_fn``, and the function, with the module-level helpers it calls, must name the snake_case operation)."""
+    custom function names it in ``custom_fn``, and the function, with the module-level helpers it calls, must call the snake_case operation, as a boto3 method or as the name passed to a call)."""
     prefix_of = doc.get("iam_prefix_of_service", {})
     pairs = {(prefix_of.get(service, service), operation) for service, operation in calls}
     problems: list[str] = []
@@ -128,7 +130,7 @@ def problems_of(doc: dict, calls: set[tuple[str, str]], functions: dict[str, set
                     services = {prefix_of.get(name, name) for name in functions.get(function, set())}
                     if service not in services:
                         problems.append(f"{action}: no manifest entry read by {function} is under service {service}")
-                    elif snake_case(operation) not in custom_fn_strings(function):
+                    elif snake_case(operation) not in custom_fn_calls(function):
                         problems.append(f"{action}: {function} does not call {snake_case(operation)}")
                 elif (service, operation) not in pairs:
                     problems.append(f"{action}: no manifest entry calls {operation} under service {service}")
