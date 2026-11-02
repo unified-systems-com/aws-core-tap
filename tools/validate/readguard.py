@@ -32,6 +32,12 @@ SECRET_RETURNING = frozenset(
         "GetServiceSpecificCredential",
         "GetRandomPassword",
         "GetDomainAuthorizationToken",
+        "GetClusterCredentials",  # Redshift: a temporary database user and password
+        "GetClusterCredentialsWithIAM",
+        "GetRelationalDatabaseMasterUserPassword",  # Lightsail
+        "GetInstanceAccessDetails",  # Lightsail: a key pair or password for the instance
+        "GetComputeAccess",  # GameLift: temporary credentials for a compute
+        "GetComputeAuthToken",
     }
 )
 
@@ -57,6 +63,14 @@ REVEALING_PARAMS = {
 }
 
 
+#: Operations that return a secret unless the request says otherwise: the call is refused unless the named
+#: parameter is set to the given value. Glue hides a connection's password only when asked to.
+REQUIRED_PARAMS = {
+    "GetConnection": {"HidePassword": True},
+    "GetConnections": {"HidePassword": True},
+}
+
+
 class NonReadCall(Exception):
     """Raised before a call the guard refuses."""
 
@@ -70,3 +84,6 @@ def check(operation, params=None):
     for name in REVEALING_PARAMS.get(operation, ()):
         if (params or {}).get(name):
             raise NonReadCall(f"asks the service to reveal a secret: {operation} {name}")
+    for name, wanted in REQUIRED_PARAMS.get(operation, {}).items():
+        if (params or {}).get(name) is not wanted:
+            raise NonReadCall(f"does not ask the service to hide a secret: {operation} needs {name}={wanted}")

@@ -81,3 +81,23 @@ def test_by_product_secret_operations_are_ones_the_collector_makes_and_are_not_r
     for op in readguard.BY_PRODUCT_SECRETS:
         assert op in source or snake(op) in source, op
     assert '"path": "ClientSecret"' in MANIFEST.read_text()
+
+
+def test_glue_connection_reads_must_hide_the_password():
+    for op in ("GetConnection", "GetConnections"):
+        with pytest.raises(readguard.NonReadCall):
+            readguard.check(op, {})
+        with pytest.raises(readguard.NonReadCall):
+            readguard.check(op, {"HidePassword": False})
+        readguard.check(op, {"HidePassword": True})
+
+
+@pytest.mark.parametrize("op", ["GetClusterCredentials", "GetRelationalDatabaseMasterUserPassword", "GetInstanceAccessDetails", "GetComputeAccess"])
+def test_more_credential_returning_reads_are_refused(op):
+    with pytest.raises(readguard.NonReadCall):
+        readguard.check(op)
+
+
+def test_the_manifests_glue_connection_entries_pass_hide_password():
+    text = MANIFEST.read_text()
+    assert text.count('"HidePassword": true') >= 1

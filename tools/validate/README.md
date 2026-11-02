@@ -10,7 +10,7 @@ region it drives the real engine path (`iter_source`, `project_item`, `resolve_n
 the row count, the AWS calls made, the seconds taken and the error class. It builds no batch, writes nothing to the
 grid and nothing to AWS; a guard (`readguard.py`, standard library only, unit-tested) refuses any operation whose name is not a read verb, any
 read-named operation that returns credentials (`GetSecretValue`, `GetSessionToken`, `GetPasswordData` and the rest of
-its list), and any request that asks the service to reveal a secret (`WithDecryption`, `includeValue`). It does not stop an operation the collector itself makes that returns a secret as a by-product of describing something else (`DescribeUserPoolClient`, `DescribeListeners`, `DescribeVerifiedAccessTrustProviders`, listed in `readguard.BY_PRODUCT_SECRETS`): the manifest drops those fields, so the smoke test holds them in memory as production does and never writes them. A zero-row result proves the
+its list), and any request that asks the service to reveal a secret (`WithDecryption`, `includeValue`), and refuses `GetConnection(s)` unless `HidePassword` is true. The refused-operation list is a deny list of known credential-returning names, not a proof that no other read returns a secret: `test_readguard.py` checks every operation the manifest names against it, and the by-product operations below are the known exceptions. It does not stop an operation the collector itself makes that returns a secret as a by-product of describing something else (`DescribeUserPoolClient`, `DescribeListeners`, `DescribeVerifiedAccessTrustProviders`, listed in `readguard.BY_PRODUCT_SECRETS`): the manifest drops those fields, so the smoke test holds them in memory as production does and never writes them. A zero-row result proves the
 call path only (see the spec's three layers).
 
 Run it inside the stack's web container, which holds the collector's secret:
@@ -26,7 +26,7 @@ scripts/dc exec -T web uv run python manage.py shell -c \
 
 ## Run records (`runs/`)
 
-One file per run: counts, operation names and error codes only. Never resource content, never error messages (they can
+One file per run: counts, operation names and error codes only. From the run after this change a result also carries `calls_made`, every `service.operation` the entry made, so a successful call can be audited; `wave0-2026-11-01.json` predates it and records operation names for failed calls only (`failed_calls`). Never resource content, never error messages (they can
 name resources), and account numbers removed because this repository is public. A record is the merge of the first
 pass and a re-run of the entries that did not come back clean (the re-run replaces the first result), so it is not
 the raw output of one invocation of the script. The ledger decisions cite these files as the evidence for a type's
