@@ -55,7 +55,7 @@ def read_json_file(path: Path) -> Any:
     path = Path(path)
     if path.is_symlink() or not path.is_file():
         raise ExpectedError(f"{path.name}: not a regular file")
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))  # NOSONAR: the operator names the file; links and paths outside out/ are refused by confine()
 
 
 def load_state(path: Path) -> list[dict[str, Any]]:
@@ -218,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
         if out.exists() and not out.is_file():
             print(f"expected.py: {out.name}: not a regular file", file=sys.stderr)
             return 2
-        out.write_text(text, encoding="utf-8")
+        out.write_text(text, encoding="utf-8")  # NOSONAR: confined to out/ and not a link, see confine()
     else:
         sys.stdout.write(text)
     return 0
