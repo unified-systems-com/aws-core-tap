@@ -48,8 +48,10 @@ from pathlib import Path
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError
+from django.db import DatabaseError
 
 from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, Candidate, Expected, Probe, Verdict
+from tap_grid.models import Entity
 from tap_plugin.aws_core.collectors.boto3_collector.iam_trust import iam_endpoint_region
 from tap_plugin.aws_core.falsifiers import (
     ProbeSession,
@@ -429,10 +431,8 @@ def _row_created_at(candidate: Candidate) -> datetime | None:
     """When the grid first created this entity: the typed row carries no timestamp, its entity record does. ``None``
     when it cannot be read, which the freshness guard treats as an order it cannot establish."""
     try:
-        from tap_grid.models import Entity  # noqa: PLC0415 — only a judging run needs the entity table
-
         created = Entity.objects.filter(id=candidate.entity_id).values_list("created_at", flat=True).first()
-    except Exception:  # noqa: BLE001 — an unreadable timestamp is answered as unknown, never raised
+    except DatabaseError:  # an unreadable timestamp is answered as unknown, never raised
         logger.warning("[c0f1] could not read the creation time of grid entity %s", candidate.entity_id)
         return None
     return created if isinstance(created, datetime) else None
