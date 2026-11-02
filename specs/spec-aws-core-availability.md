@@ -76,8 +76,11 @@ Status: `Proposed`
 A record is keyed by `(partition, region, service, operation)`; `operation` is empty for a service-level record and
 `region` is `global` for a global service. Evidence that depends on the probing account (`account-not-enabled`, an
 opt-in or subscription state, an `access-denied-present` that reflects that account's permissions) is not a property of
-the region: each such observation carries an anonymous `probe_scope` (a stable opaque label for the probing account,
-never the account number), a verdict derived from them is an account-level verdict for that scope only, and **an
+the region: each such observation carries a `probe_scope` (an opaque label for the probing account, never the account number) in
+the working record the probe holds while it runs; it is not in the Evidence Store allowlist and is stripped before anything is
+committed or **published**: the published
+dataset leaves account-level verdicts out (or states only that a service is account-dependent), because a label stable
+across releases would let readers correlate one account's permissions and subscriptions, a verdict derived from them is an account-level verdict for that scope only, and **an
 account-level verdict never drives a regional or service-level skip**. Only service-level and operation-level verdicts
 (`endpoint-absent`, `operation-absent`, `service-unsupported-in-region`, `offered`) may, because they do not vary with the
 account. It holds:
