@@ -1174,8 +1174,12 @@ first is a failure:
 - **Data, not code, not a broad catch.** `error_outcomes.json` (schema `error_outcomes.schema.json`,
   validated at load by `outcomes.load_rows`) holds one reviewed row per case with a `why`. A
   `not_configured` row must name its service, its error code and its operations or entity types. The
-  `unsupported_in_partition` rows apply outside the commercial partition only (`not_in_partitions`) and
-  are a stopgap until availability is derived from data; they are small and meant to be replaced.
+  `unsupported_in_partition` rows apply outside the commercial partition only (`not_in_partitions`), always name
+  their service (no wildcard) and one of its operations, entity types or, for a connection failure, the exception
+  class, and record only what a run observed for that service (the schema refuses a wildcard row). The same error
+  code on a service or operation no row names stays a failed call. They are a stopgap until availability is derived
+  from data; they are small and meant to be replaced. A transient network fault on a service a row names is read
+  the same way, for that run only: the listing is never complete, so nothing is retired on it.
   Throttling is classified from the error code alone.
 - **Never an authoritative empty listing.** `Listing.outcome` (region-scoped containment) and
   `ListingWalk.not_observed` (account-scoped) record the outcome; the surface is then

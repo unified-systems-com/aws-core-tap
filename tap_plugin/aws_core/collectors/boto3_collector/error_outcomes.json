@@ -121,128 +121,342 @@
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "cloudwatchomni",
       "exception": "EndpointConnectionError",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run."
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "datazone",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ecr-public",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "internetmonitor",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "kendra-ranking",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "kinesisvideo",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "notifications",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "qbusiness",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "timestream-influxdb",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "wellarchitected",
+      "exception": "EndpointConnectionError",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "events",
       "error_code": "UnknownOperationException",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The endpoint exists but does not know the operation in this partition."
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListApiDestinations",
+        "ListConnections",
+        "ListEndpoints"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "logs",
+      "error_code": "UnknownOperationException",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListIntegrations",
+        "ListLogAnomalyDetectors",
+        "ListScheduledQueries"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "sagemaker",
+      "error_code": "UnknownOperationException",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListClusterSchedulerConfigs",
+        "ListClusters",
+        "ListComputeQuotas",
+        "ListExperiments",
+        "ListFeatureGroups",
+        "ListHumanTaskUis",
+        "ListInferenceExperiments",
+        "ListMlflowApps",
+        "ListPartnerApps",
+        "ListTrialComponents",
+        "ListWorkforces",
+        "ListWorkteams"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ssm",
+      "error_code": "UnknownOperationException",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListCloudConnectors"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ec2",
       "error_code": "InvalidAction",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The endpoint rejects the action as not valid for this web service in this partition."
+      "why": "The endpoint rejects the action as not valid for this web service in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeIpamInternetRegistryAssociations",
+        "DescribeRouteServerEndpoints",
+        "DescribeRouteServerPeers",
+        "DescribeRouteServers"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "rds",
+      "error_code": "InvalidAction",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint rejects the action as not valid for this web service in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeIntegrations"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ses",
+      "error_code": "InvalidAction",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The endpoint rejects the action as not valid for this web service in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListReceiptFilters",
+        "ListReceiptRuleSets"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ec2",
       "error_code": "UnsupportedOperation",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The operation is answered as not available in this Region or partition."
+      "why": "The operation is answered as not available in this Region or partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeAwsNetworkPerformanceMetricSubscriptions",
+        "DescribeCapacityManagerDataExports",
+        "DescribeCarrierGateways",
+        "DescribeSecondaryNetworks"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "fsx",
+      "error_code": "UnsupportedOperation",
+      "not_in_partitions": [
+        "aws"
+      ],
+      "why": "The operation is answered as not available in this Region or partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeS3AccessPointAttachments"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "workspaces",
       "error_code": "OperationNotSupportedException",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The operation is answered as not supported in this Region or partition."
+      "why": "The operation is answered as not supported in this Region or partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeConnectionAliases"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "iotsitewise",
       "error_code": "404",
       "message_contains": "unknown operation",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The gateway answers 404 'Unknown Operation' for an operation the partition's endpoint does not have."
+      "why": "The gateway answers 404 'Unknown Operation' for an operation the partition's endpoint does not have. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListApplications"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "iot",
       "error_code": "404",
       "message_contains": "no method found matching route",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The gateway answers 404 for a route the partition's endpoint does not have."
+      "why": "The gateway answers 404 for a route the partition's endpoint does not have. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListOTAUpdates",
+        "ListStreams"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "comprehend",
       "error_code": "InvalidRequestException",
       "message_contains": "not supported in this region",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The service answers that the operation is not supported in this Region."
+      "why": "The service answers that the operation is not supported in this Region. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListFlywheels"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "iotsitewise",
       "error_code": "InvalidRequestException",
       "message_contains": "not supported yet",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "IoT SiteWise answers that the feature is not supported yet in this partition."
+      "why": "IoT SiteWise answers that the feature is not supported yet in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListComputationModels",
+        "ListDatasets",
+        "ListWorkspaces"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "kafka",
       "error_code": "BadRequestException",
       "message_contains": "not supported in this region",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The service answers that the API is not supported in this Region."
+      "why": "The service answers that the API is not supported in this Region. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListReplicators"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "wellarchitected",
       "error_code": "ValidationException",
       "message_contains": "not supported in govcloud",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "The service answers that the operation is not supported in GovCloud."
+      "why": "The service answers that the operation is not supported in GovCloud. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListProfiles"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "codebuild",
       "error_code": "InvalidInputException",
       "message_contains": "unknown operation",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "CodeBuild answers 'Unknown operation' for an operation the partition's endpoint does not have."
+      "why": "CodeBuild answers 'Unknown operation' for an operation the partition's endpoint does not have. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListFleets"
+      ]
     },
     {
       "outcome": "unsupported_in_partition",
-      "service": "*",
+      "service": "memorydb",
       "error_code": "InvalidParameterValueException",
       "message_contains": "currently unavailable",
       "not_in_partitions": [
         "aws"
       ],
-      "why": "MemoryDB answers that the API operation is currently unavailable in this partition."
+      "why": "MemoryDB answers that the API operation is currently unavailable in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeMultiRegionClusters"
+      ]
     }
   ]
 }

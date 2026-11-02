@@ -78,6 +78,10 @@ class TestTheShippedRows:
         schema = outcomes.load_schema(outcomes.OUTCOMES_SCHEMA_PATH)
         row = {"outcome": "unsupported_in_partition", "service": "*", "error_code": "InvalidAction", "why": "x" * 25}
         assert not jsonschema.Draft202012Validator(schema).is_valid({"description": "d", "rows": [row]})
+        wildcard = {**row, "not_in_partitions": ["aws"]}
+        assert not jsonschema.Draft202012Validator(schema).is_valid({"description": "d", "rows": [wildcard]})
+        unscoped = {**wildcard, "service": "ec2"}  # names a service but neither an operation, an entity type nor an exception
+        assert not jsonschema.Draft202012Validator(schema).is_valid({"description": "d", "rows": [unscoped]})
 
 
 class TestClassify:
@@ -136,20 +140,43 @@ class TestClassify:
         assert outcomes.classify(_entry("qbusiness_application"), exc, _GOV) is None
 
     @pytest.mark.parametrize(
-        ("code", "operation", "message"),
+        ("entity", "code", "operation", "message"),
         [
-            ("UnknownOperationException", "ListClusters", "The requested operation is not supported in the called region."),
-            ("InvalidAction", "DescribeRouteServers", "not valid for this web service"),
-            ("UnsupportedOperation", "DescribeCarrierGateways", "not available in this region"),
-            ("404", "ListStreams", "No method found matching route."),
-            ("404", "ListApplications", "Unknown Operation"),
-            ("InvalidRequestException", "ListFlywheels", "UNSUPPORTED_OPERATION: This operation is not supported in this region"),
-            ("ValidationException", "ListProfiles", "[Validation] This operation is not supported in GovCloud."),
+            ("sagemaker_cluster", "UnknownOperationException", "ListClusters", "The requested operation is not supported in the called region."),
+            ("eventbridge_connection", "UnknownOperationException", "ListConnections", "x"),
+            ("vpc", "InvalidAction", "DescribeRouteServers", "not valid for this web service"),
+            ("vpc", "UnsupportedOperation", "DescribeCarrierGateways", "not available in this region"),
+            ("iot_stream", "404", "ListStreams", "No method found matching route."),
+            ("iotsitewise_application", "404", "ListApplications", "Unknown Operation"),
+            ("comprehend_flywheel", "InvalidRequestException", "ListFlywheels", "UNSUPPORTED_OPERATION: This operation is not supported in this region"),
+            ("wellarchitected_profile", "ValidationException", "ListProfiles", "[Validation] This operation is not supported in GovCloud."),
         ],
     )
-    def test_the_unknown_operation_family_is_unsupported_in_the_partition(self, code, operation, message):
-        found = outcomes.classify(_entry("vpc"), _client_error(code, operation, message), _GOV)
+    def test_the_unknown_operation_family_is_unsupported_where_a_reviewed_row_names_it(self, entity, code, operation, message):
+        found = outcomes.classify(_entry(entity), _client_error(code, operation, message), _GOV)
         assert found is not None and found.kind == "unsupported_in_partition", found
+
+    @pytest.mark.parametrize(
+        ("entity", "code", "operation"),
+        [
+            ("vpc", "UnknownOperationException", "DescribeVpcs"),  # a code a row covers for another service
+            ("sagemaker_cluster", "UnknownOperationException", "ListNotebookInstances"),  # same service, an unreviewed operation
+            ("vpc", "InvalidAction", "DescribeVpcs"),  # same service as a reviewed row, an operation it does not name
+            ("sagemaker_cluster", "OperationNotSupportedException", "ListClusters"),  # same operation, a code no row gives it
+        ],
+    )
+    def test_the_same_family_elsewhere_is_still_a_failed_call(self, entity, code, operation):
+        assert outcomes.classify(_entry(entity), _client_error(code, operation, "Unknown Operation"), _GOV) is None
+
+    def test_an_unsupported_row_is_never_a_wildcard(self):
+        for row in outcomes.load_rows():
+            if row["outcome"] == "unsupported_in_partition":
+                assert row["service"] != "*", row
+                assert row.get("operations") or row.get("entity_types") or row.get("exception"), row
+
+    def test_an_endpoint_error_for_a_service_no_row_names_is_a_failed_call(self):
+        exc = EndpointConnectionError(endpoint_url="https://ec2.us-gov-west-1.amazonaws.com")
+        assert outcomes.classify(_entry("vpc"), exc, _GOV) is None
 
     def test_an_unmatched_message_on_a_generic_code_is_an_error(self):
         assert outcomes.classify(_entry("vpc"), _client_error("InvalidRequestException", "ListX", "bad parameter"), _GOV) is None

@@ -22,7 +22,7 @@
           "service": {
             "type": "string",
             "minLength": 1,
-            "description": "The manifest entry's `service`; `*` (unsupported_in_partition only) matches any."
+            "description": "The manifest entry's `service`. A row always names its service; there is no wildcard."
           },
           "operations": {
             "type": "array",
@@ -73,7 +73,11 @@
           },
           {
             "if": { "properties": { "outcome": { "const": "unsupported_in_partition" } }, "required": ["outcome"] },
-            "then": { "required": ["not_in_partitions"] }
+            "then": {
+              "required": ["not_in_partitions"],
+              "properties": { "service": { "not": { "const": "*" } } },
+              "anyOf": [{ "required": ["operations"] }, { "required": ["entity_types"] }, { "required": ["exception"] }]
+            }
           }
         ]
       }
