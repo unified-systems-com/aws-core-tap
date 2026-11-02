@@ -1626,3 +1626,36 @@ class TestIamAndS3ProbeStatusOf:
 def _probe_of(verdict: Verdict) -> dict[str, Any]:
     assert verdict.probe is not None, "a judged verdict records its probe"
     return verdict.probe
+
+
+@pytest.mark.django_db
+class TestIamFalsifierEndpointRegion:
+    """IAM is global per partition, so role, user and policy probes ask the endpoint that serves the
+    candidate ARN's own partition. A GovCloud key sent to us-east-1 is refused with
+    InvalidClientTokenId, which read as UNDETERMINED and left deleted GovCloud IAM objects live."""
+
+    CASES: ClassVar[list[tuple[str, str, str, str, str, str]]] = [
+        (IAM_ROLE, "role_arn", "get_role", "arn:aws:iam::{a}:role/r", "r", "us-east-1"),
+        (IAM_ROLE, "role_arn", "get_role", "arn:aws-us-gov:iam::{a}:role/r", "r", "us-gov-west-1"),
+        (IAM_USER, "user_arn", "get_user", "arn:aws:iam::{a}:user/u", "u", "us-east-1"),
+        (IAM_USER, "user_arn", "get_user", "arn:aws-us-gov:iam::{a}:user/u", "u", "us-gov-west-1"),
+        (IAM_POLICY, "policy_arn", "get_policy", "arn:aws:iam::{a}:policy/p", "p", "us-east-1"),
+        (IAM_POLICY, "policy_arn", "get_policy", "arn:aws-us-gov:iam::{a}:policy/p", "p", "us-gov-west-1"),
+    ]
+
+    @pytest.mark.parametrize(("slug", "arn_field", "call", "arn", "name", "region"), CASES)
+    def test_client_is_built_for_the_arns_partition(
+        self, slug: str, arn_field: str, call: str, arn: str, name: str, region: str
+    ) -> None:
+        arn = arn.format(a=ACCOUNT_ID)
+        entity_id = _dimensioned(slug, {"name": name, arn_field: arn}, account_id=ACCOUNT_ID)
+        candidate = _iam_candidate(entity_id, slug)
+        client = MagicMock()
+        getattr(client, call).side_effect = ClientError({"Error": {"Code": "NoSuchEntity", "Message": "gone"}}, call)
+        session = MagicMock()
+        session.client.return_value = client
+        falsifier = {IAM_ROLE: IamRoleFalsifier, IAM_USER: IamUserFalsifier, IAM_POLICY: IamPolicyFalsifier}[slug](
+            session=session, account_id=ACCOUNT_ID
+        )
+        falsifier.batch_falsify([candidate], _context())
+        session.client.assert_called_once_with("iam", region_name=region)
