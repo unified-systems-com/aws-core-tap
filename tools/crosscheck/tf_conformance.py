@@ -371,10 +371,13 @@ def version_mismatch(r: dict) -> list[str]:
 
 
 def source_unbound(r: dict) -> str:
-    """Why the source checkout is not shown to be the provider version the schema dump was made with, or "". The
+    """Why the source checkout is not shown to be at the tag of the version the schema dump was made with, or "". The
     schema is a release and the source a checkout; the version given with the dump names a tag, and the checkout is
-    bound to it only if its commit is the commit of that tag. A set of resource names cannot show that, since two
-    revisions of the provider usually have the same resources."""
+    taken to be at it only if its HEAD is the commit of that tag in its own .git. That catches the common mistake, a
+    clone left on another branch or version. It does not prove the files are unmodified (an uncommitted edit is not
+    seen) or that the tag is HashiCorp's (a rewritten .git is not seen): the report carries the digest of the parsed
+    source for anyone who needs to pin it. A set of resource names cannot show even this, since two revisions of the
+    provider usually have the same resources."""
     s = r.get("inputs", {}).get("terraform_source", {})
     if not s.get("version_tag"):
         return "no --terraform-version was given, so nothing ties the source to the schema"
@@ -387,7 +390,7 @@ def source_unbound(r: dict) -> str:
 
 def _unbound_banner(r: dict) -> list[str]:
     why = source_unbound(r)
-    return [f"**SOURCE NOT BOUND TO THE SCHEMA VERSION: {_clean(why)}. The figures below may combine two provider revisions.**", ""] if why else []
+    return [f"**SOURCE CHECKOUT NOT SHOWN TO BE AT THE SCHEMA VERSION: {_clean(why)}. The figures below may combine two provider revisions.**", ""] if why else []
 
 
 def _mismatch_banner(r: dict) -> list[str]:

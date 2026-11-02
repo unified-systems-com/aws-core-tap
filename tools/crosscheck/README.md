@@ -80,7 +80,7 @@ python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --t
     --terraform-version 6.71.0 [--out DIR]   # DIR must lie under the directory you run it from
 ```
 
-The schema is a release and the source a checkout, so the source must be at the tag of the version the dump was made with: check out `v6.71.0` in the provider clone and pass `--terraform-version 6.71.0`. The run compares the checkout's commit with that tag's and exits 4, with a banner in the report, if they differ, if the tag cannot be read, or if no version was given (a clone with packed tags works; `--allow-version-mismatch` accepts the result and the report still says it was not bound). It also exits 4 when the two inputs have different sets of resources.
+The schema is a release and the source a checkout, so the source must be at the tag of the version the dump was made with: check out `v6.71.0` in the provider clone and pass `--terraform-version 6.71.0`. The run compares the checkout's HEAD with that tag's commit in the checkout's own `.git` and exits 4, with a banner in the report, if they differ, if the tag cannot be read, or if no version was given (a clone with packed tags works; `--allow-version-mismatch` accepts the result and the report still says it was not shown). It also exits 4 when the two inputs have different sets of resources. This catches a clone left on the wrong version; it does not prove the files are unmodified or that the tag is HashiCorp's, so a clone you do not trust needs the `source_sha256` in the report checked against one you do.
 
 | File | Role |
 | --- | --- |
