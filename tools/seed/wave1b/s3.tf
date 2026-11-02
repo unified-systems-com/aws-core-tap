@@ -1,5 +1,5 @@
 # Buckets are empty, private and destroyed with the wave (a destroy stops on an object it did not create, since buckets are not force-emptied).
-resource "aws_s3_bucket" "ap" {
+resource "aws_s3_bucket" "ap" { # NOSONAR: empty, private, run-scoped and destroyed within the hour; no object is ever written by a client
   bucket = "${local.prefix}-ap"
 
   depends_on = [terraform_data.guard]
@@ -7,21 +7,21 @@ resource "aws_s3_bucket" "ap" {
 
 # The flow log and the trail write objects into their own buckets (a delivery test file, log files), so these two are
 # emptied when they are destroyed. Every other bucket here is not force-emptied and a destroy stops on a stray object.
-resource "aws_s3_bucket" "flow" {
+resource "aws_s3_bucket" "flow" { # NOSONAR: empty, private, run-scoped and destroyed within the hour; no object is ever written by a client
   bucket        = "${local.prefix}-flow"
   force_destroy = true
 
   depends_on = [terraform_data.guard]
 }
 
-resource "aws_s3_bucket" "trail" {
+resource "aws_s3_bucket" "trail" { # NOSONAR: empty, private, run-scoped and destroyed within the hour; no object is ever written by a client
   bucket        = "${local.prefix}-trail"
   force_destroy = true
 
   depends_on = [terraform_data.guard]
 }
 
-resource "aws_s3_bucket" "report" {
+resource "aws_s3_bucket" "report" { # NOSONAR: empty, private, run-scoped and destroyed within the hour; no object is ever written by a client
   bucket = "${local.prefix}-report"
 
   depends_on = [terraform_data.guard]
