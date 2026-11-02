@@ -1,0 +1,629 @@
+{
+  "name": "cartography-set",
+  "version": 1,
+  "status": "draft",
+  "description": "Weights for scoring aws_core against Cartography's own modelled set. Anything Cartography models counts at least 1; the long-established services most accounts rest on (identity, compute, network, storage, encryption, audit, databases) count 5; widely used supporting services and Bedrock count 3. Types outside Cartography's set count 0 unless a rule names them, so this weighting measures parity with Cartography and nothing more. The tiers are a first judgement and unreviewed. The cfn_type rules give the same tiers to the CloudFormation types in the coverage ledger, so the report can say how much of the weighted inventory is collected, decided or still open.",
+  "default_weight": 0,
+  "rules": [
+    {
+      "carto_label": "AWSRole",
+      "weight": 5,
+      "why": "IAM role: who can assume what; the centre of every access path"
+    },
+    {
+      "carto_label": "AWSUser",
+      "weight": 5,
+      "why": "IAM user"
+    },
+    {
+      "carto_label": "AWSGroup",
+      "weight": 5,
+      "why": "IAM group"
+    },
+    {
+      "carto_label": "AWSManagedPolicy",
+      "weight": 5,
+      "why": "IAM managed policy"
+    },
+    {
+      "carto_label": "AWSInlinePolicy",
+      "weight": 5,
+      "why": "IAM inline policy"
+    },
+    {
+      "carto_label": "AWSAccountAccessKey",
+      "weight": 5,
+      "why": "IAM access key: long-lived credentials"
+    },
+    {
+      "carto_label": "AWSMfaDevice",
+      "weight": 5,
+      "why": "MFA device"
+    },
+    {
+      "carto_label": "AWSEC2Instance",
+      "weight": 5,
+      "why": "EC2 instance: the most common compute"
+    },
+    {
+      "carto_label": "AWSVpc",
+      "weight": 5,
+      "why": "VPC"
+    },
+    {
+      "carto_label": "AWSEC2Subnet",
+      "weight": 5,
+      "why": "subnet"
+    },
+    {
+      "carto_label": "AWSEC2SecurityGroup",
+      "weight": 5,
+      "why": "security group: the network access control most boundaries rest on"
+    },
+    {
+      "carto_label": "AWSEC2NetworkAcl",
+      "weight": 5,
+      "why": "network ACL"
+    },
+    {
+      "carto_label": "AWSEC2RouteTable",
+      "weight": 5,
+      "why": "route table"
+    },
+    {
+      "carto_label": "AWSInternetGateway",
+      "weight": 5,
+      "why": "internet gateway: the path to the public internet"
+    },
+    {
+      "carto_label": "AWSNetworkInterface",
+      "weight": 5,
+      "why": "network interface"
+    },
+    {
+      "carto_label": "AWSEBSVolume",
+      "weight": 5,
+      "why": "EBS volume: data at rest"
+    },
+    {
+      "carto_label": "AWSS3Bucket",
+      "weight": 5,
+      "why": "S3 bucket: the most common data store and the most common exposure"
+    },
+    {
+      "carto_label": "AWSS3AccountPublicAccessBlock",
+      "weight": 5,
+      "why": "account-level S3 public access block"
+    },
+    {
+      "carto_label": "AWSKMSKey",
+      "weight": 5,
+      "why": "KMS key: encryption at rest depends on it"
+    },
+    {
+      "carto_label": "AWSCloudTrailTrail",
+      "weight": 5,
+      "why": "CloudTrail: the audit record"
+    },
+    {
+      "carto_label": "AWSRDSInstance",
+      "weight": 5,
+      "why": "RDS instance"
+    },
+    {
+      "carto_label": "AWSRDSCluster",
+      "weight": 5,
+      "why": "RDS/Aurora cluster"
+    },
+    {
+      "carto_label": "AWSLambda",
+      "weight": 5,
+      "why": "Lambda function"
+    },
+    {
+      "carto_label": "AWSDynamoDBTable",
+      "weight": 5,
+      "why": "DynamoDB table"
+    },
+    {
+      "carto_label": "AWSOrganization*",
+      "weight": 5,
+      "why": "AWS Organizations: the account boundary"
+    },
+    {
+      "carto_label": "AWSServiceControlPolicy",
+      "weight": 5,
+      "why": "service control policy: guardrails across accounts"
+    },
+    {
+      "carto_label": "AWSConfig*",
+      "weight": 5,
+      "why": "AWS Config: the compliance record"
+    },
+    {
+      "carto_label": "AWSConfigurationRecorder",
+      "weight": 5,
+      "why": "AWS Config recorder"
+    },
+    {
+      "carto_label": "AWSGuardDutyDetector",
+      "weight": 5,
+      "why": "GuardDuty: threat detection"
+    },
+    {
+      "carto_label": "AWSSecurityHub",
+      "weight": 5,
+      "why": "Security Hub"
+    },
+    {
+      "carto_label": "AWSIdentityCenter",
+      "weight": 5,
+      "why": "IAM Identity Center instance"
+    },
+    {
+      "carto_label": "AWSPermissionSet",
+      "weight": 5,
+      "why": "Identity Center permission set"
+    },
+    {
+      "carto_label": "AWSSSO*",
+      "weight": 5,
+      "why": "Identity Center users and groups"
+    },
+    {
+      "carto_label": "AWSLoadBalancer*",
+      "weight": 3,
+      "why": "load balancers"
+    },
+    {
+      "carto_label": "AWSELB*",
+      "weight": 3,
+      "why": "load balancer listeners and target groups"
+    },
+    {
+      "carto_label": "AWSSQSQueue",
+      "weight": 3,
+      "why": "SQS queue"
+    },
+    {
+      "carto_label": "AWSSNS*",
+      "weight": 3,
+      "why": "SNS topics and subscriptions"
+    },
+    {
+      "carto_label": "AWSECS*",
+      "weight": 3,
+      "why": "ECS"
+    },
+    {
+      "carto_label": "AWSEKS*",
+      "weight": 3,
+      "why": "EKS"
+    },
+    {
+      "carto_label": "AWSECR*",
+      "weight": 3,
+      "why": "ECR"
+    },
+    {
+      "carto_label": "AWSCloudFront*",
+      "weight": 3,
+      "why": "CloudFront"
+    },
+    {
+      "carto_label": "AWSAPIGateway*",
+      "weight": 3,
+      "why": "API Gateway"
+    },
+    {
+      "carto_label": "AWSDNS*",
+      "weight": 3,
+      "why": "Route 53 zones and records"
+    },
+    {
+      "carto_label": "AWSSecretsManager*",
+      "weight": 3,
+      "why": "Secrets Manager"
+    },
+    {
+      "carto_label": "AWSSSMParameter",
+      "weight": 3,
+      "why": "SSM Parameter Store"
+    },
+    {
+      "carto_label": "AWSSSM*",
+      "weight": 3,
+      "why": "Systems Manager inventory"
+    },
+    {
+      "carto_label": "AWSCloudWatch*",
+      "weight": 3,
+      "why": "CloudWatch"
+    },
+    {
+      "carto_label": "AWSACMCertificate",
+      "weight": 3,
+      "why": "ACM certificate"
+    },
+    {
+      "carto_label": "AWSServerCertificate",
+      "weight": 3,
+      "why": "IAM server certificate"
+    },
+    {
+      "carto_label": "AWSSAMLProvider",
+      "weight": 3,
+      "why": "SAML provider"
+    },
+    {
+      "carto_label": "AWSCognito*",
+      "weight": 3,
+      "why": "Cognito"
+    },
+    {
+      "carto_label": "AWSRedshift*",
+      "weight": 3,
+      "why": "Redshift"
+    },
+    {
+      "carto_label": "AWSElasticache*",
+      "weight": 3,
+      "why": "ElastiCache"
+    },
+    {
+      "carto_label": "AWSEfs*",
+      "weight": 3,
+      "why": "EFS"
+    },
+    {
+      "carto_label": "AWSESDomain",
+      "weight": 3,
+      "why": "OpenSearch/Elasticsearch domain"
+    },
+    {
+      "carto_label": "AWSEBSSnapshot",
+      "weight": 3,
+      "why": "EBS snapshot"
+    },
+    {
+      "carto_label": "AWSRDSSnapshot",
+      "weight": 3,
+      "why": "RDS snapshot"
+    },
+    {
+      "carto_label": "AWSRDSEventSubscription",
+      "weight": 3,
+      "why": "RDS event subscription"
+    },
+    {
+      "carto_label": "AWSDBSubnetGroup",
+      "weight": 3,
+      "why": "DB subnet group"
+    },
+    {
+      "carto_label": "AWSEC2Image",
+      "weight": 3,
+      "why": "AMI"
+    },
+    {
+      "carto_label": "AWSEC2KeyPair",
+      "weight": 3,
+      "why": "key pair"
+    },
+    {
+      "carto_label": "AWSElasticIPAddress",
+      "weight": 3,
+      "why": "Elastic IP"
+    },
+    {
+      "carto_label": "AWSTransitGateway*",
+      "weight": 3,
+      "why": "transit gateway"
+    },
+    {
+      "carto_label": "AWSPeeringConnection",
+      "weight": 3,
+      "why": "VPC peering"
+    },
+    {
+      "carto_label": "AWSVpcEndpoint",
+      "weight": 3,
+      "why": "VPC endpoint"
+    },
+    {
+      "carto_label": "AWSAutoScalingGroup",
+      "weight": 3,
+      "why": "Auto Scaling group"
+    },
+    {
+      "carto_label": "AWSLaunchTemplate",
+      "weight": 3,
+      "why": "launch template"
+    },
+    {
+      "carto_label": "AWSLaunchConfiguration",
+      "weight": 3,
+      "why": "launch configuration"
+    },
+    {
+      "carto_label": "AWSCloudFormationStack",
+      "weight": 3,
+      "why": "CloudFormation stack"
+    },
+    {
+      "carto_label": "AWSEventBridgeRule",
+      "weight": 3,
+      "why": "EventBridge rule"
+    },
+    {
+      "carto_label": "AWSInspectorFinding",
+      "weight": 3,
+      "why": "Inspector finding"
+    },
+    {
+      "carto_label": "AWSGuardDutyFinding",
+      "weight": 3,
+      "why": "GuardDuty finding"
+    },
+    {
+      "carto_label": "AWSKMSAlias",
+      "weight": 3,
+      "why": "KMS alias"
+    },
+    {
+      "carto_label": "AWSEC2Reservation",
+      "weight": 3,
+      "why": "EC2 reservation"
+    },
+    {
+      "carto_label": "AWSBedrock*",
+      "weight": 3,
+      "why": "Bedrock: new, and presumed to become standard"
+    },
+    {
+      "tap_type": "aws_core__aws_bedrock_*",
+      "weight": 3,
+      "why": "Bedrock types aws_core collects that Cartography does not model; same weight as its Bedrock labels"
+    },
+    {
+      "carto_label": "AWS*",
+      "weight": 1,
+      "why": "Everything else in Cartography's modelled set: it is in scope because Cartography chose to model it"
+    },
+    {
+      "cfn_type": "AWS::IAM::*",
+      "weight": 5,
+      "why": "identity: roles, users, groups, policies, keys"
+    },
+    {
+      "cfn_type": "AWS::EC2::Instance",
+      "weight": 5,
+      "why": "EC2 instance"
+    },
+    {
+      "cfn_type": "AWS::EC2::VPC",
+      "weight": 5,
+      "why": "VPC"
+    },
+    {
+      "cfn_type": "AWS::EC2::Subnet",
+      "weight": 5,
+      "why": "subnet"
+    },
+    {
+      "cfn_type": "AWS::EC2::SecurityGroup*",
+      "weight": 5,
+      "why": "security groups"
+    },
+    {
+      "cfn_type": "AWS::EC2::NetworkAcl*",
+      "weight": 5,
+      "why": "network ACLs"
+    },
+    {
+      "cfn_type": "AWS::EC2::RouteTable",
+      "weight": 5,
+      "why": "route tables"
+    },
+    {
+      "cfn_type": "AWS::EC2::InternetGateway",
+      "weight": 5,
+      "why": "internet gateway"
+    },
+    {
+      "cfn_type": "AWS::EC2::NetworkInterface",
+      "weight": 5,
+      "why": "network interface"
+    },
+    {
+      "cfn_type": "AWS::EC2::Volume",
+      "weight": 5,
+      "why": "EBS volume"
+    },
+    {
+      "cfn_type": "AWS::EC2::FlowLog",
+      "weight": 5,
+      "why": "VPC flow logs"
+    },
+    {
+      "cfn_type": "AWS::S3::*",
+      "weight": 5,
+      "why": "S3"
+    },
+    {
+      "cfn_type": "AWS::KMS::*",
+      "weight": 5,
+      "why": "KMS"
+    },
+    {
+      "cfn_type": "AWS::CloudTrail::*",
+      "weight": 5,
+      "why": "CloudTrail"
+    },
+    {
+      "cfn_type": "AWS::RDS::*",
+      "weight": 5,
+      "why": "RDS"
+    },
+    {
+      "cfn_type": "AWS::Lambda::Function",
+      "weight": 5,
+      "why": "Lambda function"
+    },
+    {
+      "cfn_type": "AWS::DynamoDB::*",
+      "weight": 5,
+      "why": "DynamoDB"
+    },
+    {
+      "cfn_type": "AWS::Organizations::*",
+      "weight": 5,
+      "why": "Organizations"
+    },
+    {
+      "cfn_type": "AWS::Config::*",
+      "weight": 5,
+      "why": "AWS Config"
+    },
+    {
+      "cfn_type": "AWS::GuardDuty::*",
+      "weight": 5,
+      "why": "GuardDuty"
+    },
+    {
+      "cfn_type": "AWS::SecurityHub::*",
+      "weight": 5,
+      "why": "Security Hub"
+    },
+    {
+      "cfn_type": "AWS::ElasticLoadBalancing*::*",
+      "weight": 3,
+      "why": "load balancers"
+    },
+    {
+      "cfn_type": "AWS::SQS::*",
+      "weight": 3,
+      "why": "SQS"
+    },
+    {
+      "cfn_type": "AWS::SNS::*",
+      "weight": 3,
+      "why": "SNS"
+    },
+    {
+      "cfn_type": "AWS::ECS::*",
+      "weight": 3,
+      "why": "ECS"
+    },
+    {
+      "cfn_type": "AWS::EKS::*",
+      "weight": 3,
+      "why": "EKS"
+    },
+    {
+      "cfn_type": "AWS::ECR::*",
+      "weight": 3,
+      "why": "ECR"
+    },
+    {
+      "cfn_type": "AWS::CloudFront::*",
+      "weight": 3,
+      "why": "CloudFront"
+    },
+    {
+      "cfn_type": "AWS::ApiGateway*::*",
+      "weight": 3,
+      "why": "API Gateway"
+    },
+    {
+      "cfn_type": "AWS::Route53::*",
+      "weight": 3,
+      "why": "Route 53"
+    },
+    {
+      "cfn_type": "AWS::SecretsManager::*",
+      "weight": 3,
+      "why": "Secrets Manager"
+    },
+    {
+      "cfn_type": "AWS::SSM::*",
+      "weight": 3,
+      "why": "Systems Manager"
+    },
+    {
+      "cfn_type": "AWS::Logs::*",
+      "weight": 3,
+      "why": "CloudWatch Logs"
+    },
+    {
+      "cfn_type": "AWS::CloudWatch::*",
+      "weight": 3,
+      "why": "CloudWatch"
+    },
+    {
+      "cfn_type": "AWS::CertificateManager::*",
+      "weight": 3,
+      "why": "ACM"
+    },
+    {
+      "cfn_type": "AWS::Cognito::*",
+      "weight": 3,
+      "why": "Cognito"
+    },
+    {
+      "cfn_type": "AWS::Redshift::*",
+      "weight": 3,
+      "why": "Redshift"
+    },
+    {
+      "cfn_type": "AWS::ElastiCache::*",
+      "weight": 3,
+      "why": "ElastiCache"
+    },
+    {
+      "cfn_type": "AWS::EFS::*",
+      "weight": 3,
+      "why": "EFS"
+    },
+    {
+      "cfn_type": "AWS::OpenSearchService::*",
+      "weight": 3,
+      "why": "OpenSearch"
+    },
+    {
+      "cfn_type": "AWS::AutoScaling::*",
+      "weight": 3,
+      "why": "Auto Scaling"
+    },
+    {
+      "cfn_type": "AWS::CloudFormation::*",
+      "weight": 3,
+      "why": "CloudFormation"
+    },
+    {
+      "cfn_type": "AWS::Events::*",
+      "weight": 3,
+      "why": "EventBridge"
+    },
+    {
+      "cfn_type": "AWS::SSO::*",
+      "weight": 3,
+      "why": "Identity Center"
+    },
+    {
+      "cfn_type": "AWS::EC2::*",
+      "weight": 1,
+      "why": "the rest of EC2"
+    },
+    {
+      "cfn_type": "AWS::Bedrock::*",
+      "weight": 3,
+      "why": "Bedrock: new, and presumed to become standard"
+    },
+    {
+      "cfn_type": "AWS::BedrockAgentCore::*",
+      "weight": 3,
+      "why": "Bedrock AgentCore"
+    }
+  ]
+}
