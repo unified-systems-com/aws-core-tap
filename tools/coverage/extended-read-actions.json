@@ -74,32 +74,40 @@
         {
           "action": "textract:ListAdapters"
         }
-      ]
+      ],
+      "opt_in": false
     },
     {
-      "id": "probe-reads",
-      "in_policy": true,
-      "description": "Get calls the generic falsifier would make to ask whether one object still exists. The collection does not make them. They returned AccessDeniedException for a made-up id, which says nothing about whether the object exists, so without them those types cannot be retired by a probe.",
+      "id": "opt-in-probe-reads",
+      "in_policy": false,
+      "description": "Get calls the generic falsifier would make to ask whether one object still exists. The collection does not make them. They returned AccessDeniedException for a made-up id, which says nothing about whether the object exists, so without them those types cannot be retired by a probe. Left out of the default policy because a Get returns the object's content (a flow definition, a prompt), more than the existence check needs; adding them is a decision for the policy owner, taken with --include-opt-in.",
       "actions": [
         {
-          "action": "bedrock:GetAgentAlias"
+          "action": "bedrock:GetAgentAlias",
+          "reason": "Returns the object's configuration, not only whether it exists."
         },
         {
-          "action": "bedrock:GetFlow"
+          "action": "bedrock:GetFlow",
+          "reason": "Returns the object's configuration, not only whether it exists."
         },
         {
-          "action": "bedrock:GetFlowAlias"
+          "action": "bedrock:GetFlowAlias",
+          "reason": "Returns the object's configuration, not only whether it exists."
         },
         {
-          "action": "bedrock:GetFlowVersion"
+          "action": "bedrock:GetFlowVersion",
+          "reason": "Returns the object's configuration, not only whether it exists."
         },
         {
-          "action": "bedrock:GetPrompt"
+          "action": "bedrock:GetPrompt",
+          "reason": "Returns the object's configuration, not only whether it exists."
         },
         {
-          "action": "bedrock:GetRetrievalInstruction"
+          "action": "bedrock:GetRetrievalInstruction",
+          "reason": "Returns the object's configuration, not only whether it exists."
         }
-      ]
+      ],
+      "opt_in": true
     },
     {
       "id": "opt-in-credential-bearing",
@@ -110,7 +118,8 @@
           "action": "glue:GetConnections",
           "reason": "Returns connection properties, which can include a password or a secret reference."
         }
-      ]
+      ],
+      "opt_in": true
     },
     {
       "id": "not-fixable-by-this-role",
@@ -125,7 +134,8 @@
           "action": "bedrock:GetAutomatedReasoningPolicy",
           "reason": "The reply is 'Your account is not authorized to invoke this API operation': an account-level restriction, not the role."
         }
-      ]
+      ],
+      "opt_in": false
     }
   ]
 }

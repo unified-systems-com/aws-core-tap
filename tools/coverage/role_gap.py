@@ -38,7 +38,7 @@ def actions_of(doc: dict, *, include_opt_in: bool = False) -> list[str]:
     """The actions of every section that goes in the policy (and of the opt-in one when asked for)."""
     out: set[str] = set()
     for section in doc["sections"]:
-        if section["in_policy"] or (include_opt_in and section["id"] == "opt-in-credential-bearing"):
+        if section["in_policy"] or (include_opt_in and section.get("opt_in")):
             out.update(item["action"] for item in section["actions"])
     return sorted(out)
 
@@ -144,7 +144,7 @@ def problems_of(doc: dict, calls: set[tuple[str, str]], functions: dict[str, set
                 continue
             if not operation.startswith(READ_VERBS):
                 problems.append(f"{action}: not a read verb")
-            if section["in_policy"] and CREDENTIAL_WORDS.search(operation):
+            if (section["in_policy"] or section.get("opt_in")) and CREDENTIAL_WORDS.search(operation) and section["id"] != "opt-in-credential-bearing":
                 problems.append(f"{action}: the operation name suggests it returns a credential or secret")
             if action in seen:
                 problems.append(f"{action}: in {seen[action]} and {section['id']}")

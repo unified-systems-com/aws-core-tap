@@ -19,8 +19,9 @@ def test_policy_leaves_out_the_opt_in_and_unfixable_sections():
     actions = role_gap.actions_of(doc)
     assert "glue:GetConnections" not in actions
     assert "securityhub:GetConfigurationPolicy" not in actions
-    assert "bedrock:GetFlow" in actions and "geo:ListTrackers" in actions
+    assert "bedrock:GetFlow" not in actions and "geo:ListTrackers" in actions
     assert "glue:GetConnections" in role_gap.actions_of(doc, include_opt_in=True)
+    assert "bedrock:GetFlow" in role_gap.actions_of(doc, include_opt_in=True)
     assert "securityhub:GetConfigurationPolicy" not in role_gap.actions_of(doc, include_opt_in=True)
 
 
@@ -40,11 +41,11 @@ def test_policy_allows_only_read_verbs():
         ("collection-gaps", {"action": "iam:ListTrackers"}, "iam:ListTrackers: no manifest entry calls ListTrackers under service iam"),
         ("collection-gaps", {"action": "sso:ListThings", "custom_fn": "rekognition_stream_processors_described"}, "sso:ListThings: no manifest entry read by rekognition_stream_processors_described is under service sso"),
         ("collection-gaps", {"action": "sso:ListNothingReal", "custom_fn": "identity_center_applications_described"}, "sso:ListNothingReal: identity_center_applications_described does not call list_nothing_real"),
-        ("probe-reads", {"action": "sts:GetFederationToken"}, "sts:GetFederationToken: the operation name suggests it returns a credential or secret"),
-        ("probe-reads", {"action": "ecr:GetAuthorizationToken"}, "ecr:GetAuthorizationToken: the operation name suggests it returns a credential or secret"),
-        ("probe-reads", {"action": "*:Get*"}, "*:Get*: not service:Operation (one operation, no wildcard)"),
-        ("probe-reads", {"action": "iam:Get*"}, "iam:Get*: not service:Operation (one operation, no wildcard)"),
-        ("probe-reads", {"action": "iam:List*"}, "iam:List*: not service:Operation (one operation, no wildcard)"),
+        ("opt-in-probe-reads", {"action": "sts:GetFederationToken"}, "sts:GetFederationToken: the operation name suggests it returns a credential or secret"),
+        ("opt-in-probe-reads", {"action": "ecr:GetAuthorizationToken"}, "ecr:GetAuthorizationToken: the operation name suggests it returns a credential or secret"),
+        ("opt-in-probe-reads", {"action": "*:Get*"}, "*:Get*: not service:Operation (one operation, no wildcard)"),
+        ("opt-in-probe-reads", {"action": "iam:Get*"}, "iam:Get*: not service:Operation (one operation, no wildcard)"),
+        ("opt-in-probe-reads", {"action": "iam:List*"}, "iam:List*: not service:Operation (one operation, no wildcard)"),
         ("collection-gaps", {"action": "nocolon"}, "nocolon: not service:Operation (one operation, no wildcard)"),
         ("opt-in-credential-bearing", {"action": "glue:GetSomething"}, "glue:GetSomething: left out of the policy with no reason"),
     ],
