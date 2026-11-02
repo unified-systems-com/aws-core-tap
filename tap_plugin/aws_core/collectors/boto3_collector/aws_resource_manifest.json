@@ -10480,9 +10480,17 @@
       "service": "rds",
       "scope": "regional",
       "source": {
-        "aws_op": "DescribeDBClusterEndpoints"
+        "aws_op": "DescribeDBClusterEndpoints",
+        "params": {
+          "Filters": [
+            {
+              "Name": "db-cluster-endpoint-type",
+              "Values": ["custom"]
+            }
+          ]
+        }
       },
-      "why": "Enumerate RDS DB Cluster Endpoint objects with DescribeDBClusterEndpoints — an inventory of the account's db cluster endpoints and how each is tagged.",
+      "why": "Enumerate RDS DB Cluster Endpoint objects with DescribeDBClusterEndpoints — an inventory of the account's db cluster endpoints and how each is tagged. Only custom endpoints are asked for: the API also lists each cluster's default writer and reader endpoints, which have no ARN and no identifier (read live, 2026-11-02, GovCloud us-gov-west-1) and are addresses of the cluster, not objects, so one of them in the list would fail the whole type.",
       "persist_configuration": false,
       "persist_configuration_why": "Off: the DescribeDBClusterEndpoints response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
