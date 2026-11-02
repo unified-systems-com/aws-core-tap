@@ -43,10 +43,11 @@ def confine(path: Path, root: Path) -> Path:
     path = Path(path)
     if path.is_symlink():
         raise ExpectedError(f"{path.name}: a symlink")
-    real = Path(os.path.realpath(path))
-    if not real.is_relative_to(os.path.realpath(root)):
+    real = os.path.realpath(path)
+    base = os.path.realpath(root)
+    if real != base and not real.startswith(base + os.sep):
         raise ExpectedError(f"{path.name}: not under {root.name}/")
-    return real
+    return Path(real)
 
 
 def read_json_file(path: Path) -> Any:
