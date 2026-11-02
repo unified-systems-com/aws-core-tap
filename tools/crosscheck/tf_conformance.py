@@ -370,7 +370,7 @@ def _mismatch_banner(r: dict) -> list[str]:
     if not odd:
         return []
     return [
-        f"**INPUTS DIFFER: {len(odd)} resource(s) are in only one of the schema dump and the source checkout (for example `{odd[0]}`). "
+        f"**INPUTS DIFFER: {len(odd)} resource(s) are in only one of the schema dump and the source checkout (for example `{_clean(odd[0])}`). "
         "They may be different provider versions, so the figures below combine two inputs.**",
         "",
     ]

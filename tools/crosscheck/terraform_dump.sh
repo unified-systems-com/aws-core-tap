@@ -55,6 +55,12 @@ lock="$here/terraform_locks/$version.lock.hcl"
 
 out_dir="$(cd "$(dirname "$1")" && pwd)"
 out="$out_dir/$(basename "$1")"
+# A symlink here would send the write to wherever it points (a file the caller can write but did not mean to
+# replace), and so would a device or directory; refuse before the provider is started.
+if [ -L "$out" ] || { [ -e "$out" ] && [ ! -f "$out" ]; }; then
+  echo "the output path $out is a symlink or not a regular file: refusing to write to it" >&2
+  exit 2
+fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -87,12 +93,17 @@ done
   env -i "${envargs[@]}" terraform providers schema -json >"$work/schema.raw.json"
 )
 
-# Key-sorted, so the same provider gives the same bytes.
+# Key-sorted, so the same provider gives the same bytes. Written to a temporary file beside the target and moved
+# into place, so the target is replaced whole (a rename replaces a link at the path, it does not follow it).
+tmp_out="$(mktemp "$out_dir/.terraform-schema.XXXXXX")"
+trap 'rm -rf "$work"; rm -f "$tmp_out"' EXIT
 if command -v jq >/dev/null; then
-  jq -S -c . "$work/schema.raw.json" >"$out"
+  jq -S -c . "$work/schema.raw.json" >"$tmp_out"
 else
-  python3 -I -c 'import json,sys; json.dump(json.load(open(sys.argv[1])), sys.stdout, sort_keys=True, separators=(",", ":")); print()' "$work/schema.raw.json" >"$out"
+  python3 -I -c 'import json,sys; json.dump(json.load(open(sys.argv[1])), sys.stdout, sort_keys=True, separators=(",", ":")); print()' "$work/schema.raw.json" >"$tmp_out"
 fi
+chmod 644 "$tmp_out"
+mv -f "$tmp_out" "$out"
 
 if command -v sha256sum >/dev/null; then
   digest="$(sha256sum "$out" | cut -d' ' -f1)"

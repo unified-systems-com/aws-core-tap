@@ -642,6 +642,11 @@ class TestVersionMismatch:
         assert tf_conformance.main([*args, "--allow-version-mismatch"]) == 0
         capsys.readouterr()
 
+    def test_a_hostile_resource_name_cannot_forge_report_structure_in_the_banner(self):
+        report = {"names_check": {"in_source_not_in_dump": ["aws_x\n# forged heading\n| a | b |"], "in_dump_not_in_source": []}}
+        banner = "\n".join(tf_conformance._mismatch_banner(report))
+        assert "\n#" not in banner and "\n|" not in banner and "forged heading" in banner
+
     def test_matching_resource_sets_carry_no_banner(self):
         report = {"names_check": {"in_source_not_in_dump": [], "in_dump_not_in_source": []}}
         assert tf_conformance.version_mismatch(report) == [] and tf_conformance._mismatch_banner(report) == []
@@ -806,6 +811,25 @@ class TestDumpScript:
             text = call.read_text()
             assert "hunter2" not in text and "HTTPS_PROXY" not in text
             assert "HTTP_PROXY=http://proxy.example:3128" in text
+
+    def test_an_output_path_that_is_a_symlink_is_refused_and_its_target_is_left_alone(self, tmp_path):
+        bindir, log = self._stub(tmp_path)
+        victim = tmp_path / "victim.txt"
+        victim.write_text("precious\n")
+        out = tmp_path / "out.json"
+        out.symlink_to(victim)
+        env = {"PATH": f"{bindir}:{os.environ['PATH']}", "HOME": str(tmp_path / "realhome"), "CROSSCHECK_DUMP_CONFINED": "yes"}
+        proc = subprocess.run(["bash", str(DUMP_SCRIPT), str(out)], env=env, capture_output=True, text=True, check=False)
+        assert proc.returncode == 2 and "symlink or not a regular file" in proc.stderr
+        assert victim.read_text() == "precious\n" and list(log.glob("call*.txt")) == []
+
+    def test_an_existing_output_file_is_replaced_whole_and_no_temporary_file_is_left(self, tmp_path):
+        out = tmp_path / "out.json"
+        out.write_text("old\n")
+        proc, _ = self._run(tmp_path)
+        assert proc.returncode == 0, proc.stderr
+        assert json.loads(out.read_text()) == {"provider_schemas": {}}
+        assert not [f for f in tmp_path.iterdir() if f.name.startswith(".terraform-schema")]
 
     def test_a_version_with_no_committed_lock_file_is_refused(self, tmp_path):
         proc, log = self._run(tmp_path, args=["-v", "0.0.1"])
