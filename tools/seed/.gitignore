@@ -1,0 +1,20 @@
+# Terraform state can hold secrets and the account number. Never commit it, a plan, or a variable file.
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+plan.out
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform/
+tfdata/
+.terraform.tfstate.lock.info
+# Built Lambda archive and every per-run output (expected inventory, show json, verdict records)
+.build/
+out/
