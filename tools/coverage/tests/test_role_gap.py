@@ -39,6 +39,7 @@ def test_policy_allows_only_read_verbs():
         ("collection-gaps", {"action": "geo:ListNotCalledAnywhere"}, "geo:ListNotCalledAnywhere: no manifest entry calls ListNotCalledAnywhere under service geo"),
         ("collection-gaps", {"action": "iam:ListTrackers"}, "iam:ListTrackers: no manifest entry calls ListTrackers under service iam"),
         ("collection-gaps", {"action": "sso:ListThings", "custom_fn": "rekognition_stream_processors_described"}, "sso:ListThings: no manifest entry read by rekognition_stream_processors_described is under service sso"),
+        ("collection-gaps", {"action": "sso:ListNothingReal", "custom_fn": "identity_center_applications_described"}, "sso:ListNothingReal: identity_center_applications_described does not call list_nothing_real"),
         ("probe-reads", {"action": "sts:GetFederationToken"}, "sts:GetFederationToken: the operation name suggests it returns a credential or secret"),
         ("probe-reads", {"action": "ecr:GetAuthorizationToken"}, "ecr:GetAuthorizationToken: the operation name suggests it returns a credential or secret"),
         ("collection-gaps", {"action": "nocolon"}, "nocolon: not service:Operation"),
@@ -66,3 +67,9 @@ def test_check_exits_zero_on_the_committed_list(capsys):
 def test_printed_policy_is_json(capsys):
     assert role_gap.main([]) == 0
     assert json.loads(capsys.readouterr().out)["Statement"][0]["Action"]
+
+
+def test_snake_case_and_the_custom_function_closure():
+    assert role_gap.snake_case("ListApplications") == "list_applications"
+    assert "list_applications" in role_gap.custom_fn_strings("identity_center_applications_described")
+    assert role_gap.custom_fn_strings("no_such_function") == set()
