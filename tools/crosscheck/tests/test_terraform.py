@@ -598,11 +598,53 @@ class TestConformance:
         prov, dump, plugin, w = conformance
         out = tmp_path / "out"
         args = ["--terraform-schema", str(dump), "--terraform-source", str(prov), "--plugin", str(plugin), "--weights", str(w), "--out", str(out)]
-        assert tf_conformance.main(args) == 0
+        assert tf_conformance.main([*args, "--allow-version-mismatch"]) == 0
         assert (out / "report.json").is_file() and (out / "report.md").is_file()
         with pytest.raises(SystemExit):
             tf_conformance.main(["--terraform-schema", str(dump), "--terraform-source", str(tmp_path / "missing"), "--plugin", str(plugin)])
         capsys.readouterr()
+
+
+class TestFieldAlignment:
+    @staticmethod
+    def _compare(monkeypatch, typed, attrs, tf_types=("aws_x",)):
+        monkeypatch.setattr(tf_conformance, "our_fields", lambda entry: (typed, []))
+        monkeypatch.setattr(tf_conformance, "terraform_attrs", lambda *a: attrs)
+        return tf_conformance.compare_pair("t", {"manifest": None}, list(tf_types), {}, {"resources": {}})
+
+    @staticmethod
+    def _attr(leaf):
+        return {"leaves": {leaf}, "paths": [leaf], "at": "a.go:1", "mapping": "set", "expr": "x"}
+
+    def test_a_same_named_attribute_decides_before_another_with_the_same_api_key(self, monkeypatch):
+        attrs = {("aws_x", "description"): self._attr("description"), ("aws_x", "name"): self._attr("name")}
+        out = self._compare(monkeypatch, {"description": "Name"}, attrs)
+        assert [d["field"] for d in out["differ"]] == ["description"] and out["agree"] == []
+
+    def test_a_differently_named_attribute_still_agrees_when_there_is_no_same_named_one(self, monkeypatch):
+        attrs = {("aws_x", "is_enabled"): self._attr("enabled")}
+        out = self._compare(monkeypatch, {"enabled": "Enabled"}, attrs)
+        assert [a["field"] for a in out["agree"]] == ["enabled"] and out["differ"] == []
+
+    def test_a_same_named_attribute_that_reads_the_same_key_agrees(self, monkeypatch):
+        attrs = {("aws_x", "name"): self._attr("name")}
+        out = self._compare(monkeypatch, {"name": "Name"}, attrs)
+        assert [a["field"] for a in out["agree"]] == ["name"]
+
+
+class TestVersionMismatch:
+    def test_a_resource_only_one_input_has_marks_the_report_and_fails_the_run(self, conformance, capsys):
+        prov, dump, plugin, w = conformance
+        rep = tf_conformance.run(dump, prov, plugin, w)
+        assert tf_conformance.version_mismatch(rep) and "INPUTS DIFFER" in tf_conformance.markdown(rep)
+        args = ["--terraform-schema", str(dump), "--terraform-source", str(prov), "--plugin", str(plugin), "--weights", str(w)]
+        assert tf_conformance.main(args) == 4
+        assert tf_conformance.main([*args, "--allow-version-mismatch"]) == 0
+        capsys.readouterr()
+
+    def test_matching_resource_sets_carry_no_banner(self):
+        report = {"names_check": {"in_source_not_in_dump": [], "in_dump_not_in_source": []}}
+        assert tf_conformance.version_mismatch(report) == [] and tf_conformance._mismatch_banner(report) == []
 
 
 class TestParseErrors:
@@ -617,7 +659,7 @@ class TestParseErrors:
         assert "INCOMPLETE" in tf_conformance.markdown(rep)
         args = ["--terraform-schema", str(dump), "--terraform-source", str(prov), "--plugin", str(plugin), "--weights", str(w)]
         assert tf_conformance.main(args) == 3
-        assert tf_conformance.main([*args, "--allow-parse-errors"]) == 0
+        assert tf_conformance.main([*args, "--allow-parse-errors", "--allow-version-mismatch"]) == 0
         capsys.readouterr()
 
     def test_a_clean_run_carries_no_banner(self, conformance):

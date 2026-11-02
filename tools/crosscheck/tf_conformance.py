@@ -12,6 +12,11 @@ human, decided against the AWS API model or a live account (specs/spec-aws-core-
     tf_conformance.py --terraform-schema schema.json --terraform-source ~/src/terraform-provider-aws
                       [--terraform-version 6.71.0] [--plugin <aws-core-tap root>]
                       [--weights weights/cartography-set-v1.json] [--out DIR]
+                      [--allow-parse-errors] [--allow-version-mismatch]
+
+Exit 0 on a complete comparison; 3 when some provider source files failed to parse; 4 when the schema dump and the
+source checkout have different sets of resources (they may be different provider versions). Each report carries
+a banner for the same condition, and the flags accept it.
 
 The schema file comes from terraform_dump.sh; the source is only parsed (tree-sitter), never built or run.
 Needs `pip install -r tools/crosscheck/requirements-terraform.txt` for the source layer.
@@ -143,9 +148,15 @@ def compare_pair(our_type: str, entry: dict, tf_types: list[str], dump: dict, sr
     matched_attrs: set[tuple[str, str]] = set()
     for f, p in sorted(typed.items()):
         leaf, segs = _leaf(p), _segments(p)
-        hit = [(k, v) for k, v in sorted(attrs.items()) if leaf in v["leaves"]]
-        part = [(k, v) for k, v in sorted(attrs.items()) if not hit and v["leaves"] and any(x in segs[:-1] for x in v["leaves"])]
         named = [(k, v) for k, v in sorted(attrs.items()) if norm(k[1]) == norm(f)]
+        # An attribute of the same name on the type's own resource that reads an API field is the one this field is
+        # compared with: another attribute that happens to read the same API key must not turn a disagreement into
+        # an agreement. Only when there is no such attribute are all of them searched by API key, which is how
+        # `enabled` and `is_enabled` meet.
+        own = [(k, v) for k, v in named if v["leaves"] and (len(tf_types) == 1 or primary is None or k[0] in primary)]
+        pool = own or sorted(attrs.items())
+        hit = [(k, v) for k, v in pool if leaf in v["leaves"]]
+        part = [(k, v) for k, v in pool if not hit and v["leaves"] and any(x in segs[:-1] for x in v["leaves"])]
         if hit:
             matched_attrs.update(k for k, _ in hit)
             k, v = hit[0]
@@ -346,6 +357,25 @@ def top_disagreements(pairs: list[dict], n: int) -> list[dict]:
 
 # ---------------------------------------------------------------- output
 
+def version_mismatch(r: dict) -> list[str]:
+    """Resources only one of the two inputs has. The schema is a release and the source a checkout, and nothing
+    ties one to the other, so a difference in the set of resources is the sign they are not the same version (or
+    that the reader could not see a resource); either way the figures mix two inputs."""
+    nc = r["names_check"]
+    return sorted(nc["in_source_not_in_dump"] + nc["in_dump_not_in_source"])
+
+
+def _mismatch_banner(r: dict) -> list[str]:
+    odd = version_mismatch(r)
+    if not odd:
+        return []
+    return [
+        f"**INPUTS DIFFER: {len(odd)} resource(s) are in only one of the schema dump and the source checkout (for example `{odd[0]}`). "
+        "They may be different provider versions, so the figures below combine two inputs.**",
+        "",
+    ]
+
+
 def _incomplete_banner(r: dict) -> list[str]:
     """A prominent line when any Go file failed to parse: the comparison then under-reports what the provider does,
     and a normal-looking report would be read as complete."""
@@ -366,6 +396,7 @@ def markdown(r: dict) -> str:
         f"source commit {r['inputs']['terraform_source']['commit'][:12]}, aws_core {r['inputs']['aws_core']['commit'][:12]}.",
         "",
         *_incomplete_banner(r),
+        *_mismatch_banner(r),
         "## Headline",
         "",
         "| Measure | Value |",
@@ -417,6 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--weights", type=Path, default=HERE / "weights" / "cartography-set-v1.json")
     ap.add_argument("--out", type=Path, default=None, help="directory for report.json and report.md")
     ap.add_argument("--allow-parse-errors", action="store_true", help="exit 0 although some provider source files failed to parse (the report is still marked INCOMPLETE)")
+    ap.add_argument("--allow-version-mismatch", action="store_true", help="exit 0 although the schema dump and the source checkout have different sets of resources (the report is still marked INPUTS DIFFER)")
     a = ap.parse_args(argv)
     try:
         rep = run(a.terraform_schema, a.terraform_source, a.plugin, a.weights, a.terraform_version)
@@ -433,6 +465,9 @@ def main(argv: list[str] | None = None) -> int:
     if rep["inputs"]["terraform_source"]["files_with_parse_error"] and not a.allow_parse_errors:
         sys.stderr.write("some provider source files failed to parse: the report is INCOMPLETE (exit 3; --allow-parse-errors to accept)\n")
         return 3
+    if version_mismatch(rep) and not a.allow_version_mismatch:
+        sys.stderr.write("the schema dump and the source checkout have different resources, so they may be different provider versions (exit 4; --allow-version-mismatch to accept)\n")
+        return 4
     return 0
 
 
