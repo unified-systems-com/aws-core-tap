@@ -1,0 +1,104 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "fail": 1,
+  "pass": 5
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (9 destroyed). Checked directly afterwards: no firewall, policy, rule group or VPC of the run is left.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Keys, compared field names and outcomes only. Firewall, policy and rule group pass. The VPC endpoint association FAILS with read-error:ClientError and that failure is the collector role, not the collector: the role is refused network-firewall:ListVpcEndpointAssociations (read in full from the denial message, 2026-11-02; a known miss, aws-core-tap#172 and #176), so the association that was created and seen by Terraform cannot be listed under SecurityAudit plus ReadOnlyAccess. It stays collected-unverified. Not seeded: TLSInspectionConfiguration (needs a certificate), ContainerAssociation (also refused its list call), LoggingConfiguration (needs a log destination).",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w2n11021019",
+  "seeds": "tools/seed/wave2-nfw (9 Terraform resources, 4 Network Firewall entity types and two VPCs with a subnet each)",
+  "wave": 2
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::NetworkFirewall::Firewall",
+   "compared_fields": [
+    "firewall_arn",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_network_firewall",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkFirewall::FirewallPolicy",
+   "compared_fields": [
+    "name",
+    "networkfirewall_firewall_policy_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkfirewall_firewall_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkFirewall::RuleGroup",
+   "compared_fields": [
+    "name",
+    "networkfirewall_rule_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkfirewall_rule_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkFirewall::VpcEndpointAssociation",
+   "compared_fields": [
+    "vpc_endpoint_association_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkfirewall_vpc_endpoint_association",
+   "expected": 1,
+   "first_mismatch": "read-error:ClientError",
+   "uncovered_edges": [],
+   "verdict": "fail"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": [
+  "wave2-nfw"
+ ]
+}
