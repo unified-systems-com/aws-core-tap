@@ -1,0 +1,8 @@
+{
+  "description": "Ledger (CloudFormation) type names that AWS Config files under a different resource-type name, so the hit list does not report a supported type as unsupported. Each maps the ledger name to the Config ResourceType, which must be in config-resource-types.json (a test checks). Seeded from the types whose Config name differs by service prefix; add a pair when one is found.",
+  "aliases": {
+    "AWS::CertificateManager::Certificate": "AWS::ACM::Certificate",
+    "AWS::OpenSearchService::Domain": "AWS::OpenSearch::Domain",
+    "AWS::IAM::ManagedPolicy": "AWS::IAM::Policy"
+  }
+}
