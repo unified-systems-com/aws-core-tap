@@ -18,7 +18,7 @@ count without a regeneration fails.
 | File | What it is |
 | --- | --- |
 | `hit-list.json` | Generated. Per service: weight, types, collected, with falsifier, reconcilable, cascade parents, Config-supported; then one row per type. |
-| `decisions.json` | Human verdicts the code cannot show (does retiring this type need to retire others), with a status and the basis for each. Holds proposed verdicts for the top services, all `proposed-unverified` until a live trial shows the behaviour; each carries its basis. A type with no entry reads as `undecided`. |
+| `decisions.json` | Human verdicts the code cannot show (does retiring this type need to retire others), with a status and the basis for each. Add an entry when a service is worked and delete none without saying why in the commit. It holds proposed verdicts for the top services, all `proposed-unverified` until a live trial shows the behaviour; each carries its basis. A type with no entry reads as `undecided`. |
 | `config-aliases.json` | Ledger type names that Config files under another name (`AWS::CertificateManager::Certificate` is Config's `AWS::ACM::Certificate`), so a supported type is not reported unsupported. |
 | `config-resource-types.json` | Config's `ResourceType` enum from botocore, with the version. |
 

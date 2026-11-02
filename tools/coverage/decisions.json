@@ -1,5 +1,5 @@
 {
-  "description": "Human verdicts the generator cannot derive from code, keyed by CloudFormation type name. verdict is cascade (retiring this type should retire the listed children) or no-cascade. status is proposed-unverified until a live trial shows the behaviour, then verified. Rule (the rule as discussed and accepted on aws-core-tap#166; it is not yet in a specification): a child cascades when it cannot exist without its parent (identity scoped under it, or its API requires it); not when it is only attached to or referenced by the parent, or may outlive it. A type with no entry reads as undecided. Delete none without saying why in the commit.",
+  "description": "Proposed cascade verdicts, keyed by CloudFormation type name, that the generator copies into the report. verdict is cascade (retiring this type would retire the listed children) or no-cascade; status is proposed-unverified until a live trial shows the behaviour. The rule they follow: a child cascades when it cannot exist without its parent (its identity is scoped under the parent, or its API requires it), not when it is only attached to or referenced by it, or may outlive it. A type with no entry reads as undecided.",
   "decisions": {
     "AWS::EC2::VPC": {
       "verdict": "cascade",
@@ -121,7 +121,7 @@
       ],
       "status": "proposed-unverified",
       "basis": "From knowledge of AWS delete behaviour; not tried live. Whether disabling a hub removes insights, automation rules and action targets is undecided and to be verified live.",
-      "note": "Findings cascade with their parent through the containment the plugin already declares (decided in the discussion on aws-core-tap#166: semantic correctness over use-case exceptions; a retired finding stays on the grid as a tombstone and can be recovered)."
+      "note": "Findings cascade with their parent through the containment the plugin already declares; a retired finding stays on the grid as a tombstone and can be recovered."
     },
     "AWS::GuardDuty::Detector": {
       "verdict": "cascade",
@@ -139,7 +139,7 @@
       ],
       "status": "proposed-unverified",
       "basis": "From knowledge of AWS delete behaviour; not tried live. The malware protection plan is account-level.",
-      "note": "Findings cascade with their parent through the containment the plugin already declares (decided in the discussion on aws-core-tap#166: semantic correctness over use-case exceptions; a retired finding stays on the grid as a tombstone and can be recovered)."
+      "note": "Findings cascade with their parent through the containment the plugin already declares; a retired finding stays on the grid as a tombstone and can be recovered."
     },
     "AWS::IAM::Role": {
       "verdict": "no-cascade",
