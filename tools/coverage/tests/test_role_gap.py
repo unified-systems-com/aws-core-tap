@@ -78,17 +78,19 @@ def test_snake_case_and_the_custom_function_closure():
     assert role_gap.custom_fn_calls("no_such_function") == set()
 
 
-def test_a_name_that_is_only_text_is_not_a_call(tmp_path):
+def test_only_calls_on_a_client_count(tmp_path):
     source = tmp_path / "customfns.py"
     source.write_text(
-        "def f(client):\n"
-        "    \"\"\"Uses list_comment_only and list_unused.\"\"\"\n"
+        "def f(session, *, client_for):\n"
+        "    \"\"\"Uses list_comment_only.\"\"\"\n"
+        "    client = client_for('x')\n"
         "    unused = 'list_unused'\n"
+        "    logger.list_logged()\n"
+        "    print('list_printed')\n"
+        "    _pages(logger, 'list_wrong_receiver')\n"
         "    client.list_attr(x=1)\n"
         "    return _pages(client, 'list_arg')\n"
         "def _pages(client, name):\n"
         "    return name\n"
     )
     assert role_gap.custom_fn_calls("f", source) == {"list_attr", "list_arg"}
-    assert "list_unused" not in role_gap.custom_fn_calls("f", source)
-    assert "list_comment_only" not in role_gap.custom_fn_calls("f", source)

@@ -69,11 +69,26 @@ def manifest_calls(path: Path = MANIFEST) -> tuple[set[tuple[str, str]], dict[st
     return calls, functions
 
 
+def _client_names(function: ast.FunctionDef) -> set[str]:
+    """The names in a function that hold a boto3 client: a parameter called ``client`` or any name assigned
+    from ``client_for(...)`` or ``<something>.client(...)``."""
+    names = {arg.arg for arg in function.args.args + function.args.kwonlyargs if arg.arg == "client"}
+    for node in ast.walk(function):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+            callee = node.value.func
+            if (isinstance(callee, ast.Name) and callee.id == "client_for") or (
+                isinstance(callee, ast.Attribute) and callee.attr == "client"
+            ):
+                names.update(target.id for target in node.targets if isinstance(target, ast.Name))
+    return names
+
+
 def custom_fn_calls(function: str, path: Path = CUSTOMFNS) -> set[str]:
-    """The names a custom function, and the module-level functions it calls (followed transitively), could pass
-    to boto3 as an operation: a string given as an argument of a call (``_pages(client, "list_applications")``)
-    or an attribute that is itself called (``client.list_applications(...)``). A name that only appears in a
-    comment, a docstring or an unused constant is not returned. Empty when the function is not defined."""
+    """The boto3 operations a custom function, and the module-level functions it calls (followed transitively),
+    invoke on a client, in the two forms the module uses: ``client.list_applications(...)`` and
+    ``_pages(client, "list_applications")``. The receiver must be a name that holds a client (see
+    :func:`_client_names`); ``logger.list_applications()`` or ``print("list_applications")`` is not a call.
+    A heuristic on the module's own idiom, not a proof of what is sent. Empty when the function is not defined."""
     tree = ast.parse(path.read_text(encoding="utf-8"))
     defined = {node.name: node for node in tree.body if isinstance(node, ast.FunctionDef)}
     found: set[str] = set()
@@ -83,15 +98,25 @@ def custom_fn_calls(function: str, path: Path = CUSTOMFNS) -> set[str]:
         if name in seen or name not in defined:
             continue
         seen.add(name)
+        clients = _client_names(defined[name])
         for node in ast.walk(defined[name]):
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Attribute):
-                    found.add(node.func.attr)
-                if isinstance(node.func, ast.Name):
-                    pending.append(node.func.id)
-                for arg in node.args:
-                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
-                        found.add(arg.value)
+            if not isinstance(node, ast.Call):
+                continue
+            callee = node.func
+            if isinstance(callee, ast.Name):
+                pending.append(callee.id)
+                first = node.args[0] if node.args else None
+                second = node.args[1] if len(node.args) > 1 else None
+                if (
+                    callee.id == "_pages"
+                    and isinstance(first, ast.Name)
+                    and first.id in clients
+                    and isinstance(second, ast.Constant)
+                    and isinstance(second.value, str)
+                ):
+                    found.add(second.value)
+            elif isinstance(callee, ast.Attribute) and isinstance(callee.value, ast.Name) and callee.value.id in clients:
+                found.add(callee.attr)
     return found
 
 
