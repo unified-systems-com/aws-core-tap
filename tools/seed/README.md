@@ -22,8 +22,9 @@ Two identities, never mixed. The **seeder** profile (default `tap-seeder-git-ser
 used only by the Terraform commands and the leftover check below. The collector's read-only identity is used only by
 `compare.py`, inside the container. Keys are never written to a file, a state backend, a report or a message.
 
-Work from the repository root. Step 0 sets variables; type the account number at the prompt so that it reaches no file or
-shell history.
+Work from the repository root. Step 0 sets variables; type the account number at the prompt so that it is not in shell
+history. It does reach files under `out/`: Terraform's state and saved plans and the expected inventory hold it (in
+input values and ARNs). They stay in the git-ignored `out/<run id>` and are deleted at the end (steps 4, 7 and 9).
 
 ```
 cd tools/seed/wave1
@@ -62,6 +63,7 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
 
    ```
    terraform apply -input=false "$RUN_DIR/plan.tfplan"
+   rm -f "$RUN_DIR/plan.tfplan"                                       # a saved plan holds the input variables, the account number among them
    ```
 
 5. **Expected inventory** from the state:
@@ -75,7 +77,8 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
    Give EC2 and IAM a minute to settle before step 6.
 
 6. **Compare**, in the stack's web container (it holds the collector's read-only secret). The container sees the
-   repository at `/app/_dev-plugins/aws_core`; make `$RUN_DIR` visible there (it is under `tools/seed/out/`):
+   repository at `/app/_dev-plugins/aws_core`, so `$RUN_DIR` (under `tools/seed/out/`) is visible there as it is. The
+   catalog is found beside `compare.py` or at the mount path; `SEED_CATALOG` overrides it:
 
    ```
    scripts/dc exec -T \
@@ -96,6 +99,7 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
    test "$(aws sts get-caller-identity --profile "$PROFILE" --query Account --output text)" = "$TF_VAR_expected_account_id" && echo account-ok
    terraform plan -destroy -input=false -out="$RUN_DIR/destroy.tfplan"      # read it: only this run's resources
    terraform apply -input=false "$RUN_DIR/destroy.tfplan"
+   rm -f "$RUN_DIR/destroy.tfplan"
    ```
 
 8. **Leftover check** (report only; it deletes nothing). Anything still tagged for this run is the wave's failure and
@@ -130,7 +134,8 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
   marker and its own state; a later run never sweeps it up. If the state of an interrupted run is lost, report the
   leftovers to a person.
 - **Verify the account and region before apply and before destroy** (steps 1 and 7). The account number is read from
-  `TF_VAR_expected_account_id` at run time and is never written to a file.
+  `TF_VAR_expected_account_id` at run time; this tool never writes it to a file of its own, and the plan files that
+  would carry it are deleted right after they are applied.
 - The account already holds networking this repository does not declare. Nothing here references, imports or modifies
   any existing resource; the wave creates its own VPC and addresses nothing else.
 - Seeder names: every IAM role, user, group, policy and instance profile starts with `seed-`, the only names the seeder

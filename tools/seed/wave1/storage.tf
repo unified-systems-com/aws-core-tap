@@ -13,7 +13,9 @@ resource "aws_kms_alias" "seed" {
 }
 
 # Bucket A: versioning, default encryption with the seeded key, the public access block, and awkward tags.
-resource "aws_s3_bucket" "a" {
+# Both buckets are empty, private, and destroyed with the wave: no access-log target and no HTTPS-only policy, because
+# each would be one more resource (and one more bucket to log into) that the projection check does not look at.
+resource "aws_s3_bucket" "a" { # NOSONAR
   bucket        = "${local.prefix}-bucket-a"
   force_destroy = true
   tags = {
@@ -51,7 +53,7 @@ resource "aws_s3_bucket_public_access_block" "a" {
 }
 
 # Bucket B: the bucket-level public access block left at its default (none), and no tags beyond the defaults.
-resource "aws_s3_bucket" "b" {
+resource "aws_s3_bucket" "b" { # NOSONAR
   bucket        = "${local.prefix}-bucket-b"
   force_destroy = true
 

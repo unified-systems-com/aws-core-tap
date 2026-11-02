@@ -105,6 +105,18 @@ def test_report_is_deterministic_and_counts_verdicts():
     assert "123456789012" not in json.dumps(a)
 
 
+def test_the_catalog_is_found_beside_the_file_or_at_the_mount(tmp_path):
+    assert compare.catalog_path(str(SEED / "compare.py")) == str(SEED / "seeding.json")
+    assert compare.catalog_path(str(tmp_path / "manage.py"), mount="/m") == "/m/seeding.json"  # a __file__ that names something else
+    assert compare.catalog_path(None, mount="/m") == "/m/seeding.json"
+
+
+def test_compare_uses_the_wave_zero_read_guard_not_a_verb_prefix():
+    text = (SEED / "compare.py").read_text()
+    assert "from readguard import install" in text and "install(session)" in text
+    assert "read_verb" not in text
+
+
 def test_canon():
     assert compare.canon(True) == "true" and compare.canon(30) == compare.canon("30") == "30" and compare.canon(1.0) == "1"
     assert compare.canon(["b", "a"]) == compare.canon(["a", "b"]) and compare.canon({"b": 1, "a": 2}) == {"a": "2", "b": "1"}

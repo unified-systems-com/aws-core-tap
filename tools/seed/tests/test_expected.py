@@ -89,7 +89,26 @@ def test_suffix_stripped_log_group_key(doc):
 
 def test_all_true_derivation(doc):
     assert by_addr(doc, "aws_s3_bucket.a")["attrs"]["public_access_blocked"] is True
-    assert by_addr(doc, "aws_s3_bucket.b")["attrs"]["public_access_blocked"] is False
+    # bucket B has no block resource: S3's default for a new bucket is blocked, which the catalog states as `absent`
+    assert by_addr(doc, "aws_s3_bucket.b")["attrs"]["public_access_blocked"] is True
+
+
+def test_an_absent_block_is_false_unless_the_spec_names_a_default():
+    spec = {"all_true": {"terraform": "aws_s3_bucket_public_access_block", "own": "id", "other": "bucket", "flags": ["block_public_acls"]}}
+    bucket = {"type": "aws_s3_bucket", "values": {"id": "x"}}
+    assert expected.evaluate(spec, bucket, [bucket]) is False
+    assert expected.evaluate({**spec, "absent": True}, bucket, [bucket]) is True
+
+
+def test_a_symlinked_or_non_file_input_is_refused(tmp_path):
+    real = tmp_path / "real.json"
+    real.write_text("{}")
+    link = tmp_path / "link.json"
+    link.symlink_to(real)
+    for bad in (link, tmp_path):
+        with pytest.raises(expected.ExpectedError):
+            expected.read_json_file(bad)
+    assert expected.main([str(link)]) == 2
 
 
 def test_edges_only_when_target_was_seeded(doc):

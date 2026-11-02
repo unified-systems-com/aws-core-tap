@@ -22,9 +22,10 @@ data "archive_file" "fn" {
   }
 }
 
+# The function is never invoked and the group is destroyed with the wave; one day of retention keeps a stray group cheap.
 resource "aws_cloudwatch_log_group" "fn" {
   name              = "/aws/lambda/${local.prefix}-fn"
-  retention_in_days = 1
+  retention_in_days = 1 # NOSONAR
 
   depends_on = [terraform_data.guard]
 }

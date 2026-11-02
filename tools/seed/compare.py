@@ -21,9 +21,24 @@ Importing this module only defines functions; they are unit-tested without Djang
 import json
 import os
 import re
+import sys
 
 UNREAD_MARK = "<unread>"
 LOOSE_NOTE = "scalars compare by their string form (the API returns some integers as strings); lists compare as sets"
+
+
+MOUNT = "/app/_dev-plugins/aws_core/tools/seed"
+
+
+def catalog_path(file=None, mount=MOUNT):
+    """The seed catalog beside this file, or where the repository is mounted in the container. Under
+    `manage.py shell -c "exec(...)"` there is no usable ``__file__`` (it can name manage.py), so the file next to a
+    ``__file__`` is used only if it exists."""
+    if file:
+        beside = os.path.join(os.path.dirname(os.path.abspath(file)), "seeding.json")
+        if os.path.isfile(beside):
+            return beside
+    return os.path.join(mount, "seeding.json")
 
 
 def scrub(text):
@@ -244,10 +259,8 @@ def main():
     from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
     from tap_plugin.aws_core.collectors.boto3_collector.transforms import build_transform_registry
 
-    # exec() from `manage.py shell -c` has no __file__: fall back to where the repository is mounted in the container
-    here = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else "/app/_dev-plugins/aws_core/tools/seed"
     expected_doc = json.load(open(os.environ["SEED_EXPECTED"]))
-    catalog = json.load(open(os.environ.get("SEED_CATALOG") or os.path.join(here, "seeding.json")))
+    catalog = json.load(open(os.environ.get("SEED_CATALOG") or catalog_path(globals().get("__file__"))))
     entries = manifest_entries()
     entries_by_type = {e["entity_type"]: e for e in entries}
     modeled = {e["entity_type"] for e in entries}
@@ -264,17 +277,16 @@ def main():
         raise SystemExit(f"STOP: wave 1 compares only in aws-us-gov / us-gov-west-1, credential says {partition} {regions}")
     region = "us-gov-west-1"
     session = build_session(data)
+    # The same guard as wave 0, before any client is built: a read verb is not enough (it refuses GetSecretValue,
+    # GetObject, GetSessionToken and the rest of its list) and a request that asks the service to reveal a secret.
+    sys.path.insert(0, os.path.join(MOUNT, "..", "validate"))
+    from readguard import install  # noqa: E402
+
+    install(session)
     account = caller_account_id(session, region, timeout_seconds=30)
     mismatch = account_mismatch_error(data, account)
     if mismatch:
         raise SystemExit(f"STOP: {mismatch}")
-    read_verb = re.compile(r"^(Describe|List|Get|BatchGet|Search|Lookup|Head|Query)")
-
-    def guard(model=None, **_kw):
-        if not read_verb.match(getattr(model, "name", "")):
-            raise RuntimeError("non-read call refused")
-
-    session.events.register("before-call", guard)
     transforms = build_transform_registry(partition)
     first, err1 = _collect(seeded, entries_by_type, session, partition, region, account, modeled, transforms)
     second, err2 = _collect(seeded, entries_by_type, session, partition, region, account, modeled, transforms)

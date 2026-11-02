@@ -35,8 +35,17 @@ def walk_resources(module: dict[str, Any]) -> list[dict[str, Any]]:
     return found
 
 
+def read_json_file(path: Path) -> Any:
+    """A JSON document from a regular file the operator named. A link, a directory or a device is refused, so a
+    path argument cannot be made to read something it was not pointed at."""
+    path = Path(path)
+    if path.is_symlink() or not path.is_file():
+        raise ExpectedError(f"{path.name}: not a regular file")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def load_state(path: Path) -> list[dict[str, Any]]:
-    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc = read_json_file(path)
     values = doc.get("values")
     if not isinstance(values, dict) or "root_module" not in values:
         raise ExpectedError("no `values.root_module` in the input: pass `terraform show -json` of the applied STATE, not a plan")
@@ -71,8 +80,8 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
     - a string: a dotted path into the resource's values
     - {"path": p, "strip_suffix": s}: the path, with a trailing suffix removed
     - {"const": v}: v
-    - {"all_true": {terraform, own, other, flags}}: True iff a resource of that type whose `other` equals this
-      resource's `own` exists and every flag attribute on it is true; False if there is none
+    - {"all_true": {terraform, own, other, flags}, "absent": v}: True iff a resource of that type whose `other` equals
+      this resource's `own` exists and every flag attribute on it is true; `v` (default False) if there is none
     - {"join": {terraform, own, other, target}}: the `target` (a spec) of every resource of that type whose
       `other` equals this resource's `own`; a list, sorted
     """
@@ -94,7 +103,9 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
         for other in resources:
             if other.get("type") == j["terraform"] and own is not None and _get(other, j["other"]) == own:
                 return all(_get(other, flag) is True for flag in j["flags"])
-        return False
+        # No such resource: the value is the service default the spec names (S3 blocks public access on a new bucket),
+        # False when it names none.
+        return spec.get("absent", False)
     if "join" in spec:
         j = spec["join"]
         own = _get(resource, j["own"])
@@ -182,12 +193,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=None, help="write here instead of stdout")
     args = ap.parse_args(argv)
     try:
-        catalog = json.loads(args.catalog.read_text(encoding="utf-8"))
+        catalog = read_json_file(args.catalog)
         text = json.dumps(build_expected(load_state(args.show_json), catalog), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     except (ExpectedError, OSError, ValueError) as exc:
         print(f"expected.py: {exc}", file=sys.stderr)
         return 2
     if args.out:
+        if args.out.is_symlink() or (args.out.exists() and not args.out.is_file()):
+            print(f"expected.py: {args.out.name}: not a regular file", file=sys.stderr)
+            return 2
         args.out.write_text(text, encoding="utf-8")
     else:
         sys.stdout.write(text)
