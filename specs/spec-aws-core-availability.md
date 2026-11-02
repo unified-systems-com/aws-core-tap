@@ -155,9 +155,16 @@ RID: `req-aws-core-availability-probe`
 Status: `Proposed`
 
 The probe has two parts. **DNS:** resolve each service's regional endpoint hostname (the standard, FIPS and dual-stack
-forms) with the system resolver and record the answer or its absence. **Call:** one credentialed read call per
-operation under the least-privilege read-only identity, with a before-call guard refusing any non-read operation,
-recording the raw error code, exception class and HTTP status. The wave 0 smoke (`tools/validate`) is this part's first
+forms) and record the answer or its absence. A single local resolver is not evidence of absence: `endpoint-absent` needs
+a no-such-name answer from the system resolver and from at least one independent public resolver, and the same answer
+again on a second probe at least five minutes later; anything less is `unreachable-unknown`. **Call:** one credentialed
+read call per operation under the least-privilege read-only identity (an identity with no write permission, so the
+guard below is the second boundary and IAM is the first), recording the raw error code, exception class and HTTP
+status. **The before-call guard fails closed:** it refuses any operation whose name is not a read verb, any operation on a
+reviewed deny list of read-named operations that return credentials or secret values, any request that asks the service
+to reveal a secret, and any operation the manifest does not name; an operation the guard has not classified is refused,
+not attempted. A denial counts as `access-denied-present` only when the answer names the action ("is not authorized to
+perform: service:Action"); a refusal that does not (a front door, a policy that rejects before routing) is `unknown`. The wave 0 smoke (`tools/validate`) is this part's first
 implementation: its run record is an empirical layer. The probe never records resource content and removes any account
 identifier before storing.
 
