@@ -18,7 +18,7 @@ def test_default_policy_is_empty_and_known_misses_are_opt_in():
     doc = role_gap.load()
     assert role_gap.actions_of(doc) == []
     misses = role_gap.actions_of(doc, include_known_misses=True)
-    assert len(misses) == 19 and "geo:ListTrackers" in misses
+    assert len(misses) == 26 and "geo:ListTrackers" in misses
     assert "bedrock:GetFlow" not in misses and "glue:GetConnections" not in misses
 
 
