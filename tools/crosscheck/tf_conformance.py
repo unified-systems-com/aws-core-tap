@@ -442,12 +442,17 @@ def markdown(r: dict) -> str:
 
 
 def write_reports(out: Path, files: dict[str, str]) -> None:
-    """Write each file into ``out`` by a temporary file renamed into place. A link at the directory or at a file's
-    path is refused (OSError), so the write cannot be sent to wherever a link inside an analysed tree points, and a
-    rename replaces a link at the path instead of following it."""
+    """Write each file into ``out`` by a temporary file renamed into place. ``out`` must lie under the directory the
+    tool is run from. A link at the directory or at a file's path is refused (OSError), so the write cannot be sent
+    to wherever a link inside an analysed tree points, and a rename replaces a link at the path instead of following it."""
     if out.is_symlink():
         raise OSError(f"{out.name}: the output directory is a symlink")
-    out.mkdir(parents=True, exist_ok=True)  # NOSONAR: the operator names the directory; links were refused above
+    real = os.path.realpath(out)
+    base = os.path.realpath(os.getcwd())
+    if real != base and not real.startswith(base + os.sep):
+        raise OSError(f"{out.name}: not under the directory the tool is run from")
+    out = Path(real)
+    out.mkdir(parents=True, exist_ok=True)
     for name, body in files.items():
         dest = out / name
         if dest.is_symlink() or (dest.exists() and not dest.is_file()):

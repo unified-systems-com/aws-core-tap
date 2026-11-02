@@ -594,8 +594,9 @@ class TestConformance:
         by = {d["type"]: d for d in nc["different"]}
         assert by["aws_kms_key"]["only_in_source"] == ["rule", "tags_all"] and by["aws_kms_key"]["only_in_dump"] == []
 
-    def test_the_cli_writes_both_files_and_a_missing_source_is_an_argument_error(self, conformance, tmp_path, capsys):
+    def test_the_cli_writes_both_files_and_a_missing_source_is_an_argument_error(self, conformance, tmp_path, capsys, monkeypatch):
         prov, dump, plugin, w = conformance
+        monkeypatch.chdir(tmp_path)  # reports go under the directory the tool is run from
         out = tmp_path / "out"
         args = ["--terraform-schema", str(dump), "--terraform-source", str(prov), "--plugin", str(plugin), "--weights", str(w), "--out", str(out)]
         assert tf_conformance.main([*args, "--allow-version-mismatch"]) == 0
@@ -606,7 +607,8 @@ class TestConformance:
 
 
 class TestWriteReports:
-    def test_a_symlinked_report_or_directory_is_refused_and_its_target_left_alone(self, tmp_path):
+    def test_a_symlinked_report_or_directory_is_refused_and_its_target_left_alone(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
         victim = tmp_path / "victim.txt"
         victim.write_text("precious\n")
         out = tmp_path / "out"
@@ -620,13 +622,28 @@ class TestWriteReports:
         with pytest.raises(OSError):
             tf_conformance.write_reports(linked, {"report.json": "{}"})
 
-    def test_reports_replace_an_existing_file_whole_and_leave_no_temporary_file(self, tmp_path):
+    def test_reports_replace_an_existing_file_whole_and_leave_no_temporary_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
         out = tmp_path / "new" / "dir"
         tf_conformance.write_reports(out, {"report.json": "{}", "report.md": "# x"})
         (out / "report.md").write_text("stale")
         tf_conformance.write_reports(out, {"report.json": "{}", "report.md": "# y"})
         assert (out / "report.md").read_text() == "# y"
         assert sorted(f.name for f in out.iterdir()) == ["report.json", "report.md"]
+
+
+class TestReportsStayUnderTheWorkingDirectory:
+    def test_an_output_directory_outside_it_is_refused(self, tmp_path, monkeypatch):
+        here, elsewhere = tmp_path / "here", tmp_path / "elsewhere"
+        here.mkdir()
+        monkeypatch.chdir(here)
+        with pytest.raises(OSError):
+            tf_conformance.write_reports(elsewhere, {"report.json": "{}"})
+        with pytest.raises(OSError):
+            tf_conformance.write_reports(here / ".." / "elsewhere", {"report.json": "{}"})
+        assert not elsewhere.exists()
+        tf_conformance.write_reports(here / "reports", {"report.json": "{}"})
+        assert (here / "reports" / "report.json").is_file()
 
 
 class TestFieldAlignment:
