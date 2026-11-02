@@ -9,7 +9,7 @@ the falsifier asked about as well as the verdict.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -34,6 +34,7 @@ from tap_plugin.aws_core.tests.test_falsifiers import (
 )
 
 from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, UNDETERMINED, Verdict, unsupported
+from tap_grid.models import Entity
 
 LAMBDA = "aws_core__aws_lambda"
 SQS = "aws_core__aws_sqs_queue"
@@ -118,8 +119,11 @@ def judge(
     region: str = GOV,
     account: str = ACCOUNT_ID,
     sweep: list[str] | None = None,
+    row_created: datetime | None = EARLIER - timedelta(days=1),
 ) -> tuple[Verdict, MagicMock]:
     entity_id = _dimensioned(slug, payload, region=region)
+    # The row's creation time decides whether a deletion record can be about it; pin it so a test says which.
+    Entity.objects.filter(id=entity_id).update(created_at=row_created)
     session = session_for(client)
     falsifier = ConfigHistoryFalsifier(
         session=session, account_id=account, region_sweep=(lambda _s: list(sweep)) if sweep is not None else None
@@ -156,6 +160,24 @@ class TestVerdicts:
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
         assert "not a deletion" in verdict.note
+
+    def test_a_deletion_recorded_before_the_grid_row_existed_is_a_later_incarnation_and_not_retired(self) -> None:
+        # Config's latest item is a deletion, but it is older than the grid row: the row is a newer object that
+        # reuses the name or ARN, and the old record must not retire it.
+        client = FakeConfig([item("ResourceDeleted", EARLIER, arn=FN_ARN, accountId=ACCOUNT_ID, awsRegion=GOV)])
+        verdict, _ = judge(LAMBDA, LAMBDA_ROW, client, row_created=CAPTURED + timedelta(days=1))
+        assert verdict.verdict == UNDETERMINED
+        assert "later incarnation" in verdict.note
+
+    def test_a_deletion_after_the_grid_row_was_created_retires(self) -> None:
+        client = FakeConfig([item("ResourceDeleted", CAPTURED, arn=FN_ARN, accountId=ACCOUNT_ID, awsRegion=GOV)])
+        verdict, _ = judge(LAMBDA, LAMBDA_ROW, client, row_created=CAPTURED - timedelta(minutes=5))
+        assert verdict.verdict == DROPPED_FROM_OBSERVATION
+
+    @pytest.mark.parametrize(("captured", "created"), [(None, CAPTURED), (CAPTURED, None), ("2026-11-01", CAPTURED)])
+    def test_an_unknown_order_never_retires(self, captured: object, created: object) -> None:
+        why, later = ConfigHistoryFalsifier._deletion_not_after_row(captured, created)
+        assert "cannot be established" in why and later is False
 
     def test_deleted_then_recreated_is_not_retired(self) -> None:
         client = FakeConfig([item("OK", CAPTURED), item("ResourceDeleted", EARLIER)])
@@ -330,6 +352,7 @@ class TestRecorder:
             _iam_candidate(_dimensioned(LAMBDA, {"name": f"f{i}", "function_arn": FN_ARN.replace("seed-fn", f"f{i}")}, region=GOV), LAMBDA)
             for i in range(3)
         ]
+        Entity.objects.filter(id__in=[r.entity_id for r in rows]).update(created_at=EARLIER - timedelta(days=1))
         verdicts = falsifier.batch_falsify(rows, _context())
         assert [v.verdict for v in verdicts] == [DROPPED_FROM_OBSERVATION] * 3
         assert client.describe_configuration_recorders.call_count == 1
