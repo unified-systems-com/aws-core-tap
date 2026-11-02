@@ -151,10 +151,15 @@ def build_report(expected_doc, catalog, collected, collected_again, errors, mani
     for res in expected_doc["resources"]:
         by_type.setdefault(res["entity_type"], []).append(res)
     seeded_types = set(by_type)
+    waves = set(expected_doc.get("wave") or ())
     records = []
     for cfn, entry in sorted(catalog["types"].items(), key=lambda kv: kv[1]["entity_type"]):
         et = entry["entity_type"]
         if et not in by_type:
+            if entry.get("module") in waves:
+                # The wave is meant to seed this type and the state has none of it: the type is neither collected
+                # nor compared, which must not look like a pass.
+                records.append({"entity_type": et, "cfn_type": cfn, "verdict": "fail", "first_mismatch": "seeded-type-absent-from-state"})
             continue
         records.append(
             compare_type(

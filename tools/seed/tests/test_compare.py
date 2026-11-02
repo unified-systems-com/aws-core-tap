@@ -94,7 +94,8 @@ def test_uncovered_declared_edges_are_reported_not_passed():
 
 
 def test_report_is_deterministic_and_counts_verdicts():
-    catalog = json.loads((SEED / "seeding.json").read_text(encoding="utf-8"))
+    full = json.loads((SEED / "seeding.json").read_text(encoding="utf-8"))
+    catalog = {"types": {"AWS::SQS::Queue": full["types"]["AWS::SQS::Queue"]}}  # the one type this synthetic wave seeds
     doc = {"wave": ["wave1"], "resources": [
         {"entity_type": "aws_core__aws_sqs_queue", "natural_key": KEY, "attrs": {f: None for f in catalog["types"]["AWS::SQS::Queue"]["compares"]}, "tags": {}, "edges": []}]}
     rows = {"aws_core__aws_sqs_queue": [row(fields={f: None for f in catalog["types"]["AWS::SQS::Queue"]["compares"]}, tags={})]}
@@ -103,6 +104,9 @@ def test_report_is_deterministic_and_counts_verdicts():
     assert json.dumps(a, sort_keys=True) == json.dumps(b, sort_keys=True)
     assert a["counts"] == {"pass": 1} and [t["cfn_type"] for t in a["types"]] == ["AWS::SQS::Queue"]
     assert "123456789012" not in json.dumps(a)
+    # the real catalog names 24 types: a doc that seeds one of them fails for the other 23, it does not pass
+    whole = compare.build_report(doc, full, rows, rows, {}, {})
+    assert whole["counts"] == {"fail": 23, "pass": 1}
 
 
 def test_the_catalog_is_found_beside_the_file_or_at_the_mount(tmp_path):
@@ -115,6 +119,18 @@ def test_compare_uses_the_wave_zero_read_guard_not_a_verb_prefix():
     text = (SEED / "compare.py").read_text()
     assert "from readguard import install" in text and "install(session)" in text
     assert "read_verb" not in text
+
+
+def test_a_type_the_wave_should_seed_but_the_state_lacks_fails_the_record():
+    doc = {"wave": ["wave1"], "resources": [{"entity_type": "t", "natural_key": "k", "attrs": {}, "tags": {}, "edges": []}]}
+    catalog = {"types": {"AWS::X::Y": {"entity_type": "t", "module": "wave1", "compares": []},
+                         "AWS::X::Z": {"entity_type": "u", "module": "wave1", "compares": []},
+                         "AWS::X::W": {"entity_type": "w", "module": "wave2", "compares": []}}}
+    got = {"t": [row(key="k", fields={}, tags={})]}
+    report = compare.build_report(doc, catalog, got, got, {}, {})
+    assert report["counts"] == {"fail": 1, "pass": 1}
+    missing = [r for r in report["types"] if r["verdict"] == "fail"]
+    assert missing[0]["entity_type"] == "u" and missing[0]["first_mismatch"] == "seeded-type-absent-from-state"  # wave2's type is not this wave's
 
 
 def test_unresolved_expected_edge_targets_fail_the_record():

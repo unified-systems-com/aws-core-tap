@@ -127,6 +127,15 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
    rm -rf "$RUN_DIR"
    ```
 
+## Providers
+
+The wave uses two Terraform providers, both from the `hashicorp` namespace at exact versions with their hashes in
+`wave1/.terraform.lock.hcl`: `aws` (everything it creates) and `archive` (zips the Lambda function's source on the
+operator's machine; it makes no AWS call). Both run locally as the operator when Terraform runs. The lock file was
+checked by regenerating it with `terraform providers lock` for darwin and linux on amd64 and arm64 in a clean
+directory: every committed hash is among the registry-derived ones. Repeat that check before running a wave from
+a lock file you did not make.
+
 ## Safety rules (spec: Safety)
 
 - **Destroy only what the run's own state created.** The state is the allowlist. Never delete by tag, by name pattern or
