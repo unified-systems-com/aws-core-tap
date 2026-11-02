@@ -693,3 +693,54 @@ class TestFanoutTruncation:
     def test_a_listing_that_ends_is_not_refused(self):
         client = _CallLog({"list_owners": {"Owners": [{"Id": "a"}]}, "list_things": {"Things": [{"N": 1}]}})
         assert list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+
+
+class TestRdsClusterEndpointsAskForCustomOnly:
+    """The API lists a cluster's default writer and reader endpoints beside its custom ones, and the defaults carry no
+    ARN or identifier (read live, GovCloud, 2026-11-02): projecting one raises, which skips the whole type."""
+
+    class _Client:
+        calls: list = []
+
+        def can_paginate(self, method):
+            return method == "describe_db_cluster_endpoints"
+
+        def get_paginator(self, method):
+            outer = self
+
+            class _P:
+                def paginate(self, **kw):
+                    outer.calls.append(kw)
+                    items = [
+                        {"DBClusterIdentifier": "c", "Endpoint": "c.cluster.example", "EndpointType": "WRITER", "Status": "available"},
+                        {"DBClusterIdentifier": "c", "Endpoint": "c.cluster-ro.example", "EndpointType": "READER", "Status": "available"},
+                        {"DBClusterEndpointIdentifier": "e", "DBClusterEndpointArn": "arn:aws-us-gov:rds:us-gov-west-1:123456789012:cluster-endpoint:e",
+                         "DBClusterIdentifier": "c", "Endpoint": "e.cluster-custom.example", "EndpointType": "CUSTOM", "Status": "available"},
+                    ]
+                    wanted = [f for f in kw.get("Filters", []) if f["Name"] == "db-cluster-endpoint-type"]
+                    if wanted:
+                        items = [i for i in items if i["EndpointType"].lower() in wanted[0]["Values"]]
+                    yield {"DBClusterEndpoints": items}
+
+            return _P()
+
+    @staticmethod
+    def _entry():
+        import json
+        from pathlib import Path
+
+        manifest = json.loads((Path(__file__).resolve().parents[1] / "collectors/boto3_collector/aws_resource_manifest.json").read_text(encoding="utf-8"))
+        return next(e for e in manifest["entries"] if e["entity_type"] == "aws_core__aws_rds_db_cluster_endpoint")
+
+    def test_the_entry_asks_the_api_for_custom_endpoints_only(self):
+        assert self._entry()["source"]["params"] == {"Filters": [{"Name": "db-cluster-endpoint-type", "Values": ["custom"]}]}
+
+    def test_only_the_custom_endpoint_is_listed_and_it_projects(self):
+        from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
+
+        entry = self._entry()
+        client = self._Client()
+        client.calls = []
+        items = list(iter_source(entry, client_for=lambda _service: client, custom_fns=CustomFnRegistry()))
+        assert len(items) == 1 and client.calls == [{"Filters": [{"Name": "db-cluster-endpoint-type", "Values": ["custom"]}]}]
+        assert project_item(entry, items[0]).natural_key.endswith(":cluster-endpoint:e")
