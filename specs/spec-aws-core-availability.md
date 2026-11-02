@@ -110,15 +110,17 @@ Status: `Proposed`
 
 | Verdict | Meaning |
 | --- | --- |
-| `offered` | A credentialed call to the operation succeeded, or failed in a way that proves the operation exists |
+| `offered` | A credentialed call to the operation succeeded. A failure that proves the operation exists is classified by the specific verdict below that names it, never as `offered` |
 | `access-denied-present` | The call was refused for permission; the operation exists (a positive signal) |
-| `endpoint-absent` | The standard regional endpoint hostname does not resolve (a definitive DNS answer of no such name), or the connection is actively refused. A timeout, a reset mid-handshake or any other transient failure is never this verdict; see `unreachable-unknown` |
+| `endpoint-absent` | The standard regional endpoint hostname does not resolve (a definitive DNS answer of no such name). A refused connection, a timeout, a reset mid-handshake or any other transient failure is never this verdict, because a refusal shows only that something answered at that address (a proxy, a firewall, a transient service state); see `unreachable-unknown` |
 | `operation-absent` | The endpoint answers but names the operation unknown (`UnknownOperationException`, `InvalidAction`, `UnsupportedOperation`, HTTP 404 "unknown operation") |
 | `service-unsupported-in-region` | The service answers that it does not support the region or partition ("not supported in this region", "not supported in GovCloud") |
 | `account-not-enabled` | The service answers that the account has not opted in, subscribed or activated the feature (`OptInRequired`, `SubscriptionRequiredException`, `UninitializedAccountException`, "not enabled for this account") |
 | `unreachable-unknown` | Connect or read timed out, or the connection failed in a way that is not a definitive absence; neither present nor absent. Precedence: where a failure fits both this and `endpoint-absent`, this one wins |
 | `declared-only` | Declared or derived evidence exists and no empirical evidence |
 | `unknown` | No evidence |
+
+**Precedence, so identical evidence gives one verdict.** The verdict is the first that matches, in this order: `unreachable-unknown` (the failure is not a definitive answer), `endpoint-absent`, `service-unsupported-in-region`, `operation-absent`, `account-not-enabled`, `access-denied-present`, `offered` (a success). A failure matching none of these is `unknown`, not `offered`. A single `AccessDenied` response is therefore `access-denied-present` and never `offered`.
 
 The error signatures above were observed in wave 0; each new signature is added with the run that produced it.
 Service, operation and account level stay separate.
