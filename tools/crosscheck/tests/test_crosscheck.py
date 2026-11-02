@@ -271,6 +271,26 @@ class TestCommitOf:
         (r / "refs/heads/main").symlink_to(target)
         assert carto_reader.commit_of(tmp_path / "linkref") == "unknown"
 
+    def test_a_symlinked_directory_on_the_way_to_a_ref_reports_unknown(self, tmp_path):
+        outside = tmp_path / "outside"
+        _w(outside / "main", self.SHA + "\n")
+        r = tmp_path / "linkdir/.git"
+        _w(r / "HEAD", "ref: refs/heads/main\n")
+        (r / "refs").mkdir(parents=True)
+        (r / "refs/heads").symlink_to(outside)  # the leaf is a regular file, the directory above it is a link
+        assert carto_reader.commit_of(tmp_path / "linkdir") == "unknown"
+        s = tmp_path / "linkrefs/.git"
+        _w(s / "HEAD", "ref: refs/heads/main\n")
+        _w(tmp_path / "outside2/heads/main", self.SHA + "\n")
+        (s / "refs").symlink_to(tmp_path / "outside2")
+        assert carto_reader.commit_of(tmp_path / "linkrefs") == "unknown"
+
+    def test_an_ordinary_checkout_still_reports_its_commit(self, tmp_path):
+        r = tmp_path / "plain/.git"
+        _w(r / "HEAD", "ref: refs/heads/main\n")
+        _w(r / "refs/heads/main", self.SHA + "\n")
+        assert carto_reader.commit_of(tmp_path / "plain") == self.SHA
+
     def test_a_head_pointing_outside_refs_or_at_a_non_commit_reports_unknown(self, tmp_path):
         secret = tmp_path / "secret.txt"
         secret.write_text("hunter2\n")

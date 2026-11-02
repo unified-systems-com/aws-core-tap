@@ -65,38 +65,47 @@ def tree_digest(root: Path, patterns: list[str]) -> str:
     return h.hexdigest()
 
 
-def _plain(path: Path) -> Path:
-    """``path``, or an OSError (answered as 'unknown' by the caller) if it is a symlink: nothing in an analysed
-    tree is read through a link, because the link, not the tree, would choose the file."""
-    if path.is_symlink():
-        raise OSError(f"refusing to read through a symlink: {path.name}")
+def _plain(path: Path, root: Path) -> Path:
+    """``path``, or an OSError (answered as 'unknown' by the caller) if it is outside ``root`` or if it, or any
+    directory between ``root`` and it, is a symlink: nothing in an analysed tree is read through a link, because
+    the link, not the tree, would choose the file. A leaf check alone misses ``refs`` pointing elsewhere."""
+    try:
+        parts = path.relative_to(root).parts
+    except ValueError:
+        raise OSError(f"outside the analysed tree: {path.name}") from None
+    here = root
+    for part in parts:
+        here = here / part
+        if here.is_symlink():
+            raise OSError(f"refusing to read through a symlink: {here.name}")
     return path
 
 
 def _commit_of(root: Path) -> str:
+    rroot = root.resolve()
     try:
-        git = _plain(root / ".git")
+        git = _plain(rroot / ".git", rroot)
         if git.is_file():  # a worktree or submodule: ".git" is a file pointing at the real directory
             line = git.read_text().strip()
             if line.startswith("gitdir:"):
                 git = (root / line.split(":", 1)[1].strip()).resolve()
         if not git.resolve().is_relative_to(root.resolve()):
             return "unknown"  # a pointer out of the analysed tree is untrusted input, so a worktree reports no commit
-        head = _plain(git / "HEAD").read_text().strip()
+        head = _plain(git / "HEAD", rroot).read_text().strip()
         if not head.startswith("ref:"):
             return head
         ref = head.split(":", 1)[1].strip()
         if not ref.startswith("refs/") or ".." in ref.split("/"):
             return "unknown"
         common = git
-        if _plain(git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
-            common = (git / _plain(git / "commondir").read_text().strip()).resolve()
+        if _plain(git / "commondir", rroot).is_file():  # a worktree keeps shared refs in the main git directory
+            common = (git / _plain(git / "commondir", rroot).read_text().strip()).resolve()
             if not common.is_relative_to(root.resolve()):
                 return "unknown"
         for base in (git, common):
-            if _plain(base / ref).is_file():
-                return _plain(base / ref).read_text().strip()
-        packed = _plain(common / "packed-refs")
+            if _plain(base / ref, rroot).is_file():
+                return _plain(base / ref, rroot).read_text().strip()
+        packed = _plain(common / "packed-refs", rroot)
         if packed.is_file():
             for line in packed.read_text().splitlines():
                 if line.endswith(" " + ref) and not line.startswith(("#", "^")):
