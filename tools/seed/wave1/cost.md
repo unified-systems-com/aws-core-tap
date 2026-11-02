@@ -15,7 +15,7 @@ the "Price file" column). **E** = my estimate or recollection, no price file rea
 | KMS customer managed key | 1 | $1 per key-month, prorated /730 h | $0.00137 | $0.00274 | P (`awskms` 20261026201814); that it is prorated hourly is E |
 | Secrets Manager secret | 1 | $0.40 per secret-month, prorated /730 h | $0.00055 | $0.00110 | P (`AWSSecretsManager` 20260911124610); that it is prorated hourly is E |
 | Secrets Manager, KMS and API requests | a few dozen | $0.05 per 10,000 requests (Secrets Manager); KMS request charges negligible at this count | under $0.001 | under $0.001 | P for Secrets Manager, E for KMS |
-| S3 buckets (2), versioning, no objects | 2 | no standing charge while empty; a few requests | under $0.001 | under $0.001 | E |
+| S3 buckets (3), versioning on one, no objects | 3 | no standing charge while empty; a few requests | under $0.001 | under $0.001 | E |
 | DynamoDB table, on demand | 1 | no standing charge with no reads or writes | $0 | $0 | E |
 | SQS queue, SNS topic, Lambda function, CloudWatch log group, EventBridge rule (disabled), SSM standard parameter | 1 each | no standing charge; nothing is invoked, published, ingested or sent | $0 | $0 | E |
 | VPC, 2 subnets, internet gateway, route table, network ACL, 2 security groups | 1 set | no charge | $0 | $0 | E |

@@ -58,6 +58,22 @@ resource "aws_s3_bucket" "b" { # NOSONAR
   depends_on = [terraform_data.guard]
 }
 
+# Bucket C: the bucket-level public access block set explicitly to off, the negative case for `public_access_blocked`.
+# Still private and empty: no ACL, no policy, no objects. Created only so the check can tell blocked from not blocked.
+resource "aws_s3_bucket" "c" { # NOSONAR
+  bucket = "${local.prefix}-bucket-c"
+
+  depends_on = [terraform_data.guard]
+}
+
+resource "aws_s3_bucket_public_access_block" "c" { # NOSONAR
+  bucket                  = aws_s3_bucket.c.id
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
 resource "aws_dynamodb_table" "seed" {
   name         = "${local.prefix}-table"
   billing_mode = "PAY_PER_REQUEST"

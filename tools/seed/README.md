@@ -152,7 +152,7 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
 | A resource with no tag of its own beyond the two defaults | SQS queue, Lambda function, bucket B and most others |
 | A type that cannot be tagged at all (`{}` expected) | IAM group, KMS alias |
 | A public setting: a rule open to `0.0.0.0/0` on port 49152 with nothing attached | security group `...-open` |
-| A bucket with the bucket-level public access block absent | bucket B (bucket A has all four flags on) |
+| A bucket with the bucket-level public access block absent, and one with it explicitly off | bucket B (the service default, blocked) and bucket C (all four flags off); bucket A has all four on |
 | A second region | not in wave 1 |
 
 ## Choices to know about

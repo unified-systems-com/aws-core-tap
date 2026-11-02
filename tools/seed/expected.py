@@ -175,16 +175,28 @@ def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any]) -> 
             }
         )
 
-    keys_by_type: dict[str, set[str]] = {}
+    # A target is named by the state in whichever form the resource uses (a KMS key by id or by ARN), so it is
+    # matched against every identifier the seeded resource has, and an edge whose target is not found is reported
+    # in `unresolved_edge_targets`, never dropped without trace.
+    aliases_by_type: dict[str, dict[str, str]] = {}
     for s in seeded:
-        keys_by_type.setdefault(s["entity_type"], set()).add(s["natural_key"])
+        names = {s["natural_key"], s["arn"], _get(s["_res"], "id"), _get(s["_res"], "key_id"), _get(s["_res"], "arn")}
+        for name in names:
+            if isinstance(name, str) and name:
+                aliases_by_type.setdefault(s["entity_type"], {})[name] = s["natural_key"]
+    unresolved = 0
     for s in seeded:
         edges = set()
         for spec in s.pop("_edge_specs"):
             got = evaluate(spec["target"], s["_res"], resources)
             for target_key in got if isinstance(got, list) else [got]:
-                if isinstance(target_key, str) and target_key in keys_by_type.get(spec["target_type"], ()):
-                    edges.add((spec["edge_type"], spec["direction"], spec["target_type"], target_key))
+                if not isinstance(target_key, str):
+                    continue
+                resolved = aliases_by_type.get(spec["target_type"], {}).get(target_key)
+                if resolved:
+                    edges.add((spec["edge_type"], spec["direction"], spec["target_type"], resolved))
+                elif spec["target_type"] in aliases_by_type:
+                    unresolved += 1  # the target type was seeded but this value names none of its resources
         s["edges"] = [dict(zip(("edge_type", "direction", "target_type", "target_key"), e, strict=True)) for e in sorted(edges)]
         del s["_res"]
     seeded.sort(key=lambda s: (s["entity_type"], s["natural_key"], s["address"]))
@@ -196,6 +208,7 @@ def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any]) -> 
         "wave": waves,
         "run_id": run_ids,
         "resources": seeded,
+        "unresolved_edge_targets": unresolved,
         "unseeded_resources": sorted(unseeded),
     }
 

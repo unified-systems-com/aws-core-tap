@@ -686,7 +686,7 @@
           }
         }
       ],
-      "description": "Two buckets: A (versioning, KMS default encryption, public access block, odd tag keys) and B (no bucket-level block resource: S3 blocks public access on a new bucket by default, so B is expected blocked)."
+      "description": "Three buckets: A (versioning, KMS default encryption, public access block on, odd tag keys), B (no bucket-level block resource: S3 blocks public access on a new bucket by default, so B is expected blocked) and C (the block set explicitly off, expected not blocked: the negative case)."
     },
     "AWS::SNS::Topic": {
       "cfn_type": "AWS::SNS::Topic",

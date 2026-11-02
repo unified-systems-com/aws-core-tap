@@ -95,6 +95,13 @@ def test_all_true_derivation(doc):
     assert by_addr(doc, "aws_s3_bucket.b")["attrs"]["public_access_blocked"] is True
 
 
+def test_an_explicitly_off_block_is_expected_not_blocked():
+    spec = {"all_true": {"terraform": "aws_s3_bucket_public_access_block", "own": "id", "other": "bucket", "flags": ["block_public_acls", "restrict_public_buckets"]}, "absent": True}
+    bucket = {"type": "aws_s3_bucket", "values": {"id": "c"}}
+    off = {"type": "aws_s3_bucket_public_access_block", "values": {"bucket": "c", "block_public_acls": False, "restrict_public_buckets": False}}
+    assert expected.evaluate(spec, bucket, [bucket, off]) is False  # present and off beats the default for an absent block
+
+
 def test_an_absent_block_is_false_unless_the_spec_names_a_default():
     spec = {"all_true": {"terraform": "aws_s3_bucket_public_access_block", "own": "id", "other": "bucket", "flags": ["block_public_acls"]}}
     bucket = {"type": "aws_s3_bucket", "values": {"id": "x"}}
@@ -125,6 +132,35 @@ def test_paths_must_lie_under_the_tools_own_directories(tmp_path, monkeypatch):
         expected.confine(outside, out)
     assert expected.main([str(outside)]) == 2
     assert expected.main([str(inside), "--out", str(outside)]) == 2  # the input is no state, but the output path is refused first
+
+
+def _mini_catalog():
+    return {"types": {
+        "AWS::KMS::Key": {"entity_type": "t_kms", "terraform": "aws_kms_key", "natural_key": "arn", "tf_attrs": {}, "edges": []},
+        "AWS::Foo::Bar": {"entity_type": "t_foo", "terraform": "aws_foo", "natural_key": "id", "tf_attrs": {},
+                          "edges": [{"edge_type": "E", "target_type": "t_kms", "direction": "outbound", "target": "key"}]},
+    }}
+
+
+def _mini_state(key):
+    return [
+        {"address": "aws_kms_key.k", "mode": "managed", "type": "aws_kms_key", "values": {"arn": "arn:k", "key_id": "kid", "id": "kid"}},
+        {"address": "aws_foo.f", "mode": "managed", "type": "aws_foo", "values": {"id": "f1", "key": key}},
+    ]
+
+
+def test_an_edge_target_named_by_key_id_resolves_to_the_arn_natural_key():
+    for named in ("kid", "arn:k"):
+        doc = expected.build_expected(_mini_state(named), _mini_catalog())
+        foo = next(r for r in doc["resources"] if r["entity_type"] == "t_foo")
+        assert [e["target_key"] for e in foo["edges"]] == ["arn:k"], named
+        assert doc["unresolved_edge_targets"] == 0
+
+
+def test_a_target_that_names_no_seeded_resource_is_counted_not_dropped_silently():
+    doc = expected.build_expected(_mini_state("nope"), _mini_catalog())
+    foo = next(r for r in doc["resources"] if r["entity_type"] == "t_foo")
+    assert foo["edges"] == [] and doc["unresolved_edge_targets"] == 1
 
 
 def test_edges_only_when_target_was_seeded(doc):
