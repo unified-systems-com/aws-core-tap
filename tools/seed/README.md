@@ -7,6 +7,7 @@ of the plugin wheel.
 | File | What it is |
 | --- | --- |
 | `wave2-rds/` | Terraform root for wave 2, RDS (weight 5, costly): 14 of the 18 RDS types. Own state, own provider tag `tap-seed=wave2-rds`; `wave2-rds/cost.md` |
+| `wave1b/` | Terraform root for wave 1b: 21 types wave 1 could not seed in one root (Backup, WAFv2, S3 access points, Storage Lens, Access Grants, flow log, network interface, trail, Config aggregation authorization, Security Hub action target and insight). Own state, tag `tap-seed=wave1b`; `wave1b/cost.md`. Not seeded: CloudTrail Lake (closed to new customers), Backup restore testing (create refused), the OIDC provider and virtual MFA device (the seeder policy refuses them) |
 | `wave2-nfw/` | Terraform root for wave 2, Network Firewall: firewall, policy, rule group and a second endpoint, with the one costly resource that must be destroyed as soon as the check has run; tag `tap-seed=wave2-nfw`; `wave2-nfw/cost.md` |
 | `wave1/` | Terraform root for wave 1 (weight 5, free or cheap). Provider `hashicorp/aws` pinned to exactly 6.71.0, region `us-gov-west-1`. `wave1/cost.md` is its cost estimate |
 | `seeding.json` | The seed catalog: per CloudFormation type, the entity type, Terraform resource, cost class, needs, the manifest fields to compare and where each expected value lives in the state |

@@ -1,6 +1,183 @@
 {
   "description": "Seed catalog (req-aws-core-livevalidation-catalog): per CloudFormation type, what the seed modules create and what the projection check compares. A type with no entry is unseeded, not free. entity_type is the manifest entity type; terraform is the resource type; compares lists manifest field names; tf_attrs maps each compared manifest field to where the expected value lives in the Terraform state (a path into the resource values, or an object: path+strip_suffix, all_true, const); natural_key is the same for the key; tags is tags_all (the state's merged tags) or none (the type cannot carry tags, expected {}); edges lists the manifest edges whose expected target comes from the state (target is a path, or a join over another state resource). Read by tools/seed/expected.py and tools/seed/compare.py.",
   "types": {
+    "AWS::Backup::BackupPlan": {
+      "cfn_type": "AWS::Backup::BackupPlan",
+      "entity_type": "aws_core__aws_backup_plan",
+      "terraform": "aws_backup_plan",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Backup::BackupVault"
+      ],
+      "compares": [
+        "name",
+        "plan_arn",
+        "plan_id"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "plan_arn": "arn",
+        "plan_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "BACKS_UP_TO_VAULT__aws_core",
+          "target_type": "aws_core__aws_backup_vault",
+          "direction": "outbound",
+          "target": "rule.0.target_vault_name"
+        }
+      ],
+      "description": "Plan with one daily rule to the seed vault."
+    },
+    "AWS::Backup::BackupSelection": {
+      "cfn_type": "AWS::Backup::BackupSelection",
+      "entity_type": "aws_core__aws_backup_backup_selection",
+      "terraform": "aws_backup_selection",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Backup::BackupPlan",
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "backup_backup_selection_id",
+        "name"
+      ],
+      "module": "wave1b",
+      "natural_key": "id",
+      "tf_attrs": {
+        "backup_backup_selection_id": "id",
+        "name": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Selection by a tag no resource carries."
+    },
+    "AWS::Backup::BackupVault": {
+      "cfn_type": "AWS::Backup::BackupVault",
+      "entity_type": "aws_core__aws_backup_vault",
+      "terraform": "aws_backup_vault",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "vault_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "vault_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Backup vault with the default key."
+    },
+    "AWS::Backup::Framework": {
+      "cfn_type": "AWS::Backup::Framework",
+      "entity_type": "aws_core__aws_backup_framework",
+      "terraform": "aws_backup_framework",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "deployment_status",
+        "framework_arn",
+        "name"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "deployment_status": "deployment_status",
+        "framework_arn": "arn",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Framework with one control."
+    },
+    "AWS::Backup::ReportPlan": {
+      "cfn_type": "AWS::Backup::ReportPlan",
+      "entity_type": "aws_core__aws_backup_report_plan",
+      "terraform": "aws_backup_report_plan",
+      "cost_class": "free",
+      "needs": [
+        "AWS::S3::Bucket"
+      ],
+      "compares": [
+        "name",
+        "report_plan_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "report_plan_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Report plan delivering a job report to an empty bucket."
+    },
+    "AWS::CloudTrail::Trail": {
+      "cfn_type": "AWS::CloudTrail::Trail",
+      "entity_type": "aws_core__aws_cloudtrail_trail",
+      "terraform": "aws_cloudtrail",
+      "cost_class": "free",
+      "needs": [
+        "AWS::S3::Bucket"
+      ],
+      "compares": [
+        "is_logging",
+        "is_multi_region",
+        "log_file_validation_enabled",
+        "name",
+        "s3_bucket_name",
+        "trail_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "is_logging": "enable_logging",
+        "is_multi_region": "is_multi_region_trail",
+        "log_file_validation_enabled": "enable_log_file_validation",
+        "name": "name",
+        "s3_bucket_name": "s3_bucket_name",
+        "trail_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "WRITES_LOGS__aws_core",
+          "target_type": "aws_core__aws_s3_bucket",
+          "direction": "outbound",
+          "target": "s3_bucket_name"
+        }
+      ],
+      "description": "Trail created switched off, delivering to its own bucket."
+    },
+    "AWS::Config::AggregationAuthorization": {
+      "cfn_type": "AWS::Config::AggregationAuthorization",
+      "entity_type": "aws_core__aws_config_aggregation_authorization",
+      "terraform": "aws_config_aggregate_authorization",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "authorization_arn",
+        "authorized_account_id",
+        "authorized_region"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "authorization_arn": "arn",
+        "authorized_account_id": "account_id",
+        "authorized_region": "authorized_aws_region"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Authorisation of this account to aggregate into us-gov-east-1."
+    },
     "AWS::DynamoDB::Table": {
       "cfn_type": "AWS::DynamoDB::Table",
       "entity_type": "aws_core__aws_dynamodb_table",
@@ -22,6 +199,27 @@
       "tags": "tags_all",
       "edges": [],
       "description": "On-demand table."
+    },
+    "AWS::EC2::FlowLog": {
+      "cfn_type": "AWS::EC2::FlowLog",
+      "entity_type": "aws_core__aws_ec2_flow_log",
+      "terraform": "aws_flow_log",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC",
+        "AWS::S3::Bucket"
+      ],
+      "compares": [
+        "ec2_flow_log_id"
+      ],
+      "module": "wave1b",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_flow_log_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "VPC flow log delivering to its own bucket."
     },
     "AWS::EC2::Instance": {
       "cfn_type": "AWS::EC2::Instance",
@@ -128,6 +326,26 @@
       ],
       "description": "Non-default network ACL."
     },
+    "AWS::EC2::NetworkInterface": {
+      "cfn_type": "AWS::EC2::NetworkInterface",
+      "entity_type": "aws_core__aws_ec2_network_interface",
+      "terraform": "aws_network_interface",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "ec2_network_interface_id"
+      ],
+      "module": "wave1b",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_network_interface_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Interface in the seed subnet, attached to nothing."
+    },
     "AWS::EC2::RouteTable": {
       "cfn_type": "AWS::EC2::RouteTable",
       "entity_type": "aws_core__aws_route_table",
@@ -185,6 +403,26 @@
         }
       ],
       "description": "Two groups; one has a rule open to 0.0.0.0/0 on a high port with nothing attached (the public setting case)."
+    },
+    "AWS::EC2::SecurityGroupIngress": {
+      "cfn_type": "AWS::EC2::SecurityGroupIngress",
+      "entity_type": "aws_core__aws_ec2_security_group_rule",
+      "terraform": "aws_vpc_security_group_ingress_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::SecurityGroup"
+      ],
+      "compares": [
+        "ec2_security_group_rule_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "ec2_security_group_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Ingress rule on a documentation-range address."
     },
     "AWS::EC2::Subnet": {
       "cfn_type": "AWS::EC2::Subnet",
@@ -1150,6 +1388,98 @@
       "edges": [],
       "description": "MySQL 8.0 option group with no options."
     },
+    "AWS::S3::AccessGrant": {
+      "cfn_type": "AWS::S3::AccessGrant",
+      "entity_type": "aws_core__aws_s3_access_grant",
+      "terraform": "aws_s3control_access_grant",
+      "cost_class": "free",
+      "needs": [
+        "AWS::S3::AccessGrantsLocation"
+      ],
+      "compares": [
+        "s3_access_grant_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "access_grant_arn",
+      "tf_attrs": {
+        "s3_access_grant_arn": "access_grant_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "One READ grant to the seed role."
+    },
+    "AWS::S3::AccessGrantsInstance": {
+      "cfn_type": "AWS::S3::AccessGrantsInstance",
+      "entity_type": "aws_core__aws_s3_access_grants_instance",
+      "terraform": "aws_s3control_access_grants_instance",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "s3_access_grants_instance_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "access_grants_instance_arn",
+      "tf_attrs": {
+        "s3_access_grants_instance_arn": "access_grants_instance_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "The Access Grants instance of the account and region."
+    },
+    "AWS::S3::AccessGrantsLocation": {
+      "cfn_type": "AWS::S3::AccessGrantsLocation",
+      "entity_type": "aws_core__aws_s3_access_grants_location",
+      "terraform": "aws_s3control_access_grants_location",
+      "cost_class": "free",
+      "needs": [
+        "AWS::S3::AccessGrantsInstance",
+        "AWS::S3::Bucket"
+      ],
+      "compares": [
+        "s3_access_grants_location_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "access_grants_location_arn",
+      "tf_attrs": {
+        "s3_access_grants_location_arn": "access_grants_location_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "One location on the access-point bucket."
+    },
+    "AWS::S3::AccessPoint": {
+      "cfn_type": "AWS::S3::AccessPoint",
+      "entity_type": "aws_core__aws_s3_access_point",
+      "terraform": "aws_s3_access_point",
+      "cost_class": "free",
+      "needs": [
+        "AWS::S3::Bucket"
+      ],
+      "compares": [
+        "access_point_arn",
+        "alias",
+        "bucket",
+        "name"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "access_point_arn": "arn",
+        "alias": "alias",
+        "bucket": "bucket",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "FRONTS_BUCKET__aws_core",
+          "target_type": "aws_core__aws_s3_bucket",
+          "direction": "outbound",
+          "target": "bucket"
+        }
+      ],
+      "description": "Access point on its own bucket."
+    },
     "AWS::S3::Bucket": {
       "cfn_type": "AWS::S3::Bucket",
       "entity_type": "aws_core__aws_s3_bucket",
@@ -1200,6 +1530,26 @@
         }
       ],
       "description": "Three buckets: A (versioning, KMS default encryption, public access block on, odd tag keys), B (no bucket-level block resource: S3 blocks public access on a new bucket by default, so B is expected blocked) and C (the block set explicitly off, expected not blocked: the negative case)."
+    },
+    "AWS::S3::StorageLens": {
+      "cfn_type": "AWS::S3::StorageLens",
+      "entity_type": "aws_core__aws_s3_storage_lens",
+      "terraform": "aws_s3control_storage_lens_configuration",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "s3_storage_lens_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "config_id",
+        "s3_storage_lens_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Storage Lens configuration with account-level bucket metrics."
     },
     "AWS::SNS::Topic": {
       "cfn_type": "AWS::SNS::Topic",
@@ -1306,6 +1656,144 @@
         }
       ],
       "description": "Secret with no value, immediate deletion."
+    },
+    "AWS::SecurityHub::ActionTarget": {
+      "cfn_type": "AWS::SecurityHub::ActionTarget",
+      "entity_type": "aws_core__aws_securityhub_action_target",
+      "terraform": "aws_securityhub_action_target",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "action_target_arn",
+        "name"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "action_target_arn": "arn",
+        "name": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Custom action on the account's existing hub."
+    },
+    "AWS::SecurityHub::Insight": {
+      "cfn_type": "AWS::SecurityHub::Insight",
+      "entity_type": "aws_core__aws_securityhub_insight",
+      "terraform": "aws_securityhub_insight",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "group_by_attribute",
+        "insight_arn",
+        "name"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "group_by_attribute": "group_by_attribute",
+        "insight_arn": "arn",
+        "name": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Insight grouped by resource type on the existing hub."
+    },
+    "AWS::WAFv2::IPSet": {
+      "cfn_type": "AWS::WAFv2::IPSet",
+      "entity_type": "aws_core__aws_wafv2_ip_set",
+      "terraform": "aws_wafv2_ip_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "ip_address_version",
+        "ip_set_arn",
+        "name",
+        "scope"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "ip_address_version": "ip_address_version",
+        "ip_set_arn": "arn",
+        "name": "name",
+        "scope": "scope"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Regional IPv4 set with one documentation-range address."
+    },
+    "AWS::WAFv2::RegexPatternSet": {
+      "cfn_type": "AWS::WAFv2::RegexPatternSet",
+      "entity_type": "aws_core__aws_wafv2_regex_pattern_set",
+      "terraform": "aws_wafv2_regex_pattern_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "regex_pattern_set_arn",
+        "scope"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "regex_pattern_set_arn": "arn",
+        "scope": "scope"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Regional regex set with one pattern."
+    },
+    "AWS::WAFv2::RuleGroup": {
+      "cfn_type": "AWS::WAFv2::RuleGroup",
+      "entity_type": "aws_core__aws_wafv2_rule_group",
+      "terraform": "aws_wafv2_rule_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::WAFv2::IPSet"
+      ],
+      "compares": [
+        "capacity",
+        "name",
+        "rule_group_arn",
+        "scope"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "capacity": "capacity",
+        "name": "name",
+        "rule_group_arn": "arn",
+        "scope": "scope"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Regional rule group of capacity 2 with one block rule."
+    },
+    "AWS::WAFv2::WebACL": {
+      "cfn_type": "AWS::WAFv2::WebACL",
+      "entity_type": "aws_core__aws_wafv2_web_acl",
+      "terraform": "aws_wafv2_web_acl",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "capacity",
+        "name",
+        "scope",
+        "web_acl_arn"
+      ],
+      "module": "wave1b",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "capacity": "capacity",
+        "name": "name",
+        "scope": "scope",
+        "web_acl_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Regional web ACL, default allow, no rules, attached to nothing."
     }
   }
 }
