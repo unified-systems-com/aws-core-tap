@@ -1,0 +1,8 @@
+# Optional: only the Terraform provider source reader (terraform_source.py, tf_conformance.py) needs these.
+# The rest of crosscheck uses the standard library alone.
+tree-sitter==0.26.0
+tree-sitter-go==0.25.0
+# Pinned by version only: wheels differ by platform, so no hashes are committed. To install with them, run
+# `pip-compile --generate-hashes` (or `pip download --only-binary=:all:` and `pip hash`) for your platform and
+# install with `pip install --require-hashes --only-binary=:all:`. Always install wheels only (`--only-binary=:all:`):
+# an sdist would run its build backend on your machine.
