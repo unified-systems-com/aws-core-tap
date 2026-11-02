@@ -6,7 +6,12 @@ import role_gap
 
 
 def test_the_committed_list_has_not_drifted_from_the_manifest():
-    assert role_gap.problems_of(role_gap.load(), role_gap.manifest_operations()) == []
+    assert role_gap.problems_of(role_gap.load(), *role_gap.manifest_calls()) == []
+
+
+def test_a_follow_up_operation_counts_as_called():
+    calls, _ = role_gap.manifest_calls()
+    assert ("glue", "ListBlueprints") in calls
 
 
 def test_policy_leaves_out_the_opt_in_and_unfixable_sections():
@@ -31,7 +36,11 @@ def test_policy_allows_only_read_verbs():
     [
         ("collection-gaps", {"action": "ec2:DeleteVpc"}, "ec2:DeleteVpc: not a read verb"),
         ("collection-gaps", {"action": "geo:ListTrackers"}, "geo:ListTrackers: in collection-gaps and collection-gaps"),
-        ("collection-gaps", {"action": "geo:ListNotCalledAnywhere"}, "geo:ListNotCalledAnywhere: no manifest entry calls ListNotCalledAnywhere"),
+        ("collection-gaps", {"action": "geo:ListNotCalledAnywhere"}, "geo:ListNotCalledAnywhere: no manifest entry calls ListNotCalledAnywhere under service geo"),
+        ("collection-gaps", {"action": "iam:ListTrackers"}, "iam:ListTrackers: no manifest entry calls ListTrackers under service iam"),
+        ("collection-gaps", {"action": "sso:ListThings", "custom_fn": "rekognition_stream_processors_described"}, "sso:ListThings: no manifest entry read by rekognition_stream_processors_described is under service sso"),
+        ("probe-reads", {"action": "sts:GetFederationToken"}, "sts:GetFederationToken: the operation name suggests it returns a credential or secret"),
+        ("probe-reads", {"action": "ecr:GetAuthorizationToken"}, "ecr:GetAuthorizationToken: the operation name suggests it returns a credential or secret"),
         ("collection-gaps", {"action": "nocolon"}, "nocolon: not service:Operation"),
         ("opt-in-credential-bearing", {"action": "glue:GetSomething"}, "glue:GetSomething: left out of the policy with no reason"),
     ],
@@ -41,7 +50,7 @@ def test_the_check_names_each_kind_of_drift(section, item, expected):
     for s in doc["sections"]:
         if s["id"] == section:
             s["actions"].append(item)
-    assert expected in role_gap.problems_of(doc, role_gap.manifest_operations())
+    assert expected in role_gap.problems_of(doc, *role_gap.manifest_calls())
 
 
 def test_every_section_says_why_it_is_there():

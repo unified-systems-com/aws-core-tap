@@ -1,8 +1,13 @@
 {
-  "description": "Read actions the collector's role (SecurityAudit plus ReadOnlyAccess) does not allow, found in live runs against the GovCloud staging account. Each section says why its actions are listed and whether role_gap.py puts them in the policy it prints. This is a worklist for the policy owner, not a grant: nothing here is applied by the plugin.",
+  "description": "Read actions the collector's role (SecurityAudit plus ReadOnlyAccess) does not allow, found in live runs against the GovCloud staging account. Each section says why its actions are listed and whether role_gap.py puts them in the policy it prints. This is a worklist for the policy owner, not a grant: nothing here is applied by the plugin. iam_prefix_of_service maps a boto service name to the IAM prefix where they differ, so a listed action can be matched to the manifest entry that makes the call.",
+  "iam_prefix_of_service": {
+    "bedrock-agent": "bedrock",
+    "location": "geo",
+    "sso-admin": "sso"
+  },
   "provenance": {
     "ran": "2026-11-01, collector credential, us-gov-west-1: wave 0 (898 manifest types, 1,338 read calls) and the probe generator run (made-up ids, 189 types). Collection-gap and probe-read actions are the AccessDenied replies for the collector IAM user.",
-    "not_established": "Whether adding the actions clears each denial has not been tried. A denial can also come from a service-control policy or a permissions boundary, which an allow in the role does not override. Check with iam:SimulatePrincipalPolicy before asking for the change.",
+    "not_established": "Wave 0 recorded only the error class (AccessDeniedException), not the action, so the collection-gap action names are derived: the IAM prefix of the manifest entry's service plus its list or describe operation. The probe-read and unfixable entries are quoted from messages that named the action. Whether adding the actions clears each denial has not been tried. A denial can also come from a service-control policy or a permissions boundary, which an allow in the role does not override. Check with iam:SimulatePrincipalPolicy before asking for the change.",
     "scope": "One account, one partition. Commercial regions were not run."
   },
   "sections": [
@@ -63,7 +68,8 @@
           "action": "mgn:ListNetworkMigrationDefinitions"
         },
         {
-          "action": "sso:ListApplications"
+          "action": "sso:ListApplications",
+          "custom_fn": "identity_center_applications_described"
         },
         {
           "action": "textract:ListAdapters"

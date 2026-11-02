@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -19,6 +20,10 @@ HERE = Path(__file__).resolve().parent
 LIST_FILE = HERE / "extended-read-actions.json"
 MANIFEST = HERE.parents[1] / "tap_plugin" / "aws_core" / "collectors" / "boto3_collector" / "aws_resource_manifest.json"
 READ_VERBS = ("Get", "List", "Describe")
+#: A read verb is not enough: ``sts:GetFederationToken`` and ``ecr:GetAuthorizationToken`` begin with ``Get`` and
+#: issue credentials. This screen is a heuristic on the operation name, not IAM's own metadata (the AWS service
+#: authorization reference), so it catches the obvious cases and a person still reads the list.
+CREDENTIAL_WORDS = re.compile(r"Token|Secret|Password|Credential|Federation", re.IGNORECASE)
 
 
 def load(path: Path = LIST_FILE) -> dict:
@@ -43,21 +48,30 @@ def policy_of(doc: dict, *, include_opt_in: bool = False) -> dict:
     }
 
 
-def manifest_operations(path: Path = MANIFEST) -> set[str]:
-    """Every operation name the manifest's entries call (``aws_op`` and the per-item follow-up ``per``)."""
-    ops: set[str] = set()
+def manifest_calls(path: Path = MANIFEST) -> tuple[set[tuple[str, str]], dict[str, set[str]]]:
+    """What the manifest calls: ``(boto service, operation)`` pairs from each entry's ``aws_op`` and the
+    ``aws_op`` of its ``per`` follow-up, and ``{custom function: services}`` for entries a function reads
+    (their operations are not visible in the manifest)."""
+    calls: set[tuple[str, str]] = set()
+    functions: dict[str, set[str]] = {}
     for entry in json.loads(path.read_text(encoding="utf-8"))["entries"]:
         source = entry.get("source", {})
-        for key in ("aws_op", "per"):
-            value = source.get(key)
-            if isinstance(value, str):
-                ops.add(value)
-    return ops
+        service = entry["service"]
+        for step in (source, source.get("per") if isinstance(source.get("per"), dict) else {}):
+            if isinstance(step.get("aws_op"), str):
+                calls.add((service, step["aws_op"]))
+        if isinstance(source.get("custom_fn"), str):
+            functions.setdefault(source["custom_fn"], set()).add(service)
+    return calls, functions
 
 
-def problems_of(doc: dict, operations: set[str]) -> list[str]:
-    """What is wrong with the list: a non-read verb, a duplicate, an entry without a description, or a
-    collection-gap action whose operation no manifest entry calls (the manifest moved and the list did not)."""
+def problems_of(doc: dict, calls: set[tuple[str, str]], functions: dict[str, set[str]]) -> list[str]:
+    """What is wrong with the list: a non-read verb, an operation that issues credentials, a duplicate, an
+    entry without a reason, or a collection-gap action the manifest no longer makes under that service (the
+    action's prefix is mapped to the boto service through ``iam_prefix_of_service``; an entry read by a
+    custom function names it in ``custom_fn``)."""
+    prefix_of = doc.get("iam_prefix_of_service", {})
+    pairs = {(prefix_of.get(service, service), operation) for service, operation in calls}
     problems: list[str] = []
     seen: dict[str, str] = {}
     for section in doc["sections"]:
@@ -71,11 +85,19 @@ def problems_of(doc: dict, operations: set[str]) -> list[str]:
                 continue
             if not operation.startswith(READ_VERBS):
                 problems.append(f"{action}: not a read verb")
+            if section["in_policy"] and CREDENTIAL_WORDS.search(operation):
+                problems.append(f"{action}: the operation name suggests it returns a credential or secret")
             if action in seen:
                 problems.append(f"{action}: in {seen[action]} and {section['id']}")
             seen[action] = section["id"]
-            if section["id"] == "collection-gaps" and operation not in operations:
-                problems.append(f"{action}: no manifest entry calls {operation}")
+            if section["id"] == "collection-gaps":
+                function = item.get("custom_fn")
+                if function is not None:
+                    services = {prefix_of.get(name, name) for name in functions.get(function, set())}
+                    if service not in services:
+                        problems.append(f"{action}: no manifest entry read by {function} is under service {service}")
+                elif (service, operation) not in pairs:
+                    problems.append(f"{action}: no manifest entry calls {operation} under service {service}")
             if not section["in_policy"] and "reason" not in item:
                 problems.append(f"{action}: left out of the policy with no reason")
     return problems
@@ -88,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     doc = load()
     if args.check:
-        found = problems_of(doc, manifest_operations())
+        found = problems_of(doc, *manifest_calls())
         for line in found:
             print(line)
         return 1 if found else 0
