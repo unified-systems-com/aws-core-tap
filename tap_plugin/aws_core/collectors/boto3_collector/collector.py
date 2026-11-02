@@ -31,7 +31,6 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 from tap_cares.collectors import (
     CollectorBase,
@@ -82,6 +81,7 @@ from .credentials import (
     base_creds,
     build_session,
     caller_account_id,
+    client_config,
     client_factory,
     fips_requested,
     is_assumed_role,
@@ -97,6 +97,7 @@ from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
+from .outcomes import NOT_CONFIGURED, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify
 from .organizations import OrganizationTree, collect_organization, organizations_client
 from .partition import PARTITION_AWS, service_unavailable_reason
 from .paths import eval_path
@@ -146,6 +147,8 @@ _SITE_LZ_READ_FAILED = "b3c6"
 _SITE_EDGE_AUTHORITY = "f237"
 _SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
 _SITE_ADDRESSING = "7f5b"
+_SITE_ENTRY_NOT_CONFIGURED = "d4e8"
+_SITE_ENTRY_THROTTLED = "a9c3"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -267,13 +270,69 @@ class Boto3Collector(CollectorBase):
         self.record_error(site, code, message, message_data=context)
         raise Boto3CollectorError(message)
 
+    def _settle_outcome(
+        self,
+        entry: Mapping[str, Any],
+        region_label: str,
+        partition: str,
+        outcome: Outcome,
+        *,
+        listing: Listing | None,
+        walk: ListingWalk | None,
+    ) -> None:
+        """Record a listing that yielded nothing for a named reason that is not a failed call.
+
+        The completeness consequence first (``Listing``/``ListingWalk`` say "not complete" with the
+        reason, so nothing is licensed to retire), then the structured result: an info for
+        ``not_configured`` and ``unsupported_in_partition`` (the existing
+        ``SERVICE_NOT_AVAILABLE_IN_PARTITION`` code for the latter), a warning for ``throttled``,
+        which is a defect of the run (retry it), not a fact about the account.
+        """
+        if walk is not None:
+            walk.not_observed(outcome.kind, outcome.reason, authorized=True if outcome.kind == NOT_CONFIGURED else None)
+        if listing is not None:
+            listing.outcome = outcome
+            listing.done()
+        data = {
+            "entity_type": entry["entity_type"],
+            "service": entry["service"],
+            "region": region_label,
+            "partition": partition,
+            "outcome": outcome.kind,
+            "error_code": outcome.code,
+        }
+        label = f"{entry['entity_type']} in {region_label}"
+        if outcome.kind == THROTTLED:
+            self.record_warn(
+                _SITE_ENTRY_THROTTLED,
+                "ENTRY_THROTTLED",
+                f"{label}: throttled past the client's retries ({outcome.code}); nothing was listed and the "
+                "result is not an empty listing.",
+                message_data=data,
+            )
+        elif outcome.kind == UNSUPPORTED_IN_PARTITION:
+            self.record_info(
+                _SITE_SERVICE_UNAVAILABLE,
+                "SERVICE_NOT_AVAILABLE_IN_PARTITION",
+                f"{label}: not available in partition {partition} ({outcome.code}) — {outcome.why}",
+                message_data=data,
+            )
+        else:
+            self.record_info(
+                _SITE_ENTRY_NOT_CONFIGURED,
+                "ENTRY_NOT_CONFIGURED",
+                f"{label}: not configured in this account ({outcome.code}) — {outcome.why} "
+                "Nothing was listed; this is not an observation that the set is empty.",
+                message_data=data,
+            )
+
     def _read_region_facts(self, session: Any, regions: list[str]) -> dict[str, RegionFacts]:
         """Region facts for the run's scope, warning once for what could not be established.
 
         The client is built inside the guard: botocore can refuse a region name before any call.
         """
         try:
-            client = session.client("ec2", region_name=regions[0], config=Config(retries={"mode": "standard"}))
+            client = session.client("ec2", region_name=regions[0], config=client_config())
             facts, error = read_region_facts(client, regions)
         except (BotoCoreError, ValueError) as exc:
             facts = read_region_facts(_Unreadable(exc), regions)[0]
@@ -457,7 +516,7 @@ class Boto3Collector(CollectorBase):
                         session.client(
                             "resourcegroupstaggingapi",
                             region_name=region,
-                            config=Config(retries={"mode": "standard"}),
+                            config=client_config(),
                         ),
                         rgta_filters,
                     )
@@ -475,6 +534,11 @@ class Boto3Collector(CollectorBase):
         edge_envelopes: list[dict[str, Any]] = []
         skipped = 0
         unavailable = 0
+        not_configured = 0
+        #: (service, region) -> the outcome of the first connection-level "not offered here" answer. A
+        #: service whose endpoint does not respond is learned once, not once per entry that reads it
+        #: (qbusiness has seven entries, each of which would otherwise wait out its own timeouts).
+        unreachable: dict[tuple[str, str], Outcome] = {}
         # Refs already in this batch. Two refs describing one source object are a batch-fatal
         # duplicate_entity_id at import (the whole run's data lost); skip the repeat and say so instead.
         seen_nodes: set[str] = set()
@@ -557,6 +621,21 @@ class Boto3Collector(CollectorBase):
                 if walk is not None:
                     listings.append((contained, walk))
                 listed = False
+                known_unreachable = unreachable.get((entry["service"], region))
+                if known_unreachable is not None:
+                    self._settle_outcome(entry, region_label, partition, known_unreachable, listing=listing, walk=walk)
+                    unavailable += 1
+                    if contained and entry["scope"] == "regional":
+                        surfaces.append(
+                            surface_of(
+                                relation=contained["relation"],
+                                edge_type=contained["edge_type"],
+                                subject=footprint_ref(account_id, region),
+                                facts=region_facts,
+                                listing=listing,
+                            )
+                        )
+                    continue
                 try:
                     items = list(
                         iter_source(
@@ -669,38 +748,53 @@ class Boto3Collector(CollectorBase):
                     BotoCoreError,
                     ClientError,
                 ) as exc:
-                    if walk is not None:
-                        # A listing that ended before the failure was read to the end but not carried
-                        # to the batch (admitted=false); one that had not ended is simply not known
-                        # to be complete (fail).
-                        if walk.complete is True:
-                            walk.drop(f"{type(exc).__name__} while processing the listed items")
+                    outcome = None if listed else classify(entry, exc, partition)
+                    if outcome is not None:
+                        # A named result, not a failed call (outcomes.py): the listing yielded nothing and
+                        # says why, and it is not a complete one. The walk, if any, is told so with the
+                        # named reason in place of the generic `fail` ones.
+                        self._settle_outcome(entry, region_label, partition, outcome, listing=listing, walk=walk)
+                        if outcome.kind == NOT_CONFIGURED:
+                            not_configured += 1
+                        elif outcome.kind == UNSUPPORTED_IN_PARTITION:
+                            unavailable += 1
+                            if isinstance(exc, BotoCoreError):
+                                unreachable[(entry["service"], region)] = outcome
                         else:
-                            walk.fail(exc)
-                    skipped += 1
-                    hint = ""
-                    if isinstance(exc, EndpointConnectionError) and partition != PARTITION_AWS:
-                        hint = (
-                            f" (no reachable {entry['service']} endpoint in partition {partition}: "
-                            "the service may not be offered there)"
+                            skipped += 1
+                    else:
+                        if walk is not None:
+                            # A listing that ended before the failure was read to the end but not carried
+                            # to the batch (admitted=false); one that had not ended is simply not known
+                            # to be complete (fail).
+                            if walk.complete is True:
+                                walk.drop(f"{type(exc).__name__} while processing the listed items")
+                            else:
+                                walk.fail(exc)
+                        skipped += 1
+                        hint = ""
+                        if isinstance(exc, EndpointConnectionError) and partition != PARTITION_AWS:
+                            hint = (
+                                f" (no reachable {entry['service']} endpoint in partition {partition}: "
+                                "the service may not be offered there)"
+                            )
+                        self.record_warn(
+                            _SITE_ENTRY_SKIPPED,
+                            "ENTRY_SKIPPED",
+                            f"Skipped {entry['entity_type']} in {region_label}: {exc}{hint}",
+                            message_data={
+                                "entity_type": entry["entity_type"],
+                                "region": region_label,
+                            },
                         )
-                    self.record_warn(
-                        _SITE_ENTRY_SKIPPED,
-                        "ENTRY_SKIPPED",
-                        f"Skipped {entry['entity_type']} in {region_label}: {exc}{hint}",
-                        message_data={
-                            "entity_type": entry["entity_type"],
-                            "region": region_label,
-                        },
-                    )
-                    if listing:
-                        listing.done()
-                        if not listed:
-                            # The source could not be read to its end: a fact about the source.
-                            listing.error = exc
-                        else:
-                            # The listing was read; what was done with it was not finished.
-                            listing.processing.append(f"{type(exc).__name__}: {exc}")
+                        if listing:
+                            listing.done()
+                            if not listed:
+                                # The source could not be read to its end: a fact about the source.
+                                listing.error = exc
+                            else:
+                                # The listing was read; what was done with it was not finished.
+                                listing.processing.append(f"{type(exc).__name__}: {exc}")
                 if contained and entry["scope"] == "regional":
                     # `listing` is always set here (`Listing() if ... else None`, above) —
                     # `surface_of`'s own `listing: Listing | None` parameter tolerates None
@@ -780,7 +874,7 @@ class Boto3Collector(CollectorBase):
         try:
             landing_zone = collect_landing_zone(
                 lambda service, region: session.client(
-                    service, region_name=region, config=Config(retries={"mode": "standard"})
+                    service, region_name=region, config=client_config()
                 ),
                 account_id=account_id,
                 partition=partition,
@@ -901,7 +995,8 @@ class Boto3Collector(CollectorBase):
         self.summary = (
             f"Collected {len(node_envelopes)} nodes, {len(edge_envelopes)} "
             f"edges for account {account_id} ({partition}) across {len(regions)} region(s) "
-            f"({skipped} skipped, {unavailable} not offered in this partition, {imported} batch imported)."
+            f"({skipped} skipped, {unavailable} not offered in this partition, {not_configured} not configured, "
+            f"{imported} batch imported)."
         )
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for

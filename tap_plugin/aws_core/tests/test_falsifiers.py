@@ -341,6 +341,37 @@ class TestProbeStatusOf:
             exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
             assert probe_status_of(exc) == "not_found", code
 
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "NoSuchEntity",
+            "ResourceNotFound",
+            "GeneratedTemplateNotFound",
+            "InvalidInstanceEventWindowIDNotFound",
+            "DBClusterNotFoundFault",
+            "DBInstanceNotFound",
+            "DBParameterGroupNotFound",
+            "DBProxyEndpointNotFoundFault",
+            "DBProxyNotFoundFault",
+            "DBProxyTargetGroupNotFoundFault",
+            "DBSecurityGroupNotFound",
+            "DBShardGroupNotFound",
+            "DBSubnetGroupNotFoundFault",
+            "GlobalClusterNotFoundFault",
+            "OptionGroupNotFoundFault",
+            "SubscriptionNotFound",
+        ],
+    )
+    def test_not_found_codes_seen_in_live_probes(self, code: str) -> None:
+        exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
+        assert probe_status_of(exc) == "not_found"
+
+    def test_similar_codes_are_not_taken_for_not_found(self) -> None:
+        # The list is exact: a code that merely resembles a not-found one stays errored.
+        for code in ("DBInstanceNotFoundish", "NoSuchEntityAlreadyExists", "ResourceNotFoundAnywhere", "NotFound"):
+            exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
+            assert probe_status_of(exc) == "errored", code
+
     def test_forbidden_codes(self) -> None:
         for code in ("UnauthorizedOperation", "AccessDenied", "AccessDeniedException"):
             exc = ClientError({"Error": {"Code": code, "Message": "x"}}, "Op")
