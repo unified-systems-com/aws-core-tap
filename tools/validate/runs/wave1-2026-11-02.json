@@ -5,15 +5,15 @@
  },
  "layer": "projection",
  "run": {
-  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (38 destroyed). The first destroy attempt was started from the wrong directory and failed before changing anything. Afterwards: IAM lists empty; the instance terminated, volumes and the security group rule gone; one KMS key PendingDeletion by design; the tagging API still listed the instance, two volumes and the rule for a while after they were gone.",
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (40 destroyed). Checked directly afterwards: IAM lists empty, the buckets, VPC, table and function gone, the instance terminated; one KMS key PendingDeletion by design.",
   "date": "2026-11-02",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "Keys, compared field names and outcomes only. Same seeds as 2026-11-01 (38 Terraform resources, 24 entity types). The one failure of that run (s3_bucket public_access_blocked on bucket B) was a seed-expectation error: S3 blocks public access on a new bucket by default and the expected inventory read 'no block resource' as false. The catalog now states the default, and all 24 types pass. Four types still list edges the catalog gives no expected target for (uncovered_edges): those were not checked. Per-account row totals are omitted.",
+  "note": "Keys, compared field names and outcomes only; per-account row totals are omitted. This replaces the record of the earlier 2026-11-02 cycle, which passed 24 of 24 but had lost the S3 encryption edge from its expected inventory (edges_expected 0). In this cycle bucket A's ENCRYPTED_WITH_KEY edge is expected and checked (edges_expected 1, no unresolved targets), and public_access_blocked is checked on three buckets: A explicit on, B the service default (on), C explicit off (the collector reports false). Three types still list manifest edges the catalog gives no expected target for (uncovered_edges): those were not checked.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
-  "run_id": "w111020726",
-  "seeds": "tools/seed/wave1 (38 Terraform resources, 24 entity types)",
+  "run_id": "w111020752",
+  "seeds": "tools/seed/wave1 (40 Terraform resources, 24 entity types; three S3 buckets)",
   "wave": 1
  },
  "types": [
@@ -262,13 +262,11 @@
     "name",
     "public_access_blocked"
    ],
-   "edges_expected": 0,
+   "edges_expected": 1,
    "entity_type": "aws_core__aws_s3_bucket",
-   "expected": 2,
+   "expected": 3,
    "first_mismatch": null,
-   "uncovered_edges": [
-    "ENCRYPTED_WITH_KEY__aws_core->aws_core__aws_kms_key"
-   ],
+   "uncovered_edges": [],
    "verdict": "pass"
   },
   {
