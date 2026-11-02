@@ -146,7 +146,9 @@ Status: `Proposed`
    that level. A success after an earlier `endpoint-absent`, `operation-absent` or `unreachable-unknown` supersedes
    it, so an old DNS failure cannot hide a working call; a newer absence supersedes an older success (a service can
    be withdrawn). The superseded observation stays in the record under `disagreements` with its date, and the
-   precedence order under Verdicts applies only among observations of the same date and level.
+   precedence order under Verdicts applies only among observations at the same level with the same timestamp (UTC, to
+   the second); on such a tie a success outranks a failure, consistent with rule 1, so a same-moment success and
+   timeout derive `offered`, not an absence.
 
 ### Probe
 ----
@@ -174,7 +176,7 @@ RID: `req-aws-core-availability-evidence`
 
 Status: `Proposed`
 
-Raw outputs of each fetch and probe are committed with the date, the tool and library versions (botocore and the AWS CLI
+**Raw means the sanitised outcome fields, never the response.** What a probe persists is an allowlist: the service, operation, region, date, the error code, the exception class and the HTTP status, the verdict, and the tool and library versions. Response bodies, headers, error messages, request parameters, URLs and resource names are discarded before anything is committed or published. The outputs of each fetch and probe, in those fields, are committed with the date, the tool and library versions (botocore and the AWS CLI
 version, the resolver, the script's commit) and a digest. Account numbers, request ids and resource names are removed.
 A fetch of an AWS-hosted source stores the file's digest and the fields used, not necessarily the whole file, when the
 file is large or not freely redistributable.
