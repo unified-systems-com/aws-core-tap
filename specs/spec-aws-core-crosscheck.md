@@ -100,11 +100,17 @@ runs once, in a fresh empty directory, with a pinned version, the dependency loc
 prints. The comparator reads the file as data and stays inert.
 
 **What this does not do.** It sanitises the environment; it is not a sandbox. The provider binary still runs as the
-caller with that user's filesystem and network, so it could read other user-readable files, reach a cloud metadata
-service or use an inherited proxy. The lock checksums authenticate the binary; they do not confine it. Until the
-step runs inside a network-denied, filesystem-confined container with no host mounts, it is run only by a
-maintainer on a host holding no cloud credentials and never in CI that holds secrets, and its output is committed
-with the version and digest it printed. That confinement is the open work in this requirement.
+caller with that user's filesystem and network, so it could read other user-readable files (keys, tokens), reach a cloud
+metadata service or use an inherited proxy. The lock checksums authenticate the binary; they do not confine it.
+
+**Therefore the step is not a maintainer-workstation workflow.** It runs only in a disposable environment that holds no
+user or cloud credentials: a throwaway virtual machine, or a container with no host mounts and a network limited to the
+provider registry. The script refuses to start unless the operator sets `CROSSCHECK_DUMP_CONFINED=yes`, a deliberate
+statement that it is in such an environment; the script cannot verify that, so the variable is a decision on the record,
+not a check. It is never run in CI that holds secrets. The output is committed with the version and digest it printed,
+so nobody needs to run the step routinely. Providing the confined runner (a pinned container recipe) is the open work in
+this requirement, and until it exists the requirement stays Proposed and the committed dump is regenerated only by a
+person who has made that statement.
 
 ### Metrics
 ----
