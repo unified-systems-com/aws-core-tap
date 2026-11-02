@@ -346,6 +346,15 @@ def top_disagreements(pairs: list[dict], n: int) -> list[dict]:
 
 # ---------------------------------------------------------------- output
 
+def _incomplete_banner(r: dict) -> list[str]:
+    """A prominent line when any Go file failed to parse: the comparison then under-reports what the provider does,
+    and a normal-looking report would be read as complete."""
+    bad = r["inputs"]["terraform_source"]["files_with_parse_error"]
+    if not bad:
+        return []
+    return [f"**INCOMPLETE: {bad} provider source file(s) had parse errors, so some `d.Set` mappings and operations may be missing and the figures below under-report the provider.**", ""]
+
+
 def markdown(r: dict) -> str:
     h, m, nc = r["headline"], r["mapping"], r["names_check"]
     L = [
@@ -356,6 +365,7 @@ def markdown(r: dict) -> str:
         f"Provider schema {r['inputs']['terraform_schema']['provider_version']} (sha256 {r['inputs']['terraform_schema']['sha256'][:12]}), "
         f"source commit {r['inputs']['terraform_source']['commit'][:12]}, aws_core {r['inputs']['aws_core']['commit'][:12]}.",
         "",
+        *_incomplete_banner(r),
         "## Headline",
         "",
         "| Measure | Value |",
@@ -406,6 +416,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--plugin", type=Path, default=HERE.parents[1], help="aws-core-tap checkout (default: this one)")
     ap.add_argument("--weights", type=Path, default=HERE / "weights" / "cartography-set-v1.json")
     ap.add_argument("--out", type=Path, default=None, help="directory for report.json and report.md")
+    ap.add_argument("--allow-parse-errors", action="store_true", help="exit 0 although some provider source files failed to parse (the report is still marked INCOMPLETE)")
     a = ap.parse_args(argv)
     try:
         rep = run(a.terraform_schema, a.terraform_source, a.plugin, a.weights, a.terraform_version)
@@ -419,6 +430,9 @@ def main(argv: list[str] | None = None) -> int:
         (a.out / "report.json").write_text(text)
         (a.out / "report.md").write_text(markdown(rep))
     sys.stdout.write(markdown(rep))
+    if rep["inputs"]["terraform_source"]["files_with_parse_error"] and not a.allow_parse_errors:
+        sys.stderr.write("some provider source files failed to parse: the report is INCOMPLETE (exit 3; --allow-parse-errors to accept)\n")
+        return 3
     return 0
 
 

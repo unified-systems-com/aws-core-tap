@@ -605,6 +605,26 @@ class TestConformance:
         capsys.readouterr()
 
 
+class TestParseErrors:
+    pytestmark = pytest.mark.usefixtures("need_tree_sitter")
+
+    def test_a_provider_file_that_fails_to_parse_marks_the_report_incomplete_and_fails_the_run(self, conformance, tmp_path, capsys):
+        prov, dump, plugin, w = conformance
+        broken = next((prov / "internal/service").rglob("*.go")).with_name("broken.go")
+        broken.write_text("package kms\n\nfunc resourceBroken( {{{\n")
+        rep = tf_conformance.run(dump, prov, plugin, w)
+        assert rep["inputs"]["terraform_source"]["files_with_parse_error"] >= 1
+        assert "INCOMPLETE" in tf_conformance.markdown(rep)
+        args = ["--terraform-schema", str(dump), "--terraform-source", str(prov), "--plugin", str(plugin), "--weights", str(w)]
+        assert tf_conformance.main(args) == 3
+        assert tf_conformance.main([*args, "--allow-parse-errors"]) == 0
+        capsys.readouterr()
+
+    def test_a_clean_run_carries_no_banner(self, conformance):
+        prov, dump, plugin, w = conformance
+        assert "INCOMPLETE" not in tf_conformance.markdown(tf_conformance.run(dump, prov, plugin, w))
+
+
 class TestCommittedAliasFile:
     def test_shape_and_every_alias_target_is_a_real_type(self):
         root = Path(__file__).resolve().parents[3]
