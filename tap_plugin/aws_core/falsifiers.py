@@ -234,7 +234,31 @@ def _default_session() -> tuple[ProbeSession, str]:
 #: generic ``*.NotFound`` / ``*NotFoundException`` shapes every service follows. ``NoSuchBucket``
 #: is S3's own not-found code — named here, not only in a future S3 falsifier, so every
 #: ``_AwsFalsifier`` subclass gets it for free.
-_NOT_FOUND_CODES = frozenset({"ResourceNotFoundException", "NoSuchBucket"})
+_NOT_FOUND_CODES = frozenset(
+    {
+        "ResourceNotFoundException",
+        "NoSuchBucket",
+        # Not-found codes that follow neither generic shape, each seen from a real call with a made-up
+        # id (GovCloud us-gov-west-1, 2026-11-01; ``tools/probes/runs``). An exact list, not a wider
+        # suffix rule: ``endswith("NotFound")`` would also catch codes that mean something else.
+        "NoSuchEntity",  # IAM: group, instance profile, policy, role, SAML provider, server certificate, user
+        "ResourceNotFound",  # CloudWatch GetDashboard
+        "GeneratedTemplateNotFound",  # CloudFormation GetGeneratedTemplate
+        "InvalidInstanceEventWindowIDNotFound",  # EC2 DescribeInstanceEventWindows (no dot, unlike Invalid*ID.NotFound)
+        "DBClusterNotFoundFault",  # RDS
+        "DBInstanceNotFound",
+        "DBParameterGroupNotFound",
+        "DBProxyEndpointNotFoundFault",
+        "DBProxyNotFoundFault",
+        "DBProxyTargetGroupNotFoundFault",
+        "DBSecurityGroupNotFound",
+        "DBShardGroupNotFound",
+        "DBSubnetGroupNotFoundFault",
+        "GlobalClusterNotFoundFault",
+        "OptionGroupNotFoundFault",
+        "SubscriptionNotFound",
+    }
+)
 #: AWS ``Error.Code`` values recognised as "this credential may not look", not "it is gone".
 _FORBIDDEN_CODES = frozenset({"UnauthorizedOperation", "AccessDenied", "AccessDeniedException"})
 #: AWS ``Error.Code`` values recognised as a rate limit rather than a real answer.
