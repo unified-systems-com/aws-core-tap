@@ -117,6 +117,15 @@ def test_compare_uses_the_wave_zero_read_guard_not_a_verb_prefix():
     assert "read_verb" not in text
 
 
+def test_unresolved_expected_edge_targets_fail_the_record():
+    doc = {"wave": ["wave1"], "resources": [{"entity_type": "t", "natural_key": "k", "attrs": {}, "tags": {}, "edges": []}], "unresolved_edge_targets": 2}
+    catalog = {"types": {"AWS::X::Y": {"entity_type": "t", "compares": []}}}
+    report = compare.build_report(doc, catalog, {"t": [row(key="k", fields={}, tags={})]}, {"t": [row(key="k", fields={}, tags={})]}, {}, {})
+    assert report["counts"].get("fail") == 1 and report["types"][-1]["first_mismatch"] == "unresolved-edge-targets:2"
+    clean = compare.build_report({**doc, "unresolved_edge_targets": 0}, catalog, {"t": [row(key="k", fields={}, tags={})]}, {"t": [row(key="k", fields={}, tags={})]}, {}, {})
+    assert "fail" not in clean["counts"]
+
+
 def test_canon():
     assert compare.canon(True) == "true" and compare.canon(30) == compare.canon("30") == "30" and compare.canon(1.0) == "1"
     assert compare.canon(["b", "a"]) == compare.canon(["a", "b"]) and compare.canon({"b": 1, "a": 2}) == {"a": "2", "b": "1"}

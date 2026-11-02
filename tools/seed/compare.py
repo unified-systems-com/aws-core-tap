@@ -169,6 +169,11 @@ def build_report(expected_doc, catalog, collected, collected_again, errors, mani
                 errors.get(et),
             )
         )
+    unresolved = int(expected_doc.get("unresolved_edge_targets") or 0)
+    if unresolved:
+        # An expected edge whose target matched no seeded resource was dropped from the inventory, so a collector
+        # that fails to emit it would pass; the record fails instead (fail closed).
+        records.append({"entity_type": "(expected inventory)", "verdict": "fail", "first_mismatch": f"unresolved-edge-targets:{unresolved}"})
     counts = {}
     for r in records:
         counts[r["verdict"]] = counts.get(r["verdict"], 0) + 1
@@ -264,6 +269,8 @@ def main():
     entries_by_type = {e["entity_type"]: e for e in entries}
     modeled = {e["entity_type"] for e in entries}
     seeded = sorted({r["entity_type"] for r in expected_doc["resources"]})
+    if expected_doc.get("unresolved_edge_targets"):
+        raise SystemExit(f"STOP: the expected inventory has {expected_doc['unresolved_edge_targets']} edge target(s) that match no seeded resource; fix the catalog or the state before comparing")
     unknown = [t for t in seeded if t not in entries_by_type]
     if unknown:
         raise SystemExit(f"STOP: expected inventory names types the manifest lacks: {unknown}")
