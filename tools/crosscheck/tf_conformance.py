@@ -27,8 +27,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -439,6 +441,29 @@ def markdown(r: dict) -> str:
     return "\n".join(L) + "\n"
 
 
+def write_reports(out: Path, files: dict[str, str]) -> None:
+    """Write each file into ``out`` by a temporary file renamed into place. A link at the directory or at a file's
+    path is refused (OSError), so the write cannot be sent to wherever a link inside an analysed tree points, and a
+    rename replaces a link at the path instead of following it."""
+    if out.is_symlink():
+        raise OSError(f"{out.name}: the output directory is a symlink")
+    out.mkdir(parents=True, exist_ok=True)
+    for name, body in files.items():
+        dest = out / name
+        if dest.is_symlink() or (dest.exists() and not dest.is_file()):
+            raise OSError(f"{name}: a symlink or not a regular file; refusing to write to it")
+    for name, body in files.items():
+        fd, tmp = tempfile.mkstemp(prefix=".report-", dir=out)
+        try:
+            with os.fdopen(fd, "w") as fh:
+                fh.write(body)
+            os.chmod(tmp, 0o644)
+            os.replace(tmp, out / name)
+        except BaseException:
+            Path(tmp).unlink(missing_ok=True)
+            raise
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--terraform-schema", required=True, type=Path, help="schema dump file from terraform_dump.sh")
@@ -458,9 +483,10 @@ def main(argv: list[str] | None = None) -> int:
         ap.error(_clean(e))
     text = json.dumps(rep, indent=1, sort_keys=True) + "\n"
     if a.out:
-        a.out.mkdir(parents=True, exist_ok=True)
-        (a.out / "report.json").write_text(text)
-        (a.out / "report.md").write_text(markdown(rep))
+        try:
+            write_reports(a.out, {"report.json": text, "report.md": markdown(rep)})
+        except OSError as e:
+            ap.error(_clean(e))
     sys.stdout.write(markdown(rep))
     if rep["inputs"]["terraform_source"]["files_with_parse_error"] and not a.allow_parse_errors:
         sys.stderr.write("some provider source files failed to parse: the report is INCOMPLETE (exit 3; --allow-parse-errors to accept)\n")

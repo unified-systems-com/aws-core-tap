@@ -605,6 +605,30 @@ class TestConformance:
         capsys.readouterr()
 
 
+class TestWriteReports:
+    def test_a_symlinked_report_or_directory_is_refused_and_its_target_left_alone(self, tmp_path):
+        victim = tmp_path / "victim.txt"
+        victim.write_text("precious\n")
+        out = tmp_path / "out"
+        out.mkdir()
+        (out / "report.json").symlink_to(victim)
+        with pytest.raises(OSError):
+            tf_conformance.write_reports(out, {"report.json": "{}", "report.md": "# x"})
+        assert victim.read_text() == "precious\n" and not (out / "report.md").exists()  # nothing is written when one is refused
+        linked = tmp_path / "linked"
+        linked.symlink_to(out, target_is_directory=True)
+        with pytest.raises(OSError):
+            tf_conformance.write_reports(linked, {"report.json": "{}"})
+
+    def test_reports_replace_an_existing_file_whole_and_leave_no_temporary_file(self, tmp_path):
+        out = tmp_path / "new" / "dir"
+        tf_conformance.write_reports(out, {"report.json": "{}", "report.md": "# x"})
+        (out / "report.md").write_text("stale")
+        tf_conformance.write_reports(out, {"report.json": "{}", "report.md": "# y"})
+        assert (out / "report.md").read_text() == "# y"
+        assert sorted(f.name for f in out.iterdir()) == ["report.json", "report.md"]
+
+
 class TestFieldAlignment:
     @staticmethod
     def _compare(monkeypatch, typed, attrs, tf_types=("aws_x",)):
