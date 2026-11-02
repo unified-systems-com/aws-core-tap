@@ -93,6 +93,16 @@ def test_attribute_names_exist_in_the_provider_schema_dump_when_available():
             check(entry["terraform"], spec)
 
 
+def test_nothing_outside_the_state_is_deleted_by_a_destroy():
+    assert "force_destroy" not in TF_TEXT
+
+
+def test_every_iam_identity_waits_for_the_partition_guard():
+    for kind in ("role", "user", "group", "policy"):
+        block = re.search(rf'^resource "aws_iam_{kind}" "[^"]+" \{{\n(.*?)^\}}', TF_TEXT, re.M | re.S)
+        assert block and "depends_on = [terraform_data.guard]" in block.group(1), kind
+
+
 def test_iam_names_start_with_seed():
     blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_TEXT, re.M | re.S)
     assert len(blocks) == 5

@@ -111,7 +111,6 @@ def compare_type(entity_type, cfn_type, expected, compared, rows, rows_again, ma
         "entity_type": entity_type,
         "cfn_type": cfn_type,
         "expected": len(expected),
-        "rows_in_account": None if rows is None else len(rows),
         "compared_fields": sorted(compared),
         "edges_expected": sum(len(x["edges"]) for x in expected),
         "uncovered_edges": uncovered,

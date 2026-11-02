@@ -1,8 +1,10 @@
 """expected.py against a small synthetic `terraform show -json` document."""
 
 import json
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -111,6 +113,20 @@ def test_a_symlinked_or_non_file_input_is_refused(tmp_path):
     assert expected.main([str(link)]) == 2
 
 
+def test_paths_must_lie_under_the_tools_own_directories(tmp_path, monkeypatch):
+    out = tmp_path / "out"
+    out.mkdir()
+    monkeypatch.setattr(expected, "OUT_ROOT", out)
+    inside, outside = out / "show.json", tmp_path / "elsewhere.json"
+    for p in (inside, outside):
+        p.write_text("{}")
+    assert expected.confine(inside, out) == inside.resolve()
+    with pytest.raises(expected.ExpectedError):
+        expected.confine(outside, out)
+    assert expected.main([str(outside)]) == 2
+    assert expected.main([str(inside), "--out", str(outside)]) == 2  # the input is no state, but the output path is refused first
+
+
 def test_edges_only_when_target_was_seeded(doc):
     role = by_addr(doc, "aws_iam_role.seed")
     assert role["edges"] == [{"direction": "outbound", "edge_type": "ATTACHES_POLICY__aws_core", "target_key": "arn:aws-us-gov:iam::000000000000:policy/seed-w1-t1-policy", "target_type": "aws_core__aws_iam_policy"}]
@@ -127,10 +143,18 @@ def test_a_plan_or_empty_input_is_refused(tmp_path):
         expected.load_state(p)
 
 
-def test_cli_is_deterministic(tmp_path):
-    p = tmp_path / "show.json"
-    p.write_text(json.dumps(state()))
-    outs = [subprocess.run([sys.executable, "-I", str(SEED / "expected.py"), str(p)], capture_output=True, text=True, check=True).stdout for _ in range(2)]
-    assert outs[0] == outs[1] and json.loads(outs[0])["resources"]
-    bad = subprocess.run([sys.executable, "-I", str(SEED / "expected.py"), str(tmp_path / "nope.json")], capture_output=True, text=True)
-    assert bad.returncode == 2
+def test_cli_is_deterministic():
+    # The CLI reads only under the tool's own out/ (git-ignored); a subprocess cannot be pointed elsewhere.
+    run_dir = Path(tempfile.mkdtemp(prefix="test-cli-", dir=expected.OUT_ROOT)) if expected.OUT_ROOT.is_dir() else None
+    if run_dir is None:
+        expected.OUT_ROOT.mkdir(parents=True)
+        run_dir = Path(tempfile.mkdtemp(prefix="test-cli-", dir=expected.OUT_ROOT))
+    try:
+        p = run_dir / "show.json"
+        p.write_text(json.dumps(state()))
+        outs = [subprocess.run([sys.executable, "-I", str(SEED / "expected.py"), str(p)], capture_output=True, text=True, check=True).stdout for _ in range(2)]
+        assert outs[0] == outs[1] and json.loads(outs[0])["resources"]
+        bad = subprocess.run([sys.executable, "-I", str(SEED / "expected.py"), str(run_dir / "nope.json")], capture_output=True, text=True)
+        assert bad.returncode == 2
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)

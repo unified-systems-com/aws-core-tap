@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
+OUT_ROOT = HERE / "out"  # run state, the expected inventory and the verdict live here (git-ignored)
 MISSING = object()
 
 
@@ -33,6 +35,18 @@ def walk_resources(module: dict[str, Any]) -> list[dict[str, Any]]:
     for child in module.get("child_modules", []):
         found.extend(walk_resources(child))
     return found
+
+
+def confine(path: Path, root: Path) -> Path:
+    """``path`` made real, if it is not a link and lies under ``root``: an argument cannot point the tool at a file
+    outside the tool's own directories."""
+    path = Path(path)
+    if path.is_symlink():
+        raise ExpectedError(f"{path.name}: a symlink")
+    real = Path(os.path.realpath(path))
+    if not real.is_relative_to(os.path.realpath(root)):
+        raise ExpectedError(f"{path.name}: not under {root.name}/")
+    return real
 
 
 def read_json_file(path: Path) -> Any:
@@ -193,16 +207,18 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=None, help="write here instead of stdout")
     args = ap.parse_args(argv)
     try:
-        catalog = read_json_file(args.catalog)
-        text = json.dumps(build_expected(load_state(args.show_json), catalog), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+        show_json = confine(args.show_json, OUT_ROOT)
+        catalog = read_json_file(confine(args.catalog, HERE))
+        out = confine(args.out, OUT_ROOT) if args.out else None
+        text = json.dumps(build_expected(load_state(show_json), catalog), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     except (ExpectedError, OSError, ValueError) as exc:
         print(f"expected.py: {exc}", file=sys.stderr)
         return 2
-    if args.out:
-        if args.out.is_symlink() or (args.out.exists() and not args.out.is_file()):
-            print(f"expected.py: {args.out.name}: not a regular file", file=sys.stderr)
+    if out:
+        if out.exists() and not out.is_file():
+            print(f"expected.py: {out.name}: not a regular file", file=sys.stderr)
             return 2
-        args.out.write_text(text, encoding="utf-8")
+        out.write_text(text, encoding="utf-8")
     else:
         sys.stdout.write(text)
     return 0

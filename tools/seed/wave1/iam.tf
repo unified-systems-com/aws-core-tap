@@ -25,6 +25,8 @@ resource "aws_iam_policy" "seed" {
 resource "aws_iam_role" "seed" {
   name               = "seed-w1-${var.run_id}-role"
   assume_role_policy = data.aws_iam_policy_document.assume.json
+
+  depends_on = [terraform_data.guard]
 }
 
 resource "aws_iam_role_policy_attachment" "seed" {
@@ -46,6 +48,8 @@ resource "aws_iam_user" "seed" {
     "path/like"   = "a=b+c@d"
     "empty-value" = ""
   }
+
+  depends_on = [terraform_data.guard]
 }
 
 resource "aws_iam_user_policy_attachment" "seed" {
@@ -56,6 +60,8 @@ resource "aws_iam_user_policy_attachment" "seed" {
 # IAM groups cannot carry tags: the collector must report {} and the expected inventory records {}.
 resource "aws_iam_group" "seed" {
   name = "seed-w1-${var.run_id}-group"
+
+  depends_on = [terraform_data.guard]
 }
 
 resource "aws_iam_group_policy_attachment" "seed" {

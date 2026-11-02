@@ -9,7 +9,7 @@
   "date": "2026-11-02",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "Keys, compared field names and outcomes only. Same seeds as 2026-11-01 (38 Terraform resources, 24 entity types). The one failure of that run (s3_bucket public_access_blocked on bucket B) was a seed-expectation error: S3 blocks public access on a new bucket by default and the expected inventory read 'no block resource' as false. The catalog now states the default, and all 24 types pass. Four types still list edges the catalog gives no expected target for (uncovered_edges): those were not checked.",
+  "note": "Keys, compared field names and outcomes only. Same seeds as 2026-11-01 (38 Terraform resources, 24 entity types). The one failure of that run (s3_bucket public_access_blocked on bucket B) was a seed-expectation error: S3 blocks public access on a new bucket by default and the expected inventory read 'no block resource' as false. The catalog now states the default, and all 24 types pass. Four types still list edges the catalog gives no expected target for (uncovered_edges): those were not checked. Per-account row totals are omitted.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
   "run_id": "w111020726",
@@ -28,7 +28,6 @@
    "entity_type": "aws_core__aws_cloudwatch_log_group",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 5,
    "uncovered_edges": [
     "ENCRYPTED_WITH_KEY__aws_core->aws_core__aws_kms_key"
    ],
@@ -45,7 +44,6 @@
    "entity_type": "aws_core__aws_dynamodb_table",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 3,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -61,7 +59,6 @@
    "entity_type": "aws_core__aws_ebs_volume",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 4,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -79,7 +76,6 @@
    "entity_type": "aws_core__aws_ec2_instance",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 2,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -96,7 +92,6 @@
    "entity_type": "aws_core__aws_eventbridge_rule",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 5,
    "uncovered_edges": [
     "ASSUMES_ROLE__aws_core->aws_core__aws_iam_role"
    ],
@@ -114,7 +109,6 @@
    "entity_type": "aws_core__aws_iam_group",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 4,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -130,7 +124,6 @@
    "entity_type": "aws_core__aws_iam_instance_profile",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 2,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -146,7 +139,6 @@
    "entity_type": "aws_core__aws_iam_policy",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 9,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -163,7 +155,6 @@
    "entity_type": "aws_core__aws_iam_role",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 34,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -179,7 +170,6 @@
    "entity_type": "aws_core__aws_iam_user",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 4,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -192,7 +182,6 @@
    "entity_type": "aws_core__aws_internet_gateway",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 4,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -208,7 +197,6 @@
    "entity_type": "aws_core__aws_kms_alias",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 15,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -223,7 +211,6 @@
    "entity_type": "aws_core__aws_kms_key",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 8,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -241,7 +228,6 @@
    "entity_type": "aws_core__aws_lambda",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 4,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -254,7 +240,6 @@
    "entity_type": "aws_core__aws_network_acl",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 9,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -267,7 +252,6 @@
    "entity_type": "aws_core__aws_route_table",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 13,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -282,7 +266,6 @@
    "entity_type": "aws_core__aws_s3_bucket",
    "expected": 2,
    "first_mismatch": null,
-   "rows_in_account": 7,
    "uncovered_edges": [
     "ENCRYPTED_WITH_KEY__aws_core->aws_core__aws_kms_key"
    ],
@@ -298,7 +281,6 @@
    "entity_type": "aws_core__aws_secrets_manager_secret",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 2,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -313,7 +295,6 @@
    "entity_type": "aws_core__aws_security_group",
    "expected": 2,
    "first_mismatch": null,
-   "rows_in_account": 8,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -327,7 +308,6 @@
    "entity_type": "aws_core__aws_sns_topic",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 3,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -343,7 +323,6 @@
    "entity_type": "aws_core__aws_sqs_queue",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 2,
    "uncovered_edges": [
     "ENCRYPTED_WITH_KEY__aws_core->aws_core__aws_kms_key"
    ],
@@ -361,7 +340,6 @@
    "entity_type": "aws_core__aws_ssm_parameter",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 2,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -377,7 +355,6 @@
    "entity_type": "aws_core__aws_subnet",
    "expected": 2,
    "first_mismatch": null,
-   "rows_in_account": 16,
    "uncovered_edges": [],
    "verdict": "pass"
   },
@@ -391,7 +368,6 @@
    "entity_type": "aws_core__aws_vpc",
    "expected": 1,
    "first_mismatch": null,
-   "rows_in_account": 4,
    "uncovered_edges": [],
    "verdict": "pass"
   }

@@ -36,7 +36,7 @@ def run(expected, rows, again=None, **kw):
 
 def test_pass_with_loose_scalars_and_extra_rows():
     rec = run([exp()], [row(), row(key="other")])
-    assert rec["verdict"] == "pass" and rec["first_mismatch"] is None and rec["rows_in_account"] == 2
+    assert rec["verdict"] == "pass" and rec["first_mismatch"] is None and "rows_in_account" not in rec
 
 
 def test_zero_expected_is_call_path_only():
