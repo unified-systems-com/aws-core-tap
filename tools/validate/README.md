@@ -35,7 +35,7 @@ live state.
 | File | What |
 | --- | --- |
 | `runs/wave0-2026-11-01.json` | Wave 0 over 898 manifest-driven types, `us-gov-west-1`, GovCloud staging account |
-| `runs/wave0-2026-11-02.json` | The same wave re-run on main after the outcome work (#163): same ok, empty and denied sets, non-ok entries labelled by the collector's own classifier (95 + 8 access-denied, 68 unsupported-in-partition, 26 not-configured, 3 throttled, 13 still unclassified) |
+| `runs/wave0-2026-11-02.json` | The same wave re-run on main after the outcome work (#163): same ok, empty and denied sets, non-ok entries labelled by the collector's own classifier (103 access-denied, 68 unsupported-in-partition, 26 not-configured, 3 throttled, 13 still unclassified) |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
