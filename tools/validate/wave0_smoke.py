@@ -147,6 +147,10 @@ def main():
             rec["failed_calls"] = sorted({f"{c['service']}.{c['operation']}:{c['outcome']}" for c in new if c["outcome"] not in ("ok", "absent")})
             rec["calls_made"] = sorted({f"{c['service']}.{c['operation']}" for c in new})
             rec["call_outcomes"] = {o: sum(1 for c in new if c["outcome"] == o) for o in sorted({c["outcome"] for c in new})}
+            if rec.get("outcome") == "empty" and not new:
+                # No AWS call was made (a parent-dependent type with no parent resources): the type's own call
+                # path was never reached, so this is not evidence that it works.
+                rec["outcome"] = "not-exercised"
             rec["seconds"] = round(time.time() - t0, 2)
             results.append(rec)
         if n % 50 == 0:

@@ -26,7 +26,7 @@ scripts/dc exec -T web uv run python manage.py shell -c \
 
 ## Run records (`runs/`)
 
-One file per run: counts, operation names and error codes only. From the run after this change a result also carries `calls_made`, every `service.operation` the entry made, so a successful call can be audited; `wave0-2026-11-01.json` predates it and records operation names for failed calls only (`failed_calls`). Never resource content, never error messages (they can
+One file per run: counts, operation names and error codes only. An entry that made no AWS call (a parent-dependent type with no parent resources) is `not-exercised`, never `empty`: it is not evidence that its call path works. From the run after this change a result also carries `calls_made`, every `service.operation` the entry made, so a successful call can be audited; `wave0-2026-11-01.json` predates it and records operation names for failed calls only (`failed_calls`). Never resource content, never error messages (they can
 name resources), and account numbers removed because this repository is public. A record is the merge of the first
 pass and a re-run of the entries that did not come back clean (the re-run replaces the first result), so it is not
 the raw output of one invocation of the script. The ledger decisions cite these files as the evidence for a type's

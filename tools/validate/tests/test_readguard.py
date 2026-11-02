@@ -149,3 +149,11 @@ def test_a_client_built_before_the_guard_is_installed_is_not_covered():
 def test_the_wheel_ships_only_the_plugin_package():
     text = (Path(__file__).resolve().parents[3] / "pyproject.toml").read_text()
     assert 'only-include = ["tap_plugin/aws_core"]' in text
+
+
+def test_no_committed_record_calls_an_entry_that_made_no_call_empty():
+    records = sorted((Path(__file__).resolve().parents[1] / "runs").glob("*.json"))
+    assert records
+    for path in records:
+        for result in json.loads(path.read_text())["results"]:
+            assert not (result.get("outcome") == "empty" and result.get("calls") == 0), (path.name, result["entity_type"])
