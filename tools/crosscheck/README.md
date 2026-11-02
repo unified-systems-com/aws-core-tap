@@ -75,7 +75,7 @@ function), and our read operations with the provider's. Terraform is a reference
 
 ```
 CROSSCHECK_DUMP_CONFINED=yes tools/crosscheck/terraform_dump.sh [-v 6.71.0] schema.json     # the only step that runs Terraform: init + providers schema; sanitised environment, NOT a sandbox
-pip install -r tools/crosscheck/requirements-terraform.txt      # tree-sitter, for the source layer only
+pip install --only-binary=:all: -r tools/crosscheck/requirements-terraform.txt      # tree-sitter, for the source layer only; wheels only, so no build backend runs
 python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --terraform-source ~/src/terraform-provider-aws \
     --terraform-version 6.71.0 [--out DIR]   # DIR must lie under the directory you run it from
 ```

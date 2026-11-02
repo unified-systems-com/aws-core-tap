@@ -6,7 +6,7 @@ lacks: the AWS API field behind each attribute (`d.Set("is_enabled", key.metadat
 (`conn.DescribeKey(...)`). Terraform is a reference, not ground truth: this is what the provider's authors
 wrote, and it can be wrong or out of date.
 
-tree-sitter is an optional dependency (`pip install -r tools/crosscheck/requirements-terraform.txt`); the rest
+tree-sitter is an optional dependency (`pip install --only-binary=:all: -r tools/crosscheck/requirements-terraform.txt`); the rest
 of crosscheck does not import this module.
 
 Everything taken from the tree is untrusted text. Strings stored here have control characters replaced.
@@ -34,7 +34,7 @@ def _parser() -> Any:
     except ImportError as e:
         raise MissingDependency(
             "reading the Terraform provider source needs tree-sitter; run "
-            "`pip install -r tools/crosscheck/requirements-terraform.txt` (" + str(e) + ")"
+            "`pip install --only-binary=:all: -r tools/crosscheck/requirements-terraform.txt` (" + str(e) + ")"
         ) from e
     return Parser(Language(tree_sitter_go.language()))
 

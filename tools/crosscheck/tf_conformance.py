@@ -19,7 +19,7 @@ source checkout have different sets of resources (they may be different provider
 a banner for the same condition, and the flags accept it.
 
 The schema file comes from terraform_dump.sh; the source is only parsed (tree-sitter), never built or run.
-Needs `pip install -r tools/crosscheck/requirements-terraform.txt` for the source layer.
+Needs `pip install --only-binary=:all: -r tools/crosscheck/requirements-terraform.txt` for the source layer.
 """
 
 from __future__ import annotations
