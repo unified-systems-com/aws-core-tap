@@ -227,6 +227,24 @@ class TestCommitOf:
         assert carto_reader.commit_of(tmp_path / "detached") == self.SHA
         assert carto_reader.commit_of(tmp_path / "nothing") == "unknown"
 
+    def test_a_symlinked_commondir_packed_refs_or_a_head_behind_a_pointer_reports_unknown(self, tmp_path):
+        outside = tmp_path / "outside"
+        _w(outside, self.SHA + "\n")
+        g = tmp_path / "cd/.git"
+        _w(g / "HEAD", "ref: refs/heads/main\n")
+        (g / "commondir").symlink_to(outside)
+        assert carto_reader.commit_of(tmp_path / "cd") == "unknown"
+        p = tmp_path / "pk/.git"
+        _w(p / "HEAD", "ref: refs/heads/main\n")
+        (p / "packed-refs").symlink_to(tmp_path / "outside-packed")
+        _w(tmp_path / "outside-packed", f"{self.SHA} refs/heads/main\n")
+        assert carto_reader.commit_of(tmp_path / "pk") == "unknown"
+        inner = tmp_path / "ptr/real-git"
+        inner.mkdir(parents=True)
+        (inner / "HEAD").symlink_to(outside)
+        _w(tmp_path / "ptr/.git", f"gitdir: {inner}\n")
+        assert carto_reader.commit_of(tmp_path / "ptr") == "unknown"
+
     def test_a_git_pointer_or_commondir_leaving_the_tree_reports_unknown(self, tmp_path):
         outside = tmp_path / "outside-git"
         _w(outside / "HEAD", self.SHA + "\n")

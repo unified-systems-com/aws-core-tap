@@ -65,34 +65,38 @@ def tree_digest(root: Path, patterns: list[str]) -> str:
     return h.hexdigest()
 
 
+def _plain(path: Path) -> Path:
+    """``path``, or an OSError (answered as 'unknown' by the caller) if it is a symlink: nothing in an analysed
+    tree is read through a link, because the link, not the tree, would choose the file."""
+    if path.is_symlink():
+        raise OSError(f"refusing to read through a symlink: {path.name}")
+    return path
+
+
 def _commit_of(root: Path) -> str:
     try:
-        git = root / ".git"
-        if git.is_symlink() or (git / "HEAD").is_symlink():
-            return "unknown"  # a hostile tree must not point the report at a file outside itself
+        git = _plain(root / ".git")
         if git.is_file():  # a worktree or submodule: ".git" is a file pointing at the real directory
             line = git.read_text().strip()
             if line.startswith("gitdir:"):
                 git = (root / line.split(":", 1)[1].strip()).resolve()
         if not git.resolve().is_relative_to(root.resolve()):
             return "unknown"  # a pointer out of the analysed tree is untrusted input, so a worktree reports no commit
-        head = (git / "HEAD").read_text().strip()
+        head = _plain(git / "HEAD").read_text().strip()
         if not head.startswith("ref:"):
             return head
         ref = head.split(":", 1)[1].strip()
         if not ref.startswith("refs/") or ".." in ref.split("/"):
             return "unknown"
         common = git
-        if (git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
-            common = (git / (git / "commondir").read_text().strip()).resolve()
+        if _plain(git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
+            common = (git / _plain(git / "commondir").read_text().strip()).resolve()
             if not common.is_relative_to(root.resolve()):
                 return "unknown"
         for base in (git, common):
-            if (base / ref).is_symlink():
-                return "unknown"
-            if (base / ref).is_file():
-                return (base / ref).read_text().strip()
-        packed = common / "packed-refs"
+            if _plain(base / ref).is_file():
+                return _plain(base / ref).read_text().strip()
+        packed = _plain(common / "packed-refs")
         if packed.is_file():
             for line in packed.read_text().splitlines():
                 if line.endswith(" " + ref) and not line.startswith(("#", "^")):
