@@ -101,3 +101,51 @@ def test_more_credential_returning_reads_are_refused(op):
 def test_the_manifests_glue_connection_entries_pass_hide_password():
     text = MANIFEST.read_text()
     assert text.count('"HidePassword": true') >= 1
+
+
+def _session():
+    boto3 = pytest.importorskip("boto3")
+    return boto3.session.Session(aws_access_key_id="AKIAFAKE", aws_secret_access_key="fake", region_name="us-gov-west-1")
+
+
+def test_the_botocore_hook_refuses_a_write_before_anything_is_sent():
+    session = _session()
+    readguard.install(session)
+    client = session.client("s3")
+    with pytest.raises(readguard.NonReadCall, match="s3.DeleteBucket"):
+        client.delete_bucket(Bucket="b")
+
+
+def test_the_botocore_hook_refuses_a_credential_returning_read_and_a_revealing_request():
+    session = _session()
+    readguard.install(session)
+    with pytest.raises(readguard.NonReadCall, match="GetSessionToken"):
+        session.client("sts").get_session_token()
+    with pytest.raises(readguard.NonReadCall, match="WithDecryption"):
+        session.client("ssm").get_parameter(Name="n", WithDecryption=True)
+
+
+def test_the_botocore_hook_lets_a_plain_read_through():
+    stubber = pytest.importorskip("botocore.stub")
+    session = _session()
+    readguard.install(session)
+    client = session.client("s3")
+    with stubber.Stubber(client) as stub:
+        stub.add_response("list_buckets", {"Buckets": []})
+        assert client.list_buckets()["Buckets"] == []
+
+
+def test_a_client_built_before_the_guard_is_installed_is_not_covered():
+    # The documented limit: install() before building clients. Stub the write so nothing is sent.
+    stubber = pytest.importorskip("botocore.stub")
+    session = _session()
+    early = session.client("s3")
+    readguard.install(session)
+    with stubber.Stubber(early) as stub:
+        stub.add_response("delete_bucket", {})
+        early.delete_bucket(Bucket="b")  # not refused: the client copied the handlers before install
+
+
+def test_the_wheel_ships_only_the_plugin_package():
+    text = (Path(__file__).resolve().parents[3] / "pyproject.toml").read_text()
+    assert 'only-include = ["tap_plugin/aws_core"]' in text

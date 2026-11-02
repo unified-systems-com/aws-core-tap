@@ -45,16 +45,7 @@ import sys
 
 # exec() from `manage.py shell -c` has no usable __file__; the repository is mounted at this path in the container.
 sys.path.insert(0, "/app/_dev-plugins/aws_core/tools/validate")
-from readguard import NonReadCall, check  # noqa: E402
-
-
-def _guard(model=None, params=None, **_kw):
-    """Refuse a call before it is made: not a read verb, returns secrets, or asks the service to reveal one."""
-    name = getattr(model, "name", "")
-    try:
-        check(name, params)
-    except NonReadCall as exc:
-        raise NonReadCall(f"{getattr(getattr(model, 'service_model', None), 'service_name', '?')}.{name}: {exc}") from None
+from readguard import NonReadCall, install  # noqa: E402
 
 
 def _scrub(text):
@@ -93,7 +84,7 @@ def main():
     ledger = CallLedger()
     session = build_session(data)
     ledger.attach(session)
-    session.events.register("before-parameter-build", _guard)  # the API parameters, before they are serialised
+    install(session)  # readguard's before-parameter-build handler, registered before any client is built
     account = caller_account_id(session, regions[0], timeout_seconds=30)
     mismatch = account_mismatch_error(data, account)
     if mismatch:

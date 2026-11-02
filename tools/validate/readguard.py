@@ -38,6 +38,8 @@ SECRET_RETURNING = frozenset(
         "GetInstanceAccessDetails",  # Lightsail: a key pair or password for the instance
         "GetComputeAccess",  # GameLift: temporary credentials for a compute
         "GetComputeAuthToken",
+        "GetFunction",  # Lambda: a presigned link to the deployment package, and the environment variables
+        "GetFunctionConfiguration",  # Lambda: the environment variables in plain text
     }
 )
 
@@ -87,3 +89,18 @@ def check(operation, params=None):
     for name, wanted in REQUIRED_PARAMS.get(operation, {}).items():
         if (params or {}).get(name) is not wanted:
             raise NonReadCall(f"does not ask the service to hide a secret: {operation} needs {name}={wanted}")
+
+
+def guard(model=None, params=None, **_kw):
+    """The botocore ``before-parameter-build`` handler: refuse a call before it is serialised or sent."""
+    name = getattr(model, "name", "")
+    try:
+        check(name, params)
+    except NonReadCall as exc:
+        raise NonReadCall(f"{getattr(getattr(model, 'service_model', None), 'service_name', '?')}.{name}: {exc}") from None
+
+
+def install(session):
+    """Register the guard on a boto3 session. Register it BEFORE building any client: a client copies the session's
+    handlers when it is built, so one built earlier is not covered."""
+    session.events.register("before-parameter-build", guard)
