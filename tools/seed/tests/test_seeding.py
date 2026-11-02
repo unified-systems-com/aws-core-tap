@@ -110,7 +110,7 @@ def test_nothing_outside_the_state_is_deleted_by_a_destroy():
     # Only the two buckets that a flow log and a trail write their own delivery objects into are emptied on destroy.
     for module, text in TF_BY_MODULE.items():
         assert text.count("force_destroy") == (2 if module == "wave1b" else 0), module
-    block = re.findall(r'^resource "aws_s3_bucket" "(\w+)" \{\n(.*?)^\}', TF_BY_MODULE["wave1b"], re.M | re.S)
+    block = re.findall(r'^resource "aws_s3_bucket" "(\w+)" \{[^\n]*\n(.*?)^\}', TF_BY_MODULE["wave1b"], re.M | re.S)
     assert sorted(name for name, body in block if "force_destroy = true" in body) == ["flow", "trail"]
 
 
