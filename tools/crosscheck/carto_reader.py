@@ -46,7 +46,8 @@ def commit_of(root: Path) -> str:
     """The checkout's HEAD commit, read from the .git files directly (no git process), or 'unknown'.
 
     Only a value shaped like a commit id is ever returned, and a ref must live under refs/, so a hostile tree
-    cannot make the report quote some other file.
+    cannot make the report quote some other file. A ``.git`` file, ``commondir`` or symlink that leads outside the
+    tree is not followed: a worktree of a checkout therefore reports 'unknown'; use a clone.
     """
     sha = _commit_of(root)
     return sha if _SHA.match(sha) else "unknown"
@@ -73,6 +74,8 @@ def _commit_of(root: Path) -> str:
             line = git.read_text().strip()
             if line.startswith("gitdir:"):
                 git = (root / line.split(":", 1)[1].strip()).resolve()
+        if not git.resolve().is_relative_to(root.resolve()):
+            return "unknown"  # a pointer out of the analysed tree is untrusted input, so a worktree reports no commit
         head = (git / "HEAD").read_text().strip()
         if not head.startswith("ref:"):
             return head
@@ -82,6 +85,8 @@ def _commit_of(root: Path) -> str:
         common = git
         if (git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
             common = (git / (git / "commondir").read_text().strip()).resolve()
+            if not common.is_relative_to(root.resolve()):
+                return "unknown"
         for base in (git, common):
             if (base / ref).is_symlink():
                 return "unknown"

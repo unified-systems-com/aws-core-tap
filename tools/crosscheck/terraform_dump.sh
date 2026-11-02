@@ -7,7 +7,8 @@
 # (specs/spec-aws-core-crosscheck.md, Dump Step, Proposed). It SANITISES THE ENVIRONMENT; IT IS NOT A SANDBOX. The
 # provider binary still runs as the caller, with that user's filesystem and network, so a compromised provider could
 # read other user-readable files or reach a metadata service. The lock file authenticates the binary; it does not
-# confine it. Run it on a host that holds no cloud credentials, never in CI that holds secrets. What it does:
+# confine it. Run it only in a disposable VM or a container with no host mounts and no credentials (it refuses to start
+# unless CROSSCHECK_DUMP_CONFINED=yes says so), never in CI that holds secrets. What it does:
 #
 #   * it runs `init` and `providers schema` in an empty temporary directory, never plan or apply;
 #   * `env -i` starts Terraform with an EMPTY environment (no AWS_*, no tokens, no TF_* variables, no CLI config),
@@ -21,6 +22,15 @@
 #
 # The JSON is written with sorted keys; the provider version and the file's sha256 are printed so a run can be recorded.
 set -euo pipefail
+
+# The provider binary is not confined by anything below (see the header), so the step refuses to start unless the
+# operator states that this is a disposable environment holding no user or cloud credentials. The script cannot check
+# that; the variable is a deliberate statement, not a test.
+if [ "${CROSSCHECK_DUMP_CONFINED:-}" != "yes" ]; then
+  echo "refusing to run a provider binary unconfined: run this only in a disposable VM or a container with no host mounts" >&2
+  echo "and no credentials, then set CROSSCHECK_DUMP_CONFINED=yes (specs/spec-aws-core-crosscheck.md, Dump Step)" >&2
+  exit 3
+fi
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 version="6.71.0"

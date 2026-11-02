@@ -227,6 +227,19 @@ class TestCommitOf:
         assert carto_reader.commit_of(tmp_path / "detached") == self.SHA
         assert carto_reader.commit_of(tmp_path / "nothing") == "unknown"
 
+    def test_a_git_pointer_or_commondir_leaving_the_tree_reports_unknown(self, tmp_path):
+        outside = tmp_path / "outside-git"
+        _w(outside / "HEAD", self.SHA + "\n")
+        _w(tmp_path / "ptr/.git", f"gitdir: {outside}\n")
+        assert carto_reader.commit_of(tmp_path / "ptr") == "unknown"
+        _w(tmp_path / "rel/.git", "gitdir: ../../outside-git\n")
+        assert carto_reader.commit_of(tmp_path / "rel") == "unknown"
+        common = tmp_path / "cd/.git"
+        _w(common / "HEAD", "ref: refs/heads/main\n")
+        _w(common / "commondir", f"{outside}\n")
+        _w(outside / "refs/heads/main", self.SHA + "\n")
+        assert carto_reader.commit_of(tmp_path / "cd") == "unknown"
+
     def test_a_symlinked_head_or_ref_reports_unknown(self, tmp_path):
         target = tmp_path / "elsewhere"
         _w(target, self.SHA + "\n")
@@ -257,14 +270,16 @@ class TestCommitOf:
         (carto / "cartography/models/aws/rds.py").write_text((carto / "cartography/models/aws/rds.py").read_text() + "# edit\n")
         assert carto_reader.tree_digest(carto, ["cartography/models/**/*.py"]) != before
 
-    def test_a_worktree_reads_shared_refs_from_the_main_git_directory(self, tmp_path):
+    def test_a_worktree_pointing_outside_the_tree_reports_no_commit(self, tmp_path):
+        # A worktree's .git file points at the main repository, outside the analysed tree. A pointer out of an
+        # untrusted tree is not followed (the report would quote a file the tree chose), so the commit is unknown.
         main = tmp_path / "main/.git"
         _w(main / "refs/heads/feat", self.SHA + "\n")
         wt = main / "worktrees/w"
         _w(wt / "HEAD", "ref: refs/heads/feat\n")
         _w(wt / "commondir", "../..\n")
         _w(tmp_path / "w/.git", f"gitdir: {wt}\n")
-        assert carto_reader.commit_of(tmp_path / "w") == self.SHA
+        assert carto_reader.commit_of(tmp_path / "w") == "unknown"
 
 
 class TestHostileText:

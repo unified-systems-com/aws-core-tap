@@ -707,7 +707,7 @@ class TestDumpScript:
 
     def _run(self, tmp_path, extra_env=None, args=None):
         bindir, log = self._stub(tmp_path)
-        env = {"PATH": f"{bindir}:{os.environ['PATH']}", "HOME": str(tmp_path / "realhome"), **(extra_env or {})}
+        env = {"PATH": f"{bindir}:{os.environ['PATH']}", "HOME": str(tmp_path / "realhome"), "CROSSCHECK_DUMP_CONFINED": "yes", **(extra_env or {})}
         out = tmp_path / "out.json"
         proc = subprocess.run(["bash", str(DUMP_SCRIPT), *(args or []), str(out)], env=env, capture_output=True, text=True, check=False)
         return proc, log
@@ -730,6 +730,11 @@ class TestDumpScript:
             assert "AKIAFAKE" not in text and "s3cret" not in text
         assert "-lockfile=readonly" in calls[0].read_text()
         assert "providers schema -json" in calls[1].read_text()
+
+    def test_it_refuses_to_start_without_the_statement_that_it_is_confined(self, tmp_path):
+        proc, log = self._run(tmp_path, {"CROSSCHECK_DUMP_CONFINED": "no"})
+        assert proc.returncode == 3 and "refusing to run a provider binary unconfined" in proc.stderr
+        assert not list(log.glob("call*.txt")), "terraform must not have been started"
 
     def test_a_proxy_url_carrying_credentials_is_not_passed_on(self, tmp_path):
         proc, log = self._run(tmp_path, {"HTTPS_PROXY": "http://user:hunter2@proxy.example:3128", "HTTP_PROXY": "http://proxy.example:3128"})
