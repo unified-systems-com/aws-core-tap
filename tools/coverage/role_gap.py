@@ -22,6 +22,8 @@ LIST_FILE = HERE / "extended-read-actions.json"
 CUSTOMFNS = HERE.parents[1] / "tap_plugin" / "aws_core" / "collectors" / "boto3_collector" / "customfns.py"
 MANIFEST = HERE.parents[1] / "tap_plugin" / "aws_core" / "collectors" / "boto3_collector" / "aws_resource_manifest.json"
 READ_VERBS = ("Get", "List", "Describe")
+#: One service prefix and one operation, no wildcard: ``iam:Get*`` is not an action but a family of them.
+ACTION_FORM = re.compile(r"^[a-z0-9-]+:[A-Z][A-Za-z0-9]*$")
 #: A read verb is not enough: ``sts:GetFederationToken`` and ``ecr:GetAuthorizationToken`` begin with ``Get`` and
 #: issue credentials. This screen is a heuristic on the operation name, not IAM's own metadata (the AWS service
 #: authorization reference), so it catches the obvious cases and a person still reads the list.
@@ -110,8 +112,8 @@ def problems_of(doc: dict, calls: set[tuple[str, str]], functions: dict[str, set
         for item in section["actions"]:
             action = item["action"]
             service, _, operation = action.partition(":")
-            if not service or not operation:
-                problems.append(f"{action}: not service:Operation")
+            if not ACTION_FORM.match(action):
+                problems.append(f"{action}: not service:Operation (one operation, no wildcard)")
                 continue
             if not operation.startswith(READ_VERBS):
                 problems.append(f"{action}: not a read verb")

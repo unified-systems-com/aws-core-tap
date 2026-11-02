@@ -42,7 +42,10 @@ def test_policy_allows_only_read_verbs():
         ("collection-gaps", {"action": "sso:ListNothingReal", "custom_fn": "identity_center_applications_described"}, "sso:ListNothingReal: identity_center_applications_described does not call list_nothing_real"),
         ("probe-reads", {"action": "sts:GetFederationToken"}, "sts:GetFederationToken: the operation name suggests it returns a credential or secret"),
         ("probe-reads", {"action": "ecr:GetAuthorizationToken"}, "ecr:GetAuthorizationToken: the operation name suggests it returns a credential or secret"),
-        ("collection-gaps", {"action": "nocolon"}, "nocolon: not service:Operation"),
+        ("probe-reads", {"action": "*:Get*"}, "*:Get*: not service:Operation (one operation, no wildcard)"),
+        ("probe-reads", {"action": "iam:Get*"}, "iam:Get*: not service:Operation (one operation, no wildcard)"),
+        ("probe-reads", {"action": "iam:List*"}, "iam:List*: not service:Operation (one operation, no wildcard)"),
+        ("collection-gaps", {"action": "nocolon"}, "nocolon: not service:Operation (one operation, no wildcard)"),
         ("opt-in-credential-bearing", {"action": "glue:GetSomething"}, "glue:GetSomething: left out of the policy with no reason"),
     ],
 )
