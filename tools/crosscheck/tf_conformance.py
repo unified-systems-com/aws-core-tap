@@ -15,7 +15,8 @@ human, decided against the AWS API model or a live account (specs/spec-aws-core-
                       [--allow-parse-errors] [--allow-version-mismatch]
 
 Exit 0 on a complete comparison; 3 when some provider source files failed to parse; 4 when the schema dump and the
-source checkout have different sets of resources (they may be different provider versions). Each report carries
+source checkout are not shown to be the same provider version: they have different sets of resources, or the checkout
+is not at the tag v<--terraform-version>. Each report carries
 a banner for the same condition, and the flags accept it.
 
 The schema file comes from terraform_dump.sh; the source is only parsed (tree-sitter), never built or run.
@@ -270,6 +271,8 @@ def run(schema: Path, source: Path, plugin: Path, weights_path: Path, version: s
             "terraform_schema": {"sha256": dump["sha256"], "provider_version": _clean(version), "resources": len(dump["resources"])},
             "terraform_source": {
                 "commit": src["commit"],
+                "version_tag": f"v{version}" if version != "unknown" else None,
+                "version_tag_commit": carto_reader.tag_commit(Path(source), f"v{version}") if version != "unknown" else None,
                 "source_sha256": src["source_sha256"],
                 "files_parsed": src["files_parsed"],
                 "files_with_parse_error": src["files_with_parse_error"],
@@ -367,6 +370,26 @@ def version_mismatch(r: dict) -> list[str]:
     return sorted(nc["in_source_not_in_dump"] + nc["in_dump_not_in_source"])
 
 
+def source_unbound(r: dict) -> str:
+    """Why the source checkout is not shown to be the provider version the schema dump was made with, or "". The
+    schema is a release and the source a checkout; the version given with the dump names a tag, and the checkout is
+    bound to it only if its commit is the commit of that tag. A set of resource names cannot show that, since two
+    revisions of the provider usually have the same resources."""
+    s = r.get("inputs", {}).get("terraform_source", {})
+    if not s.get("version_tag"):
+        return "no --terraform-version was given, so nothing ties the source to the schema"
+    if not s.get("version_tag_commit"):
+        return f"the checkout has no readable tag {s['version_tag']}"
+    if s.get("commit") != s["version_tag_commit"]:
+        return f"the checkout is not at tag {s['version_tag']}"
+    return ""
+
+
+def _unbound_banner(r: dict) -> list[str]:
+    why = source_unbound(r)
+    return [f"**SOURCE NOT BOUND TO THE SCHEMA VERSION: {_clean(why)}. The figures below may combine two provider revisions.**", ""] if why else []
+
+
 def _mismatch_banner(r: dict) -> list[str]:
     odd = version_mismatch(r)
     if not odd:
@@ -399,6 +422,7 @@ def markdown(r: dict) -> str:
         "",
         *_incomplete_banner(r),
         *_mismatch_banner(r),
+        *_unbound_banner(r),
         "## Headline",
         "",
         "| Measure | Value |",
@@ -472,7 +496,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--terraform-schema", required=True, type=Path, help="schema dump file from terraform_dump.sh")
     ap.add_argument("--terraform-source", required=True, type=Path, help="a checkout of hashicorp/terraform-provider-aws")
-    ap.add_argument("--terraform-version", default="unknown", help="the provider version the dump was made with (recorded, not checked)")
+    ap.add_argument("--terraform-version", default="unknown", help="the provider version the dump was made with, e.g. 6.71.0; the source checkout must be at tag v<this> or the run exits 4")
     ap.add_argument("--plugin", type=Path, default=HERE.parents[1], help="aws-core-tap checkout (default: this one)")
     ap.add_argument("--weights", type=Path, default=HERE / "weights" / "cartography-set-v1.json")
     ap.add_argument("--out", type=Path, default=None, help="directory for report.json and report.md")
@@ -495,8 +519,8 @@ def main(argv: list[str] | None = None) -> int:
     if rep["inputs"]["terraform_source"]["files_with_parse_error"] and not a.allow_parse_errors:
         sys.stderr.write("some provider source files failed to parse: the report is INCOMPLETE (exit 3; --allow-parse-errors to accept)\n")
         return 3
-    if version_mismatch(rep) and not a.allow_version_mismatch:
-        sys.stderr.write("the schema dump and the source checkout have different resources, so they may be different provider versions (exit 4; --allow-version-mismatch to accept)\n")
+    if (version_mismatch(rep) or source_unbound(rep)) and not a.allow_version_mismatch:
+        sys.stderr.write("the schema dump and the source checkout are not shown to be the same provider version (different resources, or the checkout is not at the tag of --terraform-version): exit 4; --allow-version-mismatch to accept\n")
         return 4
     return 0
 

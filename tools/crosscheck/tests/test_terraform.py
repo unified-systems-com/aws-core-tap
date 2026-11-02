@@ -693,6 +693,61 @@ class TestVersionMismatch:
         assert tf_conformance.version_mismatch(report) == [] and tf_conformance._mismatch_banner(report) == []
 
 
+class TestSourceBoundToVersion:
+    SHA, TAGGED = "a" * 40, "b" * 40
+
+    @staticmethod
+    def _repo(root, packed=None, loose=None):
+        git = root / ".git"
+        git.mkdir(parents=True)
+        if packed is not None:
+            (git / "packed-refs").write_text(packed)
+        if loose is not None:
+            (git / "refs/tags").mkdir(parents=True)
+            (git / "refs/tags/v6.71.0").write_text(loose)
+        return root
+
+    def test_a_packed_annotated_tag_gives_its_peeled_commit(self, tmp_path):
+        import carto_reader
+
+        repo = self._repo(tmp_path / "r", packed=f"# pack-refs\n{self.TAGGED} refs/tags/v6.71.0\n^{self.SHA}\n")
+        assert carto_reader.tag_commit(repo, "v6.71.0") == self.SHA
+
+    def test_a_lightweight_or_loose_tag_and_a_missing_or_odd_tag(self, tmp_path):
+        import carto_reader
+
+        assert carto_reader.tag_commit(self._repo(tmp_path / "a", packed=f"{self.SHA} refs/tags/v6.71.0\n"), "v6.71.0") == self.SHA
+        assert carto_reader.tag_commit(self._repo(tmp_path / "b", loose=self.SHA + "\n"), "v6.71.0") == self.SHA
+        assert carto_reader.tag_commit(self._repo(tmp_path / "c", packed=""), "v6.71.0") is None
+        assert carto_reader.tag_commit(tmp_path / "c", "../../etc") is None  # not a tag name
+        assert carto_reader.tag_commit(tmp_path / "no-git", "v6.71.0") is None
+
+    def test_a_symlinked_tags_directory_is_not_read(self, tmp_path):
+        import carto_reader
+
+        outside = tmp_path / "outside" / "tags"
+        outside.mkdir(parents=True)
+        (outside / "v6.71.0").write_text(self.SHA + "\n")
+        repo = tmp_path / "r"
+        (repo / ".git/refs").mkdir(parents=True)
+        (repo / ".git/refs/tags").symlink_to(outside, target_is_directory=True)
+        assert carto_reader.tag_commit(repo, "v6.71.0") is None
+
+    @pytest.mark.parametrize(
+        ("source", "expected"),
+        [
+            ({"version_tag": None}, "no --terraform-version"),
+            ({"version_tag": "v6.71.0", "version_tag_commit": None}, "no readable tag v6.71.0"),
+            ({"version_tag": "v6.71.0", "version_tag_commit": "b" * 40, "commit": "a" * 40}, "not at tag v6.71.0"),
+            ({"version_tag": "v6.71.0", "version_tag_commit": "a" * 40, "commit": "a" * 40}, ""),
+        ],
+    )
+    def test_the_checkout_is_bound_only_when_its_commit_is_the_tags(self, source, expected):
+        why = tf_conformance.source_unbound({"inputs": {"terraform_source": source}})
+        assert (expected in why) if expected else why == ""
+        assert bool(tf_conformance._unbound_banner({"inputs": {"terraform_source": source}})) == bool(expected)
+
+
 class TestParseErrors:
     pytestmark = pytest.mark.usefixtures("need_tree_sitter")
 

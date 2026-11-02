@@ -81,6 +81,39 @@ def _plain(path: Path, root: Path) -> Path:
     return path
 
 
+_TAG = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
+
+
+def tag_commit(root: Path, tag: str) -> str | None:
+    """The commit that tag ``tag`` of the checkout at ``root`` names, or None when the tag is not there or the
+    checkout cannot be read plainly (a link anywhere on the way, a worktree pointer). A packed tag carries its
+    peeled commit. A loose tag file holds the tag object when the tag is annotated, which is not followed: the
+    value is returned as it stands and so will not equal the checkout's commit, which reads as not bound."""
+    if not _TAG.match(tag):
+        return None
+    rroot = root.resolve()
+    try:
+        git = _plain(rroot / ".git", rroot)
+        if not git.is_dir():
+            return None
+        loose = _plain(git / "refs" / "tags" / tag, rroot)
+        if loose.is_file():
+            value = loose.read_text().strip()
+            return value if _SHA.match(value) else None
+        packed = _plain(git / "packed-refs", rroot)
+        if packed.is_file():
+            lines = packed.read_text().splitlines()
+            for i, line in enumerate(lines):
+                if line.endswith(" refs/tags/" + tag) and not line.startswith(("#", "^")):
+                    sha = line.split()[0]
+                    if i + 1 < len(lines) and lines[i + 1].startswith("^"):
+                        sha = lines[i + 1][1:].strip()
+                    return sha if _SHA.match(sha) else None
+    except OSError:
+        pass
+    return None
+
+
 def _commit_of(root: Path) -> str:
     rroot = root.resolve()
     try:

@@ -80,6 +80,8 @@ python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --t
     --terraform-version 6.71.0 [--out DIR]   # DIR must lie under the directory you run it from
 ```
 
+The schema is a release and the source a checkout, so the source must be at the tag of the version the dump was made with: check out `v6.71.0` in the provider clone and pass `--terraform-version 6.71.0`. The run compares the checkout's commit with that tag's and exits 4, with a banner in the report, if they differ, if the tag cannot be read, or if no version was given (a clone with packed tags works; `--allow-version-mismatch` accepts the result and the report still says it was not bound). It also exits 4 when the two inputs have different sets of resources.
+
 | File | Role |
 | --- | --- |
 | `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies. It sanitises the environment and does not sandbox the provider (see the spec's Dump Step): run it only in a disposable VM or container with no host mounts and no credentials; it refuses to start unless `CROSSCHECK_DUMP_CONFINED=yes` states that. Runs Terraform with an empty environment (`env -i`), a throwaway `HOME` and the dependency lock file in `terraform_locks/` enforced (`-lockfile=readonly`); a version with no committed lock file is refused. |
