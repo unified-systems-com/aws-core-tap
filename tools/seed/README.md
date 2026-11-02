@@ -135,7 +135,7 @@ Each module is its own Terraform root with its own state, and its catalog entrie
 steps above, changing three things: the directory (`cd tools/seed/wave2-rds`), the run id prefix (`w2r...`; the module's
 names start `seed-w2r-`) and the cost note you read in step 1. The expected inventory records the module as the wave,
 and `compare.py` fails a catalog type of that module that the state does not contain, so a partial apply cannot pass.
-A module's catalog types need not be only its own: the VPC, subnets and roles it creates are wave 1 types and are
+A catalog edge whose target is a list (a subnet group's subnets) gives one expected edge per member: `expected.py` flattens a join's list result, which wave 1 never needed and the RDS instance does. A module's catalog types need not be only its own: the VPC, subnets and roles it creates are wave 1 types and are
 compared too. A **costly** module has a time box in its cost note; destroy it when the box ends whether or not the check
 finished. Wave 2 ran on 2026-11-02: RDS passed 20 of 20 types on its second cycle (the first found the Aurora
 cluster-endpoint defect fixed in #175), and Network Firewall passed 5 of 6 (the sixth, the VPC endpoint association, is

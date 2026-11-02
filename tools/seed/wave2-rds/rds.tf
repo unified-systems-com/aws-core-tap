@@ -28,7 +28,8 @@ resource "aws_rds_cluster_parameter_group" "seed" {
   depends_on = [terraform_data.guard]
 }
 
-resource "aws_sns_topic" "events" {
+# Carries no message: the subscription is never triggered, and the topic is destroyed with the wave.
+resource "aws_sns_topic" "events" { # NOSONAR
   name = "${local.prefix}-events"
 
   depends_on = [terraform_data.guard]
@@ -42,7 +43,9 @@ resource "aws_db_event_subscription" "seed" {
 }
 
 # A small instance with no public address, a RDS-managed master secret (no password in the state or the repository),
-# and no final snapshot: it is destroyed with the wave.
+# and no final snapshot: it is destroyed with the wave. No log export: it is never connected to, so it writes no log, and
+# an export would add log groups to be destroyed.
+# nosemgrep: terraform.aws.security.aws-db-instance-no-logging.aws-db-instance-no-logging
 resource "aws_db_instance" "seed" {
   identifier                  = "${local.prefix}-db"
   engine                      = "postgres"
@@ -58,7 +61,7 @@ resource "aws_db_instance" "seed" {
   parameter_group_name        = aws_db_parameter_group.seed.name
   publicly_accessible         = false
   multi_az                    = false
-  backup_retention_period     = 1
+  backup_retention_period     = 1 # NOSONAR: the shortest that keeps snapshots possible; the instance lives under an hour
   skip_final_snapshot         = true
   deletion_protection         = false
   apply_immediately           = true
@@ -82,7 +85,7 @@ resource "aws_rds_cluster" "seed" {
   vpc_security_group_ids          = [aws_security_group.db.id]
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.seed.name
   storage_encrypted               = true
-  backup_retention_period         = 1
+  backup_retention_period         = 1 # NOSONAR: the shortest that keeps snapshots possible; the cluster lives under an hour
   skip_final_snapshot             = true
   deletion_protection             = false
   apply_immediately               = true

@@ -155,6 +155,7 @@ def test_wave2_rds_declares_only_what_its_cost_note_prices():
     for banned in ("aws_nat_gateway", "aws_lb", "aws_eks_cluster", "aws_redshift", "aws_eip", "aws_opensearch", "aws_internet_gateway", "aws_rds_cluster_instance_multi"):
         assert banned not in text, banned
     assert text.count('resource "aws_db_instance"') == 1 and text.count('resource "aws_rds_cluster_instance"') == 1
+    assert 'storage_type                = "gp2"' in text and "gp2 storage for it" in (SEED / "wave2-rds" / "cost.md").read_text(encoding="utf-8")  # the priced storage is the applied storage
     assert 'instance_class              = "db.t4g.micro"' in text and 'instance_class       = "db.serverless"' in text
     assert "publicly_accessible         = false" in text and "multi_az                    = false" in text
     assert "skip_final_snapshot         = true" in text and "deletion_protection         = false" in text
