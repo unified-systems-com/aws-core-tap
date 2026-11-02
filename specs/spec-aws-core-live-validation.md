@@ -171,7 +171,8 @@ Status: `Proposed`
 | `cost_class` | `free`, `cheap`, `costly` or `blocked` |
 | `blocked_reason` | For `blocked`: why it cannot be seeded (subscription, hardware, organization, minimum spend) |
 | `needs` | Other catalog types that must exist first |
-| `compares` | The typed fields the projection check compares, by manifest field name |
+| `compares` | The typed fields the projection check compares, by manifest field name. It lists every typed field the manifest fills for the type, except those named in `compares_excluded` |
+| `compares_excluded` | Typed fields deliberately not compared, each with a reason (not settable by the seed module, derived by the service, a secret never read) |
 | `module` | The module that creates it |
 
 A type with no entry is treated as `unseeded`, not as `free`. Entries are reviewed; a `blocked` type is
@@ -205,8 +206,9 @@ RID: `req-aws-core-livevalidation-verdict`
 Status: `Proposed`
 
 A type passes the **projection** layer when, for every seeded resource of the type in the expected inventory:
-the collector returned exactly one row; its natural key equals the expected key; every field in `compares` equals
-the expected value; the tags equal the seeded tags (including `{}` for an untagged resource and no `null`
+the collector returned exactly one row; its natural key equals the expected key; `compares` and `compares_excluded`
+together name every typed field the manifest fills for the type, and `compares` is not empty (a catalog entry that
+leaves a field in neither list fails review, not the run); every field in `compares` equals the expected value; the tags equal the seeded tags (including `{}` for an untagged resource and no `null`
 where a read was possible); every edge the manifest declares for the type, whose target was also seeded, was
 emitted; and a second run produces the same rows with no duplicate. It fails with the first mismatch named.
 
