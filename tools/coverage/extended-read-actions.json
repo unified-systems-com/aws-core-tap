@@ -1,5 +1,5 @@
 {
-  "description": "Read actions the collector's role (SecurityAudit plus ReadOnlyAccess) does not allow, found in live runs against the GovCloud staging account. Each section says why its actions are listed and whether role_gap.py puts them in the policy it prints. This is a worklist for the policy owner, not a grant: nothing here is applied by the plugin. iam_prefix_of_service maps a boto service name to the IAM prefix where they differ, so a listed action can be matched to the manifest entry that makes the call. The printed policy allows these actions on Resource *: list and describe calls take no resource-level permission, and the collector reads the whole account. Whether the six Bedrock Get actions support a narrower resource type was not checked in AWS's Service Authorization Reference, so the policy owner may scope those.",
+  "description": "Read actions the collector's role (SecurityAudit plus ReadOnlyAccess) does not allow, found in live runs against the GovCloud staging account. The collector ships on that role alone, so nothing here is in the default policy: the 19 collection gaps are KNOWN MISSES (aws-core-tap#172), left out on purpose and granted only if a policy owner asks for them with --include-known-misses. Each section says why its actions are listed. This is a worklist for the policy owner, not a grant: nothing here is applied by the plugin. iam_prefix_of_service maps a boto service name to the IAM prefix where they differ, so a listed action can be matched to the manifest entry that makes the call. A printed policy allows these actions on Resource *: list and describe calls take no resource-level permission, and the collector reads the whole account. Whether the six Bedrock Get actions support a narrower resource type was not checked in AWS's Service Authorization Reference, so the policy owner may scope those.",
   "iam_prefix_of_service": {
     "bedrock-agent": "bedrock",
     "location": "geo",
@@ -13,69 +13,89 @@
   "sections": [
     {
       "id": "collection-gaps",
-      "in_policy": true,
-      "description": "List or describe calls the collection makes for a manifest type; each returned AccessDenied because no identity-based policy allows the action. Adding them lets those types be collected at all.",
+      "in_policy": false,
+      "description": "Known misses (aws-core-tap#172). List or describe calls the collection makes for a manifest type; each returned AccessDenied under SecurityAudit plus ReadOnlyAccess because no identity-based policy allows the action. Left out on purpose: the collector ships on SecurityAudit alone, so the types these feed stay thin or uncollected. Granting them (--include-known-misses) would let those types be collected at all.",
       "actions": [
         {
-          "action": "bedrock:ListRetrievalInstructions"
+          "action": "bedrock:ListRetrievalInstructions",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "drs:ListRecoveryPlans"
+          "action": "drs:ListRecoveryPlans",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "emr-containers:ListJobTemplates"
+          "action": "emr-containers:ListJobTemplates",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "fms:ListResourceSets"
+          "action": "fms:ListResourceSets",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "geo:ListGeofenceCollections"
+          "action": "geo:ListGeofenceCollections",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "geo:ListPlaceIndexes"
+          "action": "geo:ListPlaceIndexes",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "geo:ListRouteCalculators"
+          "action": "geo:ListRouteCalculators",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "geo:ListTrackers"
+          "action": "geo:ListTrackers",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "glue:DescribeIntegrations"
+          "action": "glue:DescribeIntegrations",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "glue:ListBlueprints"
+          "action": "glue:ListBlueprints",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "glue:ListConnectionTypes"
+          "action": "glue:ListConnectionTypes",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "glue:ListCustomEntityTypes"
+          "action": "glue:ListCustomEntityTypes",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "glue:ListDataQualityRulesets"
+          "action": "glue:ListDataQualityRulesets",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "glue:ListUsageProfiles"
+          "action": "glue:ListUsageProfiles",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "managedblockchain:ListAccessors"
+          "action": "managedblockchain:ListAccessors",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "mgn:ListConnectors"
+          "action": "mgn:ListConnectors",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "mgn:ListNetworkMigrationDefinitions"
+          "action": "mgn:ListNetworkMigrationDefinitions",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
           "action": "sso:ListApplications",
-          "custom_fn": "identity_center_applications_described"
+          "custom_fn": "identity_center_applications_described",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         },
         {
-          "action": "textract:ListAdapters"
+          "action": "textract:ListAdapters",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
         }
       ],
-      "opt_in": false
+      "opt_in": false,
+      "known_miss": true
     },
     {
       "id": "opt-in-probe-reads",

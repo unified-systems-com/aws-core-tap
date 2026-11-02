@@ -14,9 +14,17 @@ def test_a_follow_up_operation_counts_as_called():
     assert ("glue", "ListBlueprints") in calls
 
 
+def test_default_policy_is_empty_and_known_misses_are_opt_in():
+    doc = role_gap.load()
+    assert role_gap.actions_of(doc) == []
+    misses = role_gap.actions_of(doc, include_known_misses=True)
+    assert len(misses) == 19 and "geo:ListTrackers" in misses
+    assert "bedrock:GetFlow" not in misses and "glue:GetConnections" not in misses
+
+
 def test_policy_leaves_out_the_opt_in_and_unfixable_sections():
     doc = role_gap.load()
-    actions = role_gap.actions_of(doc)
+    actions = role_gap.actions_of(doc, include_known_misses=True)
     assert "glue:GetConnections" not in actions
     assert "securityhub:GetConfigurationPolicy" not in actions
     assert "bedrock:GetFlow" not in actions and "geo:ListTrackers" in actions
@@ -26,7 +34,7 @@ def test_policy_leaves_out_the_opt_in_and_unfixable_sections():
 
 
 def test_policy_allows_only_read_verbs():
-    policy = role_gap.policy_of(role_gap.load(), include_opt_in=True)
+    policy = role_gap.policy_of(role_gap.load(), include_opt_in=True, include_known_misses=True)
     statement = policy["Statement"][0]
     assert statement["Effect"] == "Allow"
     assert all(a.partition(":")[2].startswith(role_gap.READ_VERBS) for a in statement["Action"])
@@ -69,8 +77,14 @@ def test_check_exits_zero_on_the_committed_list(capsys):
 
 
 def test_printed_policy_is_json(capsys):
-    assert role_gap.main([]) == 0
+    assert role_gap.main(["--include-known-misses"]) == 0
     assert json.loads(capsys.readouterr().out)["Statement"][0]["Action"]
+
+
+def test_default_prints_no_policy(capsys):
+    assert role_gap.main([]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "" and "default policy is empty" in captured.err
 
 
 def test_snake_case_and_the_custom_function_closure():

@@ -1,7 +1,8 @@
 """Print the IAM policy that closes the collector's known read-permission gaps, and check the list.
 
-    python3 -I tools/coverage/role_gap.py            # the policy for the default sections, as JSON
+    python3 -I tools/coverage/role_gap.py            # the policy for the default sections, as JSON (none today)
     python3 -I tools/coverage/role_gap.py --include-opt-in
+    python3 -I tools/coverage/role_gap.py --include-known-misses
     python3 -I tools/coverage/role_gap.py --check    # exit 1 if the list has drifted from the manifest
 
 Reads ``extended-read-actions.json`` and the manifest as data. Calls no AWS API and applies nothing:
@@ -34,20 +35,25 @@ def load(path: Path = LIST_FILE) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def actions_of(doc: dict, *, include_opt_in: bool = False) -> list[str]:
-    """The actions of every section that goes in the policy (and of the opt-in one when asked for)."""
+def actions_of(doc: dict, *, include_opt_in: bool = False, include_known_misses: bool = False) -> list[str]:
+    """The actions of every section that goes in the policy (and of the opt-in and known-miss ones when asked for)."""
     out: set[str] = set()
     for section in doc["sections"]:
-        if section["in_policy"] or (include_opt_in and section.get("opt_in")):
+        if section["in_policy"] or (include_opt_in and section.get("opt_in")) or (include_known_misses and section.get("known_miss")):
             out.update(item["action"] for item in section["actions"])
     return sorted(out)
 
 
-def policy_of(doc: dict, *, include_opt_in: bool = False) -> dict:
+def policy_of(doc: dict, *, include_opt_in: bool = False, include_known_misses: bool = False) -> dict:
     return {
         "Version": "2012-10-17",
         "Statement": [
-            {"Sid": "TapCollectorExtendedRead", "Effect": "Allow", "Action": actions_of(doc, include_opt_in=include_opt_in), "Resource": "*"}
+            {
+                "Sid": "TapCollectorExtendedRead",
+                "Effect": "Allow",
+                "Action": actions_of(doc, include_opt_in=include_opt_in, include_known_misses=include_known_misses),
+                "Resource": "*",
+            }
         ],
     }
 
@@ -167,6 +173,7 @@ def problems_of(doc: dict, calls: set[tuple[str, str]], functions: dict[str, set
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--include-opt-in", action="store_true")
+    parser.add_argument("--include-known-misses", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
     doc = load()
@@ -175,7 +182,12 @@ def main(argv: list[str] | None = None) -> int:
         for line in found:
             print(line)
         return 1 if found else 0
-    json.dump(policy_of(doc, include_opt_in=args.include_opt_in), sys.stdout, indent=2)
+    policy = policy_of(doc, include_opt_in=args.include_opt_in, include_known_misses=args.include_known_misses)
+    if not policy["Statement"][0]["Action"]:
+        # An empty Action list is not a valid IAM statement, so print nothing a person could apply.
+        print("No actions selected: the default policy is empty (the collector ships on SecurityAudit alone).", file=sys.stderr)
+        return 0
+    json.dump(policy, sys.stdout, indent=2)
     sys.stdout.write("\n")
     return 0
 
