@@ -22,7 +22,7 @@ def _tf_text(directory):
 
 
 #: The seed modules: the catalog's `module` names a directory under tools/seed, and the module's provider tag.
-MODULES = ("wave1", "wave2-rds", "wave2-nfw")
+MODULES = ("wave1", "wave1b", "wave2-rds", "wave2-nfw")
 TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
 TF_TEXT = TF_BY_MODULE["wave1"]
 ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
@@ -107,7 +107,11 @@ def test_attribute_names_exist_in_the_provider_schema_dump_when_available():
 
 
 def test_nothing_outside_the_state_is_deleted_by_a_destroy():
-    assert "force_destroy" not in ALL_TF_TEXT
+    # Only the two buckets that a flow log and a trail write their own delivery objects into are emptied on destroy.
+    for module, text in TF_BY_MODULE.items():
+        assert text.count("force_destroy") == (2 if module == "wave1b" else 0), module
+    block = re.findall(r'^resource "aws_s3_bucket" "(\w+)" \{[^\n]*\n(.*?)^\}', TF_BY_MODULE["wave1b"], re.M | re.S)
+    assert sorted(name for name, body in block if "force_destroy = true" in body) == ["flow", "trail"]
 
 
 @pytest.mark.parametrize("module", MODULES)
@@ -122,7 +126,7 @@ def test_every_iam_identity_waits_for_the_partition_guard(module):
 @pytest.mark.parametrize("module", MODULES)
 def test_iam_names_start_with_seed(module):
     blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S)
-    assert len(blocks) == {"wave1": 5, "wave2-rds": 2, "wave2-nfw": 0}[module]
+    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave2-rds": 2, "wave2-nfw": 0}[module]
     for kind, body in blocks:
         assert re.search(r'^\s*name\s*=\s*"seed-', body, re.M), kind
 
@@ -140,6 +144,15 @@ def test_provider_is_pinned_and_default_tags_are_set(module):
 def test_nothing_costly_is_declared_in_wave1():
     for banned in ("aws_nat_gateway", "aws_lb", "aws_db_instance", "aws_eks_cluster", "aws_redshift", "aws_eip", "aws_opensearch", "aws_rds"):
         assert banned not in TF_TEXT, banned
+
+
+def test_wave1b_declares_nothing_that_costs_beyond_a_web_acl():
+    text = TF_BY_MODULE["wave1b"]
+    for banned in ("aws_nat_gateway", "aws_lb", "aws_db_", "aws_rds", "aws_eks_cluster", "aws_redshift", "aws_eip", "aws_opensearch", "aws_internet_gateway", "aws_instance", "aws_networkfirewall", "aws_guardduty", "aws_inspector", "aws_config_configuration_recorder", "aws_securityhub_account"):
+        assert banned not in text, banned
+    assert text.count('resource "aws_wafv2_web_acl"') == 1
+    assert "enable_logging                = false" in text  # the trail records nothing
+    assert "aws_cloudtrail_event_data_store" not in text  # CloudTrail Lake accepts no new customers
 
 
 def test_wave2_nfw_declares_one_firewall_and_nothing_else_that_costs():

@@ -155,5 +155,8 @@ def test_no_committed_record_calls_an_entry_that_made_no_call_empty():
     records = sorted((Path(__file__).resolve().parents[1] / "runs").glob("*.json"))
     assert records
     for path in records:
-        for result in json.loads(path.read_text())["results"]:
+        record = json.loads(path.read_text())
+        # Only the wave 0 smoke records list per-entry outcomes; the seeded-run records list compared types.
+        assert ("results" in record) != ("types" in record), path.name
+        for result in record.get("results", []):
             assert not (result.get("outcome") == "empty" and result.get("calls") == 0), (path.name, result["entity_type"])

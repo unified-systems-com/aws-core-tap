@@ -40,6 +40,7 @@ live state.
 | `runs/wave1-2026-11-02.json` | Wave 1 on the fixed harness: 24 of 24 pass; three S3 buckets (public access block on, default, off), the S3 encryption edge checked; torn down from the run's own state |
 | `runs/wave2-rds-2026-11-02.json` | Wave 2, RDS: 14 entity types (20 compared with the types the module needs), all pass on the second cycle; the first cycle failed `aws_rds_db_cluster_endpoint` (fixed in #175) |
 | `runs/wave2-nfw-2026-11-02.json` | Wave 2, Network Firewall: firewall, policy and rule group pass; the VPC endpoint association fails because the collector role is refused its list call (a known miss, #172) |
+| `runs/wave1b-2026-11-02.json` | Wave 1b, the remaining wave 1 types (Backup, WAFv2, S3 access points, Storage Lens and Access Grants, flow log, network interface, trail, Config aggregation authorization, Security Hub action target and insight): 21 entity types (27 compared with the types the module needs), all pass on the third cycle; the second cycle failed Storage Lens tags (fixed in #178) |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
