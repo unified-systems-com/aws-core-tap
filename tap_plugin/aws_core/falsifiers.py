@@ -238,7 +238,7 @@ _NOT_FOUND_CODES = frozenset(
     {
         "ResourceNotFoundException",
         "NoSuchBucket",
-        # Not-found codes that follow neither generic shape, each seen from a real call with a made-up
+        # Not-found codes that follow neither generic shape, 15 of 16 seen from a real call with a made-up
         # id (GovCloud us-gov-west-1, 2026-11-01; ``tools/probes/runs``). An exact list, not a wider
         # suffix rule: ``endswith("NotFound")`` would also catch codes that mean something else.
         "NoSuchEntity",  # IAM: group, instance profile, policy, role, SAML provider, server certificate, user
@@ -250,7 +250,7 @@ _NOT_FOUND_CODES = frozenset(
         "DBParameterGroupNotFound",
         "DBProxyEndpointNotFoundFault",
         "DBProxyNotFoundFault",
-        "DBProxyTargetGroupNotFoundFault",
+        "DBProxyTargetGroupNotFoundFault",  # declared in the RDS model for this call; not yet seen live
         "DBSecurityGroupNotFound",
         "DBShardGroupNotFound",
         "DBSubnetGroupNotFoundFault",
