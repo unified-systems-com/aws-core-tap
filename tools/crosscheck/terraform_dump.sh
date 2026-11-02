@@ -4,11 +4,15 @@
 #   terraform_dump.sh [-v PROVIDER_VERSION] OUTPUT_FILE
 #
 # This is the only step that runs Terraform, and the one bounded exception to the inert rule
-# (specs/spec-aws-core-crosscheck.md, Inert Readers). It is built so the provider can reach no credential:
+# (specs/spec-aws-core-crosscheck.md, Dump Step, Proposed). It SANITISES THE ENVIRONMENT; IT IS NOT A SANDBOX. The
+# provider binary still runs as the caller, with that user's filesystem and network, so a compromised provider could
+# read other user-readable files or reach a metadata service. The lock file authenticates the binary; it does not
+# confine it. Run it on a host that holds no cloud credentials, never in CI that holds secrets. What it does:
 #
 #   * it runs `init` and `providers schema` in an empty temporary directory, never plan or apply;
 #   * `env -i` starts Terraform with an EMPTY environment (no AWS_*, no tokens, no TF_* variables, no CLI config),
-#     plus only PATH, a throwaway HOME and TMPDIR, and proxy and certificate settings if the caller has them;
+#     plus only PATH, a throwaway HOME and TMPDIR, AWS_EC2_METADATA_DISABLED=true, and the proxy and certificate
+#     settings the caller has (a proxy URL that carries a user name or password is NOT passed on);
 #   * HOME is a fresh empty directory, so ~/.aws, ~/.terraformrc and any credential helper do not exist for it;
 #   * the provider is verified against the dependency lock file committed in terraform_locks/ (`-lockfile=readonly`),
 #     so a binary whose checksum is not in that file is refused, whatever the registry serves. A version with no
@@ -58,9 +62,13 @@ terraform {
 EOF
 
 # The only variables the provider process may see.
-envargs=("PATH=$PATH" "HOME=$work/home" "TMPDIR=$work/tmp" "TF_IN_AUTOMATION=1" "TF_INPUT=0" "CHECKPOINT_DISABLE=1")
+envargs=("PATH=$PATH" "HOME=$work/home" "TMPDIR=$work/tmp" "TF_IN_AUTOMATION=1" "TF_INPUT=0" "CHECKPOINT_DISABLE=1" "AWS_EC2_METADATA_DISABLED=true")
 for v in HTTPS_PROXY HTTP_PROXY NO_PROXY https_proxy http_proxy no_proxy SSL_CERT_FILE SSL_CERT_DIR; do
-  if [ -n "${!v:-}" ]; then envargs+=("$v=${!v}"); fi
+  if [ -n "${!v:-}" ]; then
+    # A proxy URL with a user name or password in it would hand that credential to the provider process.
+    if [[ "${!v}" =~ ://[^/]*@ ]]; then echo "not passing $v on: it carries credentials" >&2; continue; fi
+    envargs+=("$v=${!v}")
+  fi
 done
 
 (

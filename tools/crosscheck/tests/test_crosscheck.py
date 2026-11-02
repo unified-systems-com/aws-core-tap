@@ -227,6 +227,19 @@ class TestCommitOf:
         assert carto_reader.commit_of(tmp_path / "detached") == self.SHA
         assert carto_reader.commit_of(tmp_path / "nothing") == "unknown"
 
+    def test_a_symlinked_head_or_ref_reports_unknown(self, tmp_path):
+        target = tmp_path / "elsewhere"
+        _w(target, self.SHA + "\n")
+        g = tmp_path / "linkhead/.git"
+        g.mkdir(parents=True)
+        (g / "HEAD").symlink_to(target)
+        assert carto_reader.commit_of(tmp_path / "linkhead") == "unknown"
+        r = tmp_path / "linkref/.git"
+        _w(r / "HEAD", "ref: refs/heads/main\n")
+        (r / "refs/heads").mkdir(parents=True)
+        (r / "refs/heads/main").symlink_to(target)
+        assert carto_reader.commit_of(tmp_path / "linkref") == "unknown"
+
     def test_a_head_pointing_outside_refs_or_at_a_non_commit_reports_unknown(self, tmp_path):
         secret = tmp_path / "secret.txt"
         secret.write_text("hunter2\n")

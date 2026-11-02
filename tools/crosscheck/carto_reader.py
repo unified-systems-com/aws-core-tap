@@ -67,6 +67,8 @@ def tree_digest(root: Path, patterns: list[str]) -> str:
 def _commit_of(root: Path) -> str:
     try:
         git = root / ".git"
+        if git.is_symlink() or (git / "HEAD").is_symlink():
+            return "unknown"  # a hostile tree must not point the report at a file outside itself
         if git.is_file():  # a worktree or submodule: ".git" is a file pointing at the real directory
             line = git.read_text().strip()
             if line.startswith("gitdir:"):
@@ -81,6 +83,8 @@ def _commit_of(root: Path) -> str:
         if (git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
             common = (git / (git / "commondir").read_text().strip()).resolve()
         for base in (git, common):
+            if (base / ref).is_symlink():
+                return "unknown"
             if (base / ref).is_file():
                 return (base / ref).read_text().strip()
         packed = common / "packed-refs"

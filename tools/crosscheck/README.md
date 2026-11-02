@@ -74,7 +74,7 @@ filled from (the manifest's `fields`) with the API field the provider fills the 
 function), and our read operations with the provider's. Terraform is a reference, not ground truth.
 
 ```
-tools/crosscheck/terraform_dump.sh [-v 6.71.0] schema.json     # the only step that runs Terraform: init + providers schema, no credentials
+tools/crosscheck/terraform_dump.sh [-v 6.71.0] schema.json     # the only step that runs Terraform: init + providers schema; sanitised environment, NOT a sandbox
 pip install -r tools/crosscheck/requirements-terraform.txt      # tree-sitter, for the source layer only
 python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --terraform-source ~/src/terraform-provider-aws \
     --terraform-version 6.71.0 [--out DIR]
@@ -82,7 +82,7 @@ python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --t
 
 | File | Role |
 | --- | --- |
-| `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies. Runs Terraform with an empty environment (`env -i`), a throwaway `HOME` and the dependency lock file in `terraform_locks/` enforced (`-lockfile=readonly`); a version with no committed lock file is refused. |
+| `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies. It sanitises the environment and does not sandbox the provider (see the spec's Dump Step): run it on a host with no cloud credentials. Runs Terraform with an empty environment (`env -i`), a throwaway `HOME` and the dependency lock file in `terraform_locks/` enforced (`-lockfile=readonly`); a version with no committed lock file is refused. |
 | `terraform_locks/` | One reviewed lock file per supported provider version, with checksums for darwin and linux on amd64 and arm64. To add a version, run `terraform providers lock` in a throwaway directory, review the hashes, commit the file. |
 | `untrusted.py` | Reading a tree we did not write: no symlinks, nothing outside the root; and text made safe for Markdown and terminals. Used by the source reader and the report. |
 | `terraform_reader.py` | Reads that file (never runs Terraform) into resources, flattened attributes with flags, taggability and identity. |

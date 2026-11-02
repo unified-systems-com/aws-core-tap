@@ -723,12 +723,22 @@ class TestDumpScript:
         for call in calls:
             text = call.read_text()
             names = {line.split("=", 1)[0] for line in text.splitlines() if "=" in line and not line.startswith("ARGS")}
-            assert not [n for n in names if n.startswith("AWS_") or n in ("GITHUB_TOKEN", "TF_CLI_CONFIG_FILE") or n.startswith("TF_VAR")], names
+            assert not [n for n in names if (n.startswith("AWS_") and n != "AWS_EC2_METADATA_DISABLED") or n in ("GITHUB_TOKEN", "TF_CLI_CONFIG_FILE") or n.startswith("TF_VAR")], names
+            assert "AWS_EC2_METADATA_DISABLED=true" in text
             home = next(line.split("=", 1)[1] for line in text.splitlines() if line.startswith("HOME="))
             assert "realhome" not in home
             assert "AKIAFAKE" not in text and "s3cret" not in text
         assert "-lockfile=readonly" in calls[0].read_text()
         assert "providers schema -json" in calls[1].read_text()
+
+    def test_a_proxy_url_carrying_credentials_is_not_passed_on(self, tmp_path):
+        proc, log = self._run(tmp_path, {"HTTPS_PROXY": "http://user:hunter2@proxy.example:3128", "HTTP_PROXY": "http://proxy.example:3128"})
+        assert proc.returncode == 0, proc.stderr
+        assert "not passing HTTPS_PROXY on: it carries credentials" in proc.stderr
+        for call in log.glob("call*.txt"):
+            text = call.read_text()
+            assert "hunter2" not in text and "HTTPS_PROXY" not in text
+            assert "HTTP_PROXY=http://proxy.example:3128" in text
 
     def test_a_version_with_no_committed_lock_file_is_refused(self, tmp_path):
         proc, log = self._run(tmp_path, args=["-v", "0.0.1"])
