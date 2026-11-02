@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 PROVIDER = "registry.terraform.io/hashicorp/aws"
-_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f  ]")
+_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u2028\u2029\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff\u061c]")
 
 
 def _clean(s: object) -> str:

@@ -20,7 +20,7 @@ class UntrustedTreeError(ValueError):
     """The tree holds something a reader must not follow."""
 
 
-_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f  ]")
+_CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f\u2028\u2029\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff\u061c]")
 _MD = str.maketrans({"`": "'", "<": "‹", ">": "›", "[": "(", "]": ")", "|": "/", "\\": "/", "*": "·", "_": "-", "#": "♯", "!": "ǃ"})
 
 

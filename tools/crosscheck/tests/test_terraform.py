@@ -799,6 +799,18 @@ class TestUntrusted:
         assert not any(c in out for c in "`<>[]|\\")
         assert "forged heading" in out  # the words survive; only the structure is gone
 
+    def test_md_safe_removes_bidirectional_and_invisible_format_controls(self):
+        for ch in ("\u202e", "\u2066", "\u2069", "\u200b", "\u200f", "\u2060", "\ufeff", "\u061c", "\u202a"):
+            assert ch not in untrusted.md_safe(f"safe{ch}evil"), hex(ord(ch))
+        assert untrusted.md_safe("safe\u202eevil") == "safe?evil"
+
+    def test_the_readers_clean_the_same_controls(self):
+        import terraform_source
+
+        for mod in (terraform_reader, terraform_source):
+            assert not mod._CTRL.search("plain text, names_with-dots.and_underscores")
+            assert mod._CTRL.search("a\u202eb") and mod._CTRL.search("a\u2066b")
+
     def test_md_safe_truncates(self):
         assert len(untrusted.md_safe("x" * 5000)) <= 300
 
