@@ -447,7 +447,7 @@ def write_reports(out: Path, files: dict[str, str]) -> None:
     rename replaces a link at the path instead of following it."""
     if out.is_symlink():
         raise OSError(f"{out.name}: the output directory is a symlink")
-    out.mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)  # NOSONAR: the operator names the directory; links were refused above
     for name, body in files.items():
         dest = out / name
         if dest.is_symlink() or (dest.exists() and not dest.is_file()):
@@ -457,7 +457,6 @@ def write_reports(out: Path, files: dict[str, str]) -> None:
         try:
             with os.fdopen(fd, "w") as fh:
                 fh.write(body)
-            os.chmod(tmp, 0o644)
             os.replace(tmp, out / name)
         except BaseException:
             Path(tmp).unlink(missing_ok=True)

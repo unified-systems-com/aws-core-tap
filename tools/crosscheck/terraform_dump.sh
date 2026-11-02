@@ -26,7 +26,7 @@ set -euo pipefail
 # The provider binary is not confined by anything below (see the header), so the step refuses to start unless the
 # operator states that this is a disposable environment holding no user or cloud credentials. The script cannot check
 # that; the variable is a deliberate statement, not a test.
-if [ "${CROSSCHECK_DUMP_CONFINED:-}" != "yes" ]; then
+if [[ "${CROSSCHECK_DUMP_CONFINED:-}" != "yes" ]]; then
   echo "refusing to run a provider binary unconfined: run this only in a disposable VM or a container with no host mounts" >&2
   echo "and no credentials, then set CROSSCHECK_DUMP_CONFINED=yes (specs/spec-aws-core-crosscheck.md, Dump Step)" >&2
   exit 3
@@ -41,7 +41,7 @@ while getopts "v:" opt; do
   esac
 done
 shift $((OPTIND - 1))
-if [ "$#" -ne 1 ]; then
+if [[ "$#" -ne 1 ]]; then
   echo "usage: $0 [-v PROVIDER_VERSION] OUTPUT_FILE" >&2
   exit 2
 fi
@@ -51,13 +51,13 @@ if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
 fi
 command -v terraform >/dev/null || { echo "terraform is not installed" >&2; exit 1; }
 lock="$here/terraform_locks/$version.lock.hcl"
-[ -f "$lock" ] || { echo "no committed lock file for $version ($lock): refusing to run an unverified provider" >&2; exit 1; }
+[[ -f "$lock" ]] || { echo "no committed lock file for $version ($lock): refusing to run an unverified provider" >&2; exit 1; }
 
 out_dir="$(cd "$(dirname "$1")" && pwd)"
 out="$out_dir/$(basename "$1")"
 # A symlink here would send the write to wherever it points (a file the caller can write but did not mean to
 # replace), and so would a device or directory; refuse before the provider is started.
-if [ -L "$out" ] || { [ -e "$out" ] && [ ! -f "$out" ]; }; then
+if [[ -L "$out" ]] || { [[ -e "$out" ]] && [[ ! -f "$out" ]]; }; then
   echo "the output path $out is a symlink or not a regular file: refusing to write to it" >&2
   exit 2
 fi
@@ -80,7 +80,7 @@ EOF
 # The only variables the provider process may see.
 envargs=("PATH=$PATH" "HOME=$work/home" "TMPDIR=$work/tmp" "TF_IN_AUTOMATION=1" "TF_INPUT=0" "CHECKPOINT_DISABLE=1" "AWS_EC2_METADATA_DISABLED=true")
 for v in HTTPS_PROXY HTTP_PROXY NO_PROXY https_proxy http_proxy no_proxy SSL_CERT_FILE SSL_CERT_DIR; do
-  if [ -n "${!v:-}" ]; then
+  if [[ -n "${!v:-}" ]]; then
     # A proxy URL with a user name or password in it would hand that credential to the provider process.
     if [[ "${!v}" =~ ://[^/]*@ ]]; then echo "not passing $v on: it carries credentials" >&2; continue; fi
     envargs+=("$v=${!v}")
