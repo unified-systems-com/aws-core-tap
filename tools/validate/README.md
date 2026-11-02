@@ -38,6 +38,8 @@ live state.
 | `runs/wave0-2026-11-02.json` | The same wave re-run on main after the outcome work (#163): same ok, empty and denied sets, non-ok entries labelled by the collector's own classifier (103 access-denied, 68 unsupported-in-partition, 26 not-configured, 3 throttled, 13 still unclassified) |
 | `runs/wave1-2026-11-01.json` | Wave 1 first cycle: 24 entity types seeded with Terraform, collected and compared; 23 pass, one S3 failure that was a wrong expectation (the service default for a bucket's public access block) |
 | `runs/wave1-2026-11-02.json` | Wave 1 on the fixed harness: 24 of 24 pass; three S3 buckets (public access block on, default, off), the S3 encryption edge checked; torn down from the run's own state |
+| `runs/wave2-rds-2026-11-02.json` | Wave 2, RDS: 14 entity types (20 compared with the types the module needs), all pass on the second cycle; the first cycle failed `aws_rds_db_cluster_endpoint` (fixed in #175) |
+| `runs/wave2-nfw-2026-11-02.json` | Wave 2, Network Firewall: firewall, policy and rule group pass; the VPC endpoint association fails because the collector role is refused its list call (a known miss, #172) |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.

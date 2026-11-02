@@ -17,7 +17,17 @@ MANIFEST = json.loads(
     (REPO / "tap_plugin/aws_core/collectors/boto3_collector/aws_resource_manifest.json").read_text(encoding="utf-8")
 )
 ENTRIES = {e["entity_type"]: e for e in MANIFEST["entries"]}
-TF_TEXT = "\n".join(p.read_text(encoding="utf-8") for p in sorted((SEED / "wave1").glob("*.tf")))
+def _tf_text(directory):
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted(directory.glob("*.tf")))
+
+
+#: The seed modules: the catalog's `module` names a directory under tools/seed, and the module's provider tag.
+MODULES = ("wave1", "wave2-rds", "wave2-nfw")
+TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
+TF_TEXT = TF_BY_MODULE["wave1"]
+ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
+#: Terraform resources whose type cannot carry tags although the service tags the object.
+TAGLESS_IN_TERRAFORM = {"AWS::RDS::DBProxyTargetGroup"}
 REQUIRED = {"cfn_type", "entity_type", "terraform", "cost_class", "needs", "compares", "module", "natural_key", "tf_attrs", "tags", "edges", "description"}
 COSTS = {"free", "cheap", "costly", "blocked"}
 CASES = sorted(CATALOG["types"].items())
@@ -33,7 +43,7 @@ def test_entry_shape(cfn, entry):
     assert set(entry) == REQUIRED, cfn
     assert entry["cfn_type"] == cfn and re.fullmatch(r"AWS::[A-Za-z0-9]+::[A-Za-z0-9]+", cfn)
     assert entry["cost_class"] in COSTS and entry["cost_class"] != "blocked"  # a blocked type is not seeded, so has no entry
-    assert entry["module"] == "wave1"
+    assert entry["module"] in MODULES
     assert entry["tags"] in ("tags_all", "none")
     assert entry["description"].strip()
     assert entry["needs"] == sorted(entry["needs"]) and all(n in CATALOG["types"] for n in entry["needs"])
@@ -50,12 +60,15 @@ def test_entry_agrees_with_manifest(cfn, entry):
         assert (edge["edge_type"], edge["target_type"], edge["direction"]) in declared, (cfn, edge["edge_type"])
         assert edge["target_type"] in {e["entity_type"] for e in CATALOG["types"].values()}
     has_tags = (manifest.get("tags") or {}).get("source", "none") != "none"
-    assert (entry["tags"] == "tags_all") == has_tags
+    if cfn in TAGLESS_IN_TERRAFORM:
+        assert entry["tags"] == "none" and has_tags, cfn
+    else:
+        assert (entry["tags"] == "tags_all") == has_tags
 
 
 @pytest.mark.parametrize("cfn,entry", CASES)
-def test_terraform_resource_is_declared_in_wave1(cfn, entry):
-    assert re.search(rf'^resource "{entry["terraform"]}" ', TF_TEXT, re.M), entry["terraform"]
+def test_terraform_resource_is_declared_in_its_module(cfn, entry):
+    assert re.search(rf'^resource "{entry["terraform"]}" ', TF_BY_MODULE[entry["module"]], re.M), entry["terraform"]
 
 
 def test_every_entity_type_is_unique_and_terraform_types_are_unique():
@@ -94,33 +107,58 @@ def test_attribute_names_exist_in_the_provider_schema_dump_when_available():
 
 
 def test_nothing_outside_the_state_is_deleted_by_a_destroy():
-    assert "force_destroy" not in TF_TEXT
+    assert "force_destroy" not in ALL_TF_TEXT
 
 
-def test_every_iam_identity_waits_for_the_partition_guard():
+@pytest.mark.parametrize("module", MODULES)
+def test_every_iam_identity_waits_for_the_partition_guard(module):
     for kind in ("role", "user", "group", "policy"):
-        block = re.search(rf'^resource "aws_iam_{kind}" "[^"]+" \{{\n(.*?)^\}}', TF_TEXT, re.M | re.S)
-        assert block and "depends_on = [terraform_data.guard]" in block.group(1), kind
+        for body in re.findall(rf'^resource "aws_iam_{kind}" "[^"]+" \{{\n(.*?)^\}}', TF_BY_MODULE[module], re.M | re.S):
+            assert "depends_on = [terraform_data.guard]" in body, (module, kind)
+    if module == "wave1":
+        assert re.search(r'^resource "aws_iam_role" ', TF_BY_MODULE[module], re.M)  # the loop above found something to check
 
 
-def test_iam_names_start_with_seed():
-    blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_TEXT, re.M | re.S)
-    assert len(blocks) == 5
+@pytest.mark.parametrize("module", MODULES)
+def test_iam_names_start_with_seed(module):
+    blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S)
+    assert len(blocks) == {"wave1": 5, "wave2-rds": 2, "wave2-nfw": 0}[module]
     for kind, body in blocks:
         assert re.search(r'^\s*name\s*=\s*"seed-', body, re.M), kind
 
 
-def test_provider_is_pinned_and_default_tags_are_set():
-    assert 'version = "= 6.71.0"' in TF_TEXT
-    assert '"tap-seed"     = "wave1"' in TF_TEXT and '"tap-seed-run" = var.run_id' in TF_TEXT
-    assert 'region  = "us-gov-west-1"' in TF_TEXT and "allowed_account_ids" in TF_TEXT
-    block = re.search(r'variable "run_id" \{(.*?)\n\}\n', TF_TEXT, re.S).group(1)
+@pytest.mark.parametrize("module", MODULES)
+def test_provider_is_pinned_and_default_tags_are_set(module):
+    text = TF_BY_MODULE[module]
+    assert 'version = "= 6.71.0"' in text
+    assert re.search(rf'"tap-seed"\s+= "{re.escape(module)}"', text) and '"tap-seed-run" = var.run_id' in text
+    assert 'region  = "us-gov-west-1"' in text and "allowed_account_ids" in text
+    block = re.search(r'variable "run_id" \{(.*?)\n\}\n', text, re.S).group(1)
     assert not re.search(r"^\s*default\s*=", block, re.M)
 
 
-def test_nothing_costly_is_declared():
+def test_nothing_costly_is_declared_in_wave1():
     for banned in ("aws_nat_gateway", "aws_lb", "aws_db_instance", "aws_eks_cluster", "aws_redshift", "aws_eip", "aws_opensearch", "aws_rds"):
         assert banned not in TF_TEXT, banned
+
+
+def test_wave2_nfw_declares_one_firewall_and_nothing_else_that_costs():
+    text = TF_BY_MODULE["wave2-nfw"]
+    assert text.count('resource "aws_networkfirewall_firewall" ') == 1 and text.count("subnet_mapping {") == 2  # the firewall's and the association's
+    for banned in ("aws_nat_gateway", "aws_lb", "aws_db_", "aws_rds", "aws_eks_cluster", "aws_redshift", "aws_eip", "aws_opensearch", "aws_internet_gateway", "logging_configuration"):
+        assert banned not in text, banned
+    assert "delete_protection                 = false" in text
+
+
+def test_wave2_rds_declares_only_what_its_cost_note_prices():
+    text = TF_BY_MODULE["wave2-rds"]
+    for banned in ("aws_nat_gateway", "aws_lb", "aws_eks_cluster", "aws_redshift", "aws_eip", "aws_opensearch", "aws_internet_gateway", "aws_rds_cluster_instance_multi"):
+        assert banned not in text, banned
+    assert text.count('resource "aws_db_instance"') == 1 and text.count('resource "aws_rds_cluster_instance"') == 1
+    assert 'storage_type                = "gp2"' in text and "gp2 storage for it" in (SEED / "wave2-rds" / "cost.md").read_text(encoding="utf-8")  # the priced storage is the applied storage
+    assert 'instance_class              = "db.t4g.micro"' in text and 'instance_class       = "db.serverless"' in text
+    assert "publicly_accessible         = false" in text and "multi_az                    = false" in text
+    assert "skip_final_snapshot         = true" in text and "deletion_protection         = false" in text
 
 
 def test_no_account_number_key_or_secret_in_the_seed_tree():

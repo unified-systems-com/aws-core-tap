@@ -1,0 +1,331 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 20
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (25 destroyed). Checked directly afterwards: no instance, cluster, proxy, snapshot, global cluster, VPC, role, policy or topic of the run is left.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Keys, compared field names and outcomes only. Second cycle, on the collector with the cluster-endpoint fix (aws-core-tap#175). The first cycle (run w2r11020911, same seeds) passed 19 of 20 and failed aws_rds_db_cluster_endpoint with ProjectionError: DescribeDBClusterEndpoints also lists a cluster's default writer and reader endpoints, which have no ARN; the entry now asks for custom endpoints only. Six of the twenty types are wave 1 types the module needs (VPC, subnets, security group, role, policy, SNS topic) and are compared too. Fourteen of the 18 RDS types are seeded; not seeded: DBSecurityGroup (EC2-Classic), DBShardGroup (Aurora Limitless, about 2.24 USD an hour), Deployment (blue/green), Integration (needs a Redshift or OpenSearch target).",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w2r11021104",
+  "seeds": "tools/seed/wave2-rds (25 Terraform resources, 14 RDS entity types and the VPC, subnets, role, policy and topic they need)",
+  "wave": 2
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::IAM::ManagedPolicy",
+   "compared_fields": [
+    "name",
+    "path",
+    "policy_arn",
+    "policy_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBCluster",
+   "compared_fields": [
+    "backup_retention_days",
+    "db_cluster_arn",
+    "deletion_protection",
+    "engine",
+    "engine_mode",
+    "engine_version",
+    "iam_database_auth_enabled",
+    "name",
+    "storage_encrypted"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBClusterEndpoint",
+   "compared_fields": [
+    "dbcluster_endpoint_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_cluster_endpoint",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBClusterParameterGroup",
+   "compared_fields": [
+    "db_cluster_parameter_group_arn",
+    "family",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_cluster_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::ClusterSnapshot",
+   "compared_fields": [
+    "db_cluster_identifier",
+    "db_cluster_snapshot_arn",
+    "engine",
+    "name",
+    "snapshot_type",
+    "storage_encrypted"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_cluster_snapshot",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBParameterGroup",
+   "compared_fields": [
+    "db_parameter_group_arn",
+    "family",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBProxy",
+   "compared_fields": [
+    "db_proxy_arn",
+    "endpoint",
+    "engine_family",
+    "idle_client_timeout_seconds",
+    "name",
+    "require_tls"
+   ],
+   "edges_expected": 3,
+   "entity_type": "aws_core__aws_rds_db_proxy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBProxyEndpoint",
+   "compared_fields": [
+    "name",
+    "rds_db_proxy_endpoint_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_proxy_endpoint",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBProxyTargetGroup",
+   "compared_fields": [
+    "rds_db_proxy_target_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_proxy_target_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBSnapshot",
+   "compared_fields": [
+    "db_instance_identifier",
+    "db_snapshot_arn",
+    "encrypted",
+    "engine",
+    "name",
+    "snapshot_type"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_db_snapshot",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBSubnetGroup",
+   "compared_fields": [
+    "db_subnet_group_arn",
+    "name",
+    "subnet_ids",
+    "vpc_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_rds_db_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::EventSubscription",
+   "compared_fields": [
+    "enabled",
+    "event_subscription_arn",
+    "name",
+    "sns_topic_arn",
+    "source_type"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_rds_event_subscription",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::GlobalCluster",
+   "compared_fields": [
+    "deletion_protection",
+    "engine",
+    "engine_version",
+    "global_cluster_arn",
+    "name",
+    "storage_encrypted"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_global_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::DBInstance",
+   "compared_fields": [
+    "db_instance_arn",
+    "db_instance_id",
+    "deletion_protection",
+    "encrypted",
+    "engine",
+    "engine_version",
+    "iam_database_auth_enabled",
+    "instance_class",
+    "multi_az",
+    "name",
+    "publicly_accessible"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_rds_instance",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RDS::OptionGroup",
+   "compared_fields": [
+    "engine_name",
+    "major_engine_version",
+    "name",
+    "option_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rds_option_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SNS::Topic",
+   "compared_fields": [
+    "kms_master_key_id",
+    "topic_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sns_topic",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": [
+  "wave2-rds"
+ ]
+}

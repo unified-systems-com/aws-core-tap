@@ -6,6 +6,8 @@ of the plugin wheel.
 
 | File | What it is |
 | --- | --- |
+| `wave2-rds/` | Terraform root for wave 2, RDS (weight 5, costly): 14 of the 18 RDS types. Own state, own provider tag `tap-seed=wave2-rds`; `wave2-rds/cost.md` |
+| `wave2-nfw/` | Terraform root for wave 2, Network Firewall: firewall, policy, rule group and a second endpoint, with the one costly resource that must be destroyed as soon as the check has run; tag `tap-seed=wave2-nfw`; `wave2-nfw/cost.md` |
 | `wave1/` | Terraform root for wave 1 (weight 5, free or cheap). Provider `hashicorp/aws` pinned to exactly 6.71.0, region `us-gov-west-1`. `wave1/cost.md` is its cost estimate |
 | `seeding.json` | The seed catalog: per CloudFormation type, the entity type, Terraform resource, cost class, needs, the manifest fields to compare and where each expected value lives in the state |
 | `expected.py` | Reads `terraform show -json` of the applied state and writes the expected inventory (standard library only) |
@@ -126,6 +128,18 @@ export TF_DATA_DIR="$RUN_DIR/tfdata"                    # per-run plugin and bac
    ```
    rm -rf "$RUN_DIR"
    ```
+
+## Other modules
+
+Each module is its own Terraform root with its own state, and its catalog entries name it in `module`. Run it with the
+steps above, changing three things: the directory (`cd tools/seed/wave2-rds`), the run id prefix (`w2r...`; the module's
+names start `seed-w2r-`) and the cost note you read in step 1. The expected inventory records the module as the wave,
+and `compare.py` fails a catalog type of that module that the state does not contain, so a partial apply cannot pass.
+A catalog edge whose target is a list (a subnet group's subnets) gives one expected edge per member: `expected.py` flattens a join's list result, which wave 1 never needed and the RDS instance does. A module's catalog types need not be only its own: the VPC, subnets and roles it creates are wave 1 types and are
+compared too. A **costly** module has a time box in its cost note; destroy it when the box ends whether or not the check
+finished. Wave 2 ran on 2026-11-02: RDS passed 20 of 20 types on its second cycle (the first found the Aurora
+cluster-endpoint defect fixed in #175), and Network Firewall passed 5 of 6 (the sixth, the VPC endpoint association, is
+refused to the collector's role; see `tools/validate/runs/wave2-nfw-2026-11-02.json`).
 
 ## Providers
 
