@@ -1376,8 +1376,11 @@ class _IamFalsifier(_AwsFalsifier):
     ``_probe_of``, how its own response shape becomes a found ``Probe``.
     """
 
-    def _iam_client(self, session: ProbeSession) -> Any:
-        return session.client("iam", region_name=_GLOBAL_CLIENT_REGION)
+    def _iam_client(self, session: ProbeSession, arn: str) -> Any:
+        # IAM is global per partition: the endpoint is the one that serves the ARN's own
+        # partition, so a GovCloud role is asked at the GovCloud endpoint, not us-east-1
+        # (which answers a GovCloud key with InvalidClientTokenId).
+        return session.client("iam", region_name=iam_endpoint_region(arn))
 
     def _probe_call(
         self, candidate: Candidate, expected: Expected, call: Callable[[], dict[str, Any]]
@@ -1429,7 +1432,7 @@ class IamRoleFalsifier(_IamFalsifier):
                 "querying by name would ask about a different object than the one this ARN claims to be",
             )
         expected = Expected(source_id=arn, owner=None, name=name)
-        client = self._iam_client(session)
+        client = self._iam_client(session, arn)
         return self._probe_call(candidate, expected, lambda: client.get_role(RoleName=name))
 
     def _probe_of(self, result: dict[str, Any]) -> Probe:
@@ -1471,7 +1474,7 @@ class IamUserFalsifier(_IamFalsifier):
                 "querying by name would ask about a different object than the one this ARN claims to be",
             )
         expected = Expected(source_id=arn, owner=None, name=name)
-        client = self._iam_client(session)
+        client = self._iam_client(session, arn)
         return self._probe_call(candidate, expected, lambda: client.get_user(UserName=name))
 
     def _probe_of(self, result: dict[str, Any]) -> Probe:
@@ -1517,7 +1520,7 @@ class IamPolicyFalsifier(_IamFalsifier):
         if scoped is not None:
             return scoped
         expected = Expected(source_id=arn, owner=None, name=name or None)
-        client = self._iam_client(session)
+        client = self._iam_client(session, arn)
         return self._probe_call(candidate, expected, lambda: client.get_policy(PolicyArn=arn))
 
     def _probe_of(self, result: dict[str, Any]) -> Probe:
