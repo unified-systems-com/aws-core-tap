@@ -38,6 +38,7 @@ from .batch import node_envelope
 from .edges import edge_envelope
 from .identity import node_ref
 from .paths import eval_path
+from .outcomes import NOT_CONFIGURED, Outcome
 from .projection import ProjectedNode
 from .regions import (
     STATUS_DISABLED,
@@ -145,6 +146,10 @@ class Listing:
     count: int = 0
     #: The AWS or botocore error the listing raised, when it did.
     error: BaseException | None = None
+    #: A named result that is not a failed call (``outcomes.py``): the listing yielded nothing because
+    #: the feature is not configured, the partition does not offer it, or the call was throttled out.
+    #: Never an authoritative empty listing.
+    outcome: Outcome | None = None
     #: Continuation markers seen on a call that could not be paginated.
     truncated: list[str] = field(default_factory=list)
     #: Why the items the source yielded did not all reach the batch (projection, edge or identity
@@ -176,6 +181,8 @@ def surface_of(
     * region ``disabled``: nothing was read; ``scope_authorized`` false, nothing enumerated or admitted.
     * the credential or region refused the call (``AccessDenied``, ``OptInRequired``, ...):
       ``scope_authorized`` false — known not read.
+    * a named non-failure outcome (``not_configured``, ``unsupported_in_partition``, ``throttled``;
+      ``outcomes.py``): not complete, nothing admitted, the reason on both.
     * any other error: ``scope_authorized`` and ``enumeration_complete`` undeterminable (``null``).
     * a call that returned a continuation marker it could not follow: not complete.
     * an EMPTY listing from a region whose status is not positively ``enabled``: undeterminable, not
@@ -199,6 +206,16 @@ def surface_of(
         scope, complete, admitted, count = False, False, False, None
         why = f"region_disabled: {facts.why}; no listing was attempted"
         reasons.update(scope_authorized=why, enumeration_complete=why, admitted=why)
+    elif listing.outcome is not None:
+        # Nothing was listed for a named, non-failure reason. Zero rows here is the service declining to
+        # answer, so the listing is not complete and licenses no retirement; the credential was allowed to
+        # ask (and was answered) only for `not_configured`.
+        complete, admitted, count = False, False, None
+        reasons["enumeration_complete"] = listing.outcome.reason
+        reasons["admitted"] = f"{listing.outcome.kind}: nothing was listed, so nothing was processed"
+        if listing.outcome.kind != NOT_CONFIGURED:
+            scope = None
+            reasons["scope_authorized"] = f"not_determinable: {listing.outcome.reason}"
     elif listing.error is not None:
         code = error_code_of(listing.error) or type(listing.error).__name__
         complete, admitted, count = False, False, None
@@ -225,7 +242,7 @@ def surface_of(
             "cannot be told from a region the credential could not read"
         )
 
-    if listing is not None and listing.error is None and listing.processing:
+    if listing is not None and listing.error is None and listing.outcome is None and listing.processing:
         admitted = False
         reasons["admitted"] = f"processing_failed: {listing.processing[0]}"
 
