@@ -18,7 +18,7 @@ count without a regeneration fails.
 | File | What it is |
 | --- | --- |
 | `hit-list.json` | Generated. Per service: weight, types, collected, with falsifier, reconcilable, cascade parents, Config-supported; then one row per type. |
-| `decisions.json` | Human verdicts the code cannot show (does retiring this type need to retire others; what probe is planned). Empty until a service is worked. |
+| `decisions.json` | Human verdicts the code cannot show (does retiring this type need to retire others), with a status and the basis for each. Holds proposed verdicts for the top services, all `proposed-unverified` until a live trial shows the behaviour; each carries its basis. A type with no entry reads as `undecided`. |
 | `config-resource-types.json` | Config's `ResourceType` enum from botocore, with the version. |
 
 **What the columns do not say.** `config_supported` is the commercial-partition list; neither botocore nor

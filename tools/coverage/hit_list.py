@@ -6,8 +6,10 @@ definitions, tap-plugin.toml and the coverage ledger as data), imports nothing o
 writes only its output. The same inputs give the same file, so the committed hit-list.json can be regenerated
 and compared (tests/test_hit_list.py), and a stale one fails.
 
-    hit_list.py [--plugin <aws-core-tap root>] [--weights tools/crosscheck/weights/fedramp-additions-v1.json]
-                [--out tools/coverage/hit-list.json] [--check]
+    hit_list.py [--check]
+
+It reads and writes fixed paths inside this repository (the plugin root, the default weighting and
+tools/coverage/hit-list.json) and takes no path argument, so nothing a caller types chooses a file.
 
 Service weight = the sum, over the in-scope ledger types of that service (tier ``both``, the standing scope
 ruling), of the weighting's cfn_type weight for each type. Services whose weight is 0 are left out.
@@ -150,18 +152,16 @@ def build(plugin: Path, weights_path: Path) -> dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--plugin", type=Path, default=HERE.parents[1])
-    ap.add_argument("--weights", type=Path, default=DEFAULT_WEIGHTS)
-    ap.add_argument("--out", type=Path, default=HERE / "hit-list.json")
-    ap.add_argument("--check", action="store_true", help="exit 1 if --out is not what the inputs produce")
+    ap.add_argument("--check", action="store_true", help="exit 1 if hit-list.json is not what the inputs produce")
     args = ap.parse_args()
-    text = json.dumps(build(args.plugin, args.weights), indent=1, sort_keys=True) + "\n"
+    text = json.dumps(build(HERE.parents[1], DEFAULT_WEIGHTS), indent=1, sort_keys=True) + "\n"
+    out = HERE / "hit-list.json"
     if args.check:
-        same = args.out.exists() and args.out.read_text() == text
+        same = out.exists() and out.read_text() == text
         print("hit list is current" if same else "hit list is stale: regenerate it")
         return 0 if same else 1
-    args.out.write_text(text)
-    print(f"wrote {args.out}")
+    out.write_text(text)
+    print(f"wrote {out}")
     return 0
 
 
