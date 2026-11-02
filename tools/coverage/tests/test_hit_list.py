@@ -64,3 +64,13 @@ def test_losing_a_falsifier_shows_as_a_gap(tmp_path: Path) -> None:
 def test_config_types_file_names_its_source() -> None:
     d = json.loads((ROOT / "tools/coverage/config-resource-types.json").read_text())
     assert d["botocore_version"] and "AWS::IAM::Role" in d["types"] and d["types"] == sorted(d["types"])
+
+
+def test_every_config_alias_names_a_type_config_lists():
+    import json
+    from pathlib import Path
+
+    here = Path(hit_list.__file__).resolve().parent
+    config = set(json.loads((here / "config-resource-types.json").read_text())["types"])
+    aliases = json.loads((here / "config-aliases.json").read_text())["aliases"]
+    assert aliases and all(target in config for target in aliases.values())

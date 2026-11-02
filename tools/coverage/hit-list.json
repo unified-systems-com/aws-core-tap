@@ -2930,7 +2930,7 @@
   {
    "cascade_parents": 0,
    "collected": 9,
-   "config_supported": 8,
+   "config_supported": 9,
    "rank": 4,
    "reconcilable": 8,
    "rows": [
@@ -3006,7 +3006,7 @@
      "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
-     "config_supported": false,
+     "config_supported": true,
      "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_iam_policy"
@@ -9472,7 +9472,7 @@
   {
    "cascade_parents": 0,
    "collected": 4,
-   "config_supported": 0,
+   "config_supported": 1,
    "rank": 34,
    "reconcilable": 0,
    "rows": [
@@ -9550,7 +9550,7 @@
      "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
-     "config_supported": false,
+     "config_supported": true,
      "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_acm_certificate"
@@ -10398,7 +10398,7 @@
   {
    "cascade_parents": 0,
    "collected": 2,
-   "config_supported": 0,
+   "config_supported": 1,
    "rank": 47,
    "reconcilable": 0,
    "rows": [
@@ -10424,7 +10424,7 @@
      "cascade_children_proposed": [],
      "cascade_decision": "undecided",
      "cascade_parent_of": [],
-     "config_supported": false,
+     "config_supported": true,
      "decision_status": "undecided",
      "entity_types": [
       "aws_core__aws_opensearchservice_domain"

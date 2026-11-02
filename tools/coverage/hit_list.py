@@ -84,6 +84,7 @@ def build(plugin: Path, weights_path: Path) -> dict[str, Any]:
     src = read_plugin(plugin)
     config = json.loads((HERE / "config-resource-types.json").read_text())
     config_types = set(config["types"])
+    aliases = json.loads((HERE / "config-aliases.json").read_text())["aliases"]
     decisions = json.loads((HERE / "decisions.json").read_text())["decisions"]
     services: dict[str, list[dict[str, Any]]] = collections.defaultdict(list)
     for row in src["ledger"]["rows"]:
@@ -107,7 +108,7 @@ def build(plugin: Path, weights_path: Path) -> dict[str, Any]:
                 "has_falsifier": has_falsifier,
                 "reconcilable": is_contained and has_falsifier,
                 "cascade_parent_of": children,
-                "config_supported": row["type_name"] in config_types,
+                "config_supported": row["type_name"] in config_types or aliases.get(row["type_name"]) in config_types,
                 "falsifier_gap": collected and not has_falsifier,
                 "reconcile_gap": collected and not (is_contained and has_falsifier),
                 "cascade_decision": decisions.get(row["type_name"], {}).get("verdict", "undecided"),
