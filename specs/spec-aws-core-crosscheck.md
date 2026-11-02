@@ -44,7 +44,7 @@ not a new tool.
 |    |              |                                                                 |
 | :---: | ---       | ---                                                             |
 | 1. | Deterministic | The same inputs give byte-identical reports, so two runs can be diffed |
-| 2. | Inert         | The comparator imports and runs no reference project and writes nothing but its report; the one bounded exception is a separate dump step (see Inert Readers) |
+| 2. | Inert         | The comparator imports and runs no reference project and writes nothing but its report. A separate dump step that runs a reference's own tool is Proposed, not part of this guarantee (see Dump Step) |
 | 3. | Separable     | What matters is a data file, not code, and several can coexist |
 | 4. | Honest        | A thing the comparison cannot see is counted and named, never a pass |
 | 5. | Attributable  | A flaw found in a reference is recorded with evidence, apart from our gaps |
@@ -61,6 +61,7 @@ not a new tool.
 | req-aws-core-crosscheck-report | [Report](#report) | Implemented | Stable JSON and Markdown; no timestamps; printed text sanitised |
 | req-aws-core-crosscheck-drift | [Drift](#drift) | Implemented | Baseline diff, non-zero exit on a new gap or an incomparable baseline |
 | req-aws-core-crosscheck-defects | [Reference Defects](#reference-defects) | Implemented | Static leads and verified findings, kept apart from our gaps |
+| req-aws-core-crosscheck-dump | [Dump Step](#dump-step) | Proposed | A separate step may run a pinned reference tool once to write a data file; environment sanitising only, not a sandbox |
 | req-aws-core-crosscheck-live | [Live Tie-Break](#live-tie-break) | Proposed | A live account decides each static disagreement |
 | req-aws-core-crosscheck-reference | [Reference Adapters](#reference-adapters) | Proposed | The contract a reference reader meets |
 | req-aws-core-crosscheck-normal-form | [Normal Form](#normal-form) | Proposed | The shape every reference is reduced to |
@@ -82,13 +83,28 @@ reaches a terminal or `report.md`, a commit is reported only if it is shaped lik
 `refs/`, and the report records a digest of the files actually analysed. A tree with nothing to analyse is
 refused, not scored as empty. It lives in `tools/crosscheck`, outside the wheel.
 
-**Bounded exception: a data-producing dump step.** A reference whose model is only available by running its own
-tool (the Terraform provider's schema dump) may have it produced by a separate step, never by the comparator. The
-step runs once, in a fresh empty directory, with a pinned version, the dependency lock file's checksums enforced
-(`-lockfile=readonly`), every `AWS_*` variable removed, a throwaway `HOME` and the shared AWS config and credentials
-files pointed at nothing, so it can reach no credential; it performs no operation but the one that writes the data
-file, whose version and sha256 it prints. The comparator reads the file as data and stays inert. Nothing else is
-excepted.
+The comparator never runs a reference, without exception. A reference whose model is only available by running
+its own tool is handled by the separate, Proposed [Dump Step](#dump-step), which is not part of this requirement.
+
+### Dump Step
+----
+RID: `req-aws-core-crosscheck-dump`
+
+Status: `Proposed`
+
+A reference whose model is only available by running its own tool (the Terraform provider's schema dump) may have
+it produced by a step that is separate from the comparator and is not covered by the inert guarantee. The step
+runs once, in a fresh empty directory, with a pinned version, the dependency lock file's checksums enforced
+(`-lockfile=readonly`) and a start with an empty environment: no `AWS_*`, token or CLI-config variable, a throwaway
+`HOME` and `TMPDIR`. It performs no operation but the one that writes the data file, whose version and sha256 it
+prints. The comparator reads the file as data and stays inert.
+
+**What this does not do.** It sanitises the environment; it is not a sandbox. The provider binary still runs as the
+caller with that user's filesystem and network, so it could read other user-readable files, reach a cloud metadata
+service or use an inherited proxy. The lock checksums authenticate the binary; they do not confine it. Until the
+step runs inside a network-denied, filesystem-confined container with no host mounts, it is run only by a
+maintainer on a host holding no cloud credentials and never in CI that holds secrets, and its output is committed
+with the version and digest it printed. That confinement is the open work in this requirement.
 
 ### Metrics
 ----
@@ -272,8 +288,7 @@ RID: `req-aws-core-crosscheck-addref`
 Status: `Proposed`
 
 1. **Provenance first.** Record the source, licence, version or commit. If the model can only be obtained by
-   running the tool, stop and raise it: the only exception to the inert rule is the bounded dump step described under
-   Inert Readers, and any other needs a change to this specification.
+   running the tool, stop and raise it: the only such step is the Proposed [Dump Step](#dump-step), and any other needs a change to this specification.
 2. **Write the reader** to the normal form, with synthetic-tree tests that include a hostile-text case, a
    proof that nothing in the tree is executed, and a refusal of an empty tree.
 3. **Seed the label map** by automatic name matching, commit it, and list what remains unmapped.
@@ -300,7 +315,7 @@ What the Cartography adapter taught, observed 2026-11-01 and worth checking in a
 ## Open Questions
 
 1. **Weights.** The tiers in the shipped weightings are a first judgement and need review.
-2. **Terraform dump.** Where the pinned schema file lives (committed, or regenerated by the dump step on demand), and the wording of the exception to the inert rule.
+2. **Terraform dump.** Where the pinned schema file lives (committed, or regenerated by the dump step on demand), and when the dump step moves into a confined container (see Dump Step).
 3. **FedRAMP scope.** Whether the overlay should add rules beyond the types and services it names.
 4. **Edges by name.** Relationships are compared by type pair only; comparing by meaning needs a reviewed
    table of edge names.
