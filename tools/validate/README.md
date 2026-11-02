@@ -10,7 +10,7 @@ region it drives the real engine path (`iter_source`, `project_item`, `resolve_n
 the row count, the AWS calls made, the seconds taken and the error class. It builds no batch, writes nothing to the
 grid and nothing to AWS; a guard (`readguard.py`, standard library only, unit-tested) refuses any operation whose name is not a read verb, any
 read-named operation that returns credentials (`GetSecretValue`, `GetSessionToken`, `GetPasswordData` and the rest of
-its list), and any request that asks the service to reveal a secret (`WithDecryption`, `includeValue`). A zero-row result proves the
+its list), and any request that asks the service to reveal a secret (`WithDecryption`, `includeValue`). It does not stop an operation the collector itself makes that returns a secret as a by-product of describing something else (`DescribeUserPoolClient`, `DescribeListeners`, `DescribeVerifiedAccessTrustProviders`, listed in `readguard.BY_PRODUCT_SECRETS`): the manifest drops those fields, so the smoke test holds them in memory as production does and never writes them. A zero-row result proves the
 call path only (see the spec's three layers).
 
 Run it inside the stack's web container, which holds the collector's secret:

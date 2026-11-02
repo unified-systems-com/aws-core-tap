@@ -35,6 +35,17 @@ SECRET_RETURNING = frozenset(
     }
 )
 
+#: Operations the collector makes that return a secret as a by-product of describing something else, and are
+#: allowed: the manifest drops the secret field (persist_configuration off, the field listed as stripped), so
+#: it is read into memory and never stored. They are named here so the guard's limit is stated, not implied.
+BY_PRODUCT_SECRETS = frozenset(
+    {
+        "DescribeUserPoolClient",  # ClientSecret
+        "DescribeListeners",  # DefaultActions[].AuthenticateOidcConfig.ClientSecret
+        "DescribeVerifiedAccessTrustProviders",  # OidcOptions.ClientSecret
+    }
+)
+
 #: Operations that return a secret only when asked; the request parameter that asks is refused instead.
 REVEALING_PARAMS = {
     "GetParameter": ("WithDecryption",),

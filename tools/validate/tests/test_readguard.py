@@ -70,3 +70,14 @@ def test_committed_run_records_hold_no_account_number_and_no_messages(record):
     text = record.read_text()
     assert not re.search(r"\b\d{12}\b", text), "a 12-digit number (an account id) is in the record"
     assert "error_message" not in text, "error messages can name resources and are not recorded"
+
+
+def test_by_product_secret_operations_are_ones_the_collector_makes_and_are_not_refused():
+    # The guard's stated limit: these are allowed because the collector makes them (in the manifest or a custom
+    # function) and the manifest strips the secret field.
+    assert readguard.BY_PRODUCT_SECRETS & readguard.SECRET_RETURNING == set()
+    source = MANIFEST.read_text() + (MANIFEST.parent / "customfns.py").read_text()
+    snake = lambda op: re.sub(r"(?<!^)(?=[A-Z])", "_", op).lower()  # noqa: E731
+    for op in readguard.BY_PRODUCT_SECRETS:
+        assert op in source or snake(op) in source, op
+    assert '"path": "ClientSecret"' in MANIFEST.read_text()
