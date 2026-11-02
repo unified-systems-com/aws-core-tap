@@ -89,9 +89,9 @@ def _message_of(exc: BaseException) -> str:
 
 
 def _row_matches(row: dict[str, Any], entry: dict[str, Any], exc: BaseException, code: str, partition: str) -> bool:
-    if row["service"] not in ("*", entry["service"]):
+    if row["service"] != entry["service"]:
         return False
-    if partition in row.get("not_in_partitions", ()):
+    if "partitions" in row and partition not in row["partitions"]:
         return False
     if "error_code" in row and row["error_code"] != code:
         return False

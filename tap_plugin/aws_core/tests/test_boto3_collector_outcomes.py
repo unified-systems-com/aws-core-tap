@@ -78,7 +78,7 @@ class TestTheShippedRows:
         schema = outcomes.load_schema(outcomes.OUTCOMES_SCHEMA_PATH)
         row = {"outcome": "unsupported_in_partition", "service": "*", "error_code": "InvalidAction", "why": "x" * 25}
         assert not jsonschema.Draft202012Validator(schema).is_valid({"description": "d", "rows": [row]})
-        wildcard = {**row, "not_in_partitions": ["aws"]}
+        wildcard = {**row, "partitions": ["aws-us-gov"]}
         assert not jsonschema.Draft202012Validator(schema).is_valid({"description": "d", "rows": [wildcard]})
         unscoped = {**wildcard, "service": "ec2"}  # names a service but neither an operation, an entity type nor an exception
         assert not jsonschema.Draft202012Validator(schema).is_valid({"description": "d", "rows": [unscoped]})
@@ -98,9 +98,14 @@ class TestClassify:
             ("securitylake_subscriber", "ResourceNotFoundException", "ListSubscribers"),
         ]
         for entity, code, operation in cases:
-            message = {"ListAggregatorsV2": "Security Hub V2 is not enabled", "ListSubscribers": "Security Lake isn't enabled"}.get(
-                operation, "x"
-            )
+            message = {
+                "ListAggregatorsV2": "Security Hub V2 is not enabled",
+                "ListSubscribers": "Security Lake isn't enabled",
+                "ListDashboards": "Account 1 is not subscribed for QuickSight",
+                "ListSpaces": "Account: 1 does not have QuickSight subscription.",
+                "ListVPCConnections": "Account information for account 1 is not found.",
+                "DescribeSecurityHubV2": "You are not subscribed to HubV2",
+            }.get(operation, "x")
             found = outcomes.classify(_entry(entity), _client_error(code, operation, message), _GOV)
             assert found is not None and found.kind == "not_configured", (entity, found)
             assert found.code == code
@@ -128,6 +133,18 @@ class TestClassify:
         found = outcomes.classify(entry, exc, _GOV)
         assert found is not None and found.kind == "unsupported_in_partition"
         assert outcomes.classify(entry, exc, "aws") is None  # commercial offers it: a real failure there
+
+    def test_an_observation_in_govcloud_is_not_applied_to_another_partition(self):
+        exc = EndpointConnectionError(endpoint_url="https://qbusiness.cn-north-1.api.amazonwebservices.com.cn/applications")
+        assert outcomes.classify(_entry("qbusiness_application"), exc, "aws-cn") is None
+        assert outcomes.classify(_entry("qbusiness_application"), exc, _GOV) is not None
+
+    def test_a_generic_not_configured_code_needs_its_message(self):
+        entry = _entry("quicksight_space")
+        assert outcomes.classify(entry, _client_error("PreconditionNotMetException", "ListSpaces", "Account: 1 does not have QuickSight subscription."), _GOV)
+        assert outcomes.classify(entry, _client_error("PreconditionNotMetException", "ListSpaces", "some other precondition"), _GOV) is None
+        hub = _entry("securityhub_hub_v2")
+        assert outcomes.classify(hub, _client_error("ResourceNotFoundException", "DescribeSecurityHubV2", "a different resource"), _GOV) is None
 
     def test_a_connect_timeout_is_not_called_unsupported(self):
         # A timeout means the endpoint was unreachable, not that the service is absent: a transient fault reads the same.
@@ -391,9 +408,19 @@ class TestClientConfig:
         config = cred.client_config()
         assert config.connect_timeout == cred.CONNECT_TIMEOUT_SECONDS == 5
         assert config.read_timeout == cred.READ_TIMEOUT_SECONDS == 60
-        assert config.retries == {"mode": "adaptive", "max_attempts": 8}
+        assert config.retries == {"mode": "adaptive", "total_max_attempts": 8}
         # The worst case of an endpoint that never answers: every attempt waits out the connect timeout.
-        assert config.retries["max_attempts"] * config.connect_timeout <= 60
+        assert config.retries["total_max_attempts"] * config.connect_timeout <= 60
+
+    def test_the_effective_client_config_makes_eight_attempts_in_all(self):
+        # botocore normalises Config.retries when the client is built; assert on what the client really uses, because
+        # ``max_attempts`` would mean eight RETRIES (nine requests) where ``total_max_attempts`` means eight in all.
+        import boto3
+
+        client = boto3.session.Session(aws_access_key_id="x", aws_secret_access_key="y").client(
+            "sts", region_name="us-gov-west-1", config=cred.client_config()
+        )
+        assert client.meta.config.retries["total_max_attempts"] == 8
 
     def test_the_client_factory_builds_every_client_with_it(self):
         seen: list[dict] = []
@@ -411,7 +438,7 @@ class TestClientConfig:
         session = cred._botocore_session(None)
         default = session.get_default_client_config()
         assert default.connect_timeout == 5 and default.read_timeout == 60
-        assert default.retries == {"mode": "adaptive", "max_attempts": 8}
+        assert default.retries == {"mode": "adaptive", "total_max_attempts": 8}
 
     def test_no_collector_module_builds_its_own_retry_config(self):
         import pathlib
@@ -517,11 +544,13 @@ class TestRequestFixes:
         assert [i["SchemaArn"] for i in items] == ["arn:x:schema/mine/s"]
         assert [kw["RegistryName"] for name, kw in client.calls if name == "list_schemas"] == ["mine"]
 
-    def test_not_prefix_keeps_a_non_matching_value_and_the_schema_takes_it(self):
+    def test_only_the_registry_named_aws_events_is_skipped_never_a_prefix(self):
         from tap_plugin.aws_core.collectors.boto3_collector.source import _passes
 
-        assert _passes({"n": "mine"}, [{"path": "n", "not_prefix": "aws."}])
-        assert not _passes({"n": "aws.events"}, [{"path": "n", "not_prefix": "aws."}])
+        # A registry the account might create with an "aws."-style name must stay listed: only the AWS-owned one is skipped.
+        assert _passes({"n": "aws.mine"}, [{"path": "n", "not_equals": "aws.events"}])
+        assert _passes({"n": "mine"}, [{"path": "n", "not_equals": "aws.events"}])
+        assert not _passes({"n": "aws.events"}, [{"path": "n", "not_equals": "aws.events"}])
         entry = copy.deepcopy(_entry("eventschemas_registry"))
-        assert entry["source"]["where"] == [{"path": "RegistryName", "not_prefix": "aws."}]
-        assert "aws." in entry["why"] and "AWS-owned" in entry["why"]
+        assert entry["source"]["where"] == [{"path": "RegistryName", "not_equals": "aws.events"}]
+        assert "aws.events" in entry["why"] and "AWS-owned" in entry["why"]

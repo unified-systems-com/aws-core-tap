@@ -9286,11 +9286,11 @@
         "where": [
           {
             "path": "RegistryName",
-            "not_prefix": "aws."
+            "not_equals": "aws.events"
           }
         ]
       },
-      "why": "Enumerate EventSchemas Registry objects with ListRegistries — an inventory of the account's registrys and how each is tagged. Registries whose name starts with 'aws.' (aws.events, the AWS-owned registry of AWS service event schemas) are not read: they are AWS's, not the account's, and the API gives them no RegistryArn, so their natural key could not resolve.",
+      "why": "Enumerate EventSchemas Registry objects with ListRegistries — an inventory of the account's registrys and how each is tagged. The registry named 'aws.events' (the AWS-owned registry of AWS service event schemas) is not read: they are AWS's, not the account's, and the API gives them no RegistryArn, so their natural key could not resolve.",
       "persist_configuration": false,
       "persist_configuration_why": "Off: the ListRegistries response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {
@@ -20349,7 +20349,7 @@
           "where": [
             {
               "path": "RegistryName",
-              "not_prefix": "aws."
+              "not_equals": "aws.events"
             }
           ]
         },
@@ -20357,7 +20357,7 @@
           "RegistryName": "RegistryName"
         }
       },
-      "why": "Enumerate EventSchemas Schema objects with ListSchemas — an inventory of the account's schemas and how each is tagged. Schemas of registries whose name starts with 'aws.' (aws.events, the AWS-owned registry: 2,745 schemas of AWS service events) are not read: they are AWS's, not the account's, and the API gives them no SchemaArn, so their natural key could not resolve.",
+      "why": "Enumerate EventSchemas Schema objects with ListSchemas — an inventory of the account's schemas and how each is tagged. Schemas of the registry named 'aws.events' (the AWS-owned registry: 2,745 schemas of AWS service events) are not read: they are AWS's, not the account's, and the API gives them no SchemaArn, so their natural key could not resolve.",
       "persist_configuration": false,
       "persist_configuration_why": "Off: the ListSchemas response shape has not been reviewed for sensitive values (mechanical scan only, no reviewer pass), so none of it is stored. Identity, name and tags are typed fields or read by the tag lane, so they are unaffected.",
       "sensitivity": {

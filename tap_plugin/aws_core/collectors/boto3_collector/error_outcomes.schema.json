@@ -53,11 +53,11 @@
             "minLength": 1,
             "description": "Case-insensitive text the error message must contain, for a generic code that means this only with this message."
           },
-          "not_in_partitions": {
+          "partitions": {
             "type": "array",
             "minItems": 1,
             "items": { "type": "string", "minLength": 1 },
-            "description": "The row does not apply in these partitions (commercial `aws` offers what GovCloud does not, so an unreachable endpoint there is a real failure)."
+            "description": "The partitions the row was observed in and applies to (for example `aws-us-gov`). An observation in one partition says nothing about another, so an unsupported row must name where it was seen."
           },
           "why": { "type": "string", "minLength": 20 }
         },
@@ -74,7 +74,7 @@
           {
             "if": { "properties": { "outcome": { "const": "unsupported_in_partition" } }, "required": ["outcome"] },
             "then": {
-              "required": ["not_in_partitions"],
+              "required": ["partitions"],
               "properties": { "service": { "not": { "const": "*" } } },
               "anyOf": [{ "required": ["operations"] }, { "required": ["entity_types"] }, { "required": ["exception"] }]
             }

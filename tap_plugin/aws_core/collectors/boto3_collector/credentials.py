@@ -322,7 +322,8 @@ READ_TIMEOUT_SECONDS = 60
 #: minute) instead of five minutes, and the collector learns the endpoint is unreachable once per
 #: (service, region) rather than once per entry. botocore offers no separate budget for connection
 #: errors; this is the smallest finite one that still leaves room to absorb throttling.
-RETRIES: dict[str, Any] = {"mode": "adaptive", "max_attempts": 8}
+# ``total_max_attempts`` counts the first request; ``max_attempts`` counts only the retries after it (nine requests).
+RETRIES: dict[str, Any] = {"mode": "adaptive", "total_max_attempts": 8}
 
 
 def client_config(**overrides: Any) -> Config:
