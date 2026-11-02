@@ -61,6 +61,10 @@ def _pct(a: float, b: float) -> float | None:
 
 
 def _sha(p: Path) -> str:
+    """The sha256 of a regular file. A symlink or a non-file is refused: the path comes from the command line or a
+    directory listing of an untrusted download, and a link would let it choose what is read."""
+    if p.is_symlink() or not p.is_file():
+        raise ValueError(f"not a regular file: {p.name}")
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 

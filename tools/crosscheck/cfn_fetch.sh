@@ -8,7 +8,7 @@
 # The verifier (cfn_verifier.py) only reads what this leaves behind.
 set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
+if [[ "$#" -ne 1 ]]; then
   echo "usage: $0 <directory>" >&2
   exit 2
 fi
@@ -34,7 +34,7 @@ for entry in "${sources[@]}"; do
   status="$(curl --fail --silent --show-error --location --proto '=https' --max-time 300 --compressed \
     --write-out '%{http_code}' --output "$out.part" "$url")"
   # The gzip address may hand back gzip bytes without a Content-Encoding header; unpack them if so.
-  if [ "$(head -c 2 "$out.part" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then
+  if [[ "$(head -c 2 "$out.part" | od -An -tx1 | tr -d ' \n')" == "1f8b" ]]; then
     gzip -dc <"$out.part" >"$out"
     rm -f "$out.part"
   else
