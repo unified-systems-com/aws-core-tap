@@ -141,6 +141,12 @@ Status: `Proposed`
    time when it listed a type). Its absence is not negative evidence: it lacked 117 types whose call path worked.
 4. Where layers disagree, the stronger layer decides and the weaker is kept under `disagreements`.
 5. Without empirical evidence, the verdict is `declared-only`, never `offered`.
+6. **Empirical observations are dated, and the newest one at a level decides it.** A record keeps every dated
+   observation, but the verdict at a level (service, operation, account) is derived from the latest observation at
+   that level. A success after an earlier `endpoint-absent`, `operation-absent` or `unreachable-unknown` supersedes
+   it, so an old DNS failure cannot hide a working call; a newer absence supersedes an older success (a service can
+   be withdrawn). The superseded observation stays in the record under `disagreements` with its date, and the
+   precedence order under Verdicts applies only among observations of the same date and level.
 
 ### Probe
 ----
@@ -176,8 +182,11 @@ Status: `Proposed`
   contradiction is visible; it does not replace the tier.
 - The **collector** classifies a failing call into the matching verdict as a named, recorded outcome (not a crash) and
   never skips a read because of declared or derived data alone. A skip is justified only by empirical evidence.
-- A **validation wave** treats a type whose service-level verdict is `endpoint-absent` or `operation-absent` as
-  call-path-only and does not seed it.
+- A **validation wave** decides per type from the most specific record that exists for it: the type's own
+  operation-level verdict if there is one (`operation-absent` makes that type call-path-only), otherwise the service's
+  verdict in that region (`endpoint-absent` makes every type of that service call-path-only there). One absent
+  operation never marks its whole service, and a service-level absence is not read from an operation's record. Neither
+  case seeds the type.
 
 ### Publication
 ----
