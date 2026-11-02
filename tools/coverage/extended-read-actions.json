@@ -1,0 +1,125 @@
+{
+  "description": "Read actions the collector's role (SecurityAudit plus ReadOnlyAccess) does not allow, found in live runs against the GovCloud staging account. Each section says why its actions are listed and whether role_gap.py puts them in the policy it prints. This is a worklist for the policy owner, not a grant: nothing here is applied by the plugin.",
+  "provenance": {
+    "ran": "2026-11-01, collector credential, us-gov-west-1: wave 0 (898 manifest types, 1,338 read calls) and the probe generator run (made-up ids, 189 types). Collection-gap and probe-read actions are the AccessDenied replies for the collector IAM user.",
+    "not_established": "Whether adding the actions clears each denial has not been tried. A denial can also come from a service-control policy or a permissions boundary, which an allow in the role does not override. Check with iam:SimulatePrincipalPolicy before asking for the change.",
+    "scope": "One account, one partition. Commercial regions were not run."
+  },
+  "sections": [
+    {
+      "id": "collection-gaps",
+      "in_policy": true,
+      "description": "List or describe calls the collection makes for a manifest type; each returned AccessDenied because no identity-based policy allows the action. Adding them lets those types be collected at all.",
+      "actions": [
+        {
+          "action": "bedrock:ListRetrievalInstructions"
+        },
+        {
+          "action": "drs:ListRecoveryPlans"
+        },
+        {
+          "action": "emr-containers:ListJobTemplates"
+        },
+        {
+          "action": "fms:ListResourceSets"
+        },
+        {
+          "action": "geo:ListGeofenceCollections"
+        },
+        {
+          "action": "geo:ListPlaceIndexes"
+        },
+        {
+          "action": "geo:ListRouteCalculators"
+        },
+        {
+          "action": "geo:ListTrackers"
+        },
+        {
+          "action": "glue:DescribeIntegrations"
+        },
+        {
+          "action": "glue:ListBlueprints"
+        },
+        {
+          "action": "glue:ListConnectionTypes"
+        },
+        {
+          "action": "glue:ListCustomEntityTypes"
+        },
+        {
+          "action": "glue:ListDataQualityRulesets"
+        },
+        {
+          "action": "glue:ListUsageProfiles"
+        },
+        {
+          "action": "managedblockchain:ListAccessors"
+        },
+        {
+          "action": "mgn:ListConnectors"
+        },
+        {
+          "action": "mgn:ListNetworkMigrationDefinitions"
+        },
+        {
+          "action": "sso:ListApplications"
+        },
+        {
+          "action": "textract:ListAdapters"
+        }
+      ]
+    },
+    {
+      "id": "probe-reads",
+      "in_policy": true,
+      "description": "Get calls the generic falsifier would make to ask whether one object still exists. The collection does not make them. They returned AccessDeniedException for a made-up id, which says nothing about whether the object exists, so without them those types cannot be retired by a probe.",
+      "actions": [
+        {
+          "action": "bedrock:GetAgentAlias"
+        },
+        {
+          "action": "bedrock:GetFlow"
+        },
+        {
+          "action": "bedrock:GetFlowAlias"
+        },
+        {
+          "action": "bedrock:GetFlowVersion"
+        },
+        {
+          "action": "bedrock:GetPrompt"
+        },
+        {
+          "action": "bedrock:GetRetrievalInstruction"
+        }
+      ]
+    },
+    {
+      "id": "opt-in-credential-bearing",
+      "in_policy": false,
+      "description": "An action the response of which can carry secrets. Left out of the printed policy unless asked for with --include-opt-in, because the plugin would then receive them.",
+      "actions": [
+        {
+          "action": "glue:GetConnections",
+          "reason": "Returns connection properties, which can include a password or a secret reference."
+        }
+      ]
+    },
+    {
+      "id": "not-fixable-by-this-role",
+      "in_policy": false,
+      "description": "Denied for a reason an allow in the collector's role does not remove. Listed so the denial is not read as a missing permission.",
+      "actions": [
+        {
+          "action": "securityhub:GetConfigurationPolicy",
+          "reason": "The reply names an explicit deny in a resource-based policy; an explicit deny wins over any allow."
+        },
+        {
+          "action": "bedrock:GetAutomatedReasoningPolicy",
+          "reason": "The reply is 'Your account is not authorized to invoke this API operation': an account-level restriction, not the role."
+        }
+      ]
+    }
+  ]
+}

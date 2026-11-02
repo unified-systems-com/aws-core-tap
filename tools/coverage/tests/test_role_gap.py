@@ -1,0 +1,59 @@
+import json
+
+import pytest
+
+import role_gap
+
+
+def test_the_committed_list_has_not_drifted_from_the_manifest():
+    assert role_gap.problems_of(role_gap.load(), role_gap.manifest_operations()) == []
+
+
+def test_policy_leaves_out_the_opt_in_and_unfixable_sections():
+    doc = role_gap.load()
+    actions = role_gap.actions_of(doc)
+    assert "glue:GetConnections" not in actions
+    assert "securityhub:GetConfigurationPolicy" not in actions
+    assert "bedrock:GetFlow" in actions and "geo:ListTrackers" in actions
+    assert "glue:GetConnections" in role_gap.actions_of(doc, include_opt_in=True)
+    assert "securityhub:GetConfigurationPolicy" not in role_gap.actions_of(doc, include_opt_in=True)
+
+
+def test_policy_allows_only_read_verbs():
+    policy = role_gap.policy_of(role_gap.load(), include_opt_in=True)
+    statement = policy["Statement"][0]
+    assert statement["Effect"] == "Allow"
+    assert all(a.partition(":")[2].startswith(role_gap.READ_VERBS) for a in statement["Action"])
+
+
+@pytest.mark.parametrize(
+    ("section", "item", "expected"),
+    [
+        ("collection-gaps", {"action": "ec2:DeleteVpc"}, "ec2:DeleteVpc: not a read verb"),
+        ("collection-gaps", {"action": "geo:ListTrackers"}, "geo:ListTrackers: in collection-gaps and collection-gaps"),
+        ("collection-gaps", {"action": "geo:ListNotCalledAnywhere"}, "geo:ListNotCalledAnywhere: no manifest entry calls ListNotCalledAnywhere"),
+        ("collection-gaps", {"action": "nocolon"}, "nocolon: not service:Operation"),
+        ("opt-in-credential-bearing", {"action": "glue:GetSomething"}, "glue:GetSomething: left out of the policy with no reason"),
+    ],
+)
+def test_the_check_names_each_kind_of_drift(section, item, expected):
+    doc = role_gap.load()
+    for s in doc["sections"]:
+        if s["id"] == section:
+            s["actions"].append(item)
+    assert expected in role_gap.problems_of(doc, role_gap.manifest_operations())
+
+
+def test_every_section_says_why_it_is_there():
+    doc = role_gap.load()
+    assert doc["description"] and doc["provenance"]["not_established"]
+    assert all(s["description"] for s in doc["sections"])
+
+
+def test_check_exits_zero_on_the_committed_list(capsys):
+    assert role_gap.main(["--check"]) == 0
+
+
+def test_printed_policy_is_json(capsys):
+    assert role_gap.main([]) == 0
+    assert json.loads(capsys.readouterr().out)["Statement"][0]["Action"]
