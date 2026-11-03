@@ -23,3 +23,8 @@ policy; left for a later module), `Logs::DeliverySource`, `Logs::DeliveryDestina
 (needs buses in two regions), `SSM::ResourceDataSync`, `CloudFormation::StackSet` and the other CloudFormation types,
 `AutoScaling::LifecycleHook` and `ECR::RepositoryCreationTemplate` (their keys are `{account}/{region}/...`, which the
 catalog cannot yet build), and `ECR::PublicRepository` (ECR Public is not in GovCloud).
+
+Leftover check for this module: the tagging API does not list the Auto Scaling group, which carries no `tap-seed-run` tag
+(the provider resource has no `tags_all`, and the catalog can only expect tags it reads from `tags_all`), so after the
+tag sweep also run `aws autoscaling describe-auto-scaling-groups` and `aws ec2 describe-launch-templates` and look for names
+starting `seed-w3p-<run id>`; the group is created with capacity 0 and holds no instance.
