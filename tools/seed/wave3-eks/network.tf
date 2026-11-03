@@ -27,6 +27,7 @@ resource "aws_route_table" "public" {
   }
 }
 
+# nosemgrep: terraform.aws.security.aws-subnet-has-public-ip-address.aws-subnet-has-public-ip-address
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.seed.id
   cidr_block              = "10.95.1.0/24"
@@ -34,6 +35,7 @@ resource "aws_subnet" "public_a" {
   map_public_ip_on_launch = true # NOSONAR: the node needs an address to reach ECR; its group admits no traffic from outside
 }
 
+# nosemgrep: terraform.aws.security.aws-subnet-has-public-ip-address.aws-subnet-has-public-ip-address
 resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.seed.id
   cidr_block              = "10.95.2.0/24"

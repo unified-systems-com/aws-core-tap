@@ -9,6 +9,11 @@ resource "aws_redshift_parameter_group" "seed" {
   name   = "${local.prefix}-pg"
   family = "redshift-2.0"
 
+  parameter {
+    name  = "require_ssl"
+    value = "true"
+  }
+
   depends_on = [terraform_data.guard]
 }
 
