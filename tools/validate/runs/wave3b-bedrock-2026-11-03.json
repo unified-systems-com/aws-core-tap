@@ -1,0 +1,89 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 5
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (7 destroyed). Checked directly afterwards: no guardrail, prompt, flow, application inference profile or IAM role named for the run remains. The tagging API still listed the run's flow and prompt ARNs afterwards, but GetFlow and GetPrompt answer ResourceNotFound and both listings are empty, so those are stale index entries.",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first run (w3m11031226) created 9 of 11 resources and was destroyed: CreateAgent answered 403 \"Bedrock Agents is in Maintenance Mode. New agent creation is not available\", so the agent and its alias are not seeded. The types the module does not seed are listed in wave3b-bedrock/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3m11031230",
+  "seeds": "tools/seed/wave3b-bedrock",
+  "wave": "3b-bedrock"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::Bedrock::ApplicationInferenceProfile",
+   "compared_fields": [
+    "bedrock_application_inference_profile_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_bedrock_application_inference_profile",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Bedrock::Flow",
+   "compared_fields": [
+    "bedrock_flow_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_bedrock_flow",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Bedrock::Guardrail",
+   "compared_fields": [
+    "guardrail_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_bedrock_guardrail",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Bedrock::Prompt",
+   "compared_fields": [
+    "bedrock_prompt_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_bedrock_prompt",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-bedrock"
+}

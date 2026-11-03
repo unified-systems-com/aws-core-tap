@@ -4083,6 +4083,86 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Multicast domain with no association (associations are billed per subnet)."
+    },
+    "AWS::Bedrock::Guardrail": {
+      "cfn_type": "AWS::Bedrock::Guardrail",
+      "entity_type": "aws_core__aws_bedrock_guardrail",
+      "terraform": "aws_bedrock_guardrail",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "guardrail_arn"
+      ],
+      "module": "wave3b-bedrock",
+      "natural_key": "guardrail_arn",
+      "tf_attrs": {
+        "guardrail_arn": "guardrail_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Guardrail with one blocked word."
+    },
+    "AWS::Bedrock::Prompt": {
+      "cfn_type": "AWS::Bedrock::Prompt",
+      "entity_type": "aws_core__aws_bedrock_prompt",
+      "terraform": "aws_bedrockagent_prompt",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "bedrock_prompt_arn"
+      ],
+      "module": "wave3b-bedrock",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "bedrock_prompt_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Text prompt with one variant."
+    },
+    "AWS::Bedrock::Flow": {
+      "cfn_type": "AWS::Bedrock::Flow",
+      "entity_type": "aws_core__aws_bedrock_flow",
+      "terraform": "aws_bedrockagent_flow",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "name",
+        "bedrock_flow_arn"
+      ],
+      "module": "wave3b-bedrock",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "bedrock_flow_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Flow of an input node wired to an output node."
+    },
+    "AWS::Bedrock::ApplicationInferenceProfile": {
+      "cfn_type": "AWS::Bedrock::ApplicationInferenceProfile",
+      "entity_type": "aws_core__aws_bedrock_application_inference_profile",
+      "terraform": "aws_bedrock_inference_profile",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "bedrock_application_inference_profile_arn"
+      ],
+      "module": "wave3b-bedrock",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "bedrock_application_inference_profile_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Application inference profile copied from Nova Lite."
     }
   }
 }
