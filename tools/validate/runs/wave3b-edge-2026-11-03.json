@@ -1,0 +1,404 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 27
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (29 destroyed). Checked directly afterwards: no user pool, identity pool, REST or HTTP API, API key, usage plan, hosted zone, health check, CIDR collection, traffic policy, IP set or rule named for the run remains. The tagging API still listed the run's user pool ARN a minute later, but DescribeUserPool answers ResourceNotFound for it, so it is a stale index entry.",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first run (w3g11030854) created 23 of 30 resources and was destroyed: CreateRestApi refused the edge endpoint type in GovCloud, CreateTrafficPolicy refused the first document, and CreateWebACL is closed to new classic web ACLs. The REST API is now regional, the document is corrected, and the web ACL is not seeded. The types the module does not seed are listed in wave3b-edge/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3g11030859",
+  "seeds": "tools/seed/wave3b-edge",
+  "wave": "3b-edge"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::ApiGateway::ApiKey",
+   "compared_fields": [
+    "api_key_arn",
+    "enabled",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_apigateway_api_key",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ApiGateway::Authorizer",
+   "compared_fields": [
+    "api_kind",
+    "authorizer_arn",
+    "authorizer_type",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_apigateway_authorizer",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "AUTHORIZES_API__aws_core->aws_core__aws_apigateway_http_api"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ApiGateway::ClientCertificate",
+   "compared_fields": [
+    "client_certificate_arn",
+    "client_certificate_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_apigateway_client_certificate",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ApiGatewayV2::Api",
+   "compared_fields": [
+    "api_arn",
+    "api_endpoint",
+    "api_id",
+    "name",
+    "protocol_type"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_apigateway_http_api",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "AUTHENTICATES_VIA_USER_POOL__aws_core->aws_core__aws_cognito_user_pool"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ApiGateway::RestApi",
+   "compared_fields": [
+    "name",
+    "rest_api_arn",
+    "rest_api_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_apigateway_rest_api",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ApiGateway::Stage",
+   "compared_fields": [
+    "api_kind",
+    "deployment_id",
+    "name",
+    "stage_arn",
+    "stage_name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_apigateway_stage",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "DEPLOYS_API__aws_core->aws_core__aws_apigateway_http_api"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ApiGateway::UsagePlan",
+   "compared_fields": [
+    "name",
+    "quota_limit",
+    "quota_period",
+    "throttle_burst_limit",
+    "throttle_rate_limit",
+    "usage_plan_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_apigateway_usage_plan",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Cognito::IdentityPool",
+   "compared_fields": [
+    "allow_unauthenticated_identities",
+    "identity_pool_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cognito_identity_pool",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Cognito::UserPool",
+   "compared_fields": [
+    "mfa_configuration",
+    "name",
+    "pool_arn",
+    "pool_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cognito_user_pool",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Cognito::UserPoolClient",
+   "compared_fields": [
+    "client_id",
+    "client_key",
+    "has_secret",
+    "name",
+    "user_pool_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_cognito_user_pool_client",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Cognito::UserPoolDomain",
+   "compared_fields": [
+    "domain_key",
+    "name",
+    "user_pool_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_cognito_user_pool_domain",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Cognito::UserPoolGroup",
+   "compared_fields": [
+    "group_key",
+    "name",
+    "precedence",
+    "user_pool_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_cognito_user_pool_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Cognito::UserPoolResourceServer",
+   "compared_fields": [
+    "identifier",
+    "name",
+    "server_key",
+    "user_pool_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_cognito_user_pool_resource_server",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53::CidrCollection",
+   "compared_fields": [
+    "name",
+    "route53_cidr_collection_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53_cidr_collection",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53::HealthCheck",
+   "compared_fields": [
+    "route53_health_check_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53_health_check",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53::TrafficPolicy",
+   "compared_fields": [
+    "name",
+    "route53_traffic_policy_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53_traffic_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53::HostedZone",
+   "compared_fields": [
+    "hosted_zone_id",
+    "name",
+    "private_zone"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53_zone",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::ByteMatchSet",
+   "compared_fields": [
+    "name",
+    "wafregional_byte_match_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_byte_match_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::GeoMatchSet",
+   "compared_fields": [
+    "name",
+    "wafregional_geo_match_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_geo_match_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::IPSet",
+   "compared_fields": [
+    "name",
+    "wafregional_ip_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_ip_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::RateBasedRule",
+   "compared_fields": [
+    "name",
+    "wafregional_rate_based_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_rate_based_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::RegexPatternSet",
+   "compared_fields": [
+    "name",
+    "wafregional_regex_pattern_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_regex_pattern_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::Rule",
+   "compared_fields": [
+    "name",
+    "wafregional_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::SizeConstraintSet",
+   "compared_fields": [
+    "name",
+    "wafregional_size_constraint_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_size_constraint_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::SqlInjectionMatchSet",
+   "compared_fields": [
+    "name",
+    "wafregional_sql_injection_match_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_sql_injection_match_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFRegional::XssMatchSet",
+   "compared_fields": [
+    "name",
+    "wafregional_xss_match_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafregional_xss_match_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-edge"
+}
