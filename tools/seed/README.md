@@ -6,6 +6,7 @@ of the plugin wheel.
 
 | File | What it is |
 | --- | --- |
+| `wave3b-bedrock/` | Terraform root for wave 3b, Bedrock (free): a guardrail, a prompt, a flow and an application inference profile; nothing is invoked. Prefix `w3m`, tag `tap-seed=wave3b-bedrock`; `wave3b-bedrock/cost.md` |
 | `wave3b-compute/` | Terraform root for wave 3b, compute and network (cheap, about $0.18 an hour): ECS, EFS, application and classic load balancers, VPC endpoints and Transit Gateway. Prefix `w3k`, tag `tap-seed=wave3b-compute`; `wave3b-compute/cost.md` |
 | `wave3b-edge/` | Terraform root for wave 3b, edge services (about $0.004 an hour): Cognito, API Gateway (REST and HTTP), Route 53 and WAF Classic. Prefix `w3g`, tag `tap-seed=wave3b-edge`; `wave3b-edge/cost.md` |
 | `wave3b-ops/` | Terraform root for wave 3b, operations (free while idle): 16 types across SNS, CloudWatch, Logs, EventBridge, Systems Manager, CloudFormation, Auto Scaling and ECR. Prefix `w3p`, tag `tap-seed=wave3b-ops`; `wave3b-ops/cost.md` |
