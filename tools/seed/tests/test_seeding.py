@@ -117,7 +117,7 @@ def test_nothing_outside_the_state_is_deleted_by_a_destroy():
 
 @pytest.mark.parametrize("module", MODULES)
 def test_every_iam_identity_waits_for_the_partition_guard(module):
-    for kind in ("role", "user", "group", "policy"):
+    for kind in ("role", "user", "group", "policy", "saml_provider"):
         for body in re.findall(rf'^resource "aws_iam_{kind}" "[^"]+" \{{\n(.*?)^\}}', TF_BY_MODULE[module], re.M | re.S):
             assert "depends_on = [terraform_data.guard]" in body, (module, kind)
     if module == "wave1":

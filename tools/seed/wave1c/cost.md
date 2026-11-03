@@ -12,6 +12,10 @@ Time box 1 hour (the provider is created in under a minute; E)
 
 Seeded: `IAM::SAMLProvider`. Its metadata is a public self-signed certificate for `seed-idp.example.invalid`; the private
 key was never written to disk (it was sent to /dev/null when the certificate was made).
+Certificate: subject `CN=seed-idp.example.invalid, O=tap seed throwaway`, RSA 2048, self-signed, valid 2026-11-03 to 2036-10-31,
+SHA-256 fingerprint `A7:BC:73:24:21:88:A6:17:2E:59:C8:BA:67:61:57:DD:45:97:DB:DB:3A:F5:6E:45:4F:4A:C5:52:18:38:70:B5`. Made with
+`openssl req -x509 -newkey rsa:2048 -nodes -keyout /dev/null -subj "/CN=seed-idp.example.invalid/O=tap seed throwaway" -days 3650`.
+Check it with `openssl x509 -inform DER -noout -subject -dates -fingerprint -sha256` on the decoded certificate body.
 
 Not seeded, and why:
 

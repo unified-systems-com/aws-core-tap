@@ -9,7 +9,7 @@
   "date": "2026-11-02",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "IAM SAML provider only. Second run: after the AI review of the PR asked for the certificate's key custody to be settled, the certificate was regenerated with its private key sent to /dev/null (never written to disk) and the cycle was repeated; the first run (same result) used a certificate whose key the authoring agent reported destroying. An earlier compare attempt failed before comparing anything because the stack's database container had been removed by a disk cleanup. Not seeded: the Access Analyzer archive rule (the unused-access analyzer it needs is billed per role and user analysed, left until that spend is approved) and the types listed in wave1c/cost.md.",
+  "note": "IAM SAML provider only. Second run of the same cycle, with a certificate regenerated so that its private key was sent to /dev/null and never written to disk (the first run's certificate came from a key the authoring agent reported destroying, which cannot be checked). The certificate's subject, validity and SHA-256 fingerprint are in wave1c/cost.md. An earlier compare attempt failed before comparing anything because the stack's database container had been removed by a disk cleanup. Not seeded: the Access Analyzer archive rule (the unused-access analyzer it needs is billed per role and user analysed, left until that spend is approved) and the types listed in wave1c/cost.md.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
   "run_id": "w1c11022108",
