@@ -98,6 +98,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
+| req-aws-collector-selection | [Collection Selection](#collection-selection) | Proposed | A run collects only the types and accounts the credential's `include_types`, `exclude_types` and `accounts_allowed` select; an unselected type or account is unobserved, never empty, and retires nothing; the effective selection is echoed in every run |
 | req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
 | req-aws-collector-outcome | [Listing Outcomes And Client Posture](#listing-outcomes-and-client-posture) | Approved for Development | A listing that yields nothing for a named reason that is not a failed call (`not_configured`, `unsupported_in_partition`, `throttled`) is a recorded result and never a complete-empty observation; one `Config` for timeouts and retries |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
@@ -1083,6 +1084,81 @@ resilience shape, implemented as TAP code against `record_warn`.
 | req-aws-collector-regions-3 | Bounded Throttle Backoff | Approved for Development | Throttling retries with bounded backoff; unbroken throttle fails per protocol. | Realised by `req-aws-collector-outcome-4` and `-6`: the adaptive retry budget, then the named `throttled` outcome. |
 | req-aws-collector-regions-4 | No Data Corruption On Skip | Approved for Development | A skipped region/resource never alters previously collected data. | v0 has no deletes; reaping must honor this. |
 
+### Collection Selection
+----
+RID: `req-aws-collector-selection`
+
+Status: `Proposed`
+
+A run can be narrowed to chosen types and chosen accounts. Requested by George on 2026-11-03 for field testing;
+the keys live in the credential's `data` for now (`req-aws-core-secret-selection`, which defines the grammar of a
+type pattern and of an account reference). Design only: nothing here is built or run. It carries the type
+selection that `req-aws-core-livevalidation-selection` first proposed for validation, with one change of
+grammar (`<service>:<entity>`, not an `fnmatch` pattern over the raw entity type).
+
+#### Type Selection
+
+A manifest entry is **selected** when it matches at least one pattern of `include_types` (or `include_types` is
+absent) and matches no pattern of `exclude_types`. Exclusion wins. The match string is `<service>:<entity>`.
+
+- An unselected entry makes no call: it is absent from the run's call ledger as well as from the batch.
+- A parent that a selected type fans out from (a `per` or `bind` source) is read as the input of that type and
+  emits nothing unless it is itself selected.
+- Some things are not manifest entries and are never filtered: the per-(account, region) footprints every
+  regional containment hangs from, and the run's own account node.
+- An `include_types` pattern that matches no manifest entry stops the run before any call, naming the pattern
+  (`SELECTION_PATTERN_UNMATCHED`). An `exclude_types` pattern that matches none records a `warn` and the run goes on.
+
+**Unselected is unobserved, not empty.** A type, a region or an account the run did not read gets no
+completeness surface, no retirement candidate and no "no longer seen" signal from this run, and the keep-absent
+upsert semantics (tap#1128) hold for every row of it. Retirement candidates arise only from what the run read.
+This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
+
+#### Account Selection
+
+- **Single account.** When `accounts_allowed` is set, the account `GetCallerIdentity` resolves must be in it, or
+  the run fails visibly before any collection, as an `expected_account_id` mismatch does today
+  (`account_mismatch_error`).
+- **Fan-out** (`req-aws-collector-fanout`). The member set is the organization's `ACTIVE` members from this run's
+  `ListAccounts`, restricted to `accounts_allowed` when set, minus the secret's `exclude_account_ids`. Exclusion
+  wins. Every listed account still has exactly one `ACCOUNT_RESULT`; one the selection left out is
+  `skipped` with reason `not_selected`, and is a member that was not collected for `req-aws-collector-fanout-7`
+  (it records its `scope_authorized: false` surfaces and no more). `max_member_accounts` bounds the **selected**
+  member count; an explicit list is not a silent prefix.
+- **An account the organization does not list.** An `accounts_allowed` entry that is not an `ACTIVE` member of
+  the organization (and is not the base account) stops the run before any member is assumed
+  (`SELECTION_ACCOUNT_UNKNOWN`), naming the id. A typo must not narrow a run silently.
+- **The base account.** When `accounts_allowed` is set and omits the base account, the base account's own
+  resources are not collected. The organization tree is still read, because fan-out needs it to list members.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-selection-1 | Include, Exclude, Exclusion Wins | Proposed | An entry is read exactly when it matches an include pattern (or none is given) and no exclude pattern; a test over the committed manifest asserts the selected set for `ec2:*`, `eks:*`, `*:*_policy`, an include with an overlapping exclude, and neither. | |
+| req-aws-collector-selection-2 | Unselected Makes No Call | Proposed | With a selection that excludes a service, the fake-client harness records zero calls for that service and the run's call ledger holds none. | |
+| req-aws-collector-selection-3 | Anchors Are Never Filtered | Proposed | With `include_types: ["ec2:vpc"]`, the account and region footprint nodes and the account node are still emitted. | |
+| req-aws-collector-selection-4 | Typos Fail Loudly | Proposed | An include pattern matching no entry stops the run before any call (`SELECTION_PATTERN_UNMATCHED`); an exclude pattern matching none warns and the run goes on. | |
+| req-aws-collector-selection-5 | Unselected Is Unobserved | Proposed | A run restricted to a subset of types or accounts writes no completeness surface, no retirement candidate and no tombstone for what it did not read, and every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts those rows and surfaces are untouched. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
+| req-aws-collector-selection-6 | Single-Account Assertion | Proposed | A resolved account outside `accounts_allowed` fails the run before collection; one inside it proceeds. | |
+| req-aws-collector-selection-7 | Fan-Out Member Set | Proposed | The member set is `ACTIVE` members, restricted to `accounts_allowed`, minus the base account and `exclude_account_ids`; a member in both lists is excluded; each left-out listed account has one `ACCOUNT_RESULT` of `skipped`/`not_selected`; `max_member_accounts` bounds the selected count. | Amends `req-aws-collector-fanout-1`, `-5` and `-10`. |
+| req-aws-collector-selection-8 | Unknown Account Stops The Run | Proposed | An `accounts_allowed` id that is not an `ACTIVE` member or the base account stops the run before any `AssumeRole` (`SELECTION_ACCOUNT_UNKNOWN`). | |
+| req-aws-collector-selection-9 | Effective Selection Is Echoed | Proposed | The run's start message and its `CollectionJob.results` carry the effective selection: the type patterns, the normalised account ids, and counts (entries total, selected, skipped by type selection; accounts listed, selected, skipped). One aggregated info line, not one per skipped entry. | The secret cannot be inspected, so the run is where an auditor reads the scope it had. Account ids are runtime output; none is committed. |
+| req-aws-collector-selection-10 | Base Account Omitted | Proposed | With `accounts_allowed` set and omitting the base account, no base-account resource is collected, the organization tree is read, and the base batch carries the tree. | See the open question below. |
+
+#### Open Questions
+
+- **Edges to an unselected type.** An instance's edge to its role, when `iam:*` is not selected, names an endpoint
+  the run did not read. The engine resolves endpoints by natural key (`req-aws-collector-edges`); an endpoint of
+  an unselected type is the same case as one in a denied listing. Which of keep, defer or drop is right is pinned
+  by a test before this requirement is approved, not assumed here.
+- **The organization tree under a type selection.** The tree and the landing-zone readers are not manifest
+  entries, so `include_types` does not narrow them. Whether it should is not settled.
+- **Vocabulary.** The type pattern uses botocore service names. An alias table for IAM prefixes
+  (`elasticloadbalancing:*`) is possible and not specified.
+- **An exclude pattern that matches nothing** warns; an include pattern that matches nothing stops the run. If
+  field use shows excludes silently widening a run after a manifest rename, the exclude case becomes an error too.
+
 ### AWS Partitions
 ----
 RID: `req-aws-collector-partition`
@@ -1883,7 +1959,7 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-fanout-1 | Organization Listing Drives Fan-Out | Proposed | The member set is this run's organization-wide `ListAccounts`, `ACTIVE` members only, minus the base account and the secret's exclude list. It is never read from grid state, and fan-out does not run unless that listing read to its end and the base account is the organization's `MasterAccountId`. | |
+| req-aws-collector-fanout-1 | Organization Listing Drives Fan-Out | Proposed | The member set is this run's organization-wide `ListAccounts`, `ACTIVE` members only, minus the base account and the secret's exclude list, restricted to the secret's `accounts_allowed` when set (`req-aws-collector-selection-7`). It is never read from grid state, and fan-out does not run unless that listing read to its end and the base account is the organization's `MasterAccountId`. | |
 | req-aws-collector-fanout-2 | Partition-Aware Role ARN | Proposed | The member role ARN is `arn:<run partition>:iam::<member>:role/<member_role_name>`, with the partition from the run's resolved partition; no literal `arn:aws:` appears in the fan-out path. | A GovCloud test captures `arn:aws-us-gov:iam::…` on the wire, as `test_govcloud.py:351-399` does for the single role. |
 | req-aws-collector-fanout-3 | Assert-On-Land Per Member | Proposed | After `AssumeRole`, the member session's `GetCallerIdentity` account equals the member id, or the member is skipped as `MEMBER_ACCOUNT_MISMATCH` and nothing from it is written. | Reuses `account_mismatch_error`. |
 | req-aws-collector-fanout-4 | Member Failure Is Local | Proposed | A denied or failed `AssumeRole`, a member identity mismatch, or a member's rejected batch is recorded as that account's outcome and the run continues. A base-credential, partition or base-identity failure, or a rejected base batch (`-21`), still aborts. | |
@@ -1892,7 +1968,7 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-7 | Surfaces Per Account | Proposed | Completeness surfaces are recorded per account against that account's own batch. A listed member that was not collected records, for each containment edge type declared on its `aws_account` node (observed this run through the base batch's tree envelope), a surface with `scope_authorized: false` and the reason, never omitting one; it records no surface for parents below the account, which this run did not observe. With no submitted batch those surfaces carry `applied_batches: []`; with a rejected batch they cite it, so core derives `applied: false` either way. | Consistent with `req-aws-core-contained-type-triple` (no surface for an unobserved parent). Core counts only `scope_authorized: true` surfaces as in scope (`tap_grid/candidates.py` `_scope_of`), so recording a not-authorized surface and omitting one read the same to withdrawal: core still derives `scope_withdrawn` candidates for the member's previous surfaces, and the falsifier is the backstop (`-9`). The not-authorized surfaces carry the reason on the record. Nothing is armed (unified-systems-com/aws-core-tap#14). |
 | req-aws-collector-fanout-8 | Account Node Merged In A Run | Proposed | For every account both the organization tree and a member collection describe in one run, the member's batch carries one envelope whose fields are the union by source (the org-sourced values from this run's tree plus the account-sourced ones); neither reader's fields are dropped or blanked, and the base batch's earlier tree envelope is superseded by it. | Generalizes `collector.py:635-653`, which keeps the tree node and drops the singleton's fields. |
 | req-aws-collector-fanout-9 | Falsifier Reach Per Account | Proposed | A falsifier resolves the candidate's account credentials through the base-then-member-role path, with assert-on-land; an unreachable account is `UNDETERMINED(scope_unknown)`. | Today every falsifier resolves the one secret (`falsifiers.py:449-485`). |
-| req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
+| req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a selected member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
 | req-aws-collector-fanout-11 | Ledgered Per Account | Proposed | Every `AssumeRole` and every member-session call is in the run's call ledger tagged with the member account id. | `req-aws-core-secret-aws-assumed-role-6`. |
 | req-aws-collector-fanout-12 | Dedicated Read-Only Member Role | Proposed | The member role is a dedicated role trusting only the collector's management-account principal with a required External ID, whose only permissions are the repo-owned read-only policy of `-17`; a test fails on a collector call in a member that the policy does not grant. `OrganizationAccountAccessRole` and `AWSControlTowerExecution` are never assumed by default. | Ruling 2026-10-01 (dedicated read-only role). How read-only is enforced is refined by `-17`: no AWS-managed policy. |
 | req-aws-collector-fanout-13 | Partition-Neutral Handoff Templates | Proposed | Every committed handoff artifact builds its ARNs from the deploying partition: no `arn:aws:` literal in a template value, parameter pattern or policy ARN decides the partition, and the README shows a GovCloud example beside each commercial one. | In scope for this step by the 2026-10-01 ruling; overlaps unified-systems-com/aws-core-tap#51, which named the same templates. |

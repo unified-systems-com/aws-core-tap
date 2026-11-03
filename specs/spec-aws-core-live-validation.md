@@ -81,8 +81,9 @@ RID: `req-aws-core-livevalidation-selection`
 
 Status: `Proposed`
 
-The collector accepts `include_types` and `exclude_types` in its run configuration: lists of `fnmatch`
-patterns over entity types. With neither, behaviour is unchanged. An entry whose type is excluded is not
+Type selection is specified by `req-aws-collector-selection`: `include_types` and `exclude_types`, held in the
+credential's `data` (`req-aws-core-secret-selection`), patterns over `<service>:<entity>`. This section keeps what
+validation needs of it. With neither key, behaviour is unchanged. An entry whose type is excluded is not
 read. A parent that a selected type fans out from (a `per` or `bind` source) is read as the input of the
 selected type and emits nothing unless it is itself selected.
 

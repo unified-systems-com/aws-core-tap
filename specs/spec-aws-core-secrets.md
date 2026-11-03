@@ -25,6 +25,7 @@ concrete instance of the consumer-owned-shape contract.
 | req-aws-core-secret-aws-static | [AWS Static Access Key Kind](#aws-static-access-key-kind) | Approved for Development | `aws_static_access_key` `data` shape + region scope; relocated from `req-tap-cares-secrets-aws-static` |
 | req-aws-core-secret-aws-assumed-role | [AWS Assumed-Role Kind (cross-account)](#aws-assumed-role-kind-cross-account) | Proposed | `aws_assumed_role` `data` shape; STS AssumeRole + mandatory External ID for cross-account read-only collection; supersedes the deferral in `req-aws-core-secret-aws-static-3` |
 | req-aws-core-secret-member-fanout | [Member Fan-Out Settings](#member-fan-out-settings) | Proposed | Optional `data.member_fanout` block on the static kind: the dedicated member role's name, its required External ID, an exclude list and a cap; consumed by `req-aws-collector-fanout` |
+| req-aws-core-secret-selection | [Collection Selection Settings](#collection-selection-settings) | Proposed | Optional `data.include_types`, `data.exclude_types` and `data.accounts_allowed` on both kinds: which types and which accounts a run collects; consumed by `req-aws-collector-selection` |
 
 ## AWS Static Access Key Kind
 ----
@@ -288,3 +289,54 @@ criteria, with their secret and template inputs defined. The candidates are:
 | req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, deploys in `aws-us-gov` without edits, and attaches only the repo-owned `member-read-policy.json`, never an AWS-managed policy. | `req-aws-collector-fanout-13`, `-17`; the same templates unified-systems-com/aws-core-tap#51 names. |
 | req-aws-core-secret-member-fanout-6 | Redacted | Proposed | `external_id` is never logged, matching the assumed-role kind. | |
 | req-aws-core-secret-member-fanout-7 | External ID Required | Proposed | `enabled: true` without a non-empty `external_id` fails validation, and the collector never calls `AssumeRole` into a member without it. | Ruling 2026-10-01; mirrors `req-aws-core-secret-aws-assumed-role-2`. |
+
+## Collection Selection Settings
+----
+RID: `req-aws-core-secret-selection`
+
+Status: `Proposed`
+
+Requested by George on 2026-11-03 in conversation, for field testing: a run must be narrowable to chosen
+types and chosen accounts, and the collector has no configuration of its own to hold that. Until it does, the
+selection rides the credential's `data` as optional keys, beside `regions_allowed`, which is scope already held
+there. Design only: nothing in this section is built or run, and it has not been ruled as normative.
+
+Both kinds (`aws_static_access_key`, `aws_assumed_role`) gain three optional keys, defined once as a shared
+schema fragment as the region scope is (`_REGION_SCOPE_PROPS`), so the two schemas cannot drift:
+
+- `data.include_types` — non-empty array of type patterns. Absent means every type.
+- `data.exclude_types` — non-empty array of type patterns. Absent means none.
+- `data.accounts_allowed` — non-empty array of account references. Absent means every account the run can reach.
+
+**Type pattern.** `<service>:<entity>`, both halves required, matching `^[a-z0-9-]+:[a-z0-9_*?]+$`, with `*`
+and `?` as the only glob characters (no character classes). `<service>` is the manifest entry's `service`
+(`ec2`, `eks`, `elbv2`, `sso-admin`: the botocore service name, which is not always the IAM prefix, for example
+`elbv2` against `elasticloadbalancing`). `<entity>` is the entry's `entity_type` with the `aws_core__aws_` prefix
+removed (`ec2:vpc`, `eks:eks_cluster`). `ec2:*` selects every EC2 entry, `*:*_policy` every entry whose entity
+ends in `_policy`, `*:*` everything. Matching is case-sensitive.
+
+**Account reference.** Either a 12-digit account id, or an ARN. An ARN names an account by its account field
+(`arn:<partition>:iam::<account>:role/x`), except an Organizations account ARN
+(`arn:<partition>:organizations::<management account>:account/<org id>/<account>`), which names the account in
+its last segment. An ARN is refused at validation when it contains a wildcard, has an empty account field (an
+S3 bucket ARN), or carries a partition other than the one the run's regions resolve to. Every reference is
+normalised to a 12-digit id, de-duplicated and sorted before use.
+
+#### Transition
+
+Non-normative. These keys describe scope, not credentials, and sit in the secret only because the collector has
+nowhere else to read them. A secret is read once at start-up (restart to rotate), so changing a selection means
+restarting the worker, and it cannot be inspected by the operators who would want to audit it; the collector
+therefore echoes the effective selection in every run (`req-aws-collector-selection-9`). When the collector gains
+its own configuration, these three names and their meanings move there unchanged.
+
+### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-secret-selection-1 | Optional, Additive | Proposed | A secret without any of the three keys validates and runs exactly as before. | |
+| req-aws-core-secret-selection-2 | Shared Fragment, Both Kinds | Proposed | Both kinds accept the same three keys from one shared fragment, and the strict `additionalProperties: false` schemas still refuse any other key; a test builds both schemas and asserts the fragment is the same object. | The region-scope precedent. |
+| req-aws-core-secret-selection-3 | Pattern Grammar | Proposed | A type pattern that does not match the grammar is refused at validation; an empty `include_types`, `exclude_types` or `accounts_allowed` array is refused. A test feeds a missing colon, an uppercase letter, a character class and an empty array. | A typo must fail where the operator can see it. |
+| req-aws-core-secret-selection-4 | Account Forms | Proposed | An id of 12 digits and an ARN naming an account validate and normalise to the same id; an ARN with a wildcard, an empty account field or another partition is refused; duplicates collapse. | A test covers an IAM role ARN, an Organizations account ARN and an S3 ARN. |
+| req-aws-core-secret-selection-5 | No Contradiction With The Assertion | Proposed | When `expected_account_id` is also set, it must be in the normalised `accounts_allowed`, or validation refuses the secret. | Two statements about the same scope that disagree are an error, not a precedence rule. |
+| req-aws-core-secret-selection-6 | Not Logged As Credential | Proposed | The three keys are scope, not secret material: they are echoed in the run record (`req-aws-collector-selection-9`). The credential values beside them stay redacted as before. | |
