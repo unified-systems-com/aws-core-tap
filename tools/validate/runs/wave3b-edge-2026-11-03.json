@@ -9,10 +9,10 @@
   "date": "2026-11-03",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "Second run. The first run (w3g11030854) created 23 of 30 resources and was destroyed: CreateRestApi refused the edge endpoint type in GovCloud, CreateTrafficPolicy refused the first document, and CreateWebACL is closed to new classic web ACLs. The REST API is now regional, the document is corrected, and the web ACL is not seeded. The types the module does not seed are listed in wave3b-edge/cost.md.",
+  "note": "Second run. The first run (w3g11030854) created 23 of 30 resources and was destroyed: CreateRestApi refused the edge endpoint type in GovCloud, CreateTrafficPolicy refused the first document, and CreateWebACL is closed to new classic web ACLs. The REST API is now regional, the document is corrected, and the web ACL is not seeded. The types the module does not seed are listed in wave3b-edge/cost.md. The REST and HTTP APIs then switched off their default execute-api address and the stage turned on X-Ray tracing (a SonarCloud finding and a review finding), and the cycle was run a third time (w3g11030938): 27/27 pass, 29 destroyed, nothing named for the run left in Cognito, API Gateway, Route 53 or WAF Regional.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
-  "run_id": "w3g11030859",
+  "run_id": "w3g11030938",
   "seeds": "tools/seed/wave3b-edge",
   "wave": "3b-edge"
  },

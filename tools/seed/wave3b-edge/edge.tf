@@ -50,6 +50,9 @@ resource "aws_cognito_identity_pool" "seed" {
 resource "aws_api_gateway_rest_api" "seed" {
   name = "${local.prefix}-rest"
 
+  # The default execute-api address is switched off, so the mock method cannot be called by anyone.
+  disable_execute_api_endpoint = true
+
   endpoint_configuration {
     types = ["REGIONAL"]
   }
@@ -91,6 +94,8 @@ resource "aws_api_gateway_stage" "seed" {
   rest_api_id   = aws_api_gateway_rest_api.seed.id
   deployment_id = aws_api_gateway_deployment.seed.id
   stage_name    = "seed"
+
+  xray_tracing_enabled = true
 }
 
 resource "aws_api_gateway_authorizer" "seed" {
@@ -133,6 +138,8 @@ resource "aws_api_gateway_client_certificate" "seed" {
 resource "aws_apigatewayv2_api" "seed" {
   name          = "${local.prefix}-http"
   protocol_type = "HTTP"
+
+  disable_execute_api_endpoint = true
 
   depends_on = [terraform_data.guard]
 }
