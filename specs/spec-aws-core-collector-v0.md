@@ -1120,7 +1120,7 @@ edge authority claim for a source it did not read. This is the course `-21` take
 for the same reason. The keep-absent upsert semantics (tap#1128) hold for every row of an unselected type. The
 cost is stated: a selected run retires nothing, even within what it read; retirement comes from runs that
 select everything. Retiring the old scope on purpose, by narrowing it, is not offered through selection (open
-question below). This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
+question below). Retirement *within* a selection is the flag `retire_within_selection` (below), which waits on core. This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
 
 #### Account Selection
 
@@ -1166,6 +1166,31 @@ question below). This is the rule `req-aws-core-livevalidation-lifecycle`'s seco
 | req-aws-collector-selection-9 | Effective Selection Is Echoed | Proposed | The run's start message and its `CollectionJob.results` carry the effective selection: the type patterns, the normalised account ids, and counts (entries total, selected, skipped by type selection; accounts listed, selected, skipped). One aggregated info line, not one per skipped entry. | The secret cannot be inspected, so the run is where an auditor reads the scope it had. Account ids are runtime output; none is committed. |
 | req-aws-collector-selection-10 | Base Account Omitted | Proposed | With `accounts_allowed` set and omitting the base account, no base-account resource is collected, the organization tree is read, and the base batch carries the tree. | See the open question below. |
 | req-aws-collector-selection-11 | Exclude List And Tree Distinguished | Proposed | A run with only `exclude_account_ids` records its statement and an excluded account carries the `fanout-7` surfaces; a run with `accounts_allowed` records no statement and no account, excluded or not, carries a surface; in both, every listed member has its org-sourced fields from the tree and no unselected member has an account-sourced field written. | Settles the first review's `exclude` question and the second's tree question. |
+
+#### Retirement Within The Selection
+
+`data.retire_within_selection` (`req-aws-core-secret-selection-7`, default `false`). Requested by George on 2026-11-03.
+With it `false`, a selected run states no completeness (above) and retires nothing. With it `true`, the run states its
+completeness **for the surfaces it read**, and also declares its selection in grid terms: the entity types it listed,
+and the account and region dimension values it covered. A surface the selection did not cover is then neither in the
+statement nor read as withdrawn.
+
+This cannot be done by the collector alone. Core derives withdrawal from the previous statement and the grid
+(`tap_grid/candidates.py` `_scope_of`, `derive_candidates`), and a producer cannot name a surface under a subject it
+did not read. It needs core to accept a selection block in the completeness statement and skip, with the reason
+`not_selected`, any previous surface outside it. Filed as unified-systems-com/tap#1156 (an L: whether the block is
+its own or part of the reach block of #683 is unsettled). Until core takes it, the flag is rejected at validation
+when `true`, so no operator sets a value the collector cannot honour.
+
+What the flag does and does not do. It **permits candidates** for what the run read; a candidate still passes the
+falsifier, the operator-armed authority and the budget (`spec-grid-reconcile.md`). Retirement stays off by default,
+per collector. Falsification is per candidate and needs no change: a candidate inside the selection is probed as any
+other, and nothing outside it is a candidate.
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-selection-12 | Retirement Only Within The Selection | Proposed | With `retire_within_selection: true` and core's selection block, a run records its statement for the surfaces it read and its selection; a previous surface outside the selection is skipped as `not_selected`, never `scope_withdrawn`; a surface inside it compares as today. Live: collect everything, delete one object of a selected type and one of an unselected type, run with the flag on, and only the first becomes a candidate (and retires, with authority armed). | Blocked on unified-systems-com/tap#1156. Extends `req-aws-core-livevalidation-lifecycle`'s negative control (2). |
+| req-aws-collector-selection-13 | Flag Refused Until Core Honours It | Proposed | Until core accepts the selection block, a secret with `retire_within_selection: true` fails validation with a message naming tap#1156; `false` or absent behaves as `-5`. | A flag that is accepted and silently ignored would read as "retirement is on". |
 
 #### Open Questions
 

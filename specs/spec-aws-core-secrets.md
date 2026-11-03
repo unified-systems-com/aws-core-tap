@@ -307,6 +307,9 @@ schema fragment as the region scope is (`_REGION_SCOPE_PROPS`), so the two schem
 - `data.include_types` — non-empty array of type patterns. Absent means every type.
 - `data.exclude_types` — non-empty array of type patterns. Absent means none.
 - `data.accounts_allowed` — non-empty array of account references. Absent means every account the run can reach.
+- `data.retire_within_selection` — boolean, default `false`. Meaningful only when one of the three keys above narrows the
+  run; see `req-aws-collector-selection-12`. It permits a selected run to state its completeness for what it read
+  (so that what it read can become a retirement candidate). It retires nothing by itself.
 
 **Type pattern.** `<service>:<entity>`, both halves required, matching `^[a-z0-9*?-]+:[a-z0-9_*?]+$`, with `*`
 and `?` as the only glob characters, allowed in either half (no character classes). `<service>` is the manifest entry's `service`
@@ -340,3 +343,4 @@ its own configuration, these three names and their meanings move there unchanged
 | req-aws-core-secret-selection-4 | Account Forms | Proposed | An id of 12 digits and an ARN naming an account validate and normalise to the same id; an ARN with a wildcard, an empty account field or another partition is refused; duplicates collapse. | A test covers an IAM role ARN, an Organizations account ARN and an S3 ARN. |
 | req-aws-core-secret-selection-5 | No Contradiction With The Assertion | Proposed | When `expected_account_id` is also set, it must be in the normalised `accounts_allowed`, or validation refuses the secret. | Two statements about the same scope that disagree are an error, not a precedence rule. |
 | req-aws-core-secret-selection-6 | Not Logged As Credential | Proposed | The three keys are scope, not secret material: they are echoed in the run record (`req-aws-collector-selection-9`). The credential values beside them stay redacted as before. | |
+| req-aws-core-secret-selection-7 | Retire Flag | Proposed | `retire_within_selection` is a boolean; absent is `false`; with no narrowing key set it is accepted and has no effect. A test asserts a non-boolean is refused. | Names what it does: it is not `retire`. Authority, budget and a falsifier are still required (`spec-grid-reconcile.md`). |
