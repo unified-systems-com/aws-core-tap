@@ -2379,6 +2379,435 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Regional web ACL, default allow, no rules, attached to nothing."
+    },
+    "AWS::SNS::Subscription": {
+      "cfn_type": "AWS::SNS::Subscription",
+      "entity_type": "aws_core__aws_sns_subscription",
+      "terraform": "aws_sns_topic_subscription",
+      "cost_class": "free",
+      "needs": [
+        "AWS::SNS::Topic"
+      ],
+      "compares": [
+        "subscription_arn",
+        "topic_arn",
+        "protocol"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "subscription_arn": "arn",
+        "topic_arn": "topic_arn",
+        "protocol": "protocol"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "SUBSCRIBES_TO_TOPIC__aws_core",
+          "target_type": "aws_core__aws_sns_topic",
+          "direction": "outbound",
+          "target": "topic_arn"
+        }
+      ],
+      "description": "SQS subscription of a queue in the same account to the module's topic."
+    },
+    "AWS::CloudWatch::Alarm": {
+      "cfn_type": "AWS::CloudWatch::Alarm",
+      "entity_type": "aws_core__aws_cloudwatch_alarm",
+      "terraform": "aws_cloudwatch_metric_alarm",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "alarm_arn",
+        "actions_enabled",
+        "metric_name",
+        "namespace",
+        "comparison_operator",
+        "threshold"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "alarm_name",
+        "alarm_arn": "arn",
+        "actions_enabled": "actions_enabled",
+        "metric_name": "metric_name",
+        "namespace": "namespace",
+        "comparison_operator": "comparison_operator",
+        "threshold": "threshold"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Alarm on the queue's visible-message count, actions disabled and none named. state_value is not compared (an alarm with no data reads INSUFFICIENT_DATA until its first period)."
+    },
+    "AWS::CloudWatch::CompositeAlarm": {
+      "cfn_type": "AWS::CloudWatch::CompositeAlarm",
+      "entity_type": "aws_core__aws_cloudwatch_composite_alarm",
+      "terraform": "aws_cloudwatch_composite_alarm",
+      "cost_class": "free",
+      "needs": [
+        "AWS::CloudWatch::Alarm"
+      ],
+      "compares": [
+        "name",
+        "alarm_arn",
+        "actions_enabled",
+        "alarm_rule"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "alarm_name",
+        "alarm_arn": "arn",
+        "actions_enabled": "actions_enabled",
+        "alarm_rule": "alarm_rule"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Composite alarm over the metric alarm, actions disabled."
+    },
+    "AWS::CloudWatch::Dashboard": {
+      "cfn_type": "AWS::CloudWatch::Dashboard",
+      "entity_type": "aws_core__aws_cloudwatch_dashboard",
+      "terraform": "aws_cloudwatch_dashboard",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "dashboard_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "dashboard_arn",
+      "tf_attrs": {
+        "name": "dashboard_name",
+        "dashboard_arn": "dashboard_arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Empty dashboard. The provider resource has no tags."
+    },
+    "AWS::Logs::MetricFilter": {
+      "cfn_type": "AWS::Logs::MetricFilter",
+      "entity_type": "aws_core__aws_logs_metric_filter",
+      "terraform": "aws_cloudwatch_log_metric_filter",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Logs::LogGroup"
+      ],
+      "compares": [
+        "name",
+        "filter_key",
+        "log_group_name",
+        "filter_pattern",
+        "metric_name",
+        "metric_namespace"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "log_group_name"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "filter_key": {
+          "concat": [
+            {
+              "path": "log_group_name"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        },
+        "log_group_name": "log_group_name",
+        "filter_pattern": "pattern",
+        "metric_name": "metric_transformation.0.name",
+        "metric_namespace": "metric_transformation.0.namespace"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "FILTERS_LOG_GROUP__aws_core",
+          "target_type": "aws_core__aws_cloudwatch_log_group",
+          "direction": "outbound",
+          "target": "log_group_name"
+        }
+      ],
+      "description": "Metric filter on the module's log group; its key is <log group>:<filter>."
+    },
+    "AWS::Logs::QueryDefinition": {
+      "cfn_type": "AWS::Logs::QueryDefinition",
+      "entity_type": "aws_core__aws_logs_query_definition",
+      "terraform": "aws_cloudwatch_query_definition",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "logs_query_definition_id"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "query_definition_id",
+      "tf_attrs": {
+        "name": "name",
+        "logs_query_definition_id": "query_definition_id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Saved Logs Insights query."
+    },
+    "AWS::Events::EventBus": {
+      "cfn_type": "AWS::Events::EventBus",
+      "entity_type": "aws_core__aws_eventbridge_event_bus",
+      "terraform": "aws_cloudwatch_event_bus",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "bus_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "bus_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Custom event bus."
+    },
+    "AWS::Events::Archive": {
+      "cfn_type": "AWS::Events::Archive",
+      "entity_type": "aws_core__aws_eventbridge_archive",
+      "terraform": "aws_cloudwatch_event_archive",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Events::EventBus"
+      ],
+      "compares": [
+        "name",
+        "archive_arn",
+        "event_source_arn",
+        "retention_days"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "archive_arn": "arn",
+        "event_source_arn": "event_source_arn",
+        "retention_days": "retention_days"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "ARCHIVES_EVENT_BUS__aws_core",
+          "target_type": "aws_core__aws_eventbridge_event_bus",
+          "direction": "outbound",
+          "target": "event_source_arn"
+        }
+      ],
+      "description": "One-day archive of the custom bus."
+    },
+    "AWS::SSM::Document": {
+      "cfn_type": "AWS::SSM::Document",
+      "entity_type": "aws_core__aws_ssm_document",
+      "terraform": "aws_ssm_document",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ssm_document_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "ssm_document_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Command document that runs `true`."
+    },
+    "AWS::SSM::MaintenanceWindow": {
+      "cfn_type": "AWS::SSM::MaintenanceWindow",
+      "entity_type": "aws_core__aws_ssm_maintenance_window",
+      "terraform": "aws_ssm_maintenance_window",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ssm_maintenance_window_id"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "ssm_maintenance_window_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Disabled weekly window."
+    },
+    "AWS::SSM::PatchBaseline": {
+      "cfn_type": "AWS::SSM::PatchBaseline",
+      "entity_type": "aws_core__aws_ssm_patch_baseline",
+      "terraform": "aws_ssm_patch_baseline",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ssm_patch_baseline_id"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "ssm_patch_baseline_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Amazon Linux 2023 security-patch baseline."
+    },
+    "AWS::SSM::Association": {
+      "cfn_type": "AWS::SSM::Association",
+      "entity_type": "aws_core__aws_ssm_association",
+      "terraform": "aws_ssm_association",
+      "cost_class": "free",
+      "needs": [
+        "AWS::SSM::Document"
+      ],
+      "compares": [
+        "name",
+        "ssm_association_id"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "association_id",
+      "tf_attrs": {
+        "name": "association_name",
+        "ssm_association_id": "association_id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Association of the document with a tag value that names the run, so no instance carries it and it never runs."
+    },
+    "AWS::CloudFormation::Stack": {
+      "cfn_type": "AWS::CloudFormation::Stack",
+      "entity_type": "aws_core__aws_cloudformation_stack",
+      "terraform": "aws_cloudformation_stack",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "cloudformation_stack_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "cloudformation_stack_arn": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Stack whose one resource is a wait condition handle."
+    },
+    "AWS::AutoScaling::AutoScalingGroup": {
+      "cfn_type": "AWS::AutoScaling::AutoScalingGroup",
+      "entity_type": "aws_core__aws_autoscaling_auto_scaling_group",
+      "terraform": "aws_autoscaling_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "auto_scaling_group_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "auto_scaling_group_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Group with minimum, desired and maximum capacity 0. The provider resource has no tags_all, so none are expected."
+    },
+    "AWS::AutoScaling::ScalingPolicy": {
+      "cfn_type": "AWS::AutoScaling::ScalingPolicy",
+      "entity_type": "aws_core__aws_autoscaling_scaling_policy",
+      "terraform": "aws_autoscaling_policy",
+      "cost_class": "free",
+      "needs": [
+        "AWS::AutoScaling::AutoScalingGroup"
+      ],
+      "compares": [
+        "name",
+        "autoscaling_scaling_policy_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "autoscaling_scaling_policy_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Simple scaling policy on the empty group."
+    },
+    "AWS::AutoScaling::ScheduledAction": {
+      "cfn_type": "AWS::AutoScaling::ScheduledAction",
+      "entity_type": "aws_core__aws_autoscaling_scheduled_action",
+      "terraform": "aws_autoscaling_schedule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::AutoScaling::AutoScalingGroup"
+      ],
+      "compares": [
+        "name",
+        "autoscaling_scheduled_action_arn"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "scheduled_action_name",
+        "autoscaling_scheduled_action_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Yearly scheduled action holding the group at 0."
+    },
+    "AWS::ECR::Repository": {
+      "cfn_type": "AWS::ECR::Repository",
+      "entity_type": "aws_core__aws_ecr_repository",
+      "terraform": "aws_ecr_repository",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "repository_arn",
+        "repository_uri"
+      ],
+      "module": "wave3b-ops",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "repository_arn": "arn",
+        "repository_uri": "repository_url"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Immutable-tag repository with scan on push; no image is pushed."
     }
   }
 }

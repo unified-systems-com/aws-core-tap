@@ -95,6 +95,8 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
     - a string: a dotted path into the resource's values
     - {"path": p, "strip_suffix": s}: the path, with a trailing suffix removed
     - {"const": v}: v
+    - {"concat": [spec, ...]}: the parts' values joined into one string (a key the collector builds, `<group>:<name>`);
+      None if any part is absent
     - {"all_true": {terraform, own, other, flags}, "absent": v}: True iff a resource of that type whose `other` equals
       this resource's `own` exists and every flag attribute on it is true; `v` (default False) if there is none
     - {"join": {terraform, own, other, target}}: the `target` (a spec) of every resource of that type whose
@@ -106,6 +108,9 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
         raise ExpectedError(f"bad value spec {spec!r}")
     if "const" in spec:
         return spec["const"]
+    if "concat" in spec:
+        parts = [evaluate(part, resource, resources) for part in spec["concat"]]
+        return None if any(not isinstance(part, str) or not part for part in parts) else "".join(parts)
     if "path" in spec:
         value = _get(resource, spec["path"])
         suffix = spec.get("strip_suffix")
