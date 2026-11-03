@@ -70,6 +70,8 @@ resource "aws_ecs_service" "seed" {
 
 # --- EFS: a file system, a mount target and an access point (empty; storage is billed by use) ---
 
+# An empty file system that lives for under an hour, with the AWS managed key: a key of its own would add a costed resource.
+# nosemgrep: terraform.aws.security.aws-efs-filesystem-encrypted-with-cmk.aws-efs-filesystem-encrypted-with-cmk
 resource "aws_efs_file_system" "seed" {
   creation_token = "${local.prefix}-efs"
   encrypted      = true
@@ -104,7 +106,7 @@ resource "aws_efs_access_point" "seed" {
 
 # --- Elastic Load Balancing: an internal application balancer with a target group, a listener and a rule; a classic one ---
 
-resource "aws_lb" "app" {
+resource "aws_lb" "app" { # NOSONAR: internal, no traffic ever reaches it, and access logs need a bucket with a service policy
   name               = substr("${local.prefix}-alb", 0, 32)
   internal           = true
   load_balancer_type = "application"
@@ -131,7 +133,8 @@ resource "aws_lb_target_group" "seed" {
 resource "aws_lb_listener" "seed" {
   load_balancer_arn = aws_lb.app.arn
   port              = 80
-  protocol          = "HTTP" # NOSONAR: an internal listener that answers a fixed response; nothing can reach it
+  # nosemgrep: terraform.aws.security.insecure-load-balancer-tls-version.insecure-load-balancer-tls-version
+  protocol = "HTTP" # NOSONAR: an internal listener that answers a fixed response; nothing can reach it
 
   default_action {
     type = "fixed-response"
@@ -165,7 +168,7 @@ resource "aws_lb_listener_rule" "seed" {
   }
 }
 
-resource "aws_elb" "classic" {
+resource "aws_elb" "classic" { # NOSONAR: internal, no traffic ever reaches it, and access logs need a bucket with a service policy
   name            = substr("${local.prefix}-elb", 0, 32)
   internal        = true
   subnets         = [aws_subnet.a.id, aws_subnet.b.id]
