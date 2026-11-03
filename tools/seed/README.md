@@ -6,6 +6,7 @@ of the plugin wheel.
 
 | File | What it is |
 | --- | --- |
+| `wave3b-edge/` | Terraform root for wave 3b, edge services (about $0.004 an hour): Cognito, API Gateway (REST and HTTP), Route 53 and WAF Classic. Prefix `w3g`, tag `tap-seed=wave3b-edge`; `wave3b-edge/cost.md` |
 | `wave3b-ops/` | Terraform root for wave 3b, operations (free while idle): 16 types across SNS, CloudWatch, Logs, EventBridge, Systems Manager, CloudFormation, Auto Scaling and ECR. Prefix `w3p`, tag `tap-seed=wave3b-ops`; `wave3b-ops/cost.md` |
 | `wave3-redshift/` | Terraform root for wave 3a, Redshift (costly): one `ra3.large` node and 10 more Redshift and Redshift Serverless types. Prefix `w3r`, tag `tap-seed=wave3-redshift`; `wave3-redshift/cost.md` |
 | `wave3-elasticache/` | Terraform root for wave 3a, ElastiCache: a Valkey replication group and a Redis OSS cluster, both `cache.t4g.micro`, a serverless cache and 4 more types. Prefix `w3c`, tag `tap-seed=wave3-elasticache`; `wave3-elasticache/cost.md` |

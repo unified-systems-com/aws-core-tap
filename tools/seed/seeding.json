@@ -2415,7 +2415,7 @@
       "cfn_type": "AWS::CloudWatch::Alarm",
       "entity_type": "aws_core__aws_cloudwatch_alarm",
       "terraform": "aws_cloudwatch_metric_alarm",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [],
       "compares": [
         "name",
@@ -2445,7 +2445,7 @@
       "cfn_type": "AWS::CloudWatch::CompositeAlarm",
       "entity_type": "aws_core__aws_cloudwatch_composite_alarm",
       "terraform": "aws_cloudwatch_composite_alarm",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [
         "AWS::CloudWatch::Alarm"
       ],
@@ -2808,6 +2808,764 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Immutable-tag repository with scan on push; no image is pushed."
+    },
+    "AWS::Cognito::UserPool": {
+      "cfn_type": "AWS::Cognito::UserPool",
+      "entity_type": "aws_core__aws_cognito_user_pool",
+      "terraform": "aws_cognito_user_pool",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "pool_id",
+        "pool_arn",
+        "mfa_configuration"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "pool_id": "id",
+        "pool_arn": "arn",
+        "mfa_configuration": "mfa_configuration"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "User pool with no users."
+    },
+    "AWS::Cognito::UserPoolClient": {
+      "cfn_type": "AWS::Cognito::UserPoolClient",
+      "entity_type": "aws_core__aws_cognito_user_pool_client",
+      "terraform": "aws_cognito_user_pool_client",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Cognito::UserPool"
+      ],
+      "compares": [
+        "name",
+        "client_key",
+        "user_pool_id",
+        "client_id",
+        "has_secret"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "user_pool_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "id"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "client_key": {
+          "concat": [
+            {
+              "path": "user_pool_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "id"
+            }
+          ]
+        },
+        "user_pool_id": "user_pool_id",
+        "client_id": "id",
+        "has_secret": {
+          "const": false
+        }
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "direction": "outbound",
+          "target": "user_pool_id"
+        }
+      ],
+      "description": "App client without a secret."
+    },
+    "AWS::Cognito::UserPoolDomain": {
+      "cfn_type": "AWS::Cognito::UserPoolDomain",
+      "entity_type": "aws_core__aws_cognito_user_pool_domain",
+      "terraform": "aws_cognito_user_pool_domain",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Cognito::UserPool"
+      ],
+      "compares": [
+        "name",
+        "domain_key",
+        "user_pool_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "user_pool_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "domain"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "domain",
+        "domain_key": {
+          "concat": [
+            {
+              "path": "user_pool_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "domain"
+            }
+          ]
+        },
+        "user_pool_id": "user_pool_id"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "direction": "outbound",
+          "target": "user_pool_id"
+        }
+      ],
+      "description": "Cognito-prefix domain."
+    },
+    "AWS::Cognito::UserPoolGroup": {
+      "cfn_type": "AWS::Cognito::UserPoolGroup",
+      "entity_type": "aws_core__aws_cognito_user_pool_group",
+      "terraform": "aws_cognito_user_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Cognito::UserPool"
+      ],
+      "compares": [
+        "name",
+        "group_key",
+        "user_pool_id",
+        "precedence"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "user_pool_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "group_key": {
+          "concat": [
+            {
+              "path": "user_pool_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        },
+        "user_pool_id": "user_pool_id",
+        "precedence": "precedence"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "direction": "outbound",
+          "target": "user_pool_id"
+        }
+      ],
+      "description": "Group with precedence 1 and no role."
+    },
+    "AWS::Cognito::UserPoolResourceServer": {
+      "cfn_type": "AWS::Cognito::UserPoolResourceServer",
+      "entity_type": "aws_core__aws_cognito_user_pool_resource_server",
+      "terraform": "aws_cognito_resource_server",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Cognito::UserPool"
+      ],
+      "compares": [
+        "name",
+        "server_key",
+        "user_pool_id",
+        "identifier"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "user_pool_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "identifier"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "server_key": {
+          "concat": [
+            {
+              "path": "user_pool_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "identifier"
+            }
+          ]
+        },
+        "user_pool_id": "user_pool_id",
+        "identifier": "identifier"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "BELONGS_TO_USER_POOL__aws_core",
+          "target_type": "aws_core__aws_cognito_user_pool",
+          "direction": "outbound",
+          "target": "user_pool_id"
+        }
+      ],
+      "description": "Resource server with one scope."
+    },
+    "AWS::Cognito::IdentityPool": {
+      "cfn_type": "AWS::Cognito::IdentityPool",
+      "entity_type": "aws_core__aws_cognito_identity_pool",
+      "terraform": "aws_cognito_identity_pool",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "identity_pool_id",
+        "allow_unauthenticated_identities"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "identity_pool_name",
+        "identity_pool_id": "id",
+        "allow_unauthenticated_identities": "allow_unauthenticated_identities"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Identity pool that allows no unauthenticated identities and has no provider."
+    },
+    "AWS::ApiGateway::RestApi": {
+      "cfn_type": "AWS::ApiGateway::RestApi",
+      "entity_type": "aws_core__aws_apigateway_rest_api",
+      "terraform": "aws_api_gateway_rest_api",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "rest_api_arn",
+        "rest_api_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "rest_api_arn": "arn",
+        "rest_api_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Regional REST API from an OpenAPI body with one mock GET (GovCloud has no edge-optimised endpoints)."
+    },
+    "AWS::ApiGateway::Stage": {
+      "cfn_type": "AWS::ApiGateway::Stage",
+      "entity_type": "aws_core__aws_apigateway_stage",
+      "terraform": "aws_api_gateway_stage",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ApiGateway::RestApi"
+      ],
+      "compares": [
+        "name",
+        "stage_arn",
+        "stage_name",
+        "deployment_id",
+        "api_kind"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "stage_name",
+        "stage_arn": "arn",
+        "stage_name": "stage_name",
+        "deployment_id": "deployment_id",
+        "api_kind": {
+          "const": "rest"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "DEPLOYS_API__aws_core",
+          "target_type": "aws_core__aws_apigateway_rest_api",
+          "direction": "outbound",
+          "target": "rest_api_id"
+        }
+      ],
+      "description": "Stage of the REST API."
+    },
+    "AWS::ApiGateway::Authorizer": {
+      "cfn_type": "AWS::ApiGateway::Authorizer",
+      "entity_type": "aws_core__aws_apigateway_authorizer",
+      "terraform": "aws_api_gateway_authorizer",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ApiGateway::RestApi",
+        "AWS::Cognito::UserPool"
+      ],
+      "compares": [
+        "name",
+        "authorizer_arn",
+        "api_kind",
+        "authorizer_type"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "authorizer_arn": "arn",
+        "api_kind": {
+          "const": "rest"
+        },
+        "authorizer_type": "type"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "AUTHORIZES_API__aws_core",
+          "target_type": "aws_core__aws_apigateway_rest_api",
+          "direction": "outbound",
+          "target": "rest_api_id"
+        }
+      ],
+      "description": "Cognito user pool authorizer on the REST API."
+    },
+    "AWS::ApiGateway::ApiKey": {
+      "cfn_type": "AWS::ApiGateway::ApiKey",
+      "entity_type": "aws_core__aws_apigateway_api_key",
+      "terraform": "aws_api_gateway_api_key",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "api_key_arn",
+        "enabled"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "api_key_arn": "arn",
+        "enabled": "enabled"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "API key; its value is never requested."
+    },
+    "AWS::ApiGateway::UsagePlan": {
+      "cfn_type": "AWS::ApiGateway::UsagePlan",
+      "entity_type": "aws_core__aws_apigateway_usage_plan",
+      "terraform": "aws_api_gateway_usage_plan",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ApiGateway::RestApi"
+      ],
+      "compares": [
+        "name",
+        "usage_plan_arn",
+        "quota_limit",
+        "quota_period",
+        "throttle_rate_limit",
+        "throttle_burst_limit"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "usage_plan_arn": "arn",
+        "quota_limit": "quota_settings.0.limit",
+        "quota_period": "quota_settings.0.period",
+        "throttle_rate_limit": "throttle_settings.0.rate_limit",
+        "throttle_burst_limit": "throttle_settings.0.burst_limit"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Usage plan on the stage with a daily quota and a throttle."
+    },
+    "AWS::ApiGateway::ClientCertificate": {
+      "cfn_type": "AWS::ApiGateway::ClientCertificate",
+      "entity_type": "aws_core__aws_apigateway_client_certificate",
+      "terraform": "aws_api_gateway_client_certificate",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "client_certificate_arn",
+        "client_certificate_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "client_certificate_arn": "arn",
+        "client_certificate_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Client certificate generated by API Gateway."
+    },
+    "AWS::ApiGatewayV2::Api": {
+      "cfn_type": "AWS::ApiGatewayV2::Api",
+      "entity_type": "aws_core__aws_apigateway_http_api",
+      "terraform": "aws_apigatewayv2_api",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "api_id",
+        "api_arn",
+        "api_endpoint",
+        "protocol_type"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "api_id": "id",
+        "api_arn": "arn",
+        "api_endpoint": "api_endpoint",
+        "protocol_type": "protocol_type"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "HTTP API with no route and no integration."
+    },
+    "AWS::Route53::HostedZone": {
+      "cfn_type": "AWS::Route53::HostedZone",
+      "entity_type": "aws_core__aws_route53_zone",
+      "terraform": "aws_route53_zone",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "hosted_zone_id",
+        "private_zone"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": {
+        "concat": [
+          {
+            "const": "/hostedzone/"
+          },
+          {
+            "path": "zone_id"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": {
+          "concat": [
+            {
+              "path": "name"
+            },
+            {
+              "const": "."
+            }
+          ]
+        },
+        "hosted_zone_id": {
+          "concat": [
+            {
+              "const": "/hostedzone/"
+            },
+            {
+              "path": "zone_id"
+            }
+          ]
+        },
+        "private_zone": {
+          "const": true
+        }
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Private hosted zone on the module's VPC (GovCloud has no public zones)."
+    },
+    "AWS::Route53::HealthCheck": {
+      "cfn_type": "AWS::Route53::HealthCheck",
+      "entity_type": "aws_core__aws_route53_health_check",
+      "terraform": "aws_route53_health_check",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "route53_health_check_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "route53_health_check_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Disabled TCP health check against an address under .invalid."
+    },
+    "AWS::Route53::CidrCollection": {
+      "cfn_type": "AWS::Route53::CidrCollection",
+      "entity_type": "aws_core__aws_route53_cidr_collection",
+      "terraform": "aws_route53_cidr_collection",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "route53_cidr_collection_arn"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53_cidr_collection_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Empty CIDR collection."
+    },
+    "AWS::Route53::TrafficPolicy": {
+      "cfn_type": "AWS::Route53::TrafficPolicy",
+      "entity_type": "aws_core__aws_route53_traffic_policy",
+      "terraform": "aws_route53_traffic_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "route53_traffic_policy_arn"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53_traffic_policy_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Traffic policy with one endpoint; no instance is created (an instance is billed per policy record)."
+    },
+    "AWS::WAFRegional::IPSet": {
+      "cfn_type": "AWS::WAFRegional::IPSet",
+      "entity_type": "aws_core__aws_wafregional_ip_set",
+      "terraform": "aws_wafregional_ipset",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_ip_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_ip_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "IP set with one documentation range."
+    },
+    "AWS::WAFRegional::ByteMatchSet": {
+      "cfn_type": "AWS::WAFRegional::ByteMatchSet",
+      "entity_type": "aws_core__aws_wafregional_byte_match_set",
+      "terraform": "aws_wafregional_byte_match_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_byte_match_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_byte_match_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Byte match on the URI."
+    },
+    "AWS::WAFRegional::GeoMatchSet": {
+      "cfn_type": "AWS::WAFRegional::GeoMatchSet",
+      "entity_type": "aws_core__aws_wafregional_geo_match_set",
+      "terraform": "aws_wafregional_geo_match_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_geo_match_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_geo_match_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Geo match on one country."
+    },
+    "AWS::WAFRegional::RegexPatternSet": {
+      "cfn_type": "AWS::WAFRegional::RegexPatternSet",
+      "entity_type": "aws_core__aws_wafregional_regex_pattern_set",
+      "terraform": "aws_wafregional_regex_pattern_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_regex_pattern_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_regex_pattern_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Regex pattern set with one pattern."
+    },
+    "AWS::WAFRegional::SizeConstraintSet": {
+      "cfn_type": "AWS::WAFRegional::SizeConstraintSet",
+      "entity_type": "aws_core__aws_wafregional_size_constraint_set",
+      "terraform": "aws_wafregional_size_constraint_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_size_constraint_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_size_constraint_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Size constraint on the body."
+    },
+    "AWS::WAFRegional::SqlInjectionMatchSet": {
+      "cfn_type": "AWS::WAFRegional::SqlInjectionMatchSet",
+      "entity_type": "aws_core__aws_wafregional_sql_injection_match_set",
+      "terraform": "aws_wafregional_sql_injection_match_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_sql_injection_match_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_sql_injection_match_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "SQL injection match on the query string."
+    },
+    "AWS::WAFRegional::XssMatchSet": {
+      "cfn_type": "AWS::WAFRegional::XssMatchSet",
+      "entity_type": "aws_core__aws_wafregional_xss_match_set",
+      "terraform": "aws_wafregional_xss_match_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_xss_match_set_id"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_xss_match_set_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Cross-site scripting match on the query string."
+    },
+    "AWS::WAFRegional::Rule": {
+      "cfn_type": "AWS::WAFRegional::Rule",
+      "entity_type": "aws_core__aws_wafregional_rule",
+      "terraform": "aws_wafregional_rule",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_rule_arn"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Rule matching the IP set."
+    },
+    "AWS::WAFRegional::RateBasedRule": {
+      "cfn_type": "AWS::WAFRegional::RateBasedRule",
+      "entity_type": "aws_core__aws_wafregional_rate_based_rule",
+      "terraform": "aws_wafregional_rate_based_rule",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "wafregional_rate_based_rule_arn"
+      ],
+      "module": "wave3b-edge",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "wafregional_rate_based_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Rate-based rule on the IP set."
     }
   }
 }
