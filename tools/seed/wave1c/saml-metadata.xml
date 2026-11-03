@@ -1,32 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Seed wave 1c: metadata of an identity provider that does not exist. The certificate is self-signed for
-     CN=seed-idp.example.invalid and its private key was destroyed when it was made, so no assertion can ever be
-     signed for it. Public material only. -->
+     CN=seed-idp.example.invalid. It was made with the private key sent to /dev/null, so the key was never written to disk
+     and no assertion can be signed for it. Public material only. -->
 <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://seed-idp.example.invalid/saml">
   <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
     <md:KeyDescriptor use="signing">
       <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
         <ds:X509Data>
           <ds:X509Certificate>
-            MIIDbjCCAlagAwIBAgIUCmZIz/39fahXiudKRSSnzISnpiAwDQYJKoZIhvcNAQEL
-            BQAwVzEhMB8GA1UEAwwYc2VlZC1pZHAuZXhhbXBsZS5pbnZhbGlkMTIwMAYDVQQK
-            DCl0YXAgc2VlZCB0aHJvd2F3YXksIHByaXZhdGUga2V5IGRlc3Ryb3llZDAeFw0y
-            NjExMDMwMzAzMDNaFw0zNjEwMzEwMzAzMDNaMFcxITAfBgNVBAMMGHNlZWQtaWRw
-            LmV4YW1wbGUuaW52YWxpZDEyMDAGA1UECgwpdGFwIHNlZWQgdGhyb3dhd2F5LCBw
-            cml2YXRlIGtleSBkZXN0cm95ZWQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
-            AoIBAQC178WsgbtJtTVoD2gybeXUve6vqp7QtyhlcHHAOFO17fNoIYuSkqMVwAwV
-            MoZLDw8XiwNZyDhav5/FSbSlKKRhkXx2iBtXW8LexcJ3jXIajSym0eR2vCremWV6
-            s0ZBNn7/782tma7atRhWM4I7Dvwkqy+pGNuxb/R6neOxc16s4bXzH2DLz8YvF8M4
-            bx3cV3D5bKMT6YSGcu3IFhHXbNclFuTeZZPobwcjUZhTUHo/Qoq5O/LBj2TGiHsi
-            NgA7hxpaVObaXYVMzXYUrGti9llFM1/4R+hhVWPG1J0opl54Z3hCE0VBJojxNyXc
-            egi7hS+vlBSpUdaw8IYBB18PiZWnAgMBAAGjMjAwMB0GA1UdDgQWBBSN4zE0Hy+I
-            hd9qAgNAoJ3OZccY7zAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IB
-            AQClEe0PTW/rdIMSvdjj6nXhgy67DNkgur9lsMnpWGBYJCEMccJCl07NDC3grjYj
-            v6tMkklOJCUUwpfMMKdwQukdrXMPN2aGg4+Hzbk/f2jXzpyvUX63+BFh6zmPzTWZ
-            QuLi3e2v7SmPK5JuVN2a48r61WeDpuaGZtT+ZuKVCiX9rfEBaZU9j70tWQtEvWBF
-            BQ1Q3zwMSBcYuYOQTw+dwO4kZRZNS0JyqIP1LQ4zxqKtTfmbqpMYOZAzPM5ryW3p
-            M3KqgZrpZoed9/zh3gKeKmlU0fHXvudlM9ZNR/Mteap9znm2Cfn73XK8lozmR+2v
-            Ej6slups1QvyOlGdN5TNVVDr
+            MIIDQDCCAiigAwIBAgIUPaFL/vVuUJbF1wOmm0iHyLb1xngwDQYJKoZIhvcNAQEL
+            BQAwQDEhMB8GA1UEAwwYc2VlZC1pZHAuZXhhbXBsZS5pbnZhbGlkMRswGQYDVQQK
+            DBJ0YXAgc2VlZCB0aHJvd2F3YXkwHhcNMjYxMTAzMDUwNzU5WhcNMzYxMDMxMDUw
+            NzU5WjBAMSEwHwYDVQQDDBhzZWVkLWlkcC5leGFtcGxlLmludmFsaWQxGzAZBgNV
+            BAoMEnRhcCBzZWVkIHRocm93YXdheTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+            AQoCggEBALl8Et44OHAHgFJOTFBtNOf3jJGOEarIFXFruW71/mvqMnNijAy4o9cR
+            KtBQBb1vdyFQhEBAN5MLFjSWrymlkFzKt+8h0mXvMU5ZC7SCGup+/onyRtSqn9QZ
+            GmnsOgSHqJ5QDCiQNScID47wZNGmm1PWNZNvIryLVJLwdfCeXH7CuospGI9WmnLP
+            /hw3rQYCj7JX9ZSW/1P/VsgCzOZDt7af9vXP0hgVKMyWIoHWwmqAbG8LoZtrqVda
+            YIxaQHAb5TfuwxSdA0NI6tz+5A5rQB1MnOpkjpgpUZih82tl2pBeNbSQlM9eM0HK
+            oGYBtvZ98n1/g3Pr5GeG3taUYgiUfjUCAwEAAaMyMDAwHQYDVR0OBBYEFKPmfrDR
+            DFxtGbPPzZt1MTF7kHreMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQAD
+            ggEBAB+uNqSG4bphUy2H/s0e3V81mRlhfPJCYzKuwWL5Gz88mkrqsbI4c2YRwuza
+            i/cK2WNc0E00ffelbDK/Ojn3zS448v56s75Qtcz2G4FM+LVM5Ra5jFb0G9qNhljP
+            2sP/caxFsFC5+7Y/AjTnYNPrAZq+vhI37moBWStcMqwJ/T/R9KdveQDaNTFP0GJW
+            FdeDCG7GIiNUBwv/aOqGijYzueIvOIZFw1xUEROYzENFsRhyf07CSBLrSg9yIehv
+            u5loOapvh5eFvR4cGDmq6mIVsH8qDQFOoXUwMVLYiSYnSeCFCl0R4QbG6jFTk7AH
+            XMr19iWN/srs6RdJY+5InkgPBRE=
           </ds:X509Certificate>
         </ds:X509Data>
       </ds:KeyInfo>

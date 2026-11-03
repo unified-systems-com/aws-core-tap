@@ -1,5 +1,6 @@
 """Shape and consistency of the seed catalog, and hygiene of the wave-1 Terraform. No AWS, no Terraform run."""
 
+import base64
 import json
 import os
 import re
@@ -121,6 +122,19 @@ def test_every_iam_identity_waits_for_the_partition_guard(module):
             assert "depends_on = [terraform_data.guard]" in body, (module, kind)
     if module == "wave1":
         assert re.search(r'^resource "aws_iam_role" ', TF_BY_MODULE[module], re.M)  # the loop above found something to check
+
+
+@pytest.mark.parametrize("module", MODULES)
+def test_a_saml_provider_is_named_for_the_run(module):
+    for body in re.findall(r'^resource "aws_iam_saml_provider" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S):
+        assert re.search(r'^\s*name\s*=\s*"\$\{local\.prefix\}-', body, re.M)
+
+
+def test_the_saml_metadata_holds_a_certificate_and_no_private_key():
+    text = (SEED / "wave1c" / "saml-metadata.xml").read_text(encoding="utf-8")
+    cert = re.search(r"<ds:X509Certificate>(.*?)</ds:X509Certificate>", text, re.S).group(1)
+    der = base64.b64decode("".join(cert.split()), validate=True)
+    assert der[:2] == b"\x30\x82" and b"PRIVATE" not in text.encode("utf-8")  # a DER SEQUENCE, the shape of a certificate
 
 
 @pytest.mark.parametrize("module", MODULES)

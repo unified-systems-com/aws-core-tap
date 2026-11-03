@@ -11,7 +11,7 @@ Time box 1 hour (the provider is created in under a minute; E)
 **Total for one hour: $0.** Standing cost left running by mistake: $0.
 
 Seeded: `IAM::SAMLProvider`. Its metadata is a public self-signed certificate for `seed-idp.example.invalid`; the private
-key was destroyed when the certificate was made and exists nowhere.
+key was never written to disk (it was sent to /dev/null when the certificate was made).
 
 Not seeded, and why:
 

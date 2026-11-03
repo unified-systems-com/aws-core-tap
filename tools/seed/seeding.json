@@ -1020,7 +1020,7 @@
       },
       "tags": "tags_all",
       "edges": [],
-      "description": "SAML provider for an identity provider that does not exist; its certificate is public and its private key was destroyed when it was made. valid_until is not compared (the API's timestamp form is not the state's)."
+      "description": "SAML provider for an identity provider that does not exist; its certificate is public and its private key was never written to disk. valid_until is not compared (the API's timestamp form is not the state's)."
     },
     "AWS::IAM::User": {
       "cfn_type": "AWS::IAM::User",
