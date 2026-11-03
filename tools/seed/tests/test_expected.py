@@ -160,6 +160,12 @@ def test_a_target_that_names_no_seeded_resource_is_counted_not_dropped_silently(
     assert foo["edges"] == [] and doc["unresolved_edge_targets"] == 1
 
 
+def test_an_empty_edge_target_is_no_edge_and_no_unresolved_target():
+    doc = expected.build_expected(_mini_state(""), _mini_catalog())
+    foo = next(r for r in doc["resources"] if r["entity_type"] == "t_foo")
+    assert foo["edges"] == [] and doc["unresolved_edge_targets"] == 0
+
+
 def test_edges_only_when_target_was_seeded(doc):
     role = by_addr(doc, "aws_iam_role.seed")
     assert role["edges"] == [{"direction": "outbound", "edge_type": "ATTACHES_POLICY__aws_core", "target_key": "arn:aws-us-gov:iam::000000000000:policy/seed-w1-t1-policy", "target_type": "aws_core__aws_iam_policy"}]

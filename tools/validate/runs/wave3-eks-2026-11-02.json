@@ -1,0 +1,170 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 11
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (24 destroyed). Checked directly afterwards: no cluster, node group, instance, VPC, role or scaling group of the run is left.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "EKS: 6 entity types (11 compared with the wave 1 types the module needs). The first cycle failed creating the Fargate pod execution role (IAM rejects the service principal in this partition), so the Fargate profile was dropped; the cluster was destroyed from state and checked before the second cycle. Not seeded: capability, certificate authority (EKS creates it), Fargate profile.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3e11021708",
+  "seeds": "tools/seed/wave3-eks",
+  "wave": "3a-eks"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::EKS::AccessEntry",
+   "compared_fields": [
+    "eks_access_entry_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_eks_access_entry",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EKS::Addon",
+   "compared_fields": [
+    "eks_addon_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_eks_addon",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EKS::Cluster",
+   "compared_fields": [
+    "cluster_arn",
+    "endpoint",
+    "kubernetes_version",
+    "name",
+    "status"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_eks_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EKS::IdentityProviderConfig",
+   "compared_fields": [
+    "eks_identity_provider_config_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_eks_identity_provider_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EKS::Nodegroup",
+   "compared_fields": [
+    "eks_nodegroup_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_eks_nodegroup",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EKS::PodIdentityAssociation",
+   "compared_fields": [
+    "eks_pod_identity_association_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_eks_pod_identity_association",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 4,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::InternetGateway",
+   "compared_fields": [
+    "igw_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_internet_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::RouteTable",
+   "compared_fields": [
+    "route_table_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_route_table",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 4,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 4,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3a-eks"
+}

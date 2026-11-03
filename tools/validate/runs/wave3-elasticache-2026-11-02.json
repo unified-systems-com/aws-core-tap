@@ -1,0 +1,158 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 10
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (13 destroyed). Checked directly afterwards: no cache cluster, replication group, serverless cache, user, user group, subnet group or VPC of the run is left.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "ElastiCache: 7 entity types (10 compared with the wave 1 types the module needs). Valkey users need an authentication mode (IAM used) and Valkey cannot be created through the cache cluster API, so the standalone cache cluster is Redis OSS 7.1. Not seeded: snapshots (no Terraform resource), global replication group (needs a larger node).",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3c11021626",
+  "seeds": "tools/seed/wave3-elasticache",
+  "wave": "3a-elasticache"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::ElastiCache::CacheCluster",
+   "compared_fields": [
+    "cluster_arn",
+    "cluster_id",
+    "engine",
+    "engine_version",
+    "name",
+    "node_type",
+    "num_nodes"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElastiCache::ParameterGroup",
+   "compared_fields": [
+    "elasticache_parameter_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElastiCache::ReplicationGroup",
+   "compared_fields": [
+    "elasticache_replication_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_replication_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElastiCache::ServerlessCache",
+   "compared_fields": [
+    "elasticache_serverless_cache_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_serverless_cache",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElastiCache::SubnetGroup",
+   "compared_fields": [
+    "elasticache_subnet_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElastiCache::User",
+   "compared_fields": [
+    "elasticache_user_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_user",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElastiCache::UserGroup",
+   "compared_fields": [
+    "elasticache_user_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticache_user_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3a-elasticache"
+}

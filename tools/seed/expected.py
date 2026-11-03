@@ -193,7 +193,7 @@ def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any]) -> 
         for spec in s.pop("_edge_specs"):
             got = evaluate(spec["target"], s["_res"], resources)
             for target_key in got if isinstance(got, list) else [got]:
-                if not isinstance(target_key, str):
+                if not isinstance(target_key, str) or not target_key:  # an empty value means the resource names no target (a topic with no key)
                     continue
                 resolved = aliases_by_type.get(spec["target_type"], {}).get(target_key)
                 if resolved:

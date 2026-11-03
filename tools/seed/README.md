@@ -6,6 +6,10 @@ of the plugin wheel.
 
 | File | What it is |
 | --- | --- |
+| `wave3-redshift/` | Terraform root for wave 3a, Redshift (costly): one `ra3.large` node and 10 more Redshift and Redshift Serverless types. Prefix `w3r`, tag `tap-seed=wave3-redshift`; `wave3-redshift/cost.md` |
+| `wave3-elasticache/` | Terraform root for wave 3a, ElastiCache: a Valkey replication group and a Redis OSS cluster, both `cache.t4g.micro`, a serverless cache and 4 more types. Prefix `w3c`, tag `tap-seed=wave3-elasticache`; `wave3-elasticache/cost.md` |
+| `wave3-eks/` | Terraform root for wave 3a, EKS (costly): one control plane, one `t3.medium` node and 4 more EKS types. Prefix `w3e`, tag `tap-seed=wave3-eks`; `wave3-eks/cost.md` |
+| `wave3-opensearch/` | Terraform root for wave 3a, OpenSearch: one `t3.small.search` domain in a private subnet. Prefix `w3o`, tag `tap-seed=wave3-opensearch`; `wave3-opensearch/cost.md` |
 | `wave2-rds/` | Terraform root for wave 2, RDS (weight 5, costly): 14 of the 18 RDS types. Own state, own provider tag `tap-seed=wave2-rds`; `wave2-rds/cost.md` |
 | `wave1b/` | Terraform root for wave 1b: 21 types wave 1 could not seed in one root (Backup, WAFv2, S3 access points, Storage Lens, Access Grants, flow log, network interface, trail, Config aggregation authorization, Security Hub action target and insight). Own state, tag `tap-seed=wave1b`; `wave1b/cost.md`. Not seeded: CloudTrail Lake (closed to new customers), Backup restore testing (create refused), the OIDC provider and virtual MFA device (the seeder policy refuses them) |
 | `wave2-nfw/` | Terraform root for wave 2, Network Firewall: firewall, policy, rule group and a second endpoint, with the one costly resource that must be destroyed as soon as the check has run; tag `tap-seed=wave2-nfw`; `wave2-nfw/cost.md` |
@@ -164,8 +168,9 @@ a lock file you did not make.
   any existing resource; the wave creates its own VPC and addresses nothing else.
 - Seeder names: every IAM role, user, group, policy and instance profile starts with `seed-`, the only names the seeder
   may create. Every other resource is named `seed-w1-<run id>-...` as well.
-- No NAT gateway, load balancer, database, EKS, Redshift or search domain is declared. A quota or
-  `unsupported-in-partition` error is recorded and not retried around.
+- Wave 1 declares no NAT gateway, load balancer, database, EKS, Redshift or search domain; the costly modules declare
+  only what their cost note prices (a test checks it). A quota or `unsupported-in-partition` error is recorded and not
+  retried around.
 - Terraform state is local to the run, never committed, and removed after destroy (step 9).
 
 ## The awkward cases wave 1 includes
@@ -188,3 +193,8 @@ a lock file you did not make.
   `uncovered_edges` instead of passing them.
 - The Lambda runtime is `python3.12` and the AMI is the newest Amazon-owned `al2023-ami-2023.*-kernel-*-x86_64` image;
   neither has been checked against GovCloud, so if `plan` or `apply` rejects them, change them in `wave1/` and note it.
+
+## Service-linked roles
+
+The first use of Redshift, ElastiCache, EKS (cluster and node group) and OpenSearch in an account creates the service's
+linked role (the seeder may create them, not delete them). They are AWS-managed, free and are left in place after a run.
