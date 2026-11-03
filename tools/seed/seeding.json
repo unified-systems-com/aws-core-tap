@@ -1,5 +1,5 @@
 {
-  "description": "Seed catalog (req-aws-core-livevalidation-catalog): per CloudFormation type, what the seed modules create and what the projection check compares. A type with no entry is unseeded, not free. entity_type is the manifest entity type; terraform is the resource type; compares lists manifest field names; tf_attrs maps each compared manifest field to where the expected value lives in the Terraform state (a path into the resource values, or an object: path+strip_suffix, all_true, const); natural_key is the same for the key; tags is tags_all (the state's merged tags) or none (the type cannot carry tags, expected {}); edges lists the manifest edges whose expected target comes from the state (target is a path, or a join over another state resource). Read by tools/seed/expected.py and tools/seed/compare.py.",
+  "description": "Seed catalog (req-aws-core-livevalidation-catalog): per CloudFormation type, what the seed modules create and what the projection check compares. A type with no entry is unseeded, not free. entity_type is the manifest entity type; terraform is the resource type; compares lists manifest field names; tf_attrs maps each compared manifest field to where the expected value lives in the Terraform state (a path into the resource values, or an object: path+strip_suffix, all_true, const, join); natural_key is the same for the key; tags is tags_all (the state's merged tags) or none (the type cannot carry tags, expected {}); edges lists the manifest edges whose expected target comes from the state (target is a path, or a join over another state resource). Read by tools/seed/expected.py and tools/seed/compare.py.",
   "types": {
     "AWS::Backup::BackupPlan": {
       "cfn_type": "AWS::Backup::BackupPlan",
@@ -1001,6 +1001,26 @@
         }
       ],
       "description": "Role trusted by ec2 and lambda, with the policy attached."
+    },
+    "AWS::IAM::SAMLProvider": {
+      "cfn_type": "AWS::IAM::SAMLProvider",
+      "entity_type": "aws_core__aws_iam_saml_provider",
+      "terraform": "aws_iam_saml_provider",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "provider_arn"
+      ],
+      "module": "wave1c",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "provider_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "SAML provider for an identity provider that does not exist; its certificate is public and its private key was never written to disk. valid_until is not compared (the API's timestamp form is not the state's)."
     },
     "AWS::IAM::User": {
       "cfn_type": "AWS::IAM::User",

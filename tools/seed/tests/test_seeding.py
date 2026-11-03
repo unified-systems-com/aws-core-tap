@@ -1,5 +1,7 @@
 """Shape and consistency of the seed catalog, and hygiene of the wave-1 Terraform. No AWS, no Terraform run."""
 
+import base64
+import hashlib
 import json
 import os
 import re
@@ -22,7 +24,7 @@ def _tf_text(directory):
 
 
 #: The seed modules: the catalog's `module` names a directory under tools/seed, and the module's provider tag.
-MODULES = ("wave1", "wave1b", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch")
+MODULES = ("wave1", "wave1b", "wave1c", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch")
 TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
 TF_TEXT = TF_BY_MODULE["wave1"]
 ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
@@ -116,7 +118,7 @@ def test_nothing_outside_the_state_is_deleted_by_a_destroy():
 
 @pytest.mark.parametrize("module", MODULES)
 def test_every_iam_identity_waits_for_the_partition_guard(module):
-    for kind in ("role", "user", "group", "policy"):
+    for kind in ("role", "user", "group", "policy", "saml_provider"):
         for body in re.findall(rf'^resource "aws_iam_{kind}" "[^"]+" \{{\n(.*?)^\}}', TF_BY_MODULE[module], re.M | re.S):
             assert "depends_on = [terraform_data.guard]" in body, (module, kind)
     if module == "wave1":
@@ -124,9 +126,28 @@ def test_every_iam_identity_waits_for_the_partition_guard(module):
 
 
 @pytest.mark.parametrize("module", MODULES)
+def test_a_saml_provider_is_named_for_the_run(module):
+    for body in re.findall(r'^resource "aws_iam_saml_provider" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S):
+        assert re.search(r'^\s*name\s*=\s*"\$\{local\.prefix\}-', body, re.M)
+
+
+def test_the_saml_metadata_holds_a_certificate_and_no_private_key():
+    text = (SEED / "wave1c" / "saml-metadata.xml").read_text(encoding="utf-8")
+    cert = re.search(r"<ds:X509Certificate>(.*?)</ds:X509Certificate>", text, re.S).group(1)
+    der = base64.b64decode("".join(cert.split()), validate=True)
+    assert b"PRIVATE" not in text.encode("utf-8")
+    # Certificate ::= SEQUENCE { tbsCertificate SEQUENCE { [0] version v3, ... } ... }. A DER private key (PKCS#1 or PKCS#8)
+    # also starts with a SEQUENCE, but its first element is an INTEGER version, never the explicit [0] tag of a certificate.
+    assert der[0:2] == b"\x30\x82" and der[4:6] == b"\x30\x82" and der[8:13] == b"\xa0\x03\x02\x01\x02"
+    assert int.from_bytes(der[2:4], "big") == len(der) - 4  # the outer length covers the whole blob: nothing is appended
+    fingerprint = ":".join(f"{b:02X}" for b in hashlib.sha256(der).digest())
+    assert fingerprint in (SEED / "wave1c" / "cost.md").read_text(encoding="utf-8")  # the documented fingerprint is this blob's
+
+
+@pytest.mark.parametrize("module", MODULES)
 def test_iam_names_start_with_seed(module):
     blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S)
-    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0}[module]
+    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave1c": 0, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0}[module]
     for kind, body in blocks:
         assert re.search(r'^\s*name\s*=\s*"seed-', body, re.M), kind
 
