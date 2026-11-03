@@ -48,6 +48,7 @@ live state.
 | `runs/wave1c-2026-11-02.json` | Wave 1c, the IAM SAML provider (the one weight-5 leftover type that could be created at no cost and compared), passes |
 | `runs/wave3b-ops-2026-11-03.json` | Wave 3b, operations: 22 types compared across SNS, CloudWatch, Logs, EventBridge, Systems Manager, CloudFormation, Auto Scaling and ECR, all pass; four types the account or region refuses are not seeded |
 | `runs/wave3b-edge-2026-11-03.json` | Wave 3b, edge services: 27 types compared across Cognito, API Gateway, Route 53 and WAF Classic, all pass; types the account or region refuses are not seeded |
+| `runs/wave3b-compute-2026-11-03.json` | Wave 3b, compute and network: 20 types compared across ECS, EFS, load balancers, VPC endpoints and Transit Gateway, all pass; four types the first run failed are explained in the run note |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.

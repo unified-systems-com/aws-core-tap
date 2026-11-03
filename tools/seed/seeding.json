@@ -3566,6 +3566,523 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Rate-based rule on the IP set."
+    },
+    "AWS::ECS::Cluster": {
+      "cfn_type": "AWS::ECS::Cluster",
+      "entity_type": "aws_core__aws_ecs_cluster",
+      "terraform": "aws_ecs_cluster",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "cluster_arn",
+        "status"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "cluster_arn": "arn",
+        "status": {
+          "const": "ACTIVE"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Cluster with no capacity and no task."
+    },
+    "AWS::ECS::TaskDefinition": {
+      "cfn_type": "AWS::ECS::TaskDefinition",
+      "entity_type": "aws_core__aws_ecs_task_definition",
+      "terraform": "aws_ecs_task_definition",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ecs_task_definition_arn"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "family",
+        "ecs_task_definition_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Fargate task definition of one busybox container; never run."
+    },
+    "AWS::ECS::Service": {
+      "cfn_type": "AWS::ECS::Service",
+      "entity_type": "aws_core__aws_ecs_service",
+      "terraform": "aws_ecs_service",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ECS::Cluster"
+      ],
+      "compares": [
+        "name",
+        "service_arn",
+        "status",
+        "desired_count",
+        "running_count",
+        "launch_type"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "service_arn": "id",
+        "status": {
+          "const": "ACTIVE"
+        },
+        "desired_count": "desired_count",
+        "running_count": {
+          "const": 0
+        },
+        "launch_type": "launch_type"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RUNS_SERVICE__aws_core",
+          "target_type": "aws_core__aws_ecs_cluster",
+          "direction": "inbound",
+          "target": "cluster"
+        }
+      ],
+      "description": "Service with desired count 0, so no task starts."
+    },
+    "AWS::EFS::FileSystem": {
+      "cfn_type": "AWS::EFS::FileSystem",
+      "entity_type": "aws_core__aws_efs_file_system",
+      "terraform": "aws_efs_file_system",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "file_system_arn",
+        "file_system_id",
+        "encrypted",
+        "performance_mode",
+        "throughput_mode",
+        "life_cycle_state"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "file_system_arn": "arn",
+        "file_system_id": "id",
+        "encrypted": "encrypted",
+        "performance_mode": "performance_mode",
+        "throughput_mode": "throughput_mode",
+        "life_cycle_state": {
+          "const": "available"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Encrypted file system with one mount target; nothing is written. Name is not compared (no Name tag); number_of_mount_targets is not compared (the state records it as it was when the file system was created, before the mount target)."
+    },
+    "AWS::EFS::MountTarget": {
+      "cfn_type": "AWS::EFS::MountTarget",
+      "entity_type": "aws_core__aws_efs_mount_target",
+      "terraform": "aws_efs_mount_target",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EFS::FileSystem"
+      ],
+      "compares": [
+        "mount_target_id",
+        "file_system_id",
+        "subnet_id",
+        "ip_address",
+        "life_cycle_state"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "mount_target_id": "id",
+        "file_system_id": "file_system_id",
+        "subnet_id": "subnet_id",
+        "ip_address": "ip_address",
+        "life_cycle_state": {
+          "const": "available"
+        }
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnet_id"
+        },
+        {
+          "edge_type": "MOUNTS_FILE_SYSTEM__aws_core",
+          "target_type": "aws_core__aws_efs_file_system",
+          "direction": "outbound",
+          "target": "file_system_id"
+        }
+      ],
+      "description": "Mount target in one subnet."
+    },
+    "AWS::EFS::AccessPoint": {
+      "cfn_type": "AWS::EFS::AccessPoint",
+      "entity_type": "aws_core__aws_efs_access_point",
+      "terraform": "aws_efs_access_point",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EFS::FileSystem"
+      ],
+      "compares": [
+        "access_point_arn",
+        "file_system_id",
+        "posix_uid",
+        "root_directory_path",
+        "life_cycle_state"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "access_point_arn": "arn",
+        "file_system_id": "file_system_id",
+        "posix_uid": "posix_user.0.uid",
+        "root_directory_path": "root_directory.0.path",
+        "life_cycle_state": {
+          "const": "available"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ENTERS_FILE_SYSTEM__aws_core",
+          "target_type": "aws_core__aws_efs_file_system",
+          "direction": "outbound",
+          "target": "file_system_id"
+        }
+      ],
+      "description": "Access point rooted at /seed."
+    },
+    "AWS::ElasticLoadBalancingV2::LoadBalancer": {
+      "cfn_type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "entity_type": "aws_core__aws_alb",
+      "terraform": "aws_lb",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "lb_arn",
+        "dns_name",
+        "scheme"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "lb_arn": "arn",
+        "dns_name": "dns_name",
+        "scheme": {
+          "const": "internal"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnets"
+        }
+      ],
+      "description": "Internal application balancer in two subnets; billed by the hour. The entity holds application balancers only, so no network balancer is seeded."
+    },
+    "AWS::ElasticLoadBalancingV2::TargetGroup": {
+      "cfn_type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "entity_type": "aws_core__aws_target_group",
+      "terraform": "aws_lb_target_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "target_group_arn",
+        "protocol",
+        "port",
+        "target_type",
+        "health_check_path"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "target_group_arn": "arn",
+        "protocol": "protocol",
+        "port": "port",
+        "target_type": "target_type",
+        "health_check_path": "health_check.0.path"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "IP target group with no target."
+    },
+    "AWS::ElasticLoadBalancingV2::Listener": {
+      "cfn_type": "AWS::ElasticLoadBalancingV2::Listener",
+      "entity_type": "aws_core__aws_elb_listener",
+      "terraform": "aws_lb_listener",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ElasticLoadBalancingV2::LoadBalancer"
+      ],
+      "compares": [
+        "listener_arn",
+        "load_balancer_arn",
+        "port",
+        "protocol",
+        "action_types"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "listener_arn": "arn",
+        "load_balancer_arn": "load_balancer_arn",
+        "port": "port",
+        "protocol": "protocol",
+        "action_types": {
+          "const": [
+            "fixed-response"
+          ]
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "LISTENS_ON_LOAD_BALANCER__aws_core",
+          "target_type": "aws_core__aws_alb",
+          "direction": "outbound",
+          "target": "load_balancer_arn"
+        }
+      ],
+      "description": "HTTP listener that answers a fixed response."
+    },
+    "AWS::ElasticLoadBalancingV2::ListenerRule": {
+      "cfn_type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+      "entity_type": "aws_core__aws_elasticloadbalancingv2_listener_rule",
+      "terraform": "aws_lb_listener_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ElasticLoadBalancingV2::Listener"
+      ],
+      "compares": [
+        "elasticloadbalancingv2_listener_rule_arn"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticloadbalancingv2_listener_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Path rule on the listener."
+    },
+    "AWS::ElasticLoadBalancing::LoadBalancer": {
+      "cfn_type": "AWS::ElasticLoadBalancing::LoadBalancer",
+      "entity_type": "aws_core__aws_elb",
+      "terraform": "aws_elb",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "dns_name",
+        "scheme"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "dns_name",
+      "tf_attrs": {
+        "name": "name",
+        "dns_name": "dns_name",
+        "scheme": {
+          "const": "internal"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnets"
+        }
+      ],
+      "description": "Internal classic balancer in two subnets; billed by the hour."
+    },
+    "AWS::EC2::VPCEndpoint": {
+      "cfn_type": "AWS::EC2::VPCEndpoint",
+      "entity_type": "aws_core__aws_vpc_endpoint",
+      "terraform": "aws_vpc_endpoint",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "vpc_endpoint_id",
+        "endpoint_type",
+        "service_name",
+        "private_dns_enabled"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "vpc_endpoint_id": "id",
+        "endpoint_type": "vpc_endpoint_type",
+        "service_name": "service_name",
+        "private_dns_enabled": "private_dns_enabled"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "Gateway endpoint to S3."
+    },
+    "AWS::EC2::TransitGateway": {
+      "cfn_type": "AWS::EC2::TransitGateway",
+      "entity_type": "aws_core__aws_transit_gateway",
+      "terraform": "aws_ec2_transit_gateway",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "transit_gateway_id",
+        "owner_account_id",
+        "amazon_side_asn",
+        "auto_accept_shared_attachments",
+        "default_route_table_association",
+        "default_route_table_propagation"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "transit_gateway_id": "id",
+        "owner_account_id": "owner_id",
+        "amazon_side_asn": "amazon_side_asn",
+        "auto_accept_shared_attachments": {
+          "const": false
+        },
+        "default_route_table_association": {
+          "const": true
+        },
+        "default_route_table_propagation": {
+          "const": true
+        }
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Transit gateway with multicast on, set to the service defaults (the collector reports the three options as booleans); free until something attaches."
+    },
+    "AWS::EC2::TransitGatewayRouteTable": {
+      "cfn_type": "AWS::EC2::TransitGatewayRouteTable",
+      "entity_type": "aws_core__aws_ec2_transit_gateway_route_table",
+      "terraform": "aws_ec2_transit_gateway_route_table",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::TransitGateway"
+      ],
+      "compares": [
+        "ec2_transit_gateway_route_table_id"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_transit_gateway_route_table_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Route table of the transit gateway."
+    },
+    "AWS::EC2::TransitGatewayAttachment": {
+      "cfn_type": "AWS::EC2::TransitGatewayAttachment",
+      "entity_type": "aws_core__aws_transit_gateway_attachment",
+      "terraform": "aws_ec2_transit_gateway_vpc_attachment",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::TransitGateway"
+      ],
+      "compares": [
+        "attachment_id",
+        "resource_type",
+        "resource_owner_account_id"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "attachment_id": "id",
+        "resource_type": {
+          "const": "vpc"
+        },
+        "resource_owner_account_id": "vpc_owner_id"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ATTACHED_TO_TRANSIT_GATEWAY__aws_core",
+          "target_type": "aws_core__aws_transit_gateway",
+          "direction": "outbound",
+          "target": "transit_gateway_id"
+        },
+        {
+          "edge_type": "ATTACHES_VPC__aws_core",
+          "target_type": "aws_core__aws_vpc",
+          "direction": "outbound",
+          "target": "vpc_id"
+        }
+      ],
+      "description": "VPC attachment (one subnet); billed by the hour. The catalog holds the VPC attachment under the generic attachment type, which has the edges."
+    },
+    "AWS::EC2::TransitGatewayConnect": {
+      "cfn_type": "AWS::EC2::TransitGatewayConnect",
+      "entity_type": "aws_core__aws_ec2_transit_gateway_connect",
+      "terraform": "aws_ec2_transit_gateway_connect",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::TransitGatewayAttachment"
+      ],
+      "compares": [
+        "ec2_transit_gateway_connect_id"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_transit_gateway_connect_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Connect attachment over the VPC attachment (GRE); billed by the hour."
+    },
+    "AWS::EC2::TransitGatewayMulticastDomain": {
+      "cfn_type": "AWS::EC2::TransitGatewayMulticastDomain",
+      "entity_type": "aws_core__aws_ec2_transit_gateway_multicast_domain",
+      "terraform": "aws_ec2_transit_gateway_multicast_domain",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::TransitGateway"
+      ],
+      "compares": [
+        "transit_gateway_multicast_domain_arn"
+      ],
+      "module": "wave3b-compute",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "transit_gateway_multicast_domain_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Multicast domain with no association (associations are billed per subnet)."
     }
   }
 }
