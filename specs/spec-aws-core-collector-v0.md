@@ -1134,6 +1134,17 @@ question below). This is the rule `req-aws-core-livevalidation-lifecycle`'s seco
   `req-aws-collector-fanout-7` gives a member that failed: the run records no completeness statement at all
   (above), so there is nothing to read as a withdrawal. `max_member_accounts` bounds the **selected**
   member count; an explicit list is not a silent prefix.
+- **`exclude_account_ids` is not a selection.** The existing exclude list (`req-aws-core-secret-member-fanout`) is
+  a scope control: an excluded account is `skipped: excluded` and keeps the `scope_authorized: false` surfaces of
+  `req-aws-collector-fanout-7`, as it does today, so a run with only an exclude list states its completeness and
+  an excluded account reads as withdrawn from scope. The no-statement rule applies when `accounts_allowed`,
+  `include_types` or `exclude_types` leaves anything unselected; in such a run nothing is recorded for any
+  account, the excluded ones included. `-7` governs the failure case (a member that could not be read) and the
+  exclude list; selection omissions are governed by this section.
+- **Unselected members still appear in the organization tree.** The tree is the organization's observation, not
+  the account's: it carries each member's org-sourced fields (`req-aws-collector-fanout-8`) whether or not the
+  account is selected. "Unobserved" here means the account's own resources, surfaces and account-sourced fields
+  (`-16`): none is read, none is written, none is withdrawn.
 - **An account the organization does not list.** An `accounts_allowed` entry that is not an `ACTIVE` member of
   the organization (and is not the base account) stops the run before any member is assumed
   (`SELECTION_ACCOUNT_UNKNOWN`), naming the id. A typo must not narrow a run silently.
@@ -1154,6 +1165,7 @@ question below). This is the rule `req-aws-core-livevalidation-lifecycle`'s seco
 | req-aws-collector-selection-8 | Unknown Account Stops The Run | Proposed | An `accounts_allowed` id that is not an `ACTIVE` member or the base account stops the run before any `AssumeRole` (`SELECTION_ACCOUNT_UNKNOWN`). | |
 | req-aws-collector-selection-9 | Effective Selection Is Echoed | Proposed | The run's start message and its `CollectionJob.results` carry the effective selection: the type patterns, the normalised account ids, and counts (entries total, selected, skipped by type selection; accounts listed, selected, skipped). One aggregated info line, not one per skipped entry. | The secret cannot be inspected, so the run is where an auditor reads the scope it had. Account ids are runtime output; none is committed. |
 | req-aws-collector-selection-10 | Base Account Omitted | Proposed | With `accounts_allowed` set and omitting the base account, no base-account resource is collected, the organization tree is read, and the base batch carries the tree. | See the open question below. |
+| req-aws-collector-selection-11 | Exclude List And Tree Distinguished | Proposed | A run with only `exclude_account_ids` records its statement and an excluded account carries the `fanout-7` surfaces; a run with `accounts_allowed` records no statement and no account, excluded or not, carries a surface; in both, every listed member has its org-sourced fields from the tree and no unselected member has an account-sourced field written. | Settles the first review's `exclude` question and the second's tree question. |
 
 #### Open Questions
 
