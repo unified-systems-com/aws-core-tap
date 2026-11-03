@@ -301,7 +301,7 @@ types and chosen accounts, and the collector has no configuration of its own to 
 selection rides the credential's `data` as optional keys, beside `regions_allowed`, which is scope already held
 there. Design only: nothing in this section is built or run, and it has not been ruled as normative.
 
-Both kinds (`aws_static_access_key`, `aws_assumed_role`) gain three optional keys, defined once as a shared
+Both kinds (`aws_static_access_key`, `aws_assumed_role`) gain four optional keys, defined once as a shared
 schema fragment as the region scope is (`_REGION_SCOPE_PROPS`), so the two schemas cannot drift:
 
 - `data.include_types` — non-empty array of type patterns. Absent means every type.
@@ -331,16 +331,16 @@ Non-normative. These keys describe scope, not credentials, and sit in the secret
 nowhere else to read them. A secret is read once at start-up (restart to rotate), so changing a selection means
 restarting the worker, and it cannot be inspected by the operators who would want to audit it; the collector
 therefore echoes the effective selection in every run (`req-aws-collector-selection-9`). When the collector gains
-its own configuration, these three names and their meanings move there unchanged.
+its own configuration, these four names and their meanings move there unchanged.
 
 ### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-core-secret-selection-1 | Optional, Additive | Proposed | A secret without any of the three keys validates and runs exactly as before. | |
-| req-aws-core-secret-selection-2 | Shared Fragment, Both Kinds | Proposed | Both kinds accept the same three keys from one shared fragment, and the strict `additionalProperties: false` schemas still refuse any other key; a test builds both schemas and asserts the fragment is the same object. | The region-scope precedent. |
+| req-aws-core-secret-selection-1 | Optional, Additive | Proposed | A secret without any of the four keys validates and runs exactly as before. | |
+| req-aws-core-secret-selection-2 | Shared Fragment, Both Kinds | Proposed | Both kinds accept the same four keys from one shared fragment, and the strict `additionalProperties: false` schemas still refuse any other key; a test builds both schemas and asserts the fragment is the same object. | The region-scope precedent. |
 | req-aws-core-secret-selection-3 | Pattern Grammar | Proposed | A type pattern that does not match the grammar is refused at validation; an empty `include_types`, `exclude_types` or `accounts_allowed` array is refused. A test feeds a missing colon, an uppercase letter, a character class and an empty array, and asserts `*:*`, `*:*_policy`, `e*:vpc` and `ec2:vpc` all validate. | A typo must fail where the operator can see it. |
 | req-aws-core-secret-selection-4 | Account Forms | Proposed | An id of 12 digits and an ARN naming an account validate and normalise to the same id; an ARN with a wildcard, an empty account field or another partition is refused; duplicates collapse. | A test covers an IAM role ARN, an Organizations account ARN and an S3 ARN. |
 | req-aws-core-secret-selection-5 | No Contradiction With The Assertion | Proposed | When `expected_account_id` is also set, it must be in the normalised `accounts_allowed`, or validation refuses the secret. | Two statements about the same scope that disagree are an error, not a precedence rule. |
-| req-aws-core-secret-selection-6 | Not Logged As Credential | Proposed | The three keys are scope, not secret material: they are echoed in the run record (`req-aws-collector-selection-9`). The credential values beside them stay redacted as before. | |
+| req-aws-core-secret-selection-6 | Not Logged As Credential | Proposed | The four keys are scope, not secret material: they are echoed in the run record (`req-aws-collector-selection-9`). The credential values beside them stay redacted as before. | |
 | req-aws-core-secret-selection-7 | Retire Flag | Proposed | `retire_within_selection` is a boolean; absent or `false` is the default. `true` is refused at validation until core honours it (`req-aws-collector-selection-13`), whether or not a narrowing key is set, so there is one rule and no case where it is accepted and ignored. A test asserts a non-boolean is refused and `true` is refused with and without a narrowing key. | Names what it does: it is not `retire`. Authority, budget and a falsifier are still required (`spec-grid-reconcile.md`). |

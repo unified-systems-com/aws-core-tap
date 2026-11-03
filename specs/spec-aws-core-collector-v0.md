@@ -1101,6 +1101,11 @@ grammar (`<service>:<entity>`, not an `fnmatch` pattern over the raw entity type
 A manifest entry is **selected** when it matches at least one pattern of `include_types` (or `include_types` is
 absent) and matches no pattern of `exclude_types`. Exclusion wins. The match string is `<service>:<entity>`.
 
+**Exclusions are entry filters, not service-call boundaries.** `exclude_types` decides which manifest entries are read. It
+does not promise that no call reaches the service: a selected entry whose source needs an excluded entry as its parent
+causes that parent's list call (next bullets). An operator who needs a service never called must also keep the grant
+out of the role; the echo (`-9`) names every parent read on a selected child's behalf so the gap is visible.
+
 - An unselected entry makes no call **of its own**: it is absent from the batch, and from the run's call ledger except where a
   selected entry's source needs it as a parent (next bullet). A call made for that purpose is the selected child's: the
   ledger records it against the child, and the role's grant must include it. An operator who excludes a service whose
