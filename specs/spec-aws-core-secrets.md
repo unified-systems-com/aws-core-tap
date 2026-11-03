@@ -306,7 +306,7 @@ schema fragment as the region scope is (`_REGION_SCOPE_PROPS`), so the two schem
 
 - `data.include_types` — non-empty array of type patterns. Absent means every type.
 - `data.exclude_types` — non-empty array of type patterns. Absent means none.
-- `data.accounts_allowed` — non-empty array of account references. Absent means every account the run can reach.
+- `data.accounts_allowed` — non-empty array of account references: the accounts the run **collects from**. Absent means every account the run can reach. It is a collection scope, not a disclosure control: a fan-out run still reads the organization listing and writes its tree (`req-aws-collector-selection`, open questions).
 - `data.retire_within_selection` — boolean, default `false`. Refused when `true` until core honours it; see
   `req-aws-collector-selection-12` and `-13`. It permits a selected run to state its completeness for what it read
   (so that what it read can become a retirement candidate). It retires nothing by itself.

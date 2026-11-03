@@ -1109,8 +1109,9 @@ absent) and matches no pattern of `exclude_types`. Exclusion wins. The match str
   emits nothing unless it is itself selected.
 - Some things are not manifest entries and are never filtered: the per-(account, region) footprints every
   regional containment hangs from, and the run's own account node.
-- An `include_types` pattern that matches no manifest entry stops the run before any call, naming the pattern
-  (`SELECTION_PATTERN_UNMATCHED`). An `exclude_types` pattern that matches none records a `warn` and the run goes on.
+- A pattern, in `include_types` or `exclude_types`, that matches no manifest entry stops the run before any call,
+  naming the pattern (`SELECTION_PATTERN_UNMATCHED`). An exclude that matched nothing would widen the run silently
+  (a typo, or a manifest rename), and the selection lives in a secret the operator cannot inspect, so both fail closed.
 
 **Unselected is unobserved, not empty, and a selected run states no completeness.** Core reads a run's
 completeness statement against the previous run's, and a surface the run leaves out, or marks not authorized,
@@ -1147,7 +1148,10 @@ states its completeness as it does today.
   `include_types` or `exclude_types` leaves anything unselected; in such a run nothing is recorded for any
   account, the excluded ones included. `-7` governs the failure case (a member that could not be read) and the
   exclude list; selection omissions are governed by this section.
-- **Unselected members still appear in the organization tree.** The tree is the organization's observation, not
+- **Unselected members still appear in the organization tree, and `accounts_allowed` is a collection scope, not a
+  disclosure control.** It limits which accounts are assumed into and read; it does not limit which accounts the
+  organization listing writes to the grid. See the open question on the tree.
+- **The tree.** The tree is the organization's observation, not
   the account's: it carries each member's org-sourced fields (`req-aws-collector-fanout-8`) whether or not the
   account is selected. "Unobserved" here means the account's own resources, surfaces and account-sourced fields
   (`-16`): none is read, none is written, none is withdrawn.
@@ -1164,7 +1168,7 @@ states its completeness as it does today.
 | req-aws-collector-selection-1 | Include, Exclude, Exclusion Wins | Proposed | An entry is read exactly when it matches an include pattern (or none is given) and no exclude pattern; a test over the committed manifest asserts the selected set for `ec2:*`, `eks:*`, `*:*_policy`, an include with an overlapping exclude, and neither. | |
 | req-aws-collector-selection-2 | Unselected Makes No Call | Proposed | With a selection that excludes a service no selected entry depends on, the fake-client harness records zero calls for that service and the ledger holds none; with one a selected child's `per`/`bind` source reads as its parent, the call is made, is ledgered against the child, and the echo names the parent. | |
 | req-aws-collector-selection-3 | Anchors Are Never Filtered | Proposed | With `include_types: ["ec2:vpc"]`, the account and region footprint nodes and the account node are still emitted. | |
-| req-aws-collector-selection-4 | Typos Fail Loudly | Proposed | An include pattern matching no entry stops the run before any call (`SELECTION_PATTERN_UNMATCHED`); an exclude pattern matching none warns and the run goes on. | |
+| req-aws-collector-selection-4 | Typos Fail Loudly | Proposed | Any include or exclude pattern matching no entry stops the run before any call (`SELECTION_PATTERN_UNMATCHED`); a test feeds a typo in each list. | |
 | req-aws-collector-selection-5 | A Selected Run States No Completeness | Proposed | A run whose selection leaves any type or account unselected records no completeness statement (no surface, no `declare_no_surfaces`, no edge authority claim for an unread source), derives no candidate, and writes no tombstone; every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts no statement, no candidate, and those rows untouched; and that a run selecting everything records its statement as before. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
 | req-aws-collector-selection-6 | Single-Account Assertion | Proposed | A resolved account outside `accounts_allowed` fails the run before collection; one inside it proceeds. | |
 | req-aws-collector-selection-7 | Fan-Out Member Set | Proposed | The member set is `ACTIVE` members, restricted to `accounts_allowed`, minus the base account and `exclude_account_ids`; a member in both lists is excluded; each left-out listed account has one `ACCOUNT_RESULT` of `skipped`/`not_selected` and records no surface; `max_member_accounts` bounds the selected count. | Amends `req-aws-collector-fanout-1`, `-5` and `-10`. |
@@ -1204,6 +1208,11 @@ other, and nothing outside it is a candidate.
   the run did not read. The engine resolves endpoints by natural key (`req-aws-collector-edges`); an endpoint of
   an unselected type is the same case as one in a denied listing. Which of keep, defer or drop is right is pinned
   by a test before this requirement is approved, not assumed here.
+- **Limiting what the organization tree writes.** The tree lists every member with its org-sourced fields whatever
+  `accounts_allowed` says, so an operator who scopes a run to a few accounts still has the others' ids, names and
+  organizational placement in the grid. Whether the allowlist should also limit the tree (a disclosure control, with
+  consequences for the org-unit structure the tree draws) is not decided; until it is, the secret's wording says the
+  allowlist selects accounts to collect, and no one should read it as a way to keep other accounts out of the grid.
 - **The organization tree under a type selection.** The tree and the landing-zone readers are not manifest
   entries, so `include_types` does not narrow them. Whether it should is not settled.
 - **Retiring a scope on purpose.** Because a selected run states no completeness, narrowing the selection cannot
@@ -1212,8 +1221,8 @@ other, and nothing outside it is a candidate.
   which `spec-grid-reconcile.md` names and does not specify (Issue# 599 - tap). Not settled here.
 - **Vocabulary.** The type pattern uses botocore service names. An alias table for IAM prefixes
   (`elasticloadbalancing:*`) is possible and not specified.
-- **An exclude pattern that matches nothing** warns; an include pattern that matches nothing stops the run. If
-  field use shows excludes silently widening a run after a manifest rename, the exclude case becomes an error too.
+- **An exclude pattern that no longer matches** after a manifest rename now stops the run (`-4`). If field use shows that is too
+  brittle, the alternative is a pinned manifest version in the selection; not specified here.
 
 ### AWS Partitions
 ----
