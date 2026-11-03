@@ -1,6 +1,7 @@
 """Shape and consistency of the seed catalog, and hygiene of the wave-1 Terraform. No AWS, no Terraform run."""
 
 import base64
+import hashlib
 import json
 import os
 import re
@@ -134,7 +135,13 @@ def test_the_saml_metadata_holds_a_certificate_and_no_private_key():
     text = (SEED / "wave1c" / "saml-metadata.xml").read_text(encoding="utf-8")
     cert = re.search(r"<ds:X509Certificate>(.*?)</ds:X509Certificate>", text, re.S).group(1)
     der = base64.b64decode("".join(cert.split()), validate=True)
-    assert der[:2] == b"\x30\x82" and b"PRIVATE" not in text.encode("utf-8")  # a DER SEQUENCE, the shape of a certificate
+    assert b"PRIVATE" not in text.encode("utf-8")
+    # Certificate ::= SEQUENCE { tbsCertificate SEQUENCE { [0] version v3, ... } ... }. A DER private key (PKCS#1 or PKCS#8)
+    # also starts with a SEQUENCE, but its first element is an INTEGER version, never the explicit [0] tag of a certificate.
+    assert der[0:2] == b"\x30\x82" and der[4:6] == b"\x30\x82" and der[8:13] == b"\xa0\x03\x02\x01\x02"
+    assert int.from_bytes(der[2:4], "big") == len(der) - 4  # the outer length covers the whole blob: nothing is appended
+    fingerprint = ":".join(f"{b:02X}" for b in hashlib.sha256(der).digest())
+    assert fingerprint in (SEED / "wave1c" / "cost.md").read_text(encoding="utf-8")  # the documented fingerprint is this blob's
 
 
 @pytest.mark.parametrize("module", MODULES)
