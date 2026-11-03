@@ -1109,10 +1109,18 @@ absent) and matches no pattern of `exclude_types`. Exclusion wins. The match str
 - An `include_types` pattern that matches no manifest entry stops the run before any call, naming the pattern
   (`SELECTION_PATTERN_UNMATCHED`). An `exclude_types` pattern that matches none records a `warn` and the run goes on.
 
-**Unselected is unobserved, not empty.** A type, a region or an account the run did not read gets no
-completeness surface, no retirement candidate and no "no longer seen" signal from this run, and the keep-absent
-upsert semantics (tap#1128) hold for every row of it. Retirement candidates arise only from what the run read.
-This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
+**Unselected is unobserved, not empty, and a selected run states no completeness.** Core reads a run's
+completeness statement against the previous run's, and a surface the run leaves out, or marks not authorized,
+reads as a **narrowed scope**: the previously observed children become `scope_withdrawn` candidates
+(`spec-grid-reconcile.md`, *Withdrawal is not absence*; `tap_grid/candidates.py` `_scope_of`). Core cannot tell
+"this run read less" from "the credential's scope was narrowed", so a selection must not leave a partial
+statement. A run in which the selection leaves anything unselected (a type, a region the entries reach, or an
+account) therefore records **no completeness statement at all**: no surface, no `declare_no_surfaces`, and no
+edge authority claim for a source it did not read. This is the course `-21` takes for a rejected base batch, and
+for the same reason. The keep-absent upsert semantics (tap#1128) hold for every row of an unselected type. The
+cost is stated: a selected run retires nothing, even within what it read; retirement comes from runs that
+select everything. Retiring the old scope on purpose, by narrowing it, is not offered through selection (open
+question below). This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
 
 #### Account Selection
 
@@ -1122,8 +1130,9 @@ This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative contr
 - **Fan-out** (`req-aws-collector-fanout`). The member set is the organization's `ACTIVE` members from this run's
   `ListAccounts`, restricted to `accounts_allowed` when set, minus the secret's `exclude_account_ids`. Exclusion
   wins. Every listed account still has exactly one `ACCOUNT_RESULT`; one the selection left out is
-  `skipped` with reason `not_selected`, and is a member that was not collected for `req-aws-collector-fanout-7`
-  (it records its `scope_authorized: false` surfaces and no more). `max_member_accounts` bounds the **selected**
+  `skipped` with reason `not_selected`. It does **not** record the `scope_authorized: false` surfaces
+  `req-aws-collector-fanout-7` gives a member that failed: the run records no completeness statement at all
+  (above), so there is nothing to read as a withdrawal. `max_member_accounts` bounds the **selected**
   member count; an explicit list is not a silent prefix.
 - **An account the organization does not list.** An `accounts_allowed` entry that is not an `ACTIVE` member of
   the organization (and is not the base account) stops the run before any member is assumed
@@ -1139,9 +1148,9 @@ This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative contr
 | req-aws-collector-selection-2 | Unselected Makes No Call | Proposed | With a selection that excludes a service, the fake-client harness records zero calls for that service and the run's call ledger holds none. | |
 | req-aws-collector-selection-3 | Anchors Are Never Filtered | Proposed | With `include_types: ["ec2:vpc"]`, the account and region footprint nodes and the account node are still emitted. | |
 | req-aws-collector-selection-4 | Typos Fail Loudly | Proposed | An include pattern matching no entry stops the run before any call (`SELECTION_PATTERN_UNMATCHED`); an exclude pattern matching none warns and the run goes on. | |
-| req-aws-collector-selection-5 | Unselected Is Unobserved | Proposed | A run restricted to a subset of types or accounts writes no completeness surface, no retirement candidate and no tombstone for what it did not read, and every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts those rows and surfaces are untouched. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
+| req-aws-collector-selection-5 | A Selected Run States No Completeness | Proposed | A run whose selection leaves any type, region or account unselected records no completeness statement (no surface, no `declare_no_surfaces`, no edge authority claim for an unread source), derives no candidate, and writes no tombstone; every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts no statement, no candidate, and those rows untouched; and that a run selecting everything records its statement as before. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
 | req-aws-collector-selection-6 | Single-Account Assertion | Proposed | A resolved account outside `accounts_allowed` fails the run before collection; one inside it proceeds. | |
-| req-aws-collector-selection-7 | Fan-Out Member Set | Proposed | The member set is `ACTIVE` members, restricted to `accounts_allowed`, minus the base account and `exclude_account_ids`; a member in both lists is excluded; each left-out listed account has one `ACCOUNT_RESULT` of `skipped`/`not_selected`; `max_member_accounts` bounds the selected count. | Amends `req-aws-collector-fanout-1`, `-5` and `-10`. |
+| req-aws-collector-selection-7 | Fan-Out Member Set | Proposed | The member set is `ACTIVE` members, restricted to `accounts_allowed`, minus the base account and `exclude_account_ids`; a member in both lists is excluded; each left-out listed account has one `ACCOUNT_RESULT` of `skipped`/`not_selected` and records no surface; `max_member_accounts` bounds the selected count. | Amends `req-aws-collector-fanout-1`, `-5` and `-10`. |
 | req-aws-collector-selection-8 | Unknown Account Stops The Run | Proposed | An `accounts_allowed` id that is not an `ACTIVE` member or the base account stops the run before any `AssumeRole` (`SELECTION_ACCOUNT_UNKNOWN`). | |
 | req-aws-collector-selection-9 | Effective Selection Is Echoed | Proposed | The run's start message and its `CollectionJob.results` carry the effective selection: the type patterns, the normalised account ids, and counts (entries total, selected, skipped by type selection; accounts listed, selected, skipped). One aggregated info line, not one per skipped entry. | The secret cannot be inspected, so the run is where an auditor reads the scope it had. Account ids are runtime output; none is committed. |
 | req-aws-collector-selection-10 | Base Account Omitted | Proposed | With `accounts_allowed` set and omitting the base account, no base-account resource is collected, the organization tree is read, and the base batch carries the tree. | See the open question below. |
@@ -1154,6 +1163,10 @@ This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative contr
   by a test before this requirement is approved, not assumed here.
 - **The organization tree under a type selection.** The tree and the landing-zone readers are not manifest
   entries, so `include_types` does not narrow them. Whether it should is not settled.
+- **Retiring a scope on purpose.** Because a selected run states no completeness, narrowing the selection cannot
+  withdraw what the wider selection observed. If an operator wants that (the credential's scope really did
+  shrink), it needs either a full-scope run under the new credential or a core notion of a filter-level scope,
+  which `spec-grid-reconcile.md` names and does not specify (Issue# 599 - tap). Not settled here.
 - **Vocabulary.** The type pattern uses botocore service names. An alias table for IAM prefixes
   (`elasticloadbalancing:*`) is possible and not specified.
 - **An exclude pattern that matches nothing** warns; an include pattern that matches nothing stops the run. If

@@ -308,8 +308,8 @@ schema fragment as the region scope is (`_REGION_SCOPE_PROPS`), so the two schem
 - `data.exclude_types` — non-empty array of type patterns. Absent means none.
 - `data.accounts_allowed` — non-empty array of account references. Absent means every account the run can reach.
 
-**Type pattern.** `<service>:<entity>`, both halves required, matching `^[a-z0-9-]+:[a-z0-9_*?]+$`, with `*`
-and `?` as the only glob characters (no character classes). `<service>` is the manifest entry's `service`
+**Type pattern.** `<service>:<entity>`, both halves required, matching `^[a-z0-9*?-]+:[a-z0-9_*?]+$`, with `*`
+and `?` as the only glob characters, allowed in either half (no character classes). `<service>` is the manifest entry's `service`
 (`ec2`, `eks`, `elbv2`, `sso-admin`: the botocore service name, which is not always the IAM prefix, for example
 `elbv2` against `elasticloadbalancing`). `<entity>` is the entry's `entity_type` with the `aws_core__aws_` prefix
 removed (`ec2:vpc`, `eks:eks_cluster`). `ec2:*` selects every EC2 entry, `*:*_policy` every entry whose entity
@@ -336,7 +336,7 @@ its own configuration, these three names and their meanings move there unchanged
 | --- | --- | :---: | --- | --- |
 | req-aws-core-secret-selection-1 | Optional, Additive | Proposed | A secret without any of the three keys validates and runs exactly as before. | |
 | req-aws-core-secret-selection-2 | Shared Fragment, Both Kinds | Proposed | Both kinds accept the same three keys from one shared fragment, and the strict `additionalProperties: false` schemas still refuse any other key; a test builds both schemas and asserts the fragment is the same object. | The region-scope precedent. |
-| req-aws-core-secret-selection-3 | Pattern Grammar | Proposed | A type pattern that does not match the grammar is refused at validation; an empty `include_types`, `exclude_types` or `accounts_allowed` array is refused. A test feeds a missing colon, an uppercase letter, a character class and an empty array. | A typo must fail where the operator can see it. |
+| req-aws-core-secret-selection-3 | Pattern Grammar | Proposed | A type pattern that does not match the grammar is refused at validation; an empty `include_types`, `exclude_types` or `accounts_allowed` array is refused. A test feeds a missing colon, an uppercase letter, a character class and an empty array, and asserts `*:*`, `*:*_policy`, `e*:vpc` and `ec2:vpc` all validate. | A typo must fail where the operator can see it. |
 | req-aws-core-secret-selection-4 | Account Forms | Proposed | An id of 12 digits and an ARN naming an account validate and normalise to the same id; an ARN with a wildcard, an empty account field or another partition is refused; duplicates collapse. | A test covers an IAM role ARN, an Organizations account ARN and an S3 ARN. |
 | req-aws-core-secret-selection-5 | No Contradiction With The Assertion | Proposed | When `expected_account_id` is also set, it must be in the normalised `accounts_allowed`, or validation refuses the secret. | Two statements about the same scope that disagree are an error, not a precedence rule. |
 | req-aws-core-secret-selection-6 | Not Logged As Credential | Proposed | The three keys are scope, not secret material: they are echoed in the run record (`req-aws-collector-selection-9`). The credential values beside them stay redacted as before. | |
