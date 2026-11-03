@@ -1101,7 +1101,10 @@ grammar (`<service>:<entity>`, not an `fnmatch` pattern over the raw entity type
 A manifest entry is **selected** when it matches at least one pattern of `include_types` (or `include_types` is
 absent) and matches no pattern of `exclude_types`. Exclusion wins. The match string is `<service>:<entity>`.
 
-- An unselected entry makes no call: it is absent from the run's call ledger as well as from the batch.
+- An unselected entry makes no call **of its own**: it is absent from the batch, and from the run's call ledger except where a
+  selected entry's source needs it as a parent (next bullet). A call made for that purpose is the selected child's: the
+  ledger records it against the child, and the role's grant must include it. An operator who excludes a service whose
+  list call a selected child depends on still needs that permission; the echo (`-9`) names such parents.
 - A parent that a selected type fans out from (a `per` or `bind` source) is read as the input of that type and
   emits nothing unless it is itself selected.
 - Some things are not manifest entries and are never filtered: the per-(account, region) footprints every
@@ -1114,13 +1117,16 @@ completeness statement against the previous run's, and a surface the run leaves 
 reads as a **narrowed scope**: the previously observed children become `scope_withdrawn` candidates
 (`spec-grid-reconcile.md`, *Withdrawal is not absence*; `tap_grid/candidates.py` `_scope_of`). Core cannot tell
 "this run read less" from "the credential's scope was narrowed", so a selection must not leave a partial
-statement. A run in which the selection leaves anything unselected (a type, a region the entries reach, or an
-account) therefore records **no completeness statement at all**: no surface, no `declare_no_surfaces`, and no
+statement. A run in which the selection leaves anything unselected (a type or an account) therefore records **no completeness statement at all**: no surface, no `declare_no_surfaces`, and no
 edge authority claim for a source it did not read. This is the course `-21` takes for a rejected base batch, and
 for the same reason. The keep-absent upsert semantics (tap#1128) hold for every row of an unselected type. The
 cost is stated: a selected run retires nothing, even within what it read; retirement comes from runs that
 select everything. Retiring the old scope on purpose, by narrowing it, is not offered through selection (open
 question below). Retirement *within* a selection is the flag `retire_within_selection` (below), which waits on core. This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
+
+Regions are not a selector in this amendment. `regions_allowed` is the existing region scope
+(`req-aws-collector-regions-5`); it is unchanged, does not trigger the no-statement rule, and a run restricted by it
+states its completeness as it does today.
 
 #### Account Selection
 
@@ -1156,10 +1162,10 @@ question below). Retirement *within* a selection is the flag `retire_within_sele
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-selection-1 | Include, Exclude, Exclusion Wins | Proposed | An entry is read exactly when it matches an include pattern (or none is given) and no exclude pattern; a test over the committed manifest asserts the selected set for `ec2:*`, `eks:*`, `*:*_policy`, an include with an overlapping exclude, and neither. | |
-| req-aws-collector-selection-2 | Unselected Makes No Call | Proposed | With a selection that excludes a service, the fake-client harness records zero calls for that service and the run's call ledger holds none. | |
+| req-aws-collector-selection-2 | Unselected Makes No Call | Proposed | With a selection that excludes a service no selected entry depends on, the fake-client harness records zero calls for that service and the ledger holds none; with one a selected child's `per`/`bind` source reads as its parent, the call is made, is ledgered against the child, and the echo names the parent. | |
 | req-aws-collector-selection-3 | Anchors Are Never Filtered | Proposed | With `include_types: ["ec2:vpc"]`, the account and region footprint nodes and the account node are still emitted. | |
 | req-aws-collector-selection-4 | Typos Fail Loudly | Proposed | An include pattern matching no entry stops the run before any call (`SELECTION_PATTERN_UNMATCHED`); an exclude pattern matching none warns and the run goes on. | |
-| req-aws-collector-selection-5 | A Selected Run States No Completeness | Proposed | A run whose selection leaves any type, region or account unselected records no completeness statement (no surface, no `declare_no_surfaces`, no edge authority claim for an unread source), derives no candidate, and writes no tombstone; every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts no statement, no candidate, and those rows untouched; and that a run selecting everything records its statement as before. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
+| req-aws-collector-selection-5 | A Selected Run States No Completeness | Proposed | A run whose selection leaves any type or account unselected records no completeness statement (no surface, no `declare_no_surfaces`, no edge authority claim for an unread source), derives no candidate, and writes no tombstone; every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts no statement, no candidate, and those rows untouched; and that a run selecting everything records its statement as before. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
 | req-aws-collector-selection-6 | Single-Account Assertion | Proposed | A resolved account outside `accounts_allowed` fails the run before collection; one inside it proceeds. | |
 | req-aws-collector-selection-7 | Fan-Out Member Set | Proposed | The member set is `ACTIVE` members, restricted to `accounts_allowed`, minus the base account and `exclude_account_ids`; a member in both lists is excluded; each left-out listed account has one `ACCOUNT_RESULT` of `skipped`/`not_selected` and records no surface; `max_member_accounts` bounds the selected count. | Amends `req-aws-collector-fanout-1`, `-5` and `-10`. |
 | req-aws-collector-selection-8 | Unknown Account Stops The Run | Proposed | An `accounts_allowed` id that is not an `ACTIVE` member or the base account stops the run before any `AssumeRole` (`SELECTION_ACCOUNT_UNKNOWN`). | |
@@ -1172,7 +1178,7 @@ question below). Retirement *within* a selection is the flag `retire_within_sele
 `data.retire_within_selection` (`req-aws-core-secret-selection-7`, default `false`). Requested by George on 2026-11-03.
 With it `false`, a selected run states no completeness (above) and retires nothing. With it `true`, the run states its
 completeness **for the surfaces it read**, and also declares its selection in grid terms: the entity types it listed,
-and the account and region dimension values it covered. A surface the selection did not cover is then neither in the
+and the accounts it covered. A surface the selection did not cover is then neither in the
 statement nor read as withdrawn.
 
 This cannot be done by the collector alone. Core derives withdrawal from the previous statement and the grid
@@ -1190,7 +1196,7 @@ other, and nothing outside it is a candidate.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-selection-12 | Retirement Only Within The Selection | Proposed | With `retire_within_selection: true` and core's selection block, a run records its statement for the surfaces it read and its selection; a previous surface outside the selection is skipped as `not_selected`, never `scope_withdrawn`; a surface inside it compares as today. Live: collect everything, delete one object of a selected type and one of an unselected type, run with the flag on, and only the first becomes a candidate (and retires, with authority armed). | Blocked on unified-systems-com/tap#1156. Extends `req-aws-core-livevalidation-lifecycle`'s negative control (2). |
-| req-aws-collector-selection-13 | Flag Refused Until Core Honours It | Proposed | Until core accepts the selection block, a secret with `retire_within_selection: true` fails validation with a message naming tap#1156; `false` or absent behaves as `-5`. | A flag that is accepted and silently ignored would read as "retirement is on". |
+| req-aws-collector-selection-13 | Flag Refused Until Core Honours It | Proposed | Until core accepts the selection block, a secret with `retire_within_selection: true` fails validation with a message naming tap#1156, whether or not a narrowing key is set; `false` or absent behaves as `-5`. | A flag that is accepted and silently ignored would read as "retirement is on". |
 
 #### Open Questions
 
