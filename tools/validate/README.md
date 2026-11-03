@@ -46,6 +46,7 @@ live state.
 | `runs/wave3-eks-2026-11-02.json` | Wave 3a, EKS: 6 entity types (11 compared), all pass; the Fargate profile is not seeded because IAM rejects the Fargate service principal here |
 | `runs/wave3-opensearch-2026-11-02.json` | Wave 3a, OpenSearch: the VPC domain (4 compared), passes |
 | `runs/wave1c-2026-11-02.json` | Wave 1c, the IAM SAML provider (the one weight-5 leftover type that could be created at no cost and compared), passes |
+| `runs/wave3b-ops-2026-11-03.json` | Wave 3b, operations: 22 types compared across SNS, CloudWatch, Logs, EventBridge, Systems Manager, CloudFormation, Auto Scaling and ECR, all pass; four types the account or region refuses are not seeded |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.

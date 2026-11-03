@@ -194,3 +194,10 @@ def test_cli_is_deterministic(tmp_path, monkeypatch, capsys):
         texts.append(capsys.readouterr().out)
     assert texts[0] == texts[1] and json.loads(texts[0])["resources"]
     assert expected.main([str(out / "nope.json")]) == 2
+
+
+def test_a_concat_value_joins_its_parts_and_is_absent_if_any_part_is():
+    r = res("aws_cloudwatch_log_metric_filter.seed", "aws_cloudwatch_log_metric_filter", name="f", log_group_name="/g")
+    spec = {"concat": [{"path": "log_group_name"}, {"const": ":"}, {"path": "name"}]}
+    assert expected.evaluate(spec, r, [r]) == "/g:f"
+    assert expected.evaluate({"concat": [{"path": "log_group_name"}, {"const": ":"}, {"path": "missing"}]}, r, [r]) is None
