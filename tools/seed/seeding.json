@@ -2701,7 +2701,7 @@
       },
       "tags": "tags_all",
       "edges": [],
-      "description": "Association of the document with a tag no instance carries, so it never runs."
+      "description": "Association of the document with a tag value that names the run, so no instance carries it and it never runs."
     },
     "AWS::CloudFormation::Stack": {
       "cfn_type": "AWS::CloudFormation::Stack",

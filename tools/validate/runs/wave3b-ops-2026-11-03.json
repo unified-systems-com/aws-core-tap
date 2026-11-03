@@ -9,10 +9,10 @@
   "date": "2026-11-03",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "Second run. The first run created 20 of 27 resources and was destroyed: CreateLogAnomalyDetector, CreateConnection and CreateLaunchConfiguration were refused, so those types and their dependants (API destination, Auto Scaling group, policy and scheduled action) were removed or moved to a launch template. The types the module does not seed are listed in wave3b-ops/cost.md. The launch template then set associate_public_ip_address to false (a SonarCloud finding) and the cycle was run a third time (w3p11030704): 22/22 pass, 24 destroyed, leftovers clean.",
+  "note": "Second run. The first run created 20 of 27 resources and was destroyed: CreateLogAnomalyDetector, CreateConnection and CreateLaunchConfiguration were refused, so those types and their dependants (API destination, Auto Scaling group, policy and scheduled action) were removed or moved to a launch template. The types the module does not seed are listed in wave3b-ops/cost.md. The launch template then set associate_public_ip_address to false (a SonarCloud finding) and the cycle was run a third time (w3p11030704) and a fourth time (w3p11030740) after a review finding: the SSM association now targets a tag value that includes the run id, so no managed instance can match it (no instance carried the old tag; checked with ssm describe-instance-information before the run). Both runs:: 22/22 pass, 24 destroyed, leftovers clean.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
-  "run_id": "w3p11030704",
+  "run_id": "w3p11030740",
   "seeds": "tools/seed/wave3b-ops",
   "wave": "3b-ops"
  },

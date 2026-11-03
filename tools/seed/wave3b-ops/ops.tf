@@ -139,14 +139,14 @@ resource "aws_ssm_patch_baseline" "seed" {
   }
 }
 
-# Targets a tag no instance carries, so it never runs.
+# Targets a tag value that names this run, so no instance can carry it and the association never runs.
 resource "aws_ssm_association" "seed" {
   name             = aws_ssm_document.seed.name
   association_name = "${local.prefix}-association"
 
   targets {
     key    = "tag:seed-no-such-tag"
-    values = ["none"]
+    values = ["none-${var.run_id}"]
   }
 }
 
