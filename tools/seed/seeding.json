@@ -2415,7 +2415,7 @@
       "cfn_type": "AWS::CloudWatch::Alarm",
       "entity_type": "aws_core__aws_cloudwatch_alarm",
       "terraform": "aws_cloudwatch_metric_alarm",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [],
       "compares": [
         "name",
@@ -2445,7 +2445,7 @@
       "cfn_type": "AWS::CloudWatch::CompositeAlarm",
       "entity_type": "aws_core__aws_cloudwatch_composite_alarm",
       "terraform": "aws_cloudwatch_composite_alarm",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [
         "AWS::CloudWatch::Alarm"
       ],
@@ -3333,7 +3333,7 @@
       "cfn_type": "AWS::Route53::HealthCheck",
       "entity_type": "aws_core__aws_route53_health_check",
       "terraform": "aws_route53_health_check",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [],
       "compares": [
         "route53_health_check_id"
@@ -3531,7 +3531,7 @@
       "cfn_type": "AWS::WAFRegional::Rule",
       "entity_type": "aws_core__aws_wafregional_rule",
       "terraform": "aws_wafregional_rule",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [],
       "compares": [
         "name",
@@ -3551,7 +3551,7 @@
       "cfn_type": "AWS::WAFRegional::RateBasedRule",
       "entity_type": "aws_core__aws_wafregional_rate_based_rule",
       "terraform": "aws_wafregional_rate_based_rule",
-      "cost_class": "free",
+      "cost_class": "cheap",
       "needs": [],
       "compares": [
         "name",

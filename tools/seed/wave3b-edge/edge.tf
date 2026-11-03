@@ -90,7 +90,7 @@ resource "aws_api_gateway_deployment" "seed" {
   }
 }
 
-resource "aws_api_gateway_stage" "seed" {
+resource "aws_api_gateway_stage" "seed" { # NOSONAR: never invoked (the default address is off), so there is nothing to log, and access logs need an account-level role
   rest_api_id   = aws_api_gateway_rest_api.seed.id
   deployment_id = aws_api_gateway_deployment.seed.id
   stage_name    = "seed"
