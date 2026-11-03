@@ -13,7 +13,9 @@ resource "aws_sqs_queue" "sink" {
   depends_on = [terraform_data.guard]
 }
 
-resource "aws_sns_topic" "seed" {
+# Left unencrypted on purpose: it holds no message, and a key of the module's own would add a costed resource, while the
+# AWS managed alias would be an edge target the catalog cannot resolve.
+resource "aws_sns_topic" "seed" { # NOSONAR: empty, run-scoped and destroyed within the hour; no message is ever published
   name = "${local.prefix}-topic"
 
   depends_on = [terraform_data.guard]
@@ -206,6 +208,10 @@ resource "aws_launch_template" "seed" {
 
   metadata_options {
     http_tokens = "required"
+  }
+
+  network_interfaces {
+    associate_public_ip_address = false
   }
 
   depends_on = [terraform_data.guard]
