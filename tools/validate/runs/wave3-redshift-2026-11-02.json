@@ -1,0 +1,266 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 18
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (22 destroyed). Checked directly afterwards: no cluster, snapshot, serverless workgroup or namespace, copy grant, VPC, role or secret of the run is left.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Redshift: 11 entity types (18 compared with the wave 1 types the module needs). Cycle history: `dc2.large` is refused for new clusters in GovCloud (`InvalidParameterValue: Invalid node type`), so the node is `ra3.large`; the first comparison stopped on an empty edge target (a topic with no key), fixed in the harness; one apply hit a Serverless workgroup conflict while the previous cycle's workgroup was still deleting and was repeated. Not seeded: cluster endpoint access (needs RA3 at a higher price), integration, IdC applications, cluster security groups.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3r11021555",
+  "seeds": "tools/seed/wave3-redshift",
+  "wave": "3a-redshift"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::IAM::ManagedPolicy",
+   "compared_fields": [
+    "name",
+    "path",
+    "policy_arn",
+    "policy_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::KMS::Key",
+   "compared_fields": [
+    "description",
+    "key_arn",
+    "key_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_kms_key",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::Cluster",
+   "compared_fields": [
+    "name",
+    "redshift_cluster_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::ClusterParameterGroup",
+   "compared_fields": [
+    "name",
+    "redshift_cluster_parameter_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_cluster_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::ClusterSubnetGroup",
+   "compared_fields": [
+    "name",
+    "redshift_cluster_subnet_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_cluster_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::EventSubscription",
+   "compared_fields": [
+    "name",
+    "redshift_event_subscription_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_event_subscription",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::ScheduledAction",
+   "compared_fields": [
+    "name",
+    "redshift_scheduled_action_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_scheduled_action",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::Snapshot",
+   "compared_fields": [
+    "name",
+    "redshift_snapshot_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_snapshot",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::SnapshotCopyGrant",
+   "compared_fields": [
+    "name",
+    "redshift_snapshot_copy_grant_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_snapshot_copy_grant",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::SnapshotSchedule",
+   "compared_fields": [
+    "name",
+    "redshift_snapshot_schedule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_snapshot_schedule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Redshift::UsageLimit",
+   "compared_fields": [
+    "redshift_usage_limit_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshift_usage_limit",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RedshiftServerless::Namespace",
+   "compared_fields": [
+    "name",
+    "redshiftserverless_namespace_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshiftserverless_namespace",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RedshiftServerless::Workgroup",
+   "compared_fields": [
+    "name",
+    "redshiftserverless_workgroup_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_redshiftserverless_workgroup",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SNS::Topic",
+   "compared_fields": [
+    "kms_master_key_id",
+    "topic_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sns_topic",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "ENCRYPTED_WITH_KEY__aws_core->aws_core__aws_kms_key"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 3,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 3,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3a-redshift"
+}

@@ -510,6 +510,310 @@
       ],
       "description": "One gp3 volume, 1 GiB, encrypted with the seed key, unattached."
     },
+    "AWS::EKS::AccessEntry": {
+      "cfn_type": "AWS::EKS::AccessEntry",
+      "entity_type": "aws_core__aws_eks_access_entry",
+      "terraform": "aws_eks_access_entry",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EKS::Cluster",
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "eks_access_entry_arn",
+        "name"
+      ],
+      "module": "wave3-eks",
+      "natural_key": "access_entry_arn",
+      "tf_attrs": {
+        "eks_access_entry_arn": "access_entry_arn",
+        "name": "principal_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Standard access entry for a seed role, with no access policy and no group."
+    },
+    "AWS::EKS::Addon": {
+      "cfn_type": "AWS::EKS::Addon",
+      "entity_type": "aws_core__aws_eks_addon",
+      "terraform": "aws_eks_addon",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EKS::Cluster"
+      ],
+      "compares": [
+        "eks_addon_arn",
+        "name"
+      ],
+      "module": "wave3-eks",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "eks_addon_arn": "arn",
+        "name": "addon_name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "The eks-pod-identity-agent add-on at its default version."
+    },
+    "AWS::EKS::Cluster": {
+      "cfn_type": "AWS::EKS::Cluster",
+      "entity_type": "aws_core__aws_eks_cluster",
+      "terraform": "aws_eks_cluster",
+      "cost_class": "costly",
+      "needs": [
+        "AWS::EC2::Subnet",
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "cluster_arn",
+        "endpoint",
+        "kubernetes_version",
+        "name",
+        "status"
+      ],
+      "module": "wave3-eks",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "cluster_arn": "arn",
+        "endpoint": "endpoint",
+        "kubernetes_version": "version",
+        "name": "name",
+        "status": "status"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "vpc_config.0.subnet_ids"
+        }
+      ],
+      "description": "Kubernetes 1.34 control plane, private endpoint only, API authentication mode, standard support only."
+    },
+    "AWS::EKS::IdentityProviderConfig": {
+      "cfn_type": "AWS::EKS::IdentityProviderConfig",
+      "entity_type": "aws_core__aws_eks_identity_provider_config",
+      "terraform": "aws_eks_identity_provider_config",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EKS::Cluster"
+      ],
+      "compares": [
+        "eks_identity_provider_config_arn",
+        "name"
+      ],
+      "module": "wave3-eks",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "eks_identity_provider_config_arn": "arn",
+        "name": "oidc.0.identity_provider_config_name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "OIDC identity provider whose issuer is a reserved documentation domain, so no token can be verified."
+    },
+    "AWS::EKS::Nodegroup": {
+      "cfn_type": "AWS::EKS::Nodegroup",
+      "entity_type": "aws_core__aws_eks_nodegroup",
+      "terraform": "aws_eks_node_group",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EKS::Cluster",
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "eks_nodegroup_arn",
+        "name"
+      ],
+      "module": "wave3-eks",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "eks_nodegroup_arn": "arn",
+        "name": "node_group_name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Managed node group of one on-demand t3.medium, Amazon Linux 2023."
+    },
+    "AWS::EKS::PodIdentityAssociation": {
+      "cfn_type": "AWS::EKS::PodIdentityAssociation",
+      "entity_type": "aws_core__aws_eks_pod_identity_association",
+      "terraform": "aws_eks_pod_identity_association",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EKS::Cluster",
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "eks_pod_identity_association_arn"
+      ],
+      "module": "wave3-eks",
+      "natural_key": "association_arn",
+      "tf_attrs": {
+        "eks_pod_identity_association_arn": "association_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Pod identity association of a service account nothing runs as with a seed role granted nothing."
+    },
+    "AWS::ElastiCache::CacheCluster": {
+      "cfn_type": "AWS::ElastiCache::CacheCluster",
+      "entity_type": "aws_core__aws_elasticache_cluster",
+      "terraform": "aws_elasticache_cluster",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::ElastiCache::SubnetGroup"
+      ],
+      "compares": [
+        "cluster_arn",
+        "cluster_id",
+        "engine",
+        "engine_version",
+        "name",
+        "node_type",
+        "num_nodes"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "cluster_arn": "arn",
+        "cluster_id": "cluster_id",
+        "engine": "engine",
+        "engine_version": "engine_version_actual",
+        "name": "cluster_id",
+        "node_type": "node_type",
+        "num_nodes": "num_cache_nodes"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "A standalone cache.t4g.micro Redis OSS 7.1 cluster (Valkey cannot be created through the cache cluster API)."
+    },
+    "AWS::ElastiCache::ParameterGroup": {
+      "cfn_type": "AWS::ElastiCache::ParameterGroup",
+      "entity_type": "aws_core__aws_elasticache_parameter_group",
+      "terraform": "aws_elasticache_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "elasticache_parameter_group_arn",
+        "name"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticache_parameter_group_arn": "arn",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "valkey8 parameter group with no parameters changed."
+    },
+    "AWS::ElastiCache::ReplicationGroup": {
+      "cfn_type": "AWS::ElastiCache::ReplicationGroup",
+      "entity_type": "aws_core__aws_elasticache_replication_group",
+      "terraform": "aws_elasticache_replication_group",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::ElastiCache::ParameterGroup",
+        "AWS::ElastiCache::SubnetGroup"
+      ],
+      "compares": [
+        "elasticache_replication_group_arn"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticache_replication_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "One-node Valkey 8.0 group on cache.t4g.micro, encrypted at rest and in transit, no snapshots kept."
+    },
+    "AWS::ElastiCache::ServerlessCache": {
+      "cfn_type": "AWS::ElastiCache::ServerlessCache",
+      "entity_type": "aws_core__aws_elasticache_serverless_cache",
+      "terraform": "aws_elasticache_serverless_cache",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "elasticache_serverless_cache_arn",
+        "name"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticache_serverless_cache_arn": "arn",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Serverless Valkey 8 cache at the smallest limits (1 GB, 1000 ECPU per second), no snapshots kept."
+    },
+    "AWS::ElastiCache::SubnetGroup": {
+      "cfn_type": "AWS::ElastiCache::SubnetGroup",
+      "entity_type": "aws_core__aws_elasticache_subnet_group",
+      "terraform": "aws_elasticache_subnet_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "elasticache_subnet_group_arn",
+        "name"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticache_subnet_group_arn": "arn",
+        "name": "name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subnet group over the two private subnets."
+    },
+    "AWS::ElastiCache::User": {
+      "cfn_type": "AWS::ElastiCache::User",
+      "entity_type": "aws_core__aws_elasticache_user",
+      "terraform": "aws_elasticache_user",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "elasticache_user_arn",
+        "name"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticache_user_arn": "arn",
+        "name": "user_name"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Two Valkey users, one named default, both switched off and denied every command, no password."
+    },
+    "AWS::ElastiCache::UserGroup": {
+      "cfn_type": "AWS::ElastiCache::UserGroup",
+      "entity_type": "aws_core__aws_elasticache_user_group",
+      "terraform": "aws_elasticache_user_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ElastiCache::User"
+      ],
+      "compares": [
+        "elasticache_user_group_arn"
+      ],
+      "module": "wave3-elasticache",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "elasticache_user_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Valkey user group of the two users, attached to no cache."
+    },
     "AWS::Events::Rule": {
       "cfn_type": "AWS::Events::Rule",
       "entity_type": "aws_core__aws_eventbridge_rule",
@@ -967,6 +1271,29 @@
       "edges": [],
       "description": "A second endpoint of the firewall in another VPC."
     },
+    "AWS::OpenSearchService::Domain": {
+      "cfn_type": "AWS::OpenSearchService::Domain",
+      "entity_type": "aws_core__aws_opensearchservice_domain",
+      "terraform": "aws_opensearch_domain",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::SecurityGroup",
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "name",
+        "opensearchservice_domain_arn"
+      ],
+      "module": "wave3-opensearch",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "domain_name",
+        "opensearchservice_domain_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "One t3.small.search node, OpenSearch 2.19, 10 GiB gp2, in a private subnet, encrypted at rest and node to node."
+    },
     "AWS::RDS::ClusterSnapshot": {
       "cfn_type": "AWS::RDS::ClusterSnapshot",
       "entity_type": "aws_core__aws_rds_db_cluster_snapshot",
@@ -1387,6 +1714,244 @@
       "tags": "tags_all",
       "edges": [],
       "description": "MySQL 8.0 option group with no options."
+    },
+    "AWS::Redshift::Cluster": {
+      "cfn_type": "AWS::Redshift::Cluster",
+      "entity_type": "aws_core__aws_redshift_cluster",
+      "terraform": "aws_redshift_cluster",
+      "cost_class": "costly",
+      "needs": [
+        "AWS::EC2::SecurityGroup",
+        "AWS::Redshift::ClusterParameterGroup",
+        "AWS::Redshift::ClusterSubnetGroup"
+      ],
+      "compares": [
+        "name",
+        "redshift_cluster_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "cluster_identifier",
+        "redshift_cluster_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "One ra3.large single-node cluster, encrypted, no public address, Redshift-managed master secret."
+    },
+    "AWS::Redshift::ClusterParameterGroup": {
+      "cfn_type": "AWS::Redshift::ClusterParameterGroup",
+      "entity_type": "aws_core__aws_redshift_cluster_parameter_group",
+      "terraform": "aws_redshift_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "redshift_cluster_parameter_group_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "redshift_cluster_parameter_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "redshift-2.0 parameter group with no parameters changed."
+    },
+    "AWS::Redshift::ClusterSubnetGroup": {
+      "cfn_type": "AWS::Redshift::ClusterSubnetGroup",
+      "entity_type": "aws_core__aws_redshift_cluster_subnet_group",
+      "terraform": "aws_redshift_subnet_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "name",
+        "redshift_cluster_subnet_group_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "redshift_cluster_subnet_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subnet group over the three private subnets."
+    },
+    "AWS::Redshift::EventSubscription": {
+      "cfn_type": "AWS::Redshift::EventSubscription",
+      "entity_type": "aws_core__aws_redshift_event_subscription",
+      "terraform": "aws_redshift_event_subscription",
+      "cost_class": "free",
+      "needs": [
+        "AWS::SNS::Topic"
+      ],
+      "compares": [
+        "name",
+        "redshift_event_subscription_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "redshift_event_subscription_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subscription of the seed topic to cluster events of severity ERROR."
+    },
+    "AWS::Redshift::ScheduledAction": {
+      "cfn_type": "AWS::Redshift::ScheduledAction",
+      "entity_type": "aws_core__aws_redshift_scheduled_action",
+      "terraform": "aws_redshift_scheduled_action",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::Role",
+        "AWS::Redshift::Cluster"
+      ],
+      "compares": [
+        "name",
+        "redshift_scheduled_action_id"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "name",
+      "tf_attrs": {
+        "name": "name",
+        "redshift_scheduled_action_id": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Disabled pause of the cluster in 2099, run as a seed role (the type cannot carry tags)."
+    },
+    "AWS::Redshift::Snapshot": {
+      "cfn_type": "AWS::Redshift::Snapshot",
+      "entity_type": "aws_core__aws_redshift_snapshot",
+      "terraform": "aws_redshift_cluster_snapshot",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::Redshift::Cluster"
+      ],
+      "compares": [
+        "name",
+        "redshift_snapshot_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "snapshot_identifier",
+        "redshift_snapshot_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Manual snapshot of the empty cluster, destroyed with it."
+    },
+    "AWS::Redshift::SnapshotCopyGrant": {
+      "cfn_type": "AWS::Redshift::SnapshotCopyGrant",
+      "entity_type": "aws_core__aws_redshift_snapshot_copy_grant",
+      "terraform": "aws_redshift_snapshot_copy_grant",
+      "cost_class": "free",
+      "needs": [
+        "AWS::KMS::Key"
+      ],
+      "compares": [
+        "name",
+        "redshift_snapshot_copy_grant_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "snapshot_copy_grant_name",
+        "redshift_snapshot_copy_grant_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Snapshot copy grant on the module's own key."
+    },
+    "AWS::Redshift::SnapshotSchedule": {
+      "cfn_type": "AWS::Redshift::SnapshotSchedule",
+      "entity_type": "aws_core__aws_redshift_snapshot_schedule",
+      "terraform": "aws_redshift_snapshot_schedule",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "redshift_snapshot_schedule_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "identifier",
+        "redshift_snapshot_schedule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Twelve-hourly schedule attached to no cluster."
+    },
+    "AWS::Redshift::UsageLimit": {
+      "cfn_type": "AWS::Redshift::UsageLimit",
+      "entity_type": "aws_core__aws_redshift_usage_limit",
+      "terraform": "aws_redshift_usage_limit",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Redshift::Cluster"
+      ],
+      "compares": [
+        "redshift_usage_limit_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "redshift_usage_limit_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Daily Spectrum data-scanned limit on the cluster that only logs."
+    },
+    "AWS::RedshiftServerless::Namespace": {
+      "cfn_type": "AWS::RedshiftServerless::Namespace",
+      "entity_type": "aws_core__aws_redshiftserverless_namespace",
+      "terraform": "aws_redshiftserverless_namespace",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "redshiftserverless_namespace_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "namespace_name",
+        "redshiftserverless_namespace_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Serverless namespace with no admin user."
+    },
+    "AWS::RedshiftServerless::Workgroup": {
+      "cfn_type": "AWS::RedshiftServerless::Workgroup",
+      "entity_type": "aws_core__aws_redshiftserverless_workgroup",
+      "terraform": "aws_redshiftserverless_workgroup",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::Subnet",
+        "AWS::RedshiftServerless::Namespace"
+      ],
+      "compares": [
+        "name",
+        "redshiftserverless_workgroup_arn"
+      ],
+      "module": "wave3-redshift",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "workgroup_name",
+        "redshiftserverless_workgroup_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Serverless workgroup at 8 RPU base capacity in three private subnets; no query is run."
     },
     "AWS::S3::AccessGrant": {
       "cfn_type": "AWS::S3::AccessGrant",

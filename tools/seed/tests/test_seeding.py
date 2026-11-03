@@ -22,7 +22,7 @@ def _tf_text(directory):
 
 
 #: The seed modules: the catalog's `module` names a directory under tools/seed, and the module's provider tag.
-MODULES = ("wave1", "wave1b", "wave2-rds", "wave2-nfw")
+MODULES = ("wave1", "wave1b", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch")
 TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
 TF_TEXT = TF_BY_MODULE["wave1"]
 ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
@@ -126,7 +126,7 @@ def test_every_iam_identity_waits_for_the_partition_guard(module):
 @pytest.mark.parametrize("module", MODULES)
 def test_iam_names_start_with_seed(module):
     blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S)
-    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave2-rds": 2, "wave2-nfw": 0}[module]
+    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0}[module]
     for kind, body in blocks:
         assert re.search(r'^\s*name\s*=\s*"seed-', body, re.M), kind
 
@@ -172,6 +172,51 @@ def test_wave2_rds_declares_only_what_its_cost_note_prices():
     assert 'instance_class              = "db.t4g.micro"' in text and 'instance_class       = "db.serverless"' in text
     assert "publicly_accessible         = false" in text and "multi_az                    = false" in text
     assert "skip_final_snapshot         = true" in text and "deletion_protection         = false" in text
+
+
+#: Wave 3a: per module, the one resource of each billed type its cost note prices (Terraform type: count) and the
+#: settings that fix the price (each `name = value` must appear, whatever the alignment). Every other Terraform type in
+#: COSTLY_TF is banned from it.
+WAVE3A = {
+    "wave3-redshift": (
+        {"aws_redshift_cluster": 1, "aws_redshiftserverless_workgroup": 1, "aws_kms_key": 1},
+        {"node_type": '"ra3.large"', "cluster_type": '"single-node"', "base_capacity": "8", "publicly_accessible": "false", "skip_final_snapshot": "true", "enable": "false"},
+    ),
+    "wave3-elasticache": (
+        {"aws_elasticache_replication_group": 1, "aws_elasticache_cluster": 1, "aws_elasticache_serverless_cache": 1},
+        {"node_type": '"cache.t4g.micro"', "num_cache_clusters": "1", "maximum": "1000", "snapshot_retention_limit": "0"},
+    ),
+    "wave3-eks": (
+        {"aws_eks_cluster": 1, "aws_eks_node_group": 1, "aws_internet_gateway": 1},
+        {"instance_types": '["t3.medium"]', "desired_size": "1", "max_size": "1", "support_type": '"STANDARD"', "endpoint_public_access": "false"},
+    ),
+    "wave3-opensearch": (
+        {"aws_opensearch_domain": 1},
+        {"instance_type": '"t3.small.search"', "instance_count": "1", "volume_type": '"gp2"', "volume_size": "10"},
+    ),
+}
+COSTLY_TF = ("aws_nat_gateway", "aws_lb", "aws_alb", "aws_eip", "aws_db_instance", "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_proxy", "aws_networkfirewall_firewall", "aws_instance", "aws_eks_cluster", "aws_eks_node_group", "aws_redshift_cluster", "aws_redshiftserverless_workgroup", "aws_elasticache_replication_group", "aws_elasticache_cluster", "aws_elasticache_serverless_cache", "aws_elasticache_global_replication_group", "aws_opensearch_domain", "aws_opensearchserverless_collection", "aws_internet_gateway", "aws_kms_key", "aws_vpc_endpoint")
+
+
+@pytest.mark.parametrize("module", sorted(WAVE3A))
+def test_wave3a_declares_only_what_its_cost_note_prices(module):
+    text = TF_BY_MODULE[module]
+    counts, settings = WAVE3A[module]
+    for tf_type in COSTLY_TF:
+        assert len(re.findall(rf'^resource "{tf_type}" ', text, re.M)) == counts.get(tf_type, 0), (module, tf_type)
+    for name, value in settings.items():
+        assert re.search(rf"^\s*{name}\s+=\s+{re.escape(value)}", text, re.M), (module, name)
+    cost = (SEED / module / "cost.md").read_text(encoding="utf-8")
+    assert "Time box" in cost and "Standing cost left running by mistake" in cost
+
+
+@pytest.mark.parametrize("module", MODULES)
+def test_a_module_attaching_aws_managed_policies_declares_no_policy_of_its_own(module):
+    # The role entry joins each attachment to a seeded policy; with a policy of the module's own seeded, an AWS
+    # managed policy attached beside it would be an unresolved edge target, which stops the comparison.
+    text = TF_BY_MODULE[module]
+    if ":iam::aws:policy" in text:
+        assert not re.search(r'^resource "aws_iam_policy" ', text, re.M), module
 
 
 def test_no_account_number_key_or_secret_in_the_seed_tree():

@@ -41,6 +41,10 @@ live state.
 | `runs/wave2-rds-2026-11-02.json` | Wave 2, RDS: 14 entity types (20 compared with the types the module needs), all pass on the second cycle; the first cycle failed `aws_rds_db_cluster_endpoint` (fixed in #175) |
 | `runs/wave2-nfw-2026-11-02.json` | Wave 2, Network Firewall: firewall, policy and rule group pass; the VPC endpoint association fails because the collector role is refused its list call (a known miss, #172) |
 | `runs/wave1b-2026-11-02.json` | Wave 1b, the remaining wave 1 types (Backup, WAFv2, S3 access points, Storage Lens and Access Grants, flow log, network interface, trail, Config aggregation authorization, Security Hub action target and insight): 21 entity types (27 compared with the types the module needs), all pass on the third cycle; the second cycle failed Storage Lens tags (fixed in #178) |
+| `runs/wave3-redshift-2026-11-02.json` | Wave 3a, Redshift: 11 entity types (18 compared with the types the module needs), all pass; the node is `ra3.large` because GovCloud refuses `dc2.large` for new clusters |
+| `runs/wave3-elasticache-2026-11-02.json` | Wave 3a, ElastiCache: 7 entity types (10 compared), all pass; Valkey users use IAM authentication and the standalone cache cluster runs Redis OSS |
+| `runs/wave3-eks-2026-11-02.json` | Wave 3a, EKS: 6 entity types (11 compared), all pass; the Fargate profile is not seeded because IAM rejects the Fargate service principal here |
+| `runs/wave3-opensearch-2026-11-02.json` | Wave 3a, OpenSearch: the VPC domain (4 compared), passes |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
