@@ -1,0 +1,35 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 1
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (2 destroyed). Checked directly afterwards: the run's SAML provider is gone; the account's own Identity Center provider is untouched.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "IAM SAML provider only. An earlier compare attempt in the same session failed before comparing anything because the stack's database container had been removed by a disk cleanup; nothing was compared then and the provider was destroyed before the retry. Not seeded: the Access Analyzer archive rule (the unused-access analyzer it needs is billed per role and user analysed, left until that spend is approved) and the types listed in wave1c/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w1c11022041",
+  "seeds": "tools/seed/wave1c",
+  "wave": "1c"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::IAM::SAMLProvider",
+   "compared_fields": [
+    "name",
+    "provider_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_saml_provider",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "1c"
+}

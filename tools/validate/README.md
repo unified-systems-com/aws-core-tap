@@ -45,6 +45,7 @@ live state.
 | `runs/wave3-elasticache-2026-11-02.json` | Wave 3a, ElastiCache: 7 entity types (10 compared), all pass; Valkey users use IAM authentication and the standalone cache cluster runs Redis OSS |
 | `runs/wave3-eks-2026-11-02.json` | Wave 3a, EKS: 6 entity types (11 compared), all pass; the Fargate profile is not seeded because IAM rejects the Fargate service principal here |
 | `runs/wave3-opensearch-2026-11-02.json` | Wave 3a, OpenSearch: the VPC domain (4 compared), passes |
+| `runs/wave1c-2026-11-02.json` | Wave 1c, the IAM SAML provider (the one weight-5 leftover type that could be created at no cost and compared), passes |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.

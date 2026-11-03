@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Seed wave 1c: metadata of an identity provider that does not exist. The certificate is self-signed for
+     CN=seed-idp.example.invalid and its private key was destroyed when it was made, so no assertion can ever be
+     signed for it. Public material only. -->
+<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://seed-idp.example.invalid/saml">
+  <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <md:KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>
+            MIIDbjCCAlagAwIBAgIUCmZIz/39fahXiudKRSSnzISnpiAwDQYJKoZIhvcNAQEL
+            BQAwVzEhMB8GA1UEAwwYc2VlZC1pZHAuZXhhbXBsZS5pbnZhbGlkMTIwMAYDVQQK
+            DCl0YXAgc2VlZCB0aHJvd2F3YXksIHByaXZhdGUga2V5IGRlc3Ryb3llZDAeFw0y
+            NjExMDMwMzAzMDNaFw0zNjEwMzEwMzAzMDNaMFcxITAfBgNVBAMMGHNlZWQtaWRw
+            LmV4YW1wbGUuaW52YWxpZDEyMDAGA1UECgwpdGFwIHNlZWQgdGhyb3dhd2F5LCBw
+            cml2YXRlIGtleSBkZXN0cm95ZWQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+            AoIBAQC178WsgbtJtTVoD2gybeXUve6vqp7QtyhlcHHAOFO17fNoIYuSkqMVwAwV
+            MoZLDw8XiwNZyDhav5/FSbSlKKRhkXx2iBtXW8LexcJ3jXIajSym0eR2vCremWV6
+            s0ZBNn7/782tma7atRhWM4I7Dvwkqy+pGNuxb/R6neOxc16s4bXzH2DLz8YvF8M4
+            bx3cV3D5bKMT6YSGcu3IFhHXbNclFuTeZZPobwcjUZhTUHo/Qoq5O/LBj2TGiHsi
+            NgA7hxpaVObaXYVMzXYUrGti9llFM1/4R+hhVWPG1J0opl54Z3hCE0VBJojxNyXc
+            egi7hS+vlBSpUdaw8IYBB18PiZWnAgMBAAGjMjAwMB0GA1UdDgQWBBSN4zE0Hy+I
+            hd9qAgNAoJ3OZccY7zAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IB
+            AQClEe0PTW/rdIMSvdjj6nXhgy67DNkgur9lsMnpWGBYJCEMccJCl07NDC3grjYj
+            v6tMkklOJCUUwpfMMKdwQukdrXMPN2aGg4+Hzbk/f2jXzpyvUX63+BFh6zmPzTWZ
+            QuLi3e2v7SmPK5JuVN2a48r61WeDpuaGZtT+ZuKVCiX9rfEBaZU9j70tWQtEvWBF
+            BQ1Q3zwMSBcYuYOQTw+dwO4kZRZNS0JyqIP1LQ4zxqKtTfmbqpMYOZAzPM5ryW3p
+            M3KqgZrpZoed9/zh3gKeKmlU0fHXvudlM9ZNR/Mteap9znm2Cfn73XK8lozmR+2v
+            Ej6slups1QvyOlGdN5TNVVDr
+          </ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </md:KeyDescriptor>
+    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://seed-idp.example.invalid/sso"/>
+  </md:IDPSSODescriptor>
+</md:EntityDescriptor>
