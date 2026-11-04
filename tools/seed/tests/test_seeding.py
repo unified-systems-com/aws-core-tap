@@ -24,7 +24,7 @@ def _tf_text(directory):
 
 
 #: The seed modules: the catalog's `module` names a directory under tools/seed, and the module's provider tag.
-MODULES = ("wave1", "wave1b", "wave1c", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch", "wave3b-ops", "wave3b-edge", "wave3b-compute", "wave3b-bedrock", "wave3b-net", "wave3b-data", "wave3b-dev", "wave3b-svc", "wave3b-vpc", "wave3b-ml", "wave3b-connect", "wave3b-xfer", "wave3b-misc", "wave3b-misc2", "wave3b-ops2")
+MODULES = ("wave1", "wave1b", "wave1c", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch", "wave3b-ops", "wave3b-edge", "wave3b-compute", "wave3b-bedrock", "wave3b-net", "wave3b-data", "wave3b-dev", "wave3b-svc", "wave3b-vpc", "wave3b-ml", "wave3b-connect", "wave3b-xfer", "wave3b-misc", "wave3b-misc2", "wave3b-ops2", "wave3b-compute2", "wave3b-misc3", "wave3b-misc4")
 TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
 TF_TEXT = TF_BY_MODULE["wave1"]
 ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
@@ -147,7 +147,7 @@ def test_the_saml_metadata_holds_a_certificate_and_no_private_key():
 @pytest.mark.parametrize("module", MODULES)
 def test_iam_names_start_with_seed(module):
     blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S)
-    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave1c": 0, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0, "wave3b-ops": 0, "wave3b-edge": 0, "wave3b-compute": 0, "wave3b-bedrock": 1, "wave3b-net": 3, "wave3b-data": 2, "wave3b-dev": 4, "wave3b-svc": 1, "wave3b-vpc": 0, "wave3b-ml": 1, "wave3b-connect": 0, "wave3b-xfer": 1, "wave3b-misc": 0, "wave3b-misc2": 0, "wave3b-ops2": 0}[module]
+    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave1c": 0, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0, "wave3b-ops": 0, "wave3b-edge": 0, "wave3b-compute": 0, "wave3b-bedrock": 1, "wave3b-net": 3, "wave3b-data": 2, "wave3b-dev": 4, "wave3b-svc": 1, "wave3b-vpc": 0, "wave3b-ml": 1, "wave3b-connect": 0, "wave3b-xfer": 1, "wave3b-misc": 0, "wave3b-misc2": 0, "wave3b-ops2": 0, "wave3b-compute2": 1, "wave3b-misc3": 2, "wave3b-misc4": 0}[module]
     for kind, body in blocks:
         assert re.search(r'^\s*name\s*=\s*"seed-', body, re.M), kind
 

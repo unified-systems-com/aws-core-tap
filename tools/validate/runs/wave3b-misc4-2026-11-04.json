@@ -1,0 +1,75 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 4
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (5 destroyed). Checked directly afterwards with each service's own listing (all calls succeeded): no guardrail, alarm or mute rule of the run remains.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first (w3i11041337) compared 4 types: 3 passed; CloudWatch::AlarmMuteRule was refused ('Alarm Mute Rule Schedule expression provided is not valid') for a six-field cron with a year, and passes with a five-field cron. See wave3b-misc4/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3i11041340",
+  "seeds": "tools/seed/wave3b-misc4"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::Bedrock::Guardrail",
+   "compared_fields": [
+    "guardrail_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_bedrock_guardrail",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Bedrock::GuardrailVersion",
+   "compared_fields": [
+    "bedrock_guardrail_version_key"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_bedrock_guardrail_version",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::Alarm",
+   "compared_fields": [
+    "actions_enabled",
+    "alarm_arn",
+    "comparison_operator",
+    "metric_name",
+    "name",
+    "namespace",
+    "threshold"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_alarm",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::AlarmMuteRule",
+   "compared_fields": [
+    "alarm_mute_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_alarm_mute_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-misc4"
+}

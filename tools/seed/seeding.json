@@ -7464,6 +7464,194 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Contributor Insights rule over a log group nothing writes to."
+    },
+    "AWS::Lambda::CodeSigningConfig": {
+      "cfn_type": "AWS::Lambda::CodeSigningConfig",
+      "entity_type": "aws_core__aws_lambda_code_signing_config",
+      "terraform": "aws_lambda_code_signing_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "code_signing_config_arn",
+        "untrusted_artifact_on_deployment",
+        "signing_profile_version_arns"
+      ],
+      "module": "wave3b-compute2",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "code_signing_config_arn": "arn",
+        "untrusted_artifact_on_deployment": "policies.0.untrusted_artifact_on_deployment",
+        "signing_profile_version_arns": "allowed_publishers.0.signing_profile_version_arns"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Code signing configuration that warns on an unsigned artifact; names the module's Signer profile."
+    },
+    "AWS::ECS::TaskSet": {
+      "cfn_type": "AWS::ECS::TaskSet",
+      "entity_type": "aws_core__aws_ecs_task_set",
+      "terraform": "aws_ecs_task_set",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ECS::Cluster",
+        "AWS::ECS::Service",
+        "AWS::ECS::TaskDefinition"
+      ],
+      "compares": [
+        "name",
+        "ecs_task_set_arn"
+      ],
+      "module": "wave3b-compute2",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "task_set_id",
+        "ecs_task_set_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Task set of scale zero on an external-deployment service; no task starts."
+    },
+    "AWS::DLM::LifecyclePolicy": {
+      "cfn_type": "AWS::DLM::LifecyclePolicy",
+      "entity_type": "aws_core__aws_dlm_lifecycle_policy",
+      "terraform": "aws_dlm_lifecycle_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "dlm_lifecycle_policy_id"
+      ],
+      "module": "wave3b-compute2",
+      "natural_key": "id",
+      "tf_attrs": {
+        "dlm_lifecycle_policy_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Daily snapshot policy for a made-up tag, left disabled."
+    },
+    "AWS::RUM::AppMonitor": {
+      "cfn_type": "AWS::RUM::AppMonitor",
+      "entity_type": "aws_core__aws_rum_app_monitor",
+      "terraform": "aws_rum_app_monitor",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "rum_app_monitor_id"
+      ],
+      "module": "wave3b-misc3",
+      "natural_key": "app_monitor_id",
+      "tf_attrs": {
+        "name": "name",
+        "rum_app_monitor_id": "app_monitor_id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "RUM app monitor for a reserved invalid domain."
+    },
+    "AWS::Lex::Bot": {
+      "cfn_type": "AWS::Lex::Bot",
+      "entity_type": "aws_core__aws_lex_bot",
+      "terraform": "aws_lexv2models_bot",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "lex_bot_arn"
+      ],
+      "module": "wave3b-misc3",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "lex_bot_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Lex V2 bot with no locale; never built."
+    },
+    "AWS::Scheduler::Schedule": {
+      "cfn_type": "AWS::Scheduler::Schedule",
+      "entity_type": "aws_core__aws_scheduler_schedule",
+      "terraform": "aws_scheduler_schedule",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "scheduler_schedule_arn"
+      ],
+      "module": "wave3b-misc3",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "scheduler_schedule_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Disabled daily schedule aimed at an empty queue."
+    },
+    "AWS::Bedrock::GuardrailVersion": {
+      "cfn_type": "AWS::Bedrock::GuardrailVersion",
+      "entity_type": "aws_core__aws_bedrock_guardrail_version",
+      "terraform": "aws_bedrock_guardrail_version",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Bedrock::Guardrail"
+      ],
+      "compares": [
+        "bedrock_guardrail_version_key"
+      ],
+      "module": "wave3b-misc4",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "guardrail_arn"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "version"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "bedrock_guardrail_version_key": {
+          "concat": [
+            {
+              "path": "guardrail_arn"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "version"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Published version of the module's guardrail; the key is <guardrail ARN>:<version>."
+    },
+    "AWS::CloudWatch::AlarmMuteRule": {
+      "cfn_type": "AWS::CloudWatch::AlarmMuteRule",
+      "entity_type": "aws_core__aws_cloudwatch_alarm_mute_rule",
+      "terraform": "aws_cloudwatch_alarm_mute_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::CloudWatch::Alarm"
+      ],
+      "compares": [
+        "alarm_mute_rule_arn"
+      ],
+      "module": "wave3b-misc4",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "alarm_mute_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Mute rule over one alarm on a yearly schedule."
     }
   }
 }
