@@ -5231,6 +5231,410 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Rule groups namespace of one recording rule."
+    },
+    "AWS::Lambda::LayerVersion": {
+      "cfn_type": "AWS::Lambda::LayerVersion",
+      "entity_type": "aws_core__aws_lambda_layer_version",
+      "terraform": "aws_lambda_layer_version",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "layer_version_arn",
+        "layer_arn",
+        "version",
+        "compatible_runtimes"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "layer_name",
+        "layer_version_arn": "arn",
+        "layer_arn": "layer_arn",
+        "version": "version",
+        "compatible_runtimes": "compatible_runtimes"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Layer of the one-file zip, Python 3.12."
+    },
+    "AWS::Lambda::Alias": {
+      "cfn_type": "AWS::Lambda::Alias",
+      "entity_type": "aws_core__aws_lambda_alias",
+      "terraform": "aws_lambda_alias",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Lambda::Function"
+      ],
+      "compares": [
+        "name",
+        "lambda_alias_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "lambda_alias_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Alias of the function's published version."
+    },
+    "AWS::Batch::ComputeEnvironment": {
+      "cfn_type": "AWS::Batch::ComputeEnvironment",
+      "entity_type": "aws_core__aws_batch_compute_environment",
+      "terraform": "aws_batch_compute_environment",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "compute_environment_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "compute_environment_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Unmanaged environment, so no instance is ever started."
+    },
+    "AWS::Batch::SchedulingPolicy": {
+      "cfn_type": "AWS::Batch::SchedulingPolicy",
+      "entity_type": "aws_core__aws_batch_scheduling_policy",
+      "terraform": "aws_batch_scheduling_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "scheduling_policy_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "scheduling_policy_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Fair-share scheduling policy."
+    },
+    "AWS::Batch::JobQueue": {
+      "cfn_type": "AWS::Batch::JobQueue",
+      "entity_type": "aws_core__aws_batch_job_queue",
+      "terraform": "aws_batch_job_queue",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Batch::ComputeEnvironment",
+        "AWS::Batch::SchedulingPolicy"
+      ],
+      "compares": [
+        "name",
+        "job_queue_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "job_queue_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Queue over the unmanaged environment; nothing is submitted."
+    },
+    "AWS::Batch::JobDefinition": {
+      "cfn_type": "AWS::Batch::JobDefinition",
+      "entity_type": "aws_core__aws_batch_job_definition",
+      "terraform": "aws_batch_job_definition",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "job_definition_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "job_definition_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Container job definition of one busybox command; never submitted."
+    },
+    "AWS::CodeBuild::Project": {
+      "cfn_type": "AWS::CodeBuild::Project",
+      "entity_type": "aws_core__aws_codebuild_project",
+      "terraform": "aws_codebuild_project",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::Role"
+      ],
+      "compares": [
+        "name",
+        "project_arn",
+        "environment_image",
+        "compute_type",
+        "source_type",
+        "privileged_mode"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "project_arn": "arn",
+        "environment_image": "environment.0.image",
+        "compute_type": "environment.0.compute_type",
+        "source_type": "source.0.type",
+        "privileged_mode": "environment.0.privileged_mode"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "target_type": "aws_core__aws_iam_role",
+          "direction": "outbound",
+          "target": "service_role"
+        }
+      ],
+      "description": "Project with no source and no artifact; never built."
+    },
+    "AWS::CodeBuild::ReportGroup": {
+      "cfn_type": "AWS::CodeBuild::ReportGroup",
+      "entity_type": "aws_core__aws_codebuild_report_group",
+      "terraform": "aws_codebuild_report_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "codebuild_report_group_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "codebuild_report_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Test report group that exports nowhere."
+    },
+    "AWS::CodePipeline::Pipeline": {
+      "cfn_type": "AWS::CodePipeline::Pipeline",
+      "entity_type": "aws_core__aws_codepipeline_pipeline",
+      "terraform": "aws_codepipeline",
+      "cost_class": "free",
+      "needs": [
+        "AWS::IAM::Role",
+        "AWS::S3::Bucket"
+      ],
+      "compares": [
+        "name",
+        "pipeline_arn",
+        "stage_names",
+        "pipeline_type",
+        "execution_mode"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "pipeline_arn": "arn",
+        "stage_names": {
+          "const": [
+            "Source",
+            "Approve"
+          ]
+        },
+        "pipeline_type": {
+          "const": "V1"
+        },
+        "execution_mode": {
+          "const": "SUPERSEDED"
+        }
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "target_type": "aws_core__aws_iam_role",
+          "direction": "outbound",
+          "target": "role_arn"
+        },
+        {
+          "edge_type": "RETRIEVES_SOURCE_FROM__aws_core",
+          "target_type": "aws_core__aws_s3_bucket",
+          "direction": "outbound",
+          "target": {
+            "join": {
+              "terraform": "aws_s3_bucket",
+              "own": "stage.0.action.0.configuration.S3Bucket",
+              "other": "bucket",
+              "target": "arn"
+            }
+          }
+        }
+      ],
+      "description": "S3 source and a manual approval; the one execution it starts at creation fails because the object is not there."
+    },
+    "AWS::CodePipeline::CustomActionType": {
+      "cfn_type": "AWS::CodePipeline::CustomActionType",
+      "entity_type": "aws_core__aws_codepipeline_custom_action_type",
+      "terraform": "aws_codepipeline_custom_action_type",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "codepipeline_custom_action_type_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "codepipeline_custom_action_type_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Custom build action type."
+    },
+    "AWS::ServiceDiscovery::PrivateDnsNamespace": {
+      "cfn_type": "AWS::ServiceDiscovery::PrivateDnsNamespace",
+      "entity_type": "aws_core__aws_servicediscovery_private_dns_namespace",
+      "terraform": "aws_service_discovery_private_dns_namespace",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "servicediscovery_private_dns_namespace_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "servicediscovery_private_dns_namespace_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Private namespace in the module's VPC."
+    },
+    "AWS::ServiceDiscovery::HttpNamespace": {
+      "cfn_type": "AWS::ServiceDiscovery::HttpNamespace",
+      "entity_type": "aws_core__aws_servicediscovery_http_namespace",
+      "terraform": "aws_service_discovery_http_namespace",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "servicediscovery_http_namespace_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "servicediscovery_http_namespace_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "HTTP namespace."
+    },
+    "AWS::ServiceDiscovery::Service": {
+      "cfn_type": "AWS::ServiceDiscovery::Service",
+      "entity_type": "aws_core__aws_servicediscovery_service",
+      "terraform": "aws_service_discovery_service",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ServiceDiscovery::PrivateDnsNamespace"
+      ],
+      "compares": [
+        "name",
+        "servicediscovery_service_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "servicediscovery_service_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Service with an A record in the private namespace; no instance registered."
+    },
+    "AWS::NetworkManager::GlobalNetwork": {
+      "cfn_type": "AWS::NetworkManager::GlobalNetwork",
+      "entity_type": "aws_core__aws_networkmanager_global_network",
+      "terraform": "aws_networkmanager_global_network",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "networkmanager_global_network_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "networkmanager_global_network_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Global network holding a site, a device and a link."
+    },
+    "AWS::NetworkManager::Site": {
+      "cfn_type": "AWS::NetworkManager::Site",
+      "entity_type": "aws_core__aws_networkmanager_site",
+      "terraform": "aws_networkmanager_site",
+      "cost_class": "free",
+      "needs": [
+        "AWS::NetworkManager::GlobalNetwork"
+      ],
+      "compares": [
+        "networkmanager_site_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "networkmanager_site_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Site in the global network."
+    },
+    "AWS::NetworkManager::Device": {
+      "cfn_type": "AWS::NetworkManager::Device",
+      "entity_type": "aws_core__aws_networkmanager_device",
+      "terraform": "aws_networkmanager_device",
+      "cost_class": "free",
+      "needs": [
+        "AWS::NetworkManager::GlobalNetwork",
+        "AWS::NetworkManager::Site"
+      ],
+      "compares": [
+        "networkmanager_device_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "networkmanager_device_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Device at the site."
+    },
+    "AWS::NetworkManager::Link": {
+      "cfn_type": "AWS::NetworkManager::Link",
+      "entity_type": "aws_core__aws_networkmanager_link",
+      "terraform": "aws_networkmanager_link",
+      "cost_class": "free",
+      "needs": [
+        "AWS::NetworkManager::GlobalNetwork",
+        "AWS::NetworkManager::Site"
+      ],
+      "compares": [
+        "networkmanager_link_arn"
+      ],
+      "module": "wave3b-dev",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "networkmanager_link_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Ten megabit link at the site."
     }
   }
 }

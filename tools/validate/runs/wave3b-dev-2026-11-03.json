@@ -1,0 +1,309 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 21
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (29 destroyed). Checked directly afterwards, with each service's own listing: no Lambda function or layer, Batch environment, queue or active job definition, CodeBuild project or report group, CodePipeline pipeline or custom action type, Cloud Map namespace or service, Network Manager global network, bucket, IAM role or VPC of the run remains. The tagging API lists one Batch job definition revision per run, all INACTIVE: Batch job definitions cannot be deleted, only deregistered.",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Fourth run of the module (the earlier ones, w3v11032216, w3v11032222 and w3v11032228, were destroyed). They found: Lambda function URLs do not work here (CreateFunctionUrlConfig answers 403), Batch wants a service role carrying AWSBatchServiceRole even for an unmanaged environment (without the policy the environment goes INVALID), and the event source mapping's tags cannot be read (the compare stops at tags-unread; cause not established). The types that cannot pass are not seeded; see wave3b-dev/cost.md. One earlier verdict was not usable: the apply left the environment INVALID, no expected inventory was written, and the compare read the previous run's. That was a fault in the run script, which now removes the old inventory first.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3v11032236",
+  "seeds": "tools/seed/wave3b-dev",
+  "wave": "3b-dev"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::Batch::ComputeEnvironment",
+   "compared_fields": [
+    "compute_environment_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_batch_compute_environment",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Batch::JobDefinition",
+   "compared_fields": [
+    "job_definition_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_batch_job_definition",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Batch::JobQueue",
+   "compared_fields": [
+    "job_queue_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_batch_job_queue",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Batch::SchedulingPolicy",
+   "compared_fields": [
+    "scheduling_policy_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_batch_scheduling_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CodeBuild::Project",
+   "compared_fields": [
+    "compute_type",
+    "environment_image",
+    "name",
+    "privileged_mode",
+    "project_arn",
+    "source_type"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_codebuild_project",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CodeBuild::ReportGroup",
+   "compared_fields": [
+    "codebuild_report_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_codebuild_report_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CodePipeline::CustomActionType",
+   "compared_fields": [
+    "codepipeline_custom_action_type_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_codepipeline_custom_action_type",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CodePipeline::Pipeline",
+   "compared_fields": [
+    "execution_mode",
+    "name",
+    "pipeline_arn",
+    "pipeline_type",
+    "stage_names"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_codepipeline_pipeline",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "RUNS_BUILD__aws_core->aws_core__aws_codebuild_project"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 4,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Lambda::Function",
+   "compared_fields": [
+    "function_arn",
+    "handler",
+    "memory_size",
+    "name",
+    "runtime",
+    "timeout"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_lambda",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Lambda::Alias",
+   "compared_fields": [
+    "lambda_alias_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_lambda_alias",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Lambda::LayerVersion",
+   "compared_fields": [
+    "compatible_runtimes",
+    "layer_arn",
+    "layer_version_arn",
+    "name",
+    "version"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_lambda_layer_version",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkManager::Device",
+   "compared_fields": [
+    "networkmanager_device_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkmanager_device",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkManager::GlobalNetwork",
+   "compared_fields": [
+    "networkmanager_global_network_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkmanager_global_network",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkManager::Link",
+   "compared_fields": [
+    "networkmanager_link_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkmanager_link",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::NetworkManager::Site",
+   "compared_fields": [
+    "networkmanager_site_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_networkmanager_site",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::Bucket",
+   "compared_fields": [
+    "bucket_arn",
+    "name",
+    "public_access_blocked"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_bucket",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ServiceDiscovery::HttpNamespace",
+   "compared_fields": [
+    "name",
+    "servicediscovery_http_namespace_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_servicediscovery_http_namespace",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ServiceDiscovery::PrivateDnsNamespace",
+   "compared_fields": [
+    "name",
+    "servicediscovery_private_dns_namespace_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_servicediscovery_private_dns_namespace",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ServiceDiscovery::Service",
+   "compared_fields": [
+    "name",
+    "servicediscovery_service_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_servicediscovery_service",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-dev"
+}
