@@ -193,6 +193,8 @@ resource "aws_batch_job_definition" "seed" {
 
 # --- CodeBuild: a project with no source and a report group that exports nowhere; nothing is built ---
 
+# Nothing is built and nothing is stored, so there is no artifact or cache to encrypt; the service's own key covers the rest.
+# nosemgrep: terraform.aws.security.aws-codebuild-project-unencrypted.aws-codebuild-project-unencrypted
 resource "aws_codebuild_project" "seed" {
   name         = "${local.prefix}-build"
   service_role = aws_iam_role.codebuild.arn
