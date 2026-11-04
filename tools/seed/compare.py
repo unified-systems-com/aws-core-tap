@@ -71,6 +71,13 @@ def _row_signature(row):
     )
 
 
+def _differing(first, again):
+    """Names (never values) of the fields, and of tags or edges, that differ between two reads of one row."""
+    names = sorted(k for k in set(first["fields"]) | set(again["fields"]) if canon(first["fields"].get(k)) != canon(again["fields"].get(k)))
+    names += [k for k in ("tags", "edges") if canon(first[k]) != canon(again[k])]
+    return ",".join(names) or "unknown"
+
+
 def _check_resource(exp, rows, compared):
     """The first mismatch name for one expected resource against the rows of its type, or None."""
     matching = [r for r in rows if r["natural_key"] == exp["natural_key"]]
@@ -136,7 +143,7 @@ def compare_type(entity_type, cfn_type, expected, compared, rows, rows_again, ma
             else:
                 first = next(r for r in rows if r["natural_key"] == exp["natural_key"])
                 if _row_signature(first) != _row_signature(again[0]):
-                    problem, where = "second-pass-differs", "second-pass"
+                    problem, where = f"second-pass-differs[{_differing(first, again[0])}]", "second-pass"
         if problem:
             rec["verdict"] = "fail"
             rec["first_mismatch"] = scrub(f"{problem} @ {exp['natural_key']} ({where})")

@@ -4163,6 +4163,345 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Application inference profile copied from Nova Lite."
+    },
+    "AWS::Route53Resolver::ResolverEndpoint": {
+      "cfn_type": "AWS::Route53Resolver::ResolverEndpoint",
+      "entity_type": "aws_core__aws_route53resolver_resolver_endpoint",
+      "terraform": "aws_route53_resolver_endpoint",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "route53resolver_resolver_endpoint_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53resolver_resolver_endpoint_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Outbound endpoint on two subnets; billed by the hour per interface."
+    },
+    "AWS::Route53Resolver::ResolverRule": {
+      "cfn_type": "AWS::Route53Resolver::ResolverRule",
+      "entity_type": "aws_core__aws_route53resolver_resolver_rule",
+      "terraform": "aws_route53_resolver_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Route53Resolver::ResolverEndpoint"
+      ],
+      "compares": [
+        "name",
+        "route53resolver_resolver_rule_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53resolver_resolver_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Forwarding rule for a made-up domain to a documentation address."
+    },
+    "AWS::Route53Resolver::ResolverQueryLogConfig": {
+      "cfn_type": "AWS::Route53Resolver::ResolverQueryLogConfig",
+      "entity_type": "aws_core__aws_route53resolver_resolver_query_log_config",
+      "terraform": "aws_route53_resolver_query_log_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "route53resolver_resolver_query_log_config_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53resolver_resolver_query_log_config_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Query log configuration that writes to a log group."
+    },
+    "AWS::Route53Resolver::FirewallDomainList": {
+      "cfn_type": "AWS::Route53Resolver::FirewallDomainList",
+      "entity_type": "aws_core__aws_route53resolver_firewall_domain_list",
+      "terraform": "aws_route53_resolver_firewall_domain_list",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "route53resolver_firewall_domain_list_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53resolver_firewall_domain_list_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "DNS Firewall domain list of one made-up domain."
+    },
+    "AWS::Route53Resolver::FirewallRuleGroup": {
+      "cfn_type": "AWS::Route53Resolver::FirewallRuleGroup",
+      "entity_type": "aws_core__aws_route53_resolver_firewall_rule_group",
+      "terraform": "aws_route53_resolver_firewall_rule_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "rule_group_id"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "rule_group_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "DNS Firewall rule group holding one blocking rule. The catalog entity name is the manifest's, with the underscore after route53."
+    },
+    "AWS::Route53Resolver::FirewallRuleGroupAssociation": {
+      "cfn_type": "AWS::Route53Resolver::FirewallRuleGroupAssociation",
+      "entity_type": "aws_core__aws_route53resolver_firewall_rule_group_association",
+      "terraform": "aws_route53_resolver_firewall_rule_group_association",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Route53Resolver::FirewallRuleGroup"
+      ],
+      "compares": [
+        "name",
+        "route53resolver_firewall_rule_group_association_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "route53resolver_firewall_rule_group_association_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Association of the rule group with the module's VPC."
+    },
+    "AWS::Route53Resolver::FirewallConfig": {
+      "cfn_type": "AWS::Route53Resolver::FirewallConfig",
+      "entity_type": "aws_core__aws_route53resolver_firewall_config",
+      "terraform": "aws_route53_resolver_firewall_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "route53resolver_firewall_config_id"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "id",
+      "tf_attrs": {
+        "route53resolver_firewall_config_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Per-VPC firewall setting (fail open off)."
+    },
+    "AWS::Route53Resolver::ResolverConfig": {
+      "cfn_type": "AWS::Route53Resolver::ResolverConfig",
+      "entity_type": "aws_core__aws_route53resolver_resolver_config",
+      "terraform": "aws_route53_resolver_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "route53resolver_resolver_config_id"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "id",
+      "tf_attrs": {
+        "route53resolver_resolver_config_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Per-VPC resolver setting (automatic reverse zones off)."
+    },
+    "AWS::Route53Resolver::ResolverDNSSECConfig": {
+      "cfn_type": "AWS::Route53Resolver::ResolverDNSSECConfig",
+      "entity_type": "aws_core__aws_route53resolver_resolver_dnssec_config",
+      "terraform": "aws_route53_resolver_dnssec_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "route53resolver_resolver_dnssec_config_id"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "id",
+      "tf_attrs": {
+        "route53resolver_resolver_dnssec_config_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "DNSSEC validation setting for the module's VPC."
+    },
+    "AWS::Kinesis::Stream": {
+      "cfn_type": "AWS::Kinesis::Stream",
+      "entity_type": "aws_core__aws_kinesis_stream",
+      "terraform": "aws_kinesis_stream",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "kinesis_stream_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "kinesis_stream_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "One provisioned shard; nothing is put. Billed by the hour."
+    },
+    "AWS::Logs::Destination": {
+      "cfn_type": "AWS::Logs::Destination",
+      "entity_type": "aws_core__aws_logs_destination",
+      "terraform": "aws_cloudwatch_log_destination",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Kinesis::Stream"
+      ],
+      "compares": [
+        "name",
+        "destination_arn",
+        "target_arn",
+        "role_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "destination_arn": "arn",
+        "target_arn": "target_arn",
+        "role_arn": "role_arn"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "ASSUMES_ROLE__aws_core",
+          "target_type": "aws_core__aws_iam_role",
+          "direction": "outbound",
+          "target": "role_arn"
+        }
+      ],
+      "description": "Destination in front of the Kinesis stream, with a role CloudWatch Logs assumes."
+    },
+    "AWS::Logs::SubscriptionFilter": {
+      "cfn_type": "AWS::Logs::SubscriptionFilter",
+      "entity_type": "aws_core__aws_logs_subscription_filter",
+      "terraform": "aws_cloudwatch_log_subscription_filter",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Logs::Destination",
+        "AWS::Logs::LogGroup"
+      ],
+      "compares": [
+        "name",
+        "filter_key",
+        "log_group_name",
+        "destination_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "log_group_name"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "filter_key": {
+          "concat": [
+            {
+              "path": "log_group_name"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        },
+        "log_group_name": "log_group_name",
+        "destination_arn": "destination_arn"
+      },
+      "tags": "none",
+      "edges": [
+        {
+          "edge_type": "FILTERS_LOG_GROUP__aws_core",
+          "target_type": "aws_core__aws_cloudwatch_log_group",
+          "direction": "outbound",
+          "target": "log_group_name"
+        }
+      ],
+      "description": "Subscription filter from a log group to the destination; its key is <log group>:<filter>."
+    },
+    "AWS::KinesisFirehose::DeliveryStream": {
+      "cfn_type": "AWS::KinesisFirehose::DeliveryStream",
+      "entity_type": "aws_core__aws_kinesisfirehose_delivery_stream",
+      "terraform": "aws_kinesis_firehose_delivery_stream",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "kinesisfirehose_delivery_stream_arn"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "kinesisfirehose_delivery_stream_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Delivery stream to an empty S3 bucket; nothing is put."
+    },
+    "AWS::CloudWatch::MetricStream": {
+      "cfn_type": "AWS::CloudWatch::MetricStream",
+      "entity_type": "aws_core__aws_cloudwatch_metric_stream",
+      "terraform": "aws_cloudwatch_metric_stream",
+      "cost_class": "free",
+      "needs": [
+        "AWS::KinesisFirehose::DeliveryStream"
+      ],
+      "compares": [
+        "name",
+        "stream_arn",
+        "firehose_arn",
+        "state",
+        "output_format"
+      ],
+      "module": "wave3b-net",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "stream_arn": "arn",
+        "firehose_arn": "firehose_arn",
+        "state": {
+          "const": "running"
+        },
+        "output_format": "output_format"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Metric stream to the delivery stream, filtered to a namespace nothing publishes to."
     }
   }
 }
