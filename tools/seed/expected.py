@@ -73,15 +73,21 @@ def load_context(path: Path) -> dict[str, str]:
     root = (read_json_file(path).get("values") or {}).get("root_module") or {}
     found: dict[str, str] = {}
 
+    def note(key: str, value: str) -> None:
+        # Two data sources that disagree (a provider alias, a child module) would build keys from the wrong account or
+        # region, so the state is refused rather than one of them picked.
+        if found.setdefault(key, value) != value:
+            raise ExpectedError(f"the state holds more than one {key}; a key built from account or region would be ambiguous")
+
     def visit(module: dict[str, Any]) -> None:
         for r in module.get("resources", []):
             vals = r.get("values") or {}
             if r.get("mode") == "data" and r.get("type") == "aws_caller_identity" and isinstance(vals.get("account_id"), str):
-                found["account_id"] = vals["account_id"]
+                note("account_id", vals["account_id"])
             if r.get("mode") == "data" and r.get("type") == "aws_region":
                 region = vals.get("region") or vals.get("name")
                 if isinstance(region, str):
-                    found["region"] = region
+                    note("region", region)
         for child in module.get("child_modules", []):
             visit(child)
 

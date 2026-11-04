@@ -219,3 +219,19 @@ def test_load_context_reads_the_caller_identity_and_region_data_sources(tmp_path
     p = tmp_path / "state.json"
     p.write_text(json.dumps(doc))
     assert expected.load_context(p) == {"account_id": "ACCOUNT-ID", "region": "us-gov-west-1"}
+
+
+def test_load_context_refuses_a_state_whose_data_sources_disagree(tmp_path):
+    doc = {"values": {"root_module": {"resources": [
+        {"mode": "data", "type": "aws_caller_identity", "values": {"account_id": "ACCOUNT-ONE"}},
+    ], "child_modules": [{"resources": [
+        {"mode": "data", "type": "aws_caller_identity", "values": {"account_id": "ACCOUNT-TWO"}},
+    ]}]}}}
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps(doc))
+    with pytest.raises(expected.ExpectedError, match="more than one account_id"):
+        expected.load_context(p)
+    # The same value twice (a child module repeating the caller identity) is not a conflict.
+    doc["values"]["root_module"]["child_modules"][0]["resources"][0]["values"]["account_id"] = "ACCOUNT-ONE"
+    p.write_text(json.dumps(doc))
+    assert expected.load_context(p) == {"account_id": "ACCOUNT-ONE"}
