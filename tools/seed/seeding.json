@@ -5635,6 +5635,286 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Ten megabit link at the site."
+    },
+    "AWS::IoT::ThingGroup": {
+      "cfn_type": "AWS::IoT::ThingGroup",
+      "entity_type": "aws_core__aws_iot_thing_group",
+      "terraform": "aws_iot_thing_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_thing_group_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "iot_thing_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Thing group with no thing."
+    },
+    "AWS::IoT::BillingGroup": {
+      "cfn_type": "AWS::IoT::BillingGroup",
+      "entity_type": "aws_core__aws_iot_billing_group",
+      "terraform": "aws_iot_billing_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_billing_group_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "iot_billing_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Billing group with no thing."
+    },
+    "AWS::IoT::ThingType": {
+      "cfn_type": "AWS::IoT::ThingType",
+      "entity_type": "aws_core__aws_iot_thing_type",
+      "terraform": "aws_iot_thing_type",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_thing_type_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "iot_thing_type_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Thing type."
+    },
+    "AWS::IoT::Policy": {
+      "cfn_type": "AWS::IoT::Policy",
+      "entity_type": "aws_core__aws_iot_policy",
+      "terraform": "aws_iot_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_policy_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "iot_policy_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Policy whose one statement denies connecting."
+    },
+    "AWS::IoT::TopicRule": {
+      "cfn_type": "AWS::IoT::TopicRule",
+      "entity_type": "aws_core__aws_iot_topic_rule",
+      "terraform": "aws_iot_topic_rule",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_topic_rule_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "iot_topic_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Disabled rule that republishes."
+    },
+    "AWS::IoT::RoleAlias": {
+      "cfn_type": "AWS::IoT::RoleAlias",
+      "entity_type": "aws_core__aws_iot_role_alias",
+      "terraform": "aws_iot_role_alias",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_role_alias_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "alias",
+        "iot_role_alias_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Role alias for the module's role."
+    },
+    "AWS::IoT::ProvisioningTemplate": {
+      "cfn_type": "AWS::IoT::ProvisioningTemplate",
+      "entity_type": "aws_core__aws_iot_provisioning_template",
+      "terraform": "aws_iot_provisioning_template",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "iot_provisioning_template_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "iot_provisioning_template_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Disabled provisioning template of one thing."
+    },
+    "AWS::SES::ConfigurationSet": {
+      "cfn_type": "AWS::SES::ConfigurationSet",
+      "entity_type": "aws_core__aws_ses_configuration_set",
+      "terraform": "aws_sesv2_configuration_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ses_configuration_set_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "configuration_set_name",
+        "ses_configuration_set_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Configuration set with default options."
+    },
+    "AWS::SES::ContactList": {
+      "cfn_type": "AWS::SES::ContactList",
+      "entity_type": "aws_core__aws_ses_contact_list",
+      "terraform": "aws_sesv2_contact_list",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ses_contact_list_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "contact_list_name",
+        "ses_contact_list_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty contact list."
+    },
+    "AWS::SES::EmailIdentity": {
+      "cfn_type": "AWS::SES::EmailIdentity",
+      "entity_type": "aws_core__aws_ses_email_identity",
+      "terraform": "aws_sesv2_email_identity",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ses_email_identity_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "email_identity",
+        "ses_email_identity_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Domain identity for a reserved invalid domain; never verified."
+    },
+    "AWS::SES::DedicatedIpPool": {
+      "cfn_type": "AWS::SES::DedicatedIpPool",
+      "entity_type": "aws_core__aws_ses_dedicated_ip_pool",
+      "terraform": "aws_sesv2_dedicated_ip_pool",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ses_dedicated_ip_pool_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "pool_name",
+        "ses_dedicated_ip_pool_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Standard-scaling pool with no address."
+    },
+    "AWS::Rekognition::Collection": {
+      "cfn_type": "AWS::Rekognition::Collection",
+      "entity_type": "aws_core__aws_rekognition_collection",
+      "terraform": "aws_rekognition_collection",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "rekognition_collection_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "collection_id",
+        "rekognition_collection_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty face collection."
+    },
+    "AWS::Transcribe::Vocabulary": {
+      "cfn_type": "AWS::Transcribe::Vocabulary",
+      "entity_type": "aws_core__aws_transcribe_vocabulary",
+      "terraform": "aws_transcribe_vocabulary",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "transcribe_vocabulary_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "vocabulary_name",
+        "transcribe_vocabulary_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Custom vocabulary of two phrases."
+    },
+    "AWS::Transcribe::VocabularyFilter": {
+      "cfn_type": "AWS::Transcribe::VocabularyFilter",
+      "entity_type": "aws_core__aws_transcribe_vocabulary_filter",
+      "terraform": "aws_transcribe_vocabulary_filter",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "transcribe_vocabulary_filter_arn"
+      ],
+      "module": "wave3b-svc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "vocabulary_filter_name",
+        "transcribe_vocabulary_filter_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Vocabulary filter of one word."
     }
   }
 }
