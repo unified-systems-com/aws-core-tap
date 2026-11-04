@@ -5915,6 +5915,313 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Vocabulary filter of one word."
+    },
+    "AWS::EC2::KeyPair": {
+      "cfn_type": "AWS::EC2::KeyPair",
+      "entity_type": "aws_core__aws_ec2_key_pair",
+      "terraform": "aws_key_pair",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ec2_key_pair_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "key_pair_id",
+      "tf_attrs": {
+        "name": "key_name",
+        "ec2_key_pair_id": "key_pair_id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Key pair imported from a public key made for the purpose."
+    },
+    "AWS::EC2::PlacementGroup": {
+      "cfn_type": "AWS::EC2::PlacementGroup",
+      "entity_type": "aws_core__aws_ec2_placement_group",
+      "terraform": "aws_placement_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "placement_group_arn"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "placement_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Cluster placement group; no instance is placed."
+    },
+    "AWS::EC2::PrefixList": {
+      "cfn_type": "AWS::EC2::PrefixList",
+      "entity_type": "aws_core__aws_ec2_prefix_list",
+      "terraform": "aws_ec2_managed_prefix_list",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ec2_prefix_list_arn"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "ec2_prefix_list_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Customer-managed prefix list of one documentation range."
+    },
+    "AWS::EC2::DHCPOptions": {
+      "cfn_type": "AWS::EC2::DHCPOptions",
+      "entity_type": "aws_core__aws_ec2_dhcp_options",
+      "terraform": "aws_vpc_dhcp_options",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "ec2_dhcp_options_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_dhcp_options_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "DHCP options set with a made-up domain; not associated with a VPC."
+    },
+    "AWS::EC2::EgressOnlyInternetGateway": {
+      "cfn_type": "AWS::EC2::EgressOnlyInternetGateway",
+      "entity_type": "aws_core__aws_ec2_egress_only_internet_gateway",
+      "terraform": "aws_egress_only_internet_gateway",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "ec2_egress_only_internet_gateway_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_egress_only_internet_gateway_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Egress-only gateway attached to the module's VPC."
+    },
+    "AWS::EC2::CustomerGateway": {
+      "cfn_type": "AWS::EC2::CustomerGateway",
+      "entity_type": "aws_core__aws_ec2_customer_gateway",
+      "terraform": "aws_customer_gateway",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "ec2_customer_gateway_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_customer_gateway_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Customer gateway at a public address that is only recorded; nothing connects."
+    },
+    "AWS::EC2::VPNGateway": {
+      "cfn_type": "AWS::EC2::VPNGateway",
+      "entity_type": "aws_core__aws_ec2_vpn_gateway",
+      "terraform": "aws_vpn_gateway",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "ec2_vpn_gateway_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_vpn_gateway_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Virtual private gateway attached to the module's VPC."
+    },
+    "AWS::EC2::VPNConnection": {
+      "cfn_type": "AWS::EC2::VPNConnection",
+      "entity_type": "aws_core__aws_ec2_vpn_connection",
+      "terraform": "aws_vpn_connection",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::CustomerGateway",
+        "AWS::EC2::VPNGateway"
+      ],
+      "compares": [
+        "ec2_vpn_connection_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_vpn_connection_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Static-route VPN connection between the two gateways; billed by the hour."
+    },
+    "AWS::EC2::VPCPeeringConnection": {
+      "cfn_type": "AWS::EC2::VPCPeeringConnection",
+      "entity_type": "aws_core__aws_ec2_vpc_peering_connection",
+      "terraform": "aws_vpc_peering_connection",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::VPC"
+      ],
+      "compares": [
+        "ec2_vpc_peering_connection_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_vpc_peering_connection_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Peering between two VPCs of the module, accepted in place."
+    },
+    "AWS::EC2::LaunchTemplate": {
+      "cfn_type": "AWS::EC2::LaunchTemplate",
+      "entity_type": "aws_core__aws_ec2_launch_template",
+      "terraform": "aws_launch_template",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ec2_launch_template_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "ec2_launch_template_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Launch template of an instance type only; nothing launches."
+    },
+    "AWS::EC2::TrafficMirrorFilter": {
+      "cfn_type": "AWS::EC2::TrafficMirrorFilter",
+      "entity_type": "aws_core__aws_ec2_traffic_mirror_filter",
+      "terraform": "aws_ec2_traffic_mirror_filter",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "ec2_traffic_mirror_filter_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_traffic_mirror_filter_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Traffic mirror filter."
+    },
+    "AWS::EC2::TrafficMirrorFilterRule": {
+      "cfn_type": "AWS::EC2::TrafficMirrorFilterRule",
+      "entity_type": "aws_core__aws_ec2_traffic_mirror_filter_rule",
+      "terraform": "aws_ec2_traffic_mirror_filter_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::EC2::TrafficMirrorFilter"
+      ],
+      "compares": [
+        "ec2_traffic_mirror_filter_rule_id"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "ec2_traffic_mirror_filter_rule_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "One accept rule on the filter."
+    },
+    "AWS::EC2::NetworkInsightsPath": {
+      "cfn_type": "AWS::EC2::NetworkInsightsPath",
+      "entity_type": "aws_core__aws_ec2_network_insights_path",
+      "terraform": "aws_ec2_network_insights_path",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "network_insights_path_arn"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "network_insights_path_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Reachability Analyzer path between two detached interfaces; no analysis is started."
+    },
+    "AWS::EC2::EIP": {
+      "cfn_type": "AWS::EC2::EIP",
+      "entity_type": "aws_core__aws_elastic_ip",
+      "terraform": "aws_eip",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "allocation_id",
+        "public_ip"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "allocation_id",
+      "tf_attrs": {
+        "allocation_id": "allocation_id",
+        "public_ip": "public_ip"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Elastic IP used by the NAT gateway."
+    },
+    "AWS::EC2::NatGateway": {
+      "cfn_type": "AWS::EC2::NatGateway",
+      "entity_type": "aws_core__aws_nat_gateway",
+      "terraform": "aws_nat_gateway",
+      "cost_class": "cheap",
+      "needs": [
+        "AWS::EC2::EIP",
+        "AWS::EC2::Subnet"
+      ],
+      "compares": [
+        "nat_gateway_id",
+        "state",
+        "connectivity_type"
+      ],
+      "module": "wave3b-vpc",
+      "natural_key": "id",
+      "tf_attrs": {
+        "nat_gateway_id": "id",
+        "state": {
+          "const": "available"
+        },
+        "connectivity_type": "connectivity_type"
+      },
+      "tags": "tags_all",
+      "edges": [
+        {
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "target_type": "aws_core__aws_subnet",
+          "direction": "outbound",
+          "target": "subnet_id"
+        }
+      ],
+      "description": "Public NAT gateway in one subnet; billed by the hour."
     }
   }
 }
