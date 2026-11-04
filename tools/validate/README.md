@@ -53,6 +53,7 @@ live state.
 | `runs/wave3b-net-2026-11-03.json` | Wave 3b, DNS and streaming: 20 types compared (Route 53 Resolver and DNS Firewall, Kinesis, Logs destination and subscription filter, Firehose, metric stream, and the VPC, subnets, log groups, bucket and roles under them), all pass |
 | `runs/wave3b-data-2026-11-03.json` | Wave 3b, data and application services: 41 types compared (Glue, Athena, Step Functions, AppConfig, DocumentDB, Neptune and MemoryDB configuration objects, Service Catalog, Managed Prometheus, and the bucket, topic and roles under them), all pass; four types the collector's role cannot read or GovCloud refuses are not seeded |
 | `runs/wave3b-dev-2026-11-03.json` | Wave 3b, application and developer services: 21 types compared (Lambda layer and alias, Batch, CodeBuild, CodePipeline, Cloud Map, Network Manager, and the function, bucket, roles and VPC under them), all pass; Lambda function URLs and event source mappings are not seeded |
+| `runs/wave3b-svc-2026-11-04.json` | Wave 3b, service definitions: 15 types compared (IoT Core, SES v2, Rekognition collection, Transcribe, and the IAM role), all pass; the Location types and the Rekognition project cannot pass and are not seeded |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
