@@ -6382,6 +6382,226 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Studio lifecycle configuration with a no-op script."
+    },
+    "AWS::Connect::Instance": {
+      "cfn_type": "AWS::Connect::Instance",
+      "entity_type": "aws_core__aws_connect_instance",
+      "terraform": "aws_connect_instance",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "instance_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "instance_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "SAML instance with calls off; bills by use, and nothing is used."
+    },
+    "AWS::Connect::HoursOfOperation": {
+      "cfn_type": "AWS::Connect::HoursOfOperation",
+      "entity_type": "aws_core__aws_connect_hours_of_operation",
+      "terraform": "aws_connect_hours_of_operation",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_hours_of_operation_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_hours_of_operation_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Monday hours."
+    },
+    "AWS::Connect::Queue": {
+      "cfn_type": "AWS::Connect::Queue",
+      "entity_type": "aws_core__aws_connect_queue",
+      "terraform": "aws_connect_queue",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::HoursOfOperation",
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_queue_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_queue_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Queue on the hours."
+    },
+    "AWS::Connect::QuickConnect": {
+      "cfn_type": "AWS::Connect::QuickConnect",
+      "entity_type": "aws_core__aws_connect_quick_connect",
+      "terraform": "aws_connect_quick_connect",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_quick_connect_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_quick_connect_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Quick connect to a reserved fictional number."
+    },
+    "AWS::Connect::RoutingProfile": {
+      "cfn_type": "AWS::Connect::RoutingProfile",
+      "entity_type": "aws_core__aws_connect_routing_profile",
+      "terraform": "aws_connect_routing_profile",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance",
+        "AWS::Connect::Queue"
+      ],
+      "compares": [
+        "name",
+        "connect_routing_profile_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_routing_profile_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Voice routing profile on the queue."
+    },
+    "AWS::Connect::SecurityProfile": {
+      "cfn_type": "AWS::Connect::SecurityProfile",
+      "entity_type": "aws_core__aws_connect_security_profile",
+      "terraform": "aws_connect_security_profile",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_security_profile_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_security_profile_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Security profile with no permissions."
+    },
+    "AWS::Connect::User": {
+      "cfn_type": "AWS::Connect::User",
+      "entity_type": "aws_core__aws_connect_user",
+      "terraform": "aws_connect_user",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance",
+        "AWS::Connect::RoutingProfile",
+        "AWS::Connect::SecurityProfile"
+      ],
+      "compares": [
+        "name",
+        "connect_user_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_user_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Soft-phone user on the routing and security profiles."
+    },
+    "AWS::Connect::UserHierarchyGroup": {
+      "cfn_type": "AWS::Connect::UserHierarchyGroup",
+      "entity_type": "aws_core__aws_connect_user_hierarchy_group",
+      "terraform": "aws_connect_user_hierarchy_group",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_user_hierarchy_group_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_user_hierarchy_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Top-level hierarchy group."
+    },
+    "AWS::Connect::ContactFlow": {
+      "cfn_type": "AWS::Connect::ContactFlow",
+      "entity_type": "aws_core__aws_connect_contact_flow",
+      "terraform": "aws_connect_contact_flow",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_contact_flow_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_contact_flow_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Contact flow that disconnects at once."
+    },
+    "AWS::Connect::ContactFlowModule": {
+      "cfn_type": "AWS::Connect::ContactFlowModule",
+      "entity_type": "aws_core__aws_connect_contact_flow_module",
+      "terraform": "aws_connect_contact_flow_module",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Connect::Instance"
+      ],
+      "compares": [
+        "name",
+        "connect_contact_flow_module_arn"
+      ],
+      "module": "wave3b-connect",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connect_contact_flow_module_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Flow module that disconnects at once."
     }
   }
 }

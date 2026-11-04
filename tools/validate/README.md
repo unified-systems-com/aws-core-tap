@@ -56,6 +56,7 @@ live state.
 | `runs/wave3b-svc-2026-11-04.json` | Wave 3b, service definitions: 15 types compared (IoT Core, SES v2, Rekognition collection, Transcribe, and the IAM role), all pass; the Location types and the Rekognition project cannot pass and are not seeded |
 | `runs/wave3b-vpc-2026-11-04.json` | Wave 3b, EC2 and VPC extras: 19 types compared (key pair, placement group, prefix list, DHCP options, egress-only gateway, customer and virtual private gateways, VPN connection, peering, launch template, traffic mirror filter and rule, network insights path, Elastic IP and NAT gateway, with the module's VPCs, subnet and gateway), all pass; the traffic mirror target is refused for a detached interface and is not seeded |
 | `runs/wave3b-ml-2026-11-04.json` | Wave 3b, SageMaker definitions: 9 types compared (pipeline, model package group, model card, hub, code repository, app image configuration, two lifecycle configurations, and the IAM role), all pass; the model, endpoint configuration, feature group and human task UI cannot be created here and are not seeded |
+| `runs/wave3b-connect-2026-11-04.json` | Wave 3b, Amazon Connect: 10 types compared (instance, hours of operation, queue, quick connect, routing profile, security profile, user, hierarchy group, contact flow, flow module), all pass; the vocabulary cannot be read by the collector role and is not seeded |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.

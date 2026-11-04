@@ -1,0 +1,150 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 10
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (12 destroyed). Checked directly afterwards: the Connect instance listing is empty and no service-linked role under connect.amazonaws.com exists. The tagging API still listed the instance's queues, agent and routing profile (its known lag).",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first (w3h11040855) compared 11 types: 9 passed and 2 failed. The user was refused for lack of identity information (fixed), and Connect::Vocabulary could not be read by the collector role: SearchVocabularies answers AccessDeniedException. The action is not yet in tools/coverage/extended-read-actions.json and I did not add it. The vocabulary is not seeded; see wave3b-connect/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3h11041031",
+  "seeds": "tools/seed/wave3b-connect"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::Connect::ContactFlow",
+   "compared_fields": [
+    "connect_contact_flow_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_contact_flow",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::ContactFlowModule",
+   "compared_fields": [
+    "connect_contact_flow_module_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_contact_flow_module",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::HoursOfOperation",
+   "compared_fields": [
+    "connect_hours_of_operation_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_hours_of_operation",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::Instance",
+   "compared_fields": [
+    "instance_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_instance",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::Queue",
+   "compared_fields": [
+    "connect_queue_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_queue",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::QuickConnect",
+   "compared_fields": [
+    "connect_quick_connect_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_quick_connect",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::RoutingProfile",
+   "compared_fields": [
+    "connect_routing_profile_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_routing_profile",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::SecurityProfile",
+   "compared_fields": [
+    "connect_security_profile_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_security_profile",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::User",
+   "compared_fields": [
+    "connect_user_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_user",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Connect::UserHierarchyGroup",
+   "compared_fields": [
+    "connect_user_hierarchy_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_connect_user_hierarchy_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-connect"
+}
