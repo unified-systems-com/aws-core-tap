@@ -6700,6 +6700,204 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Stack with no fleet attached."
+    },
+    "AWS::Scheduler::ScheduleGroup": {
+      "cfn_type": "AWS::Scheduler::ScheduleGroup",
+      "entity_type": "aws_core__aws_scheduler_schedule_group",
+      "terraform": "aws_scheduler_schedule_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "scheduler_schedule_group_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "scheduler_schedule_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty schedule group."
+    },
+    "AWS::XRay::Group": {
+      "cfn_type": "AWS::XRay::Group",
+      "entity_type": "aws_core__aws_xray_group",
+      "terraform": "aws_xray_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "xray_group_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "group_name",
+        "xray_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "X-Ray group with a latency filter."
+    },
+    "AWS::XRay::SamplingRule": {
+      "cfn_type": "AWS::XRay::SamplingRule",
+      "entity_type": "aws_core__aws_xray_sampling_rule",
+      "terraform": "aws_xray_sampling_rule",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "xray_sampling_rule_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "rule_name",
+        "xray_sampling_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Low-priority X-Ray sampling rule for a made-up service."
+    },
+    "AWS::ResourceGroups::Group": {
+      "cfn_type": "AWS::ResourceGroups::Group",
+      "entity_type": "aws_core__aws_resourcegroups_group",
+      "terraform": "aws_resourcegroups_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "resourcegroups_group_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "resourcegroups_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Tag-based resource group on the run's own tag."
+    },
+    "AWS::Signer::SigningProfile": {
+      "cfn_type": "AWS::Signer::SigningProfile",
+      "entity_type": "aws_core__aws_signer_signing_profile",
+      "terraform": "aws_signer_signing_profile",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "signing_profile_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "signing_profile_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Lambda signing profile; nothing is signed."
+    },
+    "AWS::CodeCommit::Repository": {
+      "cfn_type": "AWS::CodeCommit::Repository",
+      "entity_type": "aws_core__aws_codecommit_repository",
+      "terraform": "aws_codecommit_repository",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "codecommit_repository_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "repository_name",
+        "codecommit_repository_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty repository."
+    },
+    "AWS::RAM::ResourceShare": {
+      "cfn_type": "AWS::RAM::ResourceShare",
+      "entity_type": "aws_core__aws_ram_resource_share",
+      "terraform": "aws_ram_resource_share",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ram_resource_share_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "ram_resource_share_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Share with no resource or principal."
+    },
+    "AWS::Synthetics::Group": {
+      "cfn_type": "AWS::Synthetics::Group",
+      "entity_type": "aws_core__aws_synthetics_group",
+      "terraform": "aws_synthetics_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "synthetics_group_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "synthetics_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty canary group."
+    },
+    "AWS::CodeStarConnections::Connection": {
+      "cfn_type": "AWS::CodeStarConnections::Connection",
+      "entity_type": "aws_core__aws_codestarconnections_connection",
+      "terraform": "aws_codestarconnections_connection",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "connection_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "connection_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Connection left pending; never authorised."
+    },
+    "AWS::Rbin::Rule": {
+      "cfn_type": "AWS::Rbin::Rule",
+      "entity_type": "aws_core__aws_rbin_rule",
+      "terraform": "aws_rbin_rule",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "rbin_rule_arn"
+      ],
+      "module": "wave3b-misc",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "rbin_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Recycle Bin rule for snapshots with a made-up tag, one day."
     }
   }
 }

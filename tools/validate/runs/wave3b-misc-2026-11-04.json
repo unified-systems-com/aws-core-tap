@@ -1,0 +1,150 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 10
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (11 destroyed). Checked directly afterwards with each service's own listing (all calls succeeded): no Scheduler group, X-Ray group or rule, Resource Group, CodeCommit repository, RAM share, Synthetics group, CodeConnections connection or Recycle Bin rule remains. A Signer profile cannot be deleted, only canceled: the two profiles of these runs remain listed as Canceled, which is permanent.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first (w3y11041055) compared 13 types: 10 passed and 3 failed. AppRegistry (Application, AttributeGroup) answers AccessDeniedException because the service is in maintenance mode; Oam::Sink applies but its tags are unread by the collector (cause not established). None of the three is seeded; see wave3b-misc/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3y11041059",
+  "seeds": "tools/seed/wave3b-misc"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::CodeCommit::Repository",
+   "compared_fields": [
+    "codecommit_repository_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_codecommit_repository",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CodeStarConnections::Connection",
+   "compared_fields": [
+    "connection_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_codestarconnections_connection",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RAM::ResourceShare",
+   "compared_fields": [
+    "name",
+    "ram_resource_share_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ram_resource_share",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Rbin::Rule",
+   "compared_fields": [
+    "rbin_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rbin_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ResourceGroups::Group",
+   "compared_fields": [
+    "name",
+    "resourcegroups_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_resourcegroups_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Scheduler::ScheduleGroup",
+   "compared_fields": [
+    "name",
+    "scheduler_schedule_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_scheduler_schedule_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Signer::SigningProfile",
+   "compared_fields": [
+    "name",
+    "signing_profile_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_signer_signing_profile",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Synthetics::Group",
+   "compared_fields": [
+    "name",
+    "synthetics_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_synthetics_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::XRay::Group",
+   "compared_fields": [
+    "name",
+    "xray_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_xray_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::XRay::SamplingRule",
+   "compared_fields": [
+    "name",
+    "xray_sampling_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_xray_sampling_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-misc"
+}

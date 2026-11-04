@@ -58,6 +58,7 @@ live state.
 | `runs/wave3b-ml-2026-11-04.json` | Wave 3b, SageMaker definitions: 9 types compared (pipeline, model package group, model card, hub, code repository, app image configuration, two lifecycle configurations, and the IAM role), all pass; the model, endpoint configuration, feature group and human task UI cannot be created here and are not seeded |
 | `runs/wave3b-connect-2026-11-04.json` | Wave 3b, Amazon Connect: 10 types compared (instance, hours of operation, queue, quick connect, routing profile, security profile, user, hierarchy group, contact flow, flow module), all pass; the vocabulary cannot be read by the collector role and is not seeded |
 | `runs/wave3b-xfer-2026-11-04.json` | Wave 3b, transfer definitions: 9 types compared (Transfer Family server, user and workflow, Pinpoint app, AppStream stack, and the IAM role, VPC, subnet and security group), all pass; the DMS data provider and instance profile, the Pinpoint email template and the MSK configuration cannot pass and are not seeded |
+| `runs/wave3b-misc-2026-11-04.json` | Wave 3b, small free definitions: 10 types compared (Scheduler group, X-Ray group and sampling rule, Resource Groups group, Signer profile, CodeCommit repository, RAM share, Synthetics group, CodeConnections connection, Recycle Bin rule), all pass; AppRegistry and the OAM sink cannot pass and are not seeded |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
