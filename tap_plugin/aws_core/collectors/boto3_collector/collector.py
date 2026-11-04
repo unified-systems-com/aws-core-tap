@@ -46,6 +46,12 @@ from tap_cares.exceptions import (
     SecretValidationError,
 )
 
+from .selection import (
+    SelectionError,
+    apply_type_selection,
+    echo as selection_echo,
+    parse_selection,
+)
 from .authority import (
     COMPLETE,
     anchor_reads,
@@ -149,6 +155,9 @@ _SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
 _SITE_ADDRESSING = "7f5b"
 _SITE_ENTRY_NOT_CONFIGURED = "d4e8"
 _SITE_ENTRY_THROTTLED = "a9c3"
+_SITE_SELECTION_APPLIED = "5e1c"
+_SITE_ABORT_SELECTION = "d2a9"
+_SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -418,6 +427,21 @@ class Boto3Collector(CollectorBase):
             partition = resolve_partition(data, regions)
         except CredentialError as exc:
             self._abort(_SITE_ABORT_PARTITION, "PARTITION_UNUSABLE", str(exc))
+        # --- collection selection (req-aws-collector-selection): which entries and which account this run reads ---
+        # Decided from the manifest and the secret alone, before the first call: a pattern that matches no entry
+        # stops the run here, naming it, rather than narrow or widen it silently (`-4`).
+        manifest = load_manifest()
+        all_entries = manifest_entries()
+        try:
+            selection = parse_selection(data, partition=partition)
+            type_selection = apply_type_selection(all_entries, selection)
+        except SelectionError as exc:
+            self._abort(_SITE_ABORT_SELECTION, exc.code, f"Collection selection unusable: {exc}")
+            raise  # unreachable: _abort raises; keeps the names bound for the type checker
+        entries = type_selection.selected
+        # A run that leaves any type unselected states no completeness (`-5`): core reads a surface the run leaves out
+        # as a narrowed scope and would withdraw what the run chose not to read.
+        selected_run = type_selection.leaves_unselected
         # Attach the audit ledger before any client/STS call so every AWS call
         # this run makes is recorded — including a cross-account AssumeRole,
         # which is captured on the base session
@@ -457,6 +481,12 @@ class Boto3Collector(CollectorBase):
         mismatch = account_mismatch_error(data, account_id)
         if mismatch:
             self._abort(_SITE_ABORT_ACCOUNT_MISMATCH, "ACCOUNT_MISMATCH", mismatch)
+        if not selection.account_selected(account_id):
+            self._abort(
+                _SITE_ABORT_ACCOUNT_NOT_SELECTED,
+                "ACCOUNT_NOT_SELECTED",
+                f"resolved AWS account {account_id} is not in accounts_allowed; nothing was collected",
+            )
         self.record_info(
             _SITE_IDENTITY,
             "IDENTITY_RESOLVED",
@@ -468,11 +498,29 @@ class Boto3Collector(CollectorBase):
                 "use_fips_endpoint": fips_requested(data),
             },
         )
+        # The effective selection, once and aggregated (`-9`): the secret cannot be inspected by the operators who
+        # would audit it, so the run is where the scope it had is read. Scope, not secret material.
+        echoed = selection_echo(selection, entries_total=len(all_entries), type_selection=type_selection)
+        self.record_info(
+            _SITE_SELECTION_APPLIED,
+            "SELECTION_APPLIED",
+            (
+                f"Collection selection: {echoed['entries_selected']} of {echoed['entries_total']} manifest entries selected"
+                + (f", {len(selection.accounts_allowed)} account(s) allowed" if selection.accounts_allowed else "")
+                + (
+                    "; this run states no completeness and retires nothing."
+                    if selected_run
+                    else "; every entry is selected."
+                )
+            ),
+            message_data=echoed,
+        )
 
         # --- manifest + engine collaborators ---
-        manifest = load_manifest()
-        entries = manifest_entries()
-        modeled_types = {e["entity_type"] for e in entries}
+        # The manifest was loaded and the selection applied above. An edge may name a type this run did not select:
+        # the type is still modelled, so the engine resolves the endpoint by natural key as it does for a listing it
+        # could not read (`req-aws-collector-selection`, open question on edges to an unselected type).
+        modeled_types = {e["entity_type"] for e in all_entries}
         custom_fns = build_custom_fn_registry()
         transforms = build_transform_registry(partition)
 
@@ -556,7 +604,7 @@ class Boto3Collector(CollectorBase):
         #: Held as (sent node envelope, its per-scope reads) and made into claims once the batch is
         #: addressed, when every node's key is known to be whole.
         judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]] = []
-        unclaimable = shared_scopes(entries)
+        unclaimable = shared_scopes(all_entries)
 
         # The parent of every regional containment: one footprint per (account, region) in scope,
         # emitted whether or not the region turned out readable.
@@ -824,7 +872,12 @@ class Boto3Collector(CollectorBase):
         # fail the whole run and lose every already-gathered resource.
         org_dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
         try:
-            org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
+            if selected_run:
+                # Neither the Organizations tree nor the landing-zone read is a manifest entry, so the type patterns
+                # cannot name them; a run that chose its types reads neither (it makes no call it did not select).
+                org_tree = OrganizationTree()
+            else:
+                org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(
                 _SITE_ORG_READ_FAILED,
@@ -871,17 +924,17 @@ class Boto3Collector(CollectorBase):
         # landing_zone.py). Collect-only: every surface it records is inert until reconcile authority is
         # armed. It never lets an AWS call escape; this guard isolates a defect in its own shaping code,
         # exactly as the Organizations read above is isolated.
+        landing_zone = LandingZoneRead()
         try:
-            landing_zone = collect_landing_zone(
-                lambda service, region: session.client(
-                    service, region_name=region, config=client_config()
-                ),
-                account_id=account_id,
-                partition=partition,
-                regions=regions,
-                facts=facts,
-                member_accounts=org_tree.member_accounts,
-            )
+            if not selected_run:  # not a manifest entry: a run that chose its types does not read it
+                landing_zone = collect_landing_zone(
+                    lambda service, region: session.client(service, region_name=region, config=client_config()),
+                    account_id=account_id,
+                    partition=partition,
+                    regions=regions,
+                    facts=facts,
+                    member_accounts=org_tree.member_accounts,
+                )
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(
                 _SITE_LZ_READ_FAILED,
@@ -922,10 +975,16 @@ class Boto3Collector(CollectorBase):
         for code, message in addressed.notices:
             self.record_warn(_SITE_ADDRESSING, code, message)
         node_envelopes, edge_envelopes = addressed.nodes, addressed.edges
-        claims = merge_claims(
-            claim
-            for envelope, reads in judged
-            for claim in claims_for(node_anchor(envelope), reads, unclaimable=unclaimable)
+        # A selected run claims no edge authority: a claim for a source it did not read would propose removing edges it
+        # never looked at (`req-aws-collector-selection-5`).
+        claims = (
+            []
+            if selected_run
+            else merge_claims(
+                claim
+                for envelope, reads in judged
+                for claim in claims_for(node_anchor(envelope), reads, unclaimable=unclaimable)
+            )
         )
         authority_emitted = bool(claims) and importer_accepts_edge_cases()
         document = assemble_batch(
@@ -956,21 +1015,25 @@ class Boto3Collector(CollectorBase):
         resolved_refs: dict[str, str] = {}
         for imported_batch in result.imported_batches:
             resolved_refs.update(imported_batch.resolved_refs)
-        for surface in surfaces:
-            surface = {**surface, "subject": resolve_subject(surface["subject"], addressed, resolved_refs)}
-            self.record_surface(**surface, applied_batches=[collection_batch_id])
-        for containment, walk in listings:
-            self.record_surface(
-                **surface_statement(
-                    walk,
-                    relation=containment["relation"],
-                    edge_type=containment["edge_type"],
-                    subject=resolve_subject(account_ref(account_id), addressed, resolved_refs),
-                    applied_batches=[collection_batch_id],
+        # A selected run states no completeness at all: no surface, and not `declare_no_surfaces` either, which would
+        # say "this run covered nothing" (`req-aws-collector-selection-5`). Every row of an unselected type is left as
+        # it was (keep-absent upsert).
+        if not selected_run:
+            for surface in surfaces:
+                surface = {**surface, "subject": resolve_subject(surface["subject"], addressed, resolved_refs)}
+                self.record_surface(**surface, applied_batches=[collection_batch_id])
+            for containment, walk in listings:
+                self.record_surface(
+                    **surface_statement(
+                        walk,
+                        relation=containment["relation"],
+                        edge_type=containment["edge_type"],
+                        subject=resolve_subject(account_ref(account_id), addressed, resolved_refs),
+                        applied_batches=[collection_batch_id],
+                    )
                 )
-            )
-        if not surfaces and not listings:
-            self.declare_no_surfaces()
+            if not surfaces and not listings:
+                self.declare_no_surfaces()
         self.record_info(
             _SITE_GRIFT_SUBMITTED,
             "GRIFT_SUBMITTED",
@@ -984,12 +1047,13 @@ class Boto3Collector(CollectorBase):
         # carries their observations has imported, which `submit_grift` above just did (a rejected
         # batch aborts the run before this line is reached — `submit_grift`'s default `on_rejection`).
         applied_batches = [str(b.batch_entity_id) for b in result.imported_batches]
-        for parent_listing in [*org_tree.listings, *landing_zone.listings]:
-            statement = parent_listing.surface(applied_batches)
-            statement["subject"] = resolve_subject(statement["subject"], addressed, resolved_refs)
-            self.record_surface(**statement)
-        if not org_tree.listings and not landing_zone.listings:
-            self.declare_no_surfaces()
+        if not selected_run:
+            for parent_listing in [*org_tree.listings, *landing_zone.listings]:
+                statement = parent_listing.surface(applied_batches)
+                statement["subject"] = resolve_subject(statement["subject"], addressed, resolved_refs)
+                self.record_surface(**statement)
+            if not org_tree.listings and not landing_zone.listings:
+                self.declare_no_surfaces()
 
         imported = result.counts.batches_imported
         self.summary = (
