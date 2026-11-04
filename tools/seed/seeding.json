@@ -7318,6 +7318,152 @@
       "tags": "none",
       "edges": [],
       "description": "DAX parameter group with default values; no cluster."
+    },
+    "AWS::ECR::RepositoryCreationTemplate": {
+      "cfn_type": "AWS::ECR::RepositoryCreationTemplate",
+      "entity_type": "aws_core__aws_ecr_repository_creation_template",
+      "terraform": "aws_ecr_repository_creation_template",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "ecr_repository_creation_template_key"
+      ],
+      "module": "wave3b-ops2",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "account_id"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "prefix"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "prefix",
+        "ecr_repository_creation_template_key": {
+          "concat": [
+            {
+              "context": "account_id"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "prefix"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Template for repositories created by replication under a run-scoped prefix; key <account>/<region>/<prefix>."
+    },
+    "AWS::AutoScaling::LifecycleHook": {
+      "cfn_type": "AWS::AutoScaling::LifecycleHook",
+      "entity_type": "aws_core__aws_autoscaling_lifecycle_hook",
+      "terraform": "aws_autoscaling_lifecycle_hook",
+      "cost_class": "free",
+      "needs": [
+        "AWS::AutoScaling::AutoScalingGroup"
+      ],
+      "compares": [
+        "name",
+        "autoscaling_lifecycle_hook_key"
+      ],
+      "module": "wave3b-ops2",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "account_id"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "autoscaling_group_name"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "autoscaling_lifecycle_hook_key": {
+          "concat": [
+            {
+              "context": "account_id"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "autoscaling_group_name"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Launching hook on the capacity-zero group; key <account>/<region>/<group>/<hook>."
+    },
+    "AWS::CloudWatch::InsightRule": {
+      "cfn_type": "AWS::CloudWatch::InsightRule",
+      "entity_type": "aws_core__aws_cloudwatch_insight_rule",
+      "terraform": "aws_cloudwatch_contributor_insight_rule",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "name",
+        "cloudwatch_insight_rule_arn"
+      ],
+      "module": "wave3b-ops2",
+      "natural_key": "resource_arn",
+      "tf_attrs": {
+        "name": "rule_name",
+        "cloudwatch_insight_rule_arn": "resource_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Contributor Insights rule over a log group nothing writes to."
     }
   }
 }
