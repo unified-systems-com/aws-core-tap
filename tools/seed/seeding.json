@@ -6222,6 +6222,166 @@
         }
       ],
       "description": "Public NAT gateway in one subnet; billed by the hour."
+    },
+    "AWS::SageMaker::Pipeline": {
+      "cfn_type": "AWS::SageMaker::Pipeline",
+      "entity_type": "aws_core__aws_sagemaker_pipeline",
+      "terraform": "aws_sagemaker_pipeline",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "sagemaker_pipeline_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "pipeline_name",
+        "sagemaker_pipeline_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Pipeline whose only step fails; it is never started."
+    },
+    "AWS::SageMaker::ModelPackageGroup": {
+      "cfn_type": "AWS::SageMaker::ModelPackageGroup",
+      "entity_type": "aws_core__aws_sagemaker_model_package_group",
+      "terraform": "aws_sagemaker_model_package_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "model_package_group_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "model_package_group_name",
+        "model_package_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty model package group."
+    },
+    "AWS::SageMaker::ModelCard": {
+      "cfn_type": "AWS::SageMaker::ModelCard",
+      "entity_type": "aws_core__aws_sagemaker_model_card",
+      "terraform": "aws_sagemaker_model_card",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "sagemaker_model_card_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "model_card_arn",
+      "tf_attrs": {
+        "name": "model_card_name",
+        "sagemaker_model_card_arn": "model_card_arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Draft model card."
+    },
+    "AWS::SageMaker::Hub": {
+      "cfn_type": "AWS::SageMaker::Hub",
+      "entity_type": "aws_core__aws_sagemaker_hub",
+      "terraform": "aws_sagemaker_hub",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "hub_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "hub_name",
+        "hub_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Private hub with no content."
+    },
+    "AWS::SageMaker::CodeRepository": {
+      "cfn_type": "AWS::SageMaker::CodeRepository",
+      "entity_type": "aws_core__aws_sagemaker_code_repository",
+      "terraform": "aws_sagemaker_code_repository",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "code_repository_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "code_repository_name",
+        "code_repository_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Git repository record for a reserved invalid host."
+    },
+    "AWS::SageMaker::AppImageConfig": {
+      "cfn_type": "AWS::SageMaker::AppImageConfig",
+      "entity_type": "aws_core__aws_sagemaker_app_image_config",
+      "terraform": "aws_sagemaker_app_image_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "sagemaker_app_image_config_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "app_image_config_name",
+        "sagemaker_app_image_config_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "App image configuration with a Python kernel."
+    },
+    "AWS::SageMaker::NotebookInstanceLifecycleConfig": {
+      "cfn_type": "AWS::SageMaker::NotebookInstanceLifecycleConfig",
+      "entity_type": "aws_core__aws_sagemaker_notebook_instance_lifecycle_config",
+      "terraform": "aws_sagemaker_notebook_instance_lifecycle_configuration",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "notebook_instance_lifecycle_config_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "notebook_instance_lifecycle_config_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Notebook lifecycle configuration with a no-op start script."
+    },
+    "AWS::SageMaker::StudioLifecycleConfig": {
+      "cfn_type": "AWS::SageMaker::StudioLifecycleConfig",
+      "entity_type": "aws_core__aws_sagemaker_studio_lifecycle_config",
+      "terraform": "aws_sagemaker_studio_lifecycle_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "sagemaker_studio_lifecycle_config_arn"
+      ],
+      "module": "wave3b-ml",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "studio_lifecycle_config_name",
+        "sagemaker_studio_lifecycle_config_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Studio lifecycle configuration with a no-op script."
     }
   }
 }
