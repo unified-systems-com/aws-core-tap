@@ -62,6 +62,7 @@ live state.
 | `runs/wave3b-misc2-2026-11-04.json` | Wave 3b, more small free definitions: 11 types compared (OpenSearch Serverless encryption, access and lifecycle policies, EMR security configuration, Route 53 delegation set, Direct Connect gateway, CodeDeploy deployment configuration, DAX subnet and parameter groups, and the VPC and subnet), all pass; the SES receipt types and the License Manager configuration cannot pass and are not seeded |
 | `runs/wave3b-ops2-2026-11-04.json` | Wave 3b, more operations definitions: 8 types compared (ECR repository creation template, Auto Scaling lifecycle hook and group, Contributor Insights rule, launch template, VPC, subnet, log group), all pass; the SSM data sync and the Logs delivery destination are not seeded |
 | `runs/wave3b-compute2-2026-11-04.json` | Wave 3b, more compute definitions: 11 types compared (Lambda code signing configuration, ECS task set with its cluster, task definition and service, DLM lifecycle policy, and the VPC, subnet, security group, IAM role and Signer profile), all pass; the task set passes only with the fix in #196; the IAM OIDC provider and the ECS capacity provider are not seeded |
+| `runs/wave3b-misc3-2026-11-04.json` | Wave 3b, more small definitions: 5 types compared (CloudWatch RUM app monitor, Lex V2 bot, Scheduler schedule, SQS queue and the IAM role), all pass; Internet Monitor, CloudTrail Lake and the Bedrock agent cannot be seeded here |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
