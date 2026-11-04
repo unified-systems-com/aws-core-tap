@@ -6898,6 +6898,426 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Recycle Bin rule for snapshots with a made-up tag, one day."
+    },
+    "AWS::OpenSearchServerless::SecurityPolicy": {
+      "cfn_type": "AWS::OpenSearchServerless::SecurityPolicy",
+      "entity_type": "aws_core__aws_opensearchserverless_security_policy",
+      "terraform": "aws_opensearchserverless_security_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "opensearchserverless_security_policy_key"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "account_id"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "type"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "opensearchserverless_security_policy_key": {
+          "concat": [
+            {
+              "context": "account_id"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "type"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "OpenSearch Serverless an encryption policy for a pattern that matches no collection; the key is <account>/<region>/<type>/<name>."
+    },
+    "AWS::OpenSearchServerless::AccessPolicy": {
+      "cfn_type": "AWS::OpenSearchServerless::AccessPolicy",
+      "entity_type": "aws_core__aws_opensearchserverless_access_policy",
+      "terraform": "aws_opensearchserverless_access_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "opensearchserverless_access_policy_key"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "account_id"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "type"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "opensearchserverless_access_policy_key": {
+          "concat": [
+            {
+              "context": "account_id"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "type"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "OpenSearch Serverless a data access policy for a pattern that matches no collection; the key is <account>/<region>/<type>/<name>."
+    },
+    "AWS::OpenSearchServerless::LifecyclePolicy": {
+      "cfn_type": "AWS::OpenSearchServerless::LifecyclePolicy",
+      "entity_type": "aws_core__aws_opensearchserverless_lifecycle_policy",
+      "terraform": "aws_opensearchserverless_lifecycle_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "opensearchserverless_lifecycle_policy_key"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "account_id"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "type"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "opensearchserverless_lifecycle_policy_key": {
+          "concat": [
+            {
+              "context": "account_id"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "type"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "OpenSearch Serverless a retention policy for a pattern that matches no collection; the key is <account>/<region>/<type>/<name>."
+    },
+    "AWS::EMR::SecurityConfiguration": {
+      "cfn_type": "AWS::EMR::SecurityConfiguration",
+      "entity_type": "aws_core__aws_emr_security_configuration",
+      "terraform": "aws_emr_security_configuration",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "emr_security_configuration_key"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "account_id"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": "/"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "name",
+        "emr_security_configuration_key": {
+          "concat": [
+            {
+              "context": "account_id"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": "/"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "EMR security configuration with encryption off; key <account>/<region>/<name>."
+    },
+    "AWS::Route53::DelegationSet": {
+      "cfn_type": "AWS::Route53::DelegationSet",
+      "entity_type": "aws_core__aws_route53_delegation_set",
+      "terraform": "aws_route53_delegation_set",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "route53_delegation_set_id"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": {
+        "concat": [
+          {
+            "const": "/delegationset/"
+          },
+          {
+            "path": "id"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "route53_delegation_set_id": {
+          "concat": [
+            {
+              "const": "/delegationset/"
+            },
+            {
+              "path": "id"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Reusable delegation set; the API id carries a /delegationset/ prefix."
+    },
+    "AWS::DirectConnect::Gateway": {
+      "cfn_type": "AWS::DirectConnect::Gateway",
+      "entity_type": "aws_core__aws_dx_gateway",
+      "terraform": "aws_dx_gateway",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "direct_connect_gateway_id",
+        "amazon_side_asn"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "direct_connect_gateway_id": "id",
+        "amazon_side_asn": "amazon_side_asn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Direct Connect gateway with no association."
+    },
+    "AWS::CodeDeploy::DeploymentConfig": {
+      "cfn_type": "AWS::CodeDeploy::DeploymentConfig",
+      "entity_type": "aws_core__aws_codedeploy_deployment_config",
+      "terraform": "aws_codedeploy_deployment_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "codedeploy_deployment_config_arn"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": {
+        "concat": [
+          {
+            "const": "arn:aws-us-gov:codedeploy:"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":deploymentconfig:"
+          },
+          {
+            "path": "deployment_config_name"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "name": "deployment_config_name",
+        "codedeploy_deployment_config_arn": {
+          "concat": [
+            {
+              "const": "arn:aws-us-gov:codedeploy:"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":deploymentconfig:"
+            },
+            {
+              "path": "deployment_config_name"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Host-count deployment configuration; the key is the ARN built from account, region and name."
+    },
+    "AWS::DAX::SubnetGroup": {
+      "cfn_type": "AWS::DAX::SubnetGroup",
+      "entity_type": "aws_core__aws_dax_subnet_group",
+      "terraform": "aws_dax_subnet_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "dax_subnet_group_id",
+        "name"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": "name",
+      "tf_attrs": {
+        "dax_subnet_group_id": "name",
+        "name": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "DAX subnet group on the module's subnet; no cluster."
+    },
+    "AWS::DAX::ParameterGroup": {
+      "cfn_type": "AWS::DAX::ParameterGroup",
+      "entity_type": "aws_core__aws_dax_parameter_group",
+      "terraform": "aws_dax_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "dax_parameter_group_id",
+        "name"
+      ],
+      "module": "wave3b-misc2",
+      "natural_key": "name",
+      "tf_attrs": {
+        "dax_parameter_group_id": "name",
+        "name": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "DAX parameter group with default values; no cluster."
     }
   }
 }

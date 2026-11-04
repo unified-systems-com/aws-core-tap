@@ -201,3 +201,21 @@ def test_a_concat_value_joins_its_parts_and_is_absent_if_any_part_is():
     spec = {"concat": [{"path": "log_group_name"}, {"const": ":"}, {"path": "name"}]}
     assert expected.evaluate(spec, r, [r]) == "/g:f"
     assert expected.evaluate({"concat": [{"path": "log_group_name"}, {"const": ":"}, {"path": "missing"}]}, r, [r]) is None
+
+
+def test_a_context_value_is_the_account_or_region_of_the_state_and_an_error_without_one():
+    r = res("aws_emr_security_configuration.seed", "aws_emr_security_configuration", name="n")
+    spec = {"concat": [{"context": "account_id"}, {"const": "/"}, {"context": "region"}, {"const": "/"}, {"path": "name"}]}
+    assert expected.evaluate(spec, r, [r], {"account_id": "ACCOUNT-ID", "region": "us-gov-west-1"}) == "ACCOUNT-ID/us-gov-west-1/n"
+    with pytest.raises(expected.ExpectedError):
+        expected.evaluate(spec, r, [r])
+
+
+def test_load_context_reads_the_caller_identity_and_region_data_sources(tmp_path):
+    doc = {"values": {"root_module": {"resources": [
+        {"mode": "data", "type": "aws_caller_identity", "values": {"account_id": "ACCOUNT-ID"}},
+        {"mode": "data", "type": "aws_region", "values": {"region": "us-gov-west-1"}},
+    ]}}}
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps(doc))
+    assert expected.load_context(p) == {"account_id": "ACCOUNT-ID", "region": "us-gov-west-1"}
