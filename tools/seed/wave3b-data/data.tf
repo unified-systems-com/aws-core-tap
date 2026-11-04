@@ -297,10 +297,13 @@ resource "aws_docdb_cluster_parameter_group" "seed" {
   depends_on = [terraform_data.guard]
 }
 
+# Disabled: DocumentDB takes a source only of an instance, a cluster, a snapshot or a security group, and none exists here,
+# so an enabled subscription would send every cluster event in the account to the topic.
 resource "aws_docdb_event_subscription" "seed" {
   name          = "${local.prefix}-docdb"
   sns_topic_arn = aws_sns_topic.events.arn
   source_type   = "db-cluster"
+  enabled       = false
 }
 
 resource "aws_docdb_global_cluster" "seed" {
@@ -332,10 +335,12 @@ resource "aws_neptune_parameter_group" "seed" {
   depends_on = [terraform_data.guard]
 }
 
+# Scoped to the module's own parameter group, so no other cluster's events reach the topic.
 resource "aws_neptune_event_subscription" "seed" {
   name          = "${local.prefix}-neptune"
   sns_topic_arn = aws_sns_topic.events.arn
-  source_type   = "db-cluster"
+  source_type   = "db-parameter-group"
+  source_ids    = [aws_neptune_parameter_group.seed.name]
 }
 
 resource "aws_memorydb_subnet_group" "seed" {
@@ -409,7 +414,7 @@ resource "aws_prometheus_rule_group_namespace" "seed" {
     groups:
       - name: seed
         rules:
-          - record: seed:one
-            expr: vector(1)
+          - record: seed:none
+            expr: vector(1) < 0
   YAML
 }

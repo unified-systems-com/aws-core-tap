@@ -9,10 +9,10 @@
   "date": "2026-11-03",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "Second run. The first run (w3d11032157) created 46 of 48 resources and compared 45 types: 40 passed and 5 failed. Glue connection and Glue data quality ruleset failed on the read (the collector's role is denied glue:GetConnections and glue:ListDataQualityRulesets, both already in extended-read-actions.json); the Verified Permissions policy store failed on tags-unread (the role is denied verifiedpermissions:ListTagsForResource, checked with one call as the collector's credential; not in extended-read-actions.json yet); the Glue crawler was refused because its S3 target did not exist (the second run creates an empty bucket); Neptune CreateGlobalCluster is not supported in GovCloud. The four types that cannot pass are not seeded; see wave3b-data/cost.md.",
+  "note": "Fourth run. The first (w3d11032157) created 46 of 48 resources and compared 45 types: 40 passed and 5 failed. Glue connection and Glue data quality ruleset failed on the read (the collector's role is denied glue:GetConnections and glue:ListDataQualityRulesets, both already in extended-read-actions.json); the Verified Permissions policy store failed on tags-unread (the role is denied verifiedpermissions:ListTagsForResource, checked with one call as the collector's credential; not in extended-read-actions.json yet); the Glue crawler was refused because its S3 target did not exist (the later runs create an empty bucket); Neptune CreateGlobalCluster is not supported in GovCloud. The second run (w3d11032205) passed all 41. After review, the third (w3d11032244) scoped the event subscriptions: Neptune's, set to the module's own parameter group, was created, and DocumentDB's was refused (SourceNotFound: DocumentDB has no instance parameter group), so DocumentDB's is created disabled in this run. Its recording rule is now one that returns no series. The types that cannot pass are not seeded; see wave3b-data/cost.md.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
-  "run_id": "w3d11032205",
+  "run_id": "w3d11032251",
   "seeds": "tools/seed/wave3b-data",
   "wave": "3b-data"
  },

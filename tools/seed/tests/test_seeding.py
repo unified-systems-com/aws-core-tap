@@ -29,7 +29,7 @@ TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
 TF_TEXT = TF_BY_MODULE["wave1"]
 ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
 #: Terraform resources whose type cannot carry tags although the service tags the object.
-TAGLESS_IN_TERRAFORM = {"AWS::RDS::DBProxyTargetGroup", "AWS::CloudWatch::Dashboard", "AWS::AutoScaling::AutoScalingGroup", "AWS::DocDB::GlobalCluster", "AWS::Neptune::GlobalCluster"}
+TAGLESS_IN_TERRAFORM = {"AWS::RDS::DBProxyTargetGroup", "AWS::CloudWatch::Dashboard", "AWS::AutoScaling::AutoScalingGroup", "AWS::DocDB::GlobalCluster"}
 REQUIRED = {"cfn_type", "entity_type", "terraform", "cost_class", "needs", "compares", "module", "natural_key", "tf_attrs", "tags", "edges", "description"}
 COSTS = {"free", "cheap", "costly", "blocked"}
 CASES = sorted(CATALOG["types"].items())

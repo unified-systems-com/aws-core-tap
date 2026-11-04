@@ -10,11 +10,11 @@ Time box 1 hour (every resource is created in under two minutes; E)
 | Athena work group, Glue data catalog, saved query | 1 each | per query; none is run | $0 | $0 | E |
 | Step Functions activity, state machine, alias | 1 each | per state transition; none is started | $0 | $0 | E |
 | AppConfig application, environment, configuration profile, deployment strategy | 1 each | per configuration request; none | $0 | $0 | E |
-| DocumentDB subnet group, cluster parameter group, event subscription, global cluster | 1 each | no charge with no cluster | $0 | $0 | E |
-| Neptune subnet group, cluster and instance parameter groups, event subscription | 1 each | no charge with no cluster | $0 | $0 | E |
+| DocumentDB subnet group, cluster parameter group, event subscription (disabled), global cluster | 1 each | no charge with no cluster | $0 | $0 | E |
+| Neptune subnet group, cluster and instance parameter groups, event subscription (scoped to the parameter group) | 1 each | no charge with no cluster | $0 | $0 | E |
 | MemoryDB subnet group, parameter group, user, access control list | 1 each | no charge with no cluster | $0 | $0 | E |
 | Service Catalog portfolio, tag option, service action | 1 each | no charge | $0 | $0 | E |
-| Managed Prometheus workspace and rule groups namespace | 1 each | per sample ingested and stored; none | $0 | $0 | E |
+| Managed Prometheus workspace and rule groups namespace | 1 each | per sample ingested and stored; the one recording rule returns no series, so none | $0 | $0 | E |
 | SNS topic, S3 bucket (empty), VPC and two subnets | 1 each | no charge | $0 | $0 | E |
 
 **Total for one hour: $0.** Standing cost left running by mistake: about $0 per hour (the workspace, the buckets and the groups
