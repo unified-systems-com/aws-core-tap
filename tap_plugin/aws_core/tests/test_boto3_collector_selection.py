@@ -242,3 +242,37 @@ def test_the_account_anchor_is_selected_whatever_the_patterns_say_and_is_never_c
     only_anchor_excluded = sel.apply_type_selection(ENTRIES, sel.parse_selection({"exclude_types": ["sts:*"]}))
     assert sel.ANCHOR_ENTITIES <= {e["entity_type"] for e in only_anchor_excluded.selected}
     assert not only_anchor_excluded.leaves_unselected
+
+
+@pytest.mark.spec("req-aws-collector-selection-2")
+def test_parent_reads_walks_a_nested_chain_a_per_level_service_and_skips_fixed_values():
+    nested = {
+        "service": "eks",
+        "entity_type": "aws_core__aws_x",
+        "source": {"aws_op": "Describe", "per": {"aws_op": "ListNodegroups", "per": {"aws_op": "ListClusters"}}},
+    }
+    other_service = {
+        "service": "ec2",
+        "entity_type": "aws_core__aws_y",
+        "source": {"aws_op": "Describe", "per": {"service": "organizations", "aws_op": "ListAccounts"}},
+    }
+    fixed = {"service": "ec2", "entity_type": "aws_core__aws_z", "source": {"aws_op": "Describe", "per": {"values": ["a", "b"]}}}
+    assert sel.parent_reads([nested]) == ["eks:ListClusters", "eks:ListNodegroups"]
+    assert sel.parent_reads([other_service]) == ["organizations:ListAccounts"]
+    assert sel.parent_reads([fixed]) == []
+
+
+@pytest.mark.spec("req-aws-collector-selection-2")
+def test_every_per_entry_of_the_committed_manifest_names_at_least_one_parent_read_unless_its_parents_are_fixed():
+    for entry in ENTRIES:
+        per = (entry.get("source") or {}).get("per")
+        if not isinstance(per, dict):
+            continue
+        chain = []
+        while isinstance(per, dict):
+            chain.append(per)
+            per = per.get("per")
+        if all("values" in level for level in chain):
+            assert sel.parent_reads([entry]) == [], entry["entity_type"]
+        else:
+            assert sel.parent_reads([entry]), entry["entity_type"]

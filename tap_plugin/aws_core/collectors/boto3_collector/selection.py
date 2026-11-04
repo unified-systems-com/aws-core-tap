@@ -231,13 +231,19 @@ def parent_reads(selected: Iterable[Mapping[str, Any]]) -> list[str]:
     """The parent list calls selected entries fan out from (a ``per`` source), as ``<service>:<operation>``.
 
     A parent is read as the input of the child that needs it and emits nothing unless it is itself selected; the
-    role's grant must include the call, so the echo names it (``req-aws-collector-selection-2`` and ``-9``).
+    role's grant must include the call, so the echo names it (``req-aws-collector-selection-2`` and ``-9``). A ``per``
+    block can nest (a grandparent is listed to reach the parent), can name its own service, and can be a fixed list of
+    ``values`` (no call): the chain is walked the way the engine walks it (``source._iter_parents``).
     """
     found: set[str] = set()
     for entry in selected:
         per = (entry.get("source") or {}).get("per")
-        if isinstance(per, Mapping) and per.get("aws_op"):
-            found.add(f"{entry['service']}:{per['aws_op']}")
+        service = str(entry["service"])
+        while isinstance(per, Mapping):
+            service = str(per.get("service", service))
+            if "values" not in per and per.get("aws_op"):
+                found.add(f"{service}:{per['aws_op']}")
+            per = per.get("per")
     return sorted(found)
 
 
