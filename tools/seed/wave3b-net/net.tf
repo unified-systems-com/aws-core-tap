@@ -125,6 +125,8 @@ resource "aws_route53_resolver_dnssec_config" "seed" {
 
 # --- Kinesis: one provisioned shard, a CloudWatch Logs destination in front of it, and a subscription filter to the destination ---
 
+# An empty stream that lives for under an hour and is never put to; encrypting it would need the destination's role to be allowed the key too.
+# nosemgrep: terraform.aws.security.aws-kinesis-stream-unencrypted.aws-kinesis-stream-unencrypted
 resource "aws_kinesis_stream" "seed" { # NOSONAR: empty, run-scoped and destroyed within the hour; nothing is ever put
   name             = "${local.prefix}-stream"
   shard_count      = 1
