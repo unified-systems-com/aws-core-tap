@@ -7588,6 +7588,70 @@
       "tags": "none",
       "edges": [],
       "description": "Disabled daily schedule aimed at an empty queue."
+    },
+    "AWS::Bedrock::GuardrailVersion": {
+      "cfn_type": "AWS::Bedrock::GuardrailVersion",
+      "entity_type": "aws_core__aws_bedrock_guardrail_version",
+      "terraform": "aws_bedrock_guardrail_version",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Bedrock::Guardrail"
+      ],
+      "compares": [
+        "bedrock_guardrail_version_key"
+      ],
+      "module": "wave3b-misc4",
+      "natural_key": {
+        "concat": [
+          {
+            "path": "guardrail_arn"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "version"
+          }
+        ]
+      },
+      "tf_attrs": {
+        "bedrock_guardrail_version_key": {
+          "concat": [
+            {
+              "path": "guardrail_arn"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "version"
+            }
+          ]
+        }
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Published version of the module's guardrail; the key is <guardrail ARN>:<version>."
+    },
+    "AWS::CloudWatch::AlarmMuteRule": {
+      "cfn_type": "AWS::CloudWatch::AlarmMuteRule",
+      "entity_type": "aws_core__aws_cloudwatch_alarm_mute_rule",
+      "terraform": "aws_cloudwatch_alarm_mute_rule",
+      "cost_class": "free",
+      "needs": [
+        "AWS::CloudWatch::Alarm"
+      ],
+      "compares": [
+        "alarm_mute_rule_arn"
+      ],
+      "module": "wave3b-misc4",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "alarm_mute_rule_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Mute rule over one alarm on a yearly schedule."
     }
   }
 }
