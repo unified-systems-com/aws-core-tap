@@ -6602,6 +6602,104 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Flow module that disconnects at once."
+    },
+    "AWS::Transfer::Server": {
+      "cfn_type": "AWS::Transfer::Server",
+      "entity_type": "aws_core__aws_transfer_server",
+      "terraform": "aws_transfer_server",
+      "cost_class": "cheap",
+      "needs": [],
+      "compares": [
+        "server_arn"
+      ],
+      "module": "wave3b-xfer",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "server_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "SFTP server on a VPC endpoint with service-managed users; billed by the hour."
+    },
+    "AWS::Transfer::User": {
+      "cfn_type": "AWS::Transfer::User",
+      "entity_type": "aws_core__aws_transfer_user",
+      "terraform": "aws_transfer_user",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Transfer::Server"
+      ],
+      "compares": [
+        "name",
+        "transfer_user_arn"
+      ],
+      "module": "wave3b-xfer",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "user_name",
+        "transfer_user_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "User with a permissionless role and no key; nobody can sign in."
+    },
+    "AWS::Transfer::Workflow": {
+      "cfn_type": "AWS::Transfer::Workflow",
+      "entity_type": "aws_core__aws_transfer_workflow",
+      "terraform": "aws_transfer_workflow",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "transfer_workflow_arn"
+      ],
+      "module": "wave3b-xfer",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "transfer_workflow_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Workflow with one delete step; never run."
+    },
+    "AWS::Pinpoint::App": {
+      "cfn_type": "AWS::Pinpoint::App",
+      "entity_type": "aws_core__aws_pinpoint_app",
+      "terraform": "aws_pinpoint_app",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "pinpoint_app_arn"
+      ],
+      "module": "wave3b-xfer",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "pinpoint_app_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Pinpoint app with no channel."
+    },
+    "AWS::AppStream::Stack": {
+      "cfn_type": "AWS::AppStream::Stack",
+      "entity_type": "aws_core__aws_appstream_stack",
+      "terraform": "aws_appstream_stack",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "stack_arn"
+      ],
+      "module": "wave3b-xfer",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "stack_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Stack with no fleet attached."
     }
   }
 }
