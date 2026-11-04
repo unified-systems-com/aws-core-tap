@@ -50,6 +50,7 @@ live state.
 | `runs/wave3b-edge-2026-11-03.json` | Wave 3b, edge services: 27 types compared across Cognito, API Gateway, Route 53 and WAF Classic, all pass; types the account or region refuses are not seeded |
 | `runs/wave3b-compute-2026-11-03.json` | Wave 3b, compute and network: 20 types compared across ECS, EFS, load balancers, VPC endpoints and Transit Gateway, all pass; four types the first run failed are explained in the run note |
 | `runs/wave3b-bedrock-2026-11-03.json` | Wave 3b, Bedrock: 5 types compared (guardrail, prompt, flow, application inference profile and the flow's IAM role), all pass; agents cannot be created (maintenance mode) |
+| `runs/wave3b-net-2026-11-03.json` | Wave 3b, DNS and streaming: 20 types compared (Route 53 Resolver and DNS Firewall, Kinesis, Logs destination and subscription filter, Firehose, metric stream, and the VPC, subnets, log groups, bucket and roles under them), all pass |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.
