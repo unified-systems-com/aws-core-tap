@@ -4502,6 +4502,735 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Metric stream to the delivery stream, filtered to a namespace nothing publishes to."
+    },
+    "AWS::Glue::Database": {
+      "cfn_type": "AWS::Glue::Database",
+      "entity_type": "aws_core__aws_glue_database",
+      "terraform": "aws_glue_catalog_database",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "glue_database_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "glue_database_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Catalog database that holds one table."
+    },
+    "AWS::Glue::Table": {
+      "cfn_type": "AWS::Glue::Table",
+      "entity_type": "aws_core__aws_glue_table",
+      "terraform": "aws_glue_catalog_table",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Glue::Database"
+      ],
+      "compares": [
+        "name",
+        "glue_table_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "glue_table_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "External table of one string column over a location nothing writes to."
+    },
+    "AWS::Glue::Registry": {
+      "cfn_type": "AWS::Glue::Registry",
+      "entity_type": "aws_core__aws_glue_registry",
+      "terraform": "aws_glue_registry",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "glue_registry_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "registry_name",
+        "glue_registry_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Schema registry."
+    },
+    "AWS::Glue::Schema": {
+      "cfn_type": "AWS::Glue::Schema",
+      "entity_type": "aws_core__aws_glue_schema",
+      "terraform": "aws_glue_schema",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Glue::Registry"
+      ],
+      "compares": [
+        "name",
+        "glue_schema_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "schema_name",
+        "glue_schema_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Avro schema in the registry."
+    },
+    "AWS::Glue::Crawler": {
+      "cfn_type": "AWS::Glue::Crawler",
+      "entity_type": "aws_core__aws_glue_crawler",
+      "terraform": "aws_glue_crawler",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Glue::Database"
+      ],
+      "compares": [
+        "name",
+        "glue_crawler_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "glue_crawler_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Crawler of an S3 path nothing writes to; never started."
+    },
+    "AWS::Glue::Job": {
+      "cfn_type": "AWS::Glue::Job",
+      "entity_type": "aws_core__aws_glue_job",
+      "terraform": "aws_glue_job",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "glue_job_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "glue_job_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Spark job with a script location nothing holds; never run."
+    },
+    "AWS::Glue::Trigger": {
+      "cfn_type": "AWS::Glue::Trigger",
+      "entity_type": "aws_core__aws_glue_trigger",
+      "terraform": "aws_glue_trigger",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Glue::Job"
+      ],
+      "compares": [
+        "name",
+        "glue_trigger_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "glue_trigger_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "On-demand trigger of the job; never fired."
+    },
+    "AWS::Glue::Workflow": {
+      "cfn_type": "AWS::Glue::Workflow",
+      "entity_type": "aws_core__aws_glue_workflow",
+      "terraform": "aws_glue_workflow",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "glue_workflow_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "glue_workflow_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Workflow with no node."
+    },
+    "AWS::Glue::SecurityConfiguration": {
+      "cfn_type": "AWS::Glue::SecurityConfiguration",
+      "entity_type": "aws_core__aws_glue_security_configuration",
+      "terraform": "aws_glue_security_configuration",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "glue_security_configuration_name",
+        "name"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "name",
+      "tf_attrs": {
+        "glue_security_configuration_name": "name",
+        "name": "name"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Security configuration with S3 server-side encryption."
+    },
+    "AWS::Athena::WorkGroup": {
+      "cfn_type": "AWS::Athena::WorkGroup",
+      "entity_type": "aws_core__aws_athena_work_group",
+      "terraform": "aws_athena_workgroup",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "athena_work_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "athena_work_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Work group with metrics off."
+    },
+    "AWS::Athena::DataCatalog": {
+      "cfn_type": "AWS::Athena::DataCatalog",
+      "entity_type": "aws_core__aws_athena_data_catalog",
+      "terraform": "aws_athena_data_catalog",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "athena_data_catalog_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "athena_data_catalog_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Data catalog of type Glue over the account's own catalog."
+    },
+    "AWS::Athena::NamedQuery": {
+      "cfn_type": "AWS::Athena::NamedQuery",
+      "entity_type": "aws_core__aws_athena_named_query",
+      "terraform": "aws_athena_named_query",
+      "cost_class": "free",
+      "needs": [
+        "AWS::Athena::WorkGroup",
+        "AWS::Glue::Database"
+      ],
+      "compares": [
+        "name",
+        "athena_named_query_id"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "athena_named_query_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Saved query that is never run."
+    },
+    "AWS::StepFunctions::Activity": {
+      "cfn_type": "AWS::StepFunctions::Activity",
+      "entity_type": "aws_core__aws_stepfunctions_activity",
+      "terraform": "aws_sfn_activity",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "stepfunctions_activity_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "stepfunctions_activity_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Activity that no worker polls."
+    },
+    "AWS::StepFunctions::StateMachine": {
+      "cfn_type": "AWS::StepFunctions::StateMachine",
+      "entity_type": "aws_core__aws_stepfunctions_state_machine",
+      "terraform": "aws_sfn_state_machine",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "stepfunctions_state_machine_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "stepfunctions_state_machine_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "State machine of one Pass state, published; never started."
+    },
+    "AWS::StepFunctions::StateMachineAlias": {
+      "cfn_type": "AWS::StepFunctions::StateMachineAlias",
+      "entity_type": "aws_core__aws_stepfunctions_state_machine_alias",
+      "terraform": "aws_sfn_alias",
+      "cost_class": "free",
+      "needs": [
+        "AWS::StepFunctions::StateMachine"
+      ],
+      "compares": [
+        "stepfunctions_state_machine_alias_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "stepfunctions_state_machine_alias_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Alias routing all traffic to the published version."
+    },
+    "AWS::AppConfig::Application": {
+      "cfn_type": "AWS::AppConfig::Application",
+      "entity_type": "aws_core__aws_appconfig_application",
+      "terraform": "aws_appconfig_application",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "appconfig_application_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "appconfig_application_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Application with one environment and one profile."
+    },
+    "AWS::AppConfig::Environment": {
+      "cfn_type": "AWS::AppConfig::Environment",
+      "entity_type": "aws_core__aws_appconfig_environment",
+      "terraform": "aws_appconfig_environment",
+      "cost_class": "free",
+      "needs": [
+        "AWS::AppConfig::Application"
+      ],
+      "compares": [
+        "name",
+        "appconfig_environment_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "appconfig_environment_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Environment with no monitor."
+    },
+    "AWS::AppConfig::ConfigurationProfile": {
+      "cfn_type": "AWS::AppConfig::ConfigurationProfile",
+      "entity_type": "aws_core__aws_appconfig_configuration_profile",
+      "terraform": "aws_appconfig_configuration_profile",
+      "cost_class": "free",
+      "needs": [
+        "AWS::AppConfig::Application"
+      ],
+      "compares": [
+        "name",
+        "appconfig_configuration_profile_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "appconfig_configuration_profile_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Hosted configuration profile; nothing is deployed."
+    },
+    "AWS::AppConfig::DeploymentStrategy": {
+      "cfn_type": "AWS::AppConfig::DeploymentStrategy",
+      "entity_type": "aws_core__aws_appconfig_deployment_strategy",
+      "terraform": "aws_appconfig_deployment_strategy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "appconfig_deployment_strategy_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "appconfig_deployment_strategy_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Immediate deployment strategy."
+    },
+    "AWS::DocDB::DBSubnetGroup": {
+      "cfn_type": "AWS::DocDB::DBSubnetGroup",
+      "entity_type": "aws_core__aws_docdb_db_subnet_group",
+      "terraform": "aws_docdb_subnet_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "dbsubnet_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "dbsubnet_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subnet group over two subnets; no cluster."
+    },
+    "AWS::DocDB::DBClusterParameterGroup": {
+      "cfn_type": "AWS::DocDB::DBClusterParameterGroup",
+      "entity_type": "aws_core__aws_docdb_db_cluster_parameter_group",
+      "terraform": "aws_docdb_cluster_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "dbcluster_parameter_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "dbcluster_parameter_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Cluster parameter group, family docdb5.0."
+    },
+    "AWS::DocDB::EventSubscription": {
+      "cfn_type": "AWS::DocDB::EventSubscription",
+      "entity_type": "aws_core__aws_docdb_event_subscription",
+      "terraform": "aws_docdb_event_subscription",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "event_subscription_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "event_subscription_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subscription of cluster events to an SNS topic."
+    },
+    "AWS::DocDB::GlobalCluster": {
+      "cfn_type": "AWS::DocDB::GlobalCluster",
+      "entity_type": "aws_core__aws_docdb_global_cluster",
+      "terraform": "aws_docdb_global_cluster",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "docdb_global_cluster_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "docdb_global_cluster_arn": "arn"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Global cluster with no member. The Terraform resource cannot carry tags."
+    },
+    "AWS::Neptune::DBSubnetGroup": {
+      "cfn_type": "AWS::Neptune::DBSubnetGroup",
+      "entity_type": "aws_core__aws_neptune_db_subnet_group",
+      "terraform": "aws_neptune_subnet_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "neptune_db_subnet_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "neptune_db_subnet_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subnet group over two subnets; no cluster."
+    },
+    "AWS::Neptune::DBClusterParameterGroup": {
+      "cfn_type": "AWS::Neptune::DBClusterParameterGroup",
+      "entity_type": "aws_core__aws_neptune_db_cluster_parameter_group",
+      "terraform": "aws_neptune_cluster_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "neptune_db_cluster_parameter_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "neptune_db_cluster_parameter_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Cluster parameter group, family neptune1.4."
+    },
+    "AWS::Neptune::DBParameterGroup": {
+      "cfn_type": "AWS::Neptune::DBParameterGroup",
+      "entity_type": "aws_core__aws_neptune_db_parameter_group",
+      "terraform": "aws_neptune_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "neptune_db_parameter_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "neptune_db_parameter_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Instance parameter group, family neptune1.4."
+    },
+    "AWS::Neptune::EventSubscription": {
+      "cfn_type": "AWS::Neptune::EventSubscription",
+      "entity_type": "aws_core__aws_neptune_event_subscription",
+      "terraform": "aws_neptune_event_subscription",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "neptune_event_subscription_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "neptune_event_subscription_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subscription of cluster events to an SNS topic."
+    },
+    "AWS::MemoryDB::SubnetGroup": {
+      "cfn_type": "AWS::MemoryDB::SubnetGroup",
+      "entity_type": "aws_core__aws_memorydb_subnet_group",
+      "terraform": "aws_memorydb_subnet_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "memorydb_subnet_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "memorydb_subnet_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Subnet group over two subnets; no cluster."
+    },
+    "AWS::MemoryDB::ParameterGroup": {
+      "cfn_type": "AWS::MemoryDB::ParameterGroup",
+      "entity_type": "aws_core__aws_memorydb_parameter_group",
+      "terraform": "aws_memorydb_parameter_group",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "memorydb_parameter_group_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "memorydb_parameter_group_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Parameter group, family memorydb_redis7."
+    },
+    "AWS::MemoryDB::User": {
+      "cfn_type": "AWS::MemoryDB::User",
+      "entity_type": "aws_core__aws_memorydb_user",
+      "terraform": "aws_memorydb_user",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "memorydb_user_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "user_name",
+        "memorydb_user_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "User that authenticates with IAM."
+    },
+    "AWS::MemoryDB::ACL": {
+      "cfn_type": "AWS::MemoryDB::ACL",
+      "entity_type": "aws_core__aws_memorydb_acl",
+      "terraform": "aws_memorydb_acl",
+      "cost_class": "free",
+      "needs": [
+        "AWS::MemoryDB::User"
+      ],
+      "compares": [
+        "name",
+        "memorydb_acl_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "memorydb_acl_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Access control list holding the user."
+    },
+    "AWS::ServiceCatalog::Portfolio": {
+      "cfn_type": "AWS::ServiceCatalog::Portfolio",
+      "entity_type": "aws_core__aws_servicecatalog_portfolio",
+      "terraform": "aws_servicecatalog_portfolio",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "servicecatalog_portfolio_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "servicecatalog_portfolio_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Empty portfolio."
+    },
+    "AWS::ServiceCatalog::TagOption": {
+      "cfn_type": "AWS::ServiceCatalog::TagOption",
+      "entity_type": "aws_core__aws_servicecatalog_tag_option",
+      "terraform": "aws_servicecatalog_tag_option",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "servicecatalog_tag_option_id"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "id",
+      "tf_attrs": {
+        "servicecatalog_tag_option_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Tag option whose value is the run id."
+    },
+    "AWS::ServiceCatalog::ServiceAction": {
+      "cfn_type": "AWS::ServiceCatalog::ServiceAction",
+      "entity_type": "aws_core__aws_servicecatalog_service_action",
+      "terraform": "aws_servicecatalog_service_action",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "name",
+        "servicecatalog_service_action_id"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "id",
+      "tf_attrs": {
+        "name": "name",
+        "servicecatalog_service_action_id": "id"
+      },
+      "tags": "none",
+      "edges": [],
+      "description": "Service action over an AWS-owned Systems Manager document."
+    },
+    "AWS::APS::Workspace": {
+      "cfn_type": "AWS::APS::Workspace",
+      "entity_type": "aws_core__aws_aps_workspace",
+      "terraform": "aws_prometheus_workspace",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "workspace_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "workspace_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Managed Prometheus workspace; nothing is ingested."
+    },
+    "AWS::APS::RuleGroupsNamespace": {
+      "cfn_type": "AWS::APS::RuleGroupsNamespace",
+      "entity_type": "aws_core__aws_aps_rule_groups_namespace",
+      "terraform": "aws_prometheus_rule_group_namespace",
+      "cost_class": "free",
+      "needs": [
+        "AWS::APS::Workspace"
+      ],
+      "compares": [
+        "name",
+        "aps_rule_groups_namespace_arn"
+      ],
+      "module": "wave3b-data",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "name",
+        "aps_rule_groups_namespace_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Rule groups namespace of one recording rule."
     }
   }
 }

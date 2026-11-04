@@ -24,12 +24,12 @@ def _tf_text(directory):
 
 
 #: The seed modules: the catalog's `module` names a directory under tools/seed, and the module's provider tag.
-MODULES = ("wave1", "wave1b", "wave1c", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch", "wave3b-ops", "wave3b-edge", "wave3b-compute", "wave3b-bedrock", "wave3b-net")
+MODULES = ("wave1", "wave1b", "wave1c", "wave2-rds", "wave2-nfw", "wave3-redshift", "wave3-elasticache", "wave3-eks", "wave3-opensearch", "wave3b-ops", "wave3b-edge", "wave3b-compute", "wave3b-bedrock", "wave3b-net", "wave3b-data")
 TF_BY_MODULE = {m: _tf_text(SEED / m) for m in MODULES}
 TF_TEXT = TF_BY_MODULE["wave1"]
 ALL_TF_TEXT = "\n".join(TF_BY_MODULE.values())
 #: Terraform resources whose type cannot carry tags although the service tags the object.
-TAGLESS_IN_TERRAFORM = {"AWS::RDS::DBProxyTargetGroup", "AWS::CloudWatch::Dashboard", "AWS::AutoScaling::AutoScalingGroup"}
+TAGLESS_IN_TERRAFORM = {"AWS::RDS::DBProxyTargetGroup", "AWS::CloudWatch::Dashboard", "AWS::AutoScaling::AutoScalingGroup", "AWS::DocDB::GlobalCluster"}
 REQUIRED = {"cfn_type", "entity_type", "terraform", "cost_class", "needs", "compares", "module", "natural_key", "tf_attrs", "tags", "edges", "description"}
 COSTS = {"free", "cheap", "costly", "blocked"}
 CASES = sorted(CATALOG["types"].items())
@@ -147,7 +147,7 @@ def test_the_saml_metadata_holds_a_certificate_and_no_private_key():
 @pytest.mark.parametrize("module", MODULES)
 def test_iam_names_start_with_seed(module):
     blocks = re.findall(r'^resource "aws_iam_(role|user|group|policy|instance_profile)" "[^"]+" \{\n(.*?)^\}', TF_BY_MODULE[module], re.M | re.S)
-    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave1c": 0, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0, "wave3b-ops": 0, "wave3b-edge": 0, "wave3b-compute": 0, "wave3b-bedrock": 1, "wave3b-net": 3}[module]
+    assert len(blocks) == {"wave1": 5, "wave1b": 4, "wave1c": 0, "wave2-rds": 2, "wave2-nfw": 0, "wave3-redshift": 2, "wave3-elasticache": 0, "wave3-eks": 4, "wave3-opensearch": 0, "wave3b-ops": 0, "wave3b-edge": 0, "wave3b-compute": 0, "wave3b-bedrock": 1, "wave3b-net": 3, "wave3b-data": 2}[module]
     for kind, body in blocks:
         assert re.search(r'^\s*name\s*=\s*"seed-', body, re.M), kind
 
