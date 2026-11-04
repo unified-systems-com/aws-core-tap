@@ -744,3 +744,55 @@ class TestRdsClusterEndpointsAskForCustomOnly:
         items = list(iter_source(entry, client_for=lambda _service: client, custom_fns=CustomFnRegistry()))
         assert len(items) == 1 and client.calls == [{"Filters": [{"Name": "db-cluster-endpoint-type", "Values": ["custom"]}]}]
         assert project_item(entry, items[0]).natural_key.endswith(":cluster-endpoint:e")
+
+
+class TestListBindFromAProjectedList:
+    def test_a_path_that_already_projects_a_list_is_passed_as_that_list(self):
+        entry = {
+            "service": "x",
+            "items_path": "Things[]",
+            "source": {
+                "aws_op": "BatchGetThings",
+                "per": {"aws_op": "ListGroups", "items_path": "Groups[]"},
+                "bind": {"Arns": {"path": "Members[].Arn", "list": True}},
+            },
+        }
+        client = _CallLog(
+            {
+                "list_groups": {"Groups": [{"Members": [{"Arn": "a1"}, {"Arn": "a2"}]}]},
+                "batch_get_things": lambda Arns: {"Things": [{"Name": arn} for arn in Arns]},
+            }
+        )
+        items = list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["Name"] for i in items] == ["a1", "a2"]
+        assert ("batch_get_things", {"Arns": ["a1", "a2"]}) in client.calls
+
+
+class TestEcsTaskSetSource:
+    """DescribeTaskSets has no list form: it refuses a call that names no task set ("TaskSets cannot be empty", found by the live
+    trial of the seed). The committed entry reads the task set ARNs off DescribeServices and calls it only for a service holding one."""
+
+    def _entry(self):
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+        return next(e for e in manifest_entries() if e["entity_type"] == "aws_core__aws_ecs_task_set")
+
+    def test_describe_task_sets_names_the_task_sets_of_each_external_service_that_holds_one(self):
+        ts = "arn:aws-us-gov:ecs:us-gov-west-1:111122223333:task-set/c/s/ecs-svc/1"
+        all_services = [
+            {"serviceArn": "s-ext-with", "clusterArn": "c1", "deploymentController": {"type": "EXTERNAL"}, "taskSets": [{"taskSetArn": ts}]},
+            {"serviceArn": "s-ext-none", "clusterArn": "c1", "deploymentController": {"type": "EXTERNAL"}, "taskSets": []},
+            {"serviceArn": "s-ecs", "clusterArn": "c1", "deploymentController": {"type": "ECS"}, "taskSets": []},
+        ]
+        client = _CallLog(
+            {
+                "list_clusters": {"clusterArns": ["c1"]},
+                "list_services": {"serviceArns": ["s-ext-with", "s-ext-none", "s-ecs"]},
+                "describe_services": lambda cluster, services: {"services": [s for s in all_services if s["serviceArn"] in services]},
+                "describe_task_sets": lambda cluster, service, taskSets, include: {"taskSets": [{"taskSetArn": taskSets[0], "id": "ecs-svc/1"}]},
+            }
+        )
+        items = list(iter_source(self._entry(), client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [i["id"] for i in items] == ["ecs-svc/1"]
+        calls = [kw for name, kw in client.calls if name == "describe_task_sets"]
+        assert calls == [{"cluster": "c1", "service": "s-ext-with", "taskSets": [ts], "include": ["TAGS"]}]
