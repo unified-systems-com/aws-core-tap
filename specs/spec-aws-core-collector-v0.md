@@ -1092,8 +1092,10 @@ Status: `Proposed`
 
 A run can be narrowed to chosen types and chosen accounts. Requested by George on 2026-11-03 for field testing;
 the keys live in the credential's `data` for now (`req-aws-core-secret-selection`, which defines the grammar of a
-type pattern and of an account reference). Design only: nothing here is built or run. It carries the type
-selection that `req-aws-core-livevalidation-selection` first proposed for validation, with one change of
+type pattern and of an account reference). Built for a single-account run (`-1` to `-6`, `-9` and `-13`; tests in
+`test_boto3_collector_selection.py` and `test_boto3_collector_selection_run.py`) and not yet run live. Not built: the
+fan-out parts (`-7`, `-8`, `-10`, `-11`), which wait on `req-aws-collector-fanout` itself, and `-12`, which waits on
+unified-systems-com/tap#1156. It carries the type selection that `req-aws-core-livevalidation-selection` first proposed for validation, with one change of
 grammar (`<service>:<entity>`, not an `fnmatch` pattern over the raw entity type).
 
 #### Type Selection
@@ -1113,7 +1115,11 @@ out of the role; the echo (`-9`) names every parent read on a selected child's b
 - A parent that a selected type fans out from (a `per` or `bind` source) is read as the input of that type and
   emits nothing unless it is itself selected.
 - Some things are not manifest entries and are never filtered: the per-(account, region) footprints every
-  regional containment hangs from, and the run's own account node.
+  regional containment hangs from, and the run's own account node (the `sts:account` entry, an anchor that is always
+  selected and never counted as skipped).
+- Two reads are not manifest entries and no pattern can name them: the Organizations tree and the landing-zone read. A
+  run whose type patterns leave anything unselected skips both, so that it makes no call it did not select. A run
+  narrowed by `accounts_allowed` alone keeps them (the tree is what fan-out lists members from).
 - A pattern, in `include_types` or `exclude_types`, that matches no manifest entry stops the run before any call,
   naming the pattern (`SELECTION_PATTERN_UNMATCHED`). An exclude that matched nothing would widen the run silently
   (a typo, or a manifest rename), and the selection lives in a secret the operator cannot inspect, so both fail closed.

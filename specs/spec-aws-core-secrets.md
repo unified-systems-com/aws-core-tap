@@ -299,7 +299,8 @@ Status: `Proposed`
 Requested by George on 2026-11-03 in conversation, for field testing: a run must be narrowable to chosen
 types and chosen accounts, and the collector has no configuration of its own to hold that. Until it does, the
 selection rides the credential's `data` as optional keys, beside `regions_allowed`, which is scope already held
-there. Design only: nothing in this section is built or run, and it has not been ruled as normative.
+there. Built and tested (`test_boto3_collector_credentials.py`, `test_boto3_collector_selection.py`), not yet run live, and
+not ruled as normative.
 
 Both kinds (`aws_static_access_key`, `aws_assumed_role`) gain four optional keys, defined once as a shared
 schema fragment as the region scope is (`_REGION_SCOPE_PROPS`), so the two schemas cannot drift:

@@ -43,6 +43,7 @@ import boto3
 import botocore.session
 from botocore.config import Config
 
+from tap_cares.exceptions import SecretValidationError
 from tap_cares.secrets import SecretRef, require_secret_kind, resolve_secret
 from tap_cares.secrets.models import Secret
 
@@ -54,6 +55,7 @@ from .partition import (
     parse_arn,
     partition_of_region,
 )
+from .selection import ACCOUNT_REFERENCE_PATTERN, TYPE_PATTERN, SelectionError, parse_selection
 
 # The well-known SecretRef for the AWS collector. v0 has no per-instance
 # config (CollectorConfig carries only entity ids), so the key is a constant;
@@ -94,6 +96,18 @@ _EXPECTED_ACCOUNT_PROPS: dict[str, Any] = {
     "expected_account_id": {"type": "string", "pattern": "^[0-9]{12}$"},
 }
 
+# Collection selection is scope, not credential, and is shared by both kinds for the same reason region scope is
+# (req-aws-core-secret-selection-2): one fragment, so the two schemas cannot drift. The grammar and the checks the schema
+# cannot express (an ARN's partition, a contradiction with `expected_account_id`, the retire flag) live in
+# `selection.parse_selection`, which `resolve_aws_secret` runs on every resolved secret.
+_SELECTION_PROPS: dict[str, Any] = {
+    "include_types": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": TYPE_PATTERN}},
+    "exclude_types": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": TYPE_PATTERN}},
+    "accounts_allowed": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": ACCOUNT_REFERENCE_PATTERN}},
+    # Refused when true until core honours it (req-aws-collector-selection-13); `parse_selection` says why.
+    "retire_within_selection": {"type": "boolean"},
+}
+
 # The static-credential fragment: reused verbatim as the `aws_assumed_role`
 # kind's `data.base` (the identity that CALLS AssumeRole).
 _STATIC_CREDS_PROPS: dict[str, Any] = {
@@ -110,7 +124,7 @@ AWS_STATIC_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "required": ["access_key_id", "secret_access_key"],
-    "properties": {**_STATIC_CREDS_PROPS, **_REGION_SCOPE_PROPS, **_EXPECTED_ACCOUNT_PROPS},
+    "properties": {**_STATIC_CREDS_PROPS, **_REGION_SCOPE_PROPS, **_EXPECTED_ACCOUNT_PROPS, **_SELECTION_PROPS},
 }
 
 # aws_core owns this schema for the cross-account kind's `data`
@@ -144,6 +158,7 @@ AWS_ASSUMED_ROLE_SCHEMA: dict[str, Any] = {
         # AssumeRole DurationSeconds bounds (15 min .. 12 h).
         "duration_seconds": {"type": "integer", "minimum": 900, "maximum": 43200},
         **_REGION_SCOPE_PROPS,
+        **_SELECTION_PROPS,
     },
 }
 
@@ -178,6 +193,13 @@ def resolve_aws_secret(ref: SecretRef = AWS_SECRET_REF) -> Secret:
         # (Only reachable when kind is neither of ours; this call always raises.)
         require_secret_kind(secret, AWS_SECRET_KIND, data_schema=AWS_STATIC_SCHEMA)
     require_secret_kind(secret, secret.kind, data_schema=_KIND_SCHEMAS[secret.kind])
+    try:
+        # Grammar, account forms, the contradiction with `expected_account_id`, and the retire flag, where the
+        # operator reads them (req-aws-core-secret-selection-3, -4, -5, -7). The run checks an ARN's partition once
+        # it has one.
+        parse_selection(secret.data)
+    except SelectionError as exc:
+        raise SecretValidationError(f"AWS secret selection is invalid: {exc}") from exc
     return secret
 
 
