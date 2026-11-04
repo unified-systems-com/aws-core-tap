@@ -67,6 +67,34 @@ def load_state(path: Path) -> list[dict[str, Any]]:
     return walk_resources(values["root_module"])
 
 
+def load_context(path: Path) -> dict[str, str]:
+    """The account id and region the state was applied in, read from the module's `aws_caller_identity` and `aws_region`
+    data sources, for keys the collector builds as `<account>/<region>/<name>`."""
+    root = (read_json_file(path).get("values") or {}).get("root_module") or {}
+    found: dict[str, str] = {}
+
+    def note(key: str, value: str) -> None:
+        # Two data sources that disagree (a provider alias, a child module) would build keys from the wrong account or
+        # region, so the state is refused rather than one of them picked.
+        if found.setdefault(key, value) != value:
+            raise ExpectedError(f"the state holds more than one {key}; a key built from account or region would be ambiguous")
+
+    def visit(module: dict[str, Any]) -> None:
+        for r in module.get("resources", []):
+            vals = r.get("values") or {}
+            if r.get("mode") == "data" and r.get("type") == "aws_caller_identity" and isinstance(vals.get("account_id"), str):
+                note("account_id", vals["account_id"])
+            if r.get("mode") == "data" and r.get("type") == "aws_region":
+                region = vals.get("region") or vals.get("name")
+                if isinstance(region, str):
+                    note("region", region)
+        for child in module.get("child_modules", []):
+            visit(child)
+
+    visit(root)
+    return found
+
+
 def dig(values: Any, path: str) -> Any:
     """A dotted path into Terraform resource values; numeric segments index lists. MISSING if absent."""
     cur = values
@@ -89,12 +117,14 @@ def _get(resource: dict[str, Any], path: str) -> Any:
     return None if got is MISSING else got
 
 
-def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]]) -> Any:
+def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]], context: dict[str, str] | None = None) -> Any:
     """Evaluate one catalog value spec against a resource (and, for joins, the whole state).
 
     - a string: a dotted path into the resource's values
     - {"path": p, "strip_suffix": s}: the path, with a trailing suffix removed
     - {"const": v}: v
+    - {"context": "account_id" | "region"}: the account or region the state was applied in (the `aws_caller_identity` and
+      `aws_region` data sources); an error if the state has none
     - {"concat": [spec, ...]}: the parts' values joined into one string (a key the collector builds, `<group>:<name>`);
       None if any part is absent
     - {"all_true": {terraform, own, other, flags}, "absent": v}: True iff a resource of that type whose `other` equals
@@ -108,8 +138,13 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
         raise ExpectedError(f"bad value spec {spec!r}")
     if "const" in spec:
         return spec["const"]
+    if "context" in spec:
+        got = (context or {}).get(spec["context"])
+        if not got:
+            raise ExpectedError(f"value spec {spec!r} needs the {spec['context']} data source in the state")
+        return got
     if "concat" in spec:
-        parts = [evaluate(part, resource, resources) for part in spec["concat"]]
+        parts = [evaluate(part, resource, resources, context) for part in spec["concat"]]
         return None if any(not isinstance(part, str) or not part for part in parts) else "".join(parts)
     if "path" in spec:
         value = _get(resource, spec["path"])
@@ -132,7 +167,7 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
         out = []
         for other in resources:
             if other.get("type") == j["terraform"] and own is not None and _get(other, j["other"]) == own:
-                got = evaluate(j["target"], other, resources)
+                got = evaluate(j["target"], other, resources, context)
                 if isinstance(got, (list, tuple, set)):
                     out.extend(got)  # a target that is itself a list (a subnet group's subnets) adds its members
                 elif got is not None:
@@ -146,7 +181,7 @@ def _norm_attr(value: Any) -> Any:
     return None if value == "" else value
 
 
-def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any]) -> dict[str, Any]:
+def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any], context: dict[str, str] | None = None) -> dict[str, Any]:
     by_tf: dict[str, tuple[str, dict[str, Any]]] = {}
     for cfn, entry in catalog["types"].items():
         by_tf[entry["terraform"]] = (cfn, entry)
@@ -159,13 +194,13 @@ def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any]) -> 
             unseeded.append(res["address"])
             continue
         cfn, entry = hit
-        key = evaluate(entry["natural_key"], res, resources)
+        key = evaluate(entry["natural_key"], res, resources, context)
         if not isinstance(key, str) or not key:
             raise ExpectedError(f"{res['address']}: natural key did not resolve")
         tags: dict[str, str] = {}
         if entry.get("tags") == "tags_all":
             tags = dict(_get(res, "tags_all") or {})
-        attrs = {f: _norm_attr(evaluate(spec, res, resources)) for f, spec in sorted(entry["tf_attrs"].items())}
+        attrs = {f: _norm_attr(evaluate(spec, res, resources, context)) for f, spec in sorted(entry["tf_attrs"].items())}
         arn = _get(res, "arn")
         seeded.append(
             {
@@ -196,7 +231,7 @@ def build_expected(resources: list[dict[str, Any]], catalog: dict[str, Any]) -> 
     for s in seeded:
         edges = set()
         for spec in s.pop("_edge_specs"):
-            got = evaluate(spec["target"], s["_res"], resources)
+            got = evaluate(spec["target"], s["_res"], resources, context)
             for target_key in got if isinstance(got, list) else [got]:
                 if not isinstance(target_key, str) or not target_key:  # an empty value means the resource names no target (a topic with no key)
                     continue
@@ -231,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
         show_json = confine(args.show_json, OUT_ROOT)
         catalog = read_json_file(confine(args.catalog, HERE))
         out = confine(args.out, OUT_ROOT) if args.out else None
-        text = json.dumps(build_expected(load_state(show_json), catalog), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
+        text = json.dumps(build_expected(load_state(show_json), catalog, load_context(show_json)), indent=1, sort_keys=True, ensure_ascii=False) + "\n"
     except (ExpectedError, OSError, ValueError) as exc:
         print(f"expected.py: {exc}", file=sys.stderr)
         return 2
