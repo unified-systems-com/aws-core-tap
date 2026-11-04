@@ -1,0 +1,175 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 11
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (12 destroyed). Checked directly afterwards (all calls succeeded): no ECS cluster, DLM policy, code signing configuration, VPC or IAM role of the run remains, and no ECS task definition of the run is ACTIVE (a deregistered revision stays listed as INACTIVE). A Signer profile cannot be deleted, only canceled; it stays listed as Canceled.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Third run. The first (w3j11041303) compared 15 types: 12 passed and 3 failed. IAM::OIDCProvider could not be created (the seeder is denied iam:CreateOpenIDConnectProvider); AutoScaling::AutoScalingGroup showed tags-differ because the ECS capacity provider tags the group it manages (AmazonECSManaged), which the catalog's expectation of no tags cannot hold; ECS::TaskSet failed with read-error:InvalidParameterException, a real collector defect: DescribeTaskSets refuses a call that names no task set. A hand check with the collector role reproduced it and showed the corrected call works; the fix is aws-core-tap#196 and this run compares against it. The OIDC provider and the capacity provider are not seeded; see wave3b-compute2/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3j11041318",
+  "seeds": "tools/seed/wave3b-compute2"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::DLM::LifecyclePolicy",
+   "compared_fields": [
+    "dlm_lifecycle_policy_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_dlm_lifecycle_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::Cluster",
+   "compared_fields": [
+    "cluster_arn",
+    "name",
+    "status"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecs_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::Service",
+   "compared_fields": [
+    "desired_count",
+    "launch_type",
+    "name",
+    "running_count",
+    "service_arn",
+    "status"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_ecs_service",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::TaskDefinition",
+   "compared_fields": [
+    "ecs_task_definition_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecs_task_definition",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::TaskSet",
+   "compared_fields": [
+    "ecs_task_set_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecs_task_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Lambda::CodeSigningConfig",
+   "compared_fields": [
+    "code_signing_config_arn",
+    "signing_profile_version_arns",
+    "untrusted_artifact_on_deployment"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_lambda_code_signing_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Signer::SigningProfile",
+   "compared_fields": [
+    "name",
+    "signing_profile_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_signer_signing_profile",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-compute2"
+}

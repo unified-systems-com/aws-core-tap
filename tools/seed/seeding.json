@@ -7464,6 +7464,70 @@
       "tags": "tags_all",
       "edges": [],
       "description": "Contributor Insights rule over a log group nothing writes to."
+    },
+    "AWS::Lambda::CodeSigningConfig": {
+      "cfn_type": "AWS::Lambda::CodeSigningConfig",
+      "entity_type": "aws_core__aws_lambda_code_signing_config",
+      "terraform": "aws_lambda_code_signing_config",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "code_signing_config_arn",
+        "untrusted_artifact_on_deployment",
+        "signing_profile_version_arns"
+      ],
+      "module": "wave3b-compute2",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "code_signing_config_arn": "arn",
+        "untrusted_artifact_on_deployment": "policies.0.untrusted_artifact_on_deployment",
+        "signing_profile_version_arns": "allowed_publishers.0.signing_profile_version_arns"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Code signing configuration that warns on an unsigned artifact; names the module's Signer profile."
+    },
+    "AWS::ECS::TaskSet": {
+      "cfn_type": "AWS::ECS::TaskSet",
+      "entity_type": "aws_core__aws_ecs_task_set",
+      "terraform": "aws_ecs_task_set",
+      "cost_class": "free",
+      "needs": [
+        "AWS::ECS::Cluster",
+        "AWS::ECS::Service",
+        "AWS::ECS::TaskDefinition"
+      ],
+      "compares": [
+        "name",
+        "ecs_task_set_arn"
+      ],
+      "module": "wave3b-compute2",
+      "natural_key": "arn",
+      "tf_attrs": {
+        "name": "task_set_id",
+        "ecs_task_set_arn": "arn"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Task set of scale zero on an external-deployment service; no task starts."
+    },
+    "AWS::DLM::LifecyclePolicy": {
+      "cfn_type": "AWS::DLM::LifecyclePolicy",
+      "entity_type": "aws_core__aws_dlm_lifecycle_policy",
+      "terraform": "aws_dlm_lifecycle_policy",
+      "cost_class": "free",
+      "needs": [],
+      "compares": [
+        "dlm_lifecycle_policy_id"
+      ],
+      "module": "wave3b-compute2",
+      "natural_key": "id",
+      "tf_attrs": {
+        "dlm_lifecycle_policy_id": "id"
+      },
+      "tags": "tags_all",
+      "edges": [],
+      "description": "Daily snapshot policy for a made-up tag, left disabled."
     }
   }
 }
