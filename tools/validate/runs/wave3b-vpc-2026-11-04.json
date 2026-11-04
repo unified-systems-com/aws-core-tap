@@ -9,10 +9,10 @@
   "date": "2026-11-04",
   "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
   "kind": "projection check against Terraform-seeded resources",
-  "note": "Second run. The first (w3x11040540) applied 20 of 22 resources: the customer gateway was refused at the documentation address 192.0.2.10 (InvalidParameterValue), and the traffic mirror target was refused for a detached network interface (NetworkInterfaceNotSupported). The target is dropped; the gateway now holds a public address that is only recorded. See wave3b-vpc/cost.md.",
+  "note": "Third run, after review: the launch template requires IMDSv2 and has no public address, and the customer gateway uses the module's own Elastic IP rather than a third party's address. The first (w3x11040540) applied 20 of 22 resources: the customer gateway was refused at the documentation address 192.0.2.10 (InvalidParameterValue), and the traffic mirror target was refused for a detached network interface (NetworkInterfaceNotSupported). The target is dropped; the gateway now holds a public address that is only recorded. See wave3b-vpc/cost.md. Run 2 (w3x11040546) also passed 19 of 19.",
   "partition": "aws-us-gov",
   "region": "us-gov-west-1",
-  "run_id": "w3x11040546",
+  "run_id": "w3x11040628",
   "seeds": "tools/seed/wave3b-vpc"
  },
  "types": [

@@ -70,14 +70,22 @@ resource "aws_launch_template" "seed" {
   name          = "${local.prefix}-lt"
   instance_type = "t3.micro"
 
+  metadata_options {
+    http_tokens = "required"
+  }
+
+  network_interfaces {
+    associate_public_ip_address = false
+  }
+
   depends_on = [terraform_data.guard]
 }
 
-# --- VPN: a customer gateway at an address that is only recorded (the documentation ranges are refused; nothing connects), a virtual private gateway and the connection between them ---
+# --- VPN: a customer gateway at the module's own Elastic IP (the documentation ranges are refused, and no third party is addressed), a virtual private gateway and the connection between them ---
 
 resource "aws_customer_gateway" "seed" {
   bgp_asn    = 65000
-  ip_address = "8.8.8.8"
+  ip_address = aws_eip.seed.public_ip
   type       = "ipsec.1"
 
   depends_on = [terraform_data.guard]
@@ -87,6 +95,8 @@ resource "aws_vpn_gateway" "seed" {
   vpc_id = aws_vpc.seed.id
 }
 
+# The provider keeps the generated tunnel pre-shared keys in state while the connection exists. The state stays in the git-ignored
+# out/<run id> and the keys stop working when the connection is destroyed in the same run.
 resource "aws_vpn_connection" "seed" {
   customer_gateway_id = aws_customer_gateway.seed.id
   vpn_gateway_id      = aws_vpn_gateway.seed.id
