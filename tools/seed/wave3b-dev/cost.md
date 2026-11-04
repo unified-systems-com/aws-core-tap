@@ -10,12 +10,12 @@ Time box 1 hour (every resource is created in under two minutes; E)
 | Batch unmanaged compute environment, job queue, scheduling policy, job definition | 1 each | no charge; an unmanaged environment starts no instance, and nothing is submitted | $0 | $0 | E |
 | CodeBuild project, report group | 1 each | per build minute; none is built | $0 | $0 | E |
 | CodePipeline pipeline (V1, S3 source, manual approval) and a custom action type | 1 each | $1.00 per active pipeline per month, free for its first 30 days; E | $0 | $0 | E |
-| Cloud Map private namespace, HTTP namespace, service | 1 each | per registered instance and per query; none | $0 | $0 | E |
+| Cloud Map private namespace (it creates a Route 53 private hosted zone), HTTP namespace, service | 1 each | per registered instance and per query; none. The hosted zone is $0.50 per month, not charged if deleted within 12 hours (the same rule the edge note uses) | $0 | $0 | E |
 | Network Manager global network, site, device, link | 1 each | no charge | $0 | $0 | E |
 | S3 bucket (empty), VPC | 1 each | no charge | $0 | $0 | E |
 
-**Total for one hour: $0.** Standing cost left running by mistake: about $0 per hour. If the pipeline were billed for a whole
-month: $1.00 once.
+**Total for one hour: $0.** Standing cost left running by mistake: about $0 per hour. If the pipeline and the hosted zone were each billed a whole
+month: $1.50 once.
 
 Batch job definitions cannot be deleted, only deregistered. A destroy leaves one `INACTIVE` revision per run, which is free and
 which the tagging API lists afterwards. A leftover check must look for `ACTIVE` ones.
