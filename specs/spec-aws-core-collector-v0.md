@@ -92,6 +92,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-edges | [Declarative Edge Rules](#declarative-edge-rules) | Approved for Development | Endpoints named by natural key, resolved by core; v0 make-it-work = mutually-available natural keys |
 | req-aws-collector-edge-resolver | [Edge Identifier Resolution (Future Seam)](#edge-identifier-resolution-future-seam) | Backlog | The durable fix: pre-batch resolution pass; `key_kind`-driven; misses become observable warnings |
 | req-aws-collector-reconcile | [Grid-State Reconciliation (Future Seam)](#v0-non-goals) | Backlog | Implied-absence/tombstone via the same grid-read primitive as the resolver; one generic reconcile vs Cartography per-type cleanup |
+| req-aws-collector-progressive-upload | [Progressive Upload (Future Seam)](#progressive-upload-future-seam) | Backlog | Write to the grid as the run works, not in one batch at the end: either by phase (nodes, edges, completeness) or by self-contained units the manifest or collector declares complete |
 | req-aws-collector-hydrate | [Fan-Out Hydrate Seam](#fan-out-hydrate-seam) | Approved for Development | First named seam; per-op error-swallow; S3-style many-call |
 | req-aws-collector-s3-bucket-size | [S3 Bucket Size Metrics](#s3-bucket-size-metrics) | Approved for Development | Aggregate size/count from CloudWatch storage metrics; `size_observed_at` data-currency disclosure |
 | req-aws-collector-ecs | [ECS Clusters, Tasks And Container Images](#ecs-clusters-tasks-and-container-images) | Proposed | Collect ECS clusters, services, tasks and containers; per-container image and image digest as the join key to builds, SBOMs and findings; credential-bearing overrides declared, configuration off |
@@ -652,6 +653,52 @@ the target writes it.
 | req-aws-collector-edges-5 | Policy Edges Excluded | Approved for Development | Edges requiring policy-document parsing are not emitted in v0. | Deferred resolver, named seam. |
 | req-aws-collector-edges-6 | Two-Phase, Unmodeled-Safe | Approved for Development | Nodes are emitted before edges; an edge to an unmodeled `target_type` is dropped with a `warn`, never a failure; uncollected modeled targets follow GRIFT dangling-edge mode. | Single chokepoint for the v0-fence gap. |
 | req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no identifier resolver of its own: core finds an endpoint by its exact natural key only, so an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by its ARN, and both `WRITES_LOGS` referrers reach it through the `log_group_arn` transform (a Lambda's bare log-group name takes region and account from the Lambda's own ARN, handed to a source-aware transform). `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
+
+### Progressive Upload (Future Seam)
+----
+RID: `req-aws-collector-progressive-upload`
+
+Status: `Backlog`
+
+Backlogged on George's request, 2026-11-04. Nothing here is built or approved. Today a run reads everything, then
+submits **one** GRIFT batch (`address_batch`, `assemble_batch`, `submit_grift`). The question was whether rows could
+reach the grid as the run works. The full collection of 2026-11-04 took 676 seconds, 643 of them reading and 31 of them
+importing about 1,200 nodes and 1,600 edges (`runs/` records the earlier 1,090-second run), so the case rests on
+visibility and on what a failure loses, not on import time today.
+
+**Two directions, not exclusive.**
+
+1. **Split by phase.** Nodes, then edges, then the completeness statement and edge authority. The cheapest cut. It keeps
+   one statement of completeness, written once after the last batch, and makes the edge ordering explicit (an edge
+   whose far end is not in its own batch is sent by key and skipped by core if that node does not exist yet).
+2. **Self-contained units.** Reorganise collection so that a unit (a service, a service in a region, a group of
+   entries that depend on one another) carries its nodes, its edges and its completeness surfaces, and the manifest or
+   the collector says when the unit is done, so it can be uploaded then. George's reasoning: AWS is organised by
+   service and region, so a unit likely exists. **Not verified.** The cross-unit dependencies to find are edges between
+   services (a Lambda to its IAM role), the per-account footprints every regional containment hangs from, the
+   `per` parents some entries fan out from, the tag sweep that spans services (`shared_scopes`), and the account anchor.
+
+**What a design has to settle** (the strengths and weaknesses weighed on 2026-11-04):
+
+- **Edges depend on nodes.** Order or a later pass, as above.
+- **Completeness is recorded against the batch that carries a listing's observations.** A half-uploaded run must not
+  state completeness it has not earned; the statement is written when the last unit is in.
+- **Retirement candidates and edge authority** are only sound once a whole listing is known, so they cannot go early.
+- **Identity** is deduplicated across the run (`duplicate_entity_id` is batch-fatal at import), so splitting needs the
+  seen-set to span batches.
+- **A crash leaves a partial, mixed-age grid** where today it leaves nothing. A unit that fails must say so.
+- **More batches** are more writes and more audit records. The collection job already links several
+  (`PRODUCED_BATCH` carries a disposition per batch); how core treats several batches in one run, and what the
+  importer needs to be told, has to be read before approval.
+- **Alternatives that need no upload change:** the progress lines (`req-aws-collector-progress`), and a read-only "nodes
+  so far by type" count.
+
+#### Requirements
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-progressive-upload-1 | Phased Batches | Backlog | A run submits its nodes, then its edges, then its completeness statement and edge authority, as separate batches, and states completeness only after the last. | Direction 1. |
+| req-aws-collector-progressive-upload-2 | Units Declare Completion | Backlog | The manifest or the collector names the self-contained units of a run and declares each complete; a complete unit is uploaded with its nodes, edges and completeness surfaces, and a run states completeness for the units that finished. | Direction 2; needs the dependency survey above. |
 
 ### Edge Identifier Resolution (Future Seam)
 ----
