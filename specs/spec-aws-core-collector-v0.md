@@ -103,6 +103,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-outcome | [Listing Outcomes And Client Posture](#listing-outcomes-and-client-posture) | Approved for Development | A listing that yields nothing for a named reason that is not a failed call (`not_configured`, `unsupported_in_partition`, `throttled`) is a recorded result and never a complete-empty observation; one `Config` for timeouts and retries |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source, and each Organizations placement and attachment read, was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
+| req-aws-collector-progress | [Run Progress](#run-progress) | Proposed | A run writes progress lines to the process log while it works: a start line, a throttled heartbeat naming the entry being read, a line when the reads end, and a line when the batch is imported; counts only |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
 | req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
 | req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
@@ -1468,6 +1469,31 @@ are never the same value.
 | req-aws-collector-edge-authority-6 | Sent Only Where Accepted | Implemented | The `edge_cases` section is written only when the importer's own schema defines it; the run record says whether it was sent. | Drop the check when `requires_tap` reaches a release that has the section. |
 | req-aws-collector-edge-authority-7 | Organizations Placement Is Claimed | Implemented | Every account and OU the Organizations reader writes carries one `NESTED_UNDER_PARENT` outbound claim: `complete` only when the read behind its one parent was whole (an OU: the listing that named it; an account: the whole placement walk, and named under exactly one parent); an errored page is `failed`, an account named under no parent or two is `partial`. | aws-core-tap#88: the stale parent edge a `MoveAccount` leaves. `tests/test_organizations_edge_authority.py::TestPlacement`. |
 | req-aws-collector-edge-authority-8 | Organizations Attachments Are Claimed | Implemented | Every customer-managed Organizations policy the reader writes carries one `ATTACHED_TO_TARGET` outbound claim from its `ListTargetsForPolicy` read: an errored page is `failed`, an unmappable target `partial`; an AWS-managed policy (shared by every organization in the partition) is never claimed. | `tests/test_organizations_edge_authority.py::TestAttachments`. |
+
+### Run Progress
+----
+RID: `req-aws-collector-progress`
+
+Status: `Proposed`
+
+Requested by George on 2026-11-04 ("interim logging so that we know that it's cooking"). The run log (`CollectionJob.results`)
+is persisted once, when the run ends, so a long run is silent until then. Progress goes to the process log, where it can
+be followed as it happens. Built in `progress.py`; tested in `test_boto3_collector_progress.py`.
+
+- **Lines.** A start line (manifest entries, regions, partition, and whether a selection is applied); a heartbeat at most
+  once per 30 seconds, written at the start of an entry, naming that entry's service and entity type, the entries finished
+  and the percentage, the nodes and edges so far, and the seconds elapsed; a line when the reads end and the batch is
+  about to be submitted; a line when the import returns.
+- **Counts only.** A line holds counts, an entity type, a partition and seconds. Never an account number, a resource
+  id or name, or response content.
+- **Limit.** The heartbeat is written between entries, not from a side thread (a thread would outlive an aborted run). During
+  one long call nothing is written; the last line names the entry being read.
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-progress-1 | Start, Reads-Finished And Finished Lines | Proposed | A run writes a start line, a line when the reads end and a line when the import returns, to the process log. | Tests read the log records of a real `run()`. |
+| req-aws-collector-progress-2 | Throttled Heartbeat | Proposed | A run faster than the interval writes no heartbeat; a slower one writes one per interval, naming the entry about to be read, the entries finished, the nodes and edges so far and the seconds elapsed. | Tests drive a fake clock. |
+| req-aws-collector-progress-3 | Counts Only | Proposed | No progress line carries an account number, a resource id or name, or response content. | A test asserts no 12-digit number in the lines of a real run. |
 
 ### Audit Verifiability
 ----
