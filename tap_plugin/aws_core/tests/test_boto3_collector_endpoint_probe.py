@@ -89,8 +89,29 @@ def _codes(collector, code):
     return [w for w in collector.results["warn"] if w["message_code"] == code]
 
 
+def _summary(collector):
+    (record,) = [r for r in collector.results["info"] if r["message_code"] == "ENDPOINT_PROBE"]
+    return record["message_data"]
+
+
 @pytest.mark.django_db
 class TestInARun:
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_the_run_says_how_much_the_probe_checked_so_silence_means_nothing_found(self, monkeypatch):
+        _wire(monkeypatch, include_types=["ec2:vpc", "qbusiness:*"])
+        data = _summary(base._run())
+        assert data["usable"] is True and data["hosts_checked"] >= 1
+        assert data["gaps"] == 0 and data["stale"] >= 1
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_a_run_whose_dns_cannot_be_trusted_says_the_probe_was_disabled(self, monkeypatch):
+        _wire(monkeypatch, missing={"sts.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc"])
+        collector = base._run()
+        data = _summary(collector)
+        assert data["usable"] is False and data["hosts_checked"] == 0
+        (record,) = [r for r in collector.results["info"] if r["message_code"] == "ENDPOINT_PROBE"]
+        assert "disabled" in record["message"]
+
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_an_unmarked_service_with_no_host_is_reported_once_and_still_called(self, monkeypatch):
         _wire(monkeypatch, missing={"ec2.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc", "ec2:subnet"])

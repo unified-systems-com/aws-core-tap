@@ -159,6 +159,7 @@ _SITE_ENTRY_THROTTLED = "a9c3"
 _SITE_SELECTION_APPLIED = "5e1c"
 _SITE_GAP_LEARNED = "b81d"
 _SITE_LIST_STALE = "e07a"
+_SITE_PROBE_SUMMARY = "8c2f"
 _SITE_ABORT_SELECTION = "d2a9"
 _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 
@@ -423,7 +424,10 @@ class Boto3Collector(CollectorBase):
     ) -> None:
         """An entry the manifest marks not offered whose host now resolves: the claim may no longer hold."""
         host = self._entry_host(entry, region, fips)
+        if host is None:
+            probe.not_probed += 1
         if probe.resolves(host):
+            probe.stale += 1
             self.record_warn(
                 _SITE_LIST_STALE,
                 "PARTITION_LIST_STALE",
@@ -439,8 +443,10 @@ class Boto3Collector(CollectorBase):
         (service, region); the entry is still called, as it was before the probe. True when the entry could be probed."""
         host = self._entry_host(entry, region, fips)
         if host is None:
+            probe.not_probed += 1
             return False
         if probe.resolves(host) is False:
+            probe.gaps += 1
             self.record_warn(
                 _SITE_GAP_LEARNED,
                 "PARTITION_GAP_LEARNED",
@@ -919,6 +925,26 @@ class Boto3Collector(CollectorBase):
                             listing=listing,
                         )
                     )
+
+        # One line that says whether the probe could speak: a run that found nothing and a run whose DNS could not be trusted
+        # would otherwise look the same (`req-aws-collector-partition-13`).
+        self.record_info(
+            _SITE_PROBE_SUMMARY,
+            "ENDPOINT_PROBE",
+            (
+                f"Endpoint probe: {probe.hosts_checked} host(s) checked, {probe.gaps} unmarked gap(s), "
+                f"{probe.stale} marked entr(ies) now resolving, {probe.not_probed} entr(ies) it could not probe."
+                if probe.usable
+                else "Endpoint probe disabled for this run: the control host did not resolve, so DNS here cannot be believed."
+            ),
+            message_data={
+                "usable": probe.usable,
+                "hosts_checked": probe.hosts_checked,
+                "gaps": probe.gaps,
+                "stale": probe.stale,
+                "not_probed": probe.not_probed,
+            },
+        )
 
         # --- AWS Organizations tree (req-aws-core-organizations-collect, tap-plugin-aws-core#50) ---
         # One structure, not a per-account resource list, so it is its own read rather than a

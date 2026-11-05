@@ -79,6 +79,16 @@ class EndpointProbe:
         self._control_host = control_host
         self._cache: dict[str, bool] = {}
         self._usable: bool | None = None
+        #: Entries asked about whose host could not be told (a parent to fan out from, a custom function, a parameter
+        #: the probe lacks), counted by the caller so the run's summary says how much was out of reach.
+        self.not_probed = 0
+        self.gaps = 0
+        self.stale = 0
+
+    @property
+    def hosts_checked(self) -> int:
+        """Distinct hosts looked up, the control host excluded."""
+        return len([h for h in self._cache if h != self._control_host])
 
     def _lookup(self, host: str) -> bool:
         if host not in self._cache:
