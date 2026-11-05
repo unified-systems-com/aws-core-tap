@@ -67,7 +67,6 @@
    },
    "errored_calls_classified": {
     "ListTagsForResource on the tables of the four AWS-managed keyspaces: ValidationException 'Resource does not exist' (direct call of each table; the keyspaces themselves tag fine)": 41,
-    "ListTagsForResource on appconfig (5) and route53resolver (5) objects, 400, not classified": 10,
     "82 calls over 80 other operations (the sagemaker ListTags call is among them); 79 were called directly, by the code each returned": {
      "UnknownOperationException": 19,
      "ParamValidationError (the probe lacked a parameter the collector supplies)": 13,
@@ -92,7 +91,15 @@
      "BadRequestException": 1,
      "ok": 1,
      "InvalidInputException": 1
-    }
+    },
+    "appconfig ListTagsForResource, BadRequestException 'ARN ... is invalid due to not containing an account ID': the 5 AWS-defined extensions (AWS.AppConfig.*), whose ARNs carry no account (read from the error response of a selected run)": 5,
+    "route53resolver ListTagsForResource: InvalidParameterException RSLVR-00907 'not authorized to do this operation on shared resource' (4) and InvalidRequestException RSLVR-00903 'Cannot tag Auto Defined Rule' (1) (read from the error response of a selected run)": 5
+   },
+   "not_offered_candidates": {
+    "what": "39 of the errored operations answer with a code that says the operation is not offered (UnknownOperationException, InvalidAction, UnsupportedOperation, a 404 route, OperationNotSupportedException, or a message saying so), each mapped to one manifest entry",
+    "region_check": "each was called once more in us-gov-east-1: the same code in every case where that region has an endpoint; iotsitewise, translate and comprehend have no endpoint there (EndpointConnectionError)",
+    "listed_in_manifest": false,
+    "why_not_listed": "req-aws-collector-partition-8 leaves such entries unlisted because the service answers and the refusal costs no time, and the endpoint probe would report each listed entry as PARTITION_LIST_STALE because its host resolves"
    }
   }
  ],
