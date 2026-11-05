@@ -1285,7 +1285,7 @@ choice follows from it.
   own precedence. The effective setting is reported in `IDENTITY_RESOLVED` and
   the `self_test` `AWS_PARTITION` check. Per-service FIPS exceptions are not
   modelled.
-- **Entries a partition does not offer (`-7` to `-12`).** Wave 0 on GovCloud (`runs/wave0-2026-11-02.json`, measured)
+- **Entries a partition does not offer (`-7` to `-14`).** Wave 0 on GovCloud (`runs/wave0-2026-11-02.json`, measured)
   found 22 entries in 10 services whose endpoint does not resolve there (`EndpointConnectionError`, 20 to 52 seconds
   each, the client's five-second connect timeout across its eight attempts). The smoke test drives each entry on its
   own, so it paid that 22 times (815 of 1,385 seconds). The collector already learns an unreachable service once per
@@ -1305,6 +1305,16 @@ choice follows from it.
   stays named in `partition.py`. The test in `-10` keeps the blocks honest: it reads the newest wave 0 record and fails when an entry that record shows unreachable is neither
   listed nor named as an exception.
 
+  Keeping the blocks current over time is layered. The offline test in `-14` runs on every botocore bump. The probe in `-13`
+  reports, during ordinary runs, a service the manifest does not know is unreachable and a marked service that now
+  resolves, so neither needs a wave 0 re-run to be noticed. A wave 0 re-run with the blocks ignored remains the way to
+  prove a marked entry reachable, and runs after a batch of manifest additions and before a release. Measured on
+  2026-11-04 from the stack's container: of the ten services wave 0 could not reach, three are absent from botocore's
+  GovCloud data and unresolved, five (`qbusiness`, `datazone`, `internetmonitor`, `kendra-ranking`, `notifications`)
+  are listed by botocore at `*.api.aws` hosts that do not resolve, `kinesisvideo` resolves only at its FIPS host, and
+  `wellarchitected` resolves at its main host though its `agent_*` entries failed (which host they called was not
+  established), so a host-level check cannot see a service served in part (`-12`).
+
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
@@ -1321,6 +1331,8 @@ choice follows from it.
 | req-aws-collector-partition-10 | List Is Checked Against The Latest Record | Proposed | A test reads the newest `runs/wave0-*.json` for each supported partition and fails when an entry it records as `EndpointConnectionError` is neither on that partition's list nor named in a short exception list with a reason; and fails when a listed entry that record shows reachable (`ok` or `empty`) is not named in the same exception list. | Keeps the list from rotting in either direction; a re-run of wave 0 updates the record and the test says what to change. |
 | req-aws-collector-partition-11 | Not Offered Is Not Selection | Proposed | An entry skipped as not offered is reported as not offered and never counted as skipped by type selection (`req-aws-collector-selection-9`), and does not by itself make a run a selected run: a full run over a partition that does not offer an entry still states its completeness for every entry it can read, and records no surface for the one it does not. | Without this, the first listed entry would turn every GovCloud run into a run that states no completeness. |
 | req-aws-collector-partition-12 | A Service Served In Part Is Not Masked | Proposed | A connection failure learned for a (service, region) applies only to entries that would call the endpoint that failed. With the three `agent_*` entries unlisted and failing, `lens`, `profile`, `review_template` and `workload` are still called and collected. | Today the first failure marks the whole service: with the list emptied, a probe run made one `wellarchitected` call and settled all seven entries as not offered. The list covers the known case; an unlisted service served in part is still masked until this is built. Keying by the failing endpoint's host is one way. |
+| req-aws-collector-partition-13 | Endpoint Probe Checks The Claims | Proposed | In a run, before the first call to a service in a region, the collector resolves the host its client would call and records `PARTITION_GAP_LEARNED` (once per service and region) when the host has no record and the entry is not marked `not_offered`; for a service the manifest marks `not_offered`, it resolves the host once and records `PARTITION_LIST_STALE` when it resolves. The probe never skips a call and never makes one: an unmarked entry is called as before and a marked entry is still not called. It first resolves the host of STS, which the run has already called; if that does not resolve, the probe is disabled for the run and records nothing. | The lookup is a detector. A collector behind a proxy or on private DNS may not resolve public hosts that its proxy reaches, which is why a failed lookup alone is never a reason to skip. Each host is looked up once per run. |
+| req-aws-collector-partition-14 | Botocore Cannot Contradict A Documented Claim | Proposed | A test fails when a manifest entry's `not_offered` block rests on `web`, `read` or `inferred` evidence and botocore's own endpoint data lists the service for that partition; a block marked `ran` rests on a live failed call and is not held to botocore. | Botocore's silence proves nothing (it synthesises hostnames) and its listing does not prove a service is reachable: seven of the ten services wave 0 could not reach in GovCloud are listed by it. The test runs on every botocore bump. |
 
 ### Listing Outcomes And Client Posture
 ----

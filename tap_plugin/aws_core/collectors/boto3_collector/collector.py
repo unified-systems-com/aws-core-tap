@@ -97,6 +97,7 @@ from .credentials import (
 )
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
+from .endpoint_probe import EndpointProbe, host_of
 from .hydrate import hydrate_item
 from .identity import IdentityError
 from .landing_zone import LandingZoneRead, collect_landing_zone
@@ -156,6 +157,8 @@ _SITE_ADDRESSING = "7f5b"
 _SITE_ENTRY_NOT_CONFIGURED = "d4e8"
 _SITE_ENTRY_THROTTLED = "a9c3"
 _SITE_SELECTION_APPLIED = "5e1c"
+_SITE_GAP_LEARNED = "b81d"
+_SITE_LIST_STALE = "e07a"
 _SITE_ABORT_SELECTION = "d2a9"
 _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 
@@ -402,6 +405,39 @@ class Boto3Collector(CollectorBase):
             },
         )
 
+    def _check_listed_host(self, probe: EndpointProbe, client_for: Any, entry: dict[str, Any], partition: str) -> None:
+        """A service the manifest marks not offered whose host now resolves: the claim may no longer hold."""
+        try:
+            host = host_of(client_for(entry["service"]))
+        except Exception:  # noqa: BLE001 - a client that cannot be built is not evidence either way
+            return
+        if probe.resolves(host):
+            self.record_warn(
+                _SITE_LIST_STALE,
+                "PARTITION_LIST_STALE",
+                f"{entry['entity_type']} is marked not offered in partition {partition}, but its host {host} resolves; "
+                "re-run wave 0 with WAVE0_IGNORE_AVAILABILITY=1 to see whether it can be read.",
+                message_data={"entity_type": entry["entity_type"], "service": entry["service"], "host": host, "partition": partition},
+            )
+
+    def _check_unlisted_host(
+        self, probe: EndpointProbe, client_for: Any, entry: dict[str, Any], region_label: str, partition: str
+    ) -> None:
+        """A service the manifest does not mark whose host does not resolve: a gap nobody has listed. Reported once per
+        (service, region); the entry is still called, as it was before the probe."""
+        try:
+            host = host_of(client_for(entry["service"]))
+        except Exception:  # noqa: BLE001 - a client that cannot be built is not evidence either way
+            return
+        if probe.resolves(host) is False:
+            self.record_warn(
+                _SITE_GAP_LEARNED,
+                "PARTITION_GAP_LEARNED",
+                f"{entry['service']} in {region_label}: the host {host} does not resolve in partition {partition}, and "
+                f"{entry['entity_type']} is not marked not offered. Add a not_offered block for it to the manifest.",
+                message_data={"entity_type": entry["entity_type"], "service": entry["service"], "region": region_label, "host": host, "partition": partition},
+            )
+
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
 
@@ -619,6 +655,12 @@ class Boto3Collector(CollectorBase):
                 (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
                 bucket.append(envelope)
 
+        # The endpoint probe (`req-aws-collector-partition-13`): a detector for the manifest's "not offered" claims, never a
+        # reason to skip. Its control host is STS's, which this run has already called.
+        probe = EndpointProbe(host_of(client_factory(session, regions[0])("sts")))
+        listed_checked: set[str] = set()
+        probed: set[tuple[str, str]] = set()
+        # The footprints are built; read the entries.
         for entry in entries:
             # A service the partition does not offer is a clear result, not a failed call.
             not_offered = entry_unavailable_reason(partition, entry)
@@ -634,6 +676,9 @@ class Boto3Collector(CollectorBase):
                         "partition": partition,
                     },
                 )
+                if entry["service"] not in listed_checked:
+                    listed_checked.add(entry["service"])
+                    self._check_listed_host(probe, client_factory(session, regions[0]), entry, partition)
                 continue
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
             contained = entry.get("containment")
@@ -644,6 +689,9 @@ class Boto3Collector(CollectorBase):
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
+                if (entry["service"], region) not in probed:
+                    probed.add((entry["service"], region))
+                    self._check_unlisted_host(probe, client_factory(session, region), entry, region_label, partition)
                 region_facts = facts[region]
                 if entry["scope"] == "regional" and region_facts.status == STATUS_DISABLED:
                     # Positively known not opted in: no call would be honoured, and an "empty" answer
