@@ -156,6 +156,7 @@ _SITE_ADDRESSING = "7f5b"
 _SITE_ENTRY_NOT_CONFIGURED = "d4e8"
 _SITE_ENTRY_THROTTLED = "a9c3"
 _SITE_SELECTION_APPLIED = "5e1c"
+_SITE_EDGES_NOT_SELECTED = "c47e"
 _SITE_ABORT_SELECTION = "d2a9"
 _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 
@@ -442,6 +443,8 @@ class Boto3Collector(CollectorBase):
         # A run that leaves any type unselected states no completeness (`-5`): core reads a surface the run leaves out
         # as a narrowed scope and would withdraw what the run chose not to read.
         selected_run = type_selection.leaves_unselected
+        unselected_types = frozenset(e["entity_type"] for e in type_selection.skipped)
+        edges_not_selected = 0
         # Attach the audit ledger before any client/STS call so every AWS call
         # this run makes is recorded — including a cross-account AssumeRole,
         # which is captured on the base session
@@ -517,9 +520,8 @@ class Boto3Collector(CollectorBase):
         )
 
         # --- manifest + engine collaborators ---
-        # The manifest was loaded and the selection applied above. An edge may name a type this run did not select:
-        # the type is still modelled, so the engine resolves the endpoint by natural key as it does for a listing it
-        # could not read (`req-aws-collector-selection`, open question on edges to an unselected type).
+        # The manifest was loaded and the selection applied above. An edge to a type this run did not select is not
+        # emitted (`req-aws-collector-selection-3`): the type is still modelled, but the run never read the far end.
         modeled_types = {e["entity_type"] for e in all_entries}
         custom_fns = build_custom_fn_registry()
         transforms = build_transform_registry(partition)
@@ -753,7 +755,9 @@ class Boto3Collector(CollectorBase):
                             modeled_types=modeled_types,
                             transforms=transforms,
                             dimensions=dimensions,
+                            unselected_types=unselected_types,
                         )
+                        edges_not_selected += emission.skipped_unselected
                         new_edges = list(emission.envelopes)
                         if contained and entry["scope"] == "regional":
                             new_edges.extend(
@@ -1040,6 +1044,13 @@ class Boto3Collector(CollectorBase):
             "AWS Core GRIFT batch submitted.",
             message_data={"imported": [str(b.batch_entity_id) for b in result.imported_batches]},
         )
+        if edges_not_selected:
+            self.record_info(
+                _SITE_EDGES_NOT_SELECTED,
+                "EDGES_NOT_SELECTED",
+                f"{edges_not_selected} edge(s) to a type this run did not select were not emitted.",
+                message_data={"edges": edges_not_selected, "types": sorted(unselected_types)},
+            )
 
         # Completeness surfaces for the Organizations tree and the landing zone
         # (req-grid-reconcile-evidence): each `subject` was recorded as the parent's ref and becomes
