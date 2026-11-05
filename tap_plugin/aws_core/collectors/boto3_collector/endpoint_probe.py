@@ -52,7 +52,7 @@ def request_host(
     import boto3
     from botocore import xform_name
     from botocore.awsrequest import AWSResponse
-    from botocore.config import Config
+    from .credentials import client_config
 
     seen: list[str] = []
 
@@ -64,7 +64,8 @@ def request_host(
 
     try:
         session = boto3.session.Session(aws_access_key_id="x", aws_secret_access_key="y", region_name=region)
-        config = Config(retries={"max_attempts": 0}, **({} if use_fips is None else {"use_fips_endpoint": use_fips}))
+        # The package's one client configuration; nothing is sent, so its timeouts and retries never apply.
+        config = client_config(**({} if use_fips is None else {"use_fips_endpoint": use_fips}))
         client = session.client(service, region_name=region, config=config)
         client.meta.events.register("before-send", stop)
         getattr(client, xform_name(operation))(**(params or {}))
