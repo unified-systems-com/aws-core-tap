@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import socket
-from types import SimpleNamespace
 
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector import endpoint_probe
-from tap_plugin.aws_core.collectors.boto3_collector.endpoint_probe import EndpointProbe, host_of
+from tap_plugin.aws_core.collectors.boto3_collector.endpoint_probe import EndpointProbe
 from tap_plugin.aws_core.tests import test_boto3_collector_selection_run as base
 
 
@@ -56,20 +55,31 @@ class TestEndpointProbe:
         assert EndpointProbe(None).resolves("a.example") is None
         assert EndpointProbe("sts.example").resolves(None) is None
 
-    def test_host_of_reads_the_endpoint_and_tolerates_a_client_without_one(self):
-        assert host_of(SimpleNamespace(meta=SimpleNamespace(endpoint_url="https://x.us-gov-west-1.api.aws/path"))) == "x.us-gov-west-1.api.aws"
-        assert host_of(object()) is None
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_the_host_is_the_one_the_operation_calls_not_the_clients_default(self):
+        # Offline: the request is built and stopped before it is sent. The hosts below were seen in the error text of
+        # real calls on 2026-11-04 (a different host per operation; a FIPS client calling a non-FIPS host).
+        assert endpoint_probe.request_host("wellarchitected", "us-gov-west-1", "ListLenses") == "wellarchitected.us-gov-west-1.amazonaws.com"
+        assert (
+            endpoint_probe.request_host("wellarchitected", "us-gov-west-1", "ListAgentProfiles")
+            == "wellarchitected-agent.us-gov-west-1.amazonaws.com"
+        )
+        # The collector's client reports kinesisvideo-fips as its endpoint but sends to the host below, FIPS being off.
+        assert endpoint_probe.request_host("kinesisvideo", "us-gov-west-1", "ListStreams", use_fips=False) == "kinesisvideo.us-gov-west-1.amazonaws.com"
+        assert endpoint_probe.request_host("kinesisvideo", "us-gov-west-1", "ListStreams", use_fips=True) == "kinesisvideo-fips.us-gov-west-1.amazonaws.com"
 
-
-class _Client(base._RecordingClient):
-    @property
-    def meta(self):
-        return SimpleNamespace(endpoint_url=f"https://{self._service}.us-gov-west-1.amazonaws.com")
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_an_operation_that_needs_parameters_it_lacks_gives_no_host(self):
+        assert endpoint_probe.request_host("sts", "us-gov-west-1", "AssumeRole") is None
+        assert endpoint_probe.request_host("no-such-service", "us-gov-west-1", "ListThings") is None
 
 
 def _wire(monkeypatch, *, missing=(), **selection):
+    """Every request host is ``<service>.us-gov-west-1.amazonaws.com``; ``missing`` names hosts with no record."""
     base._install(monkeypatch, **selection)
-    monkeypatch.setattr(collector_mod, "client_factory", lambda _s, region: (lambda svc: _Client(svc)))
+    monkeypatch.setattr(
+        collector_mod, "request_host", lambda service, region, operation, params=None, **_kw: f"{service}.{region}.amazonaws.com"
+    )
     resolver = _Resolver(missing=missing)
     monkeypatch.setattr(endpoint_probe, "RESOLVE", resolver)
     return resolver
@@ -90,11 +100,12 @@ class TestInARun:
         assert ("ec2", "describe_vpcs") in base._RecordingClient.calls, "a detector, not a skip: the entry is still called"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
-    def test_a_marked_service_whose_host_resolves_is_reported_stale_once_per_service(self, monkeypatch):
+    def test_a_marked_entry_whose_host_resolves_is_reported_stale(self, monkeypatch):
         _wire(monkeypatch, include_types=["qbusiness:*"])
         collector = base._run()
-        (stale,) = _codes(collector, "PARTITION_LIST_STALE")
-        assert stale["message_data"]["service"] == "qbusiness"
+        stale = _codes(collector, "PARTITION_LIST_STALE")
+        assert stale and {w["message_data"]["service"] for w in stale} == {"qbusiness"}
+        assert len({w["message_data"]["entity_type"] for w in stale}) == len(stale), "one per marked entry"
         assert not [s for s, _op in base._RecordingClient.calls if s == "qbusiness"], "still not called"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
