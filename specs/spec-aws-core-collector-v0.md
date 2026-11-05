@@ -663,7 +663,7 @@ Status: `Backlog`
 Backlogged on George's request, 2026-11-04. Nothing here is built or approved. Today a run reads everything, then
 submits **one** GRIFT batch (`address_batch`, `assemble_batch`, `submit_grift`). The question was whether rows could
 reach the grid as the run works. The full collection of 2026-11-04 took 676 seconds, 643 of them reading and 31 of them
-importing about 1,200 nodes and 1,600 edges (`runs/` records the earlier 1,090-second run), so the case rests on
+importing about 1,200 nodes and 1,600 edges (measured in the stack on that date; no run record is committed), so the case rests on
 visibility and on what a failure loses, not on import time today.
 
 **Two directions, not exclusive.**
