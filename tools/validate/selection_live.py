@@ -3,7 +3,7 @@
 Run inside the stack's web container, which holds the collector's secret:
 
     scripts/dc exec -T web uv run python manage.py shell -c \
-      "exec(open('/app/_dev-plugins/aws_core/tools/validate/selection_live.py').read())"
+      "RUN_SELECTION_LIVE = True; exec(open('/app/_dev-plugins/aws_core/tools/validate/selection_live.py').read())"
 
 It runs the real ``Boto3Collector.run()`` three times and writes to this stack's grid only (never to AWS, and never
 to the secrets store: the selection keys are added to an in-memory copy of the collector's secret):
@@ -123,6 +123,7 @@ def main():
     print("SELECTION_JSON_END")
 
 
-# Run only when exec()'d from `manage.py shell -c` (no __file__), never on an import, a module scan or test discovery.
-if "__file__" not in globals():
+# Runs only when the caller sets RUN_SELECTION_LIVE first (the command in the docstring does), never on an import, a
+# module scan or test discovery.
+if globals().get("RUN_SELECTION_LIVE") is True:
     main()
