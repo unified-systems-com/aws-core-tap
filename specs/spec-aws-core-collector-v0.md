@@ -698,7 +698,7 @@ visibility and on what a failure loses, not on import time today.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-progressive-upload-1 | Phased Batches | Backlog | A run submits its nodes, then its edges, then its completeness statement and edge authority, as separate batches, and states completeness only after the last. | Direction 1. |
-| req-aws-collector-progressive-upload-2 | Units Declare Completion | Backlog | The manifest or the collector names the self-contained units of a run and declares each complete; a complete unit is uploaded with its nodes, edges and completeness surfaces, and a run states completeness for the units that finished. | Direction 2; needs the dependency survey above. |
+| req-aws-collector-progressive-upload-2 | Units Declare Completion | Backlog | The manifest or the collector names the self-contained units of a run and declares each complete; a complete unit is uploaded with its nodes and edges, and with the completeness surfaces of the listings it contains whole. A listing that more than one unit contributes to (the tag sweep, the per-account footprints, a `per` parent) is stated complete, and its retirement candidates and edge authority are written, only when the last unit that contributes to it is in; a run that stops early states no completeness for a listing an unfinished unit contributes to. | Direction 2; needs the dependency survey above. Read with the constraints above: completeness is never stated for a part of a listing, so no unit can authorise retirement by itself. |
 
 ### Edge Identifier Resolution (Future Seam)
 ----
