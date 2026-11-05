@@ -107,6 +107,7 @@ from .outcomes import NOT_CONFIGURED, THROTTLED, UNSUPPORTED_IN_PARTITION, Outco
 from .organizations import OrganizationTree, collect_organization, organizations_client
 from .partition import PARTITION_AWS, service_unavailable_reason
 from .paths import eval_path
+from .progress import Progress
 from .projection import ProjectionError, project_item
 from .regions import (
     STATUS_DISABLED,
@@ -621,7 +622,10 @@ class Boto3Collector(CollectorBase):
                 (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
                 bucket.append(envelope)
 
-        for entry in entries:
+        progress = Progress(len(entries))
+        progress.start(regions=len(regions), partition=partition, selected_run=selected_run)
+        for done, entry in enumerate(entries):
+            progress.tick(done, entry, nodes=len(node_envelopes), edges=len(edge_envelopes))
             # A service the partition does not offer is a clear result, not a failed call.
             not_offered = service_unavailable_reason(partition, entry["service"])
             if not_offered:
@@ -970,6 +974,7 @@ class Boto3Collector(CollectorBase):
         # A node whose declared key has a hole would be created afresh on every run, so the run
         # fails here rather than send it. Permissive dangling mode: an endpoint naming a node no
         # live row matches skips that edge and core records a skip event, never a failure.
+        progress.reads_finished(nodes=len(node_envelopes), edges=len(edge_envelopes))
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:
@@ -1067,6 +1072,7 @@ class Boto3Collector(CollectorBase):
                 self.declare_no_surfaces()
 
         imported = result.counts.batches_imported
+        progress.finished(batches_imported=imported)
         self.summary = (
             f"Collected {len(node_envelopes)} nodes, {len(edge_envelopes)} "
             f"edges for account {account_id} ({partition}) across {len(regions)} region(s) "
