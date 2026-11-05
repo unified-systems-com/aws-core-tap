@@ -59,6 +59,11 @@ def test_no_listed_entry_is_shown_reachable_by_the_newest_record():
 def test_the_accepted_list_names_only_entries_that_are_actually_out_of_step():
     record = _newest("aws-us-gov")
     assert record is not None
-    seen = {r["entity_type"] for r in record["results"]}
-    stale = [t for t in ACCEPTED if t not in seen]
-    assert not stale, f"accepted but not in the record: {stale}"
+    by_type = {r["entity_type"]: r for r in record["results"]}
+    for entity_type, reason in ACCEPTED.items():
+        assert reason.strip(), f"{entity_type}: an exemption states why"
+        assert entity_type in by_type, f"accepted but not in the record: {entity_type}"
+        result = by_type[entity_type]
+        unreachable_and_unlisted = result.get("error_class") == "EndpointConnectionError" and not _listed("aws-us-gov", entity_type)
+        reachable_and_listed = result["outcome"] in ("ok", "empty") and _listed("aws-us-gov", entity_type)
+        assert unreachable_and_unlisted or reachable_and_listed, f"{entity_type} is accepted but the record and the list agree: remove it"

@@ -419,7 +419,14 @@ class Boto3Collector(CollectorBase):
 
     def _entry_host(self, entry: dict[str, Any], region: str, fips: bool | None) -> str | None:
         target = self._probe_target(entry)
-        return None if target is None else request_host(entry["service"], region, target[0], target[1], use_fips=fips)
+        if target is None:
+            return None
+        # Building the request costs a client; an operation's host is worked out once per run.
+        key = (entry["service"], region, target[0], json.dumps(target[1], sort_keys=True, default=str), fips)
+        cache = self.__dict__.setdefault("_host_cache", {})
+        if key not in cache:
+            cache[key] = request_host(entry["service"], region, target[0], target[1], use_fips=fips)
+        return cache[key]
 
     def _check_listed_host(
         self, probe: EndpointProbe, entry: dict[str, Any], region: str, partition: str, fips: bool | None
@@ -440,14 +447,19 @@ class Boto3Collector(CollectorBase):
 
     def _check_unlisted_host(
         self, probe: EndpointProbe, entry: dict[str, Any], region: str, region_label: str, partition: str, fips: bool | None
-    ) -> bool:
-        """A service the manifest does not mark whose host does not resolve: a gap nobody has listed. Reported once per
-        (service, region); the entry is still called, as it was before the probe. True when the entry could be probed."""
+    ) -> None:
+        """A service the manifest does not mark whose host does not resolve: a gap nobody has listed. Each distinct host
+        of a service is checked (its operations can go to different hosts) and reported once per (service, region, host);
+        the entry is still called, as it was before the probe."""
         host = self._entry_host(entry, region, fips)
         if host is None:
-            probe.not_probed += 1
-            return False
-        if probe.resolves(host) is False:
+            if entry["entity_type"] not in probe.unprobed:
+                probe.unprobed.add(entry["entity_type"])
+                probe.not_probed += 1
+            return
+        key = (entry["service"], region_label, host)
+        if probe.resolves(host) is False and key not in probe.reported:
+            probe.reported.add(key)
             probe.gaps += 1
             self.record_warn(
                 _SITE_GAP_LEARNED,
@@ -456,7 +468,6 @@ class Boto3Collector(CollectorBase):
                 f"{entry['entity_type']} is not marked not offered. Add a not_offered block for it to the manifest.",
                 message_data={"entity_type": entry["entity_type"], "service": entry["service"], "region": region_label, "host": host, "partition": partition},
             )
-        return True
 
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
@@ -681,7 +692,6 @@ class Boto3Collector(CollectorBase):
         fips = fips_requested(data)
         probe = EndpointProbe(request_host("sts", regions[0], "GetCallerIdentity", use_fips=fips))
         listed_checked: set[str] = set()
-        probed: set[tuple[str, str]] = set()
         # The footprints are built; read the entries.
         progress = Progress(len(entries))
         progress.start(regions=len(regions), partition=partition, selected_run=selected_run)
@@ -714,10 +724,7 @@ class Boto3Collector(CollectorBase):
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
-                if (entry["service"], region) not in probed and self._check_unlisted_host(
-                    probe, entry, region, region_label, partition, fips
-                ):
-                    probed.add((entry["service"], region))  # only once an entry that can be probed has been
+                self._check_unlisted_host(probe, entry, region, region_label, partition, fips)
                 region_facts = facts[region]
                 if entry["scope"] == "regional" and region_facts.status == STATUS_DISABLED:
                     # Positively known not opted in: no call would be honoured, and an "empty" answer

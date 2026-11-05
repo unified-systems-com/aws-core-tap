@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import socket
+import threading
 
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
@@ -69,6 +70,38 @@ class TestEndpointProbe:
         assert endpoint_probe.request_host("kinesisvideo", "us-gov-west-1", "ListStreams", use_fips=True) == "kinesisvideo-fips.us-gov-west-1.amazonaws.com"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_building_the_request_sends_nothing(self, monkeypatch):
+        # The request is stopped at botocore's before-send event; if that did not short-circuit, the HTTP session would
+        # be asked to send it. It must never be.
+        from botocore.httpsession import URLLib3Session
+
+        def refuse(self, request):
+            raise AssertionError("the probe sent a request")
+
+        monkeypatch.setattr(URLLib3Session, "send", refuse)
+        assert endpoint_probe.request_host("sts", "us-gov-west-1", "GetCallerIdentity") == "sts.us-gov-west-1.amazonaws.com"
+        assert endpoint_probe.request_host("ec2", "us-gov-west-1", "DescribeVpcs") == "ec2.us-gov-west-1.amazonaws.com"
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_a_resolver_that_does_not_answer_ends_the_probe_instead_of_stalling_the_run(self, monkeypatch):
+        release = threading.Event()
+
+        def resolver(host, port):
+            if host == "wedged.example":
+                release.wait(30)  # a lookup that does not return
+            return [("family", "type", 0, "", (host, port))]
+
+        monkeypatch.setattr(endpoint_probe, "RESOLVE", resolver)
+        monkeypatch.setattr(endpoint_probe, "LOOKUP_SECONDS", 0.05)
+        probe = EndpointProbe("sts.example")
+        assert probe.usable is True and probe.resolves("fine.example") is True
+        assert probe.resolves("wedged.example") is None
+        assert probe.usable is False, "one unanswered lookup ends the probe for the run"
+        assert probe.resolves("later.example") is None, "and no further lookup is waited on"
+        assert probe.hosts_checked == 1, "only the host that answered counts as checked"
+        release.set()
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
     def test_an_operation_that_needs_parameters_it_lacks_gives_no_host(self):
         assert endpoint_probe.request_host("sts", "us-gov-west-1", "AssumeRole") is None
         assert endpoint_probe.request_host("no-such-service", "us-gov-west-1", "ListThings") is None
@@ -119,6 +152,22 @@ class TestInARun:
         (gap,) = _codes(collector, "PARTITION_GAP_LEARNED")
         assert gap["message_data"]["service"] == "ec2" and gap["message_data"]["host"] == "ec2.us-gov-west-1.amazonaws.com"
         assert ("ec2", "describe_vpcs") in base._RecordingClient.calls, "a detector, not a skip: the entry is still called"
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_each_host_of_a_service_is_checked_when_its_operations_go_to_different_hosts(self, monkeypatch):
+        # The first operation's host resolves; the second operation's host has no record. A check once per service would
+        # stop at the first.
+        _wire(monkeypatch, missing={"ec2-subnets.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc", "ec2:subnet"])
+        monkeypatch.setattr(
+            collector_mod,
+            "request_host",
+            lambda service, region, operation, params=None, **_kw: (
+                f"ec2-subnets.{region}.amazonaws.com" if operation == "DescribeSubnets" else f"{service}.{region}.amazonaws.com"
+            ),
+        )
+        collector = base._run()
+        (gap,) = _codes(collector, "PARTITION_GAP_LEARNED")
+        assert gap["message_data"]["host"] == "ec2-subnets.us-gov-west-1.amazonaws.com"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_marked_entry_whose_host_resolves_is_reported_stale(self, monkeypatch):

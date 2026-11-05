@@ -16,12 +16,15 @@ from __future__ import annotations
 
 import contextlib
 import socket
+import threading
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
 #: The resolver. Replaced in tests; ``socket.getaddrinfo`` otherwise.
 RESOLVE: Callable[..., Any] = socket.getaddrinfo
+#: How long one host lookup may take before the resolver is taken to be wedged.
+LOOKUP_SECONDS = 5.0
 
 
 class _Raw:
@@ -78,34 +81,59 @@ def request_host(
 class EndpointProbe:
     def __init__(self, control_host: str | None) -> None:
         self._control_host = control_host
-        self._cache: dict[str, bool] = {}
+        self._cache: dict[str, bool | None] = {}
+        self._wedged = False
         self._usable: bool | None = None
         #: Entries asked about whose host could not be told (a parent to fan out from, a custom function, a parameter
         #: the probe lacks), counted by the caller so the run's summary says how much was out of reach.
         self.not_probed = 0
+        #: What has been reported, so a service whose operations go to different hosts is checked at each host and
+        #: warned about once per (service, region, host); and the entity types counted as not probed, once each.
+        self.reported: set[tuple[str, str, str]] = set()
+        self.unprobed: set[str] = set()
         self.gaps = 0
         self.stale = 0
 
     @property
     def hosts_checked(self) -> int:
         """Distinct hosts looked up, the control host excluded."""
-        return len([h for h in self._cache if h != self._control_host])
+        return len([h for h, found in self._cache.items() if h != self._control_host and found is not None])
 
-    def _lookup(self, host: str) -> bool:
+    def _lookup(self, host: str) -> bool | None:
+        """Whether ``host`` resolves; ``None`` when the resolver did not answer within ``LOOKUP_SECONDS``. The first
+        such lookup ends the probe for the run (``usable`` turns False): a resolver that wedges is not to be waited on
+        once per host."""
         if host not in self._cache:
+            self._cache[host] = self._resolve(host)
+        return self._cache[host]
+
+    def _resolve(self, host: str) -> bool | None:
+        if self._wedged:
+            return None
+        outcome: list[bool] = []
+
+        def work() -> None:
             try:
                 RESOLVE(host, 443)
-                self._cache[host] = True
+                outcome.append(True)
             except OSError:  # socket.gaierror is an OSError: no such host
-                self._cache[host] = False
-        return self._cache[host]
+                outcome.append(False)
+
+        # A daemon thread, because getaddrinfo cannot be interrupted: a wedged lookup is abandoned, not joined.
+        thread = threading.Thread(target=work, daemon=True)
+        thread.start()
+        thread.join(LOOKUP_SECONDS)
+        if outcome:
+            return outcome[0]
+        self._wedged = True
+        return None
 
     @property
     def usable(self) -> bool:
         """Whether lookups here can be believed: the control host, which this run reached, resolves."""
         if self._usable is None:
-            self._usable = bool(self._control_host) and self._lookup(self._control_host)  # type: ignore[arg-type]
-        return self._usable
+            self._usable = bool(self._control_host) and bool(self._lookup(self._control_host))  # type: ignore[arg-type]
+        return self._usable and not self._wedged
 
     def resolves(self, host: str | None) -> bool | None:
         """True or False when the lookup can be believed, ``None`` when it cannot (no host, or an untrusted resolver)."""
