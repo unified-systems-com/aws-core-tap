@@ -1092,7 +1092,7 @@ Status: `Proposed`
 
 A run can be narrowed to chosen types and chosen accounts. Requested by George on 2026-11-03 for field testing;
 the keys live in the credential's `data` for now (`req-aws-core-secret-selection`, which defines the grammar of a
-type pattern and of an account reference). Built for a single-account run (`-1` to `-6`, `-9` and `-13`; tests in
+type pattern and of an account reference). Built for a single-account run (`-1` to `-6`, `-9`, `-13` and `-14`; tests in
 `test_boto3_collector_selection.py` and `test_boto3_collector_selection_run.py`) and not yet run live. Not built: the
 fan-out parts (`-7`, `-8`, `-10`, `-11`), which wait on `req-aws-collector-fanout` itself, and `-12`, which waits on
 unified-systems-com/tap#1156. It carries the type selection that `req-aws-core-livevalidation-selection` first proposed for validation, with one change of
@@ -1212,20 +1212,19 @@ other, and nothing outside it is a candidate.
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-selection-12 | Retirement Only Within The Selection | Proposed | With `retire_within_selection: true` and core's selection block, a run records its statement for the surfaces it read and its selection; a previous surface outside the selection is skipped as `not_selected`, never `scope_withdrawn`; a surface inside it compares as today. Live: collect everything, delete one object of a selected type and one of an unselected type, run with the flag on, and only the first becomes a candidate (and retires, with authority armed). | Blocked on unified-systems-com/tap#1156. Extends `req-aws-core-livevalidation-lifecycle`'s negative control (2). |
 | req-aws-collector-selection-13 | Flag Refused Until Core Honours It | Proposed | Until core accepts the selection block, a secret with `retire_within_selection: true` fails validation with a message naming tap#1156, whether or not a narrowing key is set; `false` or absent behaves as `-5`. | A flag that is accepted and silently ignored would read as "retirement is on". |
+| req-aws-collector-selection-14 | Edges To An Unselected Type Are Not Emitted | Proposed | A run whose selection leaves a type unselected emits no edge whose far end is of that type, counts them in one `EDGES_NOT_SELECTED` info line, and writes no `EDGE_DROPPED` warning for them; an edge between two selected types, and the account containment edges, are emitted as before. A run that selects everything records no such line. | The run never read the far end, so it cannot state the relationship. Edges from earlier full runs are untouched (keep-absent). |
 
 #### Open Questions
 
-- **Edges to an unselected type.** An instance's edge to its role, when `iam:*` is not selected, names an endpoint
-  the run did not read. The engine resolves endpoints by natural key (`req-aws-collector-edges`); an endpoint of
-  an unselected type is the same case as one in a denied listing. Which of keep, defer or drop is right is pinned
-  by a test before this requirement is approved, not assumed here.
 - **Limiting what the organization tree writes.** The tree lists every member with its org-sourced fields whatever
   `accounts_allowed` says, so an operator who scopes a run to a few accounts still has the others' ids, names and
   organizational placement in the grid. Whether the allowlist should also limit the tree (a disclosure control, with
   consequences for the org-unit structure the tree draws) is not decided; until it is, the secret's wording says the
   allowlist selects accounts to collect, and no one should read it as a way to keep other accounts out of the grid.
 - **The organization tree under a type selection.** The tree and the landing-zone readers are not manifest
-  entries, so `include_types` does not narrow them. Whether it should is not settled.
+  entries, so no pattern can name them, and a run whose type patterns leave anything unselected skips both. Whether they
+  should become selectable (pseudo-entries such as `organizations:account`) waits for someone who wants an
+  organization-only run.
 - **Retiring a scope on purpose.** Because a selected run states no completeness, narrowing the selection cannot
   withdraw what the wider selection observed. If an operator wants that (the credential's scope really did
   shrink), it needs either a full-scope run under the new credential or a core notion of a filter-level scope,

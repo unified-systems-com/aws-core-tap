@@ -56,6 +56,31 @@ LAMBDA_EDGE_ENTRY = {
 }
 
 
+class TestUnselectedTargets:
+    @pytest.mark.spec("req-aws-collector-selection-14")
+    def test_an_edge_to_an_unselected_type_is_counted_not_emitted_or_warned(self):
+        node = _node({"Role": "arn:role", "LoggingConfig": {"LogGroup": "/aws/lambda/fn"}})
+        result = emit_edges(
+            node,
+            LAMBDA_EDGE_ENTRY,
+            modeled_types=MODELED,
+            transforms=TransformRegistry(),
+            dimensions=DIMS,
+            unselected_types=frozenset({"aws_core__aws_iam_role"}),
+        )
+        assert [e["edge"]["edge_type"] for e in result.envelopes] == ["WRITES_LOGS__aws_core"]
+        assert result.skipped_unselected == 1
+        assert result.warnings == []
+
+    @pytest.mark.spec("req-aws-collector-selection-14")
+    def test_with_nothing_unselected_nothing_is_skipped(self):
+        node = _node({"Role": "arn:role", "LoggingConfig": {"LogGroup": "/aws/lambda/fn"}})
+        result = emit_edges(
+            node, LAMBDA_EDGE_ENTRY, modeled_types=MODELED, transforms=TransformRegistry(), dimensions=DIMS
+        )
+        assert len(result.envelopes) == 2 and result.skipped_unselected == 0
+
+
 class TestEmitEdges:
     def test_scalar_outbound_edges_identity_resolved(self):
         node = _node({"Role": "arn:role", "LoggingConfig": {"LogGroup": "/aws/lambda/fn"}})

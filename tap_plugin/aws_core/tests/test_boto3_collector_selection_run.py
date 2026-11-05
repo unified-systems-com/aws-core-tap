@@ -216,6 +216,25 @@ class TestIncludeOneType:
 
 
 @pytest.mark.django_db
+class TestEdgesToUnselectedTypes:
+    @pytest.mark.spec("req-aws-collector-selection-14")
+    def test_a_subnet_run_emits_no_edge_to_the_unselected_vpc_and_says_so(self, monkeypatch):
+        _install(monkeypatch, include_types=["ec2:subnet"])
+        collector = _run()
+        (note,) = [r for r in collector.results["info"] if r["message_code"] == "EDGES_NOT_SELECTED"]
+        assert note["message_data"]["edges"] == 1 and "aws_core__aws_vpc" in note["message_data"]["types"]
+        assert not [w for w in collector.results["warn"] if w["message_code"] == "EDGE_DROPPED"]
+        assert find_node_id("aws_core__aws_subnet", _SUBNET_ID) is not None
+        assert find_node_id("aws_core__aws_vpc", _VPC_ID) is None
+
+    @pytest.mark.spec("req-aws-collector-selection-14")
+    def test_a_run_selecting_everything_records_no_such_line(self, monkeypatch):
+        _install(monkeypatch)
+        collector = _run()
+        assert not [r for r in collector.results["info"] if r["message_code"] == "EDGES_NOT_SELECTED"]
+
+
+@pytest.mark.django_db
 class TestFailClosed:
     @pytest.mark.spec("req-aws-collector-selection-4")
     @pytest.mark.parametrize("key", ["include_types", "exclude_types"])
