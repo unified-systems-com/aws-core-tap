@@ -661,6 +661,23 @@ class TestWhere:
         assert not TestPerFanoutSchema._validator().is_valid(entry)  # one predicate per condition
 
 
+    def test_the_keyspaces_table_entry_does_not_list_the_tables_of_the_aws_managed_keyspaces(self):
+        # ListTagsForResource answers "Resource does not exist" for every table of the four AWS-managed keyspaces
+        # (live, us-gov-west-1, tools/validate/runs/full-collection-2026-11-05.json), so none is listed.
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+        entry = next(e for e in manifest_entries() if e["entity_type"] == "aws_core__aws_cassandra_table")
+        names = ["system", "system_schema", "system_schema_mcs", "system_multiregion_info", "orders"]
+        client = _CallLog(
+            {
+                "list_keyspaces": {"keyspaces": [{"keyspaceName": n, "resourceArn": f"arn:x:keyspace/{n}"} for n in names]},
+                "list_tables": {"tables": [{"keyspaceName": "orders", "tableName": "t", "resourceArn": "arn:x:table/orders/t"}]},
+            }
+        )
+        list(iter_source(entry, client_for=lambda _s: client, custom_fns=CustomFnRegistry()))
+        assert [p for op, p in client.calls if op == "list_tables"] == [{"keyspaceName": "orders"}]
+
+
 class TestFanoutTruncation:
     """A parent or child call that cannot be followed to its end fails the listing (fail closed)."""
 
