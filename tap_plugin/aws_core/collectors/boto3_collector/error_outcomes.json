@@ -439,6 +439,19 @@
     },
     {
       "outcome": "unsupported_in_partition",
+      "service": "transcribe",
+      "error_code": "BadRequestException",
+      "message_contains": "isn't supported in this region",
+      "why": "Amazon Transcribe answers that Call Analytics is not supported in this Region. Observed for this service in the 2026-11-05 full collection in GovCloud (aws-us-gov), and by a direct call in both us-gov-west-1 and us-gov-east-1; the row names only what was observed.",
+      "operations": [
+        "ListCallAnalyticsCategories"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
       "service": "kafka",
       "error_code": "BadRequestException",
       "message_contains": "not supported in this region",
