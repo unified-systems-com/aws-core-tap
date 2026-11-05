@@ -10,7 +10,7 @@
   "the selection is echoed": "SELECTION_APPLIED recorded on every run"
  },
  "not_covered": "Retirement of a deleted object under a full run (the lifecycle negative control) and retire_within_selection (tap#1156) are not exercised here.",
- "runs": [
+ "trials": [
   {
    "include_types": [
     "ec2:vpc",
