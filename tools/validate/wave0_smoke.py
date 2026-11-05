@@ -38,7 +38,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import build_custo
 from tap_plugin.aws_core.collectors.boto3_collector.ledger import CallLedger
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.outcomes import classify as collector_outcome
-from tap_plugin.aws_core.collectors.boto3_collector.partition import service_unavailable_reason
+from tap_plugin.aws_core.collectors.boto3_collector.partition import entry_unavailable_reason
 from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectionError, project_item
 from tap_plugin.aws_core.collectors.boto3_collector.source import SourceError, iter_source
 
@@ -115,8 +115,8 @@ def main():
     start = time.time()
     for n, entry in enumerate(entries, 1):
         etype = entry["entity_type"]
-        not_offered = service_unavailable_reason(partition, entry["service"])
-        if not_offered:
+        not_offered = entry_unavailable_reason(partition, entry)
+        if not_offered and not os.environ.get("WAVE0_IGNORE_AVAILABILITY"):
             results.append({"entity_type": etype, "region": None, "outcome": "unsupported-in-partition", "error_class": "ledger-says-not-offered", "rows": 0, "calls": 0, "seconds": 0.0})
             continue
         for region in regions if entry["scope"] == "regional" else regions[:1]:

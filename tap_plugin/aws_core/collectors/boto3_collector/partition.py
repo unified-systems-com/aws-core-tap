@@ -30,8 +30,10 @@ in ``tests/test_partition.py``), and the AWS GovCloud (US) User Guide
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 PARTITION_AWS = "aws"
 PARTITION_US_GOV = "aws-us-gov"
@@ -91,26 +93,36 @@ _HOME_REGIONS = {
     PARTITION_CN: "cn-north-1",
 }
 
-#: Services the manifest collects that DO NOT EXIST in a partition. A run scoped to that
-#: partition records a clear "not available in this partition" result for the entry instead
-#: of calling an endpoint that is not there (botocore will happily synthesise a hostname such
-#: as ``cloudfront.us-gov-west-1.amazonaws.com`` that no DNS server knows).
-#: CloudFront: "not available in AWS GovCloud (US)" (AWS GovCloud (US) User Guide,
-#: "Setting Up Amazon CloudFront with Your AWS GovCloud (US) Resources"); botocore's
-#: endpoints.json carries no ``aws-us-gov`` CloudFront endpoint.
-_UNAVAILABLE_SERVICES: dict[str, dict[str, str]] = {
-    PARTITION_US_GOV: {
-        "cloudfront": (
-            "Amazon CloudFront is not offered in AWS GovCloud (US); a GovCloud account cannot list "
-            "distributions. Distributions that front GovCloud resources live in a commercial account."
-        ),
-        # Not collected anywhere (req-aws-landing-zone-nongoals); named so the gap is data.
-        "macie2": (
-            "Amazon Macie is not offered in AWS GovCloud (US): no GovCloud endpoint "
-            "(https://docs.aws.amazon.com/general/latest/gr/macie.html)."
-        ),
-    },
-}
+#: Entries the collector does not call in a partition, from ``partition_availability.json``
+#: (``req-aws-collector-partition-7``): a service the partition does not offer, or an entry whose endpoint does not
+#: resolve there (botocore will happily synthesise a hostname such as ``cloudfront.us-gov-west-1.amazonaws.com``
+#: that no DNS server knows, and a call to it waits out its retries). A run scoped to the partition records a clear
+#: "not available in this partition" result for the entry instead of calling it.
+AVAILABILITY_FILE = Path(__file__).with_name("partition_availability.json")
+_METHODS = frozenset({"ran", "web", "read", "inferred"})
+
+
+def _load_unavailable(path: Path = AVAILABILITY_FILE) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]]]:
+    """The list as two maps per partition: whole services and single entity types, each to the reason it is listed.
+
+    A malformed file stops the import: a list that is silently partial would call endpoints it should not.
+    """
+    data = json.loads(path.read_text())
+    services: dict[str, dict[str, str]] = {}
+    entities: dict[str, dict[str, str]] = {}
+    for partition, block in data["partitions"].items():
+        services[partition], entities[partition] = {}, {}
+        for item in block["entries"]:
+            if item.get("method") not in _METHODS or not all(item.get(k) for k in ("description", "evidence", "date")):
+                raise ValueError(f"{path.name}: an entry in {partition} lacks a description, method, evidence or date: {item}")
+            if ("service" in item) == ("entity_type" in item):
+                raise ValueError(f"{path.name}: an entry in {partition} must name exactly one of service and entity_type")
+            target, key = (services, item["service"]) if "service" in item else (entities, item["entity_type"])
+            target[partition][key] = item["description"]
+    return services, entities
+
+
+_UNAVAILABLE_SERVICES, _UNAVAILABLE_ENTITIES = _load_unavailable()
 
 
 @dataclass(frozen=True)
@@ -308,3 +320,11 @@ def service_unavailable_reason(partition: str, service: str) -> str | None:
     """Why ``service`` cannot be collected in ``partition``, or ``None`` if it can (or if we
     do not know it cannot — an unknown gap surfaces as a normal per-entry skip at run time)."""
     return _UNAVAILABLE_SERVICES.get(partition, {}).get(service)
+
+
+def entry_unavailable_reason(partition: str, entry: dict) -> str | None:
+    """Why the manifest ``entry`` is not called in ``partition``, or ``None``: its service is listed whole, or its
+    entity type is listed (``req-aws-collector-partition-7``)."""
+    return service_unavailable_reason(partition, entry["service"]) or _UNAVAILABLE_ENTITIES.get(partition, {}).get(
+        entry["entity_type"]
+    )

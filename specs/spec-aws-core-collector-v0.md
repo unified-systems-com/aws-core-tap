@@ -99,7 +99,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
 | req-aws-collector-selection | [Collection Selection](#collection-selection) | Proposed | A run collects only the types and accounts the credential's `include_types`, `exclude_types` and `accounts_allowed` select; an unselected type or account is unobserved, never empty, and retires nothing; the effective selection is echoed in every run |
-| req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in; entries a partition does not offer are listed per entry and bounded by a per-run breaker (proposed) |
+| req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in; entries a partition does not offer are listed per entry in `partition_availability.json` and kept honest by a test against the newest wave 0 record |
 | req-aws-collector-outcome | [Listing Outcomes And Client Posture](#listing-outcomes-and-client-posture) | Approved for Development | A listing that yields nothing for a named reason that is not a failed call (`not_configured`, `unsupported_in_partition`, `throttled`) is a recorded result and never a complete-empty observation; one `Config` for timeouts and retries |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source, and each Organizations placement and attachment read, was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
@@ -1285,22 +1285,23 @@ choice follows from it.
   own precedence. The effective setting is reported in `IDENTITY_RESOLVED` and
   the `self_test` `AWS_PARTITION` check. Per-service FIPS exceptions are not
   modelled.
-- **Entries a partition does not offer (proposed, `-7` to `-11`).** Wave 0 on GovCloud (`runs/wave0-2026-11-02.json`,
-  measured) spent 815 of 1,385 seconds on 22 entries in 10 services whose endpoint does not resolve there
-  (`EndpointConnectionError`, 20 to 52 seconds each, botocore's retries included): `qbusiness` (7 entries),
-  `wellarchitected` (3 of its 7: the `agent_*` entries; `lens`, `review_template` and `workload` work),
-  `timestream-influxdb` (3), `kinesisvideo` (2), `notifications` (2), and one each of `cloudwatchomni`, `ecr-public`,
-  `internetmonitor`, `datazone` and `kendra-ranking`. Today only CloudFront and Macie are listed as unavailable, so the
-  rest are called, wait out the timeout and are reported as `ENTRY_SKIPPED`. The grain of the list has to be the
-  entry, not only the service, because `wellarchitected` serves some of its entries and not others. Two guards work
-  together: a **list** that skips a known-unavailable entry with no call, and a **breaker** that, after one
-  `EndpointConnectionError` for a service in a run, skips that service's remaining entries, so a gap nobody has listed
-  costs one timeout and not one per entry. The connect timeout and retry budget are **not** shortened (George,
-  2026-11-04): a slow network must not read as an absent service, so the breaker is the only bound on an unlisted gap.
-  The list is a data file beside the manifest, `partition_availability.json`, with a top-level description and a
-  description on each entry like the manifest's, so the wave 0 tool can rewrite it from its own record and the test in
-  `-10` reads it. A third check keeps the list honest: a test reads the newest wave 0 record
-  and fails when an entry that record shows unreachable is neither listed nor named as an exception.
+- **Entries a partition does not offer (`-7` to `-12`).** Wave 0 on GovCloud (`runs/wave0-2026-11-02.json`, measured)
+  found 22 entries in 10 services whose endpoint does not resolve there (`EndpointConnectionError`, 20 to 52 seconds
+  each, the client's five-second connect timeout across its eight attempts). The smoke test drives each entry on its
+  own, so it paid that 22 times (815 of 1,385 seconds). The collector already learns an unreachable service once per
+  (service, region) in a run (`unreachable` in `collector.py`, built in #163, `-9`), so a full collection pays it once
+  per service and region: the full collection of 2026-11-04 took 1,090 seconds, 1,008 of them reading, and the listed
+  entries were called in it. The list removes that remaining first call (about 35 seconds a service, 10 services, per
+  region) and, more important, the **masking** that learning causes in a service served in part: `wellarchitected`
+  serves `lens`, `profile`, `review_template` and `workload` but not its three `agent_*` entries, and because
+  `agent_profile` is read first, the first connection error marks the whole service unreachable and the four served
+  entries are settled as "not offered" without a call (`-12`, shown by a probe run on 2026-11-04). The list is per
+  entry, with a whole service listed only when none of its entries is served. The connect timeout and retry budget are
+  **not** shortened (George, 2026-11-04): a slow network must not read as an absent service. The list is a data file
+  beside the manifest, `partition_availability.json`, with a top-level description and a description on each entry like
+  the manifest's, so the wave 0 tool can rewrite it from its own record and the test in `-10` reads it. That test keeps
+  the list honest: it reads the newest wave 0 record and fails when an entry that record shows unreachable is neither
+  listed nor named as an exception.
 
 #### Acceptance Criteria
 
@@ -1314,9 +1315,10 @@ choice follows from it.
 | req-aws-collector-partition-6 | FIPS Opt-In | Implemented | `use_fips_endpoint` true/false is pinned on the session and reaches every client; absent defers to botocore's environment/shared-config resolution; the effective value is reported. | `TestGovCloudEndpoints`, `TestSelfTestReportsPartition` |
 | req-aws-collector-partition-7 | Unavailable Entries Are Listed Per Entry | Proposed | For each supported partition the collector holds the entries (an entity type, or a whole service) it knows are not offered there, each with how it was established (`ran`, `web` or `read`, and the evidence) and the date. An entry on the list makes no call, records one `SERVICE_NOT_AVAILABLE_IN_PARTITION` info line carrying the reason, and is counted under "not offered" in the run summary. A service is listed whole only when none of its entries is served; `wellarchitected` lists its `agent_*` entries and not the service. | Replaces the service-keyed `_UNAVAILABLE_SERVICES`; the list is the data file `partition_availability.json` beside the manifest (a description at the top and on each entry). The landing zone's `Availability` record is the model for the method vocabulary. |
 | req-aws-collector-partition-8 | Initial GovCloud List From The Wave 0 Record | Proposed | The GovCloud list opens with the 22 entries of `runs/wave0-2026-11-02.json` that failed with `EndpointConnectionError`, plus CloudFront and Macie, each marked `ran` with the record as evidence. A run over the manifest against GovCloud makes no call for any of them. | The other 46 entries that record labels unsupported-in-partition are not listed (CloudFront among them is listed already): the service answers and the refusal is per call (`UnknownOperationException`, `InvalidAction` and the like), at no cost in time. |
-| req-aws-collector-partition-9 | Unreachable Service Breaker | Proposed | In one run, the first `EndpointConnectionError` for a service in a non-commercial partition marks that service unreachable for the rest of the run; its remaining entries are skipped with `ENTRY_SKIPPED` naming the earlier failure, and the run summary counts them. The breaker is per run and per service, holds no state between runs, and does not trip on a throttle, a timeout after a connection was made, or a `ClientError`. | Bounds the cost of a gap nobody has listed to one timeout per service; the timeout itself is left at botocore's default. A test feeds a client that raises it on the first call and counts the calls. |
+| req-aws-collector-partition-9 | Unreachable Service Is Learned Once Per Run | Implemented | In one run, the first connection-level failure for a (service, region) settles every later entry of that service in that region as not offered, with no further call; the state is per run. | `test_boto3_collector_outcomes.py::TestCollectorRun::test_an_unreachable_service_is_learned_once_not_once_per_entry`. Built in #163. It is keyed by service, which is what `-12` corrects. |
 | req-aws-collector-partition-10 | List Is Checked Against The Latest Record | Proposed | A test reads the newest `runs/wave0-*.json` for each supported partition and fails when an entry it records as `EndpointConnectionError` is neither on that partition's list nor named in a short exception list with a reason; and fails when a listed entry that record shows reachable (`ok` or `empty`) is not named in the same exception list. | Keeps the list from rotting in either direction; a re-run of wave 0 updates the record and the test says what to change. |
 | req-aws-collector-partition-11 | Not Offered Is Not Selection | Proposed | An entry skipped as not offered is reported as not offered and never counted as skipped by type selection (`req-aws-collector-selection-9`), and does not by itself make a run a selected run: a full run over a partition that does not offer an entry still states its completeness for every entry it can read, and records no surface for the one it does not. | Without this, the first listed entry would turn every GovCloud run into a run that states no completeness. |
+| req-aws-collector-partition-12 | A Service Served In Part Is Not Masked | Proposed | A connection failure learned for a (service, region) applies only to entries that would call the endpoint that failed. With the three `agent_*` entries unlisted and failing, `lens`, `profile`, `review_template` and `workload` are still called and collected. | Today the first failure marks the whole service: with the list emptied, a probe run made one `wellarchitected` call and settled all seven entries as not offered. The list covers the known case; an unlisted service served in part is still masked until this is built. Keying by the failing endpoint's host is one way. |
 
 ### Listing Outcomes And Client Posture
 ----

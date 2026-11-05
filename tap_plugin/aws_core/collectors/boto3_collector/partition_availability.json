@@ -1,0 +1,112 @@
+{
+  "description": "Entries the collector does not call in a partition, because the service or the endpoint that serves them is not offered there (req-aws-collector-partition-7). An entry names a whole service (service) or one entity type (entity_type); a service is listed whole only when none of its entries is served. Each carries why, how it was established (ran, web, read or inferred), the evidence and the date. tools/validate/tests/test_partition_availability.py keeps this file consistent with the newest wave 0 record (req-aws-collector-partition-10).",
+  "partitions": {
+    "aws-us-gov": {
+      "description": "AWS GovCloud (US). Opened from tools/validate/runs/wave0-2026-11-02.json (one region, us-gov-west-1) plus the two services this collector already named as unavailable.",
+      "entries": [
+        {
+          "service": "cloudfront",
+          "description": "Amazon CloudFront is not offered in AWS GovCloud (US); a GovCloud account cannot list distributions. Distributions that front GovCloud resources live in a commercial account.",
+          "method": "web",
+          "evidence": "AWS GovCloud (US) User Guide, Setting Up Amazon CloudFront with Your AWS GovCloud (US) Resources",
+          "date": "2026-09-28"
+        },
+        {
+          "service": "macie2",
+          "description": "Amazon Macie is not offered in AWS GovCloud (US): no GovCloud endpoint (https://docs.aws.amazon.com/general/latest/gr/macie.html). Not collected anywhere (req-aws-landing-zone-nongoals); named so the gap is data.",
+          "method": "inferred",
+          "evidence": "https://docs.aws.amazon.com/general/latest/gr/macie.html lists no GovCloud endpoint",
+          "date": "2026-09-28"
+        },
+        {
+          "service": "cloudwatchomni",
+          "description": "No cloudwatchomni endpoint resolves in AWS GovCloud (US): every cloudwatchomni entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "datazone",
+          "description": "No datazone endpoint resolves in AWS GovCloud (US): every datazone entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "ecr-public",
+          "description": "No ecr-public endpoint resolves in AWS GovCloud (US): every ecr-public entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "internetmonitor",
+          "description": "No internetmonitor endpoint resolves in AWS GovCloud (US): every internetmonitor entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "kendra-ranking",
+          "description": "No kendra-ranking endpoint resolves in AWS GovCloud (US): every kendra-ranking entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "kinesisvideo",
+          "description": "No kinesisvideo endpoint resolves in AWS GovCloud (US): every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "notifications",
+          "description": "No notifications endpoint resolves in AWS GovCloud (US): every notifications entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "qbusiness",
+          "description": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "service": "timestream-influxdb",
+          "description": "No timestream-influxdb endpoint resolves in AWS GovCloud (US): every timestream-influxdb entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "entity_type": "aws_core__aws_wellarchitected_agent_context",
+          "description": "The wellarchitected endpoint that serves this entry does not resolve in AWS GovCloud (US) (EndpointConnectionError in wave 0); the service's other entries (lens, review_template, workload) are served.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "entity_type": "aws_core__aws_wellarchitected_agent_goal",
+          "description": "The wellarchitected endpoint that serves this entry does not resolve in AWS GovCloud (US) (EndpointConnectionError in wave 0); the service's other entries (lens, review_template, workload) are served.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        },
+        {
+          "entity_type": "aws_core__aws_wellarchitected_agent_profile",
+          "description": "The wellarchitected endpoint that serves this entry does not resolve in AWS GovCloud (US) (EndpointConnectionError in wave 0); the service's other entries (lens, review_template, workload) are served.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      ]
+    },
+    "aws": {
+      "description": "Commercial. Nothing is listed: a list is wanted but waits for a commercial run to show which entries need it.",
+      "entries": []
+    }
+  }
+}

@@ -105,7 +105,7 @@ from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
 from .outcomes import NOT_CONFIGURED, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify
 from .organizations import OrganizationTree, collect_organization, organizations_client
-from .partition import PARTITION_AWS, service_unavailable_reason
+from .partition import PARTITION_AWS, entry_unavailable_reason
 from .paths import eval_path
 from .projection import ProjectionError, project_item
 from .regions import (
@@ -621,7 +621,7 @@ class Boto3Collector(CollectorBase):
 
         for entry in entries:
             # A service the partition does not offer is a clear result, not a failed call.
-            not_offered = service_unavailable_reason(partition, entry["service"])
+            not_offered = entry_unavailable_reason(partition, entry)
             if not_offered:
                 unavailable += 1
                 self.record_info(

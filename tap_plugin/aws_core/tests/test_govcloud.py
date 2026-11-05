@@ -777,8 +777,10 @@ class TestCollectorRunInGovCloud:
 
         # CloudFront: a clear "not available in this partition" result — not a skipped-with-error warn.
         info = [e for e in collector.results["info"] if e["message_code"] == "SERVICE_NOT_AVAILABLE_IN_PARTITION"]
-        assert [e["message_data"]["service"] for e in info] == ["cloudfront"]
-        assert "not available in partition aws-us-gov" in info[0]["message"]
+        # The 22 entries wave 0 could not reach are on the list as well (req-aws-collector-partition-8).
+        cloudfront = [e for e in info if e["message_data"]["service"] == "cloudfront"]
+        assert len(cloudfront) == 1 and len(info) == 23
+        assert "not available in partition aws-us-gov" in cloudfront[0]["message"]
         assert not [
             w for w in collector.results["warn"] if w["message_code"] == "ENTRY_SKIPPED" and "cloudfront" in w["message"]
         ]

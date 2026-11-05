@@ -391,7 +391,13 @@ class TestCollectorRun:
         assert surface["enumeration_complete"] is False
         assert surface["reasons"]["enumeration_complete"].startswith("throttled: ThrottlingException")
 
-    def test_an_unreachable_service_is_learned_once_not_once_per_entry(self, _run_with):
+    def test_an_unreachable_service_is_learned_once_not_once_per_entry(self, _run_with, monkeypatch):
+        # qbusiness is on the partition's availability list and never called; empty it to exercise the learning
+        # that covers an unlisted gap (req-aws-collector-partition-9).
+        from tap_plugin.aws_core.collectors.boto3_collector import partition as partition_mod
+
+        monkeypatch.setattr(partition_mod, "_UNAVAILABLE_SERVICES", {})
+        monkeypatch.setattr(partition_mod, "_UNAVAILABLE_ENTITIES", {})
         exc = EndpointConnectionError(endpoint_url="https://qbusiness.us-gov-west-1.api.aws/applications")
         collector, calls = _run_with({"qbusiness": exc})
         entries = [e["entity_type"] for e in manifest_entries() if e["service"] == "qbusiness"]
