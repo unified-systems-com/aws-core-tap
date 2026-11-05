@@ -64,6 +64,7 @@ live state.
 | `runs/wave3b-compute2-2026-11-04.json` | Wave 3b, more compute definitions: 11 types compared (Lambda code signing configuration, ECS task set with its cluster, task definition and service, DLM lifecycle policy, and the VPC, subnet, security group, IAM role and Signer profile), all pass; the task set passes only with the fix in #196; the IAM OIDC provider and the ECS capacity provider are not seeded |
 | `runs/wave3b-misc3-2026-11-04.json` | Wave 3b, more small definitions: 5 types compared (CloudWatch RUM app monitor, Lex V2 bot, Scheduler schedule, SQS queue and the IAM role), all pass; Internet Monitor, CloudTrail Lake and the Bedrock agent cannot be seeded here |
 | `runs/wave3b-misc4-2026-11-04.json` | Wave 3b, a guardrail version and an alarm mute rule: 4 types compared (Bedrock guardrail version, guardrail, CloudWatch alarm mute rule and alarm), all pass |
+| `runs/selection-2026-11-04.json` | Collection selection, live: the real collector three times with `include_types` (`ec2:vpc` and `ec2:subnet`, then `ec2:vpc`, then `ec2:subnet`); no completeness stated, the 14 subnets untouched when their type is unselected, 14 edges to the unselected VPC type counted and not emitted; run by `selection_live.py` |
 
 Not covered by wave 0: the hand-written readers (landing zone, Organizations, findings), which run only through the
 full collector.

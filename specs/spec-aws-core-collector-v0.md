@@ -1093,7 +1093,7 @@ Status: `Proposed`
 A run can be narrowed to chosen types and chosen accounts. Requested by George on 2026-11-03 for field testing;
 the keys live in the credential's `data` for now (`req-aws-core-secret-selection`, which defines the grammar of a
 type pattern and of an account reference). Built for a single-account run (`-1` to `-6`, `-9`, `-13` and `-14`; tests in
-`test_boto3_collector_selection.py` and `test_boto3_collector_selection_run.py`) and not yet run live. Not built: the
+`test_boto3_collector_selection.py` and `test_boto3_collector_selection_run.py`) and run live once (`tools/validate/runs/selection-2026-11-04.json`: keep-absent, no completeness and the edge count; not the retirement control). Not built: the
 fan-out parts (`-7`, `-8`, `-10`, `-11`), which wait on `req-aws-collector-fanout` itself, and `-12`, which waits on
 unified-systems-com/tap#1156. It carries the type selection that `req-aws-core-livevalidation-selection` first proposed for validation, with one change of
 grammar (`<service>:<entity>`, not an `fnmatch` pattern over the raw entity type).
