@@ -125,6 +125,8 @@ class EdgeEmission:
 
     envelopes: list[dict[str, Any]]
     warnings: list[str]
+    #: Edge values left out because the rule's target type is not selected (``req-aws-collector-selection``).
+    skipped_unselected: int = 0
 
 
 def _as_value_list(raw: Any) -> list[Any]:
@@ -170,6 +172,7 @@ def emit_edges(
     modeled_types: set[str],
     transforms: TransformRegistry,
     dimensions: dict[str, str],
+    unselected_types: frozenset[str] = frozenset(),
 ) -> EdgeEmission:
     """Emit GRIFT edge envelopes for one projected node.
 
@@ -180,9 +183,12 @@ def emit_edges(
             ``target_type`` outside this set is dropped with a warning.
         transforms: The plugin-local transform registry.
         dimensions: Dimensions stamped on every emitted edge entity.
+        unselected_types: Entity types a selected run left out. An edge to one is not emitted: the run never read
+            the far end, so it cannot state the relationship (``req-aws-collector-selection``). Counted, not warned.
     """
     envelopes: list[dict[str, Any]] = []
     warnings: list[str] = []
+    skipped = 0
 
     for rule in entry.get("edges", []):
         target_type = rule["target_type"]
@@ -215,6 +221,9 @@ def emit_edges(
                 value = transform(raw_value)
             if value is None:
                 continue
+            if target_type in unselected_types:
+                skipped += 1
+                continue
             target_ref = node_ref(target_type, str(value))
             if rule["direction"] == "inbound":
                 from_ref, to_ref = target_ref, node.ref
@@ -223,4 +232,4 @@ def emit_edges(
 
             envelopes.append(edge_envelope(rule["edge_type"], from_ref=from_ref, to_ref=to_ref, dimensions=dimensions))
 
-    return EdgeEmission(envelopes=envelopes, warnings=warnings)
+    return EdgeEmission(envelopes=envelopes, warnings=warnings, skipped_unselected=skipped)

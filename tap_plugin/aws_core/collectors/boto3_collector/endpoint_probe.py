@@ -44,13 +44,13 @@ def request_host(
     The default endpoint of a client is not that host: an operation can carry a host prefix (``{AccountId}.``,
     ``api.``), a rule set can route an operation to another host (Well-Architected's agent operations go to
     ``wellarchitected-agent``), and a FIPS client reports one host and calls another (Kinesis Video). So the request is
-    built, signed with a throwaway key, and stopped at botocore's ``before-send`` event with a canned response; nothing
-    is sent and no credential is read. An operation that needs parameters this does not have fails validation first and
-    gives ``None``: unknown, never a guess. The host is the one the real call would use, with ``{AccountId}`` replaced by
-    zeros where the prefix is a placeholder.
+    built, unsigned, and stopped at botocore's ``before-send`` event with a canned response; nothing
+    is sent and no credential is needed or read. An operation that needs parameters this does not have fails validation first and
+    gives ``None``: unknown, never a guess. The host is the one the real call would use; a prefix that is a placeholder
+    (``{AccountId}.``) takes the value of the parameter it names, so an operation that needs one it lacks gives ``None``.
     """
     import boto3
-    from botocore import xform_name
+    from botocore import UNSIGNED, xform_name
     from botocore.awsrequest import AWSResponse
     from .credentials import client_config
 
@@ -63,9 +63,10 @@ def request_host(
         return AWSResponse(request.url, 200, {}, _Raw(b"{}"))
 
     try:
-        session = boto3.session.Session(aws_access_key_id="x", aws_secret_access_key="y", region_name=region)
-        # The package's one client configuration; nothing is sent, so its timeouts and retries never apply.
-        config = client_config(**({} if use_fips is None else {"use_fips_endpoint": use_fips}))
+        session = boto3.session.Session(region_name=region)
+        # The package's one client configuration; nothing is sent, so its timeouts and retries never apply. Unsigned: the
+        # request is only built, so no credential of any kind is needed or read.
+        config = client_config(signature_version=UNSIGNED, **({} if use_fips is None else {"use_fips_endpoint": use_fips}))
         client = session.client(service, region_name=region, config=config)
         client.meta.events.register("before-send", stop)
         getattr(client, xform_name(operation))(**(params or {}))

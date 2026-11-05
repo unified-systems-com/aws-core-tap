@@ -1,0 +1,60 @@
+{
+ "description": "Live trial of collection selection (req-aws-collector-selection-5 and -14): the real Boto3Collector.run() three times against the GovCloud staging account (us-gov-west-1), with the collector's read-only identity and the read guard installed, writing to the local grid only. Counts, codes and booleans only; no account number, resource id or message.",
+ "date": "2026-11-04",
+ "script": "tools/validate/selection_live.py",
+ "verdict": "pass",
+ "checks": {
+  "a restricted run states no completeness (no surface, no declare_no_surfaces)": "all three runs: 0 surfaces, not declared",
+  "rows of an unselected type are untouched (keep-absent)": "run 2 selected ec2:vpc only: the 14 subnets from run 1 are still live, same ids and same updated_at",
+  "edges to an unselected type are not emitted, counted once, never warned": "run 3 selected ec2:subnet only: 14 edges not selected (one per subnet to its VPC), 0 EDGE_DROPPED warnings",
+  "the selection is echoed": "SELECTION_APPLIED recorded on every run"
+ },
+ "not_covered": "Retirement of a deleted object under a full run (the lifecycle negative control) and retire_within_selection (tap#1156) are not exercised here.",
+ "trials": [
+  {
+   "include_types": [
+    "ec2:vpc",
+    "ec2:subnet"
+   ],
+   "failed": null,
+   "errors": [],
+   "surfaces": 0,
+   "declared_no_surfaces": false,
+   "states_completeness": false,
+   "edges_not_selected": 0,
+   "edge_dropped_warnings": 0,
+   "selection_applied": true,
+   "vpcs_live": 3,
+   "subnets_live": 14
+  },
+  {
+   "include_types": [
+    "ec2:vpc"
+   ],
+   "failed": null,
+   "errors": [],
+   "surfaces": 0,
+   "declared_no_surfaces": false,
+   "states_completeness": false,
+   "edges_not_selected": 0,
+   "edge_dropped_warnings": 0,
+   "selection_applied": true,
+   "subnets_live": 14,
+   "subnets_unchanged": true
+  },
+  {
+   "include_types": [
+    "ec2:subnet"
+   ],
+   "failed": null,
+   "errors": [],
+   "surfaces": 0,
+   "declared_no_surfaces": false,
+   "states_completeness": false,
+   "edges_not_selected": 14,
+   "edge_dropped_warnings": 0,
+   "selection_applied": true,
+   "subnets_live": 14
+  }
+ ]
+}
