@@ -123,4 +123,6 @@ def main():
     print("SELECTION_JSON_END")
 
 
-main()
+# Run only when exec()'d from `manage.py shell -c` (no __file__), never on an import, a module scan or test discovery.
+if "__file__" not in globals():
+    main()
