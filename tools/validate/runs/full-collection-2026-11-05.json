@@ -1,0 +1,100 @@
+{
+ "description": "Live full collection of the GovCloud staging account (us-gov-west-1, one region, 898 manifest entries, partition aws-us-gov) with the real Boto3Collector.run(), the collector's read-only identity and the read guard installed, writing to the local grid only, on the combined code of PR 199 (partition list, endpoint probe) and main (selection, progress lines). Counts, codes and booleans only; no account number, resource id or message.",
+ "date": "2026-11-05",
+ "script": "not committed: a scratch wrapper around Boto3Collector.run() like tools/validate/selection_live.py, with no include_types",
+ "verdict": "pass",
+ "checks": {
+  "the run completes with no run-log error": "2 runs, both: failed null, 0 error records",
+  "the endpoint probe raises no false warning": "2 runs: 0 PARTITION_GAP_LEARNED, 0 PARTITION_LIST_STALE, 1 ENDPOINT_PROBE summary",
+  "progress lines reach the process log": "[7a1d] start, [3e9b] every 30 s, [c52f] reads finished, [94d6] finished, in both runs"
+ },
+ "trials": [
+  {
+   "run": 1,
+   "wall_seconds": 727.7,
+   "calls": 1694,
+   "call_outcomes": {
+    "ok": 1439,
+    "absent": 4,
+    "denied": 114,
+    "error": 134,
+    "throttled": 3
+   },
+   "info": {
+    "SERVICE_NOT_AVAILABLE_IN_PARTITION": 67,
+    "ENTRY_NOT_CONFIGURED": 26,
+    "ORG_LISTING_FAILED": 2,
+    "LANDING_ZONE_READ_FAILED": 2
+   },
+   "warn": {
+    "ENTRY_SKIPPED": 116,
+    "HYDRATE_GAP": 53,
+    "ENTRY_THROTTLED": 3
+   },
+   "surfaces": 32
+  },
+  {
+   "run": 2,
+   "wall_seconds": 674.8,
+   "nodes_submitted": 1193,
+   "edges_submitted": 1623,
+   "calls": 1694,
+   "call_outcomes": {
+    "ok": 1439,
+    "absent": 4,
+    "denied": 114,
+    "error": 134,
+    "throttled": 3
+   },
+   "info": {
+    "SERVICE_NOT_AVAILABLE_IN_PARTITION": 67,
+    "ENTRY_NOT_CONFIGURED": 26,
+    "ORG_LISTING_FAILED": 2,
+    "LANDING_ZONE_READ_FAILED": 2
+   },
+   "warn": {
+    "ENTRY_SKIPPED": 116,
+    "HYDRATE_GAP": 53,
+    "ENTRY_THROTTLED": 3
+   },
+   "surfaces": 32,
+   "errored_calls_by_http_status": {
+    "400": 117,
+    "404": 12,
+    "409": 2,
+    "500": 1,
+    "no response": 2
+   },
+   "errored_calls_classified": {
+    "ListTagsForResource on the tables of the four AWS-managed keyspaces: ValidationException 'Resource does not exist' (direct call of each table; the keyspaces themselves tag fine)": 41,
+    "ListTagsForResource on appconfig (5) and route53resolver (5) objects, 400, not classified": 10,
+    "82 calls over 80 other operations (the sagemaker ListTags call is among them); 79 were called directly, by the code each returned": {
+     "UnknownOperationException": 19,
+     "ParamValidationError (the probe lacked a parameter the collector supplies)": 13,
+     "UninitializedAccountException": 6,
+     "InvalidAction": 5,
+     "UnsupportedOperation": 5,
+     "InvalidRequestException": 4,
+     "404": 3,
+     "ValidationException": 3,
+     "AuthorizationException": 2,
+     "ResourceNotFoundException": 2,
+     "InvalidParameterValue": 2,
+     "ConflictException": 2,
+     "KeyError in the probe's own message read": 2,
+     "ConnectTimeoutError": 2,
+     "InternalFailure": 1,
+     "BadRequest": 1,
+     "NotAuthorizedException": 1,
+     "UnsupportedFeatureException": 1,
+     "InvalidParameterValueException": 1,
+     "OperationNotSupportedException": 1,
+     "BadRequestException": 1,
+     "ok": 1,
+     "InvalidInputException": 1
+    }
+   }
+  }
+ ],
+ "method": "The two runs are the same code, run twice (the second with a dump of the call ledger grouped by service, operation and HTTP status). The classification of the 134 errored calls read the error code by calling each operation directly, once, with the read guard installed; operations were called without parameters, so those that need one returned ParamValidationError and are not classified; the codes are what a direct call returned, which can differ from what the collector's call returned. The call ledger records the HTTP status but not the error code."
+}
