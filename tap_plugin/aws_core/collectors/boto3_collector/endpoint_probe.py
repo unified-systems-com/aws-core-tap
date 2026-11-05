@@ -14,6 +14,7 @@ and says nothing.
 
 from __future__ import annotations
 
+import contextlib
 import socket
 from collections.abc import Callable
 from typing import Any
@@ -62,7 +63,8 @@ def request_host(
             seen.append(host)
         return AWSResponse(request.url, 200, {}, _Raw(b"{}"))
 
-    try:
+    # Only the host matters; a parse or validation failure after the request is built is not ours to report.
+    with contextlib.suppress(Exception):
         session = boto3.session.Session(region_name=region)
         # The package's one client configuration; nothing is sent, so its timeouts and retries never apply. Unsigned: the
         # request is only built, so no credential of any kind is needed or read.
@@ -70,8 +72,6 @@ def request_host(
         client = session.client(service, region_name=region, config=config)
         client.meta.events.register("before-send", stop)
         getattr(client, xform_name(operation))(**(params or {}))
-    except Exception:  # noqa: BLE001 - only the host matters; a parse or validation failure after it is not ours to report
-        pass
     return seen[0] if seen else None
 
 
