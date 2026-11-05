@@ -83,6 +83,18 @@ class TestEndpointProbe:
         assert endpoint_probe.request_host("ec2", "us-gov-west-1", "DescribeVpcs") == "ec2.us-gov-west-1.amazonaws.com"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_building_the_request_does_not_consult_the_credential_chain(self, monkeypatch):
+        # An unsigned client needs no credential; the claim in the module and the spec is that none is looked for (no
+        # environment, profile, SSO or instance-metadata lookup).
+        import botocore.session
+
+        def refuse(self, *args, **kwargs):
+            raise AssertionError("the probe asked for credentials")
+
+        monkeypatch.setattr(botocore.session.Session, "get_credentials", refuse)
+        assert endpoint_probe.request_host("sts", "us-gov-west-1", "GetCallerIdentity") == "sts.us-gov-west-1.amazonaws.com"
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_resolver_that_does_not_answer_ends_the_probe_instead_of_stalling_the_run(self, monkeypatch):
         release = threading.Event()
 
@@ -177,6 +189,19 @@ class TestInARun:
         assert stale and {w["message_data"]["service"] for w in stale} == {"qbusiness"}
         assert len({w["message_data"]["entity_type"] for w in stale}) == len(stale), "one per marked entry"
         assert not [s for s, _op in base._RecordingClient.calls if s == "qbusiness"], "still not called"
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_a_marked_entry_is_checked_in_every_selected_region(self, monkeypatch):
+        # The claim was observed in one region; a host that resolves only in another selected region is a stale claim too.
+        _wire(
+            monkeypatch,
+            missing={"qbusiness.us-gov-west-1.amazonaws.com"},
+            include_types=["qbusiness:*"],
+            regions_allowed=["us-gov-west-1", "us-gov-east-1"],
+        )
+        stale = _codes(base._run(), "PARTITION_LIST_STALE")
+        assert stale and {w["message_data"]["host"] for w in stale} == {"qbusiness.us-gov-east-1.amazonaws.com"}
+        assert {w["message_data"]["region"] for w in stale} == {"us-gov-east-1"}
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_marked_service_whose_host_has_no_record_raises_nothing(self, monkeypatch):

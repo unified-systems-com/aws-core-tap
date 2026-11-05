@@ -429,21 +429,30 @@ class Boto3Collector(CollectorBase):
         return cache[key]
 
     def _check_listed_host(
-        self, probe: EndpointProbe, entry: dict[str, Any], region: str, partition: str, fips: bool | None
+        self, probe: EndpointProbe, entry: dict[str, Any], regions: list[str], partition: str, fips: bool | None
     ) -> None:
-        """An entry the manifest marks not offered whose host now resolves: the claim may no longer hold."""
-        host = self._entry_host(entry, region, fips)
-        if host is None:
+        """An entry the manifest marks not offered whose host now resolves in any region of the run: the claim may no
+        longer hold there. A claim is made for the partition on evidence from one region and one FIPS setting, so every
+        selected region is checked (not only the first); a host is reported once per entry."""
+        reported: set[str] = set()
+        probed = False
+        for region in regions:
+            host = self._entry_host(entry, region, fips)
+            if host is None:
+                continue
+            probed = True
+            if host not in reported and probe.resolves(host):
+                reported.add(host)
+                probe.stale += 1
+                self.record_warn(
+                    _SITE_LIST_STALE,
+                    "PARTITION_LIST_STALE",
+                    f"{entry['entity_type']} is marked not offered in partition {partition}, but the host its call would "
+                    f"use in {region}, {host}, resolves; re-run wave 0 with WAVE0_IGNORE_AVAILABILITY=1 to see whether it can be read.",
+                    message_data={"entity_type": entry["entity_type"], "service": entry["service"], "host": host, "region": region, "partition": partition},
+                )
+        if not probed:
             probe.not_probed += 1
-        if probe.resolves(host):
-            probe.stale += 1
-            self.record_warn(
-                _SITE_LIST_STALE,
-                "PARTITION_LIST_STALE",
-                f"{entry['entity_type']} is marked not offered in partition {partition}, but the host its call would "
-                f"use, {host}, resolves; re-run wave 0 with WAVE0_IGNORE_AVAILABILITY=1 to see whether it can be read.",
-                message_data={"entity_type": entry["entity_type"], "service": entry["service"], "host": host, "partition": partition},
-            )
 
     def _check_unlisted_host(
         self, probe: EndpointProbe, entry: dict[str, Any], region: str, region_label: str, partition: str, fips: bool | None
@@ -713,7 +722,8 @@ class Boto3Collector(CollectorBase):
                 )
                 if entry["entity_type"] not in listed_checked:
                     listed_checked.add(entry["entity_type"])
-                    self._check_listed_host(probe, entry, regions[0], partition, fips)
+                    entry_regions_for_probe = regions if entry["scope"] == "regional" else [regions[0]]
+                    self._check_listed_host(probe, entry, entry_regions_for_probe, partition, fips)
                 continue
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
             contained = entry.get("containment")
