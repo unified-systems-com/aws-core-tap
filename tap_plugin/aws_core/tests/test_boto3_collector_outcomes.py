@@ -167,6 +167,7 @@ class TestClassify:
             ("iotsitewise_application", "404", "ListApplications", "Unknown Operation"),
             ("comprehend_flywheel", "InvalidRequestException", "ListFlywheels", "UNSUPPORTED_OPERATION: This operation is not supported in this region"),
             ("wellarchitected_profile", "ValidationException", "ListProfiles", "[Validation] This operation is not supported in GovCloud."),
+            ("transcribe_call_analytics_category", "BadRequestException", "ListCallAnalyticsCategories", "Call Analytics isn't supported in this region."),
         ],
     )
     def test_the_unknown_operation_family_is_unsupported_where_a_reviewed_row_names_it(self, entity, code, operation, message):
