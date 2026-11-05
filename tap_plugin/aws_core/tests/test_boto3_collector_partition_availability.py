@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import json
-
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import partition as partition_mod
-from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+from tap.jsonfiles import JsonFileError, load_schema, validate_json
+from tap_plugin.aws_core.collectors.boto3_collector.manifest import SCHEMA_PATH, manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.partition import (
     PARTITION_AWS,
     PARTITION_US_GOV,
@@ -48,27 +47,36 @@ class TestTheList:
         assert not [e for e in _ENTRIES.values() if entry_unavailable_reason(PARTITION_AWS, e)]
 
     @pytest.mark.spec("req-aws-collector-partition-7")
-    def test_every_listed_entity_type_is_in_the_manifest_and_every_listed_service_is_known(self):
-        data = json.loads(partition_mod.AVAILABILITY_FILE.read_text())
-        services = {e["service"] for e in _ENTRIES.values()} | {"macie2"}
-        for block in data["partitions"].values():
-            for item in block["entries"]:
-                assert item.get("entity_type") in _ENTRIES or item.get("service") in services, item
+    def test_a_service_is_marked_on_all_of_its_entries_or_is_named_as_served_in_part(self):
+        """The grain is the entry; a service marked on some of its entries and not others must be a known split."""
+        split = set()
+        for partition in (PARTITION_US_GOV, PARTITION_AWS):
+            by_service: dict[str, list[bool]] = {}
+            for e in _ENTRIES.values():
+                by_service.setdefault(e["service"], []).append(partition in (e.get("not_offered") or {}))
+            split |= {s for s, flags in by_service.items() if any(flags) and not all(flags)}
+        assert split == {"wellarchitected"}, "a new split service needs a reason here, or its entries should all be marked"
 
     @pytest.mark.spec("req-aws-collector-partition-7")
     @pytest.mark.parametrize(
-        "item",
+        "block",
         [
-            {"service": "x", "description": "d", "evidence": "e", "date": "2026-11-04"},  # no method
-            {"service": "x", "method": "ran", "evidence": "e", "date": "2026-11-04"},  # no description
-            {"service": "x", "entity_type": "y", "description": "d", "method": "ran", "evidence": "e", "date": "d"},
+            {"aws-us-gov": {"why": "w", "method": "ran", "date": "2026-11-04"}},  # no evidence
+            {"aws-us-gov": {"why": "w", "method": "guessed", "evidence": "e", "date": "2026-11-04"}},  # method
+            {"aws-us-gov": {"why": "w", "method": "ran", "evidence": "e", "date": "yesterday"}},  # date
+            {"aws-cn": {"why": "w", "method": "ran", "evidence": "e", "date": "2026-11-04"}},  # partition
         ],
     )
-    def test_a_malformed_file_stops_the_load(self, tmp_path, item):
-        path = tmp_path / "list.json"
-        path.write_text(json.dumps({"partitions": {"aws-us-gov": {"entries": [item]}}}))
-        with pytest.raises(ValueError):
-            partition_mod._load_unavailable(path)
+    def test_a_malformed_not_offered_block_fails_the_manifest_schema(self, block):
+        schema = load_schema(SCHEMA_PATH)
+        entry = {**_entry("ec2_instance"), "not_offered": block}
+        with pytest.raises(JsonFileError):
+            validate_json({"manifest_version": "0", "entries": [entry]}, schema, source="test")
+
+    @pytest.mark.spec("req-aws-collector-partition-7")
+    def test_the_blocks_the_manifest_carries_are_valid(self):
+        schema = load_schema(SCHEMA_PATH)
+        validate_json({"manifest_version": "0", "entries": list(_ENTRIES.values())}, schema, source="test")
 
 
 @pytest.mark.django_db

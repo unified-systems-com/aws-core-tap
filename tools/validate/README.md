@@ -20,7 +20,7 @@ scripts/dc exec -T web uv run python manage.py shell -c \
   "exec(open('/app/_dev-plugins/aws_core/tools/validate/wave0_smoke.py').read())"
 ```
 
-`WAVE0_IGNORE_AVAILABILITY=1` calls the entries `partition_availability.json` lists instead of skipping them; a record made that way is the only one that can show a listed entry has become reachable (`tests/test_partition_availability.py`). `WAVE0_ONLY` takes comma-separated `fnmatch` patterns on the entity type, `WAVE0_LIMIT` the first N entries,
+`WAVE0_IGNORE_AVAILABILITY=1` calls the entries the manifest marks `not_offered` instead of skipping them; a record made that way is the only one that can show a listed entry has become reachable (`tests/test_partition_availability.py`). `WAVE0_ONLY` takes comma-separated `fnmatch` patterns on the entity type, `WAVE0_LIMIT` the first N entries,
 `WAVE0_OUT` a JSON path inside the container, `WAVE0_MESSAGES=1` records error messages for local debugging only. The result is printed between `WAVE0_JSON_BEGIN` and
 `WAVE0_JSON_END`.
 

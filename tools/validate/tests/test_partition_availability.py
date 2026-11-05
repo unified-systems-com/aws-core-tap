@@ -1,6 +1,6 @@
-"""The partition availability list against the newest wave 0 record (req-aws-collector-partition-10).
+"""The manifest's ``not_offered`` blocks against the newest wave 0 record (req-aws-collector-partition-10).
 
-The list keeps the collector from calling an endpoint that is not there. It can rot two ways: an entry that
+The blocks keep the collector from calling an endpoint that is not there. It can rot two ways: an entry that
 cannot be reached is missing from it, or a listed entry has become reachable. The newest wave 0 record for the
 partition says which; this test fails with the entry named. A re-run of wave 0 that ignores the list
 (``WAVE0_IGNORE_AVAILABILITY=1``) is the record that can show a listed entry reachable.

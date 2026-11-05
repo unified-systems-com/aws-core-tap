@@ -30,10 +30,10 @@ in ``tests/test_partition.py``), and the AWS GovCloud (US) User Guide
 
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass
-from pathlib import Path
+
+from .manifest import manifest_entries
 
 PARTITION_AWS = "aws"
 PARTITION_US_GOV = "aws-us-gov"
@@ -93,36 +93,46 @@ _HOME_REGIONS = {
     PARTITION_CN: "cn-north-1",
 }
 
-#: Entries the collector does not call in a partition, from ``partition_availability.json``
-#: (``req-aws-collector-partition-7``): a service the partition does not offer, or an entry whose endpoint does not
-#: resolve there (botocore will happily synthesise a hostname such as ``cloudfront.us-gov-west-1.amazonaws.com``
-#: that no DNS server knows, and a call to it waits out its retries). A run scoped to the partition records a clear
-#: "not available in this partition" result for the entry instead of calling it.
-AVAILABILITY_FILE = Path(__file__).with_name("partition_availability.json")
-_METHODS = frozenset({"ran", "web", "read", "inferred"})
+#: Entries the collector does not call in a partition (``req-aws-collector-partition-7``): the manifest entries that carry
+#: a ``not_offered`` block for it, because the service or the endpoint that serves the entry is not offered there
+#: (botocore will happily synthesise a hostname such as ``cloudfront.us-gov-west-1.amazonaws.com`` that no DNS server
+#: knows, and a call to it waits out its retries). A run scoped to the partition records a clear "not available in this
+#: partition" result for the entry instead of calling it. The manifest is the one place this is held, so a new entry is
+#: authored with the question in front of the author.
+#:
+#: A service with no manifest entry that the landing-zone reader calls is not in the manifest, so it is named here.
+_NON_MANIFEST_UNAVAILABLE: dict[str, dict[str, str]] = {
+    PARTITION_US_GOV: {
+        "macie2": (
+            "Amazon Macie is not offered in AWS GovCloud (US): no GovCloud endpoint "
+            "(https://docs.aws.amazon.com/general/latest/gr/macie.html). Not collected anywhere "
+            "(req-aws-landing-zone-nongoals); named so the gap is data."
+        ),
+    },
+}
 
 
-def _load_unavailable(path: Path = AVAILABILITY_FILE) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]]]:
-    """The list as two maps per partition: whole services and single entity types, each to the reason it is listed.
-
-    A malformed file stops the import: a list that is silently partial would call endpoints it should not.
-    """
-    data = json.loads(path.read_text())
-    services: dict[str, dict[str, str]] = {}
+def _unavailable_from_manifest(
+    entries: list[dict],
+) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]]]:
+    """Two maps per partition, from the entries' ``not_offered`` blocks: single entity types, and whole services (a
+    service all of whose manifest entries carry the block), each to the reason it is listed."""
     entities: dict[str, dict[str, str]] = {}
-    for partition, block in data["partitions"].items():
-        services[partition], entities[partition] = {}, {}
-        for item in block["entries"]:
-            if item.get("method") not in _METHODS or not all(item.get(k) for k in ("description", "evidence", "date")):
-                raise ValueError(f"{path.name}: an entry in {partition} lacks a description, method, evidence or date: {item}")
-            if ("service" in item) == ("entity_type" in item):
-                raise ValueError(f"{path.name}: an entry in {partition} must name exactly one of service and entity_type")
-            target, key = (services, item["service"]) if "service" in item else (entities, item["entity_type"])
-            target[partition][key] = item["description"]
+    for entry in entries:
+        for partition, block in (entry.get("not_offered") or {}).items():
+            entities.setdefault(partition, {})[entry["entity_type"]] = block["why"]
+    services: dict[str, dict[str, str]] = {p: dict(m) for p, m in _NON_MANIFEST_UNAVAILABLE.items()}
+    by_service: dict[str, list[dict]] = {}
+    for entry in entries:
+        by_service.setdefault(entry["service"], []).append(entry)
+    for service, members in by_service.items():
+        for partition in entities:
+            if all(partition in (m.get("not_offered") or {}) for m in members):
+                services.setdefault(partition, {})[service] = members[0]["not_offered"][partition]["why"]
     return services, entities
 
 
-_UNAVAILABLE_SERVICES, _UNAVAILABLE_ENTITIES = _load_unavailable()
+_UNAVAILABLE_SERVICES, _UNAVAILABLE_ENTITIES = _unavailable_from_manifest(manifest_entries())
 
 
 @dataclass(frozen=True)

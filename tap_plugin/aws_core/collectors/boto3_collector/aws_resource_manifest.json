@@ -355,6 +355,14 @@
       "entity_type": "aws_core__aws_cloudfront_distribution",
       "service": "cloudfront",
       "scope": "global",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "Amazon CloudFront is not offered in AWS GovCloud (US); a GovCloud account cannot list distributions. Distributions that front GovCloud resources live in a commercial account.",
+          "method": "web",
+          "evidence": "AWS GovCloud (US) User Guide, Setting Up Amazon CloudFront with Your AWS GovCloud (US) Resources",
+          "date": "2026-09-28"
+        }
+      },
       "source": { "custom_fn": "cloudfront_distributions_with_oac" },
       "why": "Enumerate CloudFront distributions — CDN/edge entry points and their origins. Each origin's Origin Access Control (OAC) is resolved and embedded in configuration.",
       "persist_configuration": false,
@@ -10217,6 +10225,14 @@
       "entity_type": "aws_core__aws_notifications_notification_configuration",
       "service": "notifications",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No notifications endpoint resolves in AWS GovCloud (US): every notifications entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListNotificationConfigurations"
       },
@@ -11917,6 +11933,14 @@
       "entity_type": "aws_core__aws_wellarchitected_agent_profile",
       "service": "wellarchitected",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "The wellarchitected endpoint that serves this entry does not resolve in AWS GovCloud (US) (EndpointConnectionError in wave 0); the service's other entries (lens, review_template, workload) are served.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListAgentProfiles"
       },
@@ -12796,6 +12820,14 @@
       "entity_type": "aws_core__aws_datazone_domain",
       "service": "datazone",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No datazone endpoint resolves in AWS GovCloud (US): every datazone entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListDomains"
       },
@@ -14227,6 +14259,14 @@
       "entity_type": "aws_core__aws_internetmonitor_monitor",
       "service": "internetmonitor",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No internetmonitor endpoint resolves in AWS GovCloud (US): every internetmonitor entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListMonitors"
       },
@@ -15344,6 +15384,14 @@
       "entity_type": "aws_core__aws_kinesisvideo_signaling_channel",
       "service": "kinesisvideo",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No kinesisvideo endpoint resolves in AWS GovCloud (US): every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListSignalingChannels"
       },
@@ -15385,6 +15433,14 @@
       "entity_type": "aws_core__aws_kinesisvideo_stream",
       "service": "kinesisvideo",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No kinesisvideo endpoint resolves in AWS GovCloud (US): every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListStreams"
       },
@@ -21726,6 +21782,14 @@
       "entity_type": "aws_core__aws_notifications_event_rule",
       "service": "notifications",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No notifications endpoint resolves in AWS GovCloud (US): every notifications entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListEventRules",
         "per": {
@@ -21765,6 +21829,14 @@
       "entity_type": "aws_core__aws_qbusiness_data_accessor",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListDataAccessors",
         "per": {
@@ -25599,6 +25671,14 @@
       "entity_type": "aws_core__aws_wellarchitected_agent_context",
       "service": "wellarchitected",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "The wellarchitected endpoint that serves this entry does not resolve in AWS GovCloud (US) (EndpointConnectionError in wave 0); the service's other entries (lens, review_template, workload) are served.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListAgentContexts",
         "per": {
@@ -25662,6 +25742,14 @@
       "entity_type": "aws_core__aws_wellarchitected_agent_goal",
       "service": "wellarchitected",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "The wellarchitected endpoint that serves this entry does not resolve in AWS GovCloud (US) (EndpointConnectionError in wave 0); the service's other entries (lens, review_template, workload) are served.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListAgentGoals",
         "per": {
@@ -27235,6 +27323,14 @@
       "entity_type": "aws_core__aws_timestream_influx_db_backup",
       "service": "timestream-influxdb",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No timestream-influxdb endpoint resolves in AWS GovCloud (US): every timestream-influxdb entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListDbBackups"
       },
@@ -27276,6 +27372,14 @@
       "entity_type": "aws_core__aws_timestream_influx_db_cluster",
       "service": "timestream-influxdb",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No timestream-influxdb endpoint resolves in AWS GovCloud (US): every timestream-influxdb entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListDbClusters"
       },
@@ -27317,6 +27421,14 @@
       "entity_type": "aws_core__aws_timestream_influx_db_instance",
       "service": "timestream-influxdb",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No timestream-influxdb endpoint resolves in AWS GovCloud (US): every timestream-influxdb entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListDbInstances"
       },
@@ -30129,6 +30241,14 @@
       "entity_type": "aws_core__aws_ecr_public_repository",
       "service": "ecr-public",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No ecr-public endpoint resolves in AWS GovCloud (US): every ecr-public entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "DescribeRepositories"
       },
@@ -32235,6 +32355,14 @@
       "entity_type": "aws_core__aws_cloudwatch_omni_dashboard",
       "service": "cloudwatchomni",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No cloudwatchomni endpoint resolves in AWS GovCloud (US): every cloudwatchomni entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListOmniDashboards",
         "per": {
@@ -33583,6 +33711,14 @@
       "entity_type": "aws_core__aws_kendraranking_execution_plan",
       "service": "kendra-ranking",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No kendra-ranking endpoint resolves in AWS GovCloud (US): every kendra-ranking entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListRescoreExecutionPlans"
       },
@@ -37150,6 +37286,14 @@
       "entity_type": "aws_core__aws_qbusiness_application",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListApplications"
       },
@@ -37194,6 +37338,14 @@
       "entity_type": "aws_core__aws_qbusiness_index",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListIndices",
         "per": {
@@ -37245,6 +37397,14 @@
       "entity_type": "aws_core__aws_qbusiness_data_source",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListDataSources",
         "per": {
@@ -37304,6 +37464,14 @@
       "entity_type": "aws_core__aws_qbusiness_plugin",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListPlugins",
         "per": {
@@ -37355,6 +37523,14 @@
       "entity_type": "aws_core__aws_qbusiness_retriever",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListRetrievers",
         "per": {
@@ -37406,6 +37582,14 @@
       "entity_type": "aws_core__aws_qbusiness_web_experience",
       "service": "qbusiness",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "No qbusiness endpoint resolves in AWS GovCloud (US): every qbusiness entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "method": "ran",
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
+          "date": "2026-11-02"
+        }
+      },
       "source": {
         "aws_op": "ListWebExperiences",
         "per": {
