@@ -29,7 +29,7 @@ def _entry(entity: str) -> dict:
 class TestTheList:
     @pytest.mark.spec("req-aws-collector-partition-8")
     def test_govcloud_lists_the_twenty_two_entries_of_the_wave_0_record_and_the_two_named_services(self):
-        listed = [e for e in _ENTRIES.values() if entry_unavailable_reason(PARTITION_US_GOV, e)]
+        listed = [e for e in _ENTRIES.values() if entry_unavailable_reason(PARTITION_US_GOV, e, None, False)]
         assert {e["service"] for e in listed} == _WHOLE | {"cloudfront", "wellarchitected"}
         assert len([e for e in listed if e["service"] in _WHOLE]) == 19
         assert {e["entity_type"].removeprefix("aws_core__aws_") for e in listed if e["service"] == "wellarchitected"} == _AGENT
@@ -120,13 +120,13 @@ class TestRegionsAndFips:
         for entry in _entries_of("schemas"):
             assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", True)
             assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", False) is None
-            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", None) is None
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", None) is None, "unknown is not guessed at"
 
     @pytest.mark.spec("req-aws-collector-partition-15")
     def test_kinesisvideo_is_skipped_unless_fips_is_on(self):
         for entry in _entries_of("kinesisvideo"):
             assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", False)
-            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", None)
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", None) is None, "unknown is not guessed at"
             assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", True) is None
 
     @pytest.mark.spec("req-aws-collector-partition-15")

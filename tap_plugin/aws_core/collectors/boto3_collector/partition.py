@@ -119,10 +119,13 @@ def _unconditional(block: dict) -> bool:
 
 def _block_applies(block: dict, region: str | None, fips: bool | None) -> bool:
     """Whether a block holds for this region and FIPS setting. ``regions`` limits it to the regions named (a call with
-    no region in hand is not covered); ``fips`` limits it to runs with FIPS endpoints on (``true``) or off (``false``)."""
+    no region in hand is not covered); ``fips`` limits it to runs with FIPS endpoints on (``true``) or off (``false``).
+    An unknown setting (``None``) is not guessed at: a block limited by FIPS does not apply, and the entry is called.
+    The collector always passes the effective setting (``credentials.fips_requested`` resolves the secret, the
+    environment and the shared config to a boolean)."""
     if "regions" in block and (region is None or region not in block["regions"]):
         return False
-    return not ("fips" in block and bool(fips) != block["fips"])
+    return not ("fips" in block and (fips is None or fips != block["fips"]))
 
 
 def _unavailable_from_manifest(
