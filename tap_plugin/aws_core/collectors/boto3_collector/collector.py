@@ -179,6 +179,16 @@ _DOCS = (
 )
 
 
+def enrich_item(block: dict[str, Any], item: Any, *, service: str, client_for: Any) -> dict[str, Any]:
+    """The detail call of one listed resource (``req-aws-collector-enrich-1``): the slot that goes under
+    ``_hydrate.detail``, with the status of any hydrate slot. Parameters are read off the listed item."""
+    call_kwargs: dict[str, Any] = {}
+    for name, spec in block["params"].items():
+        call_kwargs[name] = spec["literal"] if "literal" in spec else eval_path(item, spec["from"])
+    env = hydrate_item(client_for(service), {}, [{"key": "detail", "op": block["op"], "why": block["why"]}], call_kwargs=call_kwargs)
+    return env["_hydrate"]["detail"]
+
+
 def resolve_node_tags(
     entry: dict[str, Any],
     item: Any,
@@ -845,6 +855,10 @@ class Boto3Collector(CollectorBase):
                         if tag_slot is not None:
                             node.configuration.setdefault("_hydrate", {})["tags"] = tag_slot
                             node.configuration.setdefault("_hydrate_mapping", {})["tags"] = tag_mapping
+                        if entry.get("enrich"):
+                            node.configuration.setdefault("_hydrate", {})["detail"] = enrich_item(
+                                entry["enrich"], item, service=entry["service"], client_for=client_factory(session, region)
+                            )
                         node_envelopes.append(
                             node_envelope(
                                 node,

@@ -49,6 +49,25 @@
           "items": { "$ref": "#/$defs/hydrate_op" }
         },
         "tags": { "$ref": "#/$defs/tags_block" },
+        "enrich": {
+          "description": "One detail call per listed resource, run after the listing, for a type whose list call returns a summary and whose Describe/Get call returns more (req-aws-collector-enrich-1). The response is stored under configuration._hydrate.detail with the same ok|absent|denied|error status as any hydrate slot, and the declared secret paths of the response are removed before storage like any other.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op", "params", "why"],
+          "properties": {
+            "op": { "type": "string", "minLength": 1 },
+            "params": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": { "from": { "type": "string", "minLength": 1 }, "literal": {} }
+              }
+            },
+            "why": { "type": "string", "minLength": 1 }
+          }
+        },
         "edges": {
           "type": "array",
           "items": { "$ref": "#/$defs/edge_rule" }

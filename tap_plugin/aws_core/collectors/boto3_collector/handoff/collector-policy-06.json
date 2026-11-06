@@ -1,0 +1,290 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadMediaconvert",
+      "Effect": "Allow",
+      "Action": [
+        "mediaconvert:ListJobTemplates",
+        "mediaconvert:ListPresets",
+        "mediaconvert:ListQueues",
+        "mediaconvert:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadMemorydb",
+      "Effect": "Allow",
+      "Action": [
+        "memorydb:DescribeAcls",
+        "memorydb:DescribeClusters",
+        "memorydb:DescribeMultiRegionClusters",
+        "memorydb:DescribeParameterGroups",
+        "memorydb:DescribeSnapshots",
+        "memorydb:DescribeSubnetGroups",
+        "memorydb:DescribeUsers",
+        "memorydb:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadMgn",
+      "Effect": "Allow",
+      "Action": [
+        "mgn:DescribeLaunchConfigurationTemplates",
+        "mgn:DescribeReplicationConfigurationTemplates",
+        "mgn:GetNetworkMigrationDefinition",
+        "mgn:ListConnectors",
+        "mgn:ListNetworkMigrationDefinitions",
+        "mgn:ListWaves"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadMobiletargeting",
+      "Effect": "Allow",
+      "Action": [
+        "mobiletargeting:GetApps",
+        "mobiletargeting:GetCampaigns",
+        "mobiletargeting:GetSegments",
+        "mobiletargeting:ListTemplates"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadMq",
+      "Effect": "Allow",
+      "Action": [
+        "mq:DescribeBroker",
+        "mq:ListBrokers",
+        "mq:ListConfigurations",
+        "mq:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadNetworkFirewall",
+      "Effect": "Allow",
+      "Action": [
+        "network-firewall:DescribeFirewall",
+        "network-firewall:ListContainerAssociations",
+        "network-firewall:ListFirewallPolicies",
+        "network-firewall:ListFirewalls",
+        "network-firewall:ListRuleGroups",
+        "network-firewall:ListTLSInspectionConfigurations",
+        "network-firewall:ListTagsForResource",
+        "network-firewall:ListVpcEndpointAssociations"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadNetworkmanager",
+      "Effect": "Allow",
+      "Action": [
+        "networkmanager:DescribeGlobalNetworks",
+        "networkmanager:GetCoreNetwork",
+        "networkmanager:GetDevices",
+        "networkmanager:GetLinks",
+        "networkmanager:GetSites",
+        "networkmanager:ListAttachments",
+        "networkmanager:ListConnectPeers",
+        "networkmanager:ListCoreNetworks",
+        "networkmanager:ListPeerings"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadNotifications",
+      "Effect": "Allow",
+      "Action": [
+        "notifications:ListEventRules",
+        "notifications:ListNotificationConfigurations",
+        "notifications:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadOam",
+      "Effect": "Allow",
+      "Action": [
+        "oam:GetLink",
+        "oam:ListLinks",
+        "oam:ListSinks",
+        "oam:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadOrganizations",
+      "Effect": "Allow",
+      "Action": [
+        "organizations:DescribeOrganization",
+        "organizations:DescribePolicy",
+        "organizations:ListAWSServiceAccessForOrganization",
+        "organizations:ListAccounts",
+        "organizations:ListAccountsForParent",
+        "organizations:ListDelegatedAdministrators",
+        "organizations:ListDelegatedServicesForAccount",
+        "organizations:ListOrganizationalUnitsForParent",
+        "organizations:ListPolicies",
+        "organizations:ListRoots",
+        "organizations:ListTagsForResource",
+        "organizations:ListTargetsForPolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadOsis",
+      "Effect": "Allow",
+      "Action": [
+        "osis:GetPipeline",
+        "osis:ListPipelines"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadOutposts",
+      "Effect": "Allow",
+      "Action": [
+        "outposts:ListOutposts",
+        "outposts:ListSites"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadPolly",
+      "Effect": "Allow",
+      "Action": [
+        "polly:ListLexicons"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadQbusiness",
+      "Effect": "Allow",
+      "Action": [
+        "qbusiness:GetApplication",
+        "qbusiness:ListApplications",
+        "qbusiness:ListDataAccessors",
+        "qbusiness:ListDataSources",
+        "qbusiness:ListIndices",
+        "qbusiness:ListPlugins",
+        "qbusiness:ListRetrievers",
+        "qbusiness:ListTagsForResource",
+        "qbusiness:ListWebExperiences"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadQuicksight",
+      "Effect": "Allow",
+      "Action": [
+        "quicksight:ListActionConnectors",
+        "quicksight:ListAgents",
+        "quicksight:ListAnalyses",
+        "quicksight:ListApprovalPolicies",
+        "quicksight:ListBrands",
+        "quicksight:ListCustomPermissions",
+        "quicksight:ListDashboards",
+        "quicksight:ListDataSets",
+        "quicksight:ListDataSources",
+        "quicksight:ListDlpSettings",
+        "quicksight:ListFlows",
+        "quicksight:ListFolders",
+        "quicksight:ListGroups",
+        "quicksight:ListKnowledgeBases",
+        "quicksight:ListLimitsProfiles",
+        "quicksight:ListNamespaces",
+        "quicksight:ListOAuthClientApplications",
+        "quicksight:ListRefreshSchedules",
+        "quicksight:ListSpaces",
+        "quicksight:ListTagsForResource",
+        "quicksight:ListTemplates",
+        "quicksight:ListThemes",
+        "quicksight:ListTopics",
+        "quicksight:ListVPCConnections"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRam",
+      "Effect": "Allow",
+      "Action": [
+        "ram:GetResourceShares",
+        "ram:ListPermissions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRbin",
+      "Effect": "Allow",
+      "Action": [
+        "rbin:ListRules",
+        "rbin:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRds",
+      "Effect": "Allow",
+      "Action": [
+        "rds:DescribeBlueGreenDeployments",
+        "rds:DescribeDBClusterEndpoints",
+        "rds:DescribeDBClusterParameterGroups",
+        "rds:DescribeDBClusterSnapshotAttributes",
+        "rds:DescribeDBClusterSnapshots",
+        "rds:DescribeDBClusters",
+        "rds:DescribeDBInstances",
+        "rds:DescribeDBParameterGroups",
+        "rds:DescribeDBProxies",
+        "rds:DescribeDBProxyEndpoints",
+        "rds:DescribeDBProxyTargetGroups",
+        "rds:DescribeDBSecurityGroups",
+        "rds:DescribeDBShardGroups",
+        "rds:DescribeDBSnapshotAttributes",
+        "rds:DescribeDBSnapshots",
+        "rds:DescribeDBSubnetGroups",
+        "rds:DescribeEventSubscriptions",
+        "rds:DescribeGlobalClusters",
+        "rds:DescribeIntegrations",
+        "rds:DescribeOptionGroups",
+        "rds:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRedshift",
+      "Effect": "Allow",
+      "Action": [
+        "redshift:DescribeClusterSecurityGroups",
+        "redshift:DescribeClusters",
+        "redshift:DescribeEndpointAccess",
+        "redshift:DescribeIntegrations",
+        "redshift:DescribeQev2IdcApplications",
+        "redshift:DescribeRedshiftIdcApplications",
+        "redshift:DescribeScheduledActions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRedshiftServerless",
+      "Effect": "Allow",
+      "Action": [
+        "redshift-serverless:ListNamespaces",
+        "redshift-serverless:ListSnapshots",
+        "redshift-serverless:ListTagsForResource",
+        "redshift-serverless:ListWorkgroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRekognition",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:DescribeProjects",
+        "rekognition:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

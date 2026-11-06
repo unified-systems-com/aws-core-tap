@@ -113,3 +113,20 @@ landed account equals `expected_account_id`.
 
 > Never commit a real `*.secret.json`. Secret material (base keys, External ID)
 > is redacted in all collector logs and errors.
+
+## The collector's own policy (instead of SecurityAudit + ReadOnlyAccess)
+
+`collector-policy-01.json` … `collector-policy-NN.json` are generated from what the collector can call: every
+operation the manifest names (list, per-parent, tag, hydrate, detail), the operations its Python makes, mapped to IAM
+actions through AWS's Service Authorization Reference. They are read-only; an explicit `Deny` in the first file
+(`NeverReturnSecretsOrContents`) blocks the actions that return secret values or the contents of a resource, so no
+other policy on the role can grant them. Regenerate after any manifest change:
+
+    uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh   # network; AWS's reference
+    uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --write
+
+Attach them with `cross-account-role-custom.tf` (Terraform) or `create-collector-policies.sh` (any other tool; the
+documents together exceed CloudFormation's inline template limit). IAM allows ten managed policies on a role by
+default; the set uses nine. `iam_policy.unverified()` lists the operations whose action name is the default
+`<prefix>:<Operation>` because AWS's reference data does not name one; they are checked by the policy simulator,
+not yet by a live round trip with the role.
