@@ -53,29 +53,53 @@ def request_host(
     gives ``None``: unknown, never a guess. The host is the one the real call would use; a prefix that is a placeholder
     (``{AccountId}.``) takes the value of the parameter it names, so an operation that needs one it lacks gives ``None``.
     """
-    import boto3
-    from botocore import UNSIGNED, xform_name
-    from botocore.awsrequest import AWSResponse
-    from .credentials import client_config
-
-    seen: list[str] = []
-
-    def stop(request: Any, **_kw: Any) -> AWSResponse:
-        host = urlparse(request.url).hostname
-        if host:
-            seen.append(host)
-        return AWSResponse(request.url, 200, {}, _Raw(b"{}"))
+    from botocore import xform_name
 
     # Only the host matters; a parse or validation failure after the request is built is not ours to report.
+    seen: list[str] = []
     with contextlib.suppress(Exception):
+        client, seen = _client(service, region, use_fips)
+        seen.clear()
+        # The canned response does not parse, so the call raises after the request was built and the host was seen.
+        getattr(client, xform_name(operation))(**(params or {}))
+    return seen[0] if seen else None
+
+
+#: One unsigned client per (service, region, FIPS) for the life of the process. Building a client loads the service's
+#: model and is the cost (about 100 ms); building the request for another operation of the same client is not. A
+#: collection that probes hundreds of entries would otherwise spend a minute here.
+_CLIENTS: dict[tuple[str, str, bool | None], tuple[Any, list[str]]] = {}
+
+
+def clear_cache() -> None:
+    """Forget the clients (tests that watch client construction)."""
+    _CLIENTS.clear()
+
+
+def _client(service: str, region: str, use_fips: bool | None) -> tuple[Any, list[str]]:
+    key = (service, region, use_fips)
+    if key not in _CLIENTS:
+        import boto3
+        from botocore import UNSIGNED
+        from botocore.awsrequest import AWSResponse
+        from .credentials import client_config
+
+        seen: list[str] = []
+
+        def stop(request: Any, **_kw: Any) -> AWSResponse:
+            host = urlparse(request.url).hostname
+            if host:
+                seen.append(host)
+            return AWSResponse(request.url, 200, {}, _Raw(b"{}"))
+
         session = boto3.session.Session(region_name=region)
         # The package's one client configuration; nothing is sent, so its timeouts and retries never apply. Unsigned: the
         # request is only built, so no credential of any kind is needed or read.
         config = client_config(signature_version=UNSIGNED, **({} if use_fips is None else {"use_fips_endpoint": use_fips}))
         client = session.client(service, region_name=region, config=config)
         client.meta.events.register("before-send", stop)
-        getattr(client, xform_name(operation))(**(params or {}))
-    return seen[0] if seen else None
+        _CLIENTS[key] = (client, seen)
+    return _CLIENTS[key]
 
 
 class EndpointProbe:

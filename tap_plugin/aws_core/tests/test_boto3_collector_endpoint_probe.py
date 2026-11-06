@@ -75,6 +75,8 @@ class TestEndpointProbe:
         # be asked to send it. It must never be.
         from botocore.httpsession import URLLib3Session
 
+        endpoint_probe.clear_cache()
+
         def refuse(self, request):
             raise AssertionError("the probe sent a request")
 
@@ -88,11 +90,32 @@ class TestEndpointProbe:
         # environment, profile, SSO or instance-metadata lookup).
         import botocore.session
 
+        endpoint_probe.clear_cache()
+
         def refuse(self, *args, **kwargs):
             raise AssertionError("the probe asked for credentials")
 
         monkeypatch.setattr(botocore.session.Session, "get_credentials", refuse)
         assert endpoint_probe.request_host("sts", "us-gov-west-1", "GetCallerIdentity") == "sts.us-gov-west-1.amazonaws.com"
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_one_client_serves_every_operation_of_a_service(self, monkeypatch):
+        # Building a client is the cost (about 100 ms); a collection probes hundreds of entries.
+        import boto3.session
+
+        endpoint_probe.clear_cache()
+        built = []
+        real = boto3.session.Session.client
+
+        def counting(self, service_name, *args, **kwargs):
+            built.append(service_name)
+            return real(self, service_name, *args, **kwargs)
+
+        monkeypatch.setattr(boto3.session.Session, "client", counting)
+        for operation in ("DescribeVpcs", "DescribeSubnets", "DescribeSecurityGroups"):
+            assert endpoint_probe.request_host("ec2", "us-gov-west-1", operation) == "ec2.us-gov-west-1.amazonaws.com"
+        assert endpoint_probe.request_host("ec2", "us-gov-east-1", "DescribeVpcs") == "ec2.us-gov-east-1.amazonaws.com"
+        assert built == ["ec2", "ec2"], "one client per (service, region, FIPS)"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_resolver_that_does_not_answer_ends_the_probe_instead_of_stalling_the_run(self, monkeypatch):
