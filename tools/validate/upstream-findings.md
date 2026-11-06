@@ -1,0 +1,17 @@
+# Upstream findings
+
+Things the collector's live work has shown that look like faults or gaps in botocore or AWS, kept so they can be reported
+upstream. Each says what was seen, how (the method: ran, read or measured), and what is not known. **None has been
+reported, and none has been checked against existing upstream issues.** Versions: botocore 1.43.123. Region
+`us-gov-west-1`, FIPS off, from the stack's container, 2026-11-04. No account number or resource name belongs here.
+
+| # | Where | Observed | Method | Not known |
+| --- | --- | --- | --- | --- |
+| U1 | botocore | `client.meta.endpoint_url` is not the host a request is sent to. Of 142 services probed (the first call-able operation of each manifest service), 3 disagree: `kinesisvideo` reports `kinesisvideo-fips.…` and sends to `kinesisvideo.…` with FIPS off; `internetmonitor` reports `….api.aws` and sends to `….amazonaws.com`; `wellarchitected` reports its main host and sends the agent operations to `wellarchitected-agent.…`. | Ran: the request was built and stopped at the `before-send` event (`tap_plugin/aws_core/collectors/boto3_collector/endpoint_probe.py`) and its URL compared with `meta.endpoint_url`; for Kinesis Video the real client's `before-send` URL and its connection error both name the non-FIPS host. | Whether this is the legacy endpoint data being read for `meta.endpoint_url` while the endpoint rule set decides the request (our reading, not confirmed in the source), and whether it is documented or already reported. |
+| U2 | botocore endpoint data | botocore lists `qbusiness`, `datazone`, `internetmonitor`, `kendra-ranking` and `notifications` as having `aws-us-gov` endpoints (`*.api.aws` hosts), but the hosts do not resolve. | Ran: DNS lookup of each host from the container; wave 0 (`runs/wave0-2026-11-02.json`) saw `EndpointConnectionError` for every call to them. | Whether AWS has not launched them in GovCloud, whether the records exist only inside a GovCloud VPC or behind a different resolver, or whether botocore is ahead of the service. |
+| U3 | AWS / botocore | The Well-Architected agent operations (`ListAgentProfiles`, and the agent context and goal operations) are in the GovCloud service model and routed to `wellarchitected-agent.us-gov-west-1.amazonaws.com`, which does not resolve; a call fails after 42 seconds. The service's other operations (`ListLenses`, 0.2 s) work. | Ran: one read-only call each with the collector's own identity; DNS lookup of the agent host. | Whether the agent operations are meant to be offered in GovCloud. |
+| U4 | AWS | Inspector Classic's GovCloud endpoint did not answer: a single entry cost 312 seconds of the 2026-11-01 wave 0 run at botocore's default timeouts (`credentials.py`, `CONNECT_TIMEOUT_SECONDS`). | Measured: `runs/wave0-2026-11-01.json`. | Whether the service is retired there, and whether botocore should still ship the endpoint. |
+| U5 | AWS (ECS) | `DescribeTaskSets` refuses a call whose task-set list is empty, so a service with no task set cannot be read with the same call that reads one that has. | Ran: reproduced by hand with the collector's identity; fixed in the collector (#196, `ecs_task_set`). | Whether this is intended; the exact error text is in that PR. |
+
+The collector's answer to U1 to U3 is to resolve the host a call would use (`req-aws-collector-partition-13`) and to
+mark entries it cannot reach in the manifest (`not_offered`, `req-aws-collector-partition-7`).

@@ -97,6 +97,7 @@ from .credentials import (
 )
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
+from .endpoint_probe import EndpointProbe, request_host
 from .hydrate import hydrate_item
 from .identity import IdentityError
 from .landing_zone import LandingZoneRead, collect_landing_zone
@@ -105,7 +106,7 @@ from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
 from .outcomes import NOT_CONFIGURED, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify
 from .organizations import OrganizationTree, collect_organization, organizations_client
-from .partition import PARTITION_AWS, service_unavailable_reason
+from .partition import PARTITION_AWS, entry_unavailable_reason
 from .paths import eval_path
 from .progress import Progress
 from .projection import ProjectionError, project_item
@@ -157,6 +158,9 @@ _SITE_ADDRESSING = "7f5b"
 _SITE_ENTRY_NOT_CONFIGURED = "d4e8"
 _SITE_ENTRY_THROTTLED = "a9c3"
 _SITE_SELECTION_APPLIED = "5e1c"
+_SITE_GAP_LEARNED = "b81d"
+_SITE_LIST_STALE = "e07a"
+_SITE_PROBE_SUMMARY = "8c2f"
 _SITE_EDGES_NOT_SELECTED = "c47e"
 _SITE_ABORT_SELECTION = "d2a9"
 _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
@@ -404,6 +408,80 @@ class Boto3Collector(CollectorBase):
             },
         )
 
+    @staticmethod
+    def _probe_target(entry: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+        """The operation and parameters to build a request from, for an entry one call can read: no parent to fan out
+        from and no custom function. Anything else cannot be probed, and the probe says nothing."""
+        source = entry.get("source") or {}
+        if "aws_op" not in source or "per" in source or "bind" in source:
+            return None
+        return str(source["aws_op"]), dict(source.get("params") or {})
+
+    def _entry_host(self, entry: dict[str, Any], region: str, fips: bool | None) -> str | None:
+        target = self._probe_target(entry)
+        if target is None:
+            return None
+        # Building the request costs a client; an operation's host is worked out once per run.
+        key = (entry["service"], region, target[0], json.dumps(target[1], sort_keys=True, default=str), fips)
+        cache = self.__dict__.setdefault("_host_cache", {})
+        if key not in cache:
+            cache[key] = request_host(entry["service"], region, target[0], target[1], use_fips=fips)
+        return cache[key]
+
+    def _check_listed_host(
+        self, probe: EndpointProbe, entry: dict[str, Any], regions: list[str], partition: str, fips: bool | None
+    ) -> None:
+        """An entry the manifest marks not offered whose host now resolves in any region of the run: the claim may no
+        longer hold there. A claim is made for the partition on evidence from one region and one FIPS setting, so every
+        selected region is checked (not only the first); a host is reported once per entry."""
+        if not probe.usable:  # DNS here cannot be trusted: build nothing
+            return
+        reported: set[str] = set()
+        probed = False
+        for region in regions:
+            host = self._entry_host(entry, region, fips)
+            if host is None:
+                continue
+            probed = True
+            if host not in reported and probe.resolves(host):
+                reported.add(host)
+                probe.stale += 1
+                self.record_warn(
+                    _SITE_LIST_STALE,
+                    "PARTITION_LIST_STALE",
+                    f"{entry['entity_type']} is marked not offered in partition {partition}, but the host its call would "
+                    f"use in {region}, {host}, resolves; re-run wave 0 with WAVE0_IGNORE_AVAILABILITY=1 to see whether it can be read.",
+                    message_data={"entity_type": entry["entity_type"], "service": entry["service"], "host": host, "region": region, "partition": partition},
+                )
+        if not probed:
+            probe.not_probed += 1
+
+    def _check_unlisted_host(
+        self, probe: EndpointProbe, entry: dict[str, Any], region: str, region_label: str, partition: str, fips: bool | None
+    ) -> None:
+        """A service the manifest does not mark whose host does not resolve: a gap nobody has listed. Each distinct host
+        of a service is checked (its operations can go to different hosts) and reported once per (service, region, host);
+        the entry is still called, as it was before the probe."""
+        if not probe.usable:  # DNS here cannot be trusted: build nothing
+            return
+        host = self._entry_host(entry, region, fips)
+        if host is None:
+            if entry["entity_type"] not in probe.unprobed:
+                probe.unprobed.add(entry["entity_type"])
+                probe.not_probed += 1
+            return
+        key = (entry["service"], region_label, host)
+        if probe.resolves(host) is False and key not in probe.reported:
+            probe.reported.add(key)
+            probe.gaps += 1
+            self.record_warn(
+                _SITE_GAP_LEARNED,
+                "PARTITION_GAP_LEARNED",
+                f"{entry['service']} in {region_label}: the host {host} does not resolve in partition {partition}, and "
+                f"{entry['entity_type']} is not marked not offered. Add a not_offered block for it to the manifest.",
+                message_data={"entity_type": entry["entity_type"], "service": entry["service"], "region": region_label, "host": host, "partition": partition},
+            )
+
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
 
@@ -622,12 +700,19 @@ class Boto3Collector(CollectorBase):
                 (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
                 bucket.append(envelope)
 
+        # The endpoint probe (`req-aws-collector-partition-13`): a detector for the manifest's "not offered" claims, never a
+        # reason to skip. Its control host is STS's, which this run has already called.
+        fips = fips_requested(data)
+        probe = EndpointProbe(request_host("sts", regions[0], "GetCallerIdentity", use_fips=fips))
+        listed_checked: set[str] = set()
+        listed_checked_regions: set[tuple[str, str]] = set()
+        # The footprints are built; read the entries.
         progress = Progress(len(entries))
         progress.start(regions=len(regions), partition=partition, selected_run=selected_run)
         for done, entry in enumerate(entries):
             progress.tick(done, entry, nodes=len(node_envelopes), edges=len(edge_envelopes))
             # A service the partition does not offer is a clear result, not a failed call.
-            not_offered = service_unavailable_reason(partition, entry["service"])
+            not_offered = entry_unavailable_reason(partition, entry, None, fips)
             if not_offered:
                 unavailable += 1
                 self.record_info(
@@ -640,16 +725,44 @@ class Boto3Collector(CollectorBase):
                         "partition": partition,
                     },
                 )
+                if entry["entity_type"] not in listed_checked:
+                    listed_checked.add(entry["entity_type"])
+                    entry_regions_for_probe = regions if entry["scope"] == "regional" else [regions[0]]
+                    self._check_listed_host(probe, entry, entry_regions_for_probe, partition, fips)
                 continue
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
             contained = entry.get("containment")
             for region in entry_regions:
                 region_label = region if entry["scope"] == "regional" else "global"
+                # A block limited to some regions of the partition (offered in gov-west, not in gov-east).
+                region_reason = (
+                    entry_unavailable_reason(partition, entry, region, fips)
+                    if "regions" in ((entry.get("not_offered") or {}).get(partition) or {})
+                    else None
+                )
+                if region_reason:
+                    unavailable += 1
+                    self.record_info(
+                        _SITE_SERVICE_UNAVAILABLE,
+                        "SERVICE_NOT_AVAILABLE_IN_PARTITION",
+                        f"{entry['entity_type']} in {region_label}: not available in partition {partition} — {region_reason}",
+                        message_data={
+                            "entity_type": entry["entity_type"],
+                            "service": entry["service"],
+                            "partition": partition,
+                            "region": region_label,
+                        },
+                    )
+                    if (entry["entity_type"], region) not in listed_checked_regions:
+                        listed_checked_regions.add((entry["entity_type"], region))
+                        self._check_listed_host(probe, entry, [region], partition, fips)
+                    continue
                 dimensions = {
                     "cloud": "aws",
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
+                self._check_unlisted_host(probe, entry, region, region_label, partition, fips)
                 region_facts = facts[region]
                 if entry["scope"] == "regional" and region_facts.status == STATUS_DISABLED:
                     # Positively known not opted in: no call would be honoured, and an "empty" answer
@@ -865,6 +978,26 @@ class Boto3Collector(CollectorBase):
                             listing=listing,
                         )
                     )
+
+        # One line that says whether the probe could speak: a run that found nothing and a run whose DNS could not be trusted
+        # would otherwise look the same (`req-aws-collector-partition-13`).
+        self.record_info(
+            _SITE_PROBE_SUMMARY,
+            "ENDPOINT_PROBE",
+            (
+                f"Endpoint probe: {probe.hosts_checked} host(s) checked, {probe.gaps} unmarked gap(s), "
+                f"{probe.stale} marked entr(ies) now resolving, {probe.not_probed} entr(ies) it could not probe."
+                if probe.usable
+                else "Endpoint probe disabled for this run: the control host did not resolve, so DNS here cannot be believed."
+            ),
+            message_data={
+                "usable": probe.usable,
+                "hosts_checked": probe.hosts_checked,
+                "gaps": probe.gaps,
+                "stale": probe.stale,
+                "not_probed": probe.not_probed,
+            },
+        )
 
         # --- AWS Organizations tree (req-aws-core-organizations-collect, tap-plugin-aws-core#50) ---
         # One structure, not a per-account resource list, so it is its own read rather than a

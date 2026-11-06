@@ -777,8 +777,14 @@ class TestCollectorRunInGovCloud:
 
         # CloudFront: a clear "not available in this partition" result — not a skipped-with-error warn.
         info = [e for e in collector.results["info"] if e["message_code"] == "SERVICE_NOT_AVAILABLE_IN_PARTITION"]
-        assert [e["message_data"]["service"] for e in info] == ["cloudfront"]
-        assert "not available in partition aws-us-gov" in info[0]["message"]
+        # The 22 entries wave 0 could not reach are on the list as well (req-aws-collector-partition-8), except the two
+        # kinesisvideo entries, which resolve at their FIPS host and are skipped only with FIPS endpoints off. This run
+        # has FIPS on, so the 19 entries of the services with no FIPS endpoint in either GovCloud region are skipped too
+        # (req-aws-collector-partition-15): 23 - 2 + 19.
+        cloudfront = [e for e in info if e["message_data"]["service"] == "cloudfront"]
+        assert len(cloudfront) == 1 and len(info) == 40
+        assert not [e for e in info if e["message_data"]["service"] == "kinesisvideo"]
+        assert "not available in partition aws-us-gov" in cloudfront[0]["message"]
         assert not [
             w for w in collector.results["warn"] if w["message_code"] == "ENTRY_SKIPPED" and "cloudfront" in w["message"]
         ]

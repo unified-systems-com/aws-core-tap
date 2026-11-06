@@ -70,6 +70,60 @@
           "propertyNames": { "pattern": "^_[A-Za-z][A-Za-z0-9_]*$" },
           "additionalProperties": { "type": "string", "minLength": 1 }
         },
+        "not_offered": {
+          "description": "Partitions in which the collector does not call this entry, because its service or the endpoint that serves it is not offered there (req-aws-collector-partition-7). Keyed by partition (aws, aws-us-gov); an entry absent from a partition is called there. Each partition carries why it is listed, how that was established (ran: a live call or a DNS lookup found no endpoint; web: an AWS page; read: offline data such as botocore's endpoint rules; inferred), the evidence and the date it was established. A service is marked on every one of its entries only when none is served; a service served in part marks only the entries it does not serve. A block may be limited to some regions of the partition (`regions`) or to FIPS runs on or off (`fips`); the collector then skips the entry only in those regions or that setting (req-aws-collector-partition-15).",
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(aws|aws-us-gov)$": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "why",
+                "method",
+                "evidence",
+                "date"
+              ],
+              "properties": {
+                "why": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Why the entry is not called in this partition."
+                },
+                "method": {
+                  "enum": [
+                    "ran",
+                    "web",
+                    "read",
+                    "inferred"
+                  ],
+                  "description": "How it was established."
+                },
+                "evidence": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The record, page or data that shows it."
+                },
+                "date": {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                  "description": "The day it was established (YYYY-MM-DD)."
+                },
+          "regions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Limits the block to these regions of the partition (a service offered in one GovCloud region and not the other). Absent: every region."
+          },
+          "fips": {
+            "type": "boolean",
+            "description": "Limits the block to runs with FIPS endpoints on (true) or off (false), for a service whose host exists only at its FIPS or only at its standard endpoint. Absent: either."
+          }
+              }
+            }
+          }
+        },
         "name_tag": {
           "description": "The tag whose value names the node (usually 'Name'), when the resource carries one. EC2-family resources have no name of their own; the human-set Name tag is the name every AWS console shows. Read from the entry's tags block (source 'field'), so it needs no extra call; when the resource has no such tag the projected 'name' field stands.",
           "type": "string",
