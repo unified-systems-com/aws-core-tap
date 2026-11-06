@@ -244,16 +244,17 @@ entry with a `credential` location, or any entry that persists while listing a
 location is surfaced to the person who requested the work, who decides it
 (the `add-aws-type` skill, step 1).
 
-An entry whose `sensitivity` has a `credential`
-location defaults to `persist_configuration: false`, and its
-`persist_configuration_why` names the credential location. An entry that lists a
-`credential` location and is persisted anyway is a **known, reviewed risk**: that
-is only allowed with a reason that names every such location, so the acceptance
-is visible where the decision is made. As shipped there are none — Lambda
-and CloudFront, API Gateway HTTP API and Cognito user pool are off, and a
-test fails if any credential-bearing entry is persisted. The canonical `tags`
-model field is persisted independently ([Resource Tags](#resource-tags)) and is
-not governed by `persist_configuration`.
+**Redaction (`req-aws-collector-redaction`).** The collector stores everything AWS returns and removes only obvious
+secret material: keys, passwords and credentials (George, 2026-11-05: the more data on the grid the better the map;
+a secret an operator typed into a tag, a description or a policy is the operator's). Every entry therefore sets
+`persist_configuration: true`. Two things are removed from a stored `configuration`: the paths the entry's
+`sensitivity.locations` mark `redact: true` (the members AWS itself marks sensitive, and the reviewed secrets such as
+`ClientSecret`, `PreSharedKey`, `UserData`), and any string whose key names a secret (`password`, `secret`, `private
+key`, `API key`, `token`) unless the key is a reference, flag, date or URL (`SecretArn`, `PasswordLastUsed`, `TokenUrl`).
+What was removed is listed under `_redacted`, so a reader can tell a withheld value from an absent one. Categories other
+than `credential` (customer content, free text, access policies, personal data) are never redacted. The contents of a
+resource (S3 objects, Parameter Store values, table items) are not collected at all, because no operation that reads
+them is made. The canonical `tags` model field is persisted independently ([Resource Tags](#resource-tags)).
 
 #### Acceptance Criteria
 
@@ -264,7 +265,7 @@ not governed by `persist_configuration`.
 | req-aws-collector-manifest-3 | Order Independent | Approved for Development | Collection results are identical regardless of manifest entry order. | Enabled by identity by natural key. |
 | req-aws-collector-manifest-4 | Versioned | Approved for Development | The manifest carries a version recorded in the GRIFT batch provenance. | Supports drift tracking. |
 | req-aws-collector-manifest-5 | Self-Describing Entries | Approved for Development | Each entry carries a `why`, and each `hydrate` element a `{key, op, why}`; the schema requires `why` so every collected call's rationale is authorable and visible in the manifest. | Materialized per-node (`_source`) so a grid object is legible without the manifest, for every entry that persists its configuration (`req-aws-collector-field-projection-7`). |
-| req-aws-collector-manifest-6 | Response Sensitivity Declared | Approved for Development | Every entry declares `sensitivity` in one of three states (`unreviewed`, `reviewed_none_known`, `reviewed_may_contain`); a missing declaration fails schema validation; `reviewed_may_contain` lists `{path, category, reason, evidence}` locations. | Ruling 2026-09-23. Credential locations default the entry to not persisting (see `req-aws-collector-field-projection-7`). `tests/test_boto3_collector_sensitivity.py`. |
+| req-aws-collector-manifest-6 | Response Sensitivity Declared | Approved for Development | Every entry declares `sensitivity` in one of three states (`unreviewed`, `reviewed_none_known`, `reviewed_may_contain`); a missing declaration fails schema validation; `reviewed_may_contain` lists `{path, category, reason, evidence}` locations. | Ruling 2026-09-23. A location may carry `redact: true` (see `req-aws-collector-redaction`). `tests/test_boto3_collector_sensitivity.py`. |
 | req-aws-collector-manifest-7 | Unreviewed Is Not Stored | Approved for Development | An entry whose `sensitivity.status` is `unreviewed` has `persist_configuration: false`; the manifest schema rejects an unreviewed entry that persists, so the manifest fails load. | Enforced in `aws_resource_manifest.schema.json` (entry `allOf`). `tests/test_boto3_collector_sensitivity.py::TestSchema::test_unreviewed_entry_that_persists_is_rejected`. |
 
 ### Source Primitive
@@ -483,6 +484,10 @@ custom origin header exists, never what it says.
 | req-aws-collector-field-projection-5 | One Canonical Timestamp | Approved for Development | All date input shapes normalize at collection into one ISO 8601 UTC envelope field; "created/updated after X" is one query, never per-resource spelunking. | Grid-native time is the always-present spine; AWS-source time is null where AWS omits it. |
 | req-aws-collector-field-projection-6 | Reserved Keys & Stable Blob | Approved for Development | `_source`/`_hydrate`/`_hydrate_mapping` are engine-reserved (not authored jsonpath targets); `ResponseMetadata` stripped; deterministic serialization ⇒ unchanged resource = byte-identical `configuration`. | Protects idempotent upsert + History/FLIP. Reserved keys are in-memory only for an entry whose `persist_configuration` is false. |
 | req-aws-collector-field-projection-7 | Per-Entry Configuration Persistence | Approved for Development | Each manifest entry's required `persist_configuration` boolean and non-empty `persist_configuration_why` decide whether the emitted node payload carries the in-memory envelope or `{}`; typed fields, tags and edges are unchanged either way; an entry with a `credential` sensitivity location defaults to false; an `unreviewed` entry is always false (`req-aws-collector-manifest-7`); no model field is removed and no migration is written. | `tests/test_boto3_collector_batch.py`, `tests/test_boto3_collector_slice.py::test_credential_canary_is_not_persisted`, `::test_s3_bucket_persists_its_configuration_with_posture`, `tests/test_boto3_collector_sensitivity.py`. |
+| req-aws-collector-redaction-1 | Everything Is Stored | Proposed | Every manifest entry has `persist_configuration: true`: a node's `configuration` carries the whole response, `_source`, `_hydrate` and `_hydrate_mapping`, less what `-2` and `-3` remove. | A test fails if any entry is off. The size and import time are measured on a full run. |
+| req-aws-collector-redaction-2 | Declared Secret Paths Are Removed | Proposed | A `sensitivity.locations` entry with `redact: true` names a path (the manifest's path dialect, `[]` to flatten) that is removed from the stored configuration. Only `credential` locations may be redacted. Every location AWS marks sensitive is redacted except four named non-secrets (an app client id, two claim names, a directory account name). | `tests/test_boto3_collector_sensitivity.py`: a canary planted at every redacted path of every entry is absent from what is stored. |
+| req-aws-collector-redaction-3 | Secret-Named Keys Are Scrubbed | Proposed | Any string value whose key names a secret is removed from every stored configuration, wherever it sits, unless the key is a reference, a flag, a date, a URL or a number. | `tests/test_boto3_collector_redaction.py`. A net for what no location declares; the list of removed paths is `_redacted`. |
+| req-aws-collector-redaction-4 | Only Secrets | Proposed | Operator-authored content (tags, names, descriptions, comments, policies, personal data) is stored. | Test: representative content passes through unchanged. |
 | req-aws-collector-field-projection-8 | Off-Type Security Facts Kept | Approved for Development | For entries whose `persist_configuration` is false, the Lambda VPC attachment (`vpc_subnet_ids`, `vpc_security_group_ids`), CloudFront per-origin access mode (`origin_access`) and API Gateway HTTP API per-route authorization type (`route_authorization_types`) are typed fields derived from data already fetched; configuration stays `{}`. | Migration 0007. `tests/test_boto3_collector_slice.py::test_promoted_security_facts_land_while_configuration_stays_empty`, `tests/test_boto3_collector_customfns.py::TestCloudfrontDistributionsWithOac::test_origin_access_mode_per_origin`, `tests/test_boto3_collector_new_service_types.py::TestApiGatewayHttpApisDetailed`. |
 | req-aws-collector-field-projection-9 | CloudFront Origin Header Presence | Approved for Development | Each CloudFront origin's custom-header presence is the typed field `origin_custom_headers_present` (`{origin Id: bool}`), derived from the `ListDistributions` origin with no extra call; an origin without headers is `false`, not absent or `null`; no header value or name reaches the field, the GRIFT batch, the stored row or its history. | Migration 0008 (additive `AddField` only). `tests/test_boto3_collector_slice.py::test_origin_header_presence_lands_and_the_value_never_does`, `tests/test_boto3_collector_customfns.py::TestCloudfrontDistributionsWithOac::test_custom_header_presence_per_origin`. |
 

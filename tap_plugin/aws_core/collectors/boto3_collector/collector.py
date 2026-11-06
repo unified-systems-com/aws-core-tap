@@ -65,6 +65,7 @@ from .batch import (
     Unread,
     address_batch,
     assemble_batch,
+    entry_redact_paths,
     envelope_ref,
     node_anchor,
     node_envelope,
@@ -850,6 +851,7 @@ class Boto3Collector(CollectorBase):
                                 dimensions,
                                 tags,
                                 persist_configuration=entry["persist_configuration"],
+                                redact_paths=entry_redact_paths(entry),
                             )
                         )
                         for slot, rec in node.configuration.get("_hydrate", {}).items():
