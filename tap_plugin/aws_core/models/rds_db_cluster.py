@@ -40,6 +40,9 @@ class RdsDbCluster(BaseModel):
         "backup_retention_days": {"type": ["integer", "null"]},
         "multi_az": {"type": ["boolean", "null"]},
         "global_cluster_identifier": {"type": ["string", "null"]},
+        "endpoint": {"type": ["string", "null"]},
+        "reader_endpoint": {"type": ["string", "null"]},
+        "port": {"type": ["integer", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -73,6 +76,12 @@ class RdsDbCluster(BaseModel):
     multi_az = models.BooleanField(null=True, blank=True, default=None)
     # The global cluster the cluster belongs to. NULL = none, or not observed.
     global_cluster_identifier = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    # The cluster (writer) endpoint (Endpoint). NULL = not observed.
+    endpoint = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    # The reader endpoint (ReaderEndpoint), load-balanced across the replicas. NULL = not observed, or the cluster has none (a single-instance or serverless cluster).
+    reader_endpoint = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    # The port the cluster listens on (Port). NULL = not observed.
+    port = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

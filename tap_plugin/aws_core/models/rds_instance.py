@@ -39,6 +39,8 @@ class RdsInstance(BaseModel):
         "deletion_protection": {"type": ["boolean", "null"]},
         "iam_database_auth_enabled": {"type": ["boolean", "null"]},
         "backup_retention_days": {"type": ["integer", "null"]},
+        "endpoint_address": {"type": ["string", "null"]},
+        "endpoint_port": {"type": ["integer", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -57,6 +59,8 @@ class RdsInstance(BaseModel):
         "deletion_protection": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "iam_database_auth_enabled": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "backup_retention_days": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
+        "endpoint_address": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "endpoint_port": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -80,6 +84,10 @@ class RdsInstance(BaseModel):
     iam_database_auth_enabled = models.BooleanField(null=True, blank=True, default=None)
     # Automated backup retention in days (BackupRetentionPeriod); 0 means automated backups are off. NULL = not observed.
     backup_retention_days = models.IntegerField(null=True, blank=True, default=None)
+    # The DNS name clients connect to (Endpoint.Address). NULL = not observed, or the instance has no endpoint yet.
+    endpoint_address = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    # The port the instance listens on (Endpoint.Port). NULL = not observed, or the instance has no endpoint yet.
+    endpoint_port = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

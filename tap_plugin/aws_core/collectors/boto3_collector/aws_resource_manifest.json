@@ -2572,7 +2572,9 @@
         "publicly_accessible": "PubliclyAccessible",
         "deletion_protection": "DeletionProtection",
         "iam_database_auth_enabled": "IAMDatabaseAuthenticationEnabled",
-        "backup_retention_days": "BackupRetentionPeriod"
+        "backup_retention_days": "BackupRetentionPeriod",
+        "endpoint_address": "Endpoint.Address",
+        "endpoint_port": "Endpoint.Port"
       },
       "tags": {
         "source": "field",
@@ -6773,7 +6775,10 @@
         "publicly_accessible": "PubliclyAccessible",
         "backup_retention_days": "BackupRetentionPeriod",
         "multi_az": "MultiAZ",
-        "global_cluster_identifier": "GlobalClusterIdentifier"
+        "global_cluster_identifier": "GlobalClusterIdentifier",
+        "endpoint": "Endpoint",
+        "reader_endpoint": "ReaderEndpoint",
+        "port": "Port"
       },
       "tags": {
         "source": "field",
