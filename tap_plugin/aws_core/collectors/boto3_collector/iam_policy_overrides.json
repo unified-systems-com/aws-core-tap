@@ -1,0 +1,74 @@
+{
+  "description": "Where AWS's reference data does not settle an operation's IAM action, the operations that need no permission, and the actions the collector role must never be granted. Read by iam_policy.py; every entry says why.",
+  "prefixes": {},
+  "actions": {
+    "keyspaces:ListTagsForResource": {
+      "actions": [
+        "cassandra:Select"
+      ],
+      "why": "Amazon Keyspaces authorises its control-plane reads as cassandra:Select; the reference data lists no action for ListTagsForResource, and the call succeeded under ReadOnlyAccess."
+    }
+  },
+  "rules": [
+    {
+      "services": [
+        "apigateway",
+        "apigatewayv2"
+      ],
+      "operation_prefix": "Get",
+      "actions": [
+        "apigateway:GET"
+      ],
+      "why": "API Gateway authorises its control-plane reads as one verb-on-path action, apigateway:GET, whatever the operation is called."
+    }
+  ],
+  "no_permission_needed": {
+    "sts:GetCallerIdentity": "STS GetCallerIdentity needs no IAM permission and cannot be denied.",
+    "sts:AssumeRole": "The collector principal assumes the customer's role; the role itself is never asked to assume anything. The trust policy, not this document, grants it."
+  },
+  "deny": {
+    "appsync:GetFunction": "Returns credentials, tokens or secret values (GetFunction); the read guard refuses the operation too.",
+    "athena:GetQueryResults": "Reads query results.",
+    "cloudfront:GetFunction": "Returns credentials, tokens or secret values (GetFunction); the read guard refuses the operation too.",
+    "cognito-identity:GetCredentialsForIdentity": "Returns credentials, tokens or secret values (GetCredentialsForIdentity); the read guard refuses the operation too.",
+    "cognito-identity:GetOpenIdToken": "Returns credentials, tokens or secret values (GetOpenIdToken); the read guard refuses the operation too.",
+    "cognito-identity:GetOpenIdTokenForDeveloperIdentity": "Returns credentials, tokens or secret values (GetOpenIdTokenForDeveloperIdentity); the read guard refuses the operation too.",
+    "connect:GetFederationToken": "Returns credentials, tokens or secret values (GetFederationToken); the read guard refuses the operation too.",
+    "dynamodb:BatchGetItem": "Reads a table's items.",
+    "dynamodb:GetItem": "Reads a table's items.",
+    "dynamodb:Query": "Reads a table's items.",
+    "dynamodb:Scan": "Reads a table's items.",
+    "ec2:GetPasswordData": "Returns credentials, tokens or secret values (GetPasswordData); the read guard refuses the operation too.",
+    "ecr-public:GetAuthorizationToken": "Returns credentials, tokens or secret values (GetAuthorizationToken); the read guard refuses the operation too.",
+    "ecr:GetAuthorizationToken": "Returns credentials, tokens or secret values (GetAuthorizationToken); the read guard refuses the operation too.",
+    "gamelift:GetComputeAccess": "Returns credentials, tokens or secret values (GetComputeAccess); the read guard refuses the operation too.",
+    "gamelift:GetComputeAuthToken": "Returns credentials, tokens or secret values (GetComputeAuthToken); the read guard refuses the operation too.",
+    "kinesis:GetRecords": "Reads a stream's records.",
+    "kms:Decrypt": "Decrypts data; the collector reads key metadata, never uses a key.",
+    "lambda:GetFunction": "Returns credentials, tokens or secret values (GetFunction); the read guard refuses the operation too.",
+    "lambda:GetFunctionConfiguration": "Returns credentials, tokens or secret values (GetFunctionConfiguration); the read guard refuses the operation too.",
+    "lambda:ListTags": "Returns credentials, tokens or secret values (GetFunction); the read guard refuses the operation too.",
+    "lightsail:GetInstanceAccessDetails": "Returns credentials, tokens or secret values (GetInstanceAccessDetails); the read guard refuses the operation too.",
+    "lightsail:GetRelationalDatabaseMasterUserPassword": "Returns credentials, tokens or secret values (GetRelationalDatabaseMasterUserPassword); the read guard refuses the operation too.",
+    "logs:GetLogEvents": "Reads log contents; the collector inventories log groups.",
+    "redshift:CreateClusterUser": "Returns credentials, tokens or secret values (GetClusterCredentials); the read guard refuses the operation too.",
+    "redshift:GetClusterCredentials": "Returns credentials, tokens or secret values (GetClusterCredentials); the read guard refuses the operation too.",
+    "redshift:GetClusterCredentialsWithIAM": "Returns credentials, tokens or secret values (GetClusterCredentialsWithIAM); the read guard refuses the operation too.",
+    "redshift:JoinGroup": "Returns credentials, tokens or secret values (GetClusterCredentials); the read guard refuses the operation too.",
+    "s3:GetObject": "Reads an object's contents; the collector inventories buckets, not what they hold.",
+    "s3:GetObjectVersion": "Reads an object's contents.",
+    "secretsmanager:BatchGetSecretValue": "Returns credentials, tokens or secret values (BatchGetSecretValue); the read guard refuses the operation too.",
+    "secretsmanager:GetRandomPassword": "Returns credentials, tokens or secret values (GetRandomPassword); the read guard refuses the operation too.",
+    "secretsmanager:GetSecretValue": "Returns credentials, tokens or secret values (GetSecretValue); the read guard refuses the operation too.",
+    "secretsmanager:ListSecrets": "Returns credentials, tokens or secret values (BatchGetSecretValue); the read guard refuses the operation too.",
+    "sqs:ReceiveMessage": "Reads a queue's messages.",
+    "ssm:GetParameter": "Reads a Parameter Store value; the collector inventories parameters, not their values.",
+    "ssm:GetParameterHistory": "Reads earlier Parameter Store values.",
+    "ssm:GetParameters": "Reads Parameter Store values.",
+    "ssm:GetParametersByPath": "Reads Parameter Store values.",
+    "sts:GetFederationToken": "Returns credentials, tokens or secret values (GetFederationToken); the read guard refuses the operation too.",
+    "sts:GetServiceBearerToken": "Returns credentials, tokens or secret values (GetAuthorizationToken); the read guard refuses the operation too.",
+    "sts:GetSessionToken": "Returns credentials, tokens or secret values (GetSessionToken); the read guard refuses the operation too.",
+    "sts:TagSession": "Returns credentials, tokens or secret values (GetFederationToken); the read guard refuses the operation too."
+  }
+}

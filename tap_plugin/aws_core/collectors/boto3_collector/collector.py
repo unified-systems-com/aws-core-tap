@@ -434,6 +434,8 @@ class Boto3Collector(CollectorBase):
         """An entry the manifest marks not offered whose host now resolves in any region of the run: the claim may no
         longer hold there. A claim is made for the partition on evidence from one region and one FIPS setting, so every
         selected region is checked (not only the first); a host is reported once per entry."""
+        if not probe.usable:  # DNS here cannot be trusted: build nothing
+            return
         reported: set[str] = set()
         probed = False
         for region in regions:
@@ -460,6 +462,8 @@ class Boto3Collector(CollectorBase):
         """A service the manifest does not mark whose host does not resolve: a gap nobody has listed. Each distinct host
         of a service is checked (its operations can go to different hosts) and reported once per (service, region, host);
         the entry is still called, as it was before the probe."""
+        if not probe.usable:  # DNS here cannot be trusted: build nothing
+            return
         host = self._entry_host(entry, region, fips)
         if host is None:
             if entry["entity_type"] not in probe.unprobed:

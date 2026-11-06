@@ -1,0 +1,1132 @@
+{
+ "description": "One real read-only call per service in each GovCloud region and FIPS setting (us-gov-west-1 and us-gov-east-1, FIPS endpoints off and on), through the collector's own client configuration and the read guard, to settle the DNS matrix of the same day. 'no_endpoint' means the connection could not be made; 'answered' means the service replied, with data or with an error. Service and operation names, regions and outcome words only.",
+ "date": "2026-11-05",
+ "script": "tools/validate/availability_calls.py",
+ "verdict": "pass",
+ "checks": {
+  "the calls agree with the not_offered blocks": "133 of 140 variant calls agree; of the 7 that did not, 4 were timestream-query and timestream-write in gov-east, whose blocks were removed, and 3 were managedblockchain, whose gov-east block was added; one managedblockchain variant (gov-west with FIPS) is unreachable and not blocked, accepted in the ratchet",
+  "every call was a read": "the read guard was installed on the session"
+ },
+ "results": [
+  {
+   "service": "backup-gateway",
+   "entity_type": "aws_core__aws_backupgateway_hypervisor",
+   "operation": "ListHypervisors",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "backup-gateway",
+   "entity_type": "aws_core__aws_backupgateway_hypervisor",
+   "operation": "ListHypervisors",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "backup-gateway",
+   "entity_type": "aws_core__aws_backupgateway_hypervisor",
+   "operation": "ListHypervisors",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "backup-gateway",
+   "entity_type": "aws_core__aws_backupgateway_hypervisor",
+   "operation": "ListHypervisors",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "schemas",
+   "entity_type": "aws_core__aws_eventschemas_discoverer",
+   "operation": "ListDiscoverers",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "schemas",
+   "entity_type": "aws_core__aws_eventschemas_discoverer",
+   "operation": "ListDiscoverers",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "schemas",
+   "entity_type": "aws_core__aws_eventschemas_discoverer",
+   "operation": "ListDiscoverers",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "schemas",
+   "entity_type": "aws_core__aws_eventschemas_discoverer",
+   "operation": "ListDiscoverers",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "iotsitewise",
+   "entity_type": "aws_core__aws_iotsitewise_application",
+   "operation": "ListApplications",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "iotsitewise",
+   "entity_type": "aws_core__aws_iotsitewise_application",
+   "operation": "ListApplications",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "iotsitewise",
+   "entity_type": "aws_core__aws_iotsitewise_application",
+   "operation": "ListApplications",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "iotsitewise",
+   "entity_type": "aws_core__aws_iotsitewise_application",
+   "operation": "ListApplications",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "notifications",
+   "entity_type": "aws_core__aws_notifications_notification_configuration",
+   "operation": "ListNotificationConfigurations",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "notifications",
+   "entity_type": "aws_core__aws_notifications_notification_configuration",
+   "operation": "ListNotificationConfigurations",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "notifications",
+   "entity_type": "aws_core__aws_notifications_notification_configuration",
+   "operation": "ListNotificationConfigurations",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "notifications",
+   "entity_type": "aws_core__aws_notifications_notification_configuration",
+   "operation": "ListNotificationConfigurations",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "osis",
+   "entity_type": "aws_core__aws_osis_pipeline",
+   "operation": "ListPipelines",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "osis",
+   "entity_type": "aws_core__aws_osis_pipeline",
+   "operation": "ListPipelines",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "osis",
+   "entity_type": "aws_core__aws_osis_pipeline",
+   "operation": "ListPipelines",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "osis",
+   "entity_type": "aws_core__aws_osis_pipeline",
+   "operation": "ListPipelines",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "securitylake",
+   "entity_type": "aws_core__aws_securitylake_subscriber",
+   "operation": "ListSubscribers",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "securitylake",
+   "entity_type": "aws_core__aws_securitylake_subscriber",
+   "operation": "ListSubscribers",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "securitylake",
+   "entity_type": "aws_core__aws_securitylake_subscriber",
+   "operation": "ListSubscribers",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "securitylake",
+   "entity_type": "aws_core__aws_securitylake_subscriber",
+   "operation": "ListSubscribers",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "timestream-query",
+   "entity_type": "aws_core__aws_timestream_scheduled_query",
+   "operation": "ListScheduledQueries",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "timestream-query",
+   "entity_type": "aws_core__aws_timestream_scheduled_query",
+   "operation": "ListScheduledQueries",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "timestream-query",
+   "entity_type": "aws_core__aws_timestream_scheduled_query",
+   "operation": "ListScheduledQueries",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "timestream-query",
+   "entity_type": "aws_core__aws_timestream_scheduled_query",
+   "operation": "ListScheduledQueries",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "translate",
+   "entity_type": "aws_core__aws_translate_parallel_data",
+   "operation": "ListParallelData",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "translate",
+   "entity_type": "aws_core__aws_translate_parallel_data",
+   "operation": "ListParallelData",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "translate",
+   "entity_type": "aws_core__aws_translate_parallel_data",
+   "operation": "ListParallelData",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "translate",
+   "entity_type": "aws_core__aws_translate_parallel_data",
+   "operation": "ListParallelData",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "connect",
+   "entity_type": "aws_core__aws_connect_instance",
+   "operation": "ListInstances",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "connect",
+   "entity_type": "aws_core__aws_connect_instance",
+   "operation": "ListInstances",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "connect",
+   "entity_type": "aws_core__aws_connect_instance",
+   "operation": "ListInstances",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "connect",
+   "entity_type": "aws_core__aws_connect_instance",
+   "operation": "ListInstances",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "wellarchitected",
+   "entity_type": "aws_core__aws_wellarchitected_agent_profile",
+   "operation": "ListAgentProfiles",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "wellarchitected",
+   "entity_type": "aws_core__aws_wellarchitected_agent_profile",
+   "operation": "ListAgentProfiles",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "wellarchitected",
+   "entity_type": "aws_core__aws_wellarchitected_agent_profile",
+   "operation": "ListAgentProfiles",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "wellarchitected",
+   "entity_type": "aws_core__aws_wellarchitected_agent_profile",
+   "operation": "ListAgentProfiles",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "comprehend",
+   "entity_type": "aws_core__aws_comprehend_document_classifier",
+   "operation": "ListDocumentClassifiers",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "comprehend",
+   "entity_type": "aws_core__aws_comprehend_document_classifier",
+   "operation": "ListDocumentClassifiers",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "comprehend",
+   "entity_type": "aws_core__aws_comprehend_document_classifier",
+   "operation": "ListDocumentClassifiers",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "comprehend",
+   "entity_type": "aws_core__aws_comprehend_document_classifier",
+   "operation": "ListDocumentClassifiers",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "datazone",
+   "entity_type": "aws_core__aws_datazone_domain",
+   "operation": "ListDomains",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "datazone",
+   "entity_type": "aws_core__aws_datazone_domain",
+   "operation": "ListDomains",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "datazone",
+   "entity_type": "aws_core__aws_datazone_domain",
+   "operation": "ListDomains",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "datazone",
+   "entity_type": "aws_core__aws_datazone_domain",
+   "operation": "ListDomains",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "emr-serverless",
+   "entity_type": "aws_core__aws_emrserverless_application",
+   "operation": "ListApplications",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "emr-serverless",
+   "entity_type": "aws_core__aws_emrserverless_application",
+   "operation": "ListApplications",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "emr-serverless",
+   "entity_type": "aws_core__aws_emrserverless_application",
+   "operation": "ListApplications",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "emr-serverless",
+   "entity_type": "aws_core__aws_emrserverless_application",
+   "operation": "ListApplications",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "internetmonitor",
+   "entity_type": "aws_core__aws_internetmonitor_monitor",
+   "operation": "ListMonitors",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "internetmonitor",
+   "entity_type": "aws_core__aws_internetmonitor_monitor",
+   "operation": "ListMonitors",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "internetmonitor",
+   "entity_type": "aws_core__aws_internetmonitor_monitor",
+   "operation": "ListMonitors",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "internetmonitor",
+   "entity_type": "aws_core__aws_internetmonitor_monitor",
+   "operation": "ListMonitors",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "iottwinmaker",
+   "entity_type": "aws_core__aws_iottwinmaker_workspace",
+   "operation": "ListWorkspaces",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "iottwinmaker",
+   "entity_type": "aws_core__aws_iottwinmaker_workspace",
+   "operation": "ListWorkspaces",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "iottwinmaker",
+   "entity_type": "aws_core__aws_iottwinmaker_workspace",
+   "operation": "ListWorkspaces",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "iottwinmaker",
+   "entity_type": "aws_core__aws_iottwinmaker_workspace",
+   "operation": "ListWorkspaces",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kinesisvideo",
+   "entity_type": "aws_core__aws_kinesisvideo_signaling_channel",
+   "operation": "ListSignalingChannels",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kinesisvideo",
+   "entity_type": "aws_core__aws_kinesisvideo_signaling_channel",
+   "operation": "ListSignalingChannels",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "kinesisvideo",
+   "entity_type": "aws_core__aws_kinesisvideo_signaling_channel",
+   "operation": "ListSignalingChannels",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kinesisvideo",
+   "entity_type": "aws_core__aws_kinesisvideo_signaling_channel",
+   "operation": "ListSignalingChannels",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "managedblockchain",
+   "entity_type": "aws_core__aws_managedblockchain_accessor",
+   "operation": "ListAccessors",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "managedblockchain",
+   "entity_type": "aws_core__aws_managedblockchain_accessor",
+   "operation": "ListAccessors",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "managedblockchain",
+   "entity_type": "aws_core__aws_managedblockchain_accessor",
+   "operation": "ListAccessors",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "managedblockchain",
+   "entity_type": "aws_core__aws_managedblockchain_accessor",
+   "operation": "ListAccessors",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "opensearchserverless",
+   "entity_type": "aws_core__aws_opensearchserverless_collection",
+   "operation": "ListCollections",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "opensearchserverless",
+   "entity_type": "aws_core__aws_opensearchserverless_collection",
+   "operation": "ListCollections",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "opensearchserverless",
+   "entity_type": "aws_core__aws_opensearchserverless_collection",
+   "operation": "ListCollections",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "opensearchserverless",
+   "entity_type": "aws_core__aws_opensearchserverless_collection",
+   "operation": "ListCollections",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "rekognition",
+   "entity_type": "aws_core__aws_rekognition_project",
+   "operation": "DescribeProjects",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "rekognition",
+   "entity_type": "aws_core__aws_rekognition_project",
+   "operation": "DescribeProjects",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "rekognition",
+   "entity_type": "aws_core__aws_rekognition_project",
+   "operation": "DescribeProjects",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "rekognition",
+   "entity_type": "aws_core__aws_rekognition_project",
+   "operation": "DescribeProjects",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "route53profiles",
+   "entity_type": "aws_core__aws_route53profiles_profile",
+   "operation": "ListProfiles",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "route53profiles",
+   "entity_type": "aws_core__aws_route53profiles_profile",
+   "operation": "ListProfiles",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "route53profiles",
+   "entity_type": "aws_core__aws_route53profiles_profile",
+   "operation": "ListProfiles",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "route53profiles",
+   "entity_type": "aws_core__aws_route53profiles_profile",
+   "operation": "ListProfiles",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "timestream-write",
+   "entity_type": "aws_core__aws_timestream_database",
+   "operation": "ListDatabases",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "timestream-write",
+   "entity_type": "aws_core__aws_timestream_database",
+   "operation": "ListDatabases",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "timestream-write",
+   "entity_type": "aws_core__aws_timestream_database",
+   "operation": "ListDatabases",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "timestream-write",
+   "entity_type": "aws_core__aws_timestream_database",
+   "operation": "ListDatabases",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "mediaconvert",
+   "entity_type": "aws_core__aws_mediaconvert_job_template",
+   "operation": "ListJobTemplates",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "mediaconvert",
+   "entity_type": "aws_core__aws_mediaconvert_job_template",
+   "operation": "ListJobTemplates",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "mediaconvert",
+   "entity_type": "aws_core__aws_mediaconvert_job_template",
+   "operation": "ListJobTemplates",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "mediaconvert",
+   "entity_type": "aws_core__aws_mediaconvert_job_template",
+   "operation": "ListJobTemplates",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "databrew",
+   "entity_type": "aws_core__aws_databrew_dataset",
+   "operation": "ListDatasets",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "databrew",
+   "entity_type": "aws_core__aws_databrew_dataset",
+   "operation": "ListDatasets",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "databrew",
+   "entity_type": "aws_core__aws_databrew_dataset",
+   "operation": "ListDatasets",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "databrew",
+   "entity_type": "aws_core__aws_databrew_dataset",
+   "operation": "ListDatasets",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "polly",
+   "entity_type": "aws_core__aws_polly_lexicon",
+   "operation": "ListLexicons",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "polly",
+   "entity_type": "aws_core__aws_polly_lexicon",
+   "operation": "ListLexicons",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "polly",
+   "entity_type": "aws_core__aws_polly_lexicon",
+   "operation": "ListLexicons",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "polly",
+   "entity_type": "aws_core__aws_polly_lexicon",
+   "operation": "ListLexicons",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "timestream-influxdb",
+   "entity_type": "aws_core__aws_timestream_influx_db_backup",
+   "operation": "ListDbBackups",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "timestream-influxdb",
+   "entity_type": "aws_core__aws_timestream_influx_db_backup",
+   "operation": "ListDbBackups",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "timestream-influxdb",
+   "entity_type": "aws_core__aws_timestream_influx_db_backup",
+   "operation": "ListDbBackups",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "timestream-influxdb",
+   "entity_type": "aws_core__aws_timestream_influx_db_backup",
+   "operation": "ListDbBackups",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "bedrock-data-automation",
+   "entity_type": "aws_core__aws_bedrock_blueprint",
+   "operation": "ListBlueprints",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "bedrock-data-automation",
+   "entity_type": "aws_core__aws_bedrock_blueprint",
+   "operation": "ListBlueprints",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "bedrock-data-automation",
+   "entity_type": "aws_core__aws_bedrock_blueprint",
+   "operation": "ListBlueprints",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "bedrock-data-automation",
+   "entity_type": "aws_core__aws_bedrock_blueprint",
+   "operation": "ListBlueprints",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "bedrock-agent",
+   "entity_type": "aws_core__aws_bedrock_flow",
+   "operation": "ListFlows",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "bedrock-agent",
+   "entity_type": "aws_core__aws_bedrock_flow",
+   "operation": "ListFlows",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "bedrock-agent",
+   "entity_type": "aws_core__aws_bedrock_flow",
+   "operation": "ListFlows",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "bedrock-agent",
+   "entity_type": "aws_core__aws_bedrock_flow",
+   "operation": "ListFlows",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "cloudhsmv2",
+   "entity_type": "aws_core__aws_cloudhsm_cluster",
+   "operation": "DescribeClusters",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "cloudhsmv2",
+   "entity_type": "aws_core__aws_cloudhsm_cluster",
+   "operation": "DescribeClusters",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "cloudhsmv2",
+   "entity_type": "aws_core__aws_cloudhsm_cluster",
+   "operation": "DescribeClusters",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "cloudhsmv2",
+   "entity_type": "aws_core__aws_cloudhsm_cluster",
+   "operation": "DescribeClusters",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "license-manager-linux-subscriptions",
+   "entity_type": "aws_core__aws_licensemanager_linux_subscription_provider",
+   "operation": "ListRegisteredSubscriptionProviders",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "license-manager-linux-subscriptions",
+   "entity_type": "aws_core__aws_licensemanager_linux_subscription_provider",
+   "operation": "ListRegisteredSubscriptionProviders",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "license-manager-linux-subscriptions",
+   "entity_type": "aws_core__aws_licensemanager_linux_subscription_provider",
+   "operation": "ListRegisteredSubscriptionProviders",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "license-manager-linux-subscriptions",
+   "entity_type": "aws_core__aws_licensemanager_linux_subscription_provider",
+   "operation": "ListRegisteredSubscriptionProviders",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "pinpoint",
+   "entity_type": "aws_core__aws_pinpoint_app",
+   "operation": "GetApps",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "pinpoint",
+   "entity_type": "aws_core__aws_pinpoint_app",
+   "operation": "GetApps",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "pinpoint",
+   "entity_type": "aws_core__aws_pinpoint_app",
+   "operation": "GetApps",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "pinpoint",
+   "entity_type": "aws_core__aws_pinpoint_app",
+   "operation": "GetApps",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "ecr-public",
+   "entity_type": "aws_core__aws_ecr_public_repository",
+   "operation": "DescribeRepositories",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "ecr-public",
+   "entity_type": "aws_core__aws_ecr_public_repository",
+   "operation": "DescribeRepositories",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "ecr-public",
+   "entity_type": "aws_core__aws_ecr_public_repository",
+   "operation": "DescribeRepositories",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "ecr-public",
+   "entity_type": "aws_core__aws_ecr_public_repository",
+   "operation": "DescribeRepositories",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kendra",
+   "entity_type": "aws_core__aws_kendra_index",
+   "operation": "ListIndices",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "kendra",
+   "entity_type": "aws_core__aws_kendra_index",
+   "operation": "ListIndices",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "kendra",
+   "entity_type": "aws_core__aws_kendra_index",
+   "operation": "ListIndices",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kendra",
+   "entity_type": "aws_core__aws_kendra_index",
+   "operation": "ListIndices",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kendra-ranking",
+   "entity_type": "aws_core__aws_kendraranking_execution_plan",
+   "operation": "ListRescoreExecutionPlans",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kendra-ranking",
+   "entity_type": "aws_core__aws_kendraranking_execution_plan",
+   "operation": "ListRescoreExecutionPlans",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kendra-ranking",
+   "entity_type": "aws_core__aws_kendraranking_execution_plan",
+   "operation": "ListRescoreExecutionPlans",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "kendra-ranking",
+   "entity_type": "aws_core__aws_kendraranking_execution_plan",
+   "operation": "ListRescoreExecutionPlans",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "location",
+   "entity_type": "aws_core__aws_location_api_key",
+   "operation": "ListKeys",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "answered"
+  },
+  {
+   "service": "location",
+   "entity_type": "aws_core__aws_location_api_key",
+   "operation": "ListKeys",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "answered"
+  },
+  {
+   "service": "location",
+   "entity_type": "aws_core__aws_location_api_key",
+   "operation": "ListKeys",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "location",
+   "entity_type": "aws_core__aws_location_api_key",
+   "operation": "ListKeys",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "qbusiness",
+   "entity_type": "aws_core__aws_qbusiness_application",
+   "operation": "ListApplications",
+   "region": "us-gov-west-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "qbusiness",
+   "entity_type": "aws_core__aws_qbusiness_application",
+   "operation": "ListApplications",
+   "region": "us-gov-west-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "qbusiness",
+   "entity_type": "aws_core__aws_qbusiness_application",
+   "operation": "ListApplications",
+   "region": "us-gov-east-1",
+   "fips": false,
+   "outcome": "no_endpoint"
+  },
+  {
+   "service": "qbusiness",
+   "entity_type": "aws_core__aws_qbusiness_application",
+   "operation": "ListApplications",
+   "region": "us-gov-east-1",
+   "fips": true,
+   "outcome": "no_endpoint"
+  }
+ ]
+}

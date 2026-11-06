@@ -158,6 +158,18 @@ class TestInARun:
         assert "disabled" in record["message"]
 
     @pytest.mark.spec("req-aws-collector-partition-13")
+    def test_a_disabled_probe_builds_no_request(self, monkeypatch):
+        calls = []
+        _wire(monkeypatch, missing={"sts.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc", "qbusiness:*"])
+        monkeypatch.setattr(
+            collector_mod,
+            "request_host",
+            lambda service, region, operation, params=None, **_kw: calls.append(service) or f"{service}.{region}.amazonaws.com",
+        )
+        base._run()
+        assert calls == ["sts"], "only the control host's request is built once the probe is disabled"
+
+    @pytest.mark.spec("req-aws-collector-partition-13")
     def test_an_unmarked_service_with_no_host_is_reported_once_and_still_called(self, monkeypatch):
         _wire(monkeypatch, missing={"ec2.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc", "ec2:subnet"])
         collector = base._run()

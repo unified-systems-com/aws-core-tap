@@ -8695,10 +8695,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "backup-gateway has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "backup-gateway has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -9266,10 +9266,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -9309,10 +9309,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -9607,10 +9607,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -10312,10 +10312,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "osis has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "osis has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -11013,10 +11013,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "securitylake has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "securitylake has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -11217,15 +11217,6 @@
       "entity_type": "aws_core__aws_timestream_scheduled_query",
       "service": "timestream-query",
       "scope": "regional",
-      "not_offered": {
-        "aws-us-gov": {
-          "why": "timestream-query has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
-          "regions": ["us-gov-east-1"],
-          "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
-          "date": "2026-11-05"
-        }
-      },
       "source": {
         "aws_op": "ListScheduledQueries"
       },
@@ -11349,10 +11340,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "translate has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "translate has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -11399,10 +11390,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "translate has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "translate has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -11501,10 +11492,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -12657,10 +12648,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -12712,10 +12703,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -12767,10 +12758,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -12816,10 +12807,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -13621,10 +13612,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "emr-serverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "emr-serverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -15179,10 +15170,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -15244,10 +15235,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -15294,10 +15285,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -15344,10 +15335,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -15394,10 +15385,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -15779,6 +15770,15 @@
       "entity_type": "aws_core__aws_managedblockchain_accessor",
       "service": "managedblockchain",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "managedblockchain answers in us-gov-west-1 at its standard host and has no endpoint in us-gov-east-1: a signed read call could not connect there, with FIPS endpoints on or off.",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-calls-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAccessors"
       },
@@ -16428,10 +16428,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -16478,10 +16478,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -16879,10 +16879,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -17010,10 +17010,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "route53profiles has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "route53profiles has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -17708,10 +17708,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "securitylake has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "securitylake has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -18001,15 +18001,6 @@
       "entity_type": "aws_core__aws_timestream_database",
       "service": "timestream-write",
       "scope": "regional",
-      "not_offered": {
-        "aws-us-gov": {
-          "why": "timestream-write has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
-          "regions": ["us-gov-east-1"],
-          "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
-          "date": "2026-11-05"
-        }
-      },
       "source": {
         "aws_op": "ListDatabases"
       },
@@ -18051,15 +18042,6 @@
       "entity_type": "aws_core__aws_timestream_table",
       "service": "timestream-write",
       "scope": "regional",
-      "not_offered": {
-        "aws-us-gov": {
-          "why": "timestream-write has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
-          "regions": ["us-gov-east-1"],
-          "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
-          "date": "2026-11-05"
-        }
-      },
       "source": {
         "aws_op": "ListTables"
       },
@@ -19196,10 +19178,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19252,10 +19234,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19320,10 +19302,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19628,10 +19610,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19685,10 +19667,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19742,10 +19724,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19799,10 +19781,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19856,10 +19838,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19912,10 +19894,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -19969,10 +19951,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20025,10 +20007,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20082,10 +20064,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20132,10 +20114,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20188,10 +20170,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20245,10 +20227,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20302,10 +20284,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20359,10 +20341,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20416,10 +20398,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20473,10 +20455,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20530,10 +20512,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20587,10 +20569,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20644,10 +20626,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20701,10 +20683,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20758,10 +20740,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20820,10 +20802,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -20877,10 +20859,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -21444,6 +21426,15 @@
       "entity_type": "aws_core__aws_managedblockchain_member",
       "service": "managedblockchain",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "managedblockchain answers in us-gov-west-1 at its standard host and has no endpoint in us-gov-east-1: a signed read call could not connect there, with FIPS endpoints on or off.",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-calls-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListMembers",
         "per": {
@@ -21493,6 +21484,15 @@
       "entity_type": "aws_core__aws_managedblockchain_node",
       "service": "managedblockchain",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "managedblockchain answers in us-gov-west-1 at its standard host and has no endpoint in us-gov-east-1: a signed read call could not connect there, with FIPS endpoints on or off.",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-calls-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListNodes",
         "per": {
@@ -21977,10 +21977,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -22034,10 +22034,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -22091,10 +22091,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -22148,10 +22148,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -22205,10 +22205,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -22261,10 +22261,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26402,10 +26402,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26451,10 +26451,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26499,10 +26499,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26547,10 +26547,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26621,10 +26621,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26685,10 +26685,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26741,10 +26741,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26798,10 +26798,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26842,10 +26842,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26886,10 +26886,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26930,10 +26930,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -26977,10 +26977,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -27021,10 +27021,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -27330,10 +27330,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "polly has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "polly has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28131,10 +28131,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28189,10 +28189,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28244,10 +28244,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28302,11 +28302,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28353,11 +28353,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28411,11 +28411,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28462,11 +28462,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28773,10 +28773,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "cloudhsmv2 has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "cloudhsmv2 has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -28955,10 +28955,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "license-manager-linux-subscriptions has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "license-manager-linux-subscriptions has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -29435,10 +29435,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30693,10 +30693,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30737,10 +30737,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30788,10 +30788,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30835,10 +30835,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30882,10 +30882,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30929,10 +30929,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -30980,10 +30980,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -31185,10 +31185,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -31785,10 +31785,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -31835,10 +31835,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -33250,10 +33250,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "route53profiles has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "route53profiles has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -34266,10 +34266,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -34319,10 +34319,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -34379,10 +34379,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -34439,10 +34439,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -34499,10 +34499,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -34559,10 +34559,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36199,10 +36199,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36276,10 +36276,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36347,10 +36347,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36418,10 +36418,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36489,10 +36489,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36560,10 +36560,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36705,10 +36705,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36758,10 +36758,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36811,10 +36811,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -36865,10 +36865,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -37401,11 +37401,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -37477,11 +37477,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -37538,11 +37538,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -37668,11 +37668,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -37713,11 +37713,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -38060,10 +38060,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -38113,10 +38113,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -38173,10 +38173,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -38240,10 +38240,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -38299,10 +38299,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -38352,10 +38352,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -39474,10 +39474,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -39529,10 +39529,10 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
@@ -40489,11 +40489,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (no DNS record for the host the call would use, and a signed read call to it could not connect).",
           "regions": ["us-gov-east-1"],
           "fips": true,
           "method": "ran",
-          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
