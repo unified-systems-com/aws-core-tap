@@ -130,3 +130,14 @@ documents together exceed CloudFormation's inline template limit). IAM allows te
 default; the set uses nine. `iam_policy.unverified()` lists the operations whose action name is the default
 `<prefix>:<Operation>` because AWS's reference data does not name one; they are checked by the policy simulator,
 not yet by a live round trip with the role.
+
+### Residual access the policy cannot remove
+
+Two services authorise their control-plane reads with an action that also covers data, and IAM has no separate action
+or condition to split them. The policy grants them because the inventory needs them; the managed policies
+`SecurityAudit` and `ReadOnlyAccess` grant the same. A customer who cannot accept either removes the statement and
+loses that inventory (the collector reports the gap and keeps what it stored; it never deletes on a refused read):
+
+- `cassandra:Select` — Amazon Keyspaces lists keyspaces and tables through it, and it also runs `SELECT` on a table.
+- `apigateway:GET` — all API Gateway control-plane reads, including `GetApiKey` with `includeValue=true`, which returns
+  the key value. The collector never sets `includeValue`; the role could.

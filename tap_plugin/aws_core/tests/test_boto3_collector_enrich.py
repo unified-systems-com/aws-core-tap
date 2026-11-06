@@ -79,3 +79,18 @@ def test_a_secret_in_the_detail_response_is_removed_before_storage() -> None:
     config = {"_hydrate": {"detail": {"status": "ok", "op": "x", "data": data}}}
     stored = redact_configuration(config, [path])
     assert "PLANTED-SECRET-91c2" not in str(stored)
+
+
+def test_the_stored_envelope_has_no_secret_from_the_detail_response() -> None:
+    """End to end through ``node_envelope`` (where redaction runs, after the detail slot is attached)."""
+    from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
+    from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
+
+    entry = next(e for e in ENRICHED if any(p.startswith("_hydrate.detail.data.") and "[]" not in p and "." not in p.removeprefix("_hydrate.detail.data.") for p in entry_redact_paths(e)))
+    path = next(p for p in entry_redact_paths(entry) if p.startswith("_hydrate.detail.data.") and "[]" not in p and "." not in p.removeprefix("_hydrate.detail.data."))
+    member = path.removeprefix("_hydrate.detail.data.")
+    item = {entry["natural_key"]: "arn:aws:x:us-east-1:123456789012:thing/y"}
+    node = project_item(entry, item)
+    node.configuration.setdefault("_hydrate", {})["detail"] = {"status": "ok", "op": entry["enrich"]["op"], "data": {member: "PLANTED-SECRET-77aa"}}
+    payload = node_envelope(node, {}, {}, persist_configuration=True, redact_paths=entry_redact_paths(entry))["node"]
+    assert "PLANTED-SECRET-77aa" not in str(payload["configuration"])
