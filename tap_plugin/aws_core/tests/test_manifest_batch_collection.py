@@ -132,6 +132,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
             "DeletionProtection": True,
             "IAMDatabaseAuthenticationEnabled": True,
             "BackupRetentionPeriod": 7,
+            "Endpoint": {"Address": "db1.abc.us-east-1.rds.amazonaws.com", "Port": 5432, "HostedZoneId": "Z2R2ITUGPM61AM"},
             "KmsKeyId": KEY_ARN,
             "DBSubnetGroup": {"Subnets": [{"SubnetIdentifier": "subnet-0a1"}]},
             "PendingModifiedValues": {"MasterUserPassword": "never-stored"},
@@ -146,6 +147,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
             "deletion_protection": True,
             "iam_database_auth_enabled": True,
             "backup_retention_days": 7,
+            "endpoint_address": "db1.abc.us-east-1.rds.amazonaws.com",
+            "endpoint_port": 5432,
         },
     ),
     "aws_core__aws_elasticache_cluster": (
@@ -653,8 +656,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'to-vpc', 'api_kind': 'http', 'status': 'AVAILABLE', 'subnet_ids': ['subnet-0a1']},
     ),
     "aws_core__aws_rds_db_cluster": (
-        {'DBClusterIdentifier': 'orders', 'DBClusterArn': 'arn:aws:rds:us-east-1:123456789012:cluster:orders', 'Engine': 'aurora-postgresql', 'EngineVersion': '16.4', 'EngineMode': 'provisioned', 'Status': 'available', 'StorageEncrypted': True, 'IAMDatabaseAuthenticationEnabled': True, 'DeletionProtection': True, 'PubliclyAccessible': False, 'BackupRetentionPeriod': 14, 'MultiAZ': True, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', 'PendingModifiedValues': {'MasterUserPassword': 'never-stored'}, 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {'name': 'orders', 'engine': 'aurora-postgresql', 'storage_encrypted': True, 'publicly_accessible': False, 'deletion_protection': True, 'backup_retention_days': 14},
+        {'DBClusterIdentifier': 'orders', 'DBClusterArn': 'arn:aws:rds:us-east-1:123456789012:cluster:orders', 'Engine': 'aurora-postgresql', 'EngineVersion': '16.4', 'EngineMode': 'provisioned', 'Status': 'available', 'StorageEncrypted': True, 'IAMDatabaseAuthenticationEnabled': True, 'DeletionProtection': True, 'PubliclyAccessible': False, 'BackupRetentionPeriod': 14, 'MultiAZ': True, 'Endpoint': 'orders.cluster-abc.us-east-1.rds.amazonaws.com', 'ReaderEndpoint': 'orders.cluster-ro-abc.us-east-1.rds.amazonaws.com', 'Port': 5432, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', 'PendingModifiedValues': {'MasterUserPassword': 'never-stored'}, 'TagList': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'name': 'orders', 'engine': 'aurora-postgresql', 'storage_encrypted': True, 'publicly_accessible': False, 'deletion_protection': True, 'backup_retention_days': 14, 'endpoint': 'orders.cluster-abc.us-east-1.rds.amazonaws.com', 'reader_endpoint': 'orders.cluster-ro-abc.us-east-1.rds.amazonaws.com', 'port': 5432},
     ),
     "aws_core__aws_rds_db_snapshot": (
         {'DBSnapshotIdentifier': 'pre-upgrade', 'DBSnapshotArn': 'arn:aws:rds:us-east-1:123456789012:snapshot:pre-upgrade', 'DBInstanceIdentifier': 'orders-db', 'Engine': 'postgres', 'SnapshotType': 'manual', 'Status': 'available', 'Encrypted': True, 'KmsKeyId': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', '_is_public': True, '_created_at': '2026-10-01T00:00:00Z', 'TagList': [{'Key': 'owner', 'Value': 'net-team'}], 'MasterUsername': 'never-stored'},
