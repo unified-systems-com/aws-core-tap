@@ -1,0 +1,81 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadWafRegional",
+      "Effect": "Allow",
+      "Action": [
+        "waf-regional:GetRateBasedRule",
+        "waf-regional:GetWebACL",
+        "waf-regional:ListByteMatchSets",
+        "waf-regional:ListGeoMatchSets",
+        "waf-regional:ListIPSets",
+        "waf-regional:ListRateBasedRules",
+        "waf-regional:ListRegexPatternSets",
+        "waf-regional:ListRules",
+        "waf-regional:ListSizeConstraintSets",
+        "waf-regional:ListSqlInjectionMatchSets",
+        "waf-regional:ListTagsForResource",
+        "waf-regional:ListWebACLs",
+        "waf-regional:ListXssMatchSets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadWafv2",
+      "Effect": "Allow",
+      "Action": [
+        "wafv2:GetIPSet",
+        "wafv2:GetRegexPatternSet",
+        "wafv2:GetRuleGroup",
+        "wafv2:GetWebACL",
+        "wafv2:ListIPSets",
+        "wafv2:ListRegexPatternSets",
+        "wafv2:ListRuleGroups",
+        "wafv2:ListTagsForResource",
+        "wafv2:ListWebACLs"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadWellarchitected",
+      "Effect": "Allow",
+      "Action": [
+        "wellarchitected:GetProfile",
+        "wellarchitected:GetReviewTemplate",
+        "wellarchitected:GetWorkload",
+        "wellarchitected:ListAgentContexts",
+        "wellarchitected:ListAgentGoals",
+        "wellarchitected:ListAgentProfiles",
+        "wellarchitected:ListLenses",
+        "wellarchitected:ListProfiles",
+        "wellarchitected:ListReviewTemplates",
+        "wellarchitected:ListTagsForResource",
+        "wellarchitected:ListWorkloads"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadWorkspaces",
+      "Effect": "Allow",
+      "Action": [
+        "workspaces:DescribeConnectionAliases",
+        "workspaces:DescribeIpGroups",
+        "workspaces:DescribeTags",
+        "workspaces:DescribeWorkspaceDirectories",
+        "workspaces:DescribeWorkspaces"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadXray",
+      "Effect": "Allow",
+      "Action": [
+        "xray:GetGroups",
+        "xray:GetSamplingRules",
+        "xray:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

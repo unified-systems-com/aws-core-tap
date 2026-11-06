@@ -331,6 +331,13 @@
       "scope": "regional",
       "source": { "aws_op": "ListCertificates" },
       "why": "Enumerate ACM certificates — TLS certificates and their issuance/expiry state.",
+      "enrich": {
+        "op": "DescribeCertificate",
+        "params": {
+          "CertificateArn": {"from": "CertificateArn"}
+        },
+        "why": "The list call returns a summary; DescribeCertificate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -2740,6 +2747,13 @@
         "aws_op": "ListEndpoints"
       },
       "why": "Enumerate SageMaker endpoints — live model-serving endpoints, which are compute that answers network requests.",
+      "enrich": {
+        "op": "DescribeEndpoint",
+        "params": {
+          "EndpointName": {"from": "EndpointName"}
+        },
+        "why": "The list call returns a summary; DescribeEndpoint returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -3051,6 +3065,13 @@
         "aws_op": "ListFirewallRuleGroups"
       },
       "why": "Enumerate Route 53 Resolver DNS Firewall rule groups — the DNS-level egress filters that block or alert on domains a VPC resolves.",
+      "enrich": {
+        "op": "GetFirewallRuleGroup",
+        "params": {
+          "FirewallRuleGroupId": {"from": "Id"}
+        },
+        "why": "The list call returns a summary; GetFirewallRuleGroup returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7571,6 +7592,13 @@
         "aws_op": "ListAIWorkloadConfigs"
       },
       "why": "Enumerate SageMaker AI Workload Config objects with ListAIWorkloadConfigs — an inventory of the account's ai workload configs and how each is tagged.",
+      "enrich": {
+        "op": "DescribeAIWorkloadConfig",
+        "params": {
+          "AIWorkloadConfigName": {"from": "AIWorkloadConfigName"}
+        },
+        "why": "The list call returns a summary; DescribeAIWorkloadConfig returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7612,6 +7640,13 @@
         "aws_op": "ListAlgorithms"
       },
       "why": "Enumerate SageMaker Algorithm objects with ListAlgorithms — an inventory of the account's algorithms and how each is tagged.",
+      "enrich": {
+        "op": "DescribeAlgorithm",
+        "params": {
+          "AlgorithmName": {"from": "AlgorithmName"}
+        },
+        "why": "The list call returns a summary; DescribeAlgorithm returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7653,6 +7688,13 @@
         "aws_op": "ListClusters"
       },
       "why": "Enumerate SageMaker Cluster objects with ListClusters — an inventory of the account's clusters and how each is tagged.",
+      "enrich": {
+        "op": "DescribeCluster",
+        "params": {
+          "ClusterName": {"from": "ClusterName"}
+        },
+        "why": "The list call returns a summary; DescribeCluster returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7694,6 +7736,13 @@
         "aws_op": "ListClusterSchedulerConfigs"
       },
       "why": "Enumerate SageMaker Cluster Scheduler Config objects with ListClusterSchedulerConfigs — an inventory of the account's cluster scheduler configs and how each is tagged.",
+      "enrich": {
+        "op": "DescribeClusterSchedulerConfig",
+        "params": {
+          "ClusterSchedulerConfigId": {"from": "ClusterSchedulerConfigId"}
+        },
+        "why": "The list call returns a summary; DescribeClusterSchedulerConfig returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7782,6 +7831,13 @@
         "aws_op": "ListComputeQuotas"
       },
       "why": "Enumerate SageMaker Compute Quota objects with ListComputeQuotas — an inventory of the account's compute quotas and how each is tagged.",
+      "enrich": {
+        "op": "DescribeComputeQuota",
+        "params": {
+          "ComputeQuotaId": {"from": "ComputeQuotaId"}
+        },
+        "why": "The list call returns a summary; DescribeComputeQuota returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7823,6 +7879,13 @@
         "aws_op": "ListEndpointConfigs"
       },
       "why": "Enumerate SageMaker Endpoint Config objects with ListEndpointConfigs — an inventory of the account's endpoint configs and how each is tagged.",
+      "enrich": {
+        "op": "DescribeEndpointConfig",
+        "params": {
+          "EndpointConfigName": {"from": "EndpointConfigName"}
+        },
+        "why": "The list call returns a summary; DescribeEndpointConfig returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -7987,6 +8050,13 @@
         "aws_op": "ListInferenceComponents"
       },
       "why": "Enumerate SageMaker Inference Component objects with ListInferenceComponents — an inventory of the account's inference components and how each is tagged.",
+      "enrich": {
+        "op": "DescribeInferenceComponent",
+        "params": {
+          "InferenceComponentName": {"from": "InferenceComponentName"}
+        },
+        "why": "The list call returns a summary; DescribeInferenceComponent returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8028,6 +8098,13 @@
         "aws_op": "ListMlflowApps"
       },
       "why": "Enumerate SageMaker Mlflow App objects with ListMlflowApps — an inventory of the account's mlflow apps and how each is tagged.",
+      "enrich": {
+        "op": "DescribeMlflowApp",
+        "params": {
+          "Arn": {"from": "Arn"}
+        },
+        "why": "The list call returns a summary; DescribeMlflowApp returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8069,6 +8146,13 @@
         "aws_op": "ListModels"
       },
       "why": "Enumerate SageMaker Model objects with ListModels — an inventory of the account's models and how each is tagged.",
+      "enrich": {
+        "op": "DescribeModel",
+        "params": {
+          "ModelName": {"from": "ModelName"}
+        },
+        "why": "The list call returns a summary; DescribeModel returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8110,12 +8194,26 @@
         "aws_op": "ListModelPackages"
       },
       "why": "Enumerate SageMaker Model Package objects with ListModelPackages — an inventory of the account's model packages and how each is tagged.",
+      "enrich": {
+        "op": "DescribeModelPackage",
+        "params": {
+          "ModelPackageName": {"from": "ModelPackageName"}
+        },
+        "why": "The list call returns a summary; DescribeModelPackage returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.ModelCard.ModelCardContent; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModelPackages item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.ModelCard.ModelCardContent",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -8233,6 +8331,13 @@
         "aws_op": "ListNotebookInstances"
       },
       "why": "Enumerate SageMaker Notebook Instance objects with ListNotebookInstances — an inventory of the account's notebook instances and how each is tagged.",
+      "enrich": {
+        "op": "DescribeNotebookInstance",
+        "params": {
+          "NotebookInstanceName": {"from": "NotebookInstanceName"}
+        },
+        "why": "The list call returns a summary; DescribeNotebookInstance returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8315,6 +8420,13 @@
         "aws_op": "ListPartnerApps"
       },
       "why": "Enumerate SageMaker Partner App objects with ListPartnerApps — an inventory of the account's partner apps and how each is tagged.",
+      "enrich": {
+        "op": "DescribePartnerApp",
+        "params": {
+          "Arn": {"from": "Arn"}
+        },
+        "why": "The list call returns a summary; DescribePartnerApp returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8356,6 +8468,13 @@
         "aws_op": "ListProcessingJobs"
       },
       "why": "Enumerate SageMaker Processing Job objects with ListProcessingJobs — an inventory of the account's processing jobs and how each is tagged.",
+      "enrich": {
+        "op": "DescribeProcessingJob",
+        "params": {
+          "ProcessingJobName": {"from": "ProcessingJobName"}
+        },
+        "why": "The list call returns a summary; DescribeProcessingJob returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8397,6 +8516,13 @@
         "aws_op": "ListProjects"
       },
       "why": "Enumerate SageMaker Project objects with ListProjects — an inventory of the account's projects and how each is tagged.",
+      "enrich": {
+        "op": "DescribeProject",
+        "params": {
+          "ProjectName": {"from": "ProjectName"}
+        },
+        "why": "The list call returns a summary; DescribeProject returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8438,6 +8564,13 @@
         "aws_op": "ListTrialComponents"
       },
       "why": "Enumerate SageMaker Trial Component objects with ListTrialComponents — an inventory of the account's trial components and how each is tagged.",
+      "enrich": {
+        "op": "DescribeTrialComponent",
+        "params": {
+          "TrialComponentName": {"from": "TrialComponentName"}
+        },
+        "why": "The list call returns a summary; DescribeTrialComponent returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8728,6 +8861,13 @@
         "aws_op": "ListHypervisors"
       },
       "why": "Enumerate BackupGateway Hypervisor objects with ListHypervisors — an inventory of the account's hypervisors and how each is tagged.",
+      "enrich": {
+        "op": "GetHypervisor",
+        "params": {
+          "HypervisorArn": {"from": "HypervisorArn"}
+        },
+        "why": "The list call returns a summary; GetHypervisor returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8890,6 +9030,13 @@
         "aws_op": "ListAgents"
       },
       "why": "Enumerate DataSync Agent objects with ListAgents — an inventory of the account's agents and how each is tagged.",
+      "enrich": {
+        "op": "DescribeAgent",
+        "params": {
+          "AgentArn": {"from": "AgentArn"}
+        },
+        "why": "The list call returns a summary; DescribeAgent returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -8931,6 +9078,13 @@
         "aws_op": "ListTasks"
       },
       "why": "Enumerate DataSync Task objects with ListTasks — an inventory of the account's tasks and how each is tagged.",
+      "enrich": {
+        "op": "DescribeTask",
+        "params": {
+          "TaskArn": {"from": "TaskArn"}
+        },
+        "why": "The list call returns a summary; DescribeTask returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -9122,6 +9276,13 @@
         "aws_op": "ListDaemons"
       },
       "why": "Enumerate ECS Daemon objects with ListDaemons — an inventory of the account's daemons and how each is tagged.",
+      "enrich": {
+        "op": "DescribeDaemon",
+        "params": {
+          "daemonArn": {"from": "daemonArn"}
+        },
+        "why": "The list call returns a summary; DescribeDaemon returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -9494,6 +9655,13 @@
         "aws_op": "ListOTAUpdates"
       },
       "why": "Enumerate IoT OTA Update objects with ListOTAUpdates — an inventory of the account's ota updates and how each is tagged.",
+      "enrich": {
+        "op": "GetOTAUpdate",
+        "params": {
+          "otaUpdateId": {"from": "otaUpdateId"}
+        },
+        "why": "The list call returns a summary; GetOTAUpdate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -9592,6 +9760,13 @@
         "aws_op": "ListTunnels"
       },
       "why": "Enumerate IoTSecureTunneling Tunnel objects with ListTunnels — an inventory of the account's tunnels and how each is tagged.",
+      "enrich": {
+        "op": "DescribeTunnel",
+        "params": {
+          "tunnelId": {"from": "tunnelId"}
+        },
+        "why": "The list call returns a summary; DescribeTunnel returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -9641,6 +9816,14 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate IoTSiteWise Application objects with ListApplications — an inventory of the account's applications and how each is tagged.",
+      "enrich": {
+        "op": "DescribeApplication",
+        "params": {
+          "workspaceName": {"from": "workspaceName"},
+          "id": {"from": "id"}
+        },
+        "why": "The list call returns a summary; DescribeApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -9805,6 +9988,13 @@
         "aws_op": "ListChannels"
       },
       "why": "Enumerate Kinesis Channel objects with ListChannels — an inventory of the account's channels and how each is tagged.",
+      "enrich": {
+        "op": "DescribeChannel",
+        "params": {
+          "ChannelARN": {"from": "ChannelARN"}
+        },
+        "why": "The list call returns a summary; DescribeChannel returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -10043,6 +10233,13 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate M2 Application objects with ListApplications — an inventory of the account's applications and how each is tagged.",
+      "enrich": {
+        "op": "GetApplication",
+        "params": {
+          "applicationId": {"from": "applicationId"}
+        },
+        "why": "The list call returns a summary; GetApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -10084,6 +10281,13 @@
         "aws_op": "ListEnvironments"
       },
       "why": "Enumerate M2 Environment objects with ListEnvironments — an inventory of the account's environments and how each is tagged.",
+      "enrich": {
+        "op": "GetEnvironment",
+        "params": {
+          "environmentId": {"from": "environmentId"}
+        },
+        "why": "The list call returns a summary; GetEnvironment returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -10166,6 +10370,13 @@
         "aws_op": "ListReplicators"
       },
       "why": "Enumerate MSK Replicator objects with ListReplicators — an inventory of the account's replicators and how each is tagged.",
+      "enrich": {
+        "op": "DescribeReplicator",
+        "params": {
+          "ReplicatorArn": {"from": "ReplicatorArn"}
+        },
+        "why": "The list call returns a summary; DescribeReplicator returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -10346,6 +10557,13 @@
         "aws_op": "ListPipelines"
       },
       "why": "Enumerate OSIS Pipeline objects with ListPipelines — an inventory of the account's pipelines and how each is tagged.",
+      "enrich": {
+        "op": "GetPipeline",
+        "params": {
+          "PipelineName": {"from": "PipelineName"}
+        },
+        "why": "The list call returns a summary; GetPipeline returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -10381,6 +10599,13 @@
         "aws_op": "ListLinks"
       },
       "why": "Enumerate Oam Link objects with ListLinks — an inventory of the account's links and how each is tagged.",
+      "enrich": {
+        "op": "GetLink",
+        "params": {
+          "Identifier": {"from": "Id"}
+        },
+        "why": "The list call returns a summary; GetLink returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -10720,12 +10945,26 @@
         "aws_op": "ListApps"
       },
       "why": "Enumerate ResilienceHub App objects with ListApps — an inventory of the account's apps and how each is tagged.",
+      "enrich": {
+        "op": "DescribeApp",
+        "params": {
+          "appArn": {"from": "appArn"}
+        },
+        "why": "The list call returns a summary; DescribeApp returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.app.tags; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore resiliencehub ListApps item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.app.tags",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -10761,12 +11000,26 @@
         "aws_op": "ListPolicies"
       },
       "why": "Enumerate ResilienceHubV2 Policy objects with ListPolicies — an inventory of the account's policys and how each is tagged.",
+      "enrich": {
+        "op": "GetPolicy",
+        "params": {
+          "policyArn": {"from": "policyArn"}
+        },
+        "why": "The list call returns a summary; GetPolicy returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.policy.tags; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore resiliencehubv2 ListPolicies item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.policy.tags",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -10802,12 +11055,26 @@
         "aws_op": "ListServices"
       },
       "why": "Enumerate ResilienceHubV2 Service objects with ListServices — an inventory of the account's services and how each is tagged.",
+      "enrich": {
+        "op": "GetService",
+        "params": {
+          "serviceArn": {"from": "serviceArn"}
+        },
+        "why": "The list call returns a summary; GetService returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.service.tags; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore resiliencehubv2 ListServices item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.service.tags",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -11088,6 +11355,13 @@
         "aws_op": "ListSigningProfiles"
       },
       "why": "Enumerate Signer Signing Profile objects with ListSigningProfiles — an inventory of the account's signing profiles and how each is tagged.",
+      "enrich": {
+        "op": "GetSigningProfile",
+        "params": {
+          "profileName": {"from": "profileName"}
+        },
+        "why": "The list call returns a summary; GetSigningProfile returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -11244,12 +11518,26 @@
         "aws_op": "ListScheduledQueries"
       },
       "why": "Enumerate Timestream Scheduled Query objects with ListScheduledQueries — an inventory of the account's scheduled querys and how each is tagged.",
+      "enrich": {
+        "op": "DescribeScheduledQuery",
+        "params": {
+          "ScheduledQueryArn": {"from": "Arn"}
+        },
+        "why": "The list call returns a summary; DescribeScheduledQuery returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.ScheduledQuery.QueryString; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore timestream-query ListScheduledQueries item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.ScheduledQuery.QueryString",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -11285,6 +11573,13 @@
         "aws_op": "ListServers"
       },
       "why": "Enumerate Transfer Server objects with ListServers — an inventory of the account's servers and how each is tagged.",
+      "enrich": {
+        "op": "DescribeServer",
+        "params": {
+          "ServerId": {"from": "ServerId"}
+        },
+        "why": "The list call returns a summary; DescribeServer returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -11325,6 +11620,13 @@
         "aws_op": "ListWebApps"
       },
       "why": "Enumerate Transfer Web App objects with ListWebApps — an inventory of the account's web apps and how each is tagged.",
+      "enrich": {
+        "op": "DescribeWebApp",
+        "params": {
+          "WebAppId": {"from": "WebAppId"}
+        },
+        "why": "The list call returns a summary; DescribeWebApp returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -11886,12 +12188,33 @@
         "aws_op": "ListNetworkMigrationDefinitions"
       },
       "why": "Enumerate MGN Network Migration Definition objects with ListNetworkMigrationDefinitions — an inventory of the account's network migration definitions and how each is tagged.",
+      "enrich": {
+        "op": "GetNetworkMigrationDefinition",
+        "params": {
+          "networkMigrationDefinitionID": {"from": "networkMigrationDefinitionID"}
+        },
+        "why": "The list call returns a summary; GetNetworkMigrationDefinition returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.tags, _hydrate.detail.data.scopeTags; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags, scopeTags sensitive in the mgn ListNetworkMigrationDefinitions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.tags",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.scopeTags",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "tags",
             "category": "customer_content",
@@ -12104,6 +12427,13 @@
         "aws_op": "ListBrokers"
       },
       "why": "Enumerate AmazonMQ Broker objects with ListBrokers — an inventory of the account's brokers and how each is tagged.",
+      "enrich": {
+        "op": "DescribeBroker",
+        "params": {
+          "BrokerId": {"from": "BrokerId"}
+        },
+        "why": "The list call returns a summary; DescribeBroker returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -12795,6 +13125,13 @@
         "aws_op": "ListFlywheels"
       },
       "why": "Enumerate Comprehend Flywheel objects with ListFlywheels — an inventory of the account's flywheels and how each is tagged.",
+      "enrich": {
+        "op": "DescribeFlywheel",
+        "params": {
+          "FlywheelArn": {"from": "FlywheelArn"}
+        },
+        "why": "The list call returns a summary; DescribeFlywheel returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14423,6 +14760,13 @@
         "aws_op": "ListMonitors"
       },
       "why": "Enumerate InternetMonitor Monitor objects with ListMonitors — an inventory of the account's monitors and how each is tagged.",
+      "enrich": {
+        "op": "GetMonitor",
+        "params": {
+          "MonitorName": {"from": "MonitorName"}
+        },
+        "why": "The list call returns a summary; GetMonitor returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14464,6 +14808,13 @@
         "aws_op": "ListAuthorizers"
       },
       "why": "Enumerate IoT Authorizer objects with ListAuthorizers — an inventory of the account's authorizers and how each is tagged.",
+      "enrich": {
+        "op": "DescribeAuthorizer",
+        "params": {
+          "authorizerName": {"from": "authorizerName"}
+        },
+        "why": "The list call returns a summary; DescribeAuthorizer returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14505,6 +14856,13 @@
         "aws_op": "ListBillingGroups"
       },
       "why": "Enumerate IoT Billing Group objects with ListBillingGroups — an inventory of the account's billing groups and how each is tagged.",
+      "enrich": {
+        "op": "DescribeBillingGroup",
+        "params": {
+          "billingGroupName": {"from": "groupName"}
+        },
+        "why": "The list call returns a summary; DescribeBillingGroup returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14586,6 +14944,13 @@
         "aws_op": "ListCertificates"
       },
       "why": "Enumerate IoT Certificate objects with ListCertificates — an inventory of the account's certificates and how each is tagged.",
+      "enrich": {
+        "op": "DescribeCertificate",
+        "params": {
+          "certificateId": {"from": "certificateId"}
+        },
+        "why": "The list call returns a summary; DescribeCertificate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14626,6 +14991,13 @@
         "aws_op": "ListCertificateProviders"
       },
       "why": "Enumerate IoT Certificate Provider objects with ListCertificateProviders — an inventory of the account's certificate providers and how each is tagged.",
+      "enrich": {
+        "op": "DescribeCertificateProvider",
+        "params": {
+          "certificateProviderName": {"from": "certificateProviderName"}
+        },
+        "why": "The list call returns a summary; DescribeCertificateProvider returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14667,6 +15039,13 @@
         "aws_op": "ListCommands"
       },
       "why": "Enumerate IoT Command objects with ListCommands — an inventory of the account's commands and how each is tagged.",
+      "enrich": {
+        "op": "GetCommand",
+        "params": {
+          "commandId": {"from": "commandId"}
+        },
+        "why": "The list call returns a summary; GetCommand returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14708,6 +15087,13 @@
         "aws_op": "ListDomainConfigurations"
       },
       "why": "Enumerate IoT Domain Configuration objects with ListDomainConfigurations — an inventory of the account's domain configurations and how each is tagged.",
+      "enrich": {
+        "op": "DescribeDomainConfiguration",
+        "params": {
+          "domainConfigurationName": {"from": "domainConfigurationName"}
+        },
+        "why": "The list call returns a summary; DescribeDomainConfiguration returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14749,6 +15135,13 @@
         "aws_op": "ListFleetMetrics"
       },
       "why": "Enumerate IoT Fleet Metric objects with ListFleetMetrics — an inventory of the account's fleet metrics and how each is tagged.",
+      "enrich": {
+        "op": "DescribeFleetMetric",
+        "params": {
+          "metricName": {"from": "metricName"}
+        },
+        "why": "The list call returns a summary; DescribeFleetMetric returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14790,6 +15183,13 @@
         "aws_op": "ListJobTemplates"
       },
       "why": "Enumerate IoT Job Template objects with ListJobTemplates — an inventory of the account's job templates and how each is tagged.",
+      "enrich": {
+        "op": "DescribeJobTemplate",
+        "params": {
+          "jobTemplateId": {"from": "jobTemplateId"}
+        },
+        "why": "The list call returns a summary; DescribeJobTemplate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14830,6 +15230,13 @@
         "aws_op": "ListMitigationActions"
       },
       "why": "Enumerate IoT Mitigation Action objects with ListMitigationActions — an inventory of the account's mitigation actions and how each is tagged.",
+      "enrich": {
+        "op": "DescribeMitigationAction",
+        "params": {
+          "actionName": {"from": "actionName"}
+        },
+        "why": "The list call returns a summary; DescribeMitigationAction returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14871,6 +15278,13 @@
         "aws_op": "ListPolicies"
       },
       "why": "Enumerate IoT Policy objects with ListPolicies — an inventory of the account's policys and how each is tagged.",
+      "enrich": {
+        "op": "GetPolicy",
+        "params": {
+          "policyName": {"from": "policyName"}
+        },
+        "why": "The list call returns a summary; GetPolicy returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -14912,6 +15326,13 @@
         "aws_op": "ListProvisioningTemplates"
       },
       "why": "Enumerate IoT Provisioning Template objects with ListProvisioningTemplates — an inventory of the account's provisioning templates and how each is tagged.",
+      "enrich": {
+        "op": "DescribeProvisioningTemplate",
+        "params": {
+          "templateName": {"from": "templateName"}
+        },
+        "why": "The list call returns a summary; DescribeProvisioningTemplate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -15035,6 +15456,13 @@
         "aws_op": "ListStreams"
       },
       "why": "Enumerate IoT Stream objects with ListStreams — an inventory of the account's streams and how each is tagged.",
+      "enrich": {
+        "op": "DescribeStream",
+        "params": {
+          "streamId": {"from": "streamId"}
+        },
+        "why": "The list call returns a summary; DescribeStream returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -15075,6 +15503,13 @@
         "aws_op": "ListThingGroups"
       },
       "why": "Enumerate IoT Thing Group objects with ListThingGroups — an inventory of the account's thing groups and how each is tagged.",
+      "enrich": {
+        "op": "DescribeThingGroup",
+        "params": {
+          "thingGroupName": {"from": "groupName"}
+        },
+        "why": "The list call returns a summary; DescribeThingGroup returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -15503,6 +15938,13 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate KinesisAnalytics Application objects with ListApplications — an inventory of the account's applications and how each is tagged.",
+      "enrich": {
+        "op": "DescribeApplication",
+        "params": {
+          "ApplicationName": {"from": "ApplicationName"}
+        },
+        "why": "The list call returns a summary; DescribeApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -15544,6 +15986,13 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate KinesisAnalyticsV2 Application objects with ListApplications — an inventory of the account's applications and how each is tagged.",
+      "enrich": {
+        "op": "DescribeApplication",
+        "params": {
+          "ApplicationName": {"from": "ApplicationName"}
+        },
+        "why": "The list call returns a summary; DescribeApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -15760,6 +16209,13 @@
         "aws_op": "ListVpcConnections"
       },
       "why": "Enumerate MSK Vpc Connection objects with ListVpcConnections — an inventory of the account's vpc connections and how each is tagged.",
+      "enrich": {
+        "op": "DescribeVpcConnection",
+        "params": {
+          "Arn": {"from": "VpcConnectionArn"}
+        },
+        "why": "The list call returns a summary; DescribeVpcConnection returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -16556,6 +17012,13 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate OpenSearchService Application objects with ListApplications — an inventory of the account's applications and how each is tagged.",
+      "enrich": {
+        "op": "GetApplication",
+        "params": {
+          "id": {"from": "id"}
+        },
+        "why": "The list call returns a summary; GetApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17047,6 +17510,13 @@
         "aws_op": "ListProfiles"
       },
       "why": "Enumerate Route53Profiles Profile objects with ListProfiles — an inventory of the account's profiles and how each is tagged.",
+      "enrich": {
+        "op": "GetProfile",
+        "params": {
+          "ProfileId": {"from": "Id"}
+        },
+        "why": "The list call returns a summary; GetProfile returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17088,6 +17558,13 @@
         "aws_op": "ListFirewallDomainLists"
       },
       "why": "Enumerate Route53Resolver Firewall Domain List objects with ListFirewallDomainLists — an inventory of the account's firewall domain lists and how each is tagged.",
+      "enrich": {
+        "op": "GetFirewallDomainList",
+        "params": {
+          "FirewallDomainListId": {"from": "Id"}
+        },
+        "why": "The list call returns a summary; GetFirewallDomainList returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17375,6 +17852,13 @@
         "aws_op": "ListDeviceFleets"
       },
       "why": "Enumerate SageMaker Device Fleet objects with ListDeviceFleets — an inventory of the account's device fleets and how each is tagged.",
+      "enrich": {
+        "op": "DescribeDeviceFleet",
+        "params": {
+          "DeviceFleetName": {"from": "DeviceFleetName"}
+        },
+        "why": "The list call returns a summary; DescribeDeviceFleet returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17416,6 +17900,13 @@
         "aws_op": "ListDomains"
       },
       "why": "Enumerate SageMaker Domain objects with ListDomains — an inventory of the account's domains and how each is tagged.",
+      "enrich": {
+        "op": "DescribeDomain",
+        "params": {
+          "DomainId": {"from": "DomainId"}
+        },
+        "why": "The list call returns a summary; DescribeDomain returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17457,6 +17948,13 @@
         "aws_op": "ListExperiments"
       },
       "why": "Enumerate SageMaker Experiment objects with ListExperiments — an inventory of the account's experiments and how each is tagged.",
+      "enrich": {
+        "op": "DescribeExperiment",
+        "params": {
+          "ExperimentName": {"from": "ExperimentName"}
+        },
+        "why": "The list call returns a summary; DescribeExperiment returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17498,6 +17996,13 @@
         "aws_op": "ListFeatureGroups"
       },
       "why": "Enumerate SageMaker Feature Group objects with ListFeatureGroups — an inventory of the account's feature groups and how each is tagged.",
+      "enrich": {
+        "op": "DescribeFeatureGroup",
+        "params": {
+          "FeatureGroupName": {"from": "FeatureGroupName"}
+        },
+        "why": "The list call returns a summary; DescribeFeatureGroup returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17539,12 +18044,26 @@
         "aws_op": "ListModelCards"
       },
       "why": "Enumerate SageMaker Model Card objects with ListModelCards — an inventory of the account's model cards and how each is tagged.",
+      "enrich": {
+        "op": "DescribeModelCard",
+        "params": {
+          "ModelCardName": {"from": "ModelCardName"}
+        },
+        "why": "The list call returns a summary; DescribeModelCard returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Content; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModelCards item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.Content",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -17580,6 +18099,13 @@
         "aws_op": "ListPipelines"
       },
       "why": "Enumerate SageMaker Pipeline objects with ListPipelines — an inventory of the account's pipelines and how each is tagged.",
+      "enrich": {
+        "op": "DescribePipeline",
+        "params": {
+          "PipelineName": {"from": "PipelineName"}
+        },
+        "why": "The list call returns a summary; DescribePipeline returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17662,6 +18188,13 @@
         "aws_op": "ListSchedules"
       },
       "why": "Enumerate Scheduler Schedule objects with ListSchedules — an inventory of the account's schedules and how each is tagged.",
+      "enrich": {
+        "op": "GetSchedule",
+        "params": {
+          "Name": {"from": "Name"}
+        },
+        "why": "The list call returns a summary; GetSchedule returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -17949,12 +18482,40 @@
         "aws_op": "ListStateMachines"
       },
       "why": "Enumerate StepFunctions State Machine objects with ListStateMachines — an inventory of the account's state machines and how each is tagged.",
+      "enrich": {
+        "op": "DescribeStateMachine",
+        "params": {
+          "stateMachineArn": {"from": "stateMachineArn"}
+        },
+        "why": "The list call returns a summary; DescribeStateMachine returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.definition, _hydrate.detail.data.description, _hydrate.detail.data.variableReferences; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore stepfunctions ListStateMachines item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.definition",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.description",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.variableReferences",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -17990,6 +18551,13 @@
         "aws_op": "ListGroups"
       },
       "why": "Enumerate Synthetics Group objects with ListGroups — an inventory of the account's groups and how each is tagged.",
+      "enrich": {
+        "op": "GetGroup",
+        "params": {
+          "GroupIdentifier": {"from": "Id"}
+        },
+        "why": "The list call returns a summary; GetGroup returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -18113,12 +18681,33 @@
         "aws_op": "ListCertificates"
       },
       "why": "Enumerate Transfer Certificate objects with ListCertificates — an inventory of the account's certificates and how each is tagged.",
+      "enrich": {
+        "op": "DescribeCertificate",
+        "params": {
+          "CertificateId": {"from": "CertificateId"}
+        },
+        "why": "The list call returns a summary; DescribeCertificate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Certificate.Certificate, _hydrate.detail.data.Certificate.CertificateChain; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore transfer ListCertificates item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.Certificate.Certificate",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.Certificate.CertificateChain",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -18153,12 +18742,26 @@
         "aws_op": "ListConnectors"
       },
       "why": "Enumerate Transfer Connector objects with ListConnectors — an inventory of the account's connectors and how each is tagged.",
+      "enrich": {
+        "op": "DescribeConnector",
+        "params": {
+          "ConnectorId": {"from": "ConnectorId"}
+        },
+        "why": "The list call returns a summary; DescribeConnector returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Connector.As2Config.MessageSubject; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore transfer ListConnectors item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.Connector.As2Config.MessageSubject",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -18233,6 +18836,13 @@
         "aws_op": "ListWorkflows"
       },
       "why": "Enumerate Transfer Workflow objects with ListWorkflows — an inventory of the account's workflows and how each is tagged.",
+      "enrich": {
+        "op": "DescribeWorkflow",
+        "params": {
+          "WorkflowId": {"from": "WorkflowId"}
+        },
+        "why": "The list call returns a summary; DescribeWorkflow returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -18273,12 +18883,26 @@
         "aws_op": "ListPolicyStores"
       },
       "why": "Enumerate VerifiedPermissions Policy Store objects with ListPolicyStores — an inventory of the account's policy stores and how each is tagged.",
+      "enrich": {
+        "op": "GetPolicyStore",
+        "params": {
+          "policyStoreId": {"from": "policyStoreId"}
+        },
+        "why": "The list call returns a summary; GetPolicyStore returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.description; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks description sensitive in the verifiedpermissions ListPolicyStores item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.description",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "description",
             "category": "free_text",
@@ -19436,6 +20060,13 @@
         "aws_op": "ListProfiles"
       },
       "why": "Enumerate WellArchitected Profile objects with ListProfiles — an inventory of the account's profiles and how each is tagged.",
+      "enrich": {
+        "op": "GetProfile",
+        "params": {
+          "ProfileArn": {"from": "ProfileArn"}
+        },
+        "why": "The list call returns a summary; GetProfile returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -19477,6 +20108,13 @@
         "aws_op": "ListReviewTemplates"
       },
       "why": "Enumerate WellArchitected Review Template objects with ListReviewTemplates — an inventory of the account's review templates and how each is tagged.",
+      "enrich": {
+        "op": "GetReviewTemplate",
+        "params": {
+          "TemplateArn": {"from": "TemplateArn"}
+        },
+        "why": "The list call returns a summary; GetReviewTemplate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -19518,6 +20156,13 @@
         "aws_op": "ListWorkloads"
       },
       "why": "Enumerate WellArchitected Workload objects with ListWorkloads — an inventory of the account's workloads and how each is tagged.",
+      "enrich": {
+        "op": "GetWorkload",
+        "params": {
+          "WorkloadId": {"from": "WorkloadId"}
+        },
+        "why": "The list call returns a summary; GetWorkload returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -28198,12 +28843,33 @@
         }
       },
       "why": "Enumerate Bedrock Data Automation Blueprint objects with ListBlueprints — an inventory of the account's blueprints and how each is tagged.",
+      "enrich": {
+        "op": "GetBlueprint",
+        "params": {
+          "blueprintArn": {"from": "blueprintArn"}
+        },
+        "why": "The list call returns a summary; GetBlueprint returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.blueprint.schema, _hydrate.detail.data.blueprint.blueprintName; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks blueprintName sensitive in the bedrock-data-automation ListBlueprints item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.blueprint.schema",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.blueprint.blueprintName",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "blueprintName",
             "category": "customer_content",
@@ -28253,12 +28919,33 @@
         "aws_op": "ListDataAutomationLibraries"
       },
       "why": "Enumerate Bedrock Data Automation Library objects with ListDataAutomationLibraries — an inventory of the account's data automation librarys and how each is tagged.",
+      "enrich": {
+        "op": "GetDataAutomationLibrary",
+        "params": {
+          "libraryArn": {"from": "libraryArn"}
+        },
+        "why": "The list call returns a summary; GetDataAutomationLibrary returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.library.libraryName, _hydrate.detail.data.library.libraryDescription; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks libraryName sensitive in the bedrock-data-automation ListDataAutomationLibraries item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.library.libraryName",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.library.libraryDescription",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "libraryName",
             "category": "customer_content",
@@ -28311,12 +28998,33 @@
         }
       },
       "why": "Enumerate Bedrock Data Automation Project objects with ListDataAutomationProjects — an inventory of the account's data automation projects and how each is tagged.",
+      "enrich": {
+        "op": "GetDataAutomationProject",
+        "params": {
+          "projectArn": {"from": "projectArn"}
+        },
+        "why": "The list call returns a summary; GetDataAutomationProject returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.project.projectName, _hydrate.detail.data.project.projectDescription; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks projectName sensitive in the bedrock-data-automation ListDataAutomationProjects item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.project.projectName",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.project.projectDescription",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "projectName",
             "category": "customer_content",
@@ -28527,12 +29235,40 @@
         "aws_op": "ListRetrievalInstructions"
       },
       "why": "Enumerate Bedrock Retrieval Instruction objects with ListRetrievalInstructions — an inventory of the account's retrieval instructions and how each is tagged.",
+      "enrich": {
+        "op": "GetRetrievalInstruction",
+        "params": {
+          "retrievalInstructionId": {"from": "retrievalInstructionId"}
+        },
+        "why": "The list call returns a summary; GetRetrievalInstruction returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.name, _hydrate.detail.data.instruction, _hydrate.detail.data.description; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks name, description sensitive in the bedrock-agent ListRetrievalInstructions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.name",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.instruction",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.description",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "name",
             "category": "customer_content",
@@ -28714,6 +29450,13 @@
         "aws_op": "ListGeneratedTemplates"
       },
       "why": "Enumerate CloudFormation Generated Template objects with ListGeneratedTemplates — an inventory of the account's generated templates and how each is tagged.",
+      "enrich": {
+        "op": "DescribeGeneratedTemplate",
+        "params": {
+          "GeneratedTemplateName": {"from": "GeneratedTemplateName"}
+        },
+        "why": "The list call returns a summary; DescribeGeneratedTemplate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -28739,6 +29482,13 @@
         "aws_op": "ListStackSets"
       },
       "why": "Enumerate CloudFormation Stack Set objects with ListStackSets — an inventory of the account's stack sets and how each is tagged.",
+      "enrich": {
+        "op": "DescribeStackSet",
+        "params": {
+          "StackSetName": {"from": "StackSetName"}
+        },
+        "why": "The list call returns a summary; DescribeStackSet returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -29182,6 +29932,13 @@
         "aws_op": "ListAppMonitors"
       },
       "why": "Enumerate RUM App Monitor objects with ListAppMonitors — an inventory of the account's app monitors and how each is tagged.",
+      "enrich": {
+        "op": "GetAppMonitor",
+        "params": {
+          "Name": {"from": "Name"}
+        },
+        "why": "The list call returns a summary; GetAppMonitor returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -29387,6 +30144,13 @@
         "aws_op": "ListMlflowTrackingServers"
       },
       "why": "Enumerate SageMaker Mlflow Tracking Server objects with ListMlflowTrackingServers — an inventory of the account's mlflow tracking servers and how each is tagged.",
+      "enrich": {
+        "op": "DescribeMlflowTrackingServer",
+        "params": {
+          "TrackingServerName": {"from": "TrackingServerName"}
+        },
+        "why": "The list call returns a summary; DescribeMlflowTrackingServer returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -29428,6 +30192,13 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate Serverless Repo Application objects with ListApplications — an inventory of the account's applications and how each is tagged.",
+      "enrich": {
+        "op": "GetApplication",
+        "params": {
+          "ApplicationId": {"from": "ApplicationId"}
+        },
+        "why": "The list call returns a summary; GetApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -29616,6 +30387,13 @@
         "aws_op": "ListCoreNetworks"
       },
       "why": "Enumerate NetworkManager Core Network objects with ListCoreNetworks — an inventory of the account's core networks and how each is tagged.",
+      "enrich": {
+        "op": "GetCoreNetwork",
+        "params": {
+          "CoreNetworkId": {"from": "CoreNetworkId"}
+        },
+        "why": "The list call returns a summary; GetCoreNetwork returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -30010,6 +30788,13 @@
         }
       },
       "why": "Enumerate Backup Logically Air Gapped Backup Vault objects with ListBackupVaults — an inventory of the account's logically air gapped backup vaults and how each is tagged.",
+      "enrich": {
+        "op": "DescribeBackupVault",
+        "params": {
+          "BackupVaultName": {"from": "BackupVaultName"}
+        },
+        "why": "The list call returns a summary; DescribeBackupVault returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -34691,6 +35476,13 @@
         "aws_op": "ListRescoreExecutionPlans"
       },
       "why": "Enumerate KendraRanking Execution Plan objects with ListRescoreExecutionPlans — an inventory of the account's rescore execution plans and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for Kendra Intelligent Ranking resource rescore-execution-plan: arn:${Partition}:kendra-ranking:${Region}:${Account}:rescore-execution-plan/${RescoreExecutionPlanId}.",
+      "enrich": {
+        "op": "DescribeRescoreExecutionPlan",
+        "params": {
+          "Id": {"from": "Id"}
+        },
+        "why": "The list call returns a summary; DescribeRescoreExecutionPlan returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -34902,6 +35694,13 @@
         }
       },
       "why": "Enumerate SSM Document objects with ListDocuments — an inventory of the account's documents and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for Systems Manager resource document: arn:${Partition}:ssm:${Region}:${Account}:document/${DocumentName}. The listing is limited to documents the account owns (botocore ssm ListDocuments: 'to return documents you own use Key=Owner,Values=Self'), not the Amazon-provided ones.",
+      "enrich": {
+        "op": "DescribeDocument",
+        "params": {
+          "Name": {"from": "Name"}
+        },
+        "why": "The list call returns a summary; DescribeDocument returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -34968,6 +35767,14 @@
         "aws_op": "ListSpaces"
       },
       "why": "Enumerate SageMaker Space objects with ListSpaces — an inventory of the account's spaces and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for SageMaker AI resource space: arn:${Partition}:sagemaker:${Region}:${Account}:space/${DomainId}/${SpaceName}.",
+      "enrich": {
+        "op": "DescribeSpace",
+        "params": {
+          "DomainId": {"from": "DomainId"},
+          "SpaceName": {"from": "SpaceName"}
+        },
+        "why": "The list call returns a summary; DescribeSpace returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -35012,6 +35819,14 @@
         "aws_op": "ListUserProfiles"
       },
       "why": "Enumerate SageMaker User Profile objects with ListUserProfiles — an inventory of the account's user profiles and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for SageMaker AI resource user-profile: arn:${Partition}:sagemaker:${Region}:${Account}:user-profile/${DomainId}/${UserProfileName}.",
+      "enrich": {
+        "op": "DescribeUserProfile",
+        "params": {
+          "DomainId": {"from": "DomainId"},
+          "UserProfileName": {"from": "UserProfileName"}
+        },
+        "why": "The list call returns a summary; DescribeUserProfile returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -35056,6 +35871,13 @@
         "aws_op": "ListInferenceExperiments"
       },
       "why": "Enumerate SageMaker Inference Experiment objects with ListInferenceExperiments — an inventory of the account's inference experiments and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for SageMaker AI resource inference-experiment: arn:${Partition}:sagemaker:${Region}:${Account}:inference-experiment/${InferenceExperimentName}.",
+      "enrich": {
+        "op": "DescribeInferenceExperiment",
+        "params": {
+          "Name": {"from": "Name"}
+        },
+        "why": "The list call returns a summary; DescribeInferenceExperiment returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -35100,6 +35922,13 @@
         "aws_op": "ListVocabularies"
       },
       "why": "Enumerate Transcribe Vocabulary objects with ListVocabularies — an inventory of the account's custom vocabularies and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for Transcribe resource vocabulary: arn:${Partition}:transcribe:${Region}:${Account}:vocabulary/${VocabularyName}.",
+      "enrich": {
+        "op": "GetVocabulary",
+        "params": {
+          "VocabularyName": {"from": "VocabularyName"}
+        },
+        "why": "The list call returns a summary; GetVocabulary returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -35188,6 +36017,13 @@
         "aws_op": "ListVocabularyFilters"
       },
       "why": "Enumerate Transcribe Vocabulary Filter objects with ListVocabularyFilters — an inventory of the account's vocabulary filters and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for Transcribe resource vocabularyfilter: arn:${Partition}:transcribe:${Region}:${Account}:vocabulary-filter/${VocabularyFilterName}.",
+      "enrich": {
+        "op": "GetVocabularyFilter",
+        "params": {
+          "VocabularyFilterName": {"from": "VocabularyFilterName"}
+        },
+        "why": "The list call returns a summary; GetVocabularyFilter returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -36358,12 +37194,33 @@
         "_arn": "arn:{partition}:geo:{region}:{account}:geofence-collection/{CollectionName}"
       },
       "why": "Enumerate Amazon Location Service geofence collections with ListGeofenceCollections. Only the listing is read; an API key's value is never fetched.",
+      "enrich": {
+        "op": "DescribeGeofenceCollection",
+        "params": {
+          "CollectionName": {"from": "CollectionName"}
+        },
+        "why": "The list call returns a summary; DescribeGeofenceCollection returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.CreateTime, _hydrate.detail.data.UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Read botocore location ListGeofenceCollections output shape and the CloudFormation schema for AWS::Location::GeofenceCollection (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListGeofenceCollections item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.CreateTime",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.UpdateTime",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "CreateTime",
             "category": "customer_content",
@@ -36429,12 +37286,40 @@
         "_arn": "arn:{partition}:geo:{region}:{account}:map/{MapName}"
       },
       "why": "Enumerate Amazon Location Service maps with ListMaps. Only the listing is read; an API key's value is never fetched.",
+      "enrich": {
+        "op": "DescribeMap",
+        "params": {
+          "MapName": {"from": "MapName"}
+        },
+        "why": "The list call returns a summary; DescribeMap returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Configuration.PoliticalView, _hydrate.detail.data.CreateTime, _hydrate.detail.data.UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Read botocore location ListMaps output shape and the CloudFormation schema for AWS::Location::Map (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListMaps item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.Configuration.PoliticalView",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.CreateTime",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.UpdateTime",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "CreateTime",
             "category": "customer_content",
@@ -36642,12 +37527,33 @@
         "_arn": "arn:{partition}:geo:{region}:{account}:tracker/{TrackerName}"
       },
       "why": "Enumerate Amazon Location Service trackers with ListTrackers. Only the listing is read; an API key's value is never fetched.",
+      "enrich": {
+        "op": "DescribeTracker",
+        "params": {
+          "TrackerName": {"from": "TrackerName"}
+        },
+        "why": "The list call returns a summary; DescribeTracker returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.CreateTime, _hydrate.detail.data.UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Read botocore location ListTrackers output shape and the CloudFormation schema for AWS::Location::Tracker (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListTrackers item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.CreateTime",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
+          {
+            "path": "_hydrate.detail.data.UpdateTime",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "CreateTime",
             "category": "customer_content",
@@ -37206,6 +38112,13 @@
         "_arn": "arn:{partition}:textract:{region}:{account}:/adapters/{AdapterId}"
       },
       "why": "Enumerate Textract adapters with ListAdapters - the customised models that tune text extraction for a document type.",
+      "enrich": {
+        "op": "GetAdapter",
+        "params": {
+          "AdapterId": {"from": "AdapterId"}
+        },
+        "why": "The list call returns a summary; GetAdapter returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -38087,6 +39000,13 @@
         "aws_op": "ListMalwareProtectionPlans"
       },
       "why": "Enumerate GuardDuty Malware Protection Plan objects with ListMalwareProtectionPlans — an inventory of the account's malware protection plans and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/guardduty/guardduty.json) resource 'malwareprotectionplan': arn:${Partition}:guardduty:${Region}:${Account}:malware-protection-plan/${MalwareProtectionPlanId}.",
+      "enrich": {
+        "op": "GetMalwareProtectionPlan",
+        "params": {
+          "MalwareProtectionPlanId": {"from": "MalwareProtectionPlanId"}
+        },
+        "why": "The list call returns a summary; GetMalwareProtectionPlan returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -38466,12 +39386,26 @@
         "aws_op": "ListApplications"
       },
       "why": "Enumerate QBusiness Application objects with ListApplications — an inventory of the account's applications and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/qbusiness/qbusiness.json) resource 'application': arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}.",
+      "enrich": {
+        "op": "GetApplication",
+        "params": {
+          "applicationId": {"from": "applicationId"}
+        },
+        "why": "The list call returns a summary; GetApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.encryptionConfiguration.kmsKeyId; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore qbusiness ListApplications item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
+          {
+            "path": "_hydrate.detail.data.encryptionConfiguration.kmsKeyId",
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
+          },
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
@@ -39121,6 +40055,13 @@
         "aws_op": "ListRateBasedRules"
       },
       "why": "Enumerate WAFRegional Rate Based Rule objects with ListRateBasedRules — an inventory of the account's rate based rules and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/waf-regional/waf-regional.json) resource 'ratebasedrule': arn:${Partition}:waf-regional:${Region}:${Account}:ratebasedrule/${Id}.",
+      "enrich": {
+        "op": "GetRateBasedRule",
+        "params": {
+          "RuleId": {"from": "RuleId"}
+        },
+        "why": "The list call returns a summary; GetRateBasedRule returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -39165,6 +40106,13 @@
         "aws_op": "ListWebACLs"
       },
       "why": "Enumerate WAFRegional Web ACL objects with ListWebACLs — an inventory of the account's web acls and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/waf-regional/waf-regional.json) resource 'webacl': arn:${Partition}:waf-regional:${Region}:${Account}:webacl/${Id}.",
+      "enrich": {
+        "op": "GetWebACL",
+        "params": {
+          "WebACLId": {"from": "WebACLId"}
+        },
+        "why": "The list call returns a summary; GetWebACL returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -40268,6 +41216,13 @@
         ]
       },
       "why": "Enumerate Glue Connection Type objects with ListConnectionTypes — an inventory of the account's connection types and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for Glue resource connectionType: arn:${Partition}:glue:${Region}:${Account}:connectionType:${ConnectionTypeName}. ListConnectionTypes returns the built-in connection types too; the entry keeps the customer-registered ones, which RegisterConnectionType requires to be named with the prefix 'REST-' (botocore: 'must be prefixed with \"REST-\"').",
+      "enrich": {
+        "op": "DescribeConnectionType",
+        "params": {
+          "ConnectionType": {"from": "ConnectionType"}
+        },
+        "why": "The list call returns a summary; DescribeConnectionType returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+      },
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
