@@ -849,7 +849,7 @@ def _row_dump(node) -> str:
 
 #: Canaries planted where the response holds operator-authored content that AWS does not mark sensitive and no secret
 #: key names: a header mapping, a command line, a WAF match string. These are collected (req-aws-collector-redaction-4).
-_STORED_BY_POLICY = {_APIGW_CANARY, _ECS_CMD_CANARY, _WAF_CANARY}
+_STORED_BY_POLICY = {_ECS_CMD_CANARY, _WAF_CANARY}
 
 
 @pytest.mark.django_db
