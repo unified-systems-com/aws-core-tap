@@ -16,7 +16,7 @@ import pytest
 from botocore.exceptions import ClientError
 from tap_plugin.aws_core import models as models_pkg
 from tap_plugin.aws_core.collectors.boto3_collector.authority import EDGE_READS
-from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
+from tap_plugin.aws_core.collectors.boto3_collector.batch import entry_redact_paths, node_envelope
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     ecs_clusters_described,
     ecs_containers_described,
@@ -360,10 +360,10 @@ class TestSharedWalk:
 
 
 class TestSensitivityAndConfiguration:
-    def test_all_four_entries_keep_configuration_off(self):
-        """req-aws-collector-ecs-9 (George, 2026-10-16: off)."""
+    def test_all_four_entries_store_their_response(self):
+        """req-aws-collector-redaction-1: stored whole; the credential paths are removed before storage (next test)."""
         for entity_type in _ECS_TYPES:
-            assert _entry(entity_type)["persist_configuration"] is False
+            assert _entry(entity_type)["persist_configuration"] is True
 
     def test_task_declares_override_environment_and_command_as_credentials(self):
         """req-aws-collector-ecs-9"""
@@ -373,14 +373,18 @@ class TestSensitivityAndConfiguration:
         assert locations["overrides.containerOverrides[].environment"] == "credential"
         assert locations["overrides.containerOverrides[].command"] == "credential"
 
-    def test_canary_never_reaches_the_node_envelope(self):
-        """req-aws-collector-ecs-9: the planted canary is in the in-memory item and in no emitted payload."""
+    def test_the_environment_canary_never_reaches_the_node_envelope(self):
+        """req-aws-collector-redaction-1: the environment override is a declared secret path and is removed before
+        storage; the command override is customer content (reviewer judgement, not a provider-marked secret) and is kept."""
         _, walk = _walk()
         entry = _entry("aws_core__aws_ecs_task")
         node = project_item(entry, walk.tasks[0])
         assert _ENV_CANARY in json.dumps(node.raw_item, default=str) and _CMD_CANARY in json.dumps(node.raw_item, default=str)
-        emitted = json.dumps(node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"]))
-        assert _ENV_CANARY not in emitted and _CMD_CANARY not in emitted
+        emitted = json.dumps(
+            node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"], redact_paths=entry_redact_paths(entry))
+        )
+        assert _ENV_CANARY not in emitted
+        assert _CMD_CANARY in emitted
 
 
 _ECS_TYPES = [

@@ -553,6 +553,10 @@
             "botocore_sensitive",
             "reviewer_judgement"
           ]
+        },
+        "redact": {
+          "description": "True: the value at this path is removed from the stored configuration (req-aws-collector-redaction). Set only for secret material: keys, passwords, credentials, and the members AWS itself marks sensitive. Absent or false: the value is stored; the location is a note that something sensitive-looking may be there.",
+          "type": "boolean"
         }
       }
     }
