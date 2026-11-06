@@ -98,3 +98,78 @@ class TestInARun:
         applied = base._applied(collector)
         assert applied["entries_skipped"] == 0
         assert len([r for r in collector.results["info"] if r["message_code"] == "SERVICE_NOT_AVAILABLE_IN_PARTITION"]) >= 22
+
+
+def _entries_of(service: str) -> list[dict]:
+    return [e for e in _ENTRIES.values() if e["service"] == service]
+
+
+class TestRegionsAndFips:
+    """A block may hold only in some regions of the partition, or only with FIPS endpoints on or off
+    (req-aws-collector-partition-15)."""
+
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    def test_a_service_offered_in_gov_west_only_is_skipped_in_gov_east_only(self):
+        for entry in _entries_of("polly"):
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-east-1", False)
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", False) is None
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry) is None, "no region in hand: the block is not applied"
+
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    def test_a_service_with_no_fips_endpoint_is_skipped_only_when_fips_is_on(self):
+        for entry in _entries_of("schemas"):
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", True)
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", False) is None
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", None) is None
+
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    def test_kinesisvideo_is_skipped_unless_fips_is_on(self):
+        for entry in _entries_of("kinesisvideo"):
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", False)
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", None)
+            assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", True) is None
+
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    def test_a_block_with_both_limits_needs_both(self):
+        (entry, *_) = _entries_of("bedrock-agent")
+        assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-east-1", True)
+        assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-east-1", False) is None
+        assert entry_unavailable_reason(PARTITION_US_GOV, entry, "us-gov-west-1", True) is None
+
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    def test_a_conditional_block_is_not_a_whole_service_listing(self):
+        assert partition_mod.service_unavailable_reason(PARTITION_US_GOV, "polly") is None
+        assert partition_mod.service_unavailable_reason(PARTITION_US_GOV, "kinesisvideo") is None
+
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    @pytest.mark.parametrize(
+        ("extra", "valid"),
+        [
+            ({"regions": ["us-gov-east-1"]}, True),
+            ({"fips": True}, True),
+            ({"regions": ["us-gov-east-1"], "fips": False}, True),
+            ({"regions": []}, False),
+            ({"regions": ["us-gov-east-1", "us-gov-east-1"]}, False),
+            ({"fips": "yes"}, False),
+        ],
+    )
+    def test_the_schema_takes_regions_and_fips_and_refuses_malformed_ones(self, extra, valid):
+        schema = load_schema(SCHEMA_PATH)
+        block = {"why": "w", "method": "ran", "evidence": "e", "date": "2026-11-05", **extra}
+        entry = {**_entry("ec2_instance"), "not_offered": {"aws-us-gov": block}}
+        if valid:
+            validate_json({"manifest_version": "0", "entries": [entry]}, schema, source="test")
+        else:
+            with pytest.raises(JsonFileError):
+                validate_json({"manifest_version": "0", "entries": [entry]}, schema, source="test")
+
+
+@pytest.mark.django_db
+class TestRegionsInARun:
+    @pytest.mark.spec("req-aws-collector-partition-15")
+    def test_a_west_only_service_is_called_in_west_and_skipped_in_east(self, monkeypatch):
+        base._install(monkeypatch, include_types=["polly:*"], regions_allowed=["us-gov-west-1", "us-gov-east-1"])
+        collector = base._run()
+        skipped = [r for r in collector.results["info"] if r["message_code"] == "SERVICE_NOT_AVAILABLE_IN_PARTITION"]
+        assert skipped and {r["message_data"]["region"] for r in skipped} == {"us-gov-east-1"}
+        assert [s for s, _op in base._RecordingClient.calls if s == "polly"], "still called in gov-west"

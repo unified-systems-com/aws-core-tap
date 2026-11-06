@@ -701,13 +701,14 @@ class Boto3Collector(CollectorBase):
         fips = fips_requested(data)
         probe = EndpointProbe(request_host("sts", regions[0], "GetCallerIdentity", use_fips=fips))
         listed_checked: set[str] = set()
+        listed_checked_regions: set[tuple[str, str]] = set()
         # The footprints are built; read the entries.
         progress = Progress(len(entries))
         progress.start(regions=len(regions), partition=partition, selected_run=selected_run)
         for done, entry in enumerate(entries):
             progress.tick(done, entry, nodes=len(node_envelopes), edges=len(edge_envelopes))
             # A service the partition does not offer is a clear result, not a failed call.
-            not_offered = entry_unavailable_reason(partition, entry)
+            not_offered = entry_unavailable_reason(partition, entry, None, fips)
             if not_offered:
                 unavailable += 1
                 self.record_info(
@@ -729,6 +730,29 @@ class Boto3Collector(CollectorBase):
             contained = entry.get("containment")
             for region in entry_regions:
                 region_label = region if entry["scope"] == "regional" else "global"
+                # A block limited to some regions of the partition (offered in gov-west, not in gov-east).
+                region_reason = (
+                    entry_unavailable_reason(partition, entry, region, fips)
+                    if "regions" in ((entry.get("not_offered") or {}).get(partition) or {})
+                    else None
+                )
+                if region_reason:
+                    unavailable += 1
+                    self.record_info(
+                        _SITE_SERVICE_UNAVAILABLE,
+                        "SERVICE_NOT_AVAILABLE_IN_PARTITION",
+                        f"{entry['entity_type']} in {region_label}: not available in partition {partition} — {region_reason}",
+                        message_data={
+                            "entity_type": entry["entity_type"],
+                            "service": entry["service"],
+                            "partition": partition,
+                            "region": region_label,
+                        },
+                    )
+                    if (entry["entity_type"], region) not in listed_checked_regions:
+                        listed_checked_regions.add((entry["entity_type"], region))
+                        self._check_listed_host(probe, entry, [region], partition, fips)
+                    continue
                 dimensions = {
                     "cloud": "aws",
                     "aws_account": account_id,

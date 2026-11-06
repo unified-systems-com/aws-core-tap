@@ -27,9 +27,12 @@ def _newest(partition: str) -> dict | None:
     return records[-1] if records else None
 
 
+_ENTRY = {e["entity_type"]: e for e in manifest_entries()}
+
+
 def _listed(partition: str, entity_type: str) -> bool:
-    entry = {"service": _SERVICE[entity_type], "entity_type": entity_type}
-    return bool(partition_mod.entry_unavailable_reason(partition, entry))
+    """Whether the entry is skipped in the partition by a run with FIPS endpoints off, which is how wave 0 ran."""
+    return bool(partition_mod.entry_unavailable_reason(partition, _ENTRY[entity_type], None, False))
 
 
 def test_every_entry_the_newest_record_could_not_reach_is_listed():

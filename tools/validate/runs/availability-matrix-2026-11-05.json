@@ -1,0 +1,352 @@
+{
+ "description": "DNS matrix of the service hosts in the two GovCloud regions, with FIPS endpoints on and off: for every manifest entry one call can read, the host the call would be sent to is worked out (request built unsigned and stopped before it is sent) and looked up. No AWS call, no credential. A host that resolves says the service has an endpoint there, not that the operation works. Service and operation names and booleans only.",
+ "date": "2026-11-05",
+ "script": "tools/validate/availability_matrix.py",
+ "verdict": "pass",
+ "checks": {
+  "the control host (STS) resolves, so the lookups can be believed": "usable: true",
+  "a host was looked up for each service readable by one call": "141 services, 482 distinct hosts, 4 variants"
+ },
+ "trials": [
+  {
+   "usable": true,
+   "variants": [
+    "west-1",
+    "west-1-fips",
+    "east-1",
+    "east-1-fips"
+   ],
+   "services_checked": 141,
+   "hosts_checked": 482,
+   "entries_not_probeable_by_service": 303,
+   "differ_between_variants": [
+    {
+     "service": "backup-gateway",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "bedrock-agent",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "bedrock-data-automation",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "cloudhsmv2",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "comprehend",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "connect",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "databrew",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "emr-serverless",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "iotsitewise",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "iottwinmaker",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "kendra",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "kinesisvideo",
+     "listed": true,
+     "by_variant": {
+      "west-1": "none",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "all"
+     }
+    },
+    {
+     "service": "license-manager-linux-subscriptions",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "location",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "managedblockchain",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "mediaconvert",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "opensearchserverless",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "osis",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "pinpoint",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "polly",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "rekognition",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "route53profiles",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "schemas",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "securitylake",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "all",
+      "west-1-fips": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "timestream-query",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "timestream-write",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "west-1-fips": "all",
+      "east-1": "none",
+      "east-1-fips": "none"
+     }
+    },
+    {
+     "service": "translate",
+     "listed": false,
+     "by_variant": {
+      "west-1": "all",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "none"
+     }
+    }
+   ],
+   "no_host_in_any_variant": [
+    {
+     "service": "datazone",
+     "listed": true
+    },
+    {
+     "service": "ecr-public",
+     "listed": true
+    },
+    {
+     "service": "internetmonitor",
+     "listed": true
+    },
+    {
+     "service": "kendra-ranking",
+     "listed": true
+    },
+    {
+     "service": "notifications",
+     "listed": true
+    },
+    {
+     "service": "qbusiness",
+     "listed": true
+    },
+    {
+     "service": "timestream-influxdb",
+     "listed": true
+    }
+   ],
+   "some_operations_resolve_some_do_not": [
+    {
+     "service": "wellarchitected",
+     "listed": true
+    }
+   ],
+   "listed_not_offered_but_a_host_resolves": [
+    {
+     "service": "kinesisvideo",
+     "by_variant": {
+      "west-1": "none",
+      "east-1": "none",
+      "west-1-fips": "all",
+      "east-1-fips": "all"
+     }
+    },
+    {
+     "service": "wellarchitected",
+     "by_variant": {
+      "west-1": "some",
+      "east-1": "some",
+      "west-1-fips": "some",
+      "east-1-fips": "some"
+     }
+    }
+   ]
+  }
+ ]
+}

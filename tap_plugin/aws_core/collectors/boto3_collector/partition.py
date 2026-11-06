@@ -112,6 +112,19 @@ _NON_MANIFEST_UNAVAILABLE: dict[str, dict[str, str]] = {
 }
 
 
+def _unconditional(block: dict) -> bool:
+    """A ``not_offered`` block that holds for the whole partition, in every region and with FIPS either way."""
+    return "regions" not in block and "fips" not in block
+
+
+def _block_applies(block: dict, region: str | None, fips: bool | None) -> bool:
+    """Whether a block holds for this region and FIPS setting. ``regions`` limits it to the regions named (a call with
+    no region in hand is not covered); ``fips`` limits it to runs with FIPS endpoints on (``true``) or off (``false``)."""
+    if "regions" in block and (region is None or region not in block["regions"]):
+        return False
+    return not ("fips" in block and bool(fips) != block["fips"])
+
+
 def _unavailable_from_manifest(
     entries: list[dict],
 ) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]]]:
@@ -120,14 +133,15 @@ def _unavailable_from_manifest(
     entities: dict[str, dict[str, str]] = {}
     for entry in entries:
         for partition, block in (entry.get("not_offered") or {}).items():
-            entities.setdefault(partition, {})[entry["entity_type"]] = block["why"]
+            if _unconditional(block):
+                entities.setdefault(partition, {})[entry["entity_type"]] = block["why"]
     services: dict[str, dict[str, str]] = {p: dict(m) for p, m in _NON_MANIFEST_UNAVAILABLE.items()}
     by_service: dict[str, list[dict]] = {}
     for entry in entries:
         by_service.setdefault(entry["service"], []).append(entry)
     for service, members in by_service.items():
         for partition in entities:
-            if all(partition in (m.get("not_offered") or {}) for m in members):
+            if all(partition in (m.get("not_offered") or {}) and _unconditional(m["not_offered"][partition]) for m in members):
                 services.setdefault(partition, {})[service] = members[0]["not_offered"][partition]["why"]
     return services, entities
 
@@ -332,9 +346,13 @@ def service_unavailable_reason(partition: str, service: str) -> str | None:
     return _UNAVAILABLE_SERVICES.get(partition, {}).get(service)
 
 
-def entry_unavailable_reason(partition: str, entry: dict) -> str | None:
-    """Why the manifest ``entry`` is not called in ``partition``, or ``None``: its service is listed whole, or its
-    entity type is listed (``req-aws-collector-partition-7``)."""
+def entry_unavailable_reason(partition: str, entry: dict, region: str | None = None, fips: bool | None = None) -> str | None:
+    """Why the manifest ``entry`` is not called in ``partition`` (in ``region``, with FIPS ``fips``), or ``None``: its
+    service is listed whole, or its entity type is (``req-aws-collector-partition-7``), or its block is limited to a
+    region or a FIPS setting that this call is in (``req-aws-collector-partition-15``)."""
+    block = (entry.get("not_offered") or {}).get(partition)
+    if block is not None and not _unconditional(block):
+        return block["why"] if _block_applies(block, region, fips) else None
     return service_unavailable_reason(partition, entry["service"]) or _UNAVAILABLE_ENTITIES.get(partition, {}).get(
         entry["entity_type"]
     )

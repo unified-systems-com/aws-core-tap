@@ -8693,6 +8693,15 @@
       "entity_type": "aws_core__aws_backupgateway_hypervisor",
       "service": "backup-gateway",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "backup-gateway has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListHypervisors"
       },
@@ -9255,6 +9264,15 @@
       "entity_type": "aws_core__aws_eventschemas_discoverer",
       "service": "schemas",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDiscoverers"
       },
@@ -9289,6 +9307,15 @@
       "entity_type": "aws_core__aws_eventschemas_registry",
       "service": "schemas",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRegistries",
         "where": [
@@ -9578,6 +9605,15 @@
       "entity_type": "aws_core__aws_iotsitewise_application",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListApplications"
       },
@@ -10274,6 +10310,15 @@
       "entity_type": "aws_core__aws_osis_pipeline",
       "service": "osis",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "osis has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPipelines"
       },
@@ -10966,6 +11011,15 @@
       "entity_type": "aws_core__aws_securitylake_subscriber",
       "service": "securitylake",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "securitylake has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSubscribers"
       },
@@ -11163,6 +11217,15 @@
       "entity_type": "aws_core__aws_timestream_scheduled_query",
       "service": "timestream-query",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "timestream-query has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListScheduledQueries"
       },
@@ -11284,6 +11347,15 @@
       "entity_type": "aws_core__aws_translate_parallel_data",
       "service": "translate",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "translate has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListParallelData"
       },
@@ -11325,6 +11397,15 @@
       "entity_type": "aws_core__aws_translate_terminology",
       "service": "translate",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "translate has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTerminologies"
       },
@@ -11418,6 +11499,15 @@
       "entity_type": "aws_core__aws_connect_instance",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListInstances"
       },
@@ -12565,6 +12655,15 @@
       "entity_type": "aws_core__aws_comprehend_document_classifier",
       "service": "comprehend",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDocumentClassifiers"
       },
@@ -12611,6 +12710,15 @@
       "entity_type": "aws_core__aws_comprehend_entity_recognizer",
       "service": "comprehend",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListEntityRecognizers"
       },
@@ -12657,6 +12765,15 @@
       "entity_type": "aws_core__aws_comprehend_flywheel",
       "service": "comprehend",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListFlywheels"
       },
@@ -12697,6 +12814,15 @@
       "entity_type": "aws_core__aws_connect_traffic_distribution_group",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTrafficDistributionGroups"
       },
@@ -13493,6 +13619,15 @@
       "entity_type": "aws_core__aws_emrserverless_application",
       "service": "emr-serverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "emr-serverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListApplications"
       },
@@ -15042,6 +15177,15 @@
       "entity_type": "aws_core__aws_iotsitewise_asset",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAssets",
         "per": {
@@ -15098,6 +15242,15 @@
       "entity_type": "aws_core__aws_iotsitewise_asset_model",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAssetModels"
       },
@@ -15139,6 +15292,15 @@
       "entity_type": "aws_core__aws_iotsitewise_computation_model",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListComputationModels"
       },
@@ -15180,6 +15342,15 @@
       "entity_type": "aws_core__aws_iotsitewise_workspace",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListWorkspaces"
       },
@@ -15221,6 +15392,15 @@
       "entity_type": "aws_core__aws_iottwinmaker_workspace",
       "service": "iottwinmaker",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListWorkspaces"
       },
@@ -15386,10 +15566,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "No kinesisvideo endpoint resolves in AWS GovCloud (US): every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "why": "No kinesisvideo endpoint resolves at the standard host in AWS GovCloud (US), in either region: every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run, which ran with FIPS endpoints off. The service resolves at its FIPS host (kinesisvideo-fips) in both regions, so the entry is skipped only when FIPS endpoints are off.",
+          "fips": false,
           "method": "ran",
-          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
-          "date": "2026-11-02"
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json and tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
         }
       },
       "source": {
@@ -15435,10 +15616,11 @@
       "scope": "regional",
       "not_offered": {
         "aws-us-gov": {
-          "why": "No kinesisvideo endpoint resolves in AWS GovCloud (US): every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run.",
+          "why": "No kinesisvideo endpoint resolves at the standard host in AWS GovCloud (US), in either region: every kinesisvideo entry failed with EndpointConnectionError after 20 to 52 seconds of retries in the wave 0 run, which ran with FIPS endpoints off. The service resolves at its FIPS host (kinesisvideo-fips) in both regions, so the entry is skipped only when FIPS endpoints are off.",
+          "fips": false,
           "method": "ran",
-          "evidence": "tools/validate/runs/wave0-2026-11-02.json",
-          "date": "2026-11-02"
+          "evidence": "tools/validate/runs/wave0-2026-11-02.json and tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
         }
       },
       "source": {
@@ -16244,6 +16426,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_collection",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListCollections"
       },
@@ -16285,6 +16476,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_collection_group",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListCollectionGroups"
       },
@@ -16677,6 +16877,15 @@
       "entity_type": "aws_core__aws_rekognition_project",
       "service": "rekognition",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "DescribeProjects"
       },
@@ -16799,6 +17008,15 @@
       "entity_type": "aws_core__aws_route53profiles_profile",
       "service": "route53profiles",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "route53profiles has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListProfiles"
       },
@@ -17488,6 +17706,15 @@
       "entity_type": "aws_core__aws_securitylake_data_lake",
       "service": "securitylake",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "securitylake has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDataLakes"
       },
@@ -17774,6 +18001,15 @@
       "entity_type": "aws_core__aws_timestream_database",
       "service": "timestream-write",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "timestream-write has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDatabases"
       },
@@ -17815,6 +18051,15 @@
       "entity_type": "aws_core__aws_timestream_table",
       "service": "timestream-write",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "timestream-write has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTables"
       },
@@ -18949,6 +19194,15 @@
       "entity_type": "aws_core__aws_mediaconvert_job_template",
       "service": "mediaconvert",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListJobTemplates"
       },
@@ -18996,6 +19250,15 @@
       "entity_type": "aws_core__aws_mediaconvert_preset",
       "service": "mediaconvert",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPresets"
       },
@@ -19055,6 +19318,15 @@
       "entity_type": "aws_core__aws_mediaconvert_queue",
       "service": "mediaconvert",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "mediaconvert has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListQueues"
       },
@@ -19354,6 +19626,15 @@
       "entity_type": "aws_core__aws_connect_agent_status",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAgentStatuses",
         "per": {
@@ -19402,6 +19683,15 @@
       "entity_type": "aws_core__aws_connect_contact_flow",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListContactFlows",
         "per": {
@@ -19450,6 +19740,15 @@
       "entity_type": "aws_core__aws_connect_contact_flow_module",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListContactFlowModules",
         "per": {
@@ -19498,6 +19797,15 @@
       "entity_type": "aws_core__aws_connect_data_table",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDataTables",
         "per": {
@@ -19546,6 +19854,15 @@
       "entity_type": "aws_core__aws_connect_evaluation_form",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListEvaluationForms",
         "per": {
@@ -19593,6 +19910,15 @@
       "entity_type": "aws_core__aws_connect_hours_of_operation",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListHoursOfOperations",
         "per": {
@@ -19641,6 +19967,15 @@
       "entity_type": "aws_core__aws_connect_integration_association",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListIntegrationAssociations",
         "per": {
@@ -19688,6 +20023,15 @@
       "entity_type": "aws_core__aws_connect_metric",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListMetrics",
         "per": {
@@ -19736,6 +20080,15 @@
       "entity_type": "aws_core__aws_connect_notification",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListNotifications",
         "per": {
@@ -19777,6 +20130,15 @@
       "entity_type": "aws_core__aws_connect_phone_number",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPhoneNumbers",
         "per": {
@@ -19824,6 +20186,15 @@
       "entity_type": "aws_core__aws_connect_prompt",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPrompts",
         "per": {
@@ -19872,6 +20243,15 @@
       "entity_type": "aws_core__aws_connect_queue",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListQueues",
         "per": {
@@ -19920,6 +20300,15 @@
       "entity_type": "aws_core__aws_connect_quick_connect",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListQuickConnects",
         "per": {
@@ -19968,6 +20357,15 @@
       "entity_type": "aws_core__aws_connect_routing_profile",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRoutingProfiles",
         "per": {
@@ -20016,6 +20414,15 @@
       "entity_type": "aws_core__aws_connect_rule",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRules",
         "per": {
@@ -20064,6 +20471,15 @@
       "entity_type": "aws_core__aws_connect_security_profile",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSecurityProfiles",
         "per": {
@@ -20112,6 +20528,15 @@
       "entity_type": "aws_core__aws_connect_task_template",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTaskTemplates",
         "per": {
@@ -20160,6 +20585,15 @@
       "entity_type": "aws_core__aws_connect_test_case",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTestCases",
         "per": {
@@ -20208,6 +20642,15 @@
       "entity_type": "aws_core__aws_connect_user",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListUsers",
         "per": {
@@ -20256,6 +20699,15 @@
       "entity_type": "aws_core__aws_connect_user_hierarchy_group",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListUserHierarchyGroups",
         "per": {
@@ -20304,6 +20756,15 @@
       "entity_type": "aws_core__aws_connect_view",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListViews",
         "per": {
@@ -20357,6 +20818,15 @@
       "entity_type": "aws_core__aws_connect_workspace",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListWorkspaces",
         "per": {
@@ -20405,6 +20875,15 @@
       "entity_type": "aws_core__aws_eventschemas_schema",
       "service": "schemas",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "schemas has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSchemas",
         "per": {
@@ -21496,6 +21975,15 @@
       "entity_type": "aws_core__aws_iotsitewise_pipeline",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPipelines",
         "per": {
@@ -21544,6 +22032,15 @@
       "entity_type": "aws_core__aws_iotsitewise_task",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTasks",
         "per": {
@@ -21592,6 +22089,15 @@
       "entity_type": "aws_core__aws_iottwinmaker_component_type",
       "service": "iottwinmaker",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListComponentTypes",
         "per": {
@@ -21640,6 +22146,15 @@
       "entity_type": "aws_core__aws_iottwinmaker_entity",
       "service": "iottwinmaker",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListEntities",
         "per": {
@@ -21688,6 +22203,15 @@
       "entity_type": "aws_core__aws_iottwinmaker_scene",
       "service": "iottwinmaker",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListScenes",
         "per": {
@@ -21735,6 +22259,15 @@
       "entity_type": "aws_core__aws_iottwinmaker_sync_job",
       "service": "iottwinmaker",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iottwinmaker has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSyncJobs",
         "per": {
@@ -25867,6 +26400,15 @@
       "entity_type": "aws_core__aws_connect_contact_flow_module_alias",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListContactFlowModuleAliases",
         "per": {
@@ -25907,6 +26449,15 @@
       "entity_type": "aws_core__aws_connect_contact_flow_module_version",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListContactFlowModuleVersions",
         "per": {
@@ -25946,6 +26497,15 @@
       "entity_type": "aws_core__aws_connect_contact_flow_version",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListContactFlowVersions",
         "per": {
@@ -25985,6 +26545,15 @@
       "entity_type": "aws_core__aws_connect_email_address",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "SearchEmailAddresses",
         "per": {
@@ -26050,6 +26619,15 @@
       "entity_type": "aws_core__aws_connect_use_case",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListUseCases",
         "per": {
@@ -26105,6 +26683,15 @@
       "entity_type": "aws_core__aws_connect_view_version",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListViewVersions",
         "per": {
@@ -26152,6 +26739,15 @@
       "entity_type": "aws_core__aws_connect_vocabulary",
       "service": "connect",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "connect has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "SearchVocabularies",
         "per": {
@@ -26200,6 +26796,15 @@
       "entity_type": "aws_core__aws_databrew_dataset",
       "service": "databrew",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDatasets"
       },
@@ -26235,6 +26840,15 @@
       "entity_type": "aws_core__aws_databrew_job",
       "service": "databrew",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListJobs"
       },
@@ -26270,6 +26884,15 @@
       "entity_type": "aws_core__aws_databrew_project",
       "service": "databrew",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListProjects"
       },
@@ -26305,6 +26928,15 @@
       "entity_type": "aws_core__aws_databrew_recipe",
       "service": "databrew",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRecipes",
         "params": {
@@ -26343,6 +26975,15 @@
       "entity_type": "aws_core__aws_databrew_ruleset",
       "service": "databrew",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRulesets"
       },
@@ -26378,6 +27019,15 @@
       "entity_type": "aws_core__aws_databrew_schedule",
       "service": "databrew",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "databrew has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSchedules"
       },
@@ -26678,6 +27328,15 @@
       "entity_type": "aws_core__aws_polly_lexicon",
       "service": "polly",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "polly has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListLexicons"
       },
@@ -27470,6 +28129,15 @@
       "entity_type": "aws_core__aws_bedrock_blueprint",
       "service": "bedrock-data-automation",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListBlueprints",
         "params": {
@@ -27519,6 +28187,15 @@
       "entity_type": "aws_core__aws_bedrock_data_automation_library",
       "service": "bedrock-data-automation",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDataAutomationLibraries"
       },
@@ -27565,6 +28242,15 @@
       "entity_type": "aws_core__aws_bedrock_data_automation_project",
       "service": "bedrock-data-automation",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-data-automation has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDataAutomationProjects",
         "params": {
@@ -27614,6 +28300,16 @@
       "entity_type": "aws_core__aws_bedrock_flow",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListFlows"
       },
@@ -27655,6 +28351,16 @@
       "entity_type": "aws_core__aws_bedrock_flow_alias",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListFlowAliases",
         "per": {
@@ -27703,6 +28409,16 @@
       "entity_type": "aws_core__aws_bedrock_prompt",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPrompts"
       },
@@ -27744,6 +28460,16 @@
       "entity_type": "aws_core__aws_bedrock_retrieval_instruction",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRetrievalInstructions"
       },
@@ -28045,6 +28771,15 @@
       "entity_type": "aws_core__aws_cloudhsm_cluster",
       "service": "cloudhsmv2",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "cloudhsmv2 has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "DescribeClusters"
       },
@@ -28218,6 +28953,15 @@
       "entity_type": "aws_core__aws_licensemanager_linux_subscription_provider",
       "service": "license-manager-linux-subscriptions",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "license-manager-linux-subscriptions has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRegisteredSubscriptionProviders"
       },
@@ -28689,6 +29433,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_vpc_endpoint",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListVpcEndpoints"
       },
@@ -29938,6 +30691,15 @@
       "entity_type": "aws_core__aws_pinpoint_app",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "GetApps"
       },
@@ -29973,6 +30735,15 @@
       "entity_type": "aws_core__aws_pinpoint_campaign",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "GetCampaigns",
         "per": {
@@ -30015,6 +30786,15 @@
       "entity_type": "aws_core__aws_pinpoint_email_template",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTemplates",
         "params": {
@@ -30053,6 +30833,15 @@
       "entity_type": "aws_core__aws_pinpoint_in_app_template",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTemplates",
         "params": {
@@ -30091,6 +30880,15 @@
       "entity_type": "aws_core__aws_pinpoint_push_template",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTemplates",
         "params": {
@@ -30129,6 +30927,15 @@
       "entity_type": "aws_core__aws_pinpoint_segment",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "GetSegments",
         "per": {
@@ -30171,6 +30978,15 @@
       "entity_type": "aws_core__aws_pinpoint_sms_template",
       "service": "pinpoint",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "pinpoint has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTemplates",
         "params": {
@@ -30367,6 +31183,15 @@
       "entity_type": "aws_core__aws_rekognition_dataset",
       "service": "rekognition",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "DescribeProjects"
       },
@@ -30958,6 +31783,15 @@
       "entity_type": "aws_core__aws_rekognition_collection",
       "service": "rekognition",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "custom_fn": "rekognition_collections_described"
       },
@@ -30999,6 +31833,15 @@
       "entity_type": "aws_core__aws_rekognition_stream_processor",
       "service": "rekognition",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "rekognition has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "custom_fn": "rekognition_stream_processors_described"
       },
@@ -32405,6 +33248,15 @@
       "entity_type": "aws_core__aws_route53profiles_profile_association",
       "service": "route53profiles",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "route53profiles has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "custom_fn": "route53profiles_profile_associations_described"
       },
@@ -33412,6 +34264,15 @@
       "entity_type": "aws_core__aws_kendra_index",
       "service": "kendra",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListIndices"
       },
@@ -33456,6 +34317,15 @@
       "entity_type": "aws_core__aws_kendra_data_source",
       "service": "kendra",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDataSources",
         "per": {
@@ -33507,6 +34377,15 @@
       "entity_type": "aws_core__aws_kendra_faq",
       "service": "kendra",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListFaqs",
         "per": {
@@ -33558,6 +34437,15 @@
       "entity_type": "aws_core__aws_kendra_featured_results_set",
       "service": "kendra",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListFeaturedResultsSets",
         "per": {
@@ -33609,6 +34497,15 @@
       "entity_type": "aws_core__aws_kendra_query_suggestions_block_list",
       "service": "kendra",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListQuerySuggestionsBlockLists",
         "per": {
@@ -33660,6 +34557,15 @@
       "entity_type": "aws_core__aws_kendra_thesaurus",
       "service": "kendra",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "kendra has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListThesauri",
         "per": {
@@ -35291,6 +36197,15 @@
       "entity_type": "aws_core__aws_location_api_key",
       "service": "location",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListKeys"
       },
@@ -35359,6 +36274,15 @@
       "entity_type": "aws_core__aws_location_geofence_collection",
       "service": "location",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListGeofenceCollections"
       },
@@ -35421,6 +36345,15 @@
       "entity_type": "aws_core__aws_location_map",
       "service": "location",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListMaps"
       },
@@ -35483,6 +36416,15 @@
       "entity_type": "aws_core__aws_location_place_index",
       "service": "location",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPlaceIndexes"
       },
@@ -35545,6 +36487,15 @@
       "entity_type": "aws_core__aws_location_route_calculator",
       "service": "location",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListRouteCalculators"
       },
@@ -35607,6 +36558,15 @@
       "entity_type": "aws_core__aws_location_tracker",
       "service": "location",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListTrackers"
       },
@@ -35743,6 +36703,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_access_policy",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAccessPolicies",
         "per": {
@@ -35787,6 +36756,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_lifecycle_policy",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListLifecyclePolicies",
         "per": {
@@ -35831,6 +36809,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_security_policy",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSecurityPolicies",
         "per": {
@@ -35876,6 +36863,15 @@
       "entity_type": "aws_core__aws_opensearchserverless_security_config",
       "service": "opensearchserverless",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "opensearchserverless has no FIPS endpoint in either GovCloud region: the host does not resolve with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListSecurityConfigs",
         "per": {
@@ -36403,6 +37399,16 @@
       "entity_type": "aws_core__aws_bedrock_agent",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "GetAgent",
         "per": {
@@ -36469,6 +37475,16 @@
       "entity_type": "aws_core__aws_bedrock_agent_alias",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAgentAliases",
         "per": {
@@ -36520,6 +37536,16 @@
       "entity_type": "aws_core__aws_bedrock_knowledge_base",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "GetKnowledgeBase",
         "per": {
@@ -36640,6 +37666,16 @@
       "entity_type": "aws_core__aws_bedrock_data_source",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDataSources",
         "per": {
@@ -36675,6 +37711,16 @@
       "entity_type": "aws_core__aws_bedrock_flow_version",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListFlowVersions",
         "per": {
@@ -37012,6 +38058,15 @@
       "entity_type": "aws_core__aws_iotsitewise_portal",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPortals"
       },
@@ -37056,6 +38111,15 @@
       "entity_type": "aws_core__aws_iotsitewise_project",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListProjects",
         "per": {
@@ -37107,6 +38171,15 @@
       "entity_type": "aws_core__aws_iotsitewise_dashboard",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDashboards",
         "per": {
@@ -37165,6 +38238,15 @@
       "entity_type": "aws_core__aws_iotsitewise_dataset",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListDatasets",
         "per": {
@@ -37215,6 +38297,15 @@
       "entity_type": "aws_core__aws_iotsitewise_gateway",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListGateways"
       },
@@ -37259,6 +38350,15 @@
       "entity_type": "aws_core__aws_iotsitewise_access_policy",
       "service": "iotsitewise",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "iotsitewise has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListAccessPolicies"
       },
@@ -38372,6 +39472,15 @@
       "entity_type": "aws_core__aws_comprehend_document_classifier_endpoint",
       "service": "comprehend",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListEndpoints",
         "where": [
@@ -38418,6 +39527,15 @@
       "entity_type": "aws_core__aws_comprehend_entity_recognizer_endpoint",
       "service": "comprehend",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "comprehend has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListEndpoints",
         "where": [
@@ -39369,6 +40487,16 @@
       "entity_type": "aws_core__aws_bedrock_prompt_version",
       "service": "bedrock-agent",
       "scope": "regional",
+      "not_offered": {
+        "aws-us-gov": {
+          "why": "bedrock-agent has no FIPS endpoint in us-gov-east-1: the host does not resolve there with FIPS endpoints on (DNS lookup of the host the call would use).",
+          "regions": ["us-gov-east-1"],
+          "fips": true,
+          "method": "ran",
+          "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json",
+          "date": "2026-11-05"
+        }
+      },
       "source": {
         "aws_op": "ListPrompts",
         "per": {
