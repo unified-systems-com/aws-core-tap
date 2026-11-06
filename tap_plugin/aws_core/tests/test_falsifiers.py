@@ -451,6 +451,14 @@ class TestFalsifierManifestWiring:
             "aws_core__aws_access_analyzer_finding": "tap_plugin.aws_core.falsifiers.AccessAnalyzerFindingFalsifier",
             "aws_core__aws_config_rule": "tap_plugin.aws_core.falsifiers.ConfigRuleFalsifier",
             "aws_core__aws_config_conformance_pack": "tap_plugin.aws_core.falsifiers.ConformancePackFalsifier",
+            # AWS Config prototype (config_falsifier.py): types with no service-specific falsifier.
+            "aws_core__aws_lambda": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
+            "aws_core__aws_sqs_queue": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
+            "aws_core__aws_sns_topic": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
+            "aws_core__aws_dynamodb_table": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
+            "aws_core__aws_kms_alias": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
+            "aws_core__aws_secrets_manager_secret": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
+            "aws_core__aws_eventbridge_rule": "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
