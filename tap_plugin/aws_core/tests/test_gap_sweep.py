@@ -73,6 +73,15 @@ def test_a_shared_resources_tags_stay_unread_not_empty_and_raise_no_gap():
     assert slot["status"] == "not_readable"
 
 
+def test_the_appconfig_refusal_is_not_taggable_only_for_the_extension_it_was_observed_on():
+    message = "ARN arn:x is invalid due to not containing an account ID."
+    for entity in ("appconfig_extension_association",):
+        entry = _entry(entity)
+        item = {spec["from"]: "x" for spec in entry["tags"]["params"].values() if "from" in spec}
+        tags, slot, _ = resolve_node_tags(entry, item, rgta_map={}, client_for=lambda _s: _Refusing("BadRequestException", message, "ListTagsForResource"))
+        assert slot["status"] == "error", entity
+
+
 def test_an_unlisted_refusal_of_a_tag_read_is_still_a_failed_read():
     entry = _entry("appconfig_extension")
     tags, slot, _ = resolve_node_tags(

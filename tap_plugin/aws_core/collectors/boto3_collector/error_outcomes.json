@@ -505,52 +505,54 @@
     {
       "outcome": "not_readable",
       "service": "route53resolver",
-      "operations": [
-        "ListTagsForResource"
-      ],
       "error_code": "InvalidParameterException",
       "message_contains": "not authorized to do this operation on shared resource",
-      "why": "The resource is shared into this account from another (a Route 53 Resolver firewall domain list, for example); only its owner may read or set its tags, so they may exist and cannot be seen from here. The tags stay unread. Observed in GovCloud."
+      "why": "The resource is shared into this account from another (a Route 53 Resolver firewall domain list, for example); only its owner may read or set its tags, so they may exist and cannot be seen from here. The tags stay unread. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_route53resolver_firewall_domain_list",
+        "aws_core__aws_route53resolver_resolver_rule",
+        "aws_core__aws_route53_resolver_firewall_rule_group"
+      ]
     },
     {
       "outcome": "not_taggable",
       "service": "route53resolver",
-      "operations": [
-        "ListTagsForResource"
-      ],
       "error_code": "InvalidRequestException",
       "message_contains": "Cannot tag Auto Defined Rule",
-      "why": "Route 53 Resolver creates auto-defined rules itself and refuses tags on them (RSLVR-00903). Observed in GovCloud."
+      "why": "Route 53 Resolver creates auto-defined rules itself and refuses tags on them (RSLVR-00903). Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_route53resolver_resolver_rule"
+      ]
     },
     {
       "outcome": "not_taggable",
       "service": "sagemaker",
-      "operations": [
-        "ListTags"
-      ],
       "error_code": "ValidationException",
       "message_contains": ":aws:hub/SageMakerPublicHub",
-      "why": "The SageMaker public hub is owned by AWS (its ARN carries the account 'aws'); the tag API refuses its ARN. Observed in GovCloud."
+      "why": "The SageMaker public hub is owned by AWS (its ARN carries the account 'aws'); the tag API refuses its ARN. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_sagemaker_hub"
+      ]
     },
     {
       "outcome": "not_taggable",
       "service": "appconfig",
-      "operations": [
-        "ListTagsForResource"
-      ],
       "error_code": "BadRequestException",
       "message_contains": "not containing an account ID",
-      "why": "AWS-defined AppConfig extensions have an ARN with no account id, and the tag API refuses it. Observed in GovCloud."
+      "why": "AWS-defined AppConfig extensions have an ARN with no account id, and the tag API refuses it. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_appconfig_extension"
+      ]
     },
     {
       "outcome": "not_taggable",
       "service": "athena",
-      "operations": [
-        "ListTagsForResource"
-      ],
       "error_code": "ResourceNotFoundException",
       "message_contains": "datacatalog/AwsDataCatalog",
-      "why": "AwsDataCatalog is the account's built-in Glue-backed catalog; the tag API does not find it as a taggable resource. Observed in GovCloud."
+      "why": "AwsDataCatalog is the account's built-in Glue-backed catalog; the tag API does not find it as a taggable resource. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_athena_data_catalog"
+      ]
     }
   ]
 }
