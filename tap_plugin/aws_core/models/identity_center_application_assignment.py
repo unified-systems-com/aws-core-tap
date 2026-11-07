@@ -26,7 +26,7 @@ class IdentityCenterApplicationAssignment(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "assignment_key": {"type": "string"},
-        "application_arn": {"type": "string"},
+        "application_arn": {"type": ["string", "null"]},
         "principal_type": {"type": ["string", "null"]},
         "principal_id": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
@@ -36,7 +36,7 @@ class IdentityCenterApplicationAssignment(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "assignment_key": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "application_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "application_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "principal_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "principal_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -47,11 +47,11 @@ class IdentityCenterApplicationAssignment(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     assignment_key = models.CharField(max_length=2048, blank=True, default="")
     # The application the principal is assigned to.
-    application_arn = models.CharField(max_length=2048, blank=True, default="")
+    application_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # USER or GROUP. NULL = not observed.
-    principal_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    principal_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The user or group id in the identity store. NULL = not observed.
-    principal_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    principal_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

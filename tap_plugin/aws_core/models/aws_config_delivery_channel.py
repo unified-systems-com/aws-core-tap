@@ -42,12 +42,12 @@ class AwsConfigDeliveryChannel(BaseModel):
         "account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
         "region": {"type": "string"},
         "channel_name": {"type": "string"},
-        "s3_bucket_name": {"type": "string"},
-        "s3_key_prefix": {"type": "string"},
-        "s3_kms_key_arn": {"type": "string"},
-        "sns_topic_arn": {"type": "string"},
+        "s3_bucket_name": {"type": ["string", "null"]},
+        "s3_key_prefix": {"type": ["string", "null"]},
+        "s3_kms_key_arn": {"type": ["string", "null"]},
+        "sns_topic_arn": {"type": ["string", "null"]},
         # configSnapshotDeliveryProperties.deliveryFrequency, verbatim.
-        "delivery_frequency": {"type": "string"},
+        "delivery_frequency": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -61,11 +61,11 @@ class AwsConfigDeliveryChannel(BaseModel):
     account_id = models.CharField(max_length=12, blank=True, default="", db_index=True)
     region = models.CharField(max_length=32, blank=True, default="")
     channel_name = models.CharField(max_length=256, blank=True, default="")
-    s3_bucket_name = models.CharField(max_length=256, blank=True, default="")
-    s3_key_prefix = models.CharField(max_length=1024, blank=True, default="")
-    s3_kms_key_arn = models.CharField(max_length=2048, blank=True, default="")
-    sns_topic_arn = models.CharField(max_length=2048, blank=True, default="")
-    delivery_frequency = models.CharField(max_length=32, blank=True, default="")
+    s3_bucket_name = models.CharField(max_length=256, null=True, blank=True, default=None)
+    s3_key_prefix = models.CharField(max_length=1024, null=True, blank=True, default=None)
+    s3_kms_key_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    sns_topic_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    delivery_frequency = models.CharField(max_length=32, null=True, blank=True, default=None)
     # Canonical {str: str}. AWS cannot tag a delivery channel: always {}.
     tags = models.JSONField(null=True, blank=True, default=None)
 

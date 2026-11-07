@@ -62,9 +62,9 @@ class CognitoUserPoolClient(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     client_key = models.CharField(max_length=512, blank=True, default="")
     # The user pool the client belongs to. NULL = not observed.
-    user_pool_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    user_pool_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The client id (botocore marks it sensitive). NULL = not observed.
-    client_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    client_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the client has a secret (the secret itself is never stored). NULL = not observed.
     has_secret = models.BooleanField(null=True, blank=True, default=None)
     # OAuth flows the client may use (code, implicit, client_credentials). NULL = not observed.
@@ -76,7 +76,7 @@ class CognitoUserPoolClient(BaseModel):
     # Authentication flows enabled on the client. NULL = not observed.
     explicit_auth_flows = models.JSONField(null=True, blank=True, default=None)
     # ENABLED or LEGACY: whether sign-in errors reveal that a user exists. NULL = not observed.
-    prevent_user_existence_errors = models.CharField(max_length=512, blank=True, null=True, default=None)
+    prevent_user_existence_errors = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether tokens can be revoked. NULL = not observed.
     enable_token_revocation = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

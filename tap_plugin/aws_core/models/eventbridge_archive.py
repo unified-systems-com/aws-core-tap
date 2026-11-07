@@ -50,9 +50,9 @@ class EventbridgeArchive(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     archive_arn = models.CharField(max_length=512, blank=True, default="")
     # The bus the archive stores events from. NULL = not observed.
-    event_source_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    event_source_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's archive state (ENABLED, DISABLED, CREATING, ...). NULL = not observed.
-    state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    state = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many days events are kept; 0 means indefinitely. NULL = not observed.
     retention_days = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

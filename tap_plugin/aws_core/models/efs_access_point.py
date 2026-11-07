@@ -52,13 +52,13 @@ class EfsAccessPoint(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     access_point_arn = models.CharField(max_length=512, blank=True, default="")
     # The file system the access point is on. NULL = not observed.
-    file_system_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    file_system_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The POSIX user id forced on clients. NULL = none enforced, or not observed.
     posix_uid = models.IntegerField(null=True, blank=True, default=None)
     # The directory clients see as the root. NULL = not observed.
-    root_directory_path = models.CharField(max_length=512, blank=True, null=True, default=None)
+    root_directory_path = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's state. NULL = not observed.
-    life_cycle_state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    life_cycle_state = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

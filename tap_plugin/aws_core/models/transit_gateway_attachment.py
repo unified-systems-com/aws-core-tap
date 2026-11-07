@@ -57,8 +57,8 @@ class TransitGatewayAttachment(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "attachment_id": {"type": "string", "pattern": "^(tgw-attach-[0-9a-f]{8,17})?$"},
-        "resource_type": {"type": "string", "enum": ["", *RESOURCE_TYPES]},
-        "resource_owner_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
+        "resource_type": {"type": ["string", "null"], "enum": ["", *RESOURCE_TYPES]},
+        "resource_owner_account_id": {"type": ["string", "null"], "pattern": "^([0-9]{12})?$"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -72,8 +72,8 @@ class TransitGatewayAttachment(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     attachment_id = models.CharField(max_length=40, blank=True, default="", db_index=True)
     # Blank means not observed (the aws_elb.lb_type convention).
-    resource_type = models.CharField(max_length=32, blank=True, default="")
-    resource_owner_account_id = models.CharField(max_length=12, blank=True, default="")
+    resource_type = models.CharField(max_length=32, null=True, blank=True, default=None)
+    resource_owner_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeTransitGatewayAttachments Tags.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.

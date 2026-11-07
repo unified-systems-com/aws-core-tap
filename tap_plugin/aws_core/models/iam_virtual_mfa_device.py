@@ -49,9 +49,9 @@ class IamVirtualMfaDevice(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     serial_number = models.CharField(max_length=512, blank=True, default="")
     # ARN of the user the device is enabled for. NULL = not observed; "" = observed, not assigned.
-    user_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    user_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ISO 8601 UTC time the device was enabled; NULL = not observed.
-    enable_date = models.CharField(max_length=512, blank=True, null=True, default=None)
+    enable_date = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

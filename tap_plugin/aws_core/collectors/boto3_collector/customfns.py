@@ -343,18 +343,20 @@ def read_sub_listing(client: Any, method: str, items_key: str, **kwargs: Any) ->
     return SubRead(items, COMPLETE)
 
 
-_ELB_ALIAS = re.compile(r"(?:^|\.)([a-z]{2}(?:-[a-z]+)+-\d)\.elb\.amazonaws\.com$")
+_REGION = r"[a-z]{2}(?:-[a-z]+)+-\d"
+# An Application or Classic load balancer is ``name-123.<region>.elb.amazonaws.com``; a Network or Gateway one is
+# ``name-0123456789abcdef.elb.<region>.amazonaws.com``. Either may carry a ``dualstack.`` prefix in an alias.
+_ELB_ALIAS = re.compile(rf"(?:^|\.)({_REGION})\.elb\.amazonaws\.com$|\.elb\.({_REGION})\.amazonaws\.com$")
 
 
 def _elb_alias_region(domain: str) -> str | None:
-    """The region named by an ELBv2 alias hostname (``name-123.us-gov-west-1.elb.amazonaws.com``), else ``None``.
+    """The region named by an ELB alias hostname, else ``None`` (both hostname forms; see ``_ELB_ALIAS``).
 
-    Classic load balancer hostnames (``name-123.us-gov-west-1.elb.amazonaws.com`` as well) look the same and are
-    not in the ELBv2 listing: they come back unmatched and mark the zone's read partial, as an alias to anything
-    the collector cannot name does.
+    Classic load balancer hostnames look like an Application one's and are not in the ELBv2 listing: they come
+    back unmatched and mark the zone's read partial, as an alias to anything the collector cannot name does.
     """
     match = _ELB_ALIAS.search(domain)
-    return match.group(1) if match else None
+    return (match.group(1) or match.group(2)) if match else None
 
 
 def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:

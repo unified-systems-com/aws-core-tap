@@ -47,17 +47,17 @@ class RdsDbProxy(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_proxy_arn = models.CharField(max_length=2048, blank=True, default="")
     # AWS's proxy status. NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # MYSQL, POSTGRESQL or SQLSERVER. NULL = not observed.
-    engine_family = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine_family = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The VPC the proxy runs in. NULL = not observed.
-    vpc_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    vpc_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether clients must use TLS. NULL = not observed.
     require_tls = models.BooleanField(null=True, blank=True, default=None)
     # How long an idle client connection is kept. NULL = not observed.
     idle_client_timeout_seconds = models.IntegerField(null=True, blank=True, default=None)
     # The proxy endpoint. NULL = not observed.
-    endpoint = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    endpoint = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

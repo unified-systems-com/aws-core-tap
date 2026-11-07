@@ -41,10 +41,10 @@ class DxVirtualInterface(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "virtual_interface_id": {"type": "string", "pattern": "^(dxvif-[a-z0-9]{8,12})?$"},
-        "virtual_interface_type": {"type": "string", "enum": ["", *VIF_TYPES]},
+        "virtual_interface_type": {"type": ["string", "null"], "enum": ["", *VIF_TYPES]},
         "vlan": {"type": ["integer", "null"], "minimum": 1, "maximum": 4094},
         "customer_asn": {"type": ["integer", "null"], "minimum": 1, "maximum": 4294967294},
-        "region": {"type": "string"},
+        "region": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -58,11 +58,11 @@ class DxVirtualInterface(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     virtual_interface_id = models.CharField(max_length=32, blank=True, default="", db_index=True)
     # Blank means not observed (the aws_elb.lb_type convention).
-    virtual_interface_type = models.CharField(max_length=16, blank=True, default="")
+    virtual_interface_type = models.CharField(max_length=16, null=True, blank=True, default=None)
     vlan = models.IntegerField(null=True, blank=True, default=None)
     # AWS's `asn`: the customer side's BGP ASN (public or private), not Amazon's.
     customer_asn = models.BigIntegerField(null=True, blank=True, default=None)
-    region = models.CharField(max_length=32, blank=True, default="")
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeVirtualInterfaces tags.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.

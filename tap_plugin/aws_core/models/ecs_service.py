@@ -29,10 +29,10 @@ class EcsService(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "service_arn": {"type": "string"},
-        "status": {"type": "string"},
+        "status": {"type": ["string", "null"]},
         "desired_count": {"type": ["integer", "null"]},
         "running_count": {"type": ["integer", "null"]},
-        "launch_type": {"type": "string"},
+        "launch_type": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -40,10 +40,10 @@ class EcsService(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "service_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "desired_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "running_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "launch_type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "launch_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -51,10 +51,10 @@ class EcsService(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     service_arn = models.CharField(max_length=512, blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
-    desired_count = models.IntegerField(blank=True, null=True)
-    running_count = models.IntegerField(blank=True, null=True)
-    launch_type = models.CharField(max_length=64, blank=True, default="")
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
+    desired_count = models.IntegerField(null=True, blank=True, default=None)
+    running_count = models.IntegerField(null=True, blank=True, default=None)
+    launch_type = models.CharField(max_length=64, null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

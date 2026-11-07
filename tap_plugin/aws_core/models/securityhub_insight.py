@@ -43,7 +43,7 @@ class SecurityhubInsight(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     insight_arn = models.CharField(max_length=512, blank=True, default="")
     # The finding attribute the insight groups by. NULL = not observed.
-    group_by_attribute = models.CharField(max_length=512, blank=True, null=True, default=None)
+    group_by_attribute = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

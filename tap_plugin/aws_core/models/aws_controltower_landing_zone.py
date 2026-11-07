@@ -54,11 +54,11 @@ class AwsControlTowerLandingZone(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "landing_zone_arn": {"type": "string"},
         # The region the ARN names: Control Tower's home region.
-        "home_region": {"type": "string"},
-        "version": {"type": "string"},
-        "latest_available_version": {"type": "string"},
-        "status": {"type": "string"},
-        "drift_status": {"type": "string"},
+        "home_region": {"type": ["string", "null"]},
+        "version": {"type": ["string", "null"]},
+        "latest_available_version": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "drift_status": {"type": ["string", "null"]},
         # The manifest's governedRegions; null when GetLandingZone did not return a readable manifest.
         "governed_regions": {"type": ["array", "null"], "items": {"type": "string"}},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
@@ -72,11 +72,11 @@ class AwsControlTowerLandingZone(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     landing_zone_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    home_region = models.CharField(max_length=32, blank=True, default="")
-    version = models.CharField(max_length=32, blank=True, default="")
-    latest_available_version = models.CharField(max_length=32, blank=True, default="")
-    status = models.CharField(max_length=32, blank=True, default="")
-    drift_status = models.CharField(max_length=32, blank=True, default="")
+    home_region = models.CharField(max_length=32, null=True, blank=True, default=None)
+    version = models.CharField(max_length=32, null=True, blank=True, default=None)
+    latest_available_version = models.CharField(max_length=32, null=True, blank=True, default=None)
+    status = models.CharField(max_length=32, null=True, blank=True, default=None)
+    drift_status = models.CharField(max_length=32, null=True, blank=True, default=None)
     governed_regions = models.JSONField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: controltower:ListTagsForResource (`tags` map).
     tags = models.JSONField(null=True, blank=True, default=None)

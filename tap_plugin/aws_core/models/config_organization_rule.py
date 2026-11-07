@@ -47,7 +47,7 @@ class ConfigOrganizationRule(BaseModel):
     # Account ids the rule is not deployed to. NULL = not observed; [] = observed, none excluded.
     excluded_accounts = models.JSONField(null=True, blank=True, default=None)
     # When the organization rule was last changed (ISO 8601 UTC). NULL = not observed.
-    last_update_time = models.CharField(max_length=512, blank=True, null=True, default=None)
+    last_update_time = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

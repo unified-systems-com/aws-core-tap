@@ -64,7 +64,7 @@ class _FakeRoute53:
 
 _ALB_ARN = "arn:aws:elasticloadbalancing:us-east-1:111122223333:loadbalancer/app/web/50dc6c495c0c9188"
 _ALB_DNS = "web-123.us-east-1.elb.amazonaws.com"
-_NLB_DNS = "net-456.us-east-1.elb.amazonaws.com"
+_NLB_DNS = "net-456.elb.us-east-1.amazonaws.com"
 
 
 class _FakeElbv2:

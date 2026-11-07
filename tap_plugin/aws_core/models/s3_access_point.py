@@ -51,15 +51,15 @@ class S3AccessPoint(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     access_point_arn = models.CharField(max_length=512, blank=True, default="")
     # The bucket the access point is in front of. NULL = not observed.
-    bucket = models.CharField(max_length=512, blank=True, null=True, default=None)
+    bucket = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Internet or VPC. NULL = not observed.
-    network_origin = models.CharField(max_length=512, blank=True, null=True, default=None)
+    network_origin = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The VPC an access point is restricted to. NULL = none, or not observed.
-    vpc_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    vpc_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the access point's policy makes it public (GetAccessPointPolicyStatus). NULL = not observed.
     is_public = models.BooleanField(null=True, blank=True, default=None)
     # The access point's alias, usable where a bucket name is. NULL = not observed.
-    alias = models.CharField(max_length=512, blank=True, null=True, default=None)
+    alias = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

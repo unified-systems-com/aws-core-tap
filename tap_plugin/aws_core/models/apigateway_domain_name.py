@@ -46,7 +46,7 @@ class ApigatewayDomainName(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     domain_name_arn = models.CharField(max_length=2048, blank=True, default="")
     # rest, http (an HTTP or WebSocket API), or both when the same regional domain is listed by both services. NULL = not observed.
-    api_kind = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    api_kind = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # TLS security policies across the domain's configurations. NULL = not observed.
     security_policies = models.JSONField(null=True, blank=True, default=None)
     # EDGE, REGIONAL or PRIVATE. NULL = not observed.
@@ -54,7 +54,7 @@ class ApigatewayDomainName(BaseModel):
     # ACM certificates the domain presents. NULL = not observed.
     certificate_arns = models.JSONField(null=True, blank=True, default=None)
     # The S3 truststore for mutual TLS. NULL = mutual TLS is off, or not observed.
-    mutual_tls_truststore_uri = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    mutual_tls_truststore_uri = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

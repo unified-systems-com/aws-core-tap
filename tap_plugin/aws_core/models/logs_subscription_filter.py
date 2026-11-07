@@ -49,13 +49,13 @@ class LogsSubscriptionFilter(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     filter_key = models.CharField(max_length=2048, blank=True, default="")
     # The log group the filter reads. NULL = not observed.
-    log_group_name = models.CharField(max_length=512, blank=True, null=True, default=None)
+    log_group_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Where events are streamed to. NULL = not observed.
-    destination_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    destination_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The role CloudWatch Logs assumes to deliver. NULL = none, or not observed.
-    role_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    role_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Random or ByLogStream. NULL = not observed.
-    distribution = models.CharField(max_length=512, blank=True, null=True, default=None)
+    distribution = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

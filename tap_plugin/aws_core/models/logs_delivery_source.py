@@ -47,9 +47,9 @@ class LogsDeliverySource(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     source_arn = models.CharField(max_length=512, blank=True, default="")
     # The AWS service that vends the logs. NULL = not observed.
-    service = models.CharField(max_length=512, blank=True, null=True, default=None)
+    service = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The kind of log. NULL = not observed.
-    log_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    log_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The resources the source covers. NULL = not observed.
     resource_arns = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

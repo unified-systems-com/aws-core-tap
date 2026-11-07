@@ -29,9 +29,9 @@ class EksCluster(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "cluster_arn": {"type": "string"},
-        "status": {"type": "string"},
-        "kubernetes_version": {"type": "string"},
-        "endpoint": {"type": "string"},
+        "status": {"type": ["string", "null"]},
+        "kubernetes_version": {"type": ["string", "null"]},
+        "endpoint": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -39,9 +39,9 @@ class EksCluster(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "cluster_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "kubernetes_version": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "endpoint": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "kubernetes_version": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "endpoint": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -49,9 +49,9 @@ class EksCluster(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     cluster_arn = models.CharField(max_length=512, blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
-    kubernetes_version = models.CharField(max_length=32, blank=True, default="")
-    endpoint = models.CharField(max_length=512, blank=True, default="")
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
+    kubernetes_version = models.CharField(max_length=32, null=True, blank=True, default=None)
+    endpoint = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

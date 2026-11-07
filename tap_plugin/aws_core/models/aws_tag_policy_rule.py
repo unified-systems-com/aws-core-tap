@@ -52,7 +52,7 @@ class AwsTagPolicyRule(BaseModel):
         "policy_arn": {"type": "string", "maxLength": 512},
         "tag_key_lower": {"type": "string", "maxLength": 128},
         # tag_key.@@assign: the capitalization the rule assigns; the document's key when it assigns none.
-        "tag_key": {"type": "string", "maxLength": 128},
+        "tag_key": {"type": ["string", "null"], "maxLength": 128},
         "allowed_values": _string_list(
             "tag_value's @@assign and @@append values, de-duplicated and sorted; null when the rule does not constrain values."
         ),
@@ -76,7 +76,7 @@ class AwsTagPolicyRule(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     policy_arn = models.CharField(max_length=512, blank=True, default="", db_index=True)
     tag_key_lower = models.CharField(max_length=128, blank=True, default="")
-    tag_key = models.CharField(max_length=128, blank=True, default="")
+    tag_key = models.CharField(max_length=128, null=True, blank=True, default=None)
     allowed_values = models.JSONField(null=True, blank=True, default=None)
     enforced_for = models.JSONField(null=True, blank=True, default=None)
     inheritance_operators = models.JSONField(null=True, blank=True, default=None)

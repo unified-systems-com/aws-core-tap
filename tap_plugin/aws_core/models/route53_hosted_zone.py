@@ -29,7 +29,7 @@ class Route53HostedZone(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "hosted_zone_id": {"type": "string"},
         "record_count": {"type": ["integer", "null"]},
-        "private_zone": {"type": "boolean"},
+        "private_zone": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -38,7 +38,7 @@ class Route53HostedZone(BaseModel):
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "hosted_zone_id": {"validation": "jsonschema", "schema": {"type": "string"}},
         "record_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "private_zone": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "private_zone": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -46,8 +46,8 @@ class Route53HostedZone(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     hosted_zone_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    record_count = models.IntegerField(blank=True, null=True)
-    private_zone = models.BooleanField(default=False)
+    record_count = models.IntegerField(null=True, blank=True, default=None)
+    private_zone = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

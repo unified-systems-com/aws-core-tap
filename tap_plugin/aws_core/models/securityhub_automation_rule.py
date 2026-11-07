@@ -47,7 +47,7 @@ class SecurityhubAutomationRule(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     rule_arn = models.CharField(max_length=512, blank=True, default="")
     # ENABLED or DISABLED. NULL = not observed.
-    rule_status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    rule_status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The rule's order among automation rules. NULL = not observed.
     rule_order = models.IntegerField(null=True, blank=True, default=None)
     # Whether no later rule runs after this one matches. NULL = not observed.

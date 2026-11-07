@@ -67,10 +67,10 @@ class AwsOrganizationsPolicy(BaseModel):
                 "[a-z0-9_]+/p-[0-9a-zA-Z_]{8,128})?$"
             ),
         },
-        "policy_id": {"type": "string", "pattern": "^(p-[0-9a-zA-Z_]{8,128})?$"},
+        "policy_id": {"type": ["string", "null"], "pattern": "^(p-[0-9a-zA-Z_]{8,128})?$"},
         # PolicySummary.Type; "" when not observed. Never SERVICE_CONTROL_POLICY (own model).
-        "policy_type": {"type": "string", "enum": ["", *OTHER_POLICY_TYPES]},
-        "description": {"type": "string"},
+        "policy_type": {"type": ["string", "null"], "enum": ["", *OTHER_POLICY_TYPES]},
+        "description": {"type": ["string", "null"]},
         "aws_managed": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
@@ -83,9 +83,9 @@ class AwsOrganizationsPolicy(BaseModel):
 
     name = models.CharField(max_length=128, blank=True, default="")
     policy_arn = models.CharField(max_length=512, blank=True, default="", db_index=True)
-    policy_id = models.CharField(max_length=130, blank=True, default="")
-    policy_type = models.CharField(max_length=64, blank=True, default="")
-    description = models.CharField(max_length=512, blank=True, default="")
+    policy_id = models.CharField(max_length=130, null=True, blank=True, default=None)
+    policy_type = models.CharField(max_length=64, null=True, blank=True, default=None)
+    description = models.CharField(max_length=512, null=True, blank=True, default=None)
     # PolicySummary.AwsManaged; null when not observed.
     aws_managed = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: organizations:ListTagsForResource

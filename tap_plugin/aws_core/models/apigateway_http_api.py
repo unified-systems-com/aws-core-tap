@@ -32,10 +32,10 @@ class ApiGatewayHttpApi(BaseModel):
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
-        "api_id": {"type": "string"},
+        "api_id": {"type": ["string", "null"]},
         "api_arn": {"type": "string"},
-        "api_endpoint": {"type": "string"},
-        "protocol_type": {"type": "string"},
+        "api_endpoint": {"type": ["string", "null"]},
+        "protocol_type": {"type": ["string", "null"]},
         "route_authorization_types": {"type": ["object", "null"], "additionalProperties": {"type": "string", "minLength": 1}},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
@@ -47,10 +47,10 @@ class ApiGatewayHttpApi(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    api_id = models.CharField(max_length=128, blank=True, default="")
+    api_id = models.CharField(max_length=128, null=True, blank=True, default=None)
     api_arn = models.CharField(max_length=512, blank=True, default="")
-    api_endpoint = models.CharField(max_length=512, blank=True, default="")
-    protocol_type = models.CharField(max_length=32, blank=True, default="")
+    api_endpoint = models.CharField(max_length=512, null=True, blank=True, default=None)
+    protocol_type = models.CharField(max_length=32, null=True, blank=True, default=None)
     # {RouteKey: AuthorizationType} from GetRoutes: NONE, AWS_IAM, JWT, or
     # CUSTOM (a Lambda authorizer). Null when GetRoutes failed, so a denied
     # listing never reads as "no open routes". A typed field because this type's

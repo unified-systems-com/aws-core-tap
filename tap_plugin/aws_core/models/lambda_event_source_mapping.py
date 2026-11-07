@@ -54,13 +54,13 @@ class LambdaEventSourceMapping(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     mapping_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's mapping id. NULL = not observed.
-    uuid = models.CharField(max_length=512, blank=True, null=True, default=None)
+    uuid = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's mapping state (Enabled, Disabled, Creating, ...). NULL = not observed.
-    state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    state = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The queue, stream or broker the mapping reads. NULL = not observed (a self-managed source has none).
-    event_source_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    event_source_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The function the mapping invokes. NULL = not observed.
-    function_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    function_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Records per invocation. NULL = not observed.
     batch_size = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

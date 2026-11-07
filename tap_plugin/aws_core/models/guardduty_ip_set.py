@@ -49,13 +49,13 @@ class GuarddutyIpSet(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     ip_set_key = models.CharField(max_length=512, blank=True, default="")
     # The detector the list belongs to. NULL = not observed.
-    detector_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    detector_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's status (ACTIVE, INACTIVE, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The file format of the list (TXT, STIX, ...). NULL = not observed.
-    format = models.CharField(max_length=512, blank=True, null=True, default=None)
+    format = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The S3 URL of the list file. NULL = not observed.
-    location = models.CharField(max_length=512, blank=True, null=True, default=None)
+    location = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

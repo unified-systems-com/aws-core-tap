@@ -27,40 +27,40 @@ class ElasticacheCluster(BaseModel):
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
-        "cluster_id": {"type": "string"},
+        "cluster_id": {"type": ["string", "null"]},
         "cluster_arn": {"type": "string"},
-        "engine": {"type": "string"},
-        "engine_version": {"type": "string"},
-        "node_type": {"type": "string"},
+        "engine": {"type": ["string", "null"]},
+        "engine_version": {"type": ["string", "null"]},
+        "node_type": {"type": ["string", "null"]},
         "num_nodes": {"type": ["integer", "null"]},
-        "status": {"type": "string"},
+        "status": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "cluster_id": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "cluster_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "cluster_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "engine": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "engine_version": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "node_type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "engine": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "engine_version": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "node_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "num_nodes": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    cluster_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
+    cluster_id = models.CharField(max_length=255, db_index=True, null=True, blank=True, default=None)
     # The cluster's ARN (ARN in DescribeCacheClusters), its identity across accounts and regions. Blank until observed.
     cluster_arn = models.CharField(max_length=512, blank=True, default="", db_index=True)
-    engine = models.CharField(max_length=32, blank=True, default="")
-    engine_version = models.CharField(max_length=64, blank=True, default="")
-    node_type = models.CharField(max_length=64, blank=True, default="")
-    num_nodes = models.IntegerField(blank=True, null=True)
-    status = models.CharField(max_length=64, blank=True, default="")
+    engine = models.CharField(max_length=32, null=True, blank=True, default=None)
+    engine_version = models.CharField(max_length=64, null=True, blank=True, default=None)
+    node_type = models.CharField(max_length=64, null=True, blank=True, default=None)
+    num_nodes = models.IntegerField(null=True, blank=True, default=None)
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

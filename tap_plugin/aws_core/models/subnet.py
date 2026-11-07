@@ -30,9 +30,9 @@ class Subnet(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "subnet_id": {"type": "string"},
-        "cidr_block": {"type": "string"},
-        "availability_zone": {"type": "string"},
-        "public": {"type": "boolean"},
+        "cidr_block": {"type": ["string", "null"]},
+        "availability_zone": {"type": ["string", "null"]},
+        "public": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -40,9 +40,9 @@ class Subnet(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "subnet_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "cidr_block": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "availability_zone": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "public": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "cidr_block": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "availability_zone": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "public": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -52,9 +52,9 @@ class Subnet(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     subnet_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    cidr_block = models.CharField(max_length=64, blank=True, default="")
-    availability_zone = models.CharField(max_length=64, blank=True, default="")
-    public = models.BooleanField(default=False)
+    cidr_block = models.CharField(max_length=64, null=True, blank=True, default=None)
+    availability_zone = models.CharField(max_length=64, null=True, blank=True, default=None)
+    public = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
     tags = models.JSONField(null=True, blank=True, default=None)

@@ -29,8 +29,8 @@ class IamPolicy(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "policy_arn": {"type": "string"},
-        "path": {"type": "string"},
-        "is_aws_managed": {"type": "boolean"},
+        "path": {"type": ["string", "null"]},
+        "is_aws_managed": {"type": ["boolean", "null"]},
         "policy_id": {"type": ["string", "null"]},
         "default_version_id": {"type": ["string", "null"]},
         "attachment_count": {"type": ["integer", "null"]},
@@ -42,8 +42,8 @@ class IamPolicy(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "policy_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "path": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "is_aws_managed": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "is_aws_managed": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "policy_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "default_version_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "attachment_count": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
@@ -55,15 +55,15 @@ class IamPolicy(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     policy_arn = models.CharField(max_length=512, blank=True, default="")
-    path = models.CharField(max_length=512, blank=True, default="/")
-    is_aws_managed = models.BooleanField(default=False)
+    path = models.CharField(max_length=512, null=True, blank=True, default=None)
+    is_aws_managed = models.BooleanField(null=True, blank=True, default=None)
     # AWS's immutable policy id (ANPA...); NULL = not observed. A policy is looked up by its full ARN, so the id
     # is what distinguishes a delete-and-recreate under the same ARN.
-    policy_id = models.CharField(max_length=64, blank=True, null=True, default=None, db_index=True)
-    default_version_id = models.CharField(max_length=32, blank=True, null=True, default=None)
+    policy_id = models.CharField(max_length=64, db_index=True, null=True, blank=True, default=None)
+    default_version_id = models.CharField(max_length=32, null=True, blank=True, default=None)
     # How many principals the policy is attached to. NULL = not observed.
-    attachment_count = models.IntegerField(blank=True, null=True, default=None)
-    is_attachable = models.BooleanField(blank=True, null=True, default=None)
+    attachment_count = models.IntegerField(null=True, blank=True, default=None)
+    is_attachable = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

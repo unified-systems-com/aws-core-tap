@@ -48,7 +48,7 @@ class LambdaCodeSigningConfig(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     code_signing_config_arn = models.CharField(max_length=512, blank=True, default="")
     # Warn or Enforce. NULL = not observed.
-    untrusted_artifact_on_deployment = models.CharField(max_length=512, blank=True, null=True, default=None)
+    untrusted_artifact_on_deployment = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Signing profile versions whose code is allowed. NULL = not observed.
     signing_profile_version_arns = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

@@ -26,8 +26,8 @@ class AccessAnalyzerArchiveRule(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "rule_arn": {"type": "string"},
-        "analyzer_arn": {"type": "string"},
-        "rule_name": {"type": "string"},
+        "analyzer_arn": {"type": ["string", "null"]},
+        "rule_name": {"type": ["string", "null"]},
         "filter": {"type": ["object", "null"]},
         "updated_at": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
@@ -37,8 +37,8 @@ class AccessAnalyzerArchiveRule(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "rule_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "analyzer_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "rule_name": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "analyzer_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "rule_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "filter": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "updated_at": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -49,13 +49,13 @@ class AccessAnalyzerArchiveRule(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     rule_arn = models.CharField(max_length=2048, blank=True, default="")
     # The analyzer the rule belongs to.
-    analyzer_arn = models.CharField(max_length=2048, blank=True, default="")
+    analyzer_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The rule's name.
-    rule_name = models.CharField(max_length=512, blank=True, default="")
+    rule_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The criteria a finding must match to be archived (operator-authored; may name resources and accounts). NULL = not observed.
     filter = models.JSONField(null=True, blank=True, default=None)
     # When the rule was last changed (ISO 8601 UTC). NULL = not observed.
-    updated_at = models.CharField(max_length=512, blank=True, null=True, default=None)
+    updated_at = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

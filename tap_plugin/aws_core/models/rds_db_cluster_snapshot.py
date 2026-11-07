@@ -48,19 +48,19 @@ class RdsDbClusterSnapshot(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_cluster_snapshot_arn = models.CharField(max_length=2048, blank=True, default="")
     # The cluster the snapshot was taken of. NULL = not observed.
-    db_cluster_identifier = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    db_cluster_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The database engine. NULL = not observed.
-    engine = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # manual, automated, shared, public, awsbackup, ... NULL = not observed.
-    snapshot_type = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    snapshot_type = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # AWS's snapshot status. NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether the snapshot is encrypted. NULL = not observed.
     storage_encrypted = models.BooleanField(null=True, blank=True, default=None)
     # Whether a manual snapshot is shared with everyone (restore attribute 'all'). NULL = not observed.
     is_public = models.BooleanField(null=True, blank=True, default=None)
     # When the snapshot was taken (ISO 8601 UTC). NULL = not observed.
-    created_at = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    created_at = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -52,7 +52,7 @@ class SnsTopic(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     topic_arn = models.CharField(max_length=512, blank=True, default="")
     # The KMS key (id, ARN or alias) that encrypts messages at rest. NULL = no key, or not observed.
-    kms_master_key_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    kms_master_key_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the topic is FIFO. NULL = not observed.
     fifo_topic = models.BooleanField(null=True, blank=True, default=None)
     # Confirmed subscriptions. NULL = not observed.

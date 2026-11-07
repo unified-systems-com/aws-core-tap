@@ -120,10 +120,10 @@ class AwsOrganization(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "organization_id": {"type": "string", "pattern": "^(o-[a-z0-9]{10,32})?$"},
-        "root_id": {"type": "string", "pattern": "^(r-[0-9a-z]{4,32})?$"},
-        "management_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
-        "feature_set": {"type": "string", "enum": ["", "ALL", "CONSOLIDATED_BILLING"]},
-        "partition": {"type": "string", "enum": ["", "aws", "aws-us-gov", "aws-cn"]},
+        "root_id": {"type": ["string", "null"], "pattern": "^(r-[0-9a-z]{4,32})?$"},
+        "management_account_id": {"type": ["string", "null"], "pattern": "^([0-9]{12})?$"},
+        "feature_set": {"type": ["string", "null"], "enum": ["", "ALL", "CONSOLIDATED_BILLING"]},
+        "partition": {"type": ["string", "null"], "enum": ["", "aws", "aws-us-gov", "aws-cn"]},
         # The root's tags (req-aws-core-organizations-completeness-1). Null means NOT READ: the one
         # case is a credential that can DescribeOrganization but not ListRoots, which keeps the node
         # (req-aws-core-organizations-collect-4) but has no root id to read tags for. A root whose
@@ -163,10 +163,10 @@ class AwsOrganization(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     organization_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    root_id = models.CharField(max_length=64, blank=True, default="")
-    management_account_id = models.CharField(max_length=12, blank=True, default="")
-    feature_set = models.CharField(max_length=32, blank=True, default="")
-    partition = models.CharField(max_length=16, blank=True, default="")
+    root_id = models.CharField(max_length=64, null=True, blank=True, default=None)
+    management_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)
+    feature_set = models.CharField(max_length=32, null=True, blank=True, default=None)
+    partition = models.CharField(max_length=16, null=True, blank=True, default=None)
     # The root's tags via the Organizations lane (organizations:ListTagsForResource on r-…).
     # Default null ("not read"), not {}: an existing or designed organization has no observed root tags.
     tags = models.JSONField(null=True, blank=True, default=None)

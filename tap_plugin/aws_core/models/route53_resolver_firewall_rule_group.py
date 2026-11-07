@@ -47,7 +47,7 @@ class Route53ResolverFirewallRuleGroup(BaseModel):
         "block_domain_lists": _NAME_LIST,
         "allow_domain_lists": _NAME_LIST,
         "alert_domain_lists": _NAME_LIST,
-        "region": {"type": "string"},
+        "region": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -65,7 +65,7 @@ class Route53ResolverFirewallRuleGroup(BaseModel):
     block_domain_lists = models.JSONField(default=list, blank=True)
     allow_domain_lists = models.JSONField(default=list, blank=True)
     alert_domain_lists = models.JSONField(default=list, blank=True)
-    region = models.CharField(max_length=32, blank=True, default="")
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: route53resolver:ListTagsForResource.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.

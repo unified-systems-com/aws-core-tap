@@ -47,7 +47,7 @@ class Wafv2RuleGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     rule_group_arn = models.CharField(max_length=512, blank=True, default="")
     # REGIONAL, or CLOUDFRONT for a global (CloudFront) object read through us-east-1. NULL = not observed.
-    scope = models.CharField(max_length=512, blank=True, null=True, default=None)
+    scope = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many rules the group holds. NULL = not observed.
     rule_count = models.IntegerField(null=True, blank=True, default=None)
     # The group's capacity units. NULL = not observed.

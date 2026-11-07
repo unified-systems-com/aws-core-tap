@@ -58,17 +58,17 @@ class EfsFileSystem(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     file_system_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's id (fs-...). NULL = not observed.
-    file_system_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    file_system_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the file system is encrypted at rest. NULL = not observed.
     encrypted = models.BooleanField(null=True, blank=True, default=None)
     # The key that encrypts the file system. NULL = none, or not observed.
-    kms_key_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    kms_key_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # generalPurpose or maxIO. NULL = not observed.
-    performance_mode = models.CharField(max_length=512, blank=True, null=True, default=None)
+    performance_mode = models.CharField(max_length=512, null=True, blank=True, default=None)
     # bursting, provisioned or elastic. NULL = not observed.
-    throughput_mode = models.CharField(max_length=512, blank=True, null=True, default=None)
+    throughput_mode = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's state (available, creating, deleting, ...). NULL = not observed.
-    life_cycle_state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    life_cycle_state = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many mount targets the file system has. NULL = not observed.
     number_of_mount_targets = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

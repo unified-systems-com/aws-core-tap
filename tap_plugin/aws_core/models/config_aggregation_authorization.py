@@ -45,9 +45,9 @@ class ConfigAggregationAuthorization(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     authorization_arn = models.CharField(max_length=512, blank=True, default="")
     # The account allowed to aggregate this account's data. NULL = not observed.
-    authorized_account_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    authorized_account_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The region the authorized aggregator lives in. NULL = not observed.
-    authorized_region = models.CharField(max_length=512, blank=True, null=True, default=None)
+    authorized_region = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

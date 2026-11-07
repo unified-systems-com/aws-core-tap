@@ -42,8 +42,8 @@ class TransitGateway(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "transit_gateway_id": {"type": "string", "pattern": "^(tgw-[0-9a-f]{8,17})?$"},
-        "owner_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
-        "region": {"type": "string"},
+        "owner_account_id": {"type": ["string", "null"], "pattern": "^([0-9]{12})?$"},
+        "region": {"type": ["string", "null"]},
         "amazon_side_asn": {
             "anyOf": [
                 {"type": "null"},
@@ -66,8 +66,8 @@ class TransitGateway(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     transit_gateway_id = models.CharField(max_length=32, blank=True, default="", db_index=True)
-    owner_account_id = models.CharField(max_length=12, blank=True, default="")
-    region = models.CharField(max_length=32, blank=True, default="")
+    owner_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # Options.AmazonSideAsn: AWS accepts only the private ranges 64512-65534 and 4200000000-4294967294
     # (the second is wider than a 32-bit signed int); the schema allows exactly those, or null.
     amazon_side_asn = models.BigIntegerField(null=True, blank=True, default=None)

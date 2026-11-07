@@ -56,9 +56,9 @@ class AwsSecurityHubHub(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "hub_arn": {"type": "string"},
-        "subscribed_at": {"type": "string"},
+        "subscribed_at": {"type": ["string", "null"]},
         "auto_enable_controls": {"type": ["boolean", "null"]},
-        "control_finding_generator": {"type": "string"},
+        "control_finding_generator": {"type": ["string", "null"]},
         # [{"standards_arn": str, "status": str}]; null when the listing did not finish.
         "enabled_standards": {
             "type": ["array", "null"],
@@ -90,9 +90,9 @@ class AwsSecurityHubHub(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     hub_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    subscribed_at = models.CharField(max_length=40, blank=True, default="")
+    subscribed_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     auto_enable_controls = models.BooleanField(null=True, blank=True, default=None)
-    control_finding_generator = models.CharField(max_length=32, blank=True, default="")
+    control_finding_generator = models.CharField(max_length=32, null=True, blank=True, default=None)
     enabled_standards = models.JSONField(null=True, blank=True, default=None)
     administrator_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", "" is "no administrator"
     # Active findings (aws-core-tap#76; collectors/boto3_collector/findings.py). Null is "not read".

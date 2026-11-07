@@ -30,7 +30,7 @@ class SecurityGroup(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "group_id": {"type": "string"},
-        "description": {"type": "string"},
+        "description": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -38,7 +38,7 @@ class SecurityGroup(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "group_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "description": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "description": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -46,7 +46,7 @@ class SecurityGroup(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     group_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    description = models.TextField(blank=True, default="")
+    description = models.TextField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
     tags = models.JSONField(null=True, blank=True, default=None)

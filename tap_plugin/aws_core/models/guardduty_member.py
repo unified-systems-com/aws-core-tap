@@ -49,13 +49,13 @@ class GuarddutyMember(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     member_key = models.CharField(max_length=512, blank=True, default="")
     # The administrator's detector. NULL = not observed.
-    detector_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    detector_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The member account. NULL = not observed.
-    account_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    account_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's relationship status (Enabled, Invited, Disabled, ...). NULL = not observed.
-    relationship_status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    relationship_status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The account that administers the member. NULL = not observed.
-    administrator_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    administrator_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -31,9 +31,9 @@ class SqsQueue(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "queue_arn": {"type": "string"},
-        "queue_url": {"type": "string"},
-        "visibility_timeout": {"type": "string"},
-        "message_retention_period": {"type": "string"},
+        "queue_url": {"type": ["string", "null"]},
+        "visibility_timeout": {"type": ["string", "null"]},
+        "message_retention_period": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -41,8 +41,8 @@ class SqsQueue(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "queue_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "queue_url": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "visibility_timeout": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "queue_url": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "visibility_timeout": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "message_retention_period": {
             "validation": "jsonschema",
             "schema": {"type": "string"},
@@ -54,10 +54,10 @@ class SqsQueue(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     queue_arn = models.CharField(max_length=512, blank=True, default="")
-    queue_url = models.CharField(max_length=512, blank=True, default="")
+    queue_url = models.CharField(max_length=512, null=True, blank=True, default=None)
     # SQS returns every attribute as a string; stored verbatim (seconds).
-    visibility_timeout = models.CharField(max_length=16, blank=True, default="")
-    message_retention_period = models.CharField(max_length=16, blank=True, default="")
+    visibility_timeout = models.CharField(max_length=16, null=True, blank=True, default=None)
+    message_retention_period = models.CharField(max_length=16, null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 
