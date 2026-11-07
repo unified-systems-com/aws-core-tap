@@ -27,5 +27,12 @@
   },
   "identity": {
     "discriminators": []
-  }
+  },
+  "targets": [
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_lambda",
+    "aws_core__aws_alb",
+    "aws_core__aws_elb",
+    "aws_core__aws_cloudfront_distribution"
+  ]
 }

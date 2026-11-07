@@ -168,8 +168,10 @@ class TestIncludeOneType:
         ops = _operations()
         assert "describe_vpcs" in ops
         assert not ops & {"describe_subnets", "describe_instances", "describe_security_groups"}
-        services = {service for service, _op in _RecordingClient.calls}
-        assert "organizations" not in services, "the Organizations tree is not a manifest entry; a run that chose its types skips it"
+        organizations_ops = {op for service, op in _RecordingClient.calls if service == "organizations"}
+        # The account anchor asks Organizations about its own account (DescribeAccount); the Organizations tree is
+        # not a manifest entry, and a run that chose its types skips it.
+        assert organizations_ops <= {"describe_account", "DescribeAccount"}, organizations_ops
 
     @pytest.mark.spec("req-aws-collector-selection-3")
     def test_anchors_are_never_filtered(self, monkeypatch):

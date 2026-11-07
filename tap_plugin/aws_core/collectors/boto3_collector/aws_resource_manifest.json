@@ -38711,6 +38711,12 @@
             "evidence": "botocore_sensitive"
           },
           {
+            "path": "metadataConfigurations[].name",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
             "path": "storageConfiguration.opensearchManagedClusterConfiguration.vectorIndexName",
             "category": "customer_content",
             "reason": "botocore marks this member sensitive: operator-set content.",

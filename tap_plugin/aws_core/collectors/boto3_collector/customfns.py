@@ -359,6 +359,16 @@ def _elb_alias_region(domain: str) -> str | None:
     return (match.group(1) or match.group(2)) if match else None
 
 
+def _elbv2_in_region(session: Any, client_for: Any, region: str) -> Any:
+    """An ELBv2 client for ``region``: the run's own client when the run is in that region (so the call goes
+    through whatever ``client_for`` wraps), else one built from the run's session, which carries the call ledger
+    and the read guard the same way."""
+    base = _run_client(session, client_for, "elbv2")
+    if _client_region(base) == region:
+        return base
+    return session.client("elbv2", region_name=region)
+
+
 def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
     """Enumerate Route 53 hosted zones, resolving CloudFront alias targets.
 
@@ -419,7 +429,7 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                         if lb_region not in lb_regions_read:
                             lb_regions_read.add(lb_region)
                             try:
-                                regional = session.client("elbv2", region_name=lb_region)
+                                regional = _elbv2_in_region(session, client_for, lb_region)
                                 for lb in _elbv2_load_balancers(regional):
                                     lb_by_dns[str(lb.get("DNSName", "")).lower()] = lb
                             except BotoCoreError, ClientError:

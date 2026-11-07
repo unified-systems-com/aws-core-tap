@@ -359,6 +359,7 @@ def _zone_item(records: dict[str, Any]) -> dict[str, Any]:
             },
             "list_hosted_zones": {"HostedZones": [{"Id": "/hostedzone/Z1", "Name": "example.com."}]},
             "list_resource_record_sets": records,
+            "describe_load_balancers": {"LoadBalancers": []},
         }
     )
     return next(iter(route53_zones_with_alias_targets(None, client_for=lambda _svc: client)))
@@ -377,14 +378,20 @@ class TestRoute53Reads:
     def test_complete_and_empty(self):
         assert _reads(_ZONE, _zone_item({"ResourceRecordSets": []}))[_ROUTES] == COMPLETE
 
-    def test_records_that_are_not_cloudfront_aliases_do_not_touch_the_read(self):
-        # Only CloudFront aliases are in ROUTES_TRAFFIC's scope: a TXT record, or an alias to another
-        # service, beside a resolved CloudFront alias leaves the read complete.
+    def test_records_that_are_not_routed_aliases_do_not_touch_the_read(self):
+        # Only CloudFront and load balancer aliases are in ROUTES_TRAFFIC's scope: a TXT record, or an alias to
+        # another service, beside a resolved CloudFront alias leaves the read complete.
         txt = {"Name": "example.com.", "Type": "TXT", "ResourceRecords": [{"Value": "x"}]}
-        elb = _alias("lb-1.us-east-1.elb.amazonaws.com")
-        item = _zone_item({"ResourceRecordSets": [txt, elb, _alias("d1.cloudfront.net")]})
+        website = _alias("s3-website-us-east-1.amazonaws.com")
+        item = _zone_item({"ResourceRecordSets": [txt, website, _alias("d1.cloudfront.net")]})
         assert item["alias_cloudfront_arns"] == [_CF_ARN]
         assert _reads(_ZONE, item)[_ROUTES] == COMPLETE
+
+    def test_an_alias_to_a_load_balancer_not_in_the_listing_is_partial(self):
+        # A load balancer alias is in scope now (the zone routes to it); one the listing does not hold
+        # (another account's, or a Classic load balancer) is a routing seen and not wired: not an absence.
+        item = _zone_item({"ResourceRecordSets": [_alias("lb-1.us-east-1.elb.amazonaws.com")]})
+        assert _reads(_ZONE, item)[_ROUTES] == PARTIAL
 
     def test_an_alias_to_a_distribution_not_listed_is_partial(self):
         item = _zone_item({"ResourceRecordSets": [_alias("d1.cloudfront.net"), _alias("elsewhere.cloudfront.net")]})
