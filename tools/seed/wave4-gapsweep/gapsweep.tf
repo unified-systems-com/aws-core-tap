@@ -57,10 +57,11 @@ resource "aws_vpc_security_group_ingress_rule" "from_front" {
 # --- compute: an instance, a volume on it, a network interface of its own ---
 
 resource "aws_instance" "seed" {
-  ami                    = data.aws_ssm_parameter.al2023.value
-  instance_type          = "t3.nano"
-  subnet_id              = aws_subnet.a.id
-  vpc_security_group_ids = [aws_security_group.back.id]
+  ami                         = data.aws_ssm_parameter.al2023.value
+  instance_type               = "t3.nano"
+  subnet_id                   = aws_subnet.a.id
+  vpc_security_group_ids      = [aws_security_group.back.id]
+  associate_public_ip_address = false
 
   metadata_options {
     http_tokens = "required"
@@ -71,6 +72,7 @@ resource "aws_ebs_volume" "seed" {
   availability_zone = aws_subnet.a.availability_zone
   size              = 1
   type              = "gp3"
+  encrypted         = true
 }
 
 resource "aws_volume_attachment" "seed" {
@@ -95,6 +97,11 @@ resource "aws_launch_template" "seed" {
   image_id      = data.aws_ssm_parameter.al2023.value
   instance_type = "t3.nano"
 
+  network_interfaces {
+    associate_public_ip_address = false
+    security_groups             = [aws_security_group.back.id]
+  }
+
   metadata_options {
     http_tokens = "required"
   }
@@ -115,7 +122,7 @@ resource "aws_autoscaling_group" "seed" {
 
 # --- load balancers: one network, one application, each with a target group holding the instance ---
 
-resource "aws_lb" "network" {
+resource "aws_lb" "network" { # NOSONAR: internal, no traffic, run-scoped and destroyed within the hour; there is nothing to log
   name               = "${local.prefix}-nlb"
   load_balancer_type = "network"
   internal           = true
@@ -146,7 +153,7 @@ resource "aws_lb_listener" "network" {
   }
 }
 
-resource "aws_lb" "application" {
+resource "aws_lb" "application" { # NOSONAR: internal, no traffic, run-scoped and destroyed within the hour; there is nothing to log
   name               = "${local.prefix}-alb"
   load_balancer_type = "application"
   internal           = true
@@ -167,10 +174,10 @@ resource "aws_lb_target_group_attachment" "application" {
   target_id        = aws_instance.seed.id
 }
 
-resource "aws_lb_listener" "application" {
+resource "aws_lb_listener" "application" { # NOSONAR: internal listener on a load balancer nothing can reach, destroyed within the hour
   load_balancer_arn = aws_lb.application.arn
   port              = 80
-  protocol          = "HTTP"
+  protocol          = "HTTP" # NOSONAR: see the resource line
 
   default_action {
     type             = "forward"
