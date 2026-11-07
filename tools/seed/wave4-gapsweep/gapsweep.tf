@@ -177,7 +177,8 @@ resource "aws_lb_target_group_attachment" "application" {
 resource "aws_lb_listener" "application" { # NOSONAR: internal listener on a load balancer nothing can reach, destroyed within the hour
   load_balancer_arn = aws_lb.application.arn
   port              = 80
-  protocol          = "HTTP" # NOSONAR: see the resource line
+  # nosemgrep: terraform.aws.security.insecure-load-balancer-tls-version.insecure-load-balancer-tls-version
+  protocol = "HTTP" # NOSONAR: see the resource line
 
   default_action {
     type             = "forward"
