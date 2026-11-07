@@ -35,14 +35,21 @@ def never_filled_to_unobserved(apps, schema_editor):
 
 
 def keep_defaults(apps, schema_editor):
-    """Going back: a null cannot be stored in the old columns, so the text ones become "" again; the boolean and
-    number ones have no default to return to and are left to the schema reversal."""
-    for ref in NEVER_FILLED:
-        model_name, field = ref.split(":")
-        for name in (model_name, "historical" + model_name):
-            model = apps.get_model("aws_core", name)
-            if isinstance(model._meta.get_field(field), (models.CharField, models.TextField)):
-                model._default_manager.filter(**{f"{field}__isnull": True}).update(**{field: ""})
+    """Going back: the columns return to NOT NULL, so every null in them (the ten above, and anything a later
+    collection left unobserved) takes the type's old default: "" for text, False for a boolean, 0 for a number.
+    Rolling back therefore loses the difference between "unobserved" and "empty"; the schema reversal needs it."""
+    for op in Migration.operations[0].operations:
+        column = op.field
+        if isinstance(column, (models.CharField, models.TextField)):
+            old_default = ""
+        elif isinstance(column, models.BooleanField):
+            old_default = False
+        elif isinstance(column, (models.FloatField, models.IntegerField)):
+            old_default = 0
+        else:
+            continue
+        model = apps.get_model("aws_core", op.model_name)
+        model._default_manager.filter(**{f"{op.name}__isnull": True}).update(**{op.name: old_default})
 
 
 class Migration(migrations.Migration):
