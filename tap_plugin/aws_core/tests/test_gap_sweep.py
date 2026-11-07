@@ -39,8 +39,6 @@ NOT_TAGGABLE = [
     ("appconfig_extension", {"Arn": "arn:aws-us-gov:appconfig:us-gov-west-1::extension/AWS.AppConfig.FeatureFlags/1"},
      "BadRequestException", "ARN arn:x is invalid due to not containing an account ID.", "ListTagsForResource"),
     ("route53resolver_resolver_rule", {"Arn": "arn:x"}, "InvalidRequestException", "[RSLVR-00903] Cannot tag Auto Defined Rule.", "ListTagsForResource"),
-    ("route53resolver_firewall_domain_list", {"Arn": "arn:x"}, "InvalidParameterException",
-     "[RSLVR-00907] You are not authorized to do this operation on shared resource", "ListTagsForResource"),
     ("sagemaker_hub", {"HubArn": "arn:x"}, "ValidationException", "Value 'arn:aws-us-gov:sagemaker:us-gov-west-1:aws:hub/SageMakerPublicHub' failed", "ListTags"),
     ("athena_data_catalog", {"Name": "AwsDataCatalog"}, "ResourceNotFoundException", "Could not find valid resource from ARN: arn:x:datacatalog/AwsDataCatalog", "ListTagsForResource"),
 ]
@@ -63,6 +61,16 @@ def test_a_hub_that_is_not_the_public_one_is_still_a_failed_read():
     message = "Value 'arn:aws-us-gov:sagemaker:us-gov-west-1:aws:hub/SomeOtherHub' failed"
     tags, slot, _ = resolve_node_tags(entry, item, rgta_map={}, client_for=lambda _s: _Refusing("ValidationException", message, "ListTags"))
     assert slot["status"] == "error"
+
+
+def test_a_shared_resources_tags_stay_unread_not_empty_and_raise_no_gap():
+    entry = _entry("route53resolver_firewall_domain_list")
+    message = "[RSLVR-00907] You are not authorized to do this operation on shared resource"
+    tags, slot, _ = resolve_node_tags(
+        entry, {"Arn": "arn:x"}, rgta_map={}, client_for=lambda _s: _Refusing("InvalidParameterException", message, "ListTagsForResource")
+    )
+    assert not isinstance(tags, dict), "the owner's tags are unread, not an empty set"
+    assert slot["status"] == "not_readable"
 
 
 def test_an_unlisted_refusal_of_a_tag_read_is_still_a_failed_read():

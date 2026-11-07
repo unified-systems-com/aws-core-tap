@@ -105,7 +105,7 @@ from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
-from .outcomes import NOT_CONFIGURED, NOT_TAGGABLE, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify, classify_tag_read
+from .outcomes import NOT_CONFIGURED, NOT_READABLE, NOT_TAGGABLE, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify, classify_tag_read
 from .organizations import OrganizationTree, collect_organization, organizations_client
 from .partition import PARTITION_AWS, entry_unavailable_reason
 from .paths import eval_path
@@ -249,15 +249,17 @@ def resolve_node_tags(
         {},
         [{"key": "tags", "op": block["op"], "why": block.get("why", "resource tags")}],
         call_kwargs=call_kwargs,
-        # A refusal that a reviewed row names as "this resource cannot hold tags" is an answer (no tags),
-        # not a failed read (req-aws-collector-tags).
-        reclassify=lambda exc: NOT_TAGGABLE if classify_tag_read(entry, exc) else None,
+        # A refusal that a reviewed row names is an answer, not a failed read (req-aws-collector-tags): the
+        # resource cannot hold tags (none), or its tags are another account's to read (unread, no gap).
+        reclassify=lambda exc: outcome.kind if (outcome := classify_tag_read(entry, exc)) else None,
     )
     slot = env["_hydrate"]["tags"]
     mapping = env["_hydrate_mapping"]["tags"]
     status = slot.get("status")
     if status in ("denied", "error"):
         return UNREAD, slot, mapping
+    if status == NOT_READABLE:
+        return UNREAD, slot, mapping  # a shared resource's tags are its owner's to read; unread, and no gap to raise
     tags: dict[str, str] = {}
     if status == NOT_TAGGABLE:
         return {}, slot, mapping

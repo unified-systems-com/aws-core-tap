@@ -40,6 +40,7 @@ NOT_CONFIGURED = "not_configured"
 UNSUPPORTED_IN_PARTITION = "unsupported_in_partition"
 THROTTLED = "throttled"
 NOT_TAGGABLE = "not_taggable"
+NOT_READABLE = "not_readable"
 
 _DIR = Path(__file__).resolve().parent
 OUTCOMES_PATH = _DIR / "error_outcomes.json"
@@ -133,6 +134,6 @@ def classify_tag_read(entry: dict[str, Any], exc: BaseException, rows: tuple[dic
         return None
     code = error_code(exc)
     for row in rows if rows is not None else load_rows():
-        if row["outcome"] == NOT_TAGGABLE and _row_matches(row, entry, exc, code, ""):
-            return Outcome(NOT_TAGGABLE, code or type(exc).__name__, row["why"])
+        if row["outcome"] in (NOT_TAGGABLE, NOT_READABLE) and _row_matches(row, entry, exc, code, ""):
+            return Outcome(row["outcome"], code or type(exc).__name__, row["why"])
     return None
