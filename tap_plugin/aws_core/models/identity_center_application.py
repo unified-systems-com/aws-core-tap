@@ -47,11 +47,11 @@ class IdentityCenterApplication(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     application_arn = models.CharField(max_length=2048, blank=True, default="")
     # The Identity Center instance the application is registered in. NULL = not observed.
-    instance_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    instance_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The application provider (the SaaS or custom application type). NULL = not observed.
-    provider_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    provider_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ENABLED or DISABLED. NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

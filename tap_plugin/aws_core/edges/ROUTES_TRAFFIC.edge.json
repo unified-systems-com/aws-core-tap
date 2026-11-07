@@ -1,7 +1,7 @@
 {
   "slug": "ROUTES_TRAFFIC__aws_core",
   "name": "Routes Traffic",
-  "description": "Route table, load balancer, DNS zone, or PrivateLink endpoint service routes traffic to a target. An endpoint service forwards the traffic its consumers send to the Network or Gateway Load Balancer behind it.",
+  "description": "A load balancer, DNS zone, route table or PrivateLink endpoint service routes traffic to a target (source -> target). A load balancer routes to the instances and functions in its target groups (DescribeTargetHealth); a hosted zone to the load balancers and CloudFront distributions its alias records name; an endpoint service forwards its consumers' traffic to the Network or Gateway Load Balancer behind it. One edge per source and target. A route-table emitter, when one is written, routes by destination: it must declare its own identity discriminators (the destination CIDR) before it emits, as one edge per source and target would collapse its routes.",
   "sources": [
     "aws_core__aws_route_table",
     "aws_core__aws_alb",
@@ -24,5 +24,15 @@
   },
   "default_dimensions": {
     "tap.cloud": "aws"
-  }
+  },
+  "identity": {
+    "discriminators": []
+  },
+  "targets": [
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_lambda",
+    "aws_core__aws_alb",
+    "aws_core__aws_elb",
+    "aws_core__aws_cloudfront_distribution"
+  ]
 }

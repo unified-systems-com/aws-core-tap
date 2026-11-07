@@ -38,8 +38,8 @@ class AwsIdentityCenterGroup(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "identity_store_id": {"type": "string"},
         "group_id": {"type": "string"},
-        "display_name": {"type": "string"},
-        "description": {"type": "string"},
+        "display_name": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
         # [{"issuer": str, "id": str}] from Group.ExternalIds.
         "external_ids": {
             "type": "array",
@@ -61,8 +61,8 @@ class AwsIdentityCenterGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     identity_store_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
     group_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    display_name = models.CharField(max_length=1024, blank=True, default="")
-    description = models.CharField(max_length=1024, blank=True, default="")
+    display_name = models.CharField(max_length=1024, null=True, blank=True, default=None)
+    description = models.CharField(max_length=1024, null=True, blank=True, default=None)
     external_ids = models.JSONField(default=list, blank=True)
     # Canonical {str: str}. AWS cannot tag a group: always {}.
     tags = models.JSONField(null=True, blank=True, default=None)

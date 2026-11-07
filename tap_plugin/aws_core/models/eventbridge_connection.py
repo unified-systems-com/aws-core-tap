@@ -48,9 +48,9 @@ class EventbridgeConnection(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     connection_arn = models.CharField(max_length=512, blank=True, default="")
     # API_KEY, BASIC or OAUTH_CLIENT_CREDENTIALS. NULL = not observed.
-    authorization_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    authorization_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's connection state (AUTHORIZED, DEAUTHORIZED, ...). NULL = not observed.
-    connection_state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    connection_state = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

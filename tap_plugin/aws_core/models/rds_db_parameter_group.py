@@ -42,7 +42,7 @@ class RdsDbParameterGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_parameter_group_arn = models.CharField(max_length=2048, blank=True, default="")
     # The engine family (postgres16, mysql8.0, ...). NULL = not observed.
-    family = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    family = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

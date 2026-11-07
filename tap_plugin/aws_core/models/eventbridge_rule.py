@@ -36,9 +36,9 @@ class EventbridgeRule(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "rule_arn": {"type": "string"},
-        "state": {"type": "string"},
-        "schedule_expression": {"type": "string"},
-        "event_bus_name": {"type": "string"},
+        "state": {"type": ["string", "null"]},
+        "schedule_expression": {"type": ["string", "null"]},
+        "event_bus_name": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -46,9 +46,9 @@ class EventbridgeRule(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "rule_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "state": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "schedule_expression": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "event_bus_name": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "state": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "schedule_expression": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "event_bus_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -56,9 +56,9 @@ class EventbridgeRule(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     rule_arn = models.CharField(max_length=512, blank=True, default="")
-    state = models.CharField(max_length=32, blank=True, default="")
-    schedule_expression = models.CharField(max_length=255, blank=True, default="")
-    event_bus_name = models.CharField(max_length=255, blank=True, default="")
+    state = models.CharField(max_length=32, null=True, blank=True, default=None)
+    schedule_expression = models.CharField(max_length=255, null=True, blank=True, default=None)
+    event_bus_name = models.CharField(max_length=255, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

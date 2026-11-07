@@ -1,0 +1,18 @@
+{
+  "slug": "ATTACHED_TO_INSTANCE__aws_core",
+  "name": "Attached To Instance",
+  "description": "A volume or network interface is attached to an EC2 instance (resource -> instance): an EBS volume's Attachments[].InstanceId, a network interface's Attachment.InstanceId. A volume attached to several instances (Multi-Attach) has one edge each.",
+  "sources": [
+    "aws_core__aws_ebs_volume",
+    "aws_core__aws_ec2_network_interface"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_instance"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

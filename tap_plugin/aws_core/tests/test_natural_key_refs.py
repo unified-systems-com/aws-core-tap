@@ -17,6 +17,7 @@ import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector, Boto3CollectorError
 from tap_plugin.aws_core.collectors.boto3_collector.identity import NAMESPACE_AWS_COLLECTOR
+from tap_plugin.aws_core.tests.undeclared_edge import read_as_undeclared
 from tap_plugin.aws_core.tests.grid_keys import edge_between, find_node_id, live_edges, node_id
 
 from tap_cares.collectors.config import CollectorConfig
@@ -270,9 +271,10 @@ def test_a_node_with_a_hole_in_its_key_fails_the_run_and_writes_nothing(monkeypa
 
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-collector-identity-3")
-def test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs() -> None:
-    """ROUTES_TRAFFIC declares no identity (aws-core-tap#64): it keeps the explicit uuid5 id it had, so
+def test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs(monkeypatch) -> None:
+    """An edge type with no declared identity (ROUTES_TRAFFIC, read as undeclared here): it keeps the explicit uuid5 id it had, so
     a re-run replaces it in place instead of adding a ref-addressed copy each time."""
+    read_as_undeclared(monkeypatch)
     assert _run().results["error"] == []
     expected = _legacy_id(f"edge:{ROUTES_TRAFFIC}:{_ZONE_ID}->{_DIST_ARN}")
     assert edge_between(ROUTES_TRAFFIC, ZONE, _ZONE_ID, DIST, _DIST_ARN).entity_id == expected
@@ -282,13 +284,30 @@ def test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs() -> None:
 
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-collector-identity-3")
-def test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge() -> None:
+def test_an_edge_written_while_its_type_was_undeclared_is_found_again_once_the_type_declares_its_identity(monkeypatch) -> None:
+    """ROUTES_TRAFFIC gained its identity declaration: an edge stored under the old explicit uuid5 id must be the
+    edge a later run finds by (type, source, target), not a second one beside it."""
+    with monkeypatch.context() as old:
+        read_as_undeclared(old)
+        assert _run().results["error"] == []
+    zone, dist = node_id(ZONE, _ZONE_ID), node_id(DIST, _DIST_ARN)
+    (before,) = live_edges(ROUTES_TRAFFIC, zone, dist)
+    assert _run().results["error"] == []  # now the real, declared definition
+    after = live_edges(ROUTES_TRAFFIC, zone, dist)
+    assert len(after) == 1, "the upgrade left a second live edge beside the one the old definition wrote"
+    assert after[0].entity_id == before.entity_id
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-identity-3")
+def test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge(monkeypatch) -> None:
     """Deleting the zone ends its ROUTES_TRAFFIC edge. Re-sending that edge's fixed uuid5 id would fail
     the whole batch (entity_tombstoned), so the run leaves it out and says so; the zone itself returns
     under a new id. The edge comes back once the type declares an identity (aws-core-tap#64)."""
     from tap_grid.models import Entity
     from tap_grid.services import delete_node
 
+    read_as_undeclared(monkeypatch)
     assert _run().results["error"] == []
     old_zone = node_id(ZONE, _ZONE_ID)
     edge_id = _legacy_id(f"edge:{ROUTES_TRAFFIC}:{_ZONE_ID}->{_DIST_ARN}")
@@ -311,6 +330,7 @@ def test_retired_ids_are_asked_of_the_grid_read_service_and_a_missing_id_is_sent
     the edge is sent and created under it."""
     import tap_grid.services as grid_services
 
+    read_as_undeclared(monkeypatch)
     real = grid_services.entity_liveness
     asked: list[list[Any]] = []
     answers: list[dict[uuid.UUID, str]] = []

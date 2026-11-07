@@ -31,7 +31,9 @@
       "natural_key": "Account",
       "fields": {
         "name": "_account_name",
-        "account_id": "Account"
+        "account_id": "Account",
+        "email": "_email",
+        "status": "_status"
       }
     },
     {
@@ -350,7 +352,8 @@
         "name": "DomainName",
         "certificate_arn": "CertificateArn",
         "domain_name": "DomainName",
-        "status": "Status"
+        "status": "Status",
+        "type": "Type"
       },
       "tags": {
         "source": "rgta",
@@ -485,7 +488,9 @@
         "size_bytes": "size_bytes",
         "object_count": "object_count",
         "size_observed_at": "size_observed_at",
-        "public_access_blocked": "_public_access_blocked"
+        "public_access_blocked": "_public_access_blocked",
+        "versioning": "_versioning",
+        "encryption": "_encryption"
       },
       "tags": {
         "source": "rgta",
@@ -592,6 +597,20 @@
           "value_path": "alias_cloudfront_arns[]",
           "target_type": "aws_core__aws_cloudfront_distribution",
           "key_kind": "arn",
+          "edge_type": "ROUTES_TRAFFIC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "alias_alb_arns",
+          "target_type": "aws_core__aws_alb",
+          "key_kind": "arn",
+          "edge_type": "ROUTES_TRAFFIC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "alias_elb_dns_names",
+          "target_type": "aws_core__aws_elb",
+          "key_kind": "id",
           "edge_type": "ROUTES_TRAFFIC__aws_core",
           "direction": "outbound"
         }
@@ -2070,7 +2089,8 @@
       "natural_key": "InternetGatewayId",
       "name_tag": "Name",
       "fields": {
-        "igw_id": "InternetGatewayId"
+        "igw_id": "InternetGatewayId",
+        "state": "Attachments[].State|first"
       },
       "tags": {
         "source": "field",
@@ -2269,6 +2289,13 @@
           "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
           "direction": "outbound",
           "transform": "kms_key_arn_or_none"
+        },
+        {
+          "value_path": "Attachments[].InstanceId",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_INSTANCE__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -2307,7 +2334,8 @@
         "vpc_endpoint_id": "VpcEndpointId",
         "endpoint_type": "VpcEndpointType",
         "service_name": "ServiceName",
-        "private_dns_enabled": "PrivateDnsEnabled"
+        "private_dns_enabled": "PrivateDnsEnabled",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -2376,6 +2404,20 @@
           "key_kind": "id",
           "edge_type": "RESIDES_IN_SUBNET__aws_core",
           "direction": "outbound"
+        },
+        {
+          "value_path": "_target_instance_ids",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "ROUTES_TRAFFIC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_target_lambda_arns",
+          "target_type": "aws_core__aws_lambda",
+          "key_kind": "arn",
+          "edge_type": "ROUTES_TRAFFIC__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -2427,6 +2469,20 @@
           "target_type": "aws_core__aws_subnet",
           "key_kind": "id",
           "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_target_instance_ids",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "ROUTES_TRAFFIC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_target_lambda_arns",
+          "target_type": "aws_core__aws_lambda",
+          "key_kind": "arn",
+          "edge_type": "ROUTES_TRAFFIC__aws_core",
           "direction": "outbound"
         }
       ]
@@ -2655,7 +2711,17 @@
         "resource_type_filter": "elasticache:cluster",
         "arn_from": "ARN",
         "why": "Resource tags from the Resource Groups Tagging API sweep, one paginated call per region, joined by ARN."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "CacheSubnetGroupName",
+          "target_type": "aws_core__aws_elasticache_subnet_group",
+          "key_kind": "arn",
+          "edge_type": "USES_CACHE_SUBNET_GROUP__aws_core",
+          "direction": "outbound",
+          "transform": "elasticache_subnet_group_arn"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_elasticsearch_domain",
@@ -2896,7 +2962,8 @@
         "name": "connectionName",
         "connection_id": "connectionId",
         "location": "location",
-        "bandwidth": "bandwidth"
+        "bandwidth": "bandwidth",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -2953,7 +3020,8 @@
         "virtual_interface_id": "virtualInterfaceId",
         "virtual_interface_type": "virtualInterfaceType",
         "vlan": "vlan",
-        "customer_asn": "asn"
+        "customer_asn": "asn",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3048,7 +3116,8 @@
         "service_id": "ServiceId",
         "service_name": "ServiceName",
         "acceptance_required": "AcceptanceRequired",
-        "private_dns_name": "PrivateDnsName"
+        "private_dns_name": "PrivateDnsName",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3090,7 +3159,8 @@
       "natural_key": "Id",
       "fields": {
         "name": "Name",
-        "rule_group_id": "Id"
+        "rule_group_id": "Id",
+        "region": "$region"
       },
       "tags": {
         "source": "service",
@@ -3136,7 +3206,8 @@
         "amazon_side_asn": "Options.AmazonSideAsn",
         "auto_accept_shared_attachments": "_auto_accept_shared_attachments",
         "default_route_table_association": "_default_route_table_association",
-        "default_route_table_propagation": "_default_route_table_propagation"
+        "default_route_table_propagation": "_default_route_table_propagation",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3327,7 +3398,8 @@
         "compute_type": "environment.computeType",
         "source_type": "source.type",
         "vpc_attached": "_vpc_attached",
-        "privileged_mode": "environment.privilegedMode"
+        "privileged_mode": "environment.privilegedMode",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3380,7 +3452,8 @@
         "pipeline_arn": "_arn",
         "stage_names": "_stage_names",
         "pipeline_type": "pipelineType",
-        "execution_mode": "executionMode"
+        "execution_mode": "executionMode",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -5209,6 +5282,13 @@
           "key_kind": "arn",
           "edge_type": "PRESENTS_CERTIFICATE__aws_core",
           "direction": "outbound"
+        },
+        {
+          "value_path": "_elb_dns_name",
+          "target_type": "aws_core__aws_elb",
+          "key_kind": "id",
+          "edge_type": "LISTENS_ON_LOAD_BALANCER__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -6890,6 +6970,14 @@
           "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
           "direction": "outbound",
           "transform": "kms_key_arn_or_none"
+        },
+        {
+          "value_path": "DBInstanceIdentifier",
+          "target_type": "aws_core__aws_rds_instance",
+          "key_kind": "arn",
+          "edge_type": "SNAPSHOTS_DATABASE__aws_core",
+          "direction": "outbound",
+          "transform": "rds_instance_arn"
         }
       ]
     },
@@ -6948,6 +7036,14 @@
           "edge_type": "ENCRYPTED_WITH_KEY__aws_core",
           "direction": "outbound",
           "transform": "kms_key_arn_or_none"
+        },
+        {
+          "value_path": "DBClusterIdentifier",
+          "target_type": "aws_core__aws_rds_db_cluster",
+          "key_kind": "arn",
+          "edge_type": "SNAPSHOTS_DATABASE__aws_core",
+          "direction": "outbound",
+          "transform": "rds_cluster_arn"
         }
       ]
     },
@@ -12740,7 +12836,30 @@
         "from": "Tags[]",
         "shape": "list_kv",
         "why": "The list answer carries the tags inline; no extra call."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "Instances[].InstanceId",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "MANAGES_EC2_INSTANCE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "LaunchTemplate.LaunchTemplateId",
+          "target_type": "aws_core__aws_ec2_launch_template",
+          "key_kind": "id",
+          "edge_type": "USES_LAUNCH_TEMPLATE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "MixedInstancesPolicy.LaunchTemplate.LaunchTemplateSpecification.LaunchTemplateId",
+          "target_type": "aws_core__aws_ec2_launch_template",
+          "key_kind": "id",
+          "edge_type": "USES_LAUNCH_TEMPLATE__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_backup_restore_testing_plan",
@@ -24955,7 +25074,23 @@
         "from": "TagSet[]",
         "shape": "list_kv",
         "why": "The list answer carries the tags inline; no extra call."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "SubnetId",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "Attachment.InstanceId",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "ATTACHED_TO_INSTANCE__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_ec2_prefix_list",
@@ -25130,7 +25265,23 @@
         "from": "Tags[]",
         "shape": "list_kv",
         "why": "The list answer carries the tags inline; no extra call."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "GroupId",
+          "target_type": "aws_core__aws_security_group",
+          "key_kind": "id",
+          "edge_type": "BELONGS_TO_SECURITY_GROUP__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "ReferencedGroupInfo.GroupId",
+          "target_type": "aws_core__aws_security_group",
+          "key_kind": "id",
+          "edge_type": "REFERENCES_SECURITY_GROUP__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_ec2_spot_fleet",
@@ -26262,7 +26413,16 @@
         "path": "TagList",
         "shape": "list_kv",
         "why": "Resource tags — ListTagsForResource by the object's ARN; the listing carries none."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "Subnets[].SubnetIdentifier",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "RESIDES_IN_SUBNET__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_fms_applications_list",
@@ -38546,6 +38706,12 @@
         "locations": [
           {
             "path": "knowledgeBaseConfiguration.sqlKnowledgeBaseConfiguration.redshiftConfiguration.queryGenerationConfiguration.generationContext",
+            "category": "customer_content",
+            "reason": "botocore marks this member sensitive: operator-set content.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "metadataConfigurations[].name",
             "category": "customer_content",
             "reason": "botocore marks this member sensitive: operator-set content.",
             "evidence": "botocore_sensitive"

@@ -32,9 +32,9 @@ class CognitoUserPool(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "pool_id": {"type": "string"},
-        "pool_arn": {"type": "string"},
-        "domain": {"type": "string"},
-        "mfa_configuration": {"type": "string"},
+        "pool_arn": {"type": ["string", "null"]},
+        "domain": {"type": ["string", "null"]},
+        "mfa_configuration": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -42,9 +42,9 @@ class CognitoUserPool(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "pool_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "pool_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "domain": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "mfa_configuration": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "pool_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "domain": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "mfa_configuration": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -52,9 +52,9 @@ class CognitoUserPool(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     pool_id = models.CharField(max_length=128, blank=True, default="")
-    pool_arn = models.CharField(max_length=512, blank=True, default="")
-    domain = models.CharField(max_length=255, blank=True, default="")
-    mfa_configuration = models.CharField(max_length=32, blank=True, default="")
+    pool_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
+    domain = models.CharField(max_length=255, null=True, blank=True, default=None)
+    mfa_configuration = models.CharField(max_length=32, null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

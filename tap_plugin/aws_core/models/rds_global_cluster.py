@@ -46,15 +46,15 @@ class RdsGlobalCluster(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     global_cluster_arn = models.CharField(max_length=2048, blank=True, default="")
     # aurora-mysql, aurora-postgresql or neptune. NULL = not observed.
-    engine = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The engine version. NULL = not observed.
-    engine_version = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine_version = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether storage is encrypted. NULL = not observed.
     storage_encrypted = models.BooleanField(null=True, blank=True, default=None)
     # Whether deletion protection is on. NULL = not observed.
     deletion_protection = models.BooleanField(null=True, blank=True, default=None)
     # AWS's status. NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

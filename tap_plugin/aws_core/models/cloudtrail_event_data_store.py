@@ -54,7 +54,7 @@ class CloudtrailEventDataStore(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     event_data_store_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's status (ENABLED, CREATED, PENDING_DELETION, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the store collects events from every region. NULL = not observed.
     multi_region_enabled = models.BooleanField(null=True, blank=True, default=None)
     # Whether the store collects events for every account of the organization. NULL = not observed.

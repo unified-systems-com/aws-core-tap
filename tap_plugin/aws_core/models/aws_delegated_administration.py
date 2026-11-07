@@ -51,7 +51,7 @@ class AwsDelegatedAdministration(BaseModel):
         "account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
         "service_principal": {"type": "string", "maxLength": 128},
         # DelegatedService.DelegationEnabledDate as ISO 8601 UTC; "" when not observed.
-        "delegation_enabled_at": {"type": "string"},
+        "delegation_enabled_at": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -65,7 +65,7 @@ class AwsDelegatedAdministration(BaseModel):
     organization_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
     account_id = models.CharField(max_length=12, blank=True, default="")
     service_principal = models.CharField(max_length=128, blank=True, default="")
-    delegation_enabled_at = models.CharField(max_length=40, blank=True, default="")
+    delegation_enabled_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     # Canonical {str: str} (req-aws-core-fields-4). AWS cannot tag a delegation: always {}.
     tags = models.JSONField(null=True, blank=True, default=None)
 

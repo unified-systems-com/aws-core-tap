@@ -45,7 +45,7 @@ class SecurityhubFindingAggregator(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     aggregator_arn = models.CharField(max_length=512, blank=True, default="")
     # ALL_REGIONS, ALL_REGIONS_EXCEPT_SPECIFIED, SPECIFIED_REGIONS or NO_REGIONS. NULL = not observed.
-    region_linking_mode = models.CharField(max_length=512, blank=True, null=True, default=None)
+    region_linking_mode = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The regions named by the linking mode. NULL = not observed.
     regions = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

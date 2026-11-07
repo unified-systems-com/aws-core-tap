@@ -46,7 +46,7 @@ class ApigatewayApiKey(BaseModel):
     # Whether the key is enabled. NULL = not observed.
     enabled = models.BooleanField(null=True, blank=True, default=None)
     # The AWS Marketplace customer id, if any. NULL = none, or not observed.
-    customer_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    customer_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The API stages the key is attached to. NULL = not observed.
     stage_keys = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

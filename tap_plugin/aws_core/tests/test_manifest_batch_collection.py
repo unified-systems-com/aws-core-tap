@@ -76,6 +76,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
             "DNSName": "web-1.us-east-1.elb.amazonaws.com",
             "Scheme": "internet-facing",
             "Type": "application",
+            "_target_instance_ids": ["i-0a1b2c3d4e5f60718"],
             "_state": "active",
             "_subnet_ids": ["subnet-0a1", "subnet-0a2"],
             "_tags": {"owner": "net-team"},
@@ -88,6 +89,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
             "DNSName": "legacy-1.us-east-1.elb.amazonaws.com",
             "Scheme": "internal",
             "_lb_type": "classic",
+            "_target_instance_ids": ["i-0a1b2c3d4e5f60718"],
             "_subnet_ids": ["subnet-0a1"],
             "_tags": {"owner": "net-team"},
         },
@@ -154,6 +156,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "aws_core__aws_elasticache_cluster": (
         {
             "CacheClusterId": "cache1",
+            "CacheSubnetGroupName": "cache-subnets",
             "ARN": f"arn:aws:elasticache:us-east-1:{ACCOUNT}:cluster:cache1",
             "Engine": "redis",
             "EngineVersion": "7.1",
@@ -1188,7 +1191,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_autoscaling_auto_scaling_group": (
-        {'AutoScalingGroupARN': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'AutoScalingGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'AutoScalingGroupARN': 'arn:aws:autoscaling:us-east-1:123456789012:res/gen-1', 'AutoScalingGroupName': 'gen-1', 'Instances': [{'InstanceId': 'i-0a1b2c3d4e5f60718'}], 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_backup_restore_testing_plan": (
@@ -2538,7 +2541,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'ec2_network_insights_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_network_interface": (
-        {'NetworkInterfaceId': 'net-0a1b2c3d4e5f60718', 'TagSet': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'NetworkInterfaceId': 'net-0a1b2c3d4e5f60718', 'SubnetId': 'subnet-0a1b2c3d4e5f60718', 'TagSet': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
         {'ec2_network_interface_id': 'net-0a1b2c3d4e5f60718', 'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_prefix_list": (
@@ -2558,7 +2561,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'ec2_route_server_peer_id': 'rou-0a1b2c3d4e5f60718', 'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_security_group_rule": (
-        {'SecurityGroupRuleArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
+        {'SecurityGroupRuleArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'GroupId': 'sg-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
         {'ec2_security_group_rule_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_spot_fleet": (
@@ -2682,7 +2685,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'elasticache_security_group_arn': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_elasticache_subnet_group": (
-        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'CacheSubnetGroupName': 'gen-1'},
+        {'ARN': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'CacheSubnetGroupName': 'gen-1', 'Subnets': [{'SubnetIdentifier': 'subnet-0a1b2c3d4e5f60718'}]},
         {'elasticache_subnet_group_arn': 'arn:aws:elasticache:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_fms_applications_list": (

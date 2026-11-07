@@ -42,7 +42,10 @@ class _Client:
         return self._answers["lbs"]
 
     def describe_target_groups(self, **_: Any) -> Any:
-        return self._answers["groups"]
+        return self._answers.get("groups", {"TargetGroups": []})
+
+    def describe_target_health(self, **kwargs: Any) -> Any:
+        return self._answers.get("health", {}).get(kwargs["TargetGroupArn"], {"TargetHealthDescriptions": []})
 
     def describe_tags(self, **kwargs: Any) -> Any:
         (ids,) = kwargs.values()
@@ -84,7 +87,7 @@ class TestApplicationLoadBalancers:
         assert alb["LoadBalancerName"] == "web"
         assert (alb["_state"], alb["_subnet_ids"]) == ("active", ["subnet-a", "subnet-b"])
         assert (alb["_tags"], alb["_tags_unread"]) == ({"owner": "net"}, False)
-        assert alb[EDGE_READS] == {"_subnet_ids": COMPLETE}
+        assert alb[EDGE_READS] == {"_subnet_ids": COMPLETE, "_target_instance_ids": COMPLETE, "_target_lambda_arns": COMPLETE}
         assert v2.tag_batches == [[_arn("app", "web")]]
 
     def test_tags_are_read_twenty_arns_to_a_call(self) -> None:

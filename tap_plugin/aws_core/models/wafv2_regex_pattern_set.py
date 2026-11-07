@@ -45,7 +45,7 @@ class Wafv2RegexPatternSet(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     regex_pattern_set_arn = models.CharField(max_length=512, blank=True, default="")
     # REGIONAL, or CLOUDFRONT for a global (CloudFront) object read through us-east-1. NULL = not observed.
-    scope = models.CharField(max_length=512, blank=True, null=True, default=None)
+    scope = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many patterns the set holds. NULL = not observed.
     pattern_count = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

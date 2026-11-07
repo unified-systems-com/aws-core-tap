@@ -45,9 +45,9 @@ class ConfigConnector(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     connector_arn = models.CharField(max_length=512, blank=True, default="")
     # The other cloud (AZURE). NULL = not observed.
-    provider = models.CharField(max_length=512, blank=True, null=True, default=None)
+    provider = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The other cloud's tenant id. NULL = not observed.
-    tenant_identifier = models.CharField(max_length=512, blank=True, null=True, default=None)
+    tenant_identifier = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

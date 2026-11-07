@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+from tap_plugin.aws_core.tests.undeclared_edge import read_as_undeclared
 from tap_plugin.aws_core.collectors.boto3_collector.batch import (
     COLLECTION_FORMAT,
     address_batch,
@@ -238,9 +239,10 @@ class TestAddressBatch:
         assert len(out.edges) == 1
         assert out.edges[0]["edge"]["from_ref"] == node_ref(LAMBDA, "arn:fn")
 
-    def test_an_edge_type_with_no_identity_keeps_its_explicit_id(self):
-        """ROUTES_TRAFFIC declares no identity (aws-core-tap#64); core would create a ref-addressed
+    def test_an_edge_type_with_no_identity_keeps_its_explicit_id(self, monkeypatch):
+        """An edge type that declares no identity (read as undeclared here); core would create a ref-addressed
         edge of it afresh every run, so it keeps the uuid5 id its existing rows carry."""
+        read_as_undeclared(monkeypatch)
         out = address_batch(
             [_node(ZONE, "Z1", hosted_zone_id="Z1")],
             [_edge("ROUTES_TRAFFIC__aws_core", ZONE, "Z1", DIST, "arn:dist")],

@@ -49,13 +49,13 @@ class LogsMetricFilter(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     filter_key = models.CharField(max_length=2048, blank=True, default="")
     # The log group the filter reads. NULL = not observed.
-    log_group_name = models.CharField(max_length=512, blank=True, null=True, default=None)
+    log_group_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The filter pattern. NULL = not observed.
-    filter_pattern = models.TextField(blank=True, null=True, default=None)
+    filter_pattern = models.TextField(null=True, blank=True, default=None)
     # The metric the filter emits (its first transformation). NULL = not observed.
-    metric_name = models.CharField(max_length=512, blank=True, null=True, default=None)
+    metric_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The namespace of that metric. NULL = not observed.
-    metric_namespace = models.CharField(max_length=512, blank=True, null=True, default=None)
+    metric_namespace = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

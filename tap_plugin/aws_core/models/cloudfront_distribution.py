@@ -36,9 +36,9 @@ class CloudfrontDistribution(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "distribution_arn": {"type": "string"},
-        "domain_name": {"type": "string"},
-        "status": {"type": "string"},
-        "enabled": {"type": "boolean"},
+        "domain_name": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "enabled": {"type": ["boolean", "null"]},
         "origin_access": {"type": ["object", "null"], "additionalProperties": {"type": "string", "enum": ["oac", "oai", "none"]}},
         "origin_custom_headers_present": {"type": ["object", "null"], "additionalProperties": {"type": "boolean"}},
         "configuration": {"type": "object"},
@@ -48,9 +48,9 @@ class CloudfrontDistribution(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "distribution_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "domain_name": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "enabled": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "domain_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "enabled": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "origin_access": {"validation": "jsonschema", "schema": {"type": ["object", "null"], "additionalProperties": {"type": "string", "enum": ["oac", "oai", "none"]}}},
         "origin_custom_headers_present": {"validation": "jsonschema", "schema": {"type": ["object", "null"], "additionalProperties": {"type": "boolean"}}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -60,9 +60,9 @@ class CloudfrontDistribution(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     distribution_arn = models.CharField(max_length=512, blank=True, default="")
-    domain_name = models.CharField(max_length=255, blank=True, default="", db_index=True)
-    status = models.CharField(max_length=64, blank=True, default="")
-    enabled = models.BooleanField(default=False)
+    domain_name = models.CharField(max_length=255, db_index=True, null=True, blank=True, default=None)
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
+    enabled = models.BooleanField(null=True, blank=True, default=None)
     # {origin Id: "oac" | "oai" | "none"}: how CloudFront authenticates to each
     # origin, derived from the ListDistributions origin by the custom_fn. A typed
     # field because this type's configuration is not stored (origins can carry

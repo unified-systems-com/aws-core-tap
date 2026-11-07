@@ -29,9 +29,9 @@ class AcmCertificate(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "certificate_arn": {"type": "string"},
-        "domain_name": {"type": "string"},
-        "status": {"type": "string"},
-        "type": {"type": "string"},
+        "domain_name": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "type": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -39,9 +39,9 @@ class AcmCertificate(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "certificate_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "domain_name": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "domain_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -49,9 +49,9 @@ class AcmCertificate(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     certificate_arn = models.CharField(max_length=512, blank=True, default="")
-    domain_name = models.CharField(max_length=255, blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
-    type = models.CharField(max_length=64, blank=True, default="")
+    domain_name = models.CharField(max_length=255, null=True, blank=True, default=None)
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
+    type = models.CharField(max_length=64, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

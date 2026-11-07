@@ -1,7 +1,7 @@
 {
   "slug": "RESIDES_IN_SUBNET__aws_core",
   "name": "Resides In Subnet",
-  "description": "A resource with network interfaces is placed in a subnet (resource -> subnet): the item's SubnetId, or one edge per entry of its subnet list (an ALB, an ECS service's awsvpc configuration, an interface VPC endpoint, a Lambda function's VpcConfig, a network firewall's subnet mappings). A reference, not containment.",
+  "description": "A resource with network interfaces is placed in a subnet (resource -> subnet): the item's SubnetId, or one edge per entry of its subnet list (an ALB, an ECS service's awsvpc configuration, an interface VPC endpoint, a Lambda function's VpcConfig, a network firewall's subnet mappings, an ElastiCache subnet group's subnets, a network interface's subnet). A reference, not containment.",
   "sources": [
     "aws_core__aws_ec2_instance",
     "aws_core__aws_lambda",
@@ -20,7 +20,9 @@
     "aws_core__aws_efs_mount_target",
     "aws_core__aws_apigateway_vpc_link",
     "aws_core__aws_rds_db_subnet_group",
-    "aws_core__aws_rds_db_proxy"
+    "aws_core__aws_rds_db_proxy",
+    "aws_core__aws_elasticache_subnet_group",
+    "aws_core__aws_ec2_network_interface"
   ],
   "targets": [
     "aws_core__aws_subnet"

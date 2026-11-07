@@ -105,7 +105,7 @@ from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
-from .outcomes import NOT_CONFIGURED, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify
+from .outcomes import NOT_CONFIGURED, NOT_READABLE, NOT_TAGGABLE, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify, classify_tag_read
 from .organizations import OrganizationTree, collect_organization, organizations_client
 from .partition import PARTITION_AWS, entry_unavailable_reason
 from .paths import eval_path
@@ -138,6 +138,9 @@ _SITE_ABORT_REGIONS = "b528"
 _SITE_ABORT_IDENTITY = "0623"
 _SITE_ABORT_ACCOUNT_MISMATCH = "005c"
 _SITE_HYDRATE_GAP = "bfd4"
+# The hydrate-slot statuses that are a gap: a read that should have answered and did not. `absent`, `not_taggable` and
+# `not_readable` are answers (or permanent, expected refusals) and raise none.
+HYDRATE_GAP_STATUSES = ("denied", "error")
 _SITE_CALL_LEDGER = "bdf3"
 _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
@@ -249,13 +252,20 @@ def resolve_node_tags(
         {},
         [{"key": "tags", "op": block["op"], "why": block.get("why", "resource tags")}],
         call_kwargs=call_kwargs,
+        # A refusal that a reviewed row names is an answer, not a failed read (req-aws-collector-tags): the
+        # resource cannot hold tags (none), or its tags are another account's to read (unread, no gap).
+        reclassify=lambda exc: outcome.kind if (outcome := classify_tag_read(entry, exc)) else None,
     )
     slot = env["_hydrate"]["tags"]
     mapping = env["_hydrate_mapping"]["tags"]
     status = slot.get("status")
     if status in ("denied", "error"):
         return UNREAD, slot, mapping
+    if status == NOT_READABLE:
+        return UNREAD, slot, mapping  # a shared resource's tags are its owner's to read; unread, and no gap to raise
     tags: dict[str, str] = {}
+    if status == NOT_TAGGABLE:
+        return {}, slot, mapping
     if status == "ok":
         tags = normalize_tags(eval_path(slot.get("data"), block["path"]), block["shape"])
     return tags, slot, mapping
@@ -832,7 +842,7 @@ class Boto3Collector(CollectorBase):
                         listing.count = len(items)
                         listing.done()
                     for item in items:
-                        node = project_item(entry, item)
+                        node = project_item(entry, item, {"region": region if entry["scope"] == "regional" else None})
                         if node.ref in seen_nodes:
                             self.record_warn(
                                 _SITE_DUPLICATE_IDENTITY,
@@ -869,7 +879,7 @@ class Boto3Collector(CollectorBase):
                             )
                         )
                         for slot, rec in node.configuration.get("_hydrate", {}).items():
-                            if rec.get("status") in ("denied", "error"):
+                            if rec.get("status") in HYDRATE_GAP_STATUSES:
                                 self.record_warn(
                                     _SITE_HYDRATE_GAP,
                                     "HYDRATE_GAP",

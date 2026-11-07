@@ -47,11 +47,11 @@ class CloudwatchCompositeAlarm(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     alarm_arn = models.CharField(max_length=512, blank=True, default="")
     # OK, ALARM or INSUFFICIENT_DATA. NULL = not observed.
-    state_value = models.CharField(max_length=512, blank=True, null=True, default=None)
+    state_value = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the alarm's actions run. NULL = not observed.
     actions_enabled = models.BooleanField(null=True, blank=True, default=None)
     # The rule over other alarms. NULL = not observed.
-    alarm_rule = models.TextField(blank=True, null=True, default=None)
+    alarm_rule = models.TextField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

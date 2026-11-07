@@ -54,15 +54,15 @@ class EfsMountTarget(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     mount_target_id = models.CharField(max_length=512, blank=True, default="")
     # The file system the mount target belongs to. NULL = not observed.
-    file_system_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    file_system_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The subnet the mount target is in. NULL = not observed.
-    subnet_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    subnet_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The VPC the mount target is in. NULL = not observed.
-    vpc_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    vpc_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The mount target's IPv4 address. NULL = not observed.
-    ip_address = models.CharField(max_length=512, blank=True, null=True, default=None)
+    ip_address = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's state. NULL = not observed.
-    life_cycle_state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    life_cycle_state = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

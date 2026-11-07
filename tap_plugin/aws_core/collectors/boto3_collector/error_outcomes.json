@@ -1,5 +1,5 @@
 {
-  "description": "Reviewed rows naming an AWS error as a result other than a failed call (req-aws-collector-outcome). not_configured: the feature is not set up in this account, so the listing is empty-by-absence and is NOT an authoritative complete-empty observation (it licenses no retirement). unsupported_in_partition: the partition does not offer the service or operation. Rows were authored from the 2026-11-01 GovCloud (us-gov-west-1) wave-0 smoke run. A not_configured row must name its service, error code and operation or entity type: it is never a broad catch. The unsupported_in_partition rows are a stopgap until availability is derived from data; replace them, do not extend them casually.",
+  "description": "Reviewed rows naming an AWS error as a result other than a failed call (req-aws-collector-outcome). not_taggable and not_readable rows apply to tag reads only (req-aws-collector-tags): not_taggable means the resource cannot hold tags, so the answer is no tags; not_readable means its tags are another account's to read, so they stay unread; they were authored from a live GovCloud probe on 2026-11-06. not_configured: the feature is not set up in this account, so the listing is empty-by-absence and is NOT an authoritative complete-empty observation (it licenses no retirement). unsupported_in_partition: the partition does not offer the service or operation. Rows were authored from the 2026-11-01 GovCloud (us-gov-west-1) wave-0 smoke run. A not_configured row must name its service, error code and operation or entity type: it is never a broad catch. The unsupported_in_partition rows are a stopgap until availability is derived from data; replace them, do not extend them casually.",
   "rows": [
     {
       "outcome": "not_configured",
@@ -500,6 +500,58 @@
       ],
       "partitions": [
         "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "not_readable",
+      "service": "route53resolver",
+      "error_code": "InvalidParameterException",
+      "message_contains": "not authorized to do this operation on shared resource",
+      "why": "The resource is shared into this account from another (a Route 53 Resolver firewall domain list, for example); only its owner may read or set its tags, so they may exist and cannot be seen from here. The tags stay unread. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_route53resolver_firewall_domain_list",
+        "aws_core__aws_route53resolver_resolver_rule",
+        "aws_core__aws_route53_resolver_firewall_rule_group"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "route53resolver",
+      "error_code": "InvalidRequestException",
+      "message_contains": "Cannot tag Auto Defined Rule",
+      "why": "Route 53 Resolver creates auto-defined rules itself and refuses tags on them (RSLVR-00903). Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_route53resolver_resolver_rule"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "sagemaker",
+      "error_code": "ValidationException",
+      "message_contains": ":aws:hub/SageMakerPublicHub",
+      "why": "The SageMaker public hub is owned by AWS (its ARN carries the account 'aws'); the tag API refuses its ARN. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_sagemaker_hub"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "appconfig",
+      "error_code": "BadRequestException",
+      "message_contains": "not containing an account ID",
+      "why": "AWS-defined AppConfig extensions have an ARN with no account id, and the tag API refuses it. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_appconfig_extension"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "athena",
+      "error_code": "ResourceNotFoundException",
+      "message_contains": "datacatalog/AwsDataCatalog",
+      "why": "AwsDataCatalog is the account's built-in Glue-backed catalog; the tag API does not find it as a taggable resource. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_athena_data_catalog"
       ]
     }
   ]

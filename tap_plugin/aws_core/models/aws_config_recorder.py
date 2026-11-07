@@ -37,15 +37,15 @@ class AwsConfigRecorder(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "recorder_arn": {"type": "string"},
-        "recorder_name": {"type": "string"},
+        "recorder_name": {"type": ["string", "null"]},
         # ConfigurationRecorderStatus.recording; null when the status read failed.
         "recording": {"type": ["boolean", "null"]},
-        "last_status": {"type": "string"},
+        "last_status": {"type": ["string", "null"]},
         # The owning service's principal for a service-linked recorder; "" for a customer-managed one.
-        "service_principal": {"type": "string"},
+        "service_principal": {"type": ["string", "null"]},
         # INTERNAL or PAID (recordingScope), verbatim.
-        "recording_scope": {"type": "string"},
-        "role_arn": {"type": "string"},
+        "recording_scope": {"type": ["string", "null"]},
+        "role_arn": {"type": ["string", "null"]},
         "all_supported": {"type": ["boolean", "null"]},
         "include_global_resource_types": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
@@ -59,12 +59,12 @@ class AwsConfigRecorder(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     recorder_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    recorder_name = models.CharField(max_length=256, blank=True, default="")
+    recorder_name = models.CharField(max_length=256, null=True, blank=True, default=None)
     recording = models.BooleanField(null=True, blank=True, default=None)
-    last_status = models.CharField(max_length=32, blank=True, default="")
-    service_principal = models.CharField(max_length=128, blank=True, default="")
-    recording_scope = models.CharField(max_length=32, blank=True, default="")
-    role_arn = models.CharField(max_length=2048, blank=True, default="")
+    last_status = models.CharField(max_length=32, null=True, blank=True, default=None)
+    service_principal = models.CharField(max_length=128, null=True, blank=True, default=None)
+    recording_scope = models.CharField(max_length=32, null=True, blank=True, default=None)
+    role_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     all_supported = models.BooleanField(null=True, blank=True, default=None)
     include_global_resource_types = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).

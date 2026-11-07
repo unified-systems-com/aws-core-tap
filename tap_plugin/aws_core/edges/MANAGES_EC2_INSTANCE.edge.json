@@ -1,0 +1,17 @@
+{
+  "slug": "MANAGES_EC2_INSTANCE__aws_core",
+  "name": "Manages EC2 Instance",
+  "description": "An Auto Scaling group runs an EC2 instance (group -> instance): the group's Instances[].InstanceId, the instances it currently holds.",
+  "sources": [
+    "aws_core__aws_autoscaling_auto_scaling_group"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_instance"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

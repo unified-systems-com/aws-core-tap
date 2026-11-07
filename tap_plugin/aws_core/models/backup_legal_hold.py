@@ -48,9 +48,9 @@ class BackupLegalHold(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     hold_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's legal hold id. NULL = not observed.
-    hold_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    hold_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's status (ACTIVE, CANCELED, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

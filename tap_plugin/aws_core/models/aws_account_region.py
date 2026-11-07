@@ -120,9 +120,9 @@ class AwsAccountRegion(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "account_id": {"type": "string"},
         "region_code": {"type": "string"},
-        "partition": {"type": "string"},
-        "opt_in_status": {"type": "string"},
-        "status": {"type": "string"},
+        "partition": {"type": ["string", "null"]},
+        "opt_in_status": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
         # This account's EBS encryption-by-default setting in this region (ec2:GetEbsEncryptionByDefault,
@@ -136,9 +136,9 @@ class AwsAccountRegion(BaseModel):
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "account_id": {"validation": "jsonschema", "schema": {"type": "string"}},
         "region_code": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "partition": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "opt_in_status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "partition": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "opt_in_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "ebs_encryption_by_default": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
@@ -151,15 +151,15 @@ class AwsAccountRegion(BaseModel):
     region_code = models.CharField(max_length=64, blank=True, default="", db_index=True)
     # The AWS partition the region lives in: "aws", "aws-us-gov" (GovCloud) or "aws-cn". Derived
     # from the region code by the collector (tap_plugin.aws_core.collectors.boto3_collector.regions).
-    partition = models.CharField(max_length=32, blank=True, default="")
+    partition = models.CharField(max_length=32, null=True, blank=True, default=None)
     # ec2:DescribeRegions OptInStatus, verbatim: "opt-in-not-required", "opted-in" or "not-opted-in".
     # Blank means the collector could not read it (not observed), never "not required".
-    opt_in_status = models.CharField(max_length=32, blank=True, default="")
+    opt_in_status = models.CharField(max_length=32, null=True, blank=True, default=None)
     # What the collector concluded about reading the region: "enabled" (positively known usable),
     # "disabled" (positively known not opted in: nothing was listed from it) or "unknown" (its status
     # could not be established). Only "enabled" — or a listing that returned resources — lets an empty
     # listing count as an observation (see the collector's region gate).
-    status = models.CharField(max_length=16, blank=True, default="")
+    status = models.CharField(max_length=16, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
     ebs_encryption_by_default = models.BooleanField(null=True, blank=True, default=None)

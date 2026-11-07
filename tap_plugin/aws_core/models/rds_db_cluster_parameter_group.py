@@ -42,7 +42,7 @@ class RdsDbClusterParameterGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_cluster_parameter_group_arn = models.CharField(max_length=2048, blank=True, default="")
     # The engine family (aurora-postgresql16, docdb5.0, ...). NULL = not observed.
-    family = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    family = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

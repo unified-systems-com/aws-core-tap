@@ -43,9 +43,9 @@ class ApigatewayClientCertificate(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     client_certificate_arn = models.CharField(max_length=2048, blank=True, default="")
     # AWS's certificate id. NULL = not observed.
-    client_certificate_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    client_certificate_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # When the certificate expires (ISO 8601 UTC). NULL = not observed.
-    expiration = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    expiration = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

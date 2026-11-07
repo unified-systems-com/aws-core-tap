@@ -25,6 +25,7 @@ import boto3
 import jsonschema
 import pytest
 from botocore.awsrequest import AWSResponse
+from botocore.exceptions import ClientError
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
@@ -508,10 +509,17 @@ class TestCustomFnsUseTheRunsPartition:
             get_caller_identity=lambda: {"Account": ACCOUNT, "Arn": "arn:aws-us-gov:sts::123456789012:assumed-role/r/s"}
         )
         iam = _gov_client(list_account_aliases=lambda: {"AccountAliases": ["govco"]})
+
+        def _refused(**_kw):
+            raise ClientError({"Error": {"Code": "AccessDeniedException", "Message": "no"}}, "DescribeAccount")
+
+        organizations = _gov_client(describe_account=_refused)
         items = list(
-            aws_account_singleton(_NoDirectClientSession(), client_for=_client_for({"sts": sts, "iam": iam}, asked))
+            aws_account_singleton(
+                _NoDirectClientSession(), client_for=_client_for({"sts": sts, "iam": iam, "organizations": organizations}, asked)
+            )
         )
-        assert asked == ["sts", "iam"]
+        assert asked == ["sts", "iam", "organizations"]
         assert items[0]["Account"] == ACCOUNT and items[0]["_account_name"] == "govco"
 
     def test_iam_oidc_providers_use_client_for(self) -> None:

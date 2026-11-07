@@ -32,7 +32,7 @@ class ElasticIp(BaseModel):
         "name": {"type": "string"},
         "allocation_id": {"type": "string"},
         "public_ip": {"type": ["string", "null"]},
-        "association_id": {"type": "string"},
+        "association_id": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -41,7 +41,7 @@ class ElasticIp(BaseModel):
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "allocation_id": {"validation": "jsonschema", "schema": {"type": "string"}},
         "public_ip": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "association_id": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "association_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -49,8 +49,8 @@ class ElasticIp(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     allocation_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    public_ip = models.GenericIPAddressField(blank=True, null=True)
-    association_id = models.CharField(max_length=64, blank=True, default="")
+    public_ip = models.GenericIPAddressField(null=True, blank=True, default=None)
+    association_id = models.CharField(max_length=64, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

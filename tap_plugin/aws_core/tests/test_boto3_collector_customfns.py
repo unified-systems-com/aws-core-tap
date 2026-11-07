@@ -62,6 +62,35 @@ class _FakeRoute53:
         return {"ResourceRecordSets": self._rrs}
 
 
+_ALB_ARN = "arn:aws:elasticloadbalancing:us-east-1:111122223333:loadbalancer/app/web/50dc6c495c0c9188"
+_ALB_DNS = "web-123.us-east-1.elb.amazonaws.com"
+_NLB_DNS = "net-456.elb.us-east-1.amazonaws.com"
+
+
+class _FakeElbv2:
+    def can_paginate(self, _m: str) -> bool:
+        return False
+
+    def describe_load_balancers(self, **_kw):
+        return {
+            "LoadBalancers": [
+                {"LoadBalancerArn": _ALB_ARN, "DNSName": _ALB_DNS, "Type": "application"},
+                {"LoadBalancerArn": "arn:aws:elasticloadbalancing:us-east-1:111122223333:loadbalancer/net/n/1", "DNSName": _NLB_DNS, "Type": "network"},
+            ]
+        }
+
+
+_CLASSIC_DNS = "legacy-789.us-east-1.elb.amazonaws.com"
+
+
+class _FakeClassicElb:
+    def can_paginate(self, _m: str) -> bool:
+        return False
+
+    def describe_load_balancers(self, **_kw):
+        return {"LoadBalancerDescriptions": [{"LoadBalancerName": "legacy", "DNSName": _CLASSIC_DNS}]}
+
+
 class _FakeSession:
     def __init__(self, record_sets):
         self._rrs = record_sets
@@ -71,6 +100,10 @@ class _FakeSession:
             return _FakeCloudFront()
         if service == "route53":
             return _FakeRoute53(self._rrs)
+        if service == "elbv2":
+            return _FakeElbv2()
+        if service == "elb":
+            return _FakeClassicElb()
         raise AssertionError(f"unexpected client {service!r}")
 
 
@@ -109,6 +142,42 @@ class TestRoute53ZonesWithAliasTargets:
         # domain kept lossless (normalized: lowercased, dot-stripped).
         assert z["alias_cloudfront_domains"] == [_CF_DOMAIN]
         assert z["alias_cloudfront_arns"] == [_CF_ARN]
+        # The ELB alias names a region the fake has no load balancer for by that DNS name: unmatched, so the
+        # zone's alias reads are partial, and no load balancer is claimed.
+        assert z["alias_alb_arns"] == [] and z["alias_elb_dns_names"] == []
+
+    def test_an_alias_naming_a_region_the_partition_does_not_have_is_never_asked(self):
+        class _Counting(_FakeSession):
+            asked: list[str] = []
+
+            def client(self, service: str, **kw):
+                if service in ("elbv2", "elb"):
+                    self.asked.append(kw.get("region_name", ""))
+                return super().client(service, **kw)
+
+        rrs = [{"Name": "x.", "Type": "A", "AliasTarget": {"DNSName": "web-1.xx-evil-9.elb.amazonaws.com."}}]
+        session = _Counting(rrs)
+        (zone,) = route53_zones_with_alias_targets(session)
+        assert "xx-evil-9" not in session.asked
+        assert zone["alias_alb_arns"] == [] and zone["alias_elb_dns_names"] == []
+        assert zone["_edge_reads"]["alias_alb_arns"] == "partial"
+
+    def test_a_classic_load_balancer_alias_resolves_to_its_dns_name(self):
+        rrs = [{"Name": "c.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_CLASSIC_DNS}."}}]
+        (zone,) = route53_zones_with_alias_targets(_FakeSession(rrs))
+        assert zone["alias_elb_dns_names"] == [_CLASSIC_DNS]
+        assert zone["_edge_reads"]["alias_elb_dns_names"] == "complete"
+
+    def test_load_balancer_aliases_resolve_to_the_alb_arn_and_the_nlb_dns_name(self):
+        rrs = [
+            {"Name": "a.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_ALB_DNS.upper()}."}},
+            {"Name": "b.", "Type": "A", "AliasTarget": {"DNSName": f"{_NLB_DNS}."}},
+            {"Name": "c.", "Type": "AAAA", "AliasTarget": {"DNSName": f"{_NLB_DNS}."}},
+        ]
+        (zone,) = route53_zones_with_alias_targets(_FakeSession(rrs))
+        assert zone["alias_alb_arns"] == [_ALB_ARN]
+        assert zone["alias_elb_dns_names"] == [_NLB_DNS]
+        assert zone["_edge_reads"]["alias_alb_arns"] == "complete"
 
     def test_unmappable_cloudfront_domain_yields_no_arn(self):
         # A CloudFront alias whose distribution is not in the CF listing
@@ -177,16 +246,29 @@ class _FakeIam:
         return {"AccountAliases": self._aliases, "ResponseMetadata": {"RequestId": "x"}}
 
 
+class _FakeOrganizations:
+    def __init__(self, account):
+        self._account = account
+
+    def describe_account(self, **_kw):
+        if self._account is None:
+            raise ClientError({"Error": {"Code": "AccessDeniedException", "Message": "denied"}}, "DescribeAccount")
+        return {"Account": self._account, "ResponseMetadata": {"RequestId": "x"}}
+
+
 class _FakeAccountSession:
-    def __init__(self, aliases=None, iam_raises=False):
+    def __init__(self, aliases=None, iam_raises=False, organization=None):
         self._aliases = aliases
         self._iam_raises = iam_raises
+        self._organization = organization
 
     def client(self, service: str, **_kw):
         if service == "sts":
             return _FakeSts()
         if service == "iam":
             return _FakeIam(self._aliases, self._iam_raises)
+        if service == "organizations":
+            return _FakeOrganizations(self._organization)
         raise AssertionError(f"unexpected client {service!r}")
 
 
@@ -207,6 +289,15 @@ class TestAwsAccountSingleton:
     def test_name_falls_back_to_id_form_when_no_alias(self):
         item = next(iter(aws_account_singleton(_FakeAccountSession(aliases=[]))))
         assert item["_account_name"] == "AWS Account 180731181784"
+
+    def test_email_and_status_are_unread_when_organizations_will_not_say(self):
+        item = next(iter(aws_account_singleton(_FakeAccountSession(aliases=[]))))
+        assert item["_email"] is None and item["_status"] is None
+
+    def test_email_and_status_come_from_describe_account(self):
+        org = {"Email": "owner@example.com", "State": "ACTIVE"}
+        item = next(iter(aws_account_singleton(_FakeAccountSession(aliases=[], organization=org))))
+        assert item["_email"] == "owner@example.com" and item["_status"] == "ACTIVE"
 
     def test_iam_failure_is_non_fatal_name_falls_back(self):
         # A denied/failed ListAccountAliases must not fail the account node —

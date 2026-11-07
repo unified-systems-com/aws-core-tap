@@ -46,7 +46,7 @@ class EventbridgeEventBus(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     bus_arn = models.CharField(max_length=512, blank=True, default="")
     # The AWS service that manages the bus, if one does. NULL = not observed.
-    managed_by = models.CharField(max_length=512, blank=True, null=True, default=None)
+    managed_by = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

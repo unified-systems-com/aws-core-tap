@@ -45,9 +45,9 @@ class LogsDestination(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     destination_arn = models.CharField(max_length=512, blank=True, default="")
     # The Kinesis stream or Firehose the destination delivers to. NULL = not observed.
-    target_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    target_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The role CloudWatch Logs assumes to deliver. NULL = not observed.
-    role_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    role_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -16,8 +16,8 @@
         "required": ["outcome", "service", "why"],
         "properties": {
           "outcome": {
-            "enum": ["not_configured", "unsupported_in_partition"],
-            "description": "not_configured: the feature is not set up in this account. unsupported_in_partition: the partition does not offer the service or operation."
+            "enum": ["not_configured", "unsupported_in_partition", "not_taggable", "not_readable"],
+            "description": "not_configured: the feature is not set up in this account. unsupported_in_partition: the partition does not offer the service or operation. not_taggable: a tag read the service refuses because the resource cannot hold tags (AWS-owned, or shared from another account); the resource has no tags, which is an answer and not a failed read. not_readable: a tag read refused because the resource is shared in from another account and its owner alone may read its tags; the tags stay unread (not none) and no gap is raised."
           },
           "service": {
             "type": "string",

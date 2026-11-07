@@ -28,7 +28,7 @@ class SecretsManagerSecret(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "secret_arn": {"type": "string"},
-        "rotation_enabled": {"type": "boolean"},
+        "rotation_enabled": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -36,7 +36,7 @@ class SecretsManagerSecret(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "secret_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "rotation_enabled": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "rotation_enabled": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -44,7 +44,7 @@ class SecretsManagerSecret(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     secret_arn = models.CharField(max_length=512, blank=True, default="")
-    rotation_enabled = models.BooleanField(default=False)
+    rotation_enabled = models.BooleanField(null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

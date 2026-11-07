@@ -46,13 +46,13 @@ class ApigatewayAuthorizer(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     authorizer_arn = models.CharField(max_length=2048, blank=True, default="")
     # rest for a REST API, http for an HTTP or WebSocket API. NULL = not observed.
-    api_kind = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    api_kind = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # TOKEN, REQUEST or COGNITO_USER_POOLS (REST); JWT or REQUEST (HTTP/WebSocket). NULL = not observed.
-    authorizer_type = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    authorizer_type = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Where the caller's identity is read from. NULL = not observed.
     identity_source = models.JSONField(null=True, blank=True, default=None)
     # The issuer a JWT authorizer trusts (HTTP/WebSocket). NULL = not a JWT authorizer, or not observed.
-    jwt_issuer = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    jwt_issuer = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # How long a decision is cached. NULL = not set, or not observed.
     result_ttl_seconds = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

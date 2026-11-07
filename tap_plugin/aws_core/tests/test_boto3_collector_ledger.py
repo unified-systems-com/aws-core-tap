@@ -77,6 +77,7 @@ class TestAfterCall:
             "host_id": None,
             "http_status": 200,
             "outcome": "ok",
+            "error_code": None,
             "response_date": "Mon, 19 May 2026 07:00:00 GMT",
         }
 

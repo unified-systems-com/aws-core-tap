@@ -58,19 +58,19 @@ class ElbListener(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     listener_arn = models.CharField(max_length=512, blank=True, default="")
     # The load balancer the listener is on. NULL = not observed.
-    load_balancer_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    load_balancer_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The port. NULL = not observed.
     port = models.IntegerField(null=True, blank=True, default=None)
     # HTTP, HTTPS, TCP, TLS, UDP, ... NULL = not observed.
-    protocol = models.CharField(max_length=512, blank=True, null=True, default=None)
+    protocol = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The TLS security policy (HTTPS and TLS listeners). NULL = none, or not observed.
-    ssl_policy = models.CharField(max_length=512, blank=True, null=True, default=None)
+    ssl_policy = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ARNs of the certificates the listener presents. NULL = not observed.
     certificate_arns = models.JSONField(null=True, blank=True, default=None)
     # The types of the default actions (forward, redirect, authenticate-oidc, ...). NULL = not observed.
     action_types = models.JSONField(null=True, blank=True, default=None)
     # off, passthrough or verify. NULL = none, or not observed.
-    mutual_authentication_mode = models.CharField(max_length=512, blank=True, null=True, default=None)
+    mutual_authentication_mode = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

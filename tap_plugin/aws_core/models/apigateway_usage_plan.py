@@ -47,7 +47,7 @@ class ApigatewayUsagePlan(BaseModel):
     # Requests allowed per quota period. NULL = no quota, or not observed.
     quota_limit = models.IntegerField(null=True, blank=True, default=None)
     # DAY, WEEK or MONTH. NULL = no quota, or not observed.
-    quota_period = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    quota_period = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Steady-state requests per second. NULL = not set, or not observed.
     throttle_rate_limit = models.FloatField(null=True, blank=True, default=None)
     # Burst size. NULL = not set, or not observed.

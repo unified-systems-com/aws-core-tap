@@ -54,7 +54,7 @@ class CognitoIdentityPool(BaseModel):
     # Whether the classic (basic) authentication flow is allowed. NULL = not observed.
     allow_classic_flow = models.BooleanField(null=True, blank=True, default=None)
     # The developer authenticated identity provider name, if set. NULL = none, or not observed.
-    developer_provider_name = models.CharField(max_length=512, blank=True, null=True, default=None)
+    developer_provider_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

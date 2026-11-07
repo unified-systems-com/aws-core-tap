@@ -51,9 +51,9 @@ class Wafv2WebAcl(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     web_acl_arn = models.CharField(max_length=512, blank=True, default="")
     # REGIONAL, or CLOUDFRONT for a global (CloudFront) object read through us-east-1. NULL = not observed.
-    scope = models.CharField(max_length=512, blank=True, null=True, default=None)
+    scope = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ALLOW or BLOCK: what happens to a request no rule matches. NULL = not observed.
-    default_action = models.CharField(max_length=512, blank=True, null=True, default=None)
+    default_action = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many rules the web ACL holds. NULL = not observed.
     rule_count = models.IntegerField(null=True, blank=True, default=None)
     # The web ACL's capacity units in use. NULL = not observed.

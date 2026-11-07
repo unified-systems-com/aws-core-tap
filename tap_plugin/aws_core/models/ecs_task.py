@@ -28,9 +28,9 @@ class EcsTask(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "task_arn": {"type": "string"},
-        "task_definition_arn": {"type": "string"},
-        "status": {"type": "string"},
-        "launch_type": {"type": "string"},
+        "task_definition_arn": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "launch_type": {"type": ["string", "null"]},
         # Null is unobserved (req-aws-core-fields-3): ECS omits these until the task has them.
         "cluster_arn": {"type": ["string", "null"]},
         "last_status": {"type": ["string", "null"]},
@@ -45,9 +45,9 @@ class EcsTask(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "task_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "task_definition_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "launch_type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "task_definition_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "launch_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "cluster_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "last_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "desired_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
@@ -61,9 +61,9 @@ class EcsTask(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     task_arn = models.CharField(max_length=512, blank=True, default="")
-    task_definition_arn = models.CharField(max_length=512, blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
-    launch_type = models.CharField(max_length=64, blank=True, default="")
+    task_definition_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
+    launch_type = models.CharField(max_length=64, null=True, blank=True, default=None)
     # Null is "not reported", distinct from "" (observed empty).
     cluster_arn = models.CharField(max_length=512, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
     last_status = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"

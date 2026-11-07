@@ -1,0 +1,17 @@
+{
+  "slug": "USES_CACHE_SUBNET_GROUP__aws_core",
+  "name": "Uses Cache Subnet Group",
+  "description": "An ElastiCache cluster is placed in the subnets of one cache subnet group (cluster -> subnet group): the cluster's CacheSubnetGroupName. The group's own subnets are its RESIDES_IN_SUBNET edges. A reference, not containment.",
+  "sources": [
+    "aws_core__aws_elasticache_cluster"
+  ],
+  "targets": [
+    "aws_core__aws_elasticache_subnet_group"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

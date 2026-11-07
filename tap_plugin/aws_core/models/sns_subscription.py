@@ -29,7 +29,7 @@ class SnsSubscription(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "subscription_arn": {"type": "string"},
-        "topic_arn": {"type": "string"},
+        "topic_arn": {"type": ["string", "null"]},
         "protocol": {"type": ["string", "null"]},
         "owner": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
@@ -39,7 +39,7 @@ class SnsSubscription(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "subscription_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "topic_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "topic_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "protocol": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "owner": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -50,11 +50,11 @@ class SnsSubscription(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     subscription_arn = models.CharField(max_length=512, blank=True, default="")
     # The topic the subscription belongs to.
-    topic_arn = models.CharField(max_length=512, blank=True, default="")
+    topic_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How messages are delivered (email, sms, http, https, sqs, lambda, ...). NULL = not observed.
-    protocol = models.CharField(max_length=512, blank=True, null=True, default=None)
+    protocol = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The account id that owns the subscription. NULL = not observed.
-    owner = models.CharField(max_length=512, blank=True, null=True, default=None)
+    owner = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

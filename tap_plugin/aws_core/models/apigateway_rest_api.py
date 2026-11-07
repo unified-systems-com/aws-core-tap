@@ -46,15 +46,15 @@ class ApigatewayRestApi(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     rest_api_arn = models.CharField(max_length=2048, blank=True, default="")
     # AWS's API id. NULL = not observed.
-    rest_api_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    rest_api_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # EDGE, REGIONAL or PRIVATE. NULL = not observed.
     endpoint_types = models.JSONField(null=True, blank=True, default=None)
     # HEADER or AUTHORIZER. NULL = not observed.
-    api_key_source = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    api_key_source = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether the default execute-api endpoint is disabled. NULL = not observed.
     disable_execute_api_endpoint = models.BooleanField(null=True, blank=True, default=None)
     # The TLS security policy. NULL = not observed.
-    security_policy = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    security_policy = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

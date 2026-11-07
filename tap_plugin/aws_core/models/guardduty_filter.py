@@ -47,9 +47,9 @@ class GuarddutyFilter(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     filter_key = models.CharField(max_length=512, blank=True, default="")
     # The detector the filter belongs to. NULL = not observed.
-    detector_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    detector_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ARCHIVE (hide matching findings) or NOOP. NULL = not observed.
-    action = models.CharField(max_length=512, blank=True, null=True, default=None)
+    action = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The filter's position among the detector's filters. NULL = not observed.
     rank = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

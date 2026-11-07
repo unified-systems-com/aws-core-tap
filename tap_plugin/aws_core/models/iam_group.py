@@ -31,7 +31,7 @@ class IamGroup(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "group_arn": {"type": "string"},
-        "path": {"type": "string"},
+        "path": {"type": ["string", "null"]},
         "group_id": {"type": ["string", "null"]},
         "attached_policy_arns": {"type": ["array", "null"]},
         "configuration": {"type": "object"},
@@ -41,7 +41,7 @@ class IamGroup(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "group_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "path": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "group_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "attached_policy_arns": {"validation": "jsonschema", "schema": {"type": ["array", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -51,9 +51,9 @@ class IamGroup(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     group_arn = models.CharField(max_length=512, blank=True, default="")
-    path = models.CharField(max_length=512, blank=True, default="/")
+    path = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's immutable group id (AGPA...); NULL = not observed.
-    group_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    group_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Managed policies attached to the group. NULL = not observed; [] = observed, none.
     attached_policy_arns = models.JSONField(blank=True, null=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
