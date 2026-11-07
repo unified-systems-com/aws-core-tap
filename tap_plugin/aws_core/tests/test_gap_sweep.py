@@ -57,6 +57,14 @@ def test_a_refused_tag_read_the_service_calls_untaggable_is_an_answer_not_a_gap(
     assert slot["error_code"] == code
 
 
+def test_a_hub_that_is_not_the_public_one_is_still_a_failed_read():
+    entry = _entry("sagemaker_hub")
+    item = {spec["from"]: "x" for spec in entry["tags"]["params"].values() if "from" in spec}
+    message = "Value 'arn:aws-us-gov:sagemaker:us-gov-west-1:aws:hub/SomeOtherHub' failed"
+    tags, slot, _ = resolve_node_tags(entry, item, rgta_map={}, client_for=lambda _s: _Refusing("ValidationException", message, "ListTags"))
+    assert slot["status"] == "error"
+
+
 def test_an_unlisted_refusal_of_a_tag_read_is_still_a_failed_read():
     entry = _entry("appconfig_extension")
     tags, slot, _ = resolve_node_tags(
@@ -72,6 +80,48 @@ def test_the_ledger_keeps_the_error_code_of_a_refused_call():
     exc = SimpleNamespace(response={"Error": {"Code": "BadRequestException"}, "ResponseMetadata": {"HTTPStatusCode": 400}})
     ledger._after_call_error(exception=exc, context=context)
     assert ledger.entries[-1]["error_code"] == "BadRequestException"
+
+
+@pytest.mark.parametrize(
+    ("host", "region"),
+    [
+        ("web-1.us-gov-west-1.elb.amazonaws.com", "us-gov-west-1"),
+        ("dualstack.web-1.us-east-1.elb.amazonaws.com", "us-east-1"),
+        ("net-0123456789abcdef.elb.us-gov-west-1.amazonaws.com", "us-gov-west-1"),
+        ("web-1.cn-north-1.elb.amazonaws.com.cn", "cn-north-1"),
+        ("net-0123456789abcdef.elb.cn-northwest-1.amazonaws.com.cn", "cn-northwest-1"),
+        ("d111.cloudfront.net", None),
+        ("s3-website-us-east-1.amazonaws.com", None),
+    ],
+)
+def test_the_elb_alias_region_is_read_from_both_hostname_forms_in_every_partition(host, region):
+    assert customfns._elb_alias_region(host) == region
+
+
+def test_the_migration_nulls_only_the_old_default():
+    import importlib
+
+    from django.apps import apps
+
+    migration = importlib.import_module("tap_plugin.aws_core.migrations.0050_observed_fields_are_nullable")
+    seen: list[tuple[str, object]] = []
+
+    class _Manager:
+        def __init__(self, label): self.label = label
+        def filter(self, **kw):
+            seen.append((self.label, kw))
+            return self
+        def update(self, **kw): return 0
+
+    class _Apps:
+        def get_model(self, app, name):
+            real = apps.get_model(app, name.removeprefix("historical"))
+            return type("M", (), {"_meta": real._meta, "_default_manager": _Manager(name)})
+    migration.never_filled_to_unobserved(_Apps(), None)
+    by_field = {tuple(kw.items())[0] for _label, kw in seen}
+    assert ("is_main", False) in by_field and ("is_aws_managed", False) in by_field
+    assert ("endpoint_instance_type", "") in by_field
+    assert not any(value is True for _field, value in by_field)
 
 
 def test_a_path_can_take_the_first_element_of_a_list():

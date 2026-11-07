@@ -346,7 +346,10 @@ def read_sub_listing(client: Any, method: str, items_key: str, **kwargs: Any) ->
 _REGION = r"[a-z]{2}(?:-[a-z]+)+-\d"
 # An Application or Classic load balancer is ``name-123.<region>.elb.amazonaws.com``; a Network or Gateway one is
 # ``name-0123456789abcdef.elb.<region>.amazonaws.com``. Either may carry a ``dualstack.`` prefix in an alias.
-_ELB_ALIAS = re.compile(rf"(?:^|\.)({_REGION})\.elb\.amazonaws\.com$|\.elb\.({_REGION})\.amazonaws\.com$")
+# The China partition's names end in ``.amazonaws.com.cn``.
+_ELB_ALIAS = re.compile(
+    rf"(?:^|\.)({_REGION})\.elb\.amazonaws\.com(?:\.cn)?$|\.elb\.({_REGION})\.amazonaws\.com(?:\.cn)?$"
+)
 
 
 def _elb_alias_region(domain: str) -> str | None:

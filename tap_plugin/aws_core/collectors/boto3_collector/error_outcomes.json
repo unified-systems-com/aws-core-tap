@@ -529,7 +529,7 @@
         "ListTags"
       ],
       "error_code": "ValidationException",
-      "message_contains": ":aws:hub/",
+      "message_contains": ":aws:hub/SageMakerPublicHub",
       "why": "The SageMaker public hub is owned by AWS (its ARN carries the account 'aws'); the tag API refuses its ARN. Observed in GovCloud."
     },
     {

@@ -23,16 +23,15 @@ NEVER_FILLED = [
 
 
 def never_filled_to_unobserved(apps, schema_editor):
+    """Only the old default becomes null: "" for a text column, False for a boolean. A value anything else wrote
+    (a True, a non-empty string) is an observation and stays."""
     for ref in NEVER_FILLED:
         model_name, field = ref.split(":")
         for name in (model_name, "historical" + model_name):
             model = apps.get_model("aws_core", name)
             column = model._meta.get_field(field)
-            default = "" if isinstance(column, (models.CharField, models.TextField)) else None
-            if default is None:
-                model._default_manager.exclude(**{field: None}).update(**{field: None})
-            else:
-                model._default_manager.filter(**{field: ""}).update(**{field: None})
+            old_default = False if isinstance(column, models.BooleanField) else ""
+            model._default_manager.filter(**{field: old_default}).update(**{field: None})
 
 
 def keep_defaults(apps, schema_editor):

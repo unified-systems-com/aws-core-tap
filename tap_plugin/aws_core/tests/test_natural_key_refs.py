@@ -284,6 +284,22 @@ def test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs(monkeypatc
 
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-collector-identity-3")
+def test_an_edge_written_while_its_type_was_undeclared_is_found_again_once_the_type_declares_its_identity(monkeypatch) -> None:
+    """ROUTES_TRAFFIC gained its identity declaration: an edge stored under the old explicit uuid5 id must be the
+    edge a later run finds by (type, source, target), not a second one beside it."""
+    with monkeypatch.context() as old:
+        read_as_undeclared(old)
+        assert _run().results["error"] == []
+    zone, dist = node_id(ZONE, _ZONE_ID), node_id(DIST, _DIST_ARN)
+    (before,) = live_edges(ROUTES_TRAFFIC, zone, dist)
+    assert _run().results["error"] == []  # now the real, declared definition
+    after = live_edges(ROUTES_TRAFFIC, zone, dist)
+    assert len(after) == 1, "the upgrade left a second live edge beside the one the old definition wrote"
+    assert after[0].entity_id == before.entity_id
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-identity-3")
 def test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge(monkeypatch) -> None:
     """Deleting the zone ends its ROUTES_TRAFFIC edge. Re-sending that edge's fixed uuid5 id would fail
     the whole batch (entity_tombstoned), so the run leaves it out and says so; the zone itself returns
