@@ -39,6 +39,7 @@ from .listing import THROTTLE_CODES, error_code
 NOT_CONFIGURED = "not_configured"
 UNSUPPORTED_IN_PARTITION = "unsupported_in_partition"
 THROTTLED = "throttled"
+NOT_TAGGABLE = "not_taggable"
 
 _DIR = Path(__file__).resolve().parent
 OUTCOMES_PATH = _DIR / "error_outcomes.json"
@@ -122,4 +123,16 @@ def classify(
     for row in rows if rows is not None else load_rows():
         if _row_matches(row, entry, exc, code, partition):
             return Outcome(row["outcome"], code or type(exc).__name__, row["why"])
+    return None
+
+
+def classify_tag_read(entry: dict[str, Any], exc: BaseException, rows: tuple[dict[str, Any], ...] | None = None) -> Outcome | None:
+    """``not_taggable`` when a reviewed row says this tag-read error means the resource cannot hold tags
+    (an AWS-owned object, a resource shared from another account); ``None`` for every other failed read."""
+    if not isinstance(exc, ClientError):
+        return None
+    code = error_code(exc)
+    for row in rows if rows is not None else load_rows():
+        if row["outcome"] == NOT_TAGGABLE and _row_matches(row, entry, exc, code, ""):
+            return Outcome(NOT_TAGGABLE, code or type(exc).__name__, row["why"])
     return None

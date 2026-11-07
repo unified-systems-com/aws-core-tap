@@ -208,6 +208,7 @@
         "elasticloadbalancing:DescribeRules",
         "elasticloadbalancing:DescribeTags",
         "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeTargetHealth",
         "elasticloadbalancing:DescribeTrustStores"
       ],
       "Resource": "*"

@@ -208,6 +208,32 @@ def _bucket_size_metrics(cw_client: Any, bucket_name: str) -> dict[str, Any]:
 _PAB_FLAGS = ("BlockPublicAcls", "IgnorePublicAcls", "BlockPublicPolicy", "RestrictPublicBuckets")
 
 
+def bucket_versioning(slot: dict[str, Any] | None) -> str | None:
+    """``Enabled``/``Suspended``; ``""`` when the answer says versioning was never turned on (GetBucketVersioning
+    omits ``Status`` then); ``None`` when the call did not answer."""
+    if not slot or slot.get("status") != "ok":
+        return None
+    return str((slot.get("data") or {}).get("Status") or "")
+
+
+def bucket_encryption(slot: dict[str, Any] | None) -> str | None:
+    """The default encryption algorithm of the bucket's first rule (``AES256``, ``aws:kms``, ``aws:kms:dsse``);
+    ``""`` when the bucket has no default-encryption configuration (the call answered 'not found'); ``None``
+    when the call was refused or failed."""
+    if not slot:
+        return None
+    if slot.get("status") == "absent":
+        return ""
+    if slot.get("status") != "ok":
+        return None
+    rules = ((slot.get("data") or {}).get("ServerSideEncryptionConfiguration") or {}).get("Rules") or []
+    for rule in rules:
+        algorithm = (rule.get("ApplyServerSideEncryptionByDefault") or {}).get("SSEAlgorithm")
+        if algorithm:
+            return str(algorithm)
+    return ""
+
+
 def public_access_blocked(slot: dict[str, Any] | None) -> bool | None:
     """The bucket's ``public_access_blocked`` from its ``GetPublicAccessBlock`` hydrate slot
     (req-aws-core-fields-9).
@@ -264,6 +290,8 @@ def s3_buckets_hydrated(
         regional = session.client("s3", region_name=region)
         envelope = hydrate_item(regional, bucket, hydrate_ops, call_kwargs={"Bucket": name})
         envelope["_public_access_blocked"] = public_access_blocked(envelope["_hydrate"].get("public_access_block"))
+        envelope["_versioning"] = bucket_versioning(envelope["_hydrate"].get("versioning"))
+        envelope["_encryption"] = bucket_encryption(envelope["_hydrate"].get("encryption"))
         # CloudWatch S3 storage metrics are region-bound, like GetBucket*.
         cw = session.client("cloudwatch", region_name=region)
         envelope.update(_bucket_size_metrics(cw, name))
@@ -315,6 +343,20 @@ def read_sub_listing(client: Any, method: str, items_key: str, **kwargs: Any) ->
     return SubRead(items, COMPLETE)
 
 
+_ELB_ALIAS = re.compile(r"(?:^|\.)([a-z]{2}(?:-[a-z]+)+-\d)\.elb\.amazonaws\.com$")
+
+
+def _elb_alias_region(domain: str) -> str | None:
+    """The region named by an ELBv2 alias hostname (``name-123.us-gov-west-1.elb.amazonaws.com``), else ``None``.
+
+    Classic load balancer hostnames (``name-123.us-gov-west-1.elb.amazonaws.com`` as well) look the same and are
+    not in the ELBv2 listing: they come back unmatched and mark the zone's read partial, as an alias to anything
+    the collector cannot name does.
+    """
+    match = _ELB_ALIAS.search(domain)
+    return match.group(1) if match else None
+
+
 def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
     """Enumerate Route 53 hosted zones, resolving CloudFront alias targets.
 
@@ -339,6 +381,8 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
     ``alias_cloudfront_domains`` and no resolved ARNs).
     """
     r53 = _run_client(session, client_for, "route53")
+    lb_by_dns: dict[str, dict[str, str]] = {}
+    lb_regions_read: set[str] = set()
     arn_by_domain: dict[str, str] = {}
     if service_unavailable_reason(_client_partition(r53), "cloudfront") is None:
         cf = _run_client(session, client_for, "cloudfront")
@@ -354,6 +398,8 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
             zone_id = zone.get("Id")
             domains: list[str] = []
             arns: list[str] = []
+            alb_arns: list[str] = []
+            elb_names: list[str] = []
             # How the zone's ROUTES_TRAFFIC scope was read (authority.py). A record-set listing that
             # raises still fails the whole entry, as before; one that stops on a page saying "more",
             # or an alias whose distribution is not in this account's listing (another account's, or
@@ -366,6 +412,24 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                 for rr in rpage.get("ResourceRecordSets", []):
                     dns = (rr.get("AliasTarget") or {}).get("DNSName") or ""
                     domain = dns.rstrip(".").lower()
+                    lb_region = _elb_alias_region(domain)
+                    if lb_region is not None:
+                        if lb_region not in lb_regions_read:
+                            lb_regions_read.add(lb_region)
+                            try:
+                                regional = session.client("elbv2", region_name=lb_region)
+                                for lb in _elbv2_load_balancers(regional):
+                                    lb_by_dns[str(lb.get("DNSName", "")).lower()] = lb
+                            except BotoCoreError, ClientError:
+                                pass  # no load balancers read in this region: the aliases below stay unmatched (partial)
+                        found = lb_by_dns.get(domain.removeprefix("dualstack."))
+                        if found is not None and found.get("Type") == "application":
+                            alb_arns.append(str(found["LoadBalancerArn"]))
+                        elif found is not None:
+                            elb_names.append(str(found["DNSName"]))
+                        else:
+                            routes_read = PARTIAL
+                        continue
                     if not domain.endswith(".cloudfront.net"):
                         continue
                     domains.append(domain)
@@ -386,13 +450,15 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                     **zone,
                     "alias_cloudfront_domains": list(dict.fromkeys(domains)),
                     "alias_cloudfront_arns": list(dict.fromkeys(arns)),
+                    "alias_alb_arns": list(dict.fromkeys(alb_arns)),
+                    "alias_elb_dns_names": list(dict.fromkeys(elb_names)),
                     # Bare zone ID (last path segment of Id like "/hostedzone/Z…").
                     # list_tags_for_resource wants ResourceId in this form; Id
                     # itself stays as boto3 returned it so existing identity and
                     # downstream consumers don't shift.
                     "_zone_resource_id": (zone_id or "").rsplit("/", 1)[-1],
                 },
-                {"alias_cloudfront_arns": routes_read},
+                {"alias_cloudfront_arns": routes_read, "alias_alb_arns": routes_read, "alias_elb_dns_names": routes_read},
             )
 
 
@@ -432,7 +498,21 @@ def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[d
         # failed ListAccountAliases just falls the name back to the id form.
         aliases = []
 
+    # The account's email and status are Organizations facts (DescribeAccount); an account outside an
+    # organization, or a caller that may not ask, leaves them unread (None), never an empty string.
+    email: str | None = None
+    status: str | None = None
+    try:
+        org = _run_client(session, client_for, "organizations")
+        described = without_response_metadata(org.describe_account(AccountId=account_id)).get("Account") or {}
+        email = described.get("Email")
+        status = described.get("State") or described.get("Status")
+    except BotoCoreError, ClientError:
+        pass
+
     yield {
+        "_email": email,
+        "_status": status,
         "Account": account_id,
         "Arn": identity.get("Arn"),
         "UserId": identity.get("UserId"),
@@ -1047,6 +1127,35 @@ def _az_subnet_ids(lb: dict[str, Any]) -> list[str]:
     return sorted({str(az["SubnetId"]) for az in lb.get("AvailabilityZones", []) if az.get("SubnetId")})
 
 
+def _with_routed_targets(item: dict[str, Any], client: Any, lb_arn: str) -> dict[str, Any]:
+    """What a load balancer routes to: the instances and Lambda functions registered in its target groups.
+
+    ``DescribeTargetGroups`` for the load balancer, then ``DescribeTargetHealth`` for each group. A target is
+    an instance (``i-...``), an IP address, a Lambda function ARN or another load balancer's ARN; only the
+    first and third are nodes this plugin links, so IP and load balancer targets are left out. The reads are
+    ``failed`` when any call did not answer: a partial list is not 'routes to nothing else'.
+    """
+    instances: set[str] = set()
+    functions: set[str] = set()
+    read = COMPLETE
+    try:
+        for page in _pages(client, "describe_target_groups", LoadBalancerArn=lb_arn):
+            for group in page.get("TargetGroups", []):
+                health = without_response_metadata(client.describe_target_health(TargetGroupArn=group["TargetGroupArn"]))
+                for description in health.get("TargetHealthDescriptions", []):
+                    target = str((description.get("Target") or {}).get("Id") or "")
+                    if target.startswith("i-"):
+                        instances.add(target)
+                    elif target.startswith("arn:") and ":lambda:" in target:
+                        functions.add(target)
+    except BotoCoreError, ClientError:
+        read = FAILED
+    return with_edge_reads(
+        {**item, "_target_instance_ids": sorted(instances), "_target_lambda_arns": sorted(functions)},
+        {**(item.get("_edge_reads") or {}), "_target_instance_ids": read, "_target_lambda_arns": read},
+    )
+
+
 def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate Application Load Balancers (regional) with their tags.
 
@@ -1058,7 +1167,8 @@ def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     albs = [lb for lb in _elbv2_load_balancers(client) if lb.get("Type") == "application"]
     tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in albs])
     for lb in albs:
-        yield _lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
+        item = _lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
+        yield _with_routed_targets(item, client, str(lb["LoadBalancerArn"]))
 
 
 def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -1073,7 +1183,7 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     v2_tags = _batched_tags(v2, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in others])
     for lb in others:
         item = _lb_item(lb, v2_tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
-        yield {**item, "_lb_type": lb["Type"]}
+        yield _with_routed_targets({**item, "_lb_type": lb["Type"]}, v2, str(lb["LoadBalancerArn"]))
     classic = client_for("elb")
     described = [
         lb for page in _pages(classic, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])
@@ -1922,7 +2032,7 @@ def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict
     """Enumerate ELBv2 listeners (regional): ``DescribeListeners`` for each load balancer, tags 20 ARNs to a
     call. The listener is the TLS fact (protocol, policy, certificates) and carries the authentication action
     (an OIDC action holds a client secret). ``_certificate_arns`` and ``_action_types`` are derived; ``_alb_arn``
-    is the load balancer's ARN for an Application Load Balancer only, the one kind whose node is keyed by it.
+    is the load balancer's ARN for an Application Load Balancer, the one kind whose node is keyed by it; ``_elb_dns_name`` is the DNS name of a Network or Gateway Load Balancer, the key of its ``aws_elb`` node.
     A load balancer whose listeners cannot be listed is a gap (:func:`_undescribed`)."""
     client = client_for("elbv2")
     listeners: list[dict[str, Any]] = []
@@ -1933,7 +2043,7 @@ def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict
             continue
         try:
             for page in _pages(client, "describe_listeners", LoadBalancerArn=lb_arn):
-                listeners.extend({**listener, "_lb_type": lb.get("Type")} for listener in page.get("Listeners", []) if listener.get("ListenerArn"))
+                listeners.extend({**listener, "_lb_type": lb.get("Type"), "_lb_dns_name": lb.get("DNSName")} for listener in page.get("Listeners", []) if listener.get("ListenerArn"))
         except BotoCoreError, ClientError:
             failed.append(str(lb_arn))
     tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(x["ListenerArn"]) for x in listeners])
@@ -1955,10 +2065,11 @@ def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict
                 "_certificate_arns": sorted(certificates),
                 "_action_types": [a.get("Type") for a in actions if a.get("Type")],
                 "_alb_arn": listener.get("LoadBalancerArn") if listener.get("_lb_type") == "application" else None,
+                "_elb_dns_name": listener.get("_lb_dns_name") if listener.get("_lb_type") != "application" else None,
                 "_tags": tags.get(arn, {}),
                 "_tags_unread": arn not in tags,
             },
-            {"_certificate_arns": certificates_read, "_alb_arn": COMPLETE},
+            {"_certificate_arns": certificates_read, "_alb_arn": COMPLETE, "_elb_dns_name": COMPLETE},
         )
     if failed:
         raise _undescribed("load balancers whose listeners", failed)

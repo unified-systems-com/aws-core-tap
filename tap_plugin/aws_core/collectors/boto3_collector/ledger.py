@@ -151,6 +151,7 @@ class CallLedger:
                 "host_id": meta.get("HostId") or headers.get("x-amz-id-2"),
                 "http_status": status,
                 "outcome": _classify(status, error_code),
+                "error_code": error_code,
                 "response_date": headers.get("date"),
             }
         )
@@ -178,6 +179,7 @@ class CallLedger:
                 "outcome": _classify(status, error_code)
                 if (status is not None or error_code)
                 else "error",
+                "error_code": error_code,
                 "response_date": headers.get("date"),
             }
         )

@@ -1,0 +1,17 @@
+{
+  "slug": "BELONGS_TO_SECURITY_GROUP__aws_core",
+  "name": "Belongs To Security Group",
+  "description": "A security group rule is a rule of one security group (rule -> group): the rule's GroupId.",
+  "sources": [
+    "aws_core__aws_ec2_security_group_rule"
+  ],
+  "targets": [
+    "aws_core__aws_security_group"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

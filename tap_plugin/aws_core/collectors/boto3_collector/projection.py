@@ -104,7 +104,18 @@ def _name_from_tag(entry: dict[str, Any], item: Any) -> str | None:
     return tags.get(wanted) or None
 
 
-def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
+SCOPE_PATH_PREFIX = "$"
+
+
+def _field_value(item: Any, path: str, scope: dict[str, Any] | None) -> Any:
+    """One field's value: a ``$region``-style path reads the run's scope (the region the item was listed in,
+    which AWS does not echo on every object); any other path is read off the item."""
+    if path.startswith(SCOPE_PATH_PREFIX):
+        return (scope or {}).get(path[len(SCOPE_PATH_PREFIX):])
+    return eval_path(item, path)
+
+
+def project_item(entry: dict[str, Any], item: Any, scope: dict[str, Any] | None = None) -> ProjectedNode:
     """Project one raw item into a :class:`ProjectedNode`.
 
     Args:
@@ -125,7 +136,7 @@ def project_item(entry: dict[str, Any], item: Any) -> ProjectedNode:
     natural_key = str(natural_key)
 
     fields = {
-        model_field: eval_path(item, path)
+        model_field: _field_value(item, path, scope)
         for model_field, path in entry["fields"].items()
     }
     tag_name = _name_from_tag(entry, item)

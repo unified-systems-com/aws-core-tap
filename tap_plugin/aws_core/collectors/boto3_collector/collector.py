@@ -105,7 +105,7 @@ from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
-from .outcomes import NOT_CONFIGURED, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify
+from .outcomes import NOT_CONFIGURED, NOT_TAGGABLE, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify, classify_tag_read
 from .organizations import OrganizationTree, collect_organization, organizations_client
 from .partition import PARTITION_AWS, entry_unavailable_reason
 from .paths import eval_path
@@ -249,6 +249,9 @@ def resolve_node_tags(
         {},
         [{"key": "tags", "op": block["op"], "why": block.get("why", "resource tags")}],
         call_kwargs=call_kwargs,
+        # A refusal that a reviewed row names as "this resource cannot hold tags" is an answer (no tags),
+        # not a failed read (req-aws-collector-tags).
+        reclassify=lambda exc: NOT_TAGGABLE if classify_tag_read(entry, exc) else None,
     )
     slot = env["_hydrate"]["tags"]
     mapping = env["_hydrate_mapping"]["tags"]
@@ -256,6 +259,8 @@ def resolve_node_tags(
     if status in ("denied", "error"):
         return UNREAD, slot, mapping
     tags: dict[str, str] = {}
+    if status == NOT_TAGGABLE:
+        return {}, slot, mapping
     if status == "ok":
         tags = normalize_tags(eval_path(slot.get("data"), block["path"]), block["shape"])
     return tags, slot, mapping
@@ -832,7 +837,7 @@ class Boto3Collector(CollectorBase):
                         listing.count = len(items)
                         listing.done()
                     for item in items:
-                        node = project_item(entry, item)
+                        node = project_item(entry, item, {"region": region if entry["scope"] == "regional" else None})
                         if node.ref in seen_nodes:
                             self.record_warn(
                                 _SITE_DUPLICATE_IDENTITY,
