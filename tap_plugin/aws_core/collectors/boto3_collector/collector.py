@@ -138,6 +138,9 @@ _SITE_ABORT_REGIONS = "b528"
 _SITE_ABORT_IDENTITY = "0623"
 _SITE_ABORT_ACCOUNT_MISMATCH = "005c"
 _SITE_HYDRATE_GAP = "bfd4"
+# The hydrate-slot statuses that are a gap: a read that should have answered and did not. `absent`, `not_taggable` and
+# `not_readable` are answers (or permanent, expected refusals) and raise none.
+HYDRATE_GAP_STATUSES = ("denied", "error")
 _SITE_CALL_LEDGER = "bdf3"
 _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
@@ -876,7 +879,7 @@ class Boto3Collector(CollectorBase):
                             )
                         )
                         for slot, rec in node.configuration.get("_hydrate", {}).items():
-                            if rec.get("status") in ("denied", "error"):
+                            if rec.get("status") in HYDRATE_GAP_STATUSES:
                                 self.record_warn(
                                     _SITE_HYDRATE_GAP,
                                     "HYDRATE_GAP",

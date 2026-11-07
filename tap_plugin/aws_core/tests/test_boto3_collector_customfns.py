@@ -80,6 +80,17 @@ class _FakeElbv2:
         }
 
 
+_CLASSIC_DNS = "legacy-789.us-east-1.elb.amazonaws.com"
+
+
+class _FakeClassicElb:
+    def can_paginate(self, _m: str) -> bool:
+        return False
+
+    def describe_load_balancers(self, **_kw):
+        return {"LoadBalancerDescriptions": [{"LoadBalancerName": "legacy", "DNSName": _CLASSIC_DNS}]}
+
+
 class _FakeSession:
     def __init__(self, record_sets):
         self._rrs = record_sets
@@ -91,6 +102,8 @@ class _FakeSession:
             return _FakeRoute53(self._rrs)
         if service == "elbv2":
             return _FakeElbv2()
+        if service == "elb":
+            return _FakeClassicElb()
         raise AssertionError(f"unexpected client {service!r}")
 
 
@@ -132,6 +145,12 @@ class TestRoute53ZonesWithAliasTargets:
         # The ELB alias names a region the fake has no load balancer for by that DNS name: unmatched, so the
         # zone's alias reads are partial, and no load balancer is claimed.
         assert z["alias_alb_arns"] == [] and z["alias_elb_dns_names"] == []
+
+    def test_a_classic_load_balancer_alias_resolves_to_its_dns_name(self):
+        rrs = [{"Name": "c.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_CLASSIC_DNS}."}}]
+        (zone,) = route53_zones_with_alias_targets(_FakeSession(rrs))
+        assert zone["alias_elb_dns_names"] == [_CLASSIC_DNS]
+        assert zone["_edge_reads"]["alias_elb_dns_names"] == "complete"
 
     def test_load_balancer_aliases_resolve_to_the_alb_arn_and_the_nlb_dns_name(self):
         rrs = [

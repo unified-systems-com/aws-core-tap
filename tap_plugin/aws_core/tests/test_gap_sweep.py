@@ -248,3 +248,11 @@ def test_every_nullable_column_accepts_null_in_both_of_its_schemas():
 def test_the_regional_fields_that_were_never_filled_now_read_the_listing_region():
     for entity in ("codebuild_project", "dx_connection", "transit_gateway", "vpc_endpoint_service"):
         assert _entry(entity)["fields"]["region"] == "$region", entity
+
+
+def test_an_answer_or_an_expected_refusal_raises_no_hydrate_gap():
+    from tap_plugin.aws_core.collectors.boto3_collector.collector import HYDRATE_GAP_STATUSES
+
+    assert set(HYDRATE_GAP_STATUSES) == {"denied", "error"}
+    for status in ("ok", "absent", "not_taggable", "not_readable"):
+        assert status not in HYDRATE_GAP_STATUSES

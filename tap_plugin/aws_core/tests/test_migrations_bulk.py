@@ -136,3 +136,37 @@ def test_altering_fields_in_bulk_reverses_to_not_null():
 def test_only_alter_field_operations_are_accepted_in_bulk():
     with pytest.raises(TypeError):
         BulkAlterFields([CreateModel("X", [])])  # type: ignore[list-item]
+
+
+def _columns(table: str) -> dict[str, str]:
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT column_name, is_nullable FROM information_schema.columns WHERE table_name = %s", [table]
+        )
+        return dict(cursor.fetchall())
+
+
+@pytest.mark.django_db
+def test_two_fields_of_one_table_both_change_when_the_alteration_is_really_applied():
+    """Executed, not collected: the tables exist in the test database and the columns are read back, so a column
+    left behind by a later alteration of the same table would show."""
+    base = ProjectState()
+    with connection.schema_editor(atomic=False) as editor:
+        for op in [
+            CreateModel("Probe", [("id", models.AutoField(primary_key=True)), ("a", models.CharField(max_length=9, default="")),
+                                  ("b", models.BooleanField(default=False)), ("c", models.IntegerField(default=0))]),
+        ]:
+            before = base.clone()
+            op.state_forwards(APP, base)
+            op.database_forwards(APP, editor, before, base)
+    table = f"{APP}_probe"
+    assert _columns(table) == {"id": "NO", "a": "NO", "b": "NO", "c": "NO"}
+    after = base.clone()
+    bulk = BulkAlterFields([_alters()[0], _alters()[1]])
+    bulk.state_forwards(APP, after)
+    with connection.schema_editor(atomic=False) as editor:
+        bulk.database_forwards(APP, editor, base, after)
+    assert _columns(table) == {"id": "NO", "a": "YES", "b": "YES", "c": "NO"}
+    with connection.schema_editor(atomic=False) as editor:
+        bulk.database_backwards(APP, editor, after, base)
+    assert _columns(table) == {"id": "NO", "a": "NO", "b": "NO", "c": "NO"}

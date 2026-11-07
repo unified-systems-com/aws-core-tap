@@ -355,21 +355,20 @@ _ELB_ALIAS = re.compile(
 def _elb_alias_region(domain: str) -> str | None:
     """The region named by an ELB alias hostname, else ``None`` (both hostname forms; see ``_ELB_ALIAS``).
 
-    Classic load balancer hostnames look like an Application one's and are not in the ELBv2 listing: they come
-    back unmatched and mark the zone's read partial, as an alias to anything the collector cannot name does.
+    Classic load balancer hostnames look like an Application one's; the Classic listing resolves them.
     """
     match = _ELB_ALIAS.search(domain)
     return (match.group(1) or match.group(2)) if match else None
 
 
-def _elbv2_in_region(session: Any, client_for: Any, region: str) -> Any:
-    """An ELBv2 client for ``region``: the run's own client when the run is in that region (so the call goes
-    through whatever ``client_for`` wraps), else one built from the run's session, which carries the call ledger
-    and the read guard the same way."""
-    base = _run_client(session, client_for, "elbv2")
+def _elbv2_in_region(session: Any, client_for: Any, region: str, service: str = "elbv2") -> Any:
+    """A load balancer client (``elbv2``, or ``elb`` for Classic) for ``region``: the run's own client when the run
+    is in that region (so the call goes through whatever ``client_for`` wraps), else one built from the run's
+    session, which carries the call ledger and the read guard the same way."""
+    base = _run_client(session, client_for, service)
     if _client_region(base) == region:
         return base
-    return session.client("elbv2", region_name=region)
+    return session.client(service, region_name=region)
 
 
 def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
@@ -437,6 +436,13 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                                     lb_by_dns[str(lb.get("DNSName", "")).lower()] = lb
                             except BotoCoreError, ClientError:
                                 pass  # no load balancers read in this region: the aliases below stay unmatched (partial)
+                            try:  # Classic load balancers share the hostname form of Application ones and are keyed by DNS name
+                                classic = _elbv2_in_region(session, client_for, lb_region, "elb")
+                                for page in _pages(classic, "describe_load_balancers"):
+                                    for lb in page.get("LoadBalancerDescriptions", []):
+                                        lb_by_dns.setdefault(str(lb.get("DNSName", "")).lower(), {"DNSName": lb.get("DNSName"), "Type": "classic"})
+                            except BotoCoreError, ClientError:
+                                pass
                         found = lb_by_dns.get(domain.removeprefix("dualstack."))
                         if found is not None and found.get("Type") == "application":
                             alb_arns.append(str(found["LoadBalancerArn"]))
