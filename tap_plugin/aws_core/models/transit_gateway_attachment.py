@@ -57,7 +57,7 @@ class TransitGatewayAttachment(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "attachment_id": {"type": "string", "pattern": "^(tgw-attach-[0-9a-f]{8,17})?$"},
-        "resource_type": {"type": ["string", "null"], "enum": ["", *RESOURCE_TYPES]},
+        "resource_type": {"type": ["string", "null"], "enum": [None, "", *RESOURCE_TYPES]},
         "resource_owner_account_id": {"type": ["string", "null"], "pattern": "^([0-9]{12})?$"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},

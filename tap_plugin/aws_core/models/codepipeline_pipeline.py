@@ -49,8 +49,8 @@ class CodepipelinePipeline(BaseModel):
         },
         # Source: GetPipeline pipeline.stages[].name, in pipeline order.
         "stage_names": {"type": "array", "items": {"type": "string", "minLength": 1}},
-        "pipeline_type": {"type": ["string", "null"], "enum": ["", *PIPELINE_TYPES]},
-        "execution_mode": {"type": ["string", "null"], "enum": ["", *EXECUTION_MODES]},
+        "pipeline_type": {"type": ["string", "null"], "enum": [None, "", *PIPELINE_TYPES]},
+        "execution_mode": {"type": ["string", "null"], "enum": [None, "", *EXECUTION_MODES]},
         "region": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},

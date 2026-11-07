@@ -43,7 +43,7 @@ class VpcEndpoint(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "vpc_endpoint_id": {"type": "string", "pattern": "^(vpce-[0-9a-f]{8,17})?$"},
-        "endpoint_type": {"type": ["string", "null"], "enum": ["", *ENDPOINT_TYPES]},
+        "endpoint_type": {"type": ["string", "null"], "enum": [None, "", *ENDPOINT_TYPES]},
         "service_name": {"type": ["string", "null"]},
         "private_dns_enabled": {"type": ["boolean", "null"]},
         "region": {"type": ["string", "null"]},

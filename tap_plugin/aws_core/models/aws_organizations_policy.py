@@ -69,7 +69,7 @@ class AwsOrganizationsPolicy(BaseModel):
         },
         "policy_id": {"type": ["string", "null"], "pattern": "^(p-[0-9a-zA-Z_]{8,128})?$"},
         # PolicySummary.Type; "" when not observed. Never SERVICE_CONTROL_POLICY (own model).
-        "policy_type": {"type": ["string", "null"], "enum": ["", *OTHER_POLICY_TYPES]},
+        "policy_type": {"type": ["string", "null"], "enum": [None, "", *OTHER_POLICY_TYPES]},
         "description": {"type": ["string", "null"]},
         "aws_managed": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},

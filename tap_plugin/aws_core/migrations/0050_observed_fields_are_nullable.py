@@ -4,24 +4,46 @@ import tap_plugin.aws_core.migrations._bulk
 from django.db import migrations, models
 
 
-def blanks_to_unobserved(apps, schema_editor):
-    """A text column that was never read held "" (the old default), which reads as the fact "empty".
-    Null is "not observed" (the house convention); "" stays for a value the source returned empty, which
-    the next collection rewrites. The columns are the ones this migration made nullable."""
-    for op in Migration.operations[0].operations:
-        if not isinstance(op.field, (models.CharField, models.TextField)):
-            continue
-        model = apps.get_model("aws_core", op.model_name)
-        model._default_manager.filter(**{op.name: ""}).update(**{op.name: None})
+# Columns the manifest never fills for their type. Nothing ever wrote them, so what they hold is the old default
+# (an empty string, False, 0), which read as a fact; it becomes null. A column the manifest does fill is left as it
+# is: its stored value may be the source's own answer (an empty string that means "none", False that was read), and
+# the next collection rewrites it, absent members now as null.
+NEVER_FILLED = [
+    "codebuildproject:region",
+    "codepipelinepipeline:region",
+    "dxconnection:region",
+    "dxvirtualinterface:region",
+    "iampolicy:is_aws_managed",
+    "route53resolverfirewallrulegroup:region",
+    "routetable:is_main",
+    "sagemakerendpoint:endpoint_instance_type",
+    "transitgateway:region",
+    "vpcendpointservice:region"
+]
 
 
-def keep_blanks(apps, schema_editor):
-    """Going back does not restore which columns held a blank: the columns return to non-null by the
-    schema operations, and a null in them is not representable there, so it becomes ""."""
-    for op in Migration.operations[0].operations:
-        if isinstance(op.field, (models.CharField, models.TextField)):
-            model = apps.get_model("aws_core", op.model_name)
-            model._default_manager.filter(**{f"{op.name}__isnull": True}).update(**{op.name: ""})
+def never_filled_to_unobserved(apps, schema_editor):
+    for ref in NEVER_FILLED:
+        model_name, field = ref.split(":")
+        for name in (model_name, "historical" + model_name):
+            model = apps.get_model("aws_core", name)
+            column = model._meta.get_field(field)
+            default = "" if isinstance(column, (models.CharField, models.TextField)) else None
+            if default is None:
+                model._default_manager.exclude(**{field: None}).update(**{field: None})
+            else:
+                model._default_manager.filter(**{field: ""}).update(**{field: None})
+
+
+def keep_defaults(apps, schema_editor):
+    """Going back: a null cannot be stored in the old columns, so the text ones become "" again; the boolean and
+    number ones have no default to return to and are left to the schema reversal."""
+    for ref in NEVER_FILLED:
+        model_name, field = ref.split(":")
+        for name in (model_name, "historical" + model_name):
+            model = apps.get_model("aws_core", name)
+            if isinstance(model._meta.get_field(field), (models.CharField, models.TextField)):
+                model._default_manager.filter(**{f"{field}__isnull": True}).update(**{field: ""})
 
 
 class Migration(migrations.Migration):
@@ -2889,5 +2911,5 @@ class Migration(migrations.Migration):
         ),
             ]
         ),
-        migrations.RunPython(blanks_to_unobserved, keep_blanks),
+        migrations.RunPython(never_filled_to_unobserved, keep_defaults),
     ]

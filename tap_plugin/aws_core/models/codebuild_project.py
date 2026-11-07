@@ -62,7 +62,7 @@ class CodebuildProject(BaseModel):
         # environment.computeType, AWS's string (BUILD_GENERAL1_SMALL, BUILD_LAMBDA_2GB, ...). Not an enum:
         # AWS adds compute types with new environment types.
         "compute_type": {"type": ["string", "null"]},
-        "source_type": {"type": ["string", "null"], "enum": ["", *SOURCE_TYPES]},
+        "source_type": {"type": ["string", "null"], "enum": [None, "", *SOURCE_TYPES]},
         # True when the project has a vpcConfig with a vpcId; null until observed.
         "vpc_attached": {"type": ["boolean", "null"]},
         # environment.privilegedMode: the build can run a Docker daemon with root on its host. Null until observed.

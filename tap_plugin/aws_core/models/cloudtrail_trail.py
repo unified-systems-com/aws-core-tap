@@ -47,7 +47,7 @@ class CloudtrailTrail(BaseModel):
         "is_multi_region": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "log_file_validation_enabled": {
             "validation": "jsonschema",
-            "schema": {"type": "boolean"},
+            "schema": {"type": ["boolean", "null"]},
         },
         "is_logging": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},

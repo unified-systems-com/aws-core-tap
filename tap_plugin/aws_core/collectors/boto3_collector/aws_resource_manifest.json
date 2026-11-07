@@ -2962,7 +2962,8 @@
         "name": "connectionName",
         "connection_id": "connectionId",
         "location": "location",
-        "bandwidth": "bandwidth"
+        "bandwidth": "bandwidth",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3019,7 +3020,8 @@
         "virtual_interface_id": "virtualInterfaceId",
         "virtual_interface_type": "virtualInterfaceType",
         "vlan": "vlan",
-        "customer_asn": "asn"
+        "customer_asn": "asn",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3114,7 +3116,8 @@
         "service_id": "ServiceId",
         "service_name": "ServiceName",
         "acceptance_required": "AcceptanceRequired",
-        "private_dns_name": "PrivateDnsName"
+        "private_dns_name": "PrivateDnsName",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3156,7 +3159,8 @@
       "natural_key": "Id",
       "fields": {
         "name": "Name",
-        "rule_group_id": "Id"
+        "rule_group_id": "Id",
+        "region": "$region"
       },
       "tags": {
         "source": "service",
@@ -3202,7 +3206,8 @@
         "amazon_side_asn": "Options.AmazonSideAsn",
         "auto_accept_shared_attachments": "_auto_accept_shared_attachments",
         "default_route_table_association": "_default_route_table_association",
-        "default_route_table_propagation": "_default_route_table_propagation"
+        "default_route_table_propagation": "_default_route_table_propagation",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3393,7 +3398,8 @@
         "compute_type": "environment.computeType",
         "source_type": "source.type",
         "vpc_attached": "_vpc_attached",
-        "privileged_mode": "environment.privilegedMode"
+        "privileged_mode": "environment.privilegedMode",
+        "region": "$region"
       },
       "tags": {
         "source": "field",
@@ -3446,7 +3452,8 @@
         "pipeline_arn": "_arn",
         "stage_names": "_stage_names",
         "pipeline_type": "pipelineType",
-        "execution_mode": "executionMode"
+        "execution_mode": "executionMode",
+        "region": "$region"
       },
       "tags": {
         "source": "field",

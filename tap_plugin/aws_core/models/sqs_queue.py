@@ -45,7 +45,7 @@ class SqsQueue(BaseModel):
         "visibility_timeout": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "message_retention_period": {
             "validation": "jsonschema",
-            "schema": {"type": "string"},
+            "schema": {"type": ["string", "null"]},
         },
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},

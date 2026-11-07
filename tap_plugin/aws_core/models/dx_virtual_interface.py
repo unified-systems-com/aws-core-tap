@@ -41,7 +41,7 @@ class DxVirtualInterface(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "virtual_interface_id": {"type": "string", "pattern": "^(dxvif-[a-z0-9]{8,12})?$"},
-        "virtual_interface_type": {"type": ["string", "null"], "enum": ["", *VIF_TYPES]},
+        "virtual_interface_type": {"type": ["string", "null"], "enum": [None, "", *VIF_TYPES]},
         "vlan": {"type": ["integer", "null"], "minimum": 1, "maximum": 4094},
         "customer_asn": {"type": ["integer", "null"], "minimum": 1, "maximum": 4294967294},
         "region": {"type": ["string", "null"]},

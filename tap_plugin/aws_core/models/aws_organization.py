@@ -122,8 +122,8 @@ class AwsOrganization(BaseModel):
         "organization_id": {"type": "string", "pattern": "^(o-[a-z0-9]{10,32})?$"},
         "root_id": {"type": ["string", "null"], "pattern": "^(r-[0-9a-z]{4,32})?$"},
         "management_account_id": {"type": ["string", "null"], "pattern": "^([0-9]{12})?$"},
-        "feature_set": {"type": ["string", "null"], "enum": ["", "ALL", "CONSOLIDATED_BILLING"]},
-        "partition": {"type": ["string", "null"], "enum": ["", "aws", "aws-us-gov", "aws-cn"]},
+        "feature_set": {"type": ["string", "null"], "enum": [None, "", "ALL", "CONSOLIDATED_BILLING"]},
+        "partition": {"type": ["string", "null"], "enum": [None, "", "aws", "aws-us-gov", "aws-cn"]},
         # The root's tags (req-aws-core-organizations-completeness-1). Null means NOT READ: the one
         # case is a credential that can DescribeOrganization but not ListRoots, which keeps the node
         # (req-aws-core-organizations-collect-4) but has no root id to read tags for. A root whose

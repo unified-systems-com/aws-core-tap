@@ -79,7 +79,7 @@ class AwsPolicyStatement(BaseModel):
         "policy_arn": {"type": "string", "maxLength": 512},
         "statement_key": {"type": "string", "pattern": "^((sid|content|dupsid):.+)?$", "maxLength": 512},
         "sid": {"type": ["string", "null"]},
-        "effect": {"type": ["string", "null"], "enum": ["", "Allow", "Deny"]},
+        "effect": {"type": ["string", "null"], "enum": [None, "", "Allow", "Deny"]},
         "actions": _string_list("Action, lowercased (IAM matches action names case-insensitively), de-duplicated, sorted."),
         "not_actions": _string_list("NotAction, lowercased, de-duplicated, sorted."),
         "resources": _string_list("Resource ARN patterns, case kept, de-duplicated, sorted."),

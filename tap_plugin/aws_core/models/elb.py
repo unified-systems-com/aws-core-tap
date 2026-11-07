@@ -37,7 +37,7 @@ class Elb(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "dns_name": {"type": "string"},
         "scheme": {"type": ["string", "null"]},
-        "lb_type": {"type": ["string", "null"], "enum": ["", "classic", "network", "gateway"]},
+        "lb_type": {"type": ["string", "null"], "enum": [None, "", "classic", "network", "gateway"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -46,7 +46,7 @@ class Elb(BaseModel):
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "dns_name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "scheme": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "lb_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"], "enum": ["", "classic", "network", "gateway"]}},
+        "lb_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"], "enum": [None, "", "classic", "network", "gateway"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }

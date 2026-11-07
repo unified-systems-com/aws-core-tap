@@ -158,3 +158,35 @@ def test_the_sibling_arn_transforms_build_the_target_keys_from_the_referring_arn
 def test_the_listener_edge_reaches_a_network_load_balancer_by_its_dns_name():
     edges = {(e["value_path"], e["target_type"]) for e in _entry("elb_listener")["edges"]}
     assert ("_elb_dns_name", "aws_core__aws_elb") in edges
+
+
+def test_every_nullable_column_accepts_null_in_both_of_its_schemas():
+    """Unobserved is null (req-aws-core-fields-10): a column that may be null must pass service validation as null,
+    enum and all; a schema that still says "string" or lists no null in its enum would reject the value the column holds."""
+    import jsonschema
+    from django.apps import apps
+
+    rejected = []
+    for model in apps.get_app_config("aws_core").get_models():
+        if model._meta.model_name.startswith("historical") or not hasattr(model, "FIELD_CRUD_SCHEMA"):
+            continue
+        for column in model._meta.concrete_fields:
+            if not column.null or column.name in ("tags", "configuration"):
+                continue
+            schemas = {
+                "crud": model.FIELD_CRUD_SCHEMA.get(column.name),
+                "validation": (model.FIELD_VALIDATION_SCHEMA.get(column.name) or {}).get("schema"),
+            }
+            for kind, schema in schemas.items():
+                try:
+                    jsonschema.validate(None, schema if schema is not None else {"type": "null"})
+                    if schema is None:
+                        rejected.append(f"{model.__name__}.{column.name} has no {kind} schema")
+                except jsonschema.ValidationError:
+                    rejected.append(f"{model.__name__}.{column.name} {kind}")
+    assert not rejected, rejected
+
+
+def test_the_regional_fields_that_were_never_filled_now_read_the_listing_region():
+    for entity in ("codebuild_project", "dx_connection", "transit_gateway", "vpc_endpoint_service"):
+        assert _entry(entity)["fields"]["region"] == "$region", entity
