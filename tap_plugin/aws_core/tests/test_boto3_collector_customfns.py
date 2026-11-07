@@ -146,6 +146,22 @@ class TestRoute53ZonesWithAliasTargets:
         # zone's alias reads are partial, and no load balancer is claimed.
         assert z["alias_alb_arns"] == [] and z["alias_elb_dns_names"] == []
 
+    def test_an_alias_naming_a_region_the_partition_does_not_have_is_never_asked(self):
+        class _Counting(_FakeSession):
+            asked: list[str] = []
+
+            def client(self, service: str, **kw):
+                if service in ("elbv2", "elb"):
+                    self.asked.append(kw.get("region_name", ""))
+                return super().client(service, **kw)
+
+        rrs = [{"Name": "x.", "Type": "A", "AliasTarget": {"DNSName": "web-1.xx-evil-9.elb.amazonaws.com."}}]
+        session = _Counting(rrs)
+        (zone,) = route53_zones_with_alias_targets(session)
+        assert "xx-evil-9" not in session.asked
+        assert zone["alias_alb_arns"] == [] and zone["alias_elb_dns_names"] == []
+        assert zone["_edge_reads"]["alias_alb_arns"] == "partial"
+
     def test_a_classic_load_balancer_alias_resolves_to_its_dns_name(self):
         rrs = [{"Name": "c.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_CLASSIC_DNS}."}}]
         (zone,) = route53_zones_with_alias_targets(_FakeSession(rrs))

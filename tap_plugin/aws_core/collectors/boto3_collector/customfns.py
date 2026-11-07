@@ -20,6 +20,7 @@ redirects ``GetBucket*`` to the bucket's own region).
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
@@ -361,6 +362,14 @@ def _elb_alias_region(domain: str) -> str | None:
     return (match.group(1) or match.group(2)) if match else None
 
 
+@lru_cache(maxsize=None)
+def _partition_regions(partition: str) -> frozenset[str]:
+    """The regions botocore knows for ``partition`` (the load balancer service's endpoints)."""
+    from botocore.session import get_session
+
+    return frozenset(get_session().get_available_regions("elbv2", partition_name=partition or "aws"))
+
+
 def _elbv2_in_region(session: Any, client_for: Any, region: str, service: str = "elbv2") -> Any:
     """A load balancer client (``elbv2``, or ``elb`` for Classic) for ``region``: the run's own client when the run
     is in that region (so the call goes through whatever ``client_for`` wraps), else one built from the run's
@@ -427,6 +436,10 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                     dns = (rr.get("AliasTarget") or {}).get("DNSName") or ""
                     domain = dns.rstrip(".").lower()
                     lb_region = _elb_alias_region(domain)
+                    if lb_region is not None and lb_region not in _partition_regions(_client_partition(r53)):
+                        # A record can name any region-shaped label; only a region the partition has is asked.
+                        routes_read = PARTIAL
+                        continue
                     if lb_region is not None:
                         if lb_region not in lb_regions_read:
                             lb_regions_read.add(lb_region)
