@@ -98,10 +98,11 @@ from .credentials import (
 )
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
+from .ecs import walks_of
 from .endpoint_probe import EndpointProbe, request_host
 from .envelope import jsonable
 from .hydrate import hydrate_item
-from .identity import IdentityError
+from .identity import IdentityError, node_ref
 from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
@@ -1233,7 +1234,22 @@ class Boto3Collector(CollectorBase):
                 statement = parent_listing.surface(applied_batches)
                 statement["subject"] = resolve_subject(statement["subject"], addressed, resolved_refs)
                 self.record_surface(**statement)
-            if not org_tree.listings and not landing_zone.listings:
+            # ECS: a cluster's running tasks and each task's containers (aws-core-tap#211). The parent is
+            # the cluster or task node itself, so its ref resolves to its grid id like any other subject.
+            ecs_listings = [listing for ecs_walk in walks_of(session) for listing in ecs_walk.listings]
+            for ecs_listing in ecs_listings:
+                self.record_surface(
+                    **surface_statement(
+                        ecs_listing.walk,
+                        relation=ecs_listing.relation,
+                        edge_type=ecs_listing.edge_type,
+                        subject=resolve_subject(
+                            node_ref(ecs_listing.parent_type, ecs_listing.parent_key), addressed, resolved_refs
+                        ),
+                        applied_batches=applied_batches,
+                    )
+                )
+            if not org_tree.listings and not landing_zone.listings and not ecs_listings:
                 self.declare_no_surfaces()
 
         imported = result.counts.batches_imported

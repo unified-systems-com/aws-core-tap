@@ -2646,8 +2646,182 @@ class ConformancePackFalsifier(_GetByArnFalsifier):
         return str((found[0] if found else {}).get("ConformancePackArn") or "")
 
 
+# ---------------------------------------------------------------------------
+# ECS tasks and containers (aws-core-tap#211)
+# ---------------------------------------------------------------------------
+
+#: The most ARNs one ``DescribeTasks`` call accepts (the ECS API reference).
+_ECS_TASKS_PER_CALL = 100
+_ECS_STOPPED = "STOPPED"
+_ECS_MISSING = "MISSING"
+
+
+def _ecs_task_of_container(container_arn: str) -> str | None:
+    """``arn:...:container/<cluster>/<task-id>/<container-id>`` -> ``arn:...:task/<cluster>/<task-id>``.
+
+    None for the older ``container/<id>`` form, which does not name its task, so it cannot be probed."""
+    prefix, sep, resource = container_arn.partition(":container/")
+    parts = resource.split("/")
+    if not sep or len(parts) != 3 or not all(parts):
+        return None
+    return f"{prefix}:task/{parts[0]}/{parts[1]}"
+
+
+def _ecs_cluster_of_task(task_arn: str) -> str | None:
+    """The cluster name in ``arn:...:task/<cluster>/<task-id>``; None for the older ``task/<id>`` form."""
+    _, sep, resource = task_arn.partition(":task/")
+    parts = resource.split("/")
+    if not sep or len(parts) != 2 or not all(parts):
+        return None
+    return parts[0]
+
+
+class _EcsFalsifier(_AwsFalsifier):
+    """``ecs:DescribeTasks`` on the candidates' tasks, batched by region and cluster, 100 ARNs a call.
+
+    A deploy replaces every task of a service at once, so a run can hold many candidates: one call per 100 is
+    the probe budget, not one per candidate. Region and cluster come from the task's own ARN (the resource's own
+    attribute, so a not-found there is a real absence). A call that raises answers every candidate it covered
+    through ``_failed_probe``: ``ClusterNotFoundException`` is a not-found (the cluster named in the task's own
+    ARN is gone), a refusal or throttle is ``UNDETERMINED``, never absence.
+
+    Subclasses say which row field holds the candidate's ARN, which task that ARN belongs to, and what a
+    described task (or a failure entry for it) means for the candidate.
+    """
+
+    id_field: str = ""
+
+    def _task_arn(self, arn: str) -> str | None:
+        raise NotImplementedError
+
+    def _judge_task(
+        self, candidate: Candidate, expected: Expected, task: dict[str, Any] | None, failure: str | None, name: str
+    ) -> Verdict:
+        raise NotImplementedError
+
+    def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
+        verdicts: dict[Any, Verdict] = {}
+        groups: dict[tuple[str, str], list[tuple[Candidate, Expected, str, str]]] = {}
+        for candidate in candidates:
+            row = _row_of(candidate.entity_id)
+            if row is None:
+                verdicts[candidate.entity_id] = _undetermined(candidate, "errored", "the grid row could not be read")
+                continue
+            arn = str(getattr(row, self.id_field, "") or "")
+            if not arn:
+                verdicts[candidate.entity_id] = _undetermined(
+                    candidate, "scope_unknown", f"the grid holds no {self.id_field} for this resource"
+                )
+                continue
+            scoped = self._scope_check(candidate, account_id, _dimensions_of(row).get("aws_account") or None)
+            if scoped is not None:
+                verdicts[candidate.entity_id] = scoped
+                continue
+            task_arn = self._task_arn(arn)
+            cluster = _ecs_cluster_of_task(task_arn) if task_arn else None
+            region = _arn_region(task_arn) if task_arn else ""
+            if not task_arn or not cluster or not region:
+                verdicts[candidate.entity_id] = _undetermined(
+                    candidate, "scope_unknown", "the ARN does not name its task's cluster and region, so it cannot be probed"
+                )
+                continue
+            expected = Expected(source_id=arn, owner=None, name=None)
+            name = str(getattr(row, "name", "") or "")
+            groups.setdefault((region, cluster), []).append((candidate, expected, task_arn, name))
+        for (region, cluster), members in groups.items():
+            task_arns = list(dict.fromkeys(member[2] for member in members))
+            for start in range(0, len(task_arns), _ECS_TASKS_PER_CALL):
+                chunk = set(task_arns[start : start + _ECS_TASKS_PER_CALL])
+                covered = [member for member in members if member[2] in chunk]
+                try:
+                    client = session.client("ecs", region_name=region)
+                    response = client.describe_tasks(cluster=cluster, tasks=sorted(chunk))
+                except Exception as exc:  # noqa: BLE001 — every candidate the call covered gets an answer, never a crash
+                    for candidate, expected, _, _ in covered:
+                        verdicts[candidate.entity_id] = _failed_probe(candidate, expected, exc)
+                    continue
+                described = {str(t.get("taskArn")): t for t in response.get("tasks") or []}
+                failures = {str(f.get("arn")): str(f.get("reason") or "Unknown") for f in response.get("failures") or []}
+                # One asked-for ARN with no answer and one answered task nobody asked for are the same task under
+                # another ARN (the long/short ARN format change): pair them, so classify() reads REIDENTIFIED.
+                unanswered = [arn for arn in sorted(chunk) if arn not in described and arn not in failures]
+                unasked = [arn for arn in described if arn not in chunk]
+                if len(unanswered) == 1 and len(unasked) == 1:
+                    described[unanswered[0]] = described[unasked[0]]
+                for candidate, expected, task_arn, name in covered:
+                    verdicts[candidate.entity_id] = self._judge_task(
+                        candidate, expected, described.get(task_arn), failures.get(task_arn), name
+                    )
+        return [verdicts[candidate.entity_id] for candidate in candidates]
+
+    def _absent(self, candidate: Candidate, expected: Expected, why: str) -> Verdict:
+        return verdict_from_probe(candidate, expected, Probe(status="not_found", detail=f"{NOT_FOUND_DETAIL} ({why})"))
+
+    def _unanswered(self, candidate: Candidate, expected: Expected, failure: str | None) -> Verdict:
+        detail = f"DescribeTasks failure: {failure}" if failure else "DescribeTasks named neither the task nor a failure for it"
+        return verdict_from_probe(candidate, expected, Probe(status="errored", detail=detail))
+
+
+class EcsTaskFalsifier(_EcsFalsifier):
+    """A task is gone when ECS reports it ``STOPPED`` or answers ``MISSING`` (it no longer shows it); any other
+    state is present. Ruled 2026-11-09 (aws-core-tap#211): a stopped task retires, unlike a stopped EC2 instance,
+    because a task never runs again; the collector records the stop first, while ECS still lists it."""
+
+    id_field = "task_arn"
+
+    def _task_arn(self, arn: str) -> str | None:
+        return arn
+
+    def _judge_task(
+        self, candidate: Candidate, expected: Expected, task: dict[str, Any] | None, failure: str | None, name: str
+    ) -> Verdict:
+        if task is not None:
+            if str(task.get("lastStatus") or "") == _ECS_STOPPED:
+                return self._absent(candidate, expected, "lastStatus=STOPPED")
+            probe = Probe(status="found", source_id=str(task.get("taskArn") or "") or None, detail="DescribeTasks 200")
+            return verdict_from_probe(candidate, expected, probe)
+        if failure == _ECS_MISSING:
+            return self._absent(candidate, expected, "failure reason MISSING")
+        return self._unanswered(candidate, expected, failure)
+
+
+class EcsContainerFalsifier(_EcsFalsifier):
+    """A container is gone with its task (``STOPPED`` or ``MISSING``), or when its running task no longer lists
+    it; a container in a running task is present whatever its own status. The task is read from the container's
+    ARN; an older ARN that does not name its task is ``UNDETERMINED``."""
+
+    id_field = "container_arn"
+
+    def _task_arn(self, arn: str) -> str | None:
+        return _ecs_task_of_container(arn)
+
+    def _judge_task(
+        self, candidate: Candidate, expected: Expected, task: dict[str, Any] | None, failure: str | None, name: str
+    ) -> Verdict:
+        if task is not None:
+            if str(task.get("lastStatus") or "") == _ECS_STOPPED:
+                return self._absent(candidate, expected, "its task's lastStatus=STOPPED")
+            containers = [c for c in task.get("containers") or [] if c.get("containerArn")]
+            listed = {str(c["containerArn"]) for c in containers}
+            if expected.source_id in listed:
+                probe = Probe(status="found", source_id=expected.source_id, detail="DescribeTasks 200")
+                return verdict_from_probe(candidate, expected, probe)
+            # The same container (by its name in the task definition) under another ARN: classify() reads it
+            # REIDENTIFIED rather than this run calling it gone.
+            renamed = [c for c in containers if name and str(c.get("name") or "") == name]
+            if len(renamed) == 1:
+                probe = Probe(status="found", source_id=str(renamed[0]["containerArn"]), detail="DescribeTasks 200")
+                return verdict_from_probe(candidate, expected, probe)
+            return self._absent(candidate, expected, "its running task no longer lists it")
+        if failure == _ECS_MISSING:
+            return self._absent(candidate, expected, "its task's failure reason MISSING")
+        return self._unanswered(candidate, expected, failure)
+
+
 __all__ = [
     "NOT_FOUND_DETAIL",
+    "EcsContainerFalsifier",
+    "EcsTaskFalsifier",
     "AccessAnalyzerFalsifier",
     "AccessAnalyzerFindingFalsifier",
     "ConfigRuleFalsifier",

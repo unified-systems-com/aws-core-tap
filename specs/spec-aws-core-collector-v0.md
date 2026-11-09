@@ -979,6 +979,20 @@ nothing and could never be reconciled. A task absent from both listings is not d
 reconcile's job (aws-core-tap#211), not this collector's. Stopped-task history beyond the last recorded state,
 task-definition revisions as nodes, ECS Anywhere and EKS are out of scope.
 
+**Retirement path (aws-core-tap#211).** A cluster contains its tasks (`RUNS_TASK`) and a task its containers
+(`RUNS_CONTAINER`); `RUNS_TASK` from a service is a reference, not containment (`-17`). The walk records a
+completeness surface for every cluster's running-task listing (relation `ecs_cluster.tasks`) and every described
+task's containers (`ecs_task.containers`), complete only when the listing reached its end, incomplete with the
+reason when it was denied, failed or stopped short, and complete-empty for a cluster running nothing (`-18`;
+`req-aws-core-contained-type-triple`). Core derives the candidates: a task the grid holds under a cluster whose
+listing this run completed, and which this run did not write. `EcsTaskFalsifier` and `EcsContainerFalsifier` probe
+`DescribeTasks` (already granted), 100 ARNs a call per region and cluster, reading region and cluster from the
+task's own ARN: `STOPPED` or a `MISSING` failure is gone, any other state is present, and an error, refusal or
+throttle is undetermined, never absence (`-19`). A container is gone with its task or when its running task no
+longer lists it. Nothing retires until an operator arms reconcile authority for the collector (off by default,
+`req-grid-reconcile-verb-2`). Not covered: a deleted cluster. It is not contained by anything, so its tasks are
+not candidates until a later change adds footprint-to-cluster containment and a cluster falsifier.
+
 **Read-only permissions added to the collector role:** `ecs:ListClusters`, `ecs:DescribeClusters`,
 `ecs:ListServices`, `ecs:DescribeServices`, `ecs:ListTasks`, `ecs:DescribeTasks`.
 
@@ -1007,6 +1021,9 @@ requirement.
 | req-aws-collector-ecs-14 | Digest Join Not Made Here | Implemented | This requirement adds no import of github_core or computing_core types and no digest-matching logic. | The join home is an open computing_core question. |
 | req-aws-collector-ecs-15 | Held Stopped Task Records Its Stop | Implemented | Each cluster is listed with `desiredStatus="STOPPED"`. A listed task the grid already holds is described and records `last_status`, `desired_status`, `stopped_at`, `stopped_reason` and `stop_code`; one the grid does not hold is neither described nor created. A grid read that fails, or finds two live rows for one ARN, records no stopped task and leaves a `stopped_tasks` gap on the cluster naming why. | Ruled 2026-11-09, aws-core-tap#211. A task listed under both filters is read as running. |
 | req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge, the containment a reconcile candidate is derived from once ECS stops listing the task (aws-core-tap#211). Not what makes it a candidate: a written task is observed (`req-grid-reconcile-candidates-1`). |
+| req-aws-collector-ecs-17 | Cluster And Task Contain | Implemented | `aws_ecs_cluster` declares `RUNS_TASK` and `aws_ecs_task` declares `RUNS_CONTAINER` in `CONTAINMENT_EDGES` (and `OUTBOUND_EDGES`); `aws_ecs_service` declares no containment. | aws-core-tap#211. A deleted cluster is not yet a candidate (no footprint containment). |
+| req-aws-collector-ecs-18 | A Surface Per Parent | Implemented | The walk records a surface for every cluster's running-task listing and every described task's containers; a denied, failed or short listing is recorded incomplete with its reason, never omitted, and a cluster running nothing is complete-empty. The stopped-task listing records no surface. | `req-aws-core-contained-type-triple-1`..`-3`. |
+| req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `STOPPED` or `MISSING` is gone, an error is undetermined, and an ARN that names no cluster, or another account's task, is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
 
 ### Credential Resolution
 ----

@@ -38,7 +38,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from .authority import COMPLETE, PARTIAL, with_edge_reads
 from .envelope import jsonable, without_response_metadata
 from .hydrate import _classify
-from .listing import error_code, page_says_more
+from .listing import ListingWalk, error_code, page_says_more
 from .source import SourceError
 
 #: The most each Describe call accepts (the ECS API reference).
@@ -51,8 +51,16 @@ _SERVICE_GROUP_PREFIX = "service:"
 
 _ARN_KEYS = {"clusters": "clusterArn", "services": "serviceArn", "tasks": "taskArn"}
 
+CLUSTER_TYPE = "aws_core__aws_ecs_cluster"
 TASK_TYPE = "aws_core__aws_ecs_task"
 CONTAINER_TYPE = "aws_core__aws_ecs_container"
+RUNS_TASK = "RUNS_TASK__aws_core"
+RUNS_CONTAINER = "RUNS_CONTAINER__aws_core"
+
+#: Every (parent type, containment edge) this reader records a surface for. It mirrors the models'
+#: ``CONTAINMENT_EDGES`` (``req-aws-core-contained-type-triple-1``; a test holds the two equal).
+CONTAINMENT_SURFACES: dict[str, tuple[str, ...]] = {CLUSTER_TYPE: (RUNS_TASK,), TASK_TYPE: (RUNS_CONTAINER,)}
+_RELATIONS = {RUNS_TASK: "ecs_cluster.tasks", RUNS_CONTAINER: "ecs_task.containers"}
 _NATURAL_KEY_FIELD = {TASK_TYPE: "task_arn", CONTAINER_TYPE: "container_arn"}
 
 #: ``held(entity_type, arn)``: whether the grid already holds a live node for that ARN.
@@ -71,6 +79,24 @@ def _held_by_none(_entity_type: str, _arn: str) -> bool:
 
 
 @dataclass
+class EcsListing:
+    """One parent's containment listing: what the collector turns into a completeness surface.
+
+    ``parent_key`` is the parent's ARN, its natural key, so the surface's subject is the parent's batch ref
+    until the import resolves it (``req-aws-core-contained-type-triple``, aws-core-tap#211).
+    """
+
+    parent_type: str
+    parent_key: str
+    edge_type: str
+    walk: ListingWalk
+
+    @property
+    def relation(self) -> str:
+        return _RELATIONS[self.edge_type]
+
+
+@dataclass
 class EcsWalk:
     """Everything one region's ECS fan-out read, as raw items ready for projection."""
 
@@ -78,6 +104,8 @@ class EcsWalk:
     services: list[dict[str, Any]] = field(default_factory=list)
     tasks: list[dict[str, Any]] = field(default_factory=list)
     containers: list[dict[str, Any]] = field(default_factory=list)
+    #: A cluster's running-task listing and each described task's containers, one per parent.
+    listings: list[EcsListing] = field(default_factory=list)
 
 
 class _IncompleteListing(Exception):
@@ -130,13 +158,55 @@ def _list_all(client: Any, method: str, key: str, **kwargs: Any) -> list[str]:
 
 def _listing(client: Any, method: str, key: str, **kwargs: Any) -> tuple[list[str], dict[str, Any]]:
     """``(arns, slot)`` for a per-cluster listing. On any failure the arns are empty and the slot says why."""
+    arns, slot, _walk = _walked_listing(client, method, key, **kwargs)
+    return arns, slot
+
+
+def _walked_listing(client: Any, method: str, key: str, **kwargs: Any) -> tuple[list[str], dict[str, Any], ListingWalk]:
+    """:func:`_listing` plus the :class:`ListingWalk` saying how far the listing got, for its surface."""
     op = _api_name(method)
+    walk = ListingWalk()
     try:
-        return _list_all(client, method, key, **kwargs), _slot(op)
+        arns = _list_all(client, method, key, **kwargs)
     except _IncompleteListing:
-        return [], _slot(op, code="IncompleteListing")
+        walk.stopped_short(0, f"{op}: the final page still reports a continuation")
+        walk.count = None  # nothing was kept: the items read before the short page are not counted as listed
+        walk.admitted = False
+        walk.reasons["admitted"] = f"walk_capped: {op} stopped short, so nothing it listed was processed"
+        return [], _slot(op, code="IncompleteListing"), walk
     except (BotoCoreError, ClientError) as exc:
-        return [], _slot(op, exc=exc)
+        walk.fail(exc)
+        return [], _slot(op, exc=exc), walk
+    walk.reached_end(len(arns))
+    return arns, _slot(op), walk
+
+
+def _container_walk(task: dict[str, Any] | None, gap: dict[str, Any] | None) -> ListingWalk:
+    """How completely one task's containers were read: from its own ``DescribeTasks`` entry.
+
+    A task that was not described lists no containers, so its surface is not complete; a container that came
+    back without an ARN was listed but could not be carried, so the surface is complete but not admitted.
+    """
+    walk = ListingWalk()
+    if task is None:
+        code = (gap or {}).get("error_code") or "NotDescribed"
+        walk.finished = walk.started
+        walk.complete = False
+        walk.count = None
+        walk.admitted = False
+        walk.reasons["enumeration_complete"] = f"describe_failed: {code}: the task's containers were not read"
+        walk.reasons["admitted"] = f"describe_failed: {code}: nothing to process"
+        if (gap or {}).get("status") == "denied":
+            walk.authorized = False
+            walk.reasons["scope_authorized"] = f"access_denied: {code}"
+        else:
+            walk.authorized = None
+        return walk
+    containers = task.get("containers") or []
+    walk.reached_end(len(containers))
+    if any(not c.get("containerArn") for c in containers):
+        walk.drop("a container came back without a containerArn")
+    return walk
 
 
 def _describe(
@@ -308,9 +378,10 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
         if cluster_arn not in clusters and cluster_arn not in cluster_gaps:
             continue  # MISSING: deleted between the list and the describe
         service_arns, services_slot = _listing(client, "list_services", "serviceArns", cluster=cluster_arn)
-        task_arns, tasks_slot = _listing(
+        task_arns, tasks_slot, tasks_walk = _walked_listing(
             client, "list_tasks", "taskArns", cluster=cluster_arn, desiredStatus="RUNNING"
         )
+        walk.listings.append(EcsListing(CLUSTER_TYPE, cluster_arn, RUNS_TASK, tasks_walk))
         stopped_listed, stopped_slot = _listing(
             client, "list_tasks", "taskArns", cluster=cluster_arn, desiredStatus="STOPPED"
         )
@@ -352,6 +423,9 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
             stopped = arn in stopped_set
             task_item = _task_item(arn, cluster_arn, tasks.get(arn), task_gaps.get(arn), by_name, stopped=stopped)
             walk.tasks.append(task_item)
+            walk.listings.append(
+                EcsListing(TASK_TYPE, arn, RUNS_CONTAINER, _container_walk(tasks.get(arn), task_gaps.get(arn)))
+            )
             if arn in tasks:
                 containers, named = _container_items(tasks[arn], stopped=stopped, held=container_held)
                 walk.containers.extend(containers)
@@ -365,6 +439,16 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
 #: One walk per (session, region), so the four entries of a run share one set of ECS calls. A walk that
 #: raised is kept too, so a denied ``ListClusters`` is not retried by each of the four entries.
 _WALKS: WeakKeyDictionary[Any, dict[str, EcsWalk | BaseException]] = WeakKeyDictionary()
+
+
+def walks_of(session: Any) -> list[EcsWalk]:
+    """Every region's completed :class:`EcsWalk` for this run's session (a walk that raised has no listings:
+    its entries were skipped, and a parent that was not observed has no surface to record)."""
+    try:
+        memo = _WALKS.get(session) or {}
+    except TypeError:
+        return []
+    return [walk for walk in memo.values() if isinstance(walk, EcsWalk)]
 
 
 def shared_walk(session: Any, client_for: Any) -> EcsWalk:

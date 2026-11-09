@@ -17,6 +17,12 @@ class EcsTask(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The task's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("task_arn",)
+    # A task contains its containers (aws-core-tap#211): retiring a task cascades to them. Literals, for
+    # validate_plugin's AST reader.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_ecs_container"}], "edges": [{"type": "RUNS_CONTAINER__aws_core"}]},
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("RUNS_CONTAINER__aws_core",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
