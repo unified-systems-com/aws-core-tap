@@ -968,8 +968,11 @@ least an hour, per the `DescribeTasks` API reference). A stopped task is describ
 grid already holds a live node for it (`tap_grid.services.find_by_natural_key`). It records `last_status`,
 `desired_status`, `stopped_at`, `stopped_reason` and `stop_code` (`-15`), and asserts no `RUNS_TASK` edge,
 nor its containers a `RUNS_CONTAINER` edge, with those edge reads `partial` so the run claims none of them
-absent (`-16`). That is what lets reconciliation find it: it is no longer among the tasks its cluster runs
-this run, while its earlier `RUNS_TASK` edge still says the cluster held it (aws-core-tap#211). A task that
+absent (`-16`), so its earlier `RUNS_TASK` edge is kept. A run that writes the task has observed it, so it is
+not a retirement candidate while ECS still lists it (`req-grid-reconcile-candidates-1`: observed is every
+entity the run wrote). Once ECS stops listing it, the run writes nothing for it, and reconciliation finds it
+through that kept edge: the stop is recorded first and the task retired after, by the falsifier, at least an
+hour after it stopped (ruled 2026-11-09, aws-core-tap#211). A task that
 started and stopped between two runs is never created, because with no `RUNS_TASK` edge it would be held by
 nothing and could never be reconciled. A task absent from both listings is not deleted or modified
 ([Collector Scope](#collector-scope), `req-aws-collector-scope-3`); retiring it is the task falsifier's and
@@ -1003,7 +1006,7 @@ requirement.
 | req-aws-collector-ecs-13 | Live Trial Before Release | Proposed | The change passes the `add-aws-type` trial run against a real cluster and Fargate task (or carries a named `deferred_reason`) and a collected container's digest is shown equal to the digest `DescribeTasks` returns for it. | Needs a human to approve what is provisioned. |
 | req-aws-collector-ecs-14 | Digest Join Not Made Here | Implemented | This requirement adds no import of github_core or computing_core types and no digest-matching logic. | The join home is an open computing_core question. |
 | req-aws-collector-ecs-15 | Held Stopped Task Records Its Stop | Implemented | Each cluster is listed with `desiredStatus="STOPPED"`. A listed task the grid already holds is described and records `last_status`, `desired_status`, `stopped_at`, `stopped_reason` and `stop_code`; one the grid does not hold is neither described nor created. A grid read that fails, or finds two live rows for one ARN, records no stopped task and leaves a `stopped_tasks` gap on the cluster naming why. | Ruled 2026-11-09, aws-core-tap#211. A task listed under both filters is read as running. |
-| req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge as the containment a reconcile candidate is derived from (aws-core-tap#211). |
+| req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge, the containment a reconcile candidate is derived from once ECS stops listing the task (aws-core-tap#211). Not what makes it a candidate: a written task is observed (`req-grid-reconcile-candidates-1`). |
 
 ### Credential Resolution
 ----
