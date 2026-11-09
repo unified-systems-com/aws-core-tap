@@ -86,8 +86,9 @@ class _FakeEcs:
 
     meta = SimpleNamespace(region_name=_REGION)
 
-    def __init__(self, *, tasks=None, deny=(), task_pages=1, failures=None):
+    def __init__(self, *, tasks=None, deny=(), task_pages=1, failures=None, stopped=None):
         self.tasks = tasks if tasks is not None else {_TASK: _task()}
+        self.stopped = stopped or {}  # what ListTasks(desiredStatus="STOPPED") returns
         self.deny = set(deny)
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.task_pages = task_pages
@@ -105,7 +106,10 @@ class _FakeEcs:
                 key, arns = {
                     "list_clusters": ("clusterArns", [_CLUSTER]),
                     "list_services": ("serviceArns", [_SERVICE]),
-                    "list_tasks": ("taskArns", list(outer.tasks)),
+                    "list_tasks": (
+                        "taskArns",
+                        list(outer.stopped if kwargs.get("desiredStatus") == "STOPPED" else outer.tasks),
+                    ),
                 }[method]
                 if method == "list_tasks" and outer.task_pages > 1:
                     half = max(1, len(arns) // outer.task_pages)
@@ -142,7 +146,8 @@ class _FakeEcs:
 
     def describe_tasks(self, **kwargs):
         self._record("describe_tasks", kwargs)
-        found = [self.tasks[a] for a in kwargs["tasks"] if a in self.tasks and a not in self.failures]
+        known = {**self.stopped, **self.tasks}
+        found = [known[a] for a in kwargs["tasks"] if a in known and a not in self.failures]
         failures = [{"arn": a, "reason": r} for a, r in self.failures.items() if a in kwargs["tasks"]]
         return {"tasks": found, "failures": failures}
 
@@ -164,7 +169,10 @@ class TestCallShape:
         assert _calls(fake, "describe_clusters")[0]["include"] == ["TAGS"]
         assert _calls(fake, "list_services") == [{"cluster": _CLUSTER}]
         assert _calls(fake, "describe_services")[0] == {"services": [_SERVICE], "cluster": _CLUSTER, "include": ["TAGS"]}
-        assert _calls(fake, "list_tasks") == [{"cluster": _CLUSTER, "desiredStatus": "RUNNING"}]
+        assert _calls(fake, "list_tasks") == [
+            {"cluster": _CLUSTER, "desiredStatus": "RUNNING"},
+            {"cluster": _CLUSTER, "desiredStatus": "STOPPED"},
+        ]
         assert _calls(fake, "describe_tasks")[0]["include"] == ["TAGS"]
 
     def test_describe_batches_respect_aws_maximums(self):
@@ -249,7 +257,8 @@ class TestEdges:
         _, walk = _walk()
         task = walk.tasks[0]
         assert task["_service_arn"] == _SERVICE
-        assert task[EDGE_READS] == {"clusterArn": "complete", "_service_arn": "complete"}
+        assert task["_cluster_arn_running"] == _CLUSTER
+        assert task[EDGE_READS] == {"_cluster_arn_running": "complete", "_service_arn": "complete"}
 
     def test_task_without_service_group_attaches_to_cluster_only(self):
         """req-aws-collector-ecs-8"""
@@ -265,7 +274,7 @@ class TestEdges:
 
     def test_manifest_declares_the_edge_rules(self):
         task_rules = {(r["edge_type"], r["value_path"], r["direction"]) for r in _entry("aws_core__aws_ecs_task")["edges"]}
-        assert ("RUNS_TASK__aws_core", "clusterArn", "inbound") in task_rules
+        assert ("RUNS_TASK__aws_core", "_cluster_arn_running", "inbound") in task_rules
         assert ("RUNS_TASK__aws_core", "_service_arn", "inbound") in task_rules
         container_rules = _entry("aws_core__aws_ecs_container")["edges"]
         assert [(r["edge_type"], r["target_type"]) for r in container_rules] == [
@@ -273,6 +282,162 @@ class TestEdges:
         ]
         service_rules = _entry("aws_core__aws_ecs_service")["edges"]
         assert [r["edge_type"] for r in service_rules] == ["RUNS_SERVICE__aws_core"]
+
+
+_STOPPED_TASK = f"arn:aws:ecs:{_REGION}:{_ACCOUNT}:task/prod/cccc3333"
+_STOPPED_CONTAINER = f"arn:aws:ecs:{_REGION}:{_ACCOUNT}:container/prod/cccc3333/c1"
+
+
+def _stopped_task() -> dict[str, Any]:
+    task = _task(_STOPPED_TASK, container_arn=_STOPPED_CONTAINER)
+    task["containers"][0]["lastStatus"] = "STOPPED"
+    task["containers"][0]["taskArn"] = _STOPPED_TASK
+    return {
+        **task,
+        "lastStatus": "STOPPED",
+        "desiredStatus": "STOPPED",
+        "stoppedAt": datetime(2026, 10, 15, 13, 30, tzinfo=UTC),
+        "stoppedReason": "Essential container in task exited",
+        "stopCode": "EssentialContainerExited",
+    }
+
+
+def _holds(*arns: str):
+    """A ``held`` that holds exactly ``arns``, recording every question it was asked."""
+    asked: list[tuple[str, str]] = []
+
+    def held(entity_type: str, arn: str) -> bool:
+        asked.append((entity_type, arn))
+        return arn in arns
+
+    held.asked = asked  # type: ignore[attr-defined]
+    return held
+
+
+def _stopped_walk(held, **fake_kwargs):
+    fake = _FakeEcs(stopped={_STOPPED_TASK: _stopped_task()}, **fake_kwargs)
+    return fake, walk_ecs(fake, held=held)
+
+
+@pytest.mark.spec("req-aws-collector-ecs-15")
+class TestStoppedTasksRecorded:
+    def test_a_held_stopped_task_records_its_stop(self):
+        _, walk = _stopped_walk(_holds(_STOPPED_TASK, _STOPPED_CONTAINER))
+        (stopped,) = [t for t in walk.tasks if t["taskArn"] == _STOPPED_TASK]
+        node = project_item(_entry("aws_core__aws_ecs_task"), stopped)
+        assert node.fields["last_status"] == "STOPPED"
+        assert node.fields["desired_status"] == "STOPPED"
+        assert node.fields["stopped_at"] == "2026-10-15T13:30:00Z"
+        assert node.fields["stopped_reason"] == "Essential container in task exited"
+        assert node.fields["stop_code"] == "EssentialContainerExited"
+        assert node.fields["cluster_arn"] == _CLUSTER  # the field is kept; only the edge source is withheld
+
+    def test_a_running_task_has_null_stop_fields(self):
+        _, walk = _walk()
+        node = project_item(_entry("aws_core__aws_ecs_task"), walk.tasks[0])
+        assert node.fields["stopped_at"] is None
+        assert node.fields["stopped_reason"] is None
+        assert node.fields["stop_code"] is None
+
+    def test_a_stopped_task_the_grid_does_not_hold_is_not_collected(self):
+        """Started and stopped between runs: without a RUNS_TASK edge it would be held by nothing."""
+        held = _holds()
+        fake, walk = _stopped_walk(held)
+        assert [t["taskArn"] for t in walk.tasks] == [_TASK]
+        assert ("aws_core__aws_ecs_task", _STOPPED_TASK) in held.asked
+        assert all(_STOPPED_TASK not in kw["tasks"] for kw in _calls(fake, "describe_tasks"))
+
+    def test_the_default_walk_holds_nothing(self):
+        fake = _FakeEcs(stopped={_STOPPED_TASK: _stopped_task()})
+        assert [t["taskArn"] for t in walk_ecs(fake).tasks] == [_TASK]
+
+    def test_running_and_held_stopped_tasks_share_one_describe_call(self):
+        fake, _ = _stopped_walk(_holds(_STOPPED_TASK))
+        assert [kw["tasks"] for kw in _calls(fake, "describe_tasks")] == [[_TASK, _STOPPED_TASK]]
+
+    def test_a_task_in_both_listings_is_read_as_running(self):
+        fake = _FakeEcs(stopped={_TASK: _task()})
+        held = _holds(_TASK)
+        walk = walk_ecs(fake, held=held)
+        (task,) = walk.tasks
+        assert task["_cluster_arn_running"] == _CLUSTER
+        assert held.asked == []  # never asked: the running read already covers it
+
+    def test_only_held_containers_of_a_stopped_task_are_yielded(self):
+        _, held_walk = _stopped_walk(_holds(_STOPPED_TASK, _STOPPED_CONTAINER))
+        assert _STOPPED_CONTAINER in [c["containerArn"] for c in held_walk.containers]
+        _, unheld_walk = _stopped_walk(_holds(_STOPPED_TASK))
+        assert _STOPPED_CONTAINER not in [c["containerArn"] for c in unheld_walk.containers]
+
+    def test_a_failed_grid_read_skips_stopped_tasks_and_says_why(self):
+        def broken(_entity_type, _arn):
+            raise RuntimeError("grid unavailable")
+
+        _, walk = _stopped_walk(broken)
+        assert [t["taskArn"] for t in walk.tasks] == [_TASK]  # the running read is untouched
+        assert walk.clusters[0]["_hydrate"]["stopped_tasks"] == {
+            "status": "error",
+            "op": "FindByNaturalKey",
+            "error_code": "RuntimeError",
+        }
+
+    def test_an_ambiguous_key_is_skipped_and_named_as_a_defect(self):
+        """Two live rows for one ARN is a grid defect: surfaced as a gap, never written through."""
+        from tap_grid.natural_key import AmbiguousIdentity
+
+        def ambiguous(entity_type, arn):
+            raise AmbiguousIdentity(entity_type, {"task_arn": arn}, ["row-1", "row-2"])
+
+        _, walk = _stopped_walk(ambiguous)
+        assert [t["taskArn"] for t in walk.tasks] == [_TASK]
+        assert walk.clusters[0]["_hydrate"]["stopped_tasks"] == {
+            "status": "error",
+            "op": "FindByNaturalKey",
+            "error_code": "AmbiguousIdentity",
+        }
+
+    def test_a_denied_stopped_listing_is_a_gap_not_an_empty_answer(self):
+        class _DenyStopped(_FakeEcs):
+            def get_paginator(self, method):
+                inner = super().get_paginator(method)
+                outer = self
+
+                class _P:
+                    def paginate(self, **kwargs):
+                        if method == "list_tasks" and kwargs.get("desiredStatus") == "STOPPED":
+                            outer.calls.append((method, kwargs))
+                            raise _error("AccessDeniedException", method)
+                        return inner.paginate(**kwargs)
+
+                return _P()
+
+        walk = walk_ecs(_DenyStopped(stopped={_STOPPED_TASK: _stopped_task()}), held=_holds(_STOPPED_TASK))
+        assert walk.clusters[0]["_hydrate"]["stopped_tasks"]["status"] == "denied"
+        assert walk.clusters[0]["_hydrate"]["tasks"]["status"] == "ok"
+        assert [t["taskArn"] for t in walk.tasks] == [_TASK]
+
+
+@pytest.mark.spec("req-aws-collector-ecs-16")
+class TestStoppedTasksAssertNoEdges:
+    def test_a_stopped_task_carries_no_runs_task_source_and_claims_nothing(self):
+        _, walk = _stopped_walk(_holds(_STOPPED_TASK))
+        (stopped,) = [t for t in walk.tasks if t["taskArn"] == _STOPPED_TASK]
+        assert stopped["_cluster_arn_running"] is None
+        assert stopped["_service_arn"] is None
+        assert stopped[EDGE_READS] == {"_cluster_arn_running": "partial", "_service_arn": "partial"}
+
+    def test_a_stopped_container_carries_no_runs_container_source_and_claims_nothing(self):
+        _, walk = _stopped_walk(_holds(_STOPPED_TASK, _STOPPED_CONTAINER))
+        (container,) = [c for c in walk.containers if c["containerArn"] == _STOPPED_CONTAINER]
+        assert container["_task_arn"] is None
+        assert container[EDGE_READS] == {"_task_arn": "partial"}
+
+    def test_a_running_task_still_asserts_both_sources(self):
+        _, walk = _stopped_walk(_holds(_STOPPED_TASK))
+        (running,) = [t for t in walk.tasks if t["taskArn"] == _TASK]
+        assert running["_cluster_arn_running"] == _CLUSTER
+        assert running["_service_arn"] == _SERVICE
+        assert running[EDGE_READS] == {"_cluster_arn_running": "complete", "_service_arn": "complete"}
 
 
 class TestDenialDegrades:

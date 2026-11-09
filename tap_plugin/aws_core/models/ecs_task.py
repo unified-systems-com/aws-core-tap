@@ -38,6 +38,10 @@ class EcsTask(BaseModel):
         "started_at": {"type": ["string", "null"]},
         "platform_version": {"type": ["string", "null"]},
         "group": {"type": ["string", "null"]},
+        # Read only for a stopped task (req-aws-collector-ecs-15); null on a running one.
+        "stopped_at": {"type": ["string", "null"]},
+        "stopped_reason": {"type": ["string", "null"]},
+        "stop_code": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -54,6 +58,9 @@ class EcsTask(BaseModel):
         "started_at": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "platform_version": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "group": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "stopped_at": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "stopped_reason": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "stop_code": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -73,6 +80,10 @@ class EcsTask(BaseModel):
     platform_version = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
     # "service:<name>" for a service-launched task; "family:<name>" or "" otherwise.
     group = models.CharField(max_length=255, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    # Set only once ECS reports the task stopped; ISO 8601 UTC like started_at. stopped_reason is ECS's own text.
+    stopped_at = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not stopped/read"
+    stopped_reason = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not stopped/read"
+    stop_code = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not stopped/read"
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

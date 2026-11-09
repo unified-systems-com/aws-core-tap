@@ -17,11 +17,18 @@ A denied or failed sub-call never reads as an empty result (``-10``): the node i
 service or task is still yielded from the ARN the listing gave when its Describe call failed. A failure of
 ``ListClusters`` itself raises, so the entry is skipped with a warning rather than reported as a region with
 no clusters.
+
+Stopped tasks (``-15``, ``-16``). Each cluster is also listed with ``desiredStatus="STOPPED"``, which returns
+the tasks ECS still shows after they stopped (at least an hour, per the ``DescribeTasks`` reference). Only a
+stopped task the grid already holds is described and yielded: it records its ``lastStatus`` and stop fields,
+and asserts no ``RUNS_TASK`` / ``RUNS_CONTAINER`` edge, with those reads ``partial`` so nothing is claimed
+absent. A task that started and stopped between two runs is never created, because without a ``RUNS_TASK``
+edge it would be held by nothing and could never be reconciled.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 from weakref import WeakKeyDictionary
@@ -43,6 +50,24 @@ TASKS_PER_CALL = 100
 _SERVICE_GROUP_PREFIX = "service:"
 
 _ARN_KEYS = {"clusters": "clusterArn", "services": "serviceArn", "tasks": "taskArn"}
+
+TASK_TYPE = "aws_core__aws_ecs_task"
+CONTAINER_TYPE = "aws_core__aws_ecs_container"
+_NATURAL_KEY_FIELD = {TASK_TYPE: "task_arn", CONTAINER_TYPE: "container_arn"}
+
+#: ``held(entity_type, arn)``: whether the grid already holds a live node for that ARN.
+Held = Callable[[str, str], bool]
+
+
+def held_on_grid(entity_type: str, arn: str) -> bool:
+    """The production :data:`Held`: a live row for the ARN, by the type's natural key (never creates one)."""
+    from tap_grid.services import find_by_natural_key
+
+    return find_by_natural_key(entity_type, {_NATURAL_KEY_FIELD[entity_type]: arn}) is not None
+
+
+def _held_by_none(_entity_type: str, _arn: str) -> bool:
+    return False
 
 
 @dataclass
@@ -149,19 +174,33 @@ def _task_item(
     described: dict[str, Any] | None,
     gap: dict[str, Any] | None,
     services_by_name: dict[str, str],
+    *,
+    stopped: bool = False,
 ) -> dict[str, Any]:
     """One task item: the described task, or a minimal one from the listed ARN when Describe failed.
 
-    ``_service_arn`` is the ``RUNS_TASK`` source from a service. Its edge read is ``complete`` when the task
-    names no service, or names one found in the cluster's service listing; otherwise ``partial``, so a task
-    whose service could not be resolved never claims to have no service.
+    ``_cluster_arn_running`` and ``_service_arn`` are the two ``RUNS_TASK`` sources. The cluster one is the
+    task's own ``clusterArn``, read ``complete``. ``_service_arn``'s read is ``complete`` when the task names no
+    service, or names one found in the cluster's service listing; otherwise ``partial``, so a task whose service
+    could not be resolved never claims to have no service.
+
+    A ``stopped`` task (listed with ``desiredStatus="STOPPED"``) carries neither source and reads both
+    ``partial``: no cluster or service runs it now, and a ``complete`` read would claim its old ``RUNS_TASK``
+    edges absent, which would leave it held by nothing (``-16``).
     """
     item: dict[str, Any] = dict(described) if described is not None else {"taskArn": arn, "clusterArn": cluster_arn}
     item["_task_name"] = _last_segment(arn)
     started = item.get("startedAt")
     item["_started_at"] = jsonable(started) if started else None
+    stopped_at = item.get("stoppedAt")
+    item["_stopped_at"] = jsonable(stopped_at) if stopped_at else None
     if gap is not None:
         item["_hydrate"] = {"describe": gap}
+    if stopped:
+        item["_cluster_arn_running"] = None
+        item["_service_arn"] = None
+        return with_edge_reads(item, {"_cluster_arn_running": PARTIAL, "_service_arn": PARTIAL})
+    item["_cluster_arn_running"] = item.get("clusterArn") or cluster_arn
     group = item.get("group")
     service_arn: str | None = None
     read = COMPLETE
@@ -172,14 +211,19 @@ def _task_item(
         if service_arn is None:
             read = PARTIAL  # named by the task but absent from the service listing (deleted, or it failed)
     item["_service_arn"] = service_arn
-    return with_edge_reads(item, {"clusterArn": COMPLETE, "_service_arn": read})
+    return with_edge_reads(item, {"_cluster_arn_running": COMPLETE, "_service_arn": read})
 
 
-def _container_items(task: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
+def _container_items(
+    task: dict[str, Any], *, stopped: bool = False, held: Held = _held_by_none
+) -> tuple[list[dict[str, Any]], bool]:
     """``(container items, every container named itself)`` for one described task.
 
     The item is the container as ECS described it plus ``_task_arn`` (the ``RUNS_CONTAINER`` source). It
     does not carry the task's ``overrides``. An empty ``imageDigest`` is left out, so it projects to null.
+
+    For a ``stopped`` task, only the containers the grid already holds are yielded, with no ``_task_arn`` and
+    that read ``partial``: they record their stopped ``lastStatus`` and assert no ``RUNS_CONTAINER`` edge.
     """
     items: list[dict[str, Any]] = []
     named = True
@@ -187,22 +231,72 @@ def _container_items(task: dict[str, Any]) -> tuple[list[dict[str, Any]], bool]:
         if not container.get("containerArn"):
             named = False
             continue
+        if stopped and not held(CONTAINER_TYPE, container["containerArn"]):
+            continue
         item = dict(container)
         if not item.get("imageDigest"):
             item.pop("imageDigest", None)
+        if stopped:
+            item["_task_arn"] = None
+            items.append(with_edge_reads(item, {"_task_arn": PARTIAL}))
+            continue
         item["_task_arn"] = task["taskArn"]
         items.append(with_edge_reads(item, {"_task_arn": COMPLETE}))
     return items, named
 
 
-def walk_ecs(client: Any) -> EcsWalk:
-    """Read one region's clusters, services, tasks and containers (req-aws-collector-ecs-1, -2, -3).
+def _held_stopped(
+    arns: list[str], running: set[str], held: Held
+) -> tuple[list[str], dict[str, Any] | None]:
+    """The stopped ARNs the grid already holds, and a slot when the grid could not answer for all of them.
+
+    A grid read that fails yields no stopped task at all (the run records none, which is what it did before
+    stopped tasks were listed) and a slot saying why, never a guess. An ARN with more than one live row is a
+    grid defect (``AmbiguousIdentity``): that task is skipped, since an upsert on its key could not say which
+    row it means, and the slot names the defect so it surfaces as a gap rather than being worked around.
+    """
+    from tap_grid.natural_key import AmbiguousIdentity
+
+    kept: list[str] = []
+    gap: dict[str, Any] | None = None
+    for arn in arns:
+        if arn in running:
+            continue  # listed under both filters (it changed state between the calls): the running read wins
+        try:
+            if held(TASK_TYPE, arn):
+                kept.append(arn)
+        except AmbiguousIdentity:
+            gap = _slot("FindByNaturalKey", code="AmbiguousIdentity")
+        except Exception as exc:  # noqa: BLE001 — a failed grid read is recorded, and stopped tasks are skipped
+            return [], _slot("FindByNaturalKey", code=type(exc).__name__)
+    return kept, gap
+
+
+def _container_held(held: Held) -> Held:
+    """``held`` for containers, where a failed grid read must not stop the walk: any failure, an ambiguous
+    key included, reads as not held, so the container keeps whatever the grid last recorded."""
+
+    def check(entity_type: str, arn: str) -> bool:
+        try:
+            return held(entity_type, arn)
+        except Exception:  # noqa: BLE001 — see the docstring
+            return False
+
+    return check
+
+
+def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
+    """Read one region's clusters, services, tasks and containers (req-aws-collector-ecs-1, -2, -3, -15).
+
+    ``held`` says whether the grid already holds a node for an ARN; only stopped tasks and their containers
+    are filtered by it. The default holds nothing, so a walk without the grid yields no stopped task.
 
     Raises:
         BotoCoreError, ClientError, SourceError: ``ListClusters`` failed, was denied or stopped short; the
             caller records the entry as skipped, which is not the same as the region having no clusters.
     """
     walk = EcsWalk()
+    container_held = _container_held(held)
     try:
         cluster_arns = _list_all(client, "list_clusters", "clusterArns")
     except _IncompleteListing:
@@ -217,12 +311,16 @@ def walk_ecs(client: Any) -> EcsWalk:
         task_arns, tasks_slot = _listing(
             client, "list_tasks", "taskArns", cluster=cluster_arn, desiredStatus="RUNNING"
         )
+        stopped_listed, stopped_slot = _listing(
+            client, "list_tasks", "taskArns", cluster=cluster_arn, desiredStatus="STOPPED"
+        )
+        stopped_arns, held_gap = _held_stopped(stopped_listed, set(task_arns), held)
         services, service_gaps = _describe(
             client, "describe_services", "services", "services", service_arns, SERVICES_PER_CALL,
             cluster=cluster_arn, include=["TAGS"],
         )  # fmt: skip
         tasks, task_gaps = _describe(
-            client, "describe_tasks", "tasks", "tasks", task_arns, TASKS_PER_CALL,
+            client, "describe_tasks", "tasks", "tasks", task_arns + stopped_arns, TASKS_PER_CALL,
             cluster=cluster_arn, include=["TAGS"],
         )  # fmt: skip
 
@@ -233,6 +331,7 @@ def walk_ecs(client: Any) -> EcsWalk:
             **({"describe": cluster_gaps[cluster_arn]} if cluster_arn in cluster_gaps else {}),
             "services": services_slot,
             "tasks": tasks_slot,
+            "stopped_tasks": held_gap or stopped_slot,
         }
         walk.clusters.append(cluster_item)
 
@@ -246,13 +345,15 @@ def walk_ecs(client: Any) -> EcsWalk:
             walk.services.append(with_edge_reads(service, {"clusterArn": COMPLETE}))
 
         by_name = {_last_segment(arn): arn for arn in service_arns}
-        for arn in task_arns:
+        stopped_set = set(stopped_arns)
+        for arn in task_arns + stopped_arns:
             if arn not in tasks and arn not in task_gaps:
                 continue
-            task_item = _task_item(arn, cluster_arn, tasks.get(arn), task_gaps.get(arn), by_name)
+            stopped = arn in stopped_set
+            task_item = _task_item(arn, cluster_arn, tasks.get(arn), task_gaps.get(arn), by_name, stopped=stopped)
             walk.tasks.append(task_item)
             if arn in tasks:
-                containers, named = _container_items(tasks[arn])
+                containers, named = _container_items(tasks[arn], stopped=stopped, held=container_held)
                 walk.containers.extend(containers)
                 if not named:
                     task_item.setdefault("_hydrate", {})["containers"] = _slot(
@@ -282,7 +383,7 @@ def shared_walk(session: Any, client_for: Any) -> EcsWalk:
             raise cached
         return cached
     try:
-        walk = walk_ecs(client)
+        walk = walk_ecs(client, held=held_on_grid)
     except (BotoCoreError, ClientError, SourceError) as exc:
         if memo is not None:
             memo[region] = exc
