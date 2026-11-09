@@ -99,6 +99,7 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .endpoint_probe import EndpointProbe, request_host
+from .envelope import jsonable
 from .hydrate import hydrate_item
 from .identity import IdentityError
 from .landing_zone import LandingZoneRead, collect_landing_zone
@@ -184,12 +185,17 @@ _DOCS = (
 
 def enrich_item(block: dict[str, Any], item: Any, *, service: str, client_for: Any) -> dict[str, Any]:
     """The detail call of one listed resource (``req-aws-collector-enrich-1``): the slot that goes under
-    ``_hydrate.detail``, with the status of any hydrate slot. Parameters are read off the listed item."""
+    ``_hydrate.detail``, with the status of any hydrate slot. Parameters are read off the listed item.
+
+    The slot is attached to ``configuration`` after projection, which is where the rest of it is made
+    JSON-safe, so it is normalised here: a raw ``datetime`` in a detail response rejects the whole batch
+    (aws-core-tap#213).
+    """
     call_kwargs: dict[str, Any] = {}
     for name, spec in block["params"].items():
         call_kwargs[name] = spec["literal"] if "literal" in spec else eval_path(item, spec["from"])
     env = hydrate_item(client_for(service), {}, [{"key": "detail", "op": block["op"], "why": block["why"]}], call_kwargs=call_kwargs)
-    return env["_hydrate"]["detail"]
+    return jsonable(env["_hydrate"]["detail"])
 
 
 def resolve_node_tags(
