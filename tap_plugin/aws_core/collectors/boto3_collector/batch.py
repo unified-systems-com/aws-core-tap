@@ -260,7 +260,7 @@ def address_batch(node_envelopes: list[dict[str, Any]], edge_envelopes: list[dic
             )
             result.undeclared_edges += 1
         else:
-            entity["ref"] = edge_ref(edge_type, ends["from"], ends["to"])
+            entity["ref"] = edge_ref(edge_type, ends["from"], ends["to"], values)
         result.edges.append({**envelope, "entity": entity, "edge": payload})
     return result
 

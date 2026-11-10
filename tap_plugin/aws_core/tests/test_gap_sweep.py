@@ -186,30 +186,37 @@ class _Elbv2:
     def __init__(self, fail: bool = False) -> None:
         self.fail = fail
 
-    def can_paginate(self, _m: str) -> bool:
-        return False
-
-    def describe_target_groups(self, **_kw: Any) -> Any:
-        if self.fail:
-            raise ClientError({"Error": {"Code": "AccessDenied"}}, "DescribeTargetGroups")
-        return {"TargetGroups": [{"TargetGroupArn": "tg1"}]}
-
     def describe_target_health(self, **_kw: Any) -> Any:
-        targets = ["i-0abc", "10.0.0.5", "arn:aws-us-gov:lambda:us-gov-west-1:111122223333:function:f", "i-0abc"]
-        return {"TargetHealthDescriptions": [{"Target": {"Id": t}} for t in targets]}
+        if self.fail:
+            raise ClientError({"Error": {"Code": "AccessDenied"}}, "DescribeTargetHealth")
+        targets = [
+            {"Id": "i-0abc", "Port": 80},
+            {"Id": "10.0.0.5", "Port": 8080, "AvailabilityZone": "all"},
+            {"Id": "arn:aws-us-gov:lambda:us-gov-west-1:111122223333:function:f"},
+            {"Id": "i-0abc", "Port": 8443},
+            {"Id": "arn:aws-us-gov:elasticloadbalancing:us-gov-west-1:111122223333:loadbalancer/app/web/1", "Port": 443},
+        ]
+        return {"TargetHealthDescriptions": [{"Target": t, "TargetHealth": {"State": "healthy"}} for t in targets]}
 
 
-def test_a_load_balancer_routes_to_the_instances_and_functions_in_its_target_groups():
-    item = customfns._with_routed_targets({}, _Elbv2(), "lb-arn")
-    assert item["_target_instance_ids"] == ["i-0abc"]
-    assert item["_target_lambda_arns"] == ["arn:aws-us-gov:lambda:us-gov-west-1:111122223333:function:f"]
-    assert item["_edge_reads"]["_target_instance_ids"] == "complete"
+@pytest.mark.spec("req-aws-collector-lb-topology-2")
+def test_a_target_group_sorts_its_targets_by_kind_with_port_and_health():
+    item = customfns._with_targets({"TargetGroupArn": "tg1"}, _Elbv2())
+    assert [(t["id"], t["properties"]["port"]) for t in item["_instance_targets"]] == [("i-0abc", 80), ("i-0abc", 8443)]
+    assert [t["id"] for t in item["_alb_targets"]] == ["arn:aws-us-gov:elasticloadbalancing:us-gov-west-1:111122223333:loadbalancer/app/web/1"]
+    assert [t["id"] for t in item["_lambda_targets"]] == ["arn:aws-us-gov:lambda:us-gov-west-1:111122223333:function:f"]
+    assert "port" not in item["_lambda_targets"][0]["properties"]
+    assert item["_ip_targets"] == [{"id": "10.0.0.5", "properties": {"port": 8080, "availability_zone": "all", "health_state": "healthy", "health_reason": None, "health_description": None}}]
+    assert item["_instance_targets"][0]["properties"]["health_state"] == "healthy"
+    assert set(item["_edge_reads"].values()) == {"complete"}
 
 
+@pytest.mark.spec("req-aws-collector-lb-topology-2")
 def test_a_target_read_that_failed_is_not_an_absence():
-    item = customfns._with_routed_targets({}, _Elbv2(fail=True), "lb-arn")
-    assert item["_target_instance_ids"] == []
-    assert item["_edge_reads"]["_target_instance_ids"] == "failed"
+    item = customfns._with_targets({"TargetGroupArn": "tg1"}, _Elbv2(fail=True))
+    assert item["_instance_targets"] == []
+    assert item["_edge_reads"]["_instance_targets"] == "failed"
+    assert item["_edge_reads"]["_lambda_targets"] == "failed"
 
 
 def test_the_sibling_arn_transforms_build_the_target_keys_from_the_referring_arn():

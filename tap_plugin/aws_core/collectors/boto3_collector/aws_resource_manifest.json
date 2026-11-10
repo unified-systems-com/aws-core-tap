@@ -2421,6 +2421,15 @@
           "key_kind": "arn",
           "edge_type": "ROUTES_TRAFFIC__aws_core",
           "direction": "outbound"
+        },
+        {
+          "value_path": "_forwards[]",
+          "key_path": "target_group_arn",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_target_group",
+          "key_kind": "arn",
+          "edge_type": "FORWARDS_TO_TARGET_GROUP__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -2487,6 +2496,15 @@
           "key_kind": "arn",
           "edge_type": "ROUTES_TRAFFIC__aws_core",
           "direction": "outbound"
+        },
+        {
+          "value_path": "_forwards[]",
+          "key_path": "target_group_arn",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_target_group",
+          "key_kind": "arn",
+          "edge_type": "FORWARDS_TO_TARGET_GROUP__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -2534,6 +2552,33 @@
           "target_type": "aws_core__aws_vpc",
           "key_kind": "id",
           "edge_type": "RESIDES_IN_VPC__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_instance_targets[]",
+          "key_path": "id",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "ROUTES_TO_TARGET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_alb_targets[]",
+          "key_path": "id",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_alb",
+          "key_kind": "arn",
+          "edge_type": "ROUTES_TO_TARGET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_lambda_targets[]",
+          "key_path": "id",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_lambda",
+          "key_kind": "arn",
+          "edge_type": "INVOKES_LAMBDA__aws_core",
           "direction": "outbound"
         }
       ]

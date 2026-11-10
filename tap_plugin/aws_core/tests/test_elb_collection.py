@@ -6,8 +6,9 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from botocore.exceptions import ClientError
-from tap_plugin.aws_core.collectors.boto3_collector.authority import COMPLETE, EDGE_READS
+from tap_plugin.aws_core.collectors.boto3_collector.authority import COMPLETE, EDGE_READS, FAILED
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     elb_family_described,
     elbv2_albs_described,
@@ -45,7 +46,19 @@ class _Client:
         return self._answers.get("groups", {"TargetGroups": []})
 
     def describe_target_health(self, **kwargs: Any) -> Any:
-        return self._answers.get("health", {}).get(kwargs["TargetGroupArn"], {"TargetHealthDescriptions": []})
+        answer = self._answers.get("health", {}).get(kwargs["TargetGroupArn"], {"TargetHealthDescriptions": []})
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    def describe_listeners(self, **kwargs: Any) -> Any:
+        answer = self._answers.get("listeners", {}).get(kwargs["LoadBalancerArn"], {"Listeners": []})
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    def describe_rules(self, **kwargs: Any) -> Any:
+        return self._answers.get("rules", {}).get(kwargs["ListenerArn"], {"Rules": []})
 
     def describe_tags(self, **kwargs: Any) -> Any:
         (ids,) = kwargs.values()
@@ -87,7 +100,7 @@ class TestApplicationLoadBalancers:
         assert alb["LoadBalancerName"] == "web"
         assert (alb["_state"], alb["_subnet_ids"]) == ("active", ["subnet-a", "subnet-b"])
         assert (alb["_tags"], alb["_tags_unread"]) == ({"owner": "net"}, False)
-        assert alb[EDGE_READS] == {"_subnet_ids": COMPLETE, "_target_instance_ids": COMPLETE, "_target_lambda_arns": COMPLETE}
+        assert alb[EDGE_READS] == {"_subnet_ids": COMPLETE, "_forwards": COMPLETE, "_target_instance_ids": COMPLETE, "_target_lambda_arns": COMPLETE}
         assert v2.tag_batches == [[_arn("app", "web")]]
 
     def test_tags_are_read_twenty_arns_to_a_call(self) -> None:
@@ -175,3 +188,96 @@ class TestTargetGroups:
         client = _Client({"groups": {"TargetGroups": [{"TargetGroupArn": arn}]}}, deny={arn})
         [tg] = _run(elbv2_target_groups_described, elbv2=client)
         assert (tg["_tags"], tg["_tags_unread"]) == ({}, True)
+
+
+def _listener(lb: dict[str, Any], port: int, protocol: str, *, default_actions: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return {
+        "ListenerArn": f"{lb['LoadBalancerArn']}/listener-{port}",
+        "LoadBalancerArn": lb["LoadBalancerArn"],
+        "Port": port,
+        "Protocol": protocol,
+        "DefaultActions": default_actions or [],
+    }
+
+
+def _group(name: str) -> str:
+    return f"{REGION_ARN}:targetgroup/{name}/1"
+
+
+class TestForwards:
+    """Where a load balancer forwards: one route per listener rule and target group (req-aws-collector-lb-topology-1)."""
+
+    def _alb_with_rules(self) -> tuple[dict[str, Any], _Client]:
+        alb = _lb("app", "web")
+        listener = _listener(alb, 443, "HTTPS")
+        host = [{"Field": "host-header", "HostHeaderConfig": {"Values": ["api.example.com"]}}]
+        rules = [
+            {"RuleArn": "rule-api", "Priority": "10", "IsDefault": False, "Conditions": host, "Actions": [
+                {"Type": "forward", "ForwardConfig": {"TargetGroups": [
+                    {"TargetGroupArn": _group("api-blue"), "Weight": 90}, {"TargetGroupArn": _group("api-green"), "Weight": 10}]}}]},
+            {"RuleArn": "rule-old", "Priority": "20", "IsDefault": False, "Conditions": [], "Actions": [
+                {"Type": "redirect", "RedirectConfig": {"Host": "new.example.com"}}]},
+            {"RuleArn": "rule-default", "Priority": "default", "IsDefault": True, "Conditions": [], "Actions": [
+                {"Type": "forward", "TargetGroupArn": _group("web")}]},
+        ]
+        client = _Client({"lbs": {"LoadBalancers": [alb]}, "listeners": {alb["LoadBalancerArn"]: {"Listeners": [listener]}},
+                          "rules": {listener["ListenerArn"]: {"Rules": rules}}})
+        return alb, client
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-1")
+    def test_each_rule_forwards_with_its_conditions_and_weight(self) -> None:
+        _, client = self._alb_with_rules()
+        [alb] = _run(elbv2_albs_described, elbv2=client)
+        routes = {(f["target_group_arn"], f["properties"]["route_id"]): f["properties"] for f in alb["_forwards"]}
+        assert set(routes) == {(_group("api-blue"), "rule-api"), (_group("api-green"), "rule-api"), (_group("web"), "rule-default")}
+        blue = routes[(_group("api-blue"), "rule-api")]
+        assert (blue["weight"], blue["priority"], blue["is_default"], blue["listener_port"], blue["listener_protocol"]) == (90, "10", False, 443, "HTTPS")
+        assert blue["conditions"] == [{"Field": "host-header", "HostHeaderConfig": {"Values": ["api.example.com"]}}]
+        default = routes[(_group("web"), "rule-default")]
+        assert (default["weight"], default["is_default"], default["conditions"]) == (None, True, [])
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-1")
+    def test_a_redirect_forwards_nowhere(self) -> None:
+        _, client = self._alb_with_rules()
+        [alb] = _run(elbv2_albs_described, elbv2=client)
+        assert "rule-old" not in {f["properties"]["route_id"] for f in alb["_forwards"]}
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-1")
+    def test_a_network_load_balancer_routes_by_its_listener_default_action(self) -> None:
+        nlb = _lb("net", "tcp")
+        listener = _listener(nlb, 443, "TCP", default_actions=[{"Type": "forward", "TargetGroupArn": _group("front-alb")}])
+        client = _Client({"lbs": {"LoadBalancers": [nlb]}, "listeners": {nlb["LoadBalancerArn"]: {"Listeners": [listener]}}})
+        [item] = _run(elb_family_described, elbv2=client, elb=_Client({"lbs": {"LoadBalancerDescriptions": []}}))
+        [forward] = item["_forwards"]
+        assert forward["target_group_arn"] == _group("front-alb")
+        assert (forward["properties"]["route_id"], forward["properties"]["rule_arn"], forward["properties"]["is_default"]) == (listener["ListenerArn"], None, True)
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-1")
+    def test_a_listener_read_that_failed_is_not_an_absence(self) -> None:
+        alb = _lb("app", "web")
+        client = _Client({"lbs": {"LoadBalancers": [alb]}, "listeners": {alb["LoadBalancerArn"]: _denied("DescribeListeners")}})
+        [item] = _run(elbv2_albs_described, elbv2=client)
+        assert (item["_forwards"], item[EDGE_READS]["_forwards"]) == ([], FAILED)
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_a_failed_listener_read_never_claims_the_replaced_routes(self) -> None:
+        """The old direct edges are only proposed for removal when the routes replacing them were read: a failed
+        read leaves them failed, so an armed reconcile keeps the old edges (PR 221 review)."""
+        alb = _lb("app", "web")
+        client = _Client({"lbs": {"LoadBalancers": [alb]}, "listeners": {alb["LoadBalancerArn"]: _denied("DescribeListeners")}})
+        [item] = _run(elbv2_albs_described, elbv2=client)
+        assert (item[EDGE_READS]["_target_instance_ids"], item[EDGE_READS]["_target_lambda_arns"]) == (FAILED, FAILED)
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_the_replaced_direct_routes_read_complete_and_empty(self) -> None:
+        _, client = self._alb_with_rules()
+        [alb] = _run(elbv2_albs_described, elbv2=client)
+        assert (alb["_target_instance_ids"], alb["_target_lambda_arns"]) == ([], [])
+        assert (alb[EDGE_READS]["_target_instance_ids"], alb[EDGE_READS]["_target_lambda_arns"]) == (COMPLETE, COMPLETE)
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_a_classic_load_balancer_keeps_its_direct_routes_to_its_instances(self) -> None:
+        classic = _Client({"lbs": {"LoadBalancerDescriptions": [{"LoadBalancerName": "legacy", "DNSName": "legacy.elb.amazonaws.com",
+                                                                 "Subnets": [], "Instances": [{"InstanceId": "i-2"}, {"InstanceId": "i-1"}]}]}})
+        [item] = _run(elb_family_described, elbv2=_v2(), elb=classic)
+        assert (item["_target_instance_ids"], item[EDGE_READS]["_target_instance_ids"], item["_forwards"]) == (["i-1", "i-2"], COMPLETE, [])
