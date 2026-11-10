@@ -1,0 +1,29 @@
+{
+ "description": "Staging trial of customer-side VPC flow-log aggregation (aws-core-tap#218), seed wave 5 (tools/seed/wave5-flowlogs) in the GovCloud staging account, us-gov-west-1, under the seeder identity; the collector took no part. Counts, codes and booleans only; hosts are named by role (client, server), no account number, resource id or message.",
+ "date": "2026-11-10",
+ "wave": "wave5-flowlogs",
+ "time_box": "applied 02:39:38Z, destroyed 03:10:05Z (31 minutes of a 2-hour box)",
+ "verdict": "pass: flow logs, Glue partition projection, the summarising query with each filter, and the scheduled path all worked; two design defects found (below)",
+ "checks": {
+  "plan creates only this run's resources": "22 to create, 0 to change or destroy",
+  "flow logs arrive as hourly Parquet under the projected layout": "first object 5 minutes after apply, at .../aws-region=us-gov-west-1/year=2026/month=11/day=10/hour=02/",
+  "unfiltered summary": "SUCCEEDED, 2,217 bytes scanned, 160 s; 10 rows; client and server addresses and the server ports 8080, 9090, 9443 all right; 9443 REJECT on the server's interface, as the security group intends",
+  "host filter (server interface)": "SUCCEEDED; 5 rows, every one on the server's interface",
+  "port filter (8080, 9443)": "SUCCEEDED; 6 rows, only those ports, ACCEPT and REJECT both present",
+  "fixed window (3 minutes)": "SUCCEEDED, 326 bytes scanned; rows only for records starting inside the window",
+  "scheduled path (EventBridge Scheduler calling Athena as its own role)": "a scheduled run SUCCEEDED and wrote its summary, so the role's Athena, Glue and S3 permissions hold",
+  "output format": "INSERT INTO the JSON table wrote gzipped JSON lines (.gz), readable without a Parquet library",
+  "destroy and leftovers": "22 destroyed; VPC, flow log, buckets, workgroup, Glue database, role and schedule gone; the tagging API still listed 8 deleted entries (2 terminated instances, 2 volumes, 3 security-group rules, the flow log), each confirmed gone or terminated by a direct describe"
+ },
+ "findings": [
+  "Each conversation appears 4 times (2 interfaces x 2 directions): a reader must merge them on (client, server, port, protocol).",
+  "syn_seen (any SYN bit in the record) was true on every row, so it cannot name the initiator; prior art (the AWS flow-log record examples) says a record whose flags have SYN without ACK (2 or 3, not 18 or 19) is the initiator's direction. The query used the lower-port rule, which was right here.",
+  "A one-minute schedule with ~160 s queries overlapped: 1 of the scheduled runs failed with HIVE_S3_THROTTLING and later ones queued; AWS warns overlapping INSERT INTO runs can duplicate partitions. Runs must be serialised and idempotent, and the window must lag the clock for late delivery (about 10 minutes)."
+ ],
+ "not_checked": [
+  "the collector side (reading summaries onto the grid): not built yet",
+  "volume beyond two instances; cost was not measured, only estimated in cost.md",
+  "flow-log fields newer than the trial's format (pkt-src/dst-aws-service, next-hop-interface-id)"
+ ],
+ "method": "Each query was rendered from the live configuration with terraform console and the filter variables, run with aws athena start-query-execution in the wave's workgroup, and its output read back from S3. Output was scrubbed of 12-digit numbers and ARNs before it was read."
+}
