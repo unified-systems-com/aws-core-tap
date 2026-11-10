@@ -206,3 +206,9 @@ variable "schedule_state" {
     error_message = "schedule_state must be ENABLED or DISABLED."
   }
 }
+
+variable "edge_path" {
+  description = "Add the edge path (path.tf): an internet gateway, an internet-facing Application Load Balancer in front of the server with a /b/* rule, a visitor instance that calls it over the internet, and a DynamoDB table the server writes to through a gateway endpoint. About $0.05 an hour more."
+  type        = bool
+  default     = false
+}

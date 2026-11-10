@@ -1,7 +1,8 @@
 # Wave 5, flow logs (aws-core-tap#218): a private VPC where one instance calls another on known ports, so that flow logs,
 # the summarising query and its filters have traffic to show. The client calls the server on 8080 and 9090 (allowed) and
 # 9443 (not allowed by the security group, so those records are REJECT). Nothing is reachable from outside: no internet
-# gateway, no NAT, no route out. The hourly charges are the two instances; `cost.md` prices the rest.
+# gateway, no NAT, no route out. The hourly charges are the two instances; `cost.md` prices the rest. `edge_path`
+# adds an internet gateway, a load balancer and a DynamoDB gateway endpoint (path.tf).
 
 data "aws_availability_zones" "available" {
   state = "available"
@@ -46,18 +47,36 @@ resource "aws_vpc_security_group_egress_rule" "inside" {
   ip_protocol       = "-1"
 }
 
+locals {
+  # Two plain heredocs, joined: a template directive inside a heredoc defeats its indent stripping, which leaves the
+  # shebang indented and cloud-init refusing the script (seen in the 2026-11-10 edge-path trial).
+  server_script      = <<-EOT
+    #!/bin/bash
+    mkdir -p /srv/a /srv/b/b
+    cd /srv/a && nohup python3 -m http.server 8080 >/dev/null 2>&1 &
+    cd /srv/b && nohup python3 -m http.server 9090 >/dev/null 2>&1 &
+  EOT
+  server_ping_script = <<-EOT
+    cat > /usr/local/bin/seed-ping <<'LOOP'
+    #!/bin/bash
+    while true; do
+      aws dynamodb put-item --region ${data.aws_region.current.region} --table-name ${local.prefix}-pings --item '{"id":{"S":"ping"}}' >/dev/null 2>&1
+      sleep 20
+    done
+    LOOP
+    chmod +x /usr/local/bin/seed-ping
+    nohup /usr/local/bin/seed-ping >/dev/null 2>&1 &
+  EOT
+}
+
 resource "aws_instance" "server" {
   ami                         = data.aws_ssm_parameter.al2023.value
   instance_type               = "t3.nano"
   subnet_id                   = aws_subnet.a.id
   vpc_security_group_ids      = [aws_security_group.traffic.id]
   associate_public_ip_address = false
-  user_data                   = <<-EOT
-    #!/bin/bash
-    mkdir -p /srv/a /srv/b
-    cd /srv/a && nohup python3 -m http.server 8080 >/dev/null 2>&1 &
-    cd /srv/b && nohup python3 -m http.server 9090 >/dev/null 2>&1 &
-  EOT
+  iam_instance_profile        = var.edge_path ? aws_iam_instance_profile.server[0].name : null
+  user_data                   = "${local.server_script}${var.edge_path ? local.server_ping_script : ""}"
 
   metadata_options {
     http_tokens = "required"

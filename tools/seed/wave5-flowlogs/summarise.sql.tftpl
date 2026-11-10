@@ -5,6 +5,9 @@ WITH rec AS (
     interface_id, instance_id, flow_direction, action, srcaddr, dstaddr, srcport, dstport, protocol, packets, bytes,
     "start", "end", nullif(pkt_src_aws_service, '-') AS src_service, nullif(pkt_dst_aws_service, '-') AS dst_service,
     nullif(next_hop_interface_id, '-') AS next_hop,
+    -- The path an egress record took (traffic-path: 7 a gateway endpoint, 8 an internet gateway, and so on), as one
+    -- bit, so the paths of a conversation can be or-ed together on the way up.
+    IF(traffic_path IS NULL, BIGINT '0', bitwise_left_shift(BIGINT '1', traffic_path)) AS path_bit,
     -- The connection's two ends in a fixed order (a before b), so both directions of it share one key.
     (srcaddr < dstaddr OR (srcaddr = dstaddr AND srcport <= dstport)) AS src_is_a,
     -- Who opened it, where the handshake fell inside this record: tcp-flags cannot log a bare ACK, so SYN without ACK
@@ -57,6 +60,7 @@ per_interface AS (
     arbitrary(IF(src_is_a, src_service, dst_service)) AS a_service,
     arbitrary(IF(src_is_a, dst_service, src_service)) AS b_service,
     arbitrary(next_hop) AS next_hop,
+    bitwise_or_agg(path_bit) AS path_bits,
     min("start") AS first_seen, max("end") AS last_seen
   FROM rec
   GROUP BY 1, 2, 3, 4, 5, 6
@@ -73,6 +77,7 @@ connection AS (
     arbitrary(IF(holds_a, interface_id)) AS a_interface, arbitrary(IF(holds_a, instance_id)) AS a_instance,
     arbitrary(IF(holds_b, interface_id)) AS b_interface, arbitrary(IF(holds_b, instance_id)) AS b_instance,
     arbitrary(a_service) AS a_service, arbitrary(b_service) AS b_service, arbitrary(next_hop) AS next_hop,
+    bitwise_or_agg(path_bits) AS path_bits,
     min(first_seen) AS first_seen, max(last_seen) AS last_seen
   FROM per_interface
   GROUP BY 1, 2, 3, 4, 5
@@ -116,6 +121,7 @@ conversation AS (
     arbitrary(IF(a_is_client, b_instance, a_instance)) AS server_instance_id,
     arbitrary(IF(a_is_client, b_service, a_service)) AS server_aws_service,
     array_agg(DISTINCT next_hop) FILTER (WHERE next_hop IS NOT NULL) AS next_hop_interface_ids,
+    bitwise_or_agg(path_bits) AS traffic_path_bits,
     min(first_seen) AS first_seen,
     max(last_seen) AS last_seen
   FROM decided
@@ -124,6 +130,9 @@ conversation AS (
 SELECT
   *,
   CASE WHEN rejected_records = 0 THEN 'ACCEPT' WHEN rejected_records = records THEN 'REJECT' ELSE 'MIXED' END AS action,
+  -- The traffic-path values any of the conversation's records carried; empty when none did (traffic inside a subnet
+  -- carries 1, ingress records carry none).
+  filter(sequence(1, 8), p -> bitwise_and(traffic_path_bits, bitwise_left_shift(BIGINT '1', CAST(p AS integer))) <> 0) AS traffic_paths,
   date_format((${window_start_sql}) AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%i:%sZ') AS window_start,
   date_format((${window_end_sql}) AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%i:%sZ') AS window_end
 FROM conversation
