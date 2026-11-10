@@ -37,3 +37,14 @@ output "hosts" {
     }
   }
 }
+
+output "edge_path" {
+  description = "The edge path's load balancer and table, when edge_path is on."
+  value = var.edge_path ? {
+    alb_dns_name   = aws_lb.path[0].dns_name
+    table_name     = aws_dynamodb_table.path[0].name
+    visitor        = { instance_id = aws_instance.visitor[0].id, interface_id = aws_instance.visitor[0].primary_network_interface_id, private_address = aws_instance.visitor[0].private_ip }
+    endpoint_id    = aws_vpc_endpoint.dynamodb[0].id
+    internet_gw_id = aws_internet_gateway.path[0].id
+  } : null
+}

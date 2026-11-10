@@ -1,0 +1,32 @@
+{
+ "description": "Staging trial of the wave 5 edge path (aws-core-tap#218, Q14): traffic through an internet gateway, an internet-facing Application Load Balancer and a DynamoDB gateway endpoint, summarised by the flow-log query, in the GovCloud staging account, us-gov-west-1, under the seeder identity; the collector took no part. Counts, codes, ports and booleans only; hosts are named by role (visitor, load balancer node, server, client), no account number, resource id, address or message.",
+ "date": "2026-11-10",
+ "wave": "wave5-flowlogs (edge_path = true)",
+ "time_box": "applied 17:09:31Z, destroyed 17:47:34Z (38 minutes of a 2-hour box)",
+ "verdict": "pass after two module fixes found by the trial (below): every hop of internet -> load balancer -> server -> DynamoDB appears as its own conversation with the client decided by flags, and traffic_paths names the internet gateway (8) and the gateway endpoint (7)",
+ "checks": {
+  "plan creates only this run's resources": "48 to create, 0 to change or destroy",
+  "visitor -> load balancer, seen on the visitor's interface": "ACCEPT, port 80, 29 connections over two load balancer public addresses, every one decided by flags, traffic_paths [8] (internet gateway), server_aws_service EC2",
+  "visitor -> load balancer, seen on the load balancer's node interfaces": "ACCEPT, port 80, 26 connections from the visitor's public address to the two nodes' private addresses, traffic_paths [8]: the same traffic after the internet gateway's address translation",
+  "load balancer -> server": "ACCEPT on 8080 (36 connections) and 9090 (36) from both nodes, decided by flags, traffic_paths [1]; the /b/* rule's target group on 9090",
+  "server -> DynamoDB": "ACCEPT, port 443, 13 connections to two DynamoDB addresses, server_aws_service DYNAMODB, traffic_paths [7] (gateway endpoint); the item the server wrote was read back from the table",
+  "client -> server, the base trial's traffic": "8080 and 9090 ACCEPT, 9443 MIXED (refused at the server), as in the earlier trials",
+  "the internet's own traffic": "193 conversations opened from outside the VPC in 54 minutes; 191 refused by the security groups (scanners probing the load balancer nodes and the visitor); the 2 accepted are the visitor's own, above",
+  "newer fields": "pkt-dst-aws-service populated (EC2, DYNAMODB, S3, AMAZON) in GovCloud",
+  "destroy and leftovers": "48 destroyed; no role, instance profile, buckets, table, load balancer or VPC left; the tagging API still listed 21 deleted entries (5 terminated instances, 5 volumes, 7 security-group rules, 2 subnets, the endpoint, the flow log), each confirmed gone or terminated by a direct describe"
+ },
+ "findings": [
+  "A template directive inside a <<-EOT heredoc defeated its indent stripping: the server's user data kept a four-space indent, its shebang was not at column 0, and cloud-init refused it ('Failed to run module scripts-user'), so neither the web servers nor the DynamoDB loop started. Fixed by joining two plain heredocs; the server and client were replaced (cloud-init runs user data on first boot only) and the next queries showed every hop.",
+  "Athena's bitwise_left_shift takes an integer shift: sequence() yields bigint, so the traffic_paths decode failed with FUNCTION_NOT_FOUND until the shift was cast. Fixed.",
+  "The traffic-path values recalled from the flow-log record page are confirmed on real records: 1 inside the VPC, 7 through a gateway endpoint, 8 through an internet gateway.",
+  "One connection through an internet gateway is seen twice, under different addresses: from the inside interface as private address -> public address, and from the far side as public address -> private address. Joining the two needs the interface's public address association (time-ranged), which is the collector's job.",
+  "The load balancer's node addresses are the clients of the backend connection; mapping them to the load balancer needs the node interfaces' descriptions (ELB app/<name>/<id>), also the collector's job.",
+  "An internet-facing load balancer attracts scanning within minutes: refused conversations from outside dominate the summary (191 of 211). A collector reading summaries should treat refused inbound conversations from the internet separately from accepted ones."
+ ],
+ "not_checked": [
+  "the collector side (reading summaries onto the grid, the consolidated internet node per VPC George ruled for Q14b)",
+  "a NAT gateway path, an interface endpoint, Transit Gateway",
+  "the scheduled path with edge_path on (it was tested in the re-trial and is unchanged)"
+ ],
+ "method": "As the earlier trials: the query rendered from the live configuration by terraform console, run in the wave's workgroup over fixed windows, its output read back from S3; a raw per-interface query to explain the first run's missing hops. Output was scrubbed of 12-digit numbers before it was read. The expected account came from the collector identity's STS answer (stated deviation)."
+}
