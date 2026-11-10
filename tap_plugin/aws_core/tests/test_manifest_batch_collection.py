@@ -587,11 +587,11 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'to-vendor', 'state': 'running', 'output_format': 'json'},
     ),
     "aws_core__aws_logs_metric_filter": (
-        {'filterName': 'root-usage', 'logGroupName': '/aws/cloudtrail', 'filterPattern': '{ $.userIdentity.type = "Root" }', 'metricTransformations': [{'metricName': 'RootUsage', 'metricNamespace': 'CISBenchmark', 'metricValue': '1'}], '_key': '/aws/cloudtrail:root-usage', '_log_group_arn': 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/cloudtrail', '_metric_name': 'RootUsage', '_metric_namespace': 'CISBenchmark'},
+        {'filterName': 'root-usage', 'logGroupName': '/aws/cloudtrail', 'filterPattern': '{ $.userIdentity.type = "Root" }', 'metricTransformations': [{'metricName': 'RootUsage', 'metricNamespace': 'CISBenchmark', 'metricValue': '1'}], '_key': 'aws:123456789012:us-east-1:/aws/cloudtrail:root-usage', '_log_group_arn': 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/cloudtrail', '_metric_name': 'RootUsage', '_metric_namespace': 'CISBenchmark'},
         {'name': 'root-usage', 'log_group_name': '/aws/cloudtrail', 'metric_name': 'RootUsage', 'metric_namespace': 'CISBenchmark'},
     ),
     "aws_core__aws_logs_subscription_filter": (
-        {'filterName': 'to-siem', 'logGroupName': '/aws/app', 'destinationArn': 'arn:aws:logs:us-east-1:999988887777:destination:siem', 'roleArn': 'arn:aws:iam::123456789012:role/cwl', 'distribution': 'ByLogStream', '_key': '/aws/app:to-siem', '_log_group_arn': 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/app'},
+        {'filterName': 'to-siem', 'logGroupName': '/aws/app', 'destinationArn': 'arn:aws:logs:us-east-1:999988887777:destination:siem', 'roleArn': 'arn:aws:iam::123456789012:role/cwl', 'distribution': 'ByLogStream', '_key': 'aws:123456789012:us-east-1:/aws/app:to-siem', '_log_group_arn': 'arn:aws:logs:us-east-1:123456789012:log-group:/aws/app'},
         {'name': 'to-siem', 'log_group_name': '/aws/app', 'destination_arn': 'arn:aws:logs:us-east-1:999988887777:destination:siem', 'distribution': 'ByLogStream'},
     ),
     "aws_core__aws_logs_destination": (
@@ -2187,8 +2187,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'glue_blueprint_arn': 'arn:aws:glue:us-east-1:123456789012:blueprint/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_glue_security_configuration": (
-        {'Name': 'gen-1'},
-        {'glue_security_configuration_name': 'gen-1', 'name': 'gen-1'},
+        {'Name': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1'},
+        {'glue_security_configuration_name': 'aws:123456789012:us-east-1:gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_athena_work_group": (
         {'Name': 'gen-1', '_arn': 'arn:aws:athena:us-east-1:123456789012:workgroup/gen-1'},
@@ -2219,12 +2219,12 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'lex_bot_version_key': 'BOT1234567:4', 'name': 'gen-1'},
     ),
     "aws_core__aws_backup_restore_testing_selection": (
-        {'RestoreTestingPlanName': 'plan-1', 'RestoreTestingSelectionName': 'gen-1', '_key': 'plan-1/gen-1'},
-        {'backup_restore_testing_selection_key': 'plan-1/gen-1', 'name': 'gen-1'},
+        {'RestoreTestingPlanName': 'plan-1', 'RestoreTestingSelectionName': 'gen-1', '_key': 'aws:123456789012:us-east-1:plan-1/gen-1'},
+        {'backup_restore_testing_selection_key': 'aws:123456789012:us-east-1:plan-1/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_ec2_network_performance_metric_subscription": (
-        {'Source': 'us-east-1', 'Destination': 'eu-west-1', 'Metric': 'aggregate-latency', 'Statistic': 'p50', '_key': 'us-east-1/eu-west-1/aggregate-latency/p50'},
-        {'ec2_network_performance_metric_subscription_key': 'us-east-1/eu-west-1/aggregate-latency/p50'},
+        {'Source': 'us-east-1', 'Destination': 'eu-west-1', 'Metric': 'aggregate-latency', 'Statistic': 'p50', '_key': 'aws:123456789012:us-east-1:us-east-1/eu-west-1/aggregate-latency/p50'},
+        {'ec2_network_performance_metric_subscription_key': 'aws:123456789012:us-east-1:us-east-1/eu-west-1/aggregate-latency/p50'},
     ),
     "aws_core__aws_fms_resource_set": (
         {'Id': 'rs-1', 'Name': 'gen-1', '_arn': 'arn:aws:fms:us-east-1:123456789012:resource-set/rs-1'},
@@ -2259,12 +2259,12 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'kendraranking_execution_plan_arn': 'arn:aws:kendra-ranking:us-east-1:123456789012:rescore-execution-plan/ep-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_lakeformation_data_cells_filter": (
-        {'TableCatalogId': '123456789012', 'DatabaseName': 'db', 'TableName': 'tbl', 'Name': 'gen-1', '_key': '123456789012/db/tbl/gen-1'},
-        {'lakeformation_data_cells_filter_key': '123456789012/db/tbl/gen-1', 'name': 'gen-1'},
+        {'TableCatalogId': '123456789012', 'DatabaseName': 'db', 'TableName': 'tbl', 'Name': 'gen-1', '_key': 'aws:123456789012:us-east-1:123456789012/db/tbl/gen-1'},
+        {'lakeformation_data_cells_filter_key': 'aws:123456789012:us-east-1:123456789012/db/tbl/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_lakeformation_tag": (
-        {'TagKey': 'gen-1'},
-        {'lakeformation_tag_key': 'gen-1', 'name': 'gen-1'},
+        {'TagKey': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1'},
+        {'lakeformation_tag_key': 'aws:123456789012:us-east-1:gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_s3outposts_bucket": (
         {'Bucket': 'gen-1', 'BucketArn': 'arn:aws:s3-outposts:us-east-1:123456789012:outpost/op-1/bucket/gen-1', 'OutpostId': 'op-1', '_account': '123456789012'},
@@ -2315,8 +2315,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'athena_named_query_id': 'nq-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_cassandra_type": (
-        {'keyspaceName': 'ks1', 'typeName': 'gen-1', '_key': '123456789012/us-east-1/ks1/gen-1'},
-        {'cassandra_type_key': '123456789012/us-east-1/ks1/gen-1', 'name': 'gen-1'},
+        {'keyspaceName': 'ks1', 'typeName': 'gen-1', '_key': 'aws:123456789012:us-east-1:ks1/gen-1'},
+        {'cassandra_type_key': 'aws:123456789012:us-east-1:ks1/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_cloudformation_guard_hook": (
         {'TypeArn': 'arn:aws:cloudformation:us-east-1:123456789012:type/hook/Acme-Hooks-Guard', 'TypeName': 'Acme::Hooks::Guard', 'OriginalTypeName': 'AWS::Hooks::GuardHook'},
@@ -3449,11 +3449,11 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_appstream_directory_config": (
-        {'DirectoryName': 'corp.example.com', '_key': '123456789012/us-east-1/corp.example.com'},
-        {'name': 'corp.example.com', 'appstream_directory_config_key': '123456789012/us-east-1/corp.example.com'},
+        {'DirectoryName': 'corp.example.com', '_key': 'aws:123456789012:us-east-1:corp.example.com'},
+        {'name': 'corp.example.com', 'appstream_directory_config_key': 'aws:123456789012:us-east-1:corp.example.com'},
     ),
     "aws_core__aws_appstream_entitlement": (
-        {'Name': 'ent-1', 'StackName': 'stack-1', '_key': '123456789012/us-east-1/stack-1/ent-1'},
+        {'Name': 'ent-1', 'StackName': 'stack-1', '_key': 'aws:123456789012:us-east-1:stack-1/ent-1'},
         {'name': 'ent-1'},
     ),
     "aws_core__aws_applicationautoscaling_scalable_target": (
@@ -3465,7 +3465,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'p1'},
     ),
     "aws_core__aws_autoscaling_lifecycle_hook": (
-        {'LifecycleHookName': 'h1', 'AutoScalingGroupName': 'asg-1', '_key': '123456789012/us-east-1/asg-1/h1'},
+        {'LifecycleHookName': 'h1', 'AutoScalingGroupName': 'asg-1', '_key': 'aws:123456789012:us-east-1:asg-1/h1'},
         {'name': 'h1'},
     ),
     "aws_core__aws_emr_cluster": (
@@ -3473,7 +3473,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'etl'},
     ),
     "aws_core__aws_emr_security_configuration": (
-        {'Name': 'sc-1', '_key': '123456789012/us-east-1/sc-1'},
+        {'Name': 'sc-1', '_key': 'aws:123456789012:us-east-1:sc-1'},
         {'name': 'sc-1'},
     ),
     "aws_core__aws_emr_studio": (
@@ -3481,7 +3481,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'studio'},
     ),
     "aws_core__aws_ecr_repository_creation_template": (
-        {'prefix': 'ROOT', '_key': '123456789012/us-east-1/ROOT'},
+        {'prefix': 'ROOT', '_key': 'aws:123456789012:us-east-1:ROOT'},
         {'name': 'ROOT'},
     ),
     "aws_core__aws_ecs_task_definition": (
@@ -3489,11 +3489,11 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'web'},
     ),
     "aws_core__aws_eks_certificate_authority": (
-        {'id': 'ca-1', 'signingStatus': 'ACTIVE', '_parent': 'prod', '_key': '123456789012/us-east-1/prod/ca-1'},
+        {'id': 'ca-1', 'signingStatus': 'ACTIVE', '_parent': 'prod', '_key': 'aws:123456789012:us-east-1:prod/ca-1'},
         {'name': 'ca-1'},
     ),
     "aws_core__aws_fsx_s3_access_point_attachment": (
-        {'Name': 'ap-1', 'Type': 'OPENZFS', '_key': '123456789012/us-east-1/ap-1'},
+        {'Name': 'ap-1', 'Type': 'OPENZFS', '_key': 'aws:123456789012:us-east-1:ap-1'},
         {'name': 'ap-1'},
     ),
     "aws_core__aws_iot_custom_metric": (
@@ -3545,7 +3545,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'r1'},
     ),
     "aws_core__aws_logs_integration": (
-        {'integrationName': 'os-1', 'integrationType': 'OPENSEARCH', '_key': '123456789012/us-east-1/os-1'},
+        {'integrationName': 'os-1', 'integrationType': 'OPENSEARCH', '_key': 'aws:123456789012:us-east-1:os-1'},
         {'name': 'os-1'},
     ),
     "aws_core__aws_opensearch_data_source": (
@@ -3553,19 +3553,19 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'ds1'},
     ),
     "aws_core__aws_opensearchserverless_access_policy": (
-        {'type': 'data', 'name': 'p1', 'policyVersion': 'v1', '_key': '123456789012/us-east-1/data/p1'},
+        {'type': 'data', 'name': 'p1', 'policyVersion': 'v1', '_key': 'aws:123456789012:us-east-1:data/p1'},
         {'name': 'p1'},
     ),
     "aws_core__aws_opensearchserverless_lifecycle_policy": (
-        {'type': 'retention', 'name': 'p1', 'policyVersion': 'v1', '_key': '123456789012/us-east-1/retention/p1'},
+        {'type': 'retention', 'name': 'p1', 'policyVersion': 'v1', '_key': 'aws:123456789012:us-east-1:retention/p1'},
         {'name': 'p1'},
     ),
     "aws_core__aws_opensearchserverless_security_policy": (
-        {'type': 'encryption', 'name': 'p1', 'policyVersion': 'v1', '_key': '123456789012/us-east-1/encryption/p1'},
+        {'type': 'encryption', 'name': 'p1', 'policyVersion': 'v1', '_key': 'aws:123456789012:us-east-1:encryption/p1'},
         {'name': 'p1'},
     ),
     "aws_core__aws_opensearchserverless_security_config": (
-        {'id': 'saml/123456789012/idp1', 'type': 'saml', 'configVersion': 'v1', '_key': '123456789012/us-east-1/saml/123456789012/idp1'},
+        {'id': 'saml/123456789012/idp1', 'type': 'saml', 'configVersion': 'v1', '_key': 'aws:123456789012:us-east-1:saml/123456789012/idp1'},
         {'name': 'saml/123456789012/idp1'},
     ),
     "aws_core__aws_pinpointemail_configuration_set": (
@@ -3581,11 +3581,11 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'v1'},
     ),
     "aws_core__aws_ses_receipt_filter": (
-        {'Name': 'f1', 'IpFilter': {'Policy': 'Block', 'Cidr': '198.51.100.0/24'}, '_key': '123456789012/us-east-1/f1'},
+        {'Name': 'f1', 'IpFilter': {'Policy': 'Block', 'Cidr': '198.51.100.0/24'}, '_key': 'aws:123456789012:us-east-1:f1'},
         {'name': 'f1'},
     ),
     "aws_core__aws_ses_receipt_rule_set": (
-        {'Name': 'rs1', '_key': '123456789012/us-east-1/rs1'},
+        {'Name': 'rs1', '_key': 'aws:123456789012:us-east-1:rs1'},
         {'name': 'rs1'},
     ),
     "aws_core__aws_textract_adapter": (
@@ -3645,11 +3645,11 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_dax_parameter_group": (
-        {'ParameterGroupName': 'gen-1'},
+        {'ParameterGroupName': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_dax_subnet_group": (
-        {'SubnetGroupName': 'gen-1'},
+        {'SubnetGroupName': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_guardduty_malware_protection_plan": (
@@ -3705,15 +3705,15 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_redshift_cluster_security_group": (
-        {'ClusterSecurityGroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'ClusterSecurityGroupName': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_redshift_endpoint_access": (
-        {'EndpointName': 'gen-1'},
+        {'EndpointName': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_redshift_scheduled_action": (
-        {'ScheduledActionName': 'gen-1'},
+        {'ScheduledActionName': 'gen-1', '_key': 'aws:123456789012:us-east-1:gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_resiliencehubv2_service_function": (
@@ -3749,7 +3749,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_autoscalingplans_scaling_plan": (
-        {'_id': 'gen-1', 'ScalingPlanName': 'gen-1'},
+        {'_id': 'aws:123456789012:us-east-1:gen-1|1', 'ScalingPlanName': 'gen-1'},
         {'name': 'gen-1'},
     ),
 }

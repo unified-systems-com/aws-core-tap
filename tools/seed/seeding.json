@@ -1837,10 +1837,58 @@
         "redshift_scheduled_action_id"
       ],
       "module": "wave3-redshift",
-      "natural_key": "name",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
       "tf_attrs": {
         "name": "name",
-        "redshift_scheduled_action_id": "name"
+        "redshift_scheduled_action_id": {
+          "concat": [
+            {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        }
       },
       "tags": "none",
       "edges": [],
@@ -2507,6 +2555,24 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
             "path": "log_group_name"
           },
           {
@@ -2521,6 +2587,24 @@
         "name": "name",
         "filter_key": {
           "concat": [
+            {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
             {
               "path": "log_group_name"
             },
@@ -4414,6 +4498,24 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
             "path": "log_group_name"
           },
           {
@@ -4428,6 +4530,24 @@
         "name": "name",
         "filter_key": {
           "concat": [
+            {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
             {
               "path": "log_group_name"
             },
@@ -4682,9 +4802,57 @@
         "name"
       ],
       "module": "wave3b-data",
-      "natural_key": "name",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
       "tf_attrs": {
-        "glue_security_configuration_name": "name",
+        "glue_security_configuration_name": {
+          "concat": [
+            {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        },
         "name": "name"
       },
       "tags": "none",
@@ -6913,16 +7081,22 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
             "context": "account_id"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "context": "region"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "path": "type"
@@ -6940,16 +7114,22 @@
         "opensearchserverless_security_policy_key": {
           "concat": [
             {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
               "context": "account_id"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "context": "region"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "path": "type"
@@ -6981,16 +7161,22 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
             "context": "account_id"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "context": "region"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "path": "type"
@@ -7008,16 +7194,22 @@
         "opensearchserverless_access_policy_key": {
           "concat": [
             {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
               "context": "account_id"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "context": "region"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "path": "type"
@@ -7049,16 +7241,22 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
             "context": "account_id"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "context": "region"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "path": "type"
@@ -7076,16 +7274,22 @@
         "opensearchserverless_lifecycle_policy_key": {
           "concat": [
             {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
               "context": "account_id"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "context": "region"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "path": "type"
@@ -7117,16 +7321,22 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
             "context": "account_id"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "context": "region"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "path": "name"
@@ -7138,16 +7348,22 @@
         "emr_security_configuration_key": {
           "concat": [
             {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
               "context": "account_id"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "context": "region"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "path": "name"
@@ -7290,9 +7506,57 @@
         "name"
       ],
       "module": "wave3b-misc2",
-      "natural_key": "name",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
       "tf_attrs": {
-        "dax_subnet_group_id": "name",
+        "dax_subnet_group_id": {
+          "concat": [
+            {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        },
         "name": "name"
       },
       "tags": "none",
@@ -7310,9 +7574,57 @@
         "name"
       ],
       "module": "wave3b-misc2",
-      "natural_key": "name",
+      "natural_key": {
+        "concat": [
+          {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "account_id"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "context": "region"
+          },
+          {
+            "const": ":"
+          },
+          {
+            "path": "name"
+          }
+        ]
+      },
       "tf_attrs": {
-        "dax_parameter_group_id": "name",
+        "dax_parameter_group_id": {
+          "concat": [
+            {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "account_id"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "context": "region"
+            },
+            {
+              "const": ":"
+            },
+            {
+              "path": "name"
+            }
+          ]
+        },
         "name": "name"
       },
       "tags": "none",
@@ -7333,16 +7645,22 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
             "context": "account_id"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "context": "region"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "path": "prefix"
@@ -7354,16 +7672,22 @@
         "ecr_repository_creation_template_key": {
           "concat": [
             {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
               "context": "account_id"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "context": "region"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "path": "prefix"
@@ -7391,16 +7715,22 @@
       "natural_key": {
         "concat": [
           {
+            "context": "partition"
+          },
+          {
+            "const": ":"
+          },
+          {
             "context": "account_id"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "context": "region"
           },
           {
-            "const": "/"
+            "const": ":"
           },
           {
             "path": "autoscaling_group_name"
@@ -7418,16 +7748,22 @@
         "autoscaling_lifecycle_hook_key": {
           "concat": [
             {
+              "context": "partition"
+            },
+            {
+              "const": ":"
+            },
+            {
               "context": "account_id"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "context": "region"
             },
             {
-              "const": "/"
+              "const": ":"
             },
             {
               "path": "autoscaling_group_name"

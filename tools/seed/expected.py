@@ -68,8 +68,9 @@ def load_state(path: Path) -> list[dict[str, Any]]:
 
 
 def load_context(path: Path) -> dict[str, str]:
-    """The account id and region the state was applied in, read from the module's `aws_caller_identity` and `aws_region`
-    data sources, for keys the collector builds as `<account>/<region>/<name>`."""
+    """The partition, account id and region the state was applied in, read from the module's `aws_caller_identity` (its
+    `arn` names the partition) and `aws_region` data sources, for keys the collector builds as
+    `<partition>:<account>:<region>:<name>` (req-aws-collector-identity-8)."""
     root = (read_json_file(path).get("values") or {}).get("root_module") or {}
     found: dict[str, str] = {}
 
@@ -84,6 +85,9 @@ def load_context(path: Path) -> dict[str, str]:
             vals = r.get("values") or {}
             if r.get("mode") == "data" and r.get("type") == "aws_caller_identity" and isinstance(vals.get("account_id"), str):
                 note("account_id", vals["account_id"])
+                arn = vals.get("arn")
+                if isinstance(arn, str) and arn.startswith("arn:") and arn.count(":") >= 5:
+                    note("partition", arn.split(":")[1])
             if r.get("mode") == "data" and r.get("type") == "aws_region":
                 region = vals.get("region") or vals.get("name")
                 if isinstance(region, str):
@@ -123,7 +127,7 @@ def evaluate(spec: Any, resource: dict[str, Any], resources: list[dict[str, Any]
     - a string: a dotted path into the resource's values
     - {"path": p, "strip_suffix": s}: the path, with a trailing suffix removed
     - {"const": v}: v
-    - {"context": "account_id" | "region"}: the account or region the state was applied in (the `aws_caller_identity` and
+    - {"context": "partition" | "account_id" | "region"}: the partition, account or region the state was applied in (the `aws_caller_identity` and
       `aws_region` data sources); an error if the state has none
     - {"concat": [spec, ...]}: the parts' values joined into one string (a key the collector builds, `<group>:<name>`);
       None if any part is absent

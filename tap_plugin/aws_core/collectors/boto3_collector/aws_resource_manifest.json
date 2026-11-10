@@ -35147,9 +35147,12 @@
         "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore glue GetSecurityConfigurations item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1)."
       },
       "items_path": "SecurityConfigurations[]",
-      "natural_key": "Name",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{Name}"
+      },
       "fields": {
-        "glue_security_configuration_name": "Name",
+        "glue_security_configuration_name": "_key",
         "name": "Name"
       },
       "tags": {
@@ -35321,7 +35324,7 @@
         "why": "The CloudFormation schema for AWS::Backup::RestoreTestingSelection says tagging.taggable is false."
       },
       "derive": {
-        "_key": "{RestoreTestingPlanName}/{RestoreTestingSelectionName}"
+        "_key": "{partition}:{account}:{region}:{RestoreTestingPlanName}/{RestoreTestingSelectionName}"
       }
     },
     {
@@ -35348,7 +35351,7 @@
         "why": "The CloudFormation schema for AWS::EC2::NetworkPerformanceMetricSubscription says tagging.taggable is false."
       },
       "derive": {
-        "_key": "{Source}/{Destination}/{Metric}/{Statistic}"
+        "_key": "{partition}:{account}:{region}:{Source}/{Destination}/{Metric}/{Statistic}"
       }
     },
     {
@@ -35832,7 +35835,7 @@
         "why": "The CloudFormation schema for AWS::LakeFormation::DataCellsFilter says tagging.taggable is false."
       },
       "derive": {
-        "_key": "{TableCatalogId}/{DatabaseName}/{TableName}/{Name}"
+        "_key": "{partition}:{account}:{region}:{TableCatalogId}/{DatabaseName}/{TableName}/{Name}"
       }
     },
     {
@@ -35850,9 +35853,12 @@
         "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore lakeformation ListLFTags item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1)."
       },
       "items_path": "LFTags[]",
-      "natural_key": "TagKey",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{TagKey}"
+      },
       "fields": {
-        "lakeformation_tag_key": "TagKey",
+        "lakeformation_tag_key": "_key",
         "name": "TagKey"
       },
       "tags": {
@@ -36400,7 +36406,7 @@
         "aws_op": "DescribeDirectoryConfigs"
       },
       "derive": {
-        "_key": "{account}/{region}/{DirectoryName}"
+        "_key": "{partition}:{account}:{region}:{DirectoryName}"
       },
       "why": "Enumerate AppStream directory configs with DescribeDirectoryConfigs - the Active Directory domains and organizational units that fleets and image builders join.",
       "persist_configuration": true,
@@ -36450,7 +36456,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{StackName}/{Name}"
+        "_key": "{partition}:{account}:{region}:{StackName}/{Name}"
       },
       "why": "Enumerate AppStream entitlements, stack by stack, with DescribeEntitlements - the rules that decide which users may launch which applications.",
       "persist_configuration": true,
@@ -36603,7 +36609,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{AutoScalingGroupName}/{LifecycleHookName}"
+        "_key": "{partition}:{account}:{region}:{AutoScalingGroupName}/{LifecycleHookName}"
       },
       "why": "Enumerate Auto Scaling lifecycle hooks, group by group, with DescribeLifecycleHooks - the pauses an instance launch or termination waits on, and the notification target and role each uses.",
       "persist_configuration": true,
@@ -36711,7 +36717,7 @@
         "aws_op": "ListSecurityConfigurations"
       },
       "derive": {
-        "_key": "{account}/{region}/{Name}"
+        "_key": "{partition}:{account}:{region}:{Name}"
       },
       "why": "Enumerate EMR security configurations with ListSecurityConfigurations - the named encryption and authentication settings clusters are launched with. Only the name is listed; the configuration body is never fetched.",
       "persist_configuration": true,
@@ -36787,7 +36793,7 @@
         "aws_op": "DescribeRepositoryCreationTemplates"
       },
       "derive": {
-        "_key": "{account}/{region}/{prefix}"
+        "_key": "{partition}:{account}:{region}:{prefix}"
       },
       "why": "Enumerate ECR repository creation templates with DescribeRepositoryCreationTemplates - the defaults (encryption, tag mutability, policies) a repository gets when it is created on a matching prefix.",
       "persist_configuration": true,
@@ -36918,7 +36924,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{_parent}/{id}"
+        "_key": "{partition}:{account}:{region}:{_parent}/{id}"
       },
       "why": "Enumerate the certificate authorities of each EKS cluster (ListCertificateAuthorities per cluster) - a cluster has at most two, the signing CA and a successor during a rotation. Only the listing is read; the certificate data (DescribeCertificateAuthority) is not fetched.",
       "persist_configuration": true,
@@ -36946,7 +36952,7 @@
         "aws_op": "DescribeS3AccessPointAttachments"
       },
       "derive": {
-        "_key": "{account}/{region}/{Name}"
+        "_key": "{partition}:{account}:{region}:{Name}"
       },
       "why": "Enumerate FSx S3 access point attachments with DescribeS3AccessPointAttachments - the S3 access points that expose an OpenZFS or ONTAP volume, and the file-system identity they act as.",
       "persist_configuration": true,
@@ -37895,7 +37901,7 @@
         "aws_op": "ListIntegrations"
       },
       "derive": {
-        "_key": "{account}/{region}/{integrationName}"
+        "_key": "{partition}:{account}:{region}:{integrationName}"
       },
       "why": "Enumerate CloudWatch Logs integrations with ListIntegrations - the link from CloudWatch Logs to OpenSearch Service (at most one per account), its type and status.",
       "persist_configuration": true,
@@ -37986,7 +37992,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{type}/{name}"
+        "_key": "{partition}:{account}:{region}:{type}/{name}"
       },
       "why": "Enumerate OpenSearch Serverless data access policies with ListAccessPolicies, one call per policy type (the type enum in botocore) - who and what a collection's data access rules allow. Only the summary is listed; the policy document is never fetched.",
       "persist_configuration": true,
@@ -38039,7 +38045,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{type}/{name}"
+        "_key": "{partition}:{account}:{region}:{type}/{name}"
       },
       "why": "Enumerate OpenSearch Serverless lifecycle policies with ListLifecyclePolicies, one call per policy type (the type enum in botocore) - who and what a collection's lifecycle rules allow. Only the summary is listed; the policy document is never fetched.",
       "persist_configuration": true,
@@ -38093,7 +38099,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{type}/{name}"
+        "_key": "{partition}:{account}:{region}:{type}/{name}"
       },
       "why": "Enumerate OpenSearch Serverless encryption and network policies with ListSecurityPolicies, one call per policy type (the type enum in botocore) - who and what a collection's encryption and network rules allow. Only the summary is listed; the policy document is never fetched.",
       "persist_configuration": true,
@@ -38148,7 +38154,7 @@
         }
       },
       "derive": {
-        "_key": "{account}/{region}/{id}"
+        "_key": "{partition}:{account}:{region}:{id}"
       },
       "why": "Enumerate OpenSearch Serverless security configurations with ListSecurityConfigs, one call per type (the type enum in botocore: SAML, IAM Identity Center, IAM federation) - the identity providers that can sign in to the collections. Only the summary is listed.",
       "persist_configuration": true,
@@ -38333,7 +38339,7 @@
         "aws_op": "ListReceiptFilters"
       },
       "derive": {
-        "_key": "{account}/{region}/{Name}"
+        "_key": "{partition}:{account}:{region}:{Name}"
       },
       "why": "Enumerate SES IP address receipt filters with ListReceiptFilters - the sender addresses and ranges inbound mail is blocked or allowed from.",
       "persist_configuration": true,
@@ -38369,7 +38375,7 @@
         "aws_op": "ListReceiptRuleSets"
       },
       "derive": {
-        "_key": "{account}/{region}/{Name}"
+        "_key": "{partition}:{account}:{region}:{Name}"
       },
       "why": "Enumerate SES receipt rule sets with ListReceiptRuleSets - the named groups of rules that route inbound mail. Only the names are listed; the rules (DescribeReceiptRuleSet) are not fetched.",
       "persist_configuration": true,
@@ -39251,9 +39257,12 @@
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore dax DescribeParameterGroups item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1)."
       },
       "items_path": "ParameterGroups[]",
-      "natural_key": "ParameterGroupName",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{ParameterGroupName}"
+      },
       "fields": {
-        "dax_parameter_group_id": "ParameterGroupName",
+        "dax_parameter_group_id": "_key",
         "name": "ParameterGroupName"
       },
       "tags": {
@@ -39276,9 +39285,12 @@
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore dax DescribeSubnetGroups item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1)."
       },
       "items_path": "SubnetGroups[]",
-      "natural_key": "SubnetGroupName",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{SubnetGroupName}"
+      },
       "fields": {
-        "dax_subnet_group_id": "SubnetGroupName",
+        "dax_subnet_group_id": "_key",
         "name": "SubnetGroupName"
       },
       "tags": {
@@ -40055,9 +40067,12 @@
         ]
       },
       "items_path": "ClusterSecurityGroups[]",
-      "natural_key": "ClusterSecurityGroupName",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{ClusterSecurityGroupName}"
+      },
       "fields": {
-        "redshift_cluster_security_group_id": "ClusterSecurityGroupName",
+        "redshift_cluster_security_group_id": "_key",
         "name": "ClusterSecurityGroupName"
       },
       "tags": {
@@ -40082,9 +40097,12 @@
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore redshift DescribeEndpointAccess item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1)."
       },
       "items_path": "EndpointAccessList[]",
-      "natural_key": "EndpointName",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{EndpointName}"
+      },
       "fields": {
-        "redshift_endpoint_access_id": "EndpointName",
+        "redshift_endpoint_access_id": "_key",
         "name": "EndpointName"
       },
       "tags": {
@@ -40107,9 +40125,12 @@
         "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore redshift DescribeScheduledActions item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1)."
       },
       "items_path": "ScheduledActions[]",
-      "natural_key": "ScheduledActionName",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{ScheduledActionName}"
+      },
       "fields": {
-        "redshift_scheduled_action_id": "ScheduledActionName",
+        "redshift_scheduled_action_id": "_key",
         "name": "ScheduledActionName"
       },
       "tags": {
@@ -40468,7 +40489,7 @@
         "why": "The CloudFormation schema for AWS::AutoScalingPlans::ScalingPlan says tagging.taggable is false, and the botocore 1.43.121 autoscaling-plans ScalingPlan shape carries no tags and CreateScalingPlan takes none."
       },
       "derive": {
-        "_id": "{ScalingPlanName}|{ScalingPlanVersion}"
+        "_id": "{partition}:{account}:{region}:{ScalingPlanName}|{ScalingPlanVersion}"
       }
     },
     {
@@ -40550,7 +40571,7 @@
         "why": "The CloudFormation schema for AWS::Cassandra::Type says tagging.taggable is false, and botocore 1.43.121 keyspaces CreateType takes no Tags member (TagResource names keyspaces and tables)."
       },
       "derive": {
-        "_key": "{account}/{region}/{keyspaceName}/{typeName}"
+        "_key": "{partition}:{account}:{region}:{keyspaceName}/{typeName}"
       }
     },
     {
