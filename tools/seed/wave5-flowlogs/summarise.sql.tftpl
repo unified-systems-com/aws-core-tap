@@ -1,0 +1,48 @@
+INSERT INTO "${database}"."${summary_table}"
+SELECT
+  interface_id,
+  vpc_id,
+  subnet_id,
+  instance_id,
+  flow_direction,
+  action,
+  CASE WHEN srcport >= dstport THEN srcaddr ELSE dstaddr END AS client_address,
+  CASE WHEN srcport >= dstport THEN dstaddr ELSE srcaddr END AS server_address,
+  CASE WHEN srcport >= dstport THEN dstport ELSE srcport END AS server_port,
+  protocol,
+  sum(packets) AS packets,
+  sum(bytes) AS bytes,
+  count(*) AS records,
+  bool_or(bitwise_and(tcp_flags, 2) <> 0) AS syn_seen,
+  min("start") AS first_seen,
+  max("end") AS last_seen,
+  date_format(current_timestamp AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%i:%sZ') AS window_end
+FROM "${database}"."${raw_table}"
+WHERE log_status = 'OK'
+%{ if window_start != "" ~}
+  AND "start" >= to_unixtime(from_iso8601_timestamp('${window_start}'))
+%{ else ~}
+  AND "start" >= to_unixtime(current_timestamp - INTERVAL '${lookback_hours}' HOUR)
+%{ endif ~}
+%{ if window_end != "" ~}
+  AND "start" < to_unixtime(from_iso8601_timestamp('${window_end}'))
+%{ endif ~}
+%{ if length(interface_ids) + length(instance_ids) + length(addresses) > 0 ~}
+  AND (
+    false
+%{ if length(interface_ids) > 0 ~}
+    OR interface_id IN (${join(", ", [for v in interface_ids : "'${v}'"])})
+%{ endif ~}
+%{ if length(instance_ids) > 0 ~}
+    OR instance_id IN (${join(", ", [for v in instance_ids : "'${v}'"])})
+%{ endif ~}
+%{ if length(addresses) > 0 ~}
+    OR srcaddr IN (${join(", ", [for v in addresses : "'${v}'"])})
+    OR dstaddr IN (${join(", ", [for v in addresses : "'${v}'"])})
+%{ endif ~}
+  )
+%{ endif ~}
+%{ if length(ports) > 0 ~}
+  AND (srcport IN (${join(", ", [for p in ports : tostring(p)])}) OR dstport IN (${join(", ", [for p in ports : tostring(p)])}))
+%{ endif ~}
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10

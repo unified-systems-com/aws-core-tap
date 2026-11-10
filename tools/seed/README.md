@@ -6,6 +6,7 @@ of the plugin wheel.
 
 | File | What it is |
 | --- | --- |
+| `wave5-flowlogs/` | Terraform root for wave 5, flow logs (aws-core-tap#218, about $0.02 an hour): a private VPC where one `t3.nano` calls another on 8080 and 9090 (allowed) and 9443 (refused), VPC flow logs to S3 as hourly Parquet, a Glue table over them, a summary table, an Athena workgroup, the summarising query (a named query, and a schedule, off by default) and the schedule's role. Filter variables narrow the query to hosts, ports and a time window. Prefix `w5f`, tag `tap-seed=wave5-flowlogs`; `wave5-flowlogs/cost.md` |
 | `wave4-gapsweep/` | Terraform root for wave 4, the gap sweep (about $0.09 an hour): a private VPC with an instance, volume, extra network interface, Auto Scaling group, network and application load balancers with listeners and target groups, a private Route 53 zone with aliases to both, and a Memcached cluster in a cache subnet group; it gives every edge added in the gap sweep something to link. Prefix `w4g`, tag `tap-seed=wave4-gapsweep`; `wave4-gapsweep/cost.md` |
 | `wave3b-bedrock/` | Terraform root for wave 3b, Bedrock (free): a guardrail, a prompt, a flow and an application inference profile; nothing is invoked. Prefix `w3m`, tag `tap-seed=wave3b-bedrock`; `wave3b-bedrock/cost.md` |
 | `wave3b-compute/` | Terraform root for wave 3b, compute and network (cheap, about $0.18 an hour): ECS, EFS, application and classic load balancers, VPC endpoints and Transit Gateway. Prefix `w3k`, tag `tap-seed=wave3b-compute`; `wave3b-compute/cost.md` |
