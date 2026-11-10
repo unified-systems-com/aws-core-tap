@@ -546,12 +546,12 @@
       "service": "route53",
       "scope": "global",
       "source": { "custom_fn": "route53_zones_with_alias_targets" },
-      "why": "Enumerate Route 53 hosted zones with resolved alias targets — DNS topology and routing.",
+      "why": "Enumerate Route 53 hosted zones — the parents of every record set (aws_route53_record_set), which carry what the zone resolves to.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore route53 ListHostedZones output shape (HostedZone) and custom_fn route53_zones_with_alias_targets, which adds only CloudFront alias domains and ARNs, never full record sets, 2026-09-23.",
+        "basis": "Read botocore route53 ListHostedZones output shape (HostedZone) and custom_fn route53_zones_with_alias_targets, which adds only the bare zone id and three emptied former alias slots, never record sets (those are aws_route53_record_set's), 2026-11-10.",
         "locations": [
           {
             "path": "Config.Comment",
@@ -612,6 +612,86 @@
           "target_type": "aws_core__aws_elb",
           "key_kind": "id",
           "edge_type": "ROUTES_TRAFFIC__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_route53_record_set",
+      "service": "route53",
+      "scope": "global",
+      "source": {
+        "custom_fn": "route53_record_sets_described"
+      },
+      "why": "Enumerate every Route 53 record set in every hosted zone — the hostnames themselves, and what each resolves to (load balancers, CloudFront, other records), so a hostname is a node between its zone and what answers it (aws-core-tap#220).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore route53 ListResourceRecordSets output shape (ResourceRecordSet) and custom_fn route53_record_sets_described, which adds only the key, the zone id and resolved target keys, 2026-11-10.",
+        "locations": [
+          {
+            "path": "ResourceRecords[].Value",
+            "category": "customer_content",
+            "reason": "Record values are operator-set: a TXT record can carry a domain-verification token or other text the operator chose to publish in DNS.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_record_set_key",
+      "fields": {
+        "name": "Name",
+        "record_set_key": "_record_set_key",
+        "hosted_zone_id": "_zone_id",
+        "record_name": "Name",
+        "record_type": "Type",
+        "set_identifier": "SetIdentifier",
+        "ttl": "TTL",
+        "alias_dns_name": "AliasTarget.DNSName"
+      },
+      "edges": [
+        {
+          "value_path": "_zone_id",
+          "target_type": "aws_core__aws_route53_zone",
+          "key_kind": "id",
+          "edge_type": "HOLDS_RECORD_SET__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_resolves_alb[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_alb",
+          "key_kind": "arn",
+          "edge_type": "RESOLVES_TO_TARGET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_resolves_elb[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_elb",
+          "key_kind": "id",
+          "edge_type": "RESOLVES_TO_TARGET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_resolves_cloudfront[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_cloudfront_distribution",
+          "key_kind": "arn",
+          "edge_type": "RESOLVES_TO_TARGET__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_resolves_record[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_route53_record_set",
+          "key_kind": "id",
+          "edge_type": "RESOLVES_TO_TARGET__aws_core",
           "direction": "outbound"
         }
       ]

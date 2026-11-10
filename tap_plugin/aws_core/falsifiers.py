@@ -2865,8 +2865,72 @@ class EcsContainerFalsifier(_EcsFalsifier):
         return self._unanswered(candidate, expected, failure)
 
 
+
+_ROUTE53_NO_ZONE = "NoSuchHostedZone"
+
+
+class Route53RecordSetFalsifier(_AwsFalsifier):
+    """A record set is gone when ``ListResourceRecordSets``, started at its own name, type and set identifier, no
+    longer returns it first (aws-core-tap#220). Route 53 lists a zone's record sets sorted by name, type and set
+    identifier, so a listing started at those three returns the record set itself first when it exists.
+
+    ``NoSuchHostedZone`` is ``UNDETERMINED``, not absence: the zone itself is gone, and a deleted zone's record sets
+    are not retired by this falsifier (the next run, which no longer observes the zone, derives no candidate under
+    it, as for a deleted ECS cluster). Route 53 is global, so any region of the run's partition reaches it.
+    """
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        zone_id = str(getattr(row, "hosted_zone_id", "") or "")
+        name = str(getattr(row, "record_name", "") or "")
+        record_type = str(getattr(row, "record_type", "") or "")
+        set_identifier = str(getattr(row, "set_identifier", "") or "")
+        if not zone_id or not name or not record_type:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no zone, name and type for this record set")
+        dimensions = _dimensions_of(row)
+        scoped = self._scope_check(candidate, account_id, dimensions.get("aws_account") or None)
+        if scoped is not None:
+            return scoped
+        region = dimensions.get("aws_region") or ""
+        if not region or region == "global":
+            region = next(iter(self._sweep_regions(session)), "")
+        if not region:
+            return _undetermined(candidate, "scope_unknown", "no region of this partition could be resolved to reach Route 53")
+        expected = Expected(source_id=str(getattr(row, "record_set_key", "") or ""), owner=None, name=name)
+        request: dict[str, Any] = {"HostedZoneId": zone_id, "StartRecordName": name, "StartRecordType": record_type, "MaxItems": "1"}
+        if set_identifier:
+            request["StartRecordIdentifier"] = set_identifier
+        try:
+            response = session.client("route53", region_name=region).list_resource_record_sets(**request)
+        except Exception as exc:  # noqa: BLE001 — every candidate gets an answer, never a crash
+            if isinstance(exc, ClientError) and error_code_of(exc) == _ROUTE53_NO_ZONE:
+                return _undetermined(
+                    candidate, "errored", f"the hosted zone {zone_id} is gone; a deleted zone's record sets are not retired by this falsifier"
+                )
+            return _failed_probe(candidate, expected, exc)
+        first = next(iter(response.get("ResourceRecordSets") or []), None)
+        if (
+            first is not None
+            and str(first.get("Name") or "").lower() == name.lower()
+            and str(first.get("Type") or "") == record_type
+            and str(first.get("SetIdentifier") or "") == set_identifier
+        ):
+            # Route 53 names are case-insensitive: the record set as Route 53 now keys it, so a row written under
+            # another spelling of the same name reads REIDENTIFIED rather than gone.
+            from .collectors.boto3_collector.route53_records import record_set_key
+
+            probe = Probe(status="found", source_id=record_set_key(zone_id, first), detail="ListResourceRecordSets 200")
+            return verdict_from_probe(candidate, expected, probe)
+        return verdict_from_probe(
+            candidate, expected, Probe(status="not_found", detail=f"{NOT_FOUND_DETAIL} (ListResourceRecordSets started at it returns another record first)")
+        )
+
+
 __all__ = [
     "NOT_FOUND_DETAIL",
+    "Route53RecordSetFalsifier",
     "EcsContainerFalsifier",
     "EcsTaskFalsifier",
     "AccessAnalyzerFalsifier",

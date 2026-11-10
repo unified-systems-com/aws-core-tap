@@ -16,11 +16,13 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from botocore.exceptions import ClientError
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     _bucket_size_metrics,
     aws_account_singleton,
     cloudfront_distributions_with_oac,
+    route53_record_sets_described,
     route53_zones_with_alias_targets,
 )
 
@@ -107,45 +109,48 @@ class _FakeSession:
         raise AssertionError(f"unexpected client {service!r}")
 
 
-class TestRoute53ZonesWithAliasTargets:
-    def test_cloudfront_alias_resolved_to_arn_others_filtered(self):
+def _records(rrs, session=None):
+    """The record set items for one zone holding ``rrs``, by name and type."""
+    items = list(route53_record_sets_described(session or _FakeSession(rrs)))
+    return {(i["Name"], i["Type"], i.get("SetIdentifier")): i for i in items}
+
+
+def _keys(item, slot):
+    return [t["key"] for t in item[slot]]
+
+
+class TestRoute53RecordSets:
+    """Every record set is a node, resolving through its alias or CNAME (req-aws-collector-lb-topology-5, -6)."""
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-5")
+    def test_every_record_set_is_an_item_keyed_by_zone_name_type_and_set_identifier(self):
         rrs = [
-            # A-alias to the CloudFront distribution (Route 53 trailing dot,
-            # mixed case) -> resolved to the CF ARN.
-            {
-                "Name": "samsite.unified-systems.com.",
-                "Type": "A",
-                "AliasTarget": {"DNSName": f"{_CF_DOMAIN.upper()}."},
-            },
-            # Non-CloudFront alias (ELB) -> filtered out entirely.
-            {
-                "Name": "api.samsite.unified-systems.com.",
-                "Type": "A",
-                "AliasTarget": {"DNSName": "x.us-east-1.elb.amazonaws.com."},
-            },
-            # Plain record, no AliasTarget -> ignored.
-            {
-                "Name": "txt.samsite.unified-systems.com.",
-                "Type": "TXT",
-                "ResourceRecords": [{"Value": '"v=spf1"'}],
-            },
+            {"Name": "txt.samsite.unified-systems.com.", "Type": "TXT", "ResourceRecords": [{"Value": '"v=spf1"'}]},
+            {"Name": "w.samsite.unified-systems.com.", "Type": "A", "SetIdentifier": "blue", "Weight": 90, "ResourceRecords": [{"Value": "10.0.0.1"}]},
         ]
-        zones = list(route53_zones_with_alias_targets(_FakeSession(rrs)))
+        items = _records(rrs)
+        txt = items[("txt.samsite.unified-systems.com.", "TXT", None)]
+        assert txt["_record_set_key"] == "Z1SAMSITE/txt.samsite.unified-systems.com./TXT/"
+        assert txt["_zone_id"] == "/hostedzone/Z1SAMSITE"
+        assert all(txt[slot] == [] for slot in ("_resolves_alb", "_resolves_elb", "_resolves_cloudfront", "_resolves_record"))
+        assert set(txt["_edge_reads"].values()) == {"complete"}
+        weighted = items[("w.samsite.unified-systems.com.", "A", "blue")]
+        assert weighted["_record_set_key"] == "Z1SAMSITE/w.samsite.unified-systems.com./A/blue"
 
-        assert len(zones) == 1
-        z = zones[0]
-        # Zone identity/projection fields preserved verbatim.
-        assert z["Id"] == "/hostedzone/Z1SAMSITE"
-        assert z["Name"] == "samsite.unified-systems.com."
-        assert z["Config"] == {"PrivateZone": False}
-        # Only the CloudFront alias survives; resolved to the ARN; raw
-        # domain kept lossless (normalized: lowercased, dot-stripped).
-        assert z["alias_cloudfront_domains"] == [_CF_DOMAIN]
-        assert z["alias_cloudfront_arns"] == [_CF_ARN]
-        # The ELB alias names a region the fake has no load balancer for by that DNS name: unmatched, so the
-        # zone's alias reads are partial, and no load balancer is claimed.
-        assert z["alias_alb_arns"] == [] and z["alias_elb_dns_names"] == []
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_a_cloudfront_alias_resolves_to_its_arn_and_an_unmatched_alias_is_partial(self):
+        rrs = [
+            {"Name": "samsite.unified-systems.com.", "Type": "A", "AliasTarget": {"DNSName": f"{_CF_DOMAIN.upper()}.", "HostedZoneId": "Z2FDTNDATAQYW2", "EvaluateTargetHealth": False}},
+            {"Name": "api.samsite.unified-systems.com.", "Type": "A", "AliasTarget": {"DNSName": "x.us-east-1.elb.amazonaws.com."}},
+        ]
+        items = _records(rrs)
+        cf = items[("samsite.unified-systems.com.", "A", None)]
+        assert cf["_resolves_cloudfront"] == [{"key": _CF_ARN, "properties": {"via": "alias", "evaluate_target_health": False}}]
+        unmatched = items[("api.samsite.unified-systems.com.", "A", None)]
+        assert unmatched["_resolves_alb"] == [] and unmatched["_resolves_elb"] == []
+        assert unmatched["_edge_reads"]["_resolves_alb"] == "partial"
 
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
     def test_an_alias_naming_a_region_the_partition_does_not_have_is_never_asked(self):
         class _Counting(_FakeSession):
             asked: list[str] = []
@@ -157,64 +162,52 @@ class TestRoute53ZonesWithAliasTargets:
 
         rrs = [{"Name": "x.", "Type": "A", "AliasTarget": {"DNSName": "web-1.xx-evil-9.elb.amazonaws.com."}}]
         session = _Counting(rrs)
-        (zone,) = route53_zones_with_alias_targets(session)
+        (item,) = _records(rrs, session).values()
         assert "xx-evil-9" not in session.asked
-        assert zone["alias_alb_arns"] == [] and zone["alias_elb_dns_names"] == []
-        assert zone["_edge_reads"]["alias_alb_arns"] == "partial"
+        assert item["_resolves_alb"] == [] and item["_edge_reads"]["_resolves_alb"] == "partial"
 
-    def test_a_classic_load_balancer_alias_resolves_to_its_dns_name(self):
-        rrs = [{"Name": "c.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_CLASSIC_DNS}."}}]
-        (zone,) = route53_zones_with_alias_targets(_FakeSession(rrs))
-        assert zone["alias_elb_dns_names"] == [_CLASSIC_DNS]
-        assert zone["_edge_reads"]["alias_elb_dns_names"] == "complete"
-
-    def test_load_balancer_aliases_resolve_to_the_alb_arn_and_the_nlb_dns_name(self):
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_load_balancer_aliases_resolve_to_the_alb_arn_and_the_nlb_and_classic_dns_names(self):
         rrs = [
             {"Name": "a.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_ALB_DNS.upper()}."}},
             {"Name": "b.", "Type": "A", "AliasTarget": {"DNSName": f"{_NLB_DNS}."}},
-            {"Name": "c.", "Type": "AAAA", "AliasTarget": {"DNSName": f"{_NLB_DNS}."}},
+            {"Name": "c.", "Type": "A", "AliasTarget": {"DNSName": f"dualstack.{_CLASSIC_DNS}."}},
         ]
+        items = _records(rrs)
+        assert _keys(items[("a.", "A", None)], "_resolves_alb") == [_ALB_ARN]
+        assert _keys(items[("b.", "A", None)], "_resolves_elb") == [_NLB_DNS]
+        assert _keys(items[("c.", "A", None)], "_resolves_elb") == [_CLASSIC_DNS]
+        assert items[("a.", "A", None)]["_edge_reads"]["_resolves_alb"] == "complete"
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_a_cname_naming_a_load_balancer_resolves_via_cname(self):
+        rrs = [{"Name": "app.", "Type": "CNAME", "TTL": 60, "ResourceRecords": [{"Value": _ALB_DNS}]}]
+        (item,) = _records(rrs).values()
+        assert item["_resolves_alb"] == [{"key": _ALB_ARN, "properties": {"via": "cname", "evaluate_target_health": None}}]
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_an_alias_to_a_record_in_the_same_zone_resolves_to_that_record_set(self):
+        rrs = [
+            {"Name": "www.samsite.unified-systems.com.", "Type": "A", "AliasTarget": {"DNSName": "samsite.unified-systems.com.", "HostedZoneId": "Z1SAMSITE"}},
+            {"Name": "samsite.unified-systems.com.", "Type": "A", "ResourceRecords": [{"Value": "10.0.0.1"}]},
+        ]
+        items = _records(rrs)
+        www = items[("www.samsite.unified-systems.com.", "A", None)]
+        assert _keys(www, "_resolves_record") == ["Z1SAMSITE/samsite.unified-systems.com./A/"]
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_an_unmappable_cloudfront_domain_yields_no_arn(self):
+        rrs = [{"Name": "s.", "Type": "A", "AliasTarget": {"DNSName": "dXXXXXXXXXXXXX.cloudfront.net."}}]
+        (item,) = _records(rrs).values()
+        assert item["_resolves_cloudfront"] == [] and item["_edge_reads"]["_resolves_cloudfront"] == "partial"
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_the_zone_s_replaced_direct_routes_read_complete_and_empty(self):
+        rrs = [{"Name": "s.", "Type": "A", "AliasTarget": {"DNSName": f"{_CF_DOMAIN}."}}]
         (zone,) = route53_zones_with_alias_targets(_FakeSession(rrs))
-        assert zone["alias_alb_arns"] == [_ALB_ARN]
-        assert zone["alias_elb_dns_names"] == [_NLB_DNS]
-        assert zone["_edge_reads"]["alias_alb_arns"] == "complete"
-
-    def test_unmappable_cloudfront_domain_yields_no_arn(self):
-        # A CloudFront alias whose distribution is not in the CF listing
-        # (different account / not collected): the domain is captured, but
-        # no bogus ARN is fabricated — arns stays empty.
-        rrs = [
-            {
-                "Name": "samsite.unified-systems.com.",
-                "Type": "A",
-                "AliasTarget": {"DNSName": "dXXXXXXXXXXXXX.cloudfront.net."},
-            }
-        ]
-        z = next(iter(route53_zones_with_alias_targets(_FakeSession(rrs))))
-        assert z["alias_cloudfront_domains"] == ["dxxxxxxxxxxxxx.cloudfront.net"]
-        assert z["alias_cloudfront_arns"] == []
-
-    def test_ipv4_ipv6_alias_pair_dedupes(self):
-        # Regression (found live): the standard CloudFront setup has BOTH
-        # an A and an AAAA alias to the same distribution. Without dedup
-        # the domain/ARN appears twice -> two edges with the same
-        # the same relationship twice -> GRIFT rejects the whole batch.
-        # One distribution -> one resolved ARN.
-        rrs = [
-            {
-                "Name": "samsite.unified-systems.com.",
-                "Type": "A",
-                "AliasTarget": {"DNSName": f"{_CF_DOMAIN}."},
-            },
-            {
-                "Name": "samsite.unified-systems.com.",
-                "Type": "AAAA",
-                "AliasTarget": {"DNSName": f"{_CF_DOMAIN}."},
-            },
-        ]
-        z = next(iter(route53_zones_with_alias_targets(_FakeSession(rrs))))
-        assert z["alias_cloudfront_domains"] == [_CF_DOMAIN]
-        assert z["alias_cloudfront_arns"] == [_CF_ARN]
+        assert zone["Id"] == "/hostedzone/Z1SAMSITE" and zone["_zone_resource_id"] == "Z1SAMSITE"
+        assert (zone["alias_cloudfront_arns"], zone["alias_alb_arns"], zone["alias_elb_dns_names"]) == ([], [], [])
+        assert set(zone["_edge_reads"].values()) == {"complete"}
 
 
 # ---------------------------------------------------------------------------

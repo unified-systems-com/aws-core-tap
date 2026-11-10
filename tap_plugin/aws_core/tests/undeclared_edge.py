@@ -1,14 +1,15 @@
 """Make one edge type read as having no declared identity, to exercise the path that keeps an explicit uuid5 id.
 
-No aws_core edge type is undeclared any more (``ROUTES_TRAFFIC`` declares a plain key now that its emitters exist), but
-the batch still supports one, for an edge type a plugin ships without a declaration; these tests pin that path."""
+No aws_core edge type is undeclared any more, but the batch still supports one, for an edge type a plugin ships without
+a declaration; these tests pin that path with ``RESOLVES_TO_TARGET`` (a record set to the CloudFront distribution it
+aliases), which the slice's canned run emits."""
 
 from __future__ import annotations
 
 import pytest
 from tap_grid import edge_identity
 
-UNDECLARED = "ROUTES_TRAFFIC__aws_core"
+UNDECLARED = "RESOLVES_TO_TARGET__aws_core"
 
 
 def read_as_undeclared(monkeypatch: pytest.MonkeyPatch, edge_type: str = UNDECLARED) -> None:

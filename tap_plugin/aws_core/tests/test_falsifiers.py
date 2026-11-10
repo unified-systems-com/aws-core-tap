@@ -454,6 +454,7 @@ class TestFalsifierManifestWiring:
             # aws-core-tap#211 (ECS): cluster -> task, task -> container.
             "aws_core__aws_ecs_task": "tap_plugin.aws_core.falsifiers.EcsTaskFalsifier",
             "aws_core__aws_ecs_container": "tap_plugin.aws_core.falsifiers.EcsContainerFalsifier",
+            "aws_core__aws_route53_record_set": "tap_plugin.aws_core.falsifiers.Route53RecordSetFalsifier",
         }
         # Every falsifier entry must name a type this same plugin declares in [models]
         # (tap_plugins/manifest.py::_parse_falsifiers) — the check the manifest parser itself
