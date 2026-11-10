@@ -398,12 +398,17 @@ class _AliasTargets:
         self._lb_regions: set[str] = set()
         self._cloudfront: dict[str, str] = {}
         if service_unavailable_reason(self._partition, "cloudfront") is None:
-            cf = _run_client(session, client_for, "cloudfront")
-            for page in _pages(cf, "list_distributions"):
-                for dist in (page.get("DistributionList", {}) or {}).get("Items", []) or []:
-                    domain = (dist.get("DomainName") or "").rstrip(".").lower()
-                    if domain and dist.get("ARN"):
-                        self._cloudfront[domain] = str(dist["ARN"])
+            try:
+                cf = _run_client(session, client_for, "cloudfront")
+                for page in _pages(cf, "list_distributions"):
+                    for dist in (page.get("DistributionList", {}) or {}).get("Items", []) or []:
+                        domain = (dist.get("DomainName") or "").rstrip(".").lower()
+                        if domain and dist.get("ARN"):
+                            self._cloudfront[domain] = str(dist["ARN"])
+            except BotoCoreError, ClientError:
+                # No distributions read: every CloudFront hostname stays unmatched (partial), and every other
+                # record set is still described (aws-core-tap PR 223 review).
+                self._cloudfront = {}
 
     def _load_region(self, region: str) -> None:
         if region in self._lb_regions:
@@ -452,16 +457,20 @@ def route53_record_sets_described(session: Any, *, client_for: Any = None) -> It
     The record sets come from the run's one Route 53 walk (:mod:`.route53_records`), which also gives each zone
     its completeness surface. A record resolves through its alias (``AliasTarget``) or, for a CNAME, its value:
     to an Application Load Balancer, another load balancer, a CloudFront distribution, or another record set in
-    the same zone (an alias whose target is in this zone). A hostname that looks like a load balancer or
-    distribution the run could not match leaves the record's resolution partial, never 'resolves to nothing'.
+    the same zone (an alias whose target is in this zone, or a CNAME whose value is a name in this zone). A
+    hostname that looks like a load balancer or distribution the run could not match, or a same-zone name with no
+    record set, leaves the record's resolution partial, never 'resolves to nothing'. Once every record set has been
+    yielded the walk is marked projected, which is what lets the zones' surfaces say their record sets were carried.
     """
     r53 = _run_client(session, client_for, "route53")
     walk = shared_records_walk(session, r53)
     names: dict[tuple[str, str, str], list[str]] = {}
+    any_type: dict[tuple[str, str], list[str]] = {}
     for zone, record in walk.records:
-        names.setdefault((str(zone["Id"]), str(record.get("Name", "")).lower(), str(record.get("Type", ""))), []).append(
-            record_set_key(str(zone["Id"]), record)
-        )
+        name = str(record.get("Name", "")).lower()
+        key = record_set_key(str(zone["Id"]), record)
+        names.setdefault((str(zone["Id"]), name, str(record.get("Type", ""))), []).append(key)
+        any_type.setdefault((str(zone["Id"]), name), []).append(key)
     targets = _AliasTargets(session, client_for, r53) if walk.records else None
     for zone, record in walk.records:
         zone_id = str(zone["Id"])
@@ -475,9 +484,17 @@ def route53_record_sets_described(session: Any, *, client_for: Any = None) -> It
             hostnames.extend(("cname", str(v.get("Value"))) for v in record.get("ResourceRecords") or [] if v.get("Value"))
         for via, hostname in hostnames:
             properties = {"via": via, "evaluate_target_health": alias.get("EvaluateTargetHealth") if via == "alias" else None}
-            in_zone = bare_zone_id(str(alias.get("HostedZoneId") or "")) == bare_zone_id(zone_id) if via == "alias" else False
+            if via == "alias":
+                in_zone = bare_zone_id(str(alias.get("HostedZoneId") or "")) == bare_zone_id(zone_id)
+            else:  # a CNAME's value is in this zone when it is the zone's apex or a name under it
+                apex = str(zone.get("Name") or "").lower()
+                fqdn = hostname.lower() if hostname.endswith(".") else hostname.lower() + "."
+                in_zone = bool(apex) and (fqdn == apex or fqdn.endswith("." + apex))
             if in_zone:
-                keys = names.get((zone_id, hostname.lower(), str(record.get("Type", ""))), [])
+                if via == "alias":  # an alias names a record set of its own type
+                    keys = names.get((zone_id, hostname.lower(), str(record.get("Type", ""))), [])
+                else:  # a CNAME names every record set at that name
+                    keys = any_type.get((zone_id, fqdn), [])
                 slots["_resolves_record"].extend({"key": key, "properties": properties} for key in keys)
                 if not keys:
                     read = PARTIAL
@@ -499,6 +516,7 @@ def route53_record_sets_described(session: Any, *, client_for: Any = None) -> It
             },
             {"_zone_id": COMPLETE, **dict.fromkeys(_RESOLVES_SLOTS, read)},
         )
+    walk.projected = True
 
 
 #: The zone's direct routes the record sets replaced (aws-core-tap#220): still declared, read complete and empty,

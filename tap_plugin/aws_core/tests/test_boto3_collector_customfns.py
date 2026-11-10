@@ -25,6 +25,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     route53_record_sets_described,
     route53_zones_with_alias_targets,
 )
+from tap_plugin.aws_core.collectors.boto3_collector.route53_records import walk_of
 
 _CF_ARN = "arn:aws:cloudfront::111122223333:distribution/E1ABCDEF"
 _CF_DOMAIN = "d111abcdef.cloudfront.net"
@@ -194,6 +195,54 @@ class TestRoute53RecordSets:
         items = _records(rrs)
         www = items[("www.samsite.unified-systems.com.", "A", None)]
         assert _keys(www, "_resolves_record") == ["Z1SAMSITE/samsite.unified-systems.com./A/"]
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_a_cname_to_a_name_in_the_same_zone_resolves_to_every_record_set_there(self):
+        rrs = [
+            {"Name": "www.samsite.unified-systems.com.", "Type": "CNAME", "ResourceRecords": [{"Value": "origin.samsite.unified-systems.com"}]},
+            {"Name": "origin.samsite.unified-systems.com.", "Type": "A", "ResourceRecords": [{"Value": "10.0.0.1"}]},
+            {"Name": "origin.samsite.unified-systems.com.", "Type": "AAAA", "ResourceRecords": [{"Value": "fd00::1"}]},
+            {"Name": "gone.samsite.unified-systems.com.", "Type": "CNAME", "ResourceRecords": [{"Value": "nothing.samsite.unified-systems.com."}]},
+        ]
+        items = _records(rrs)
+        www = items[("www.samsite.unified-systems.com.", "CNAME", None)]
+        assert sorted(_keys(www, "_resolves_record")) == [
+            "Z1SAMSITE/origin.samsite.unified-systems.com./A/",
+            "Z1SAMSITE/origin.samsite.unified-systems.com./AAAA/",
+        ]
+        assert www["_resolves_record"][0]["properties"] == {"via": "cname", "evaluate_target_health": None}
+        assert www["_edge_reads"]["_resolves_record"] == "complete"
+        # A same-zone name with no record set is not "resolves to nothing": the read is partial.
+        assert items[("gone.samsite.unified-systems.com.", "CNAME", None)]["_edge_reads"]["_resolves_record"] == "partial"
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-6")
+    def test_a_denied_cloudfront_listing_leaves_its_aliases_partial_and_every_record_described(self):
+        class _DeniedCloudFront(_FakeCloudFront):
+            def list_distributions(self, **_kw):
+                raise ClientError({"Error": {"Code": "AccessDenied", "Message": "no"}}, "ListDistributions")
+
+        class _Session(_FakeSession):
+            def client(self, service: str, **kw):
+                return _DeniedCloudFront() if service == "cloudfront" else super().client(service, **kw)
+
+        rrs = [
+            {"Name": "samsite.unified-systems.com.", "Type": "A", "AliasTarget": {"DNSName": f"{_CF_DOMAIN}.", "HostedZoneId": "Z2FDTNDATAQYW2"}},
+            {"Name": "txt.samsite.unified-systems.com.", "Type": "TXT", "ResourceRecords": [{"Value": '"x"'}]},
+        ]
+        items = _records(rrs, _Session(rrs))
+        assert items[("samsite.unified-systems.com.", "A", None)]["_edge_reads"]["_resolves_cloudfront"] == "partial"
+        assert set(items[("txt.samsite.unified-systems.com.", "TXT", None)]["_edge_reads"].values()) == {"complete"}
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-5")
+    def test_the_walk_is_projected_only_once_every_record_set_was_yielded(self):
+        rrs = [{"Name": "a.", "Type": "A"}, {"Name": "b.", "Type": "A"}]
+        session = _FakeSession(rrs)
+        reader = route53_record_sets_described(session)
+        next(reader)
+        walk = walk_of(session)
+        assert walk is not None and walk.projected is False
+        list(reader)
+        assert walk.projected is True
 
     @pytest.mark.spec("req-aws-collector-lb-topology-6")
     def test_an_unmappable_cloudfront_domain_yields_no_arn(self):

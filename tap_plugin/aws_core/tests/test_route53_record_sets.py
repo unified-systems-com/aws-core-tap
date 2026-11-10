@@ -108,6 +108,20 @@ class TestWalk:
         assert shared_walk(session, r53) is shared_walk(session, r53)
         assert r53.calls == 1 and walk_of(session) is not None
 
+    def test_an_unprojected_walk_licenses_no_retirement(self) -> None:
+        walk = walk_zones(_FakeRoute53({"/hostedzone/ZA": [{"Name": "a.", "Type": "A"}]}))
+        surfaces = {
+            listing.zone_id: surface_statement(listing.walk, relation=listing.relation, edge_type=listing.edge_type, subject="s", applied_batches=[])
+            for listing in walk.surface_listings()
+        }
+        assert all(surface["admitted"] is False for surface in surfaces.values())
+        assert surfaces["/hostedzone/ZA"]["reasons"]["admitted"].startswith("collection_partial")
+
+    def test_a_projected_walk_keeps_its_complete_surfaces(self) -> None:
+        walk = walk_zones(_FakeRoute53({"/hostedzone/ZA": [{"Name": "a.", "Type": "A"}]}))
+        walk.projected = True
+        assert all(listing.walk.admitted for listing in walk.surface_listings())
+
     def test_a_walk_that_raised_is_kept_and_has_no_listings(self) -> None:
         class _Denied(_FakeRoute53):
             def list_hosted_zones(self, **_kw: Any) -> Any:

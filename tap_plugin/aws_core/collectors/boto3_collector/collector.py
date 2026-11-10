@@ -1252,7 +1252,7 @@ class Boto3Collector(CollectorBase):
                 )
             # Route 53: each hosted zone's record sets (aws-core-tap#220), the zone node as the parent.
             record_walk = route53_walk_of(session)
-            zone_listings = record_walk.listings if record_walk is not None else []
+            zone_listings = record_walk.surface_listings() if record_walk is not None else []
             for zone_listing in zone_listings:
                 self.record_surface(
                     **surface_statement(

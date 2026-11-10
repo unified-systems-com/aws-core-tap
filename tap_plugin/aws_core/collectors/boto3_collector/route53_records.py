@@ -62,6 +62,18 @@ class RecordWalk:
     #: ``(zone, record set)`` for every record set of a zone whose listing reached its end.
     records: list[tuple[dict[str, Any], dict[str, Any]]] = field(default_factory=list)
     listings: list[ZoneListing] = field(default_factory=list)
+    #: The record set reader yielded every record set to the end. Until it has, no zone's surface may say its
+    #: record sets reached the batch: a reader that raised partway imported none of the ones it missed.
+    projected: bool = False
+
+    def surface_listings(self) -> list[ZoneListing]:
+        """The listings to record as the zones' surfaces. When the reader did not finish, every listing says its
+        record sets were not all carried to the batch, so none of them licenses retiring a record set the batch
+        is missing (aws-core-tap PR 223 review)."""
+        if not self.projected:
+            for listing in self.listings:
+                listing.walk.drop("the record set reader did not finish; its record sets were not all carried")
+        return self.listings
 
 
 def _pages(client: Any, method: str, **kwargs: Any) -> list[dict[str, Any]]:
