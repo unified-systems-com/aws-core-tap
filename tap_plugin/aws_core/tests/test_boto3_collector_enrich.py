@@ -106,3 +106,24 @@ def test_the_stored_envelope_has_no_secret_from_the_detail_response() -> None:
     node.configuration.setdefault("_hydrate", {})["detail"] = {"status": "ok", "op": entry["enrich"]["op"], "data": {member: "PLANTED-SECRET-77aa"}}
     payload = node_envelope(node, {}, {}, persist_configuration=True, redact_paths=entry_redact_paths(entry))["node"]
     assert "PLANTED-SECRET-77aa" not in str(payload["configuration"])
+
+
+def test_a_late_attached_slot_with_a_timestamp_still_reaches_the_envelope_as_json() -> None:
+    """aws-core-tap#215: the envelope is the one JSON boundary, so a tag slot (attached after projection, like the
+    detail slot) cannot carry a raw datetime into the batch either."""
+    import json
+    from datetime import UTC, datetime
+
+    from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
+    from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
+
+    entry = ENRICHED[0]
+    node = project_item(entry, {entry["natural_key"]: "arn:aws:x:us-east-1:123456789012:thing/y"})
+    node.configuration.setdefault("_hydrate", {})["tags"] = {
+        "status": "ok",
+        "op": "ListTagsForResource",
+        "data": {"Tags": [{"Key": "k", "Value": "v"}], "AsOf": datetime(2026, 11, 9, 12, 0, tzinfo=UTC)},
+    }
+    payload = node_envelope(node, {}, {}, persist_configuration=True, redact_paths=())["node"]
+    json.dumps(payload, allow_nan=False)  # raises TypeError on any value JSON cannot carry
+    assert payload["configuration"]["_hydrate"]["tags"]["data"]["AsOf"] == "2026-11-09T12:00:00Z"

@@ -39,7 +39,7 @@ from .identity import (
     split_node_ref,
     undeclared_edge_id,
 )
-from .envelope import redact_configuration
+from .envelope import jsonable, redact_configuration
 from .projection import ProjectedNode
 
 # The description_json format tag for this collector's provenance payload —
@@ -117,8 +117,11 @@ def node_envelope(
         payload.pop("tags", None)
     else:
         payload["tags"] = tags or {}
-    payload["configuration"] = persisted_configuration(
-        node, persist_configuration=persist_configuration, redact_paths=redact_paths
+    # Made JSON-safe here, once, after every slot is attached and redaction has run: a slot attached after
+    # projection (tags, detail) can carry a raw boto3 datetime, and one such value rejects the whole batch
+    # (aws-core-tap#213, #215).
+    payload["configuration"] = jsonable(
+        persisted_configuration(node, persist_configuration=persist_configuration, redact_paths=redact_paths)
     )
     return {
         "entity": {
