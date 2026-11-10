@@ -61,6 +61,18 @@ def test_the_detail_response_is_stored_with_its_status_and_the_parameters_come_f
     assert slot["status"] == "ok" and slot["data"] == {"BrokerId": "b-1", "EngineType": "ActiveMQ"}
 
 
+def test_a_timestamp_in_the_detail_response_is_stored_as_json() -> None:
+    """aws-core-tap#213: boto3 returns datetimes; one left raw in the slot rejected the whole live batch."""
+    import json
+    from datetime import UTC, datetime
+
+    client = _Client({"BrokerId": "b-1", "Created": datetime(2026, 11, 9, 12, 30, tzinfo=UTC), "Users": [{"At": datetime(2026, 1, 2)}]})
+    slot = enrich_item(_BLOCK, {"BrokerId": "b-1"}, service="mq", client_for=lambda _s: client)
+    json.dumps(slot, allow_nan=False)  # raises TypeError on any value JSON cannot carry
+    assert slot["data"]["Created"] == "2026-11-09T12:30:00Z"
+    assert slot["data"]["Users"] == [{"At": "2026-01-02T00:00:00Z"}]
+
+
 def test_a_refused_detail_call_is_a_denied_slot_not_a_crash() -> None:
     slot = enrich_item(_BLOCK, {"BrokerId": "b-1"}, service="mq", client_for=lambda _s: _Client(error="AccessDeniedException"))
     assert slot["status"] == "denied"
