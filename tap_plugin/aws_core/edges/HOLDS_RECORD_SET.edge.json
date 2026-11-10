@@ -1,0 +1,17 @@
+{
+  "slug": "HOLDS_RECORD_SET__aws_core",
+  "name": "Holds Record Set",
+  "description": "A Route 53 hosted zone holds a record set (zone -> record set). Every record set ListResourceRecordSets returns is a node, aliases or not. Containment: a record set belongs to exactly one zone, and when a complete listing of the zone no longer names it, it is a retirement candidate.",
+  "sources": [
+    "aws_core__aws_route53_zone"
+  ],
+  "targets": [
+    "aws_core__aws_route53_record_set"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

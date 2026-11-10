@@ -38,6 +38,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     cloudfront_distributions_with_oac,
     eventbridge_rules_with_targets,
     iam_oidc_providers_described,
+    route53_record_sets_described,
     route53_zones_with_alias_targets,
     s3_buckets_hydrated,
 )
@@ -542,12 +543,15 @@ class TestCustomFnsUseTheRunsPartition:
                 ]
             },
         )
-        zones = list(
-            route53_zones_with_alias_targets(_NoDirectClientSession(), client_for=_client_for({"route53": r53}, asked))
-        )
+        session = _NoDirectClientSession()
+        client_for = _client_for({"route53": r53}, asked)
+        zones = list(route53_zones_with_alias_targets(session, client_for=client_for))
+        records = list(route53_record_sets_described(session, client_for=client_for))
         assert "cloudfront" not in asked
-        assert zones[0]["alias_cloudfront_domains"] == ["dabc.cloudfront.net"]  # raw fact kept
-        assert zones[0]["alias_cloudfront_arns"] == []  # nothing resolvable without CloudFront
+        assert [z["Id"] for z in zones] == ["/hostedzone/ZGOV1"]
+        assert records[0]["AliasTarget"]["DNSName"] == "dabc.cloudfront.net."  # raw fact kept
+        assert records[0]["_resolves_cloudfront"] == []  # nothing resolvable without CloudFront
+        assert records[0]["_edge_reads"]["_resolves_cloudfront"] == "partial"  # unresolved, not 'resolves nowhere'
 
     def test_cloudfront_distribution_fn_yields_nothing_in_govcloud(self) -> None:
         cf = _gov_client(list_distributions=lambda: (_ for _ in ()).throw(AssertionError("must not be called")))

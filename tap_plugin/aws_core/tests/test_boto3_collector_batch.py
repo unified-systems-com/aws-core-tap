@@ -242,7 +242,7 @@ class TestAddressBatch:
     def test_an_edge_type_with_no_identity_keeps_its_explicit_id(self, monkeypatch):
         """An edge type that declares no identity (read as undeclared here); core would create a ref-addressed
         edge of it afresh every run, so it keeps the uuid5 id its existing rows carry."""
-        read_as_undeclared(monkeypatch)
+        read_as_undeclared(monkeypatch, "ROUTES_TRAFFIC__aws_core")
         out = address_batch(
             [_node(ZONE, "Z1", hosted_zone_id="Z1")],
             [_edge("ROUTES_TRAFFIC__aws_core", ZONE, "Z1", DIST, "arn:dist")],

@@ -653,22 +653,22 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert str(log_edge.from_entity_id) == str(node_id("aws_core__aws_lambda", _FN_ARN))
     assert str(log_edge.to_entity_id) == str(node_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
 
-    # ROUTES_TRAFFIC resolves non-dangling through the route53 custom_fn's
-    # CloudFront cross-join: the zone's A-alias domain -> the already-
-    # collected CloudFront node by ARN identity. No transform — the
-    # custom_fn did the domain->ARN join (req-aws-collector-edges-7). Note
-    # the manifest-registered type is aws_route53_zone (model + plugin),
-    # which the collector manifest was reconciled to.
+    # The zone holds its record sets (HOLDS_RECORD_SET), and each alias record RESOLVES_TO_TARGET the already-collected
+    # CloudFront node by ARN identity (aws-core-tap#220): the custom_fn did the domain->ARN join
+    # (req-aws-collector-edges-7). The A and AAAA aliases are two record sets, so two edges, not a duplicate.
     zone = get_node(node_id("aws_core__aws_route53_zone", _ZONE_ID))
     assert zone.name == "samsite.unified-systems.com."
-    route_edge = get_edge(
-        edge_between(
-            "ROUTES_TRAFFIC__aws_core", "aws_core__aws_route53_zone", _ZONE_ID, "aws_core__aws_cloudfront_distribution", _DIST_ARN
-        ).entity_id
-    )
-    assert route_edge.edge_type == "ROUTES_TRAFFIC__aws_core"
-    assert str(route_edge.from_entity_id) == str(node_id("aws_core__aws_route53_zone", _ZONE_ID))
-    assert str(route_edge.to_entity_id) == str(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+    for record_type in ("A", "AAAA"):
+        key = f"ZSLICE000001/samsite.unified-systems.com./{record_type}/"
+        record = get_node(node_id("aws_core__aws_route53_record_set", key))
+        assert (record.record_name, record.record_type) == ("samsite.unified-systems.com.", record_type)
+        held = get_edge(edge_between("HOLDS_RECORD_SET__aws_core", "aws_core__aws_route53_zone", _ZONE_ID, "aws_core__aws_route53_record_set", key).entity_id)
+        assert str(held.from_entity_id) == str(node_id("aws_core__aws_route53_zone", _ZONE_ID))
+        resolves = get_edge(
+            edge_between("RESOLVES_TO_TARGET__aws_core", "aws_core__aws_route53_record_set", key, "aws_core__aws_cloudfront_distribution", _DIST_ARN).entity_id
+        )
+        assert str(resolves.to_entity_id) == str(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+        assert resolves.properties == {"via": "alias", "evaluate_target_health": None}
 
 
 @pytest.mark.django_db

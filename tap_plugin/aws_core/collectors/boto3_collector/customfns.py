@@ -30,6 +30,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads
 from .ecs import shared_walk
+from .route53_records import bare_zone_id, record_set_key
+from .route53_records import shared_walk as shared_records_walk
 from .envelope import jsonable, without_response_metadata
 from .hydrate import hydrate_item
 from .iam_trust import account_of_iam_arn, summarize_trust_policy
@@ -380,120 +382,177 @@ def _elbv2_in_region(session: Any, client_for: Any, region: str, service: str = 
     return session.client(service, region_name=region)
 
 
-def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
-    """Enumerate Route 53 hosted zones, resolving CloudFront alias targets.
+class _AliasTargets:
+    """What a record's alias or CNAME names, resolved to the node keys the grid uses (aws-core-tap#220).
 
-    Route 53's ``ListHostedZones`` is shallow; the routing relationship
-    lives in each zone's record sets, where an A/AAAA *alias* whose
-    ``AliasTarget.DNSName`` is a CloudFront distribution domain expresses
-    "this zone routes traffic to that distribution". The edge target
-    (``aws_cloudfront_distribution``) is ARN-keyed, but a record set only
-    carries the CloudFront *domain* — bridging domain -> ARN is a
-    cross-resource join no pure scalar transform can do. That join is
-    exactly what this ``custom_fn`` seam exists for: it lists CloudFront
-    once, builds a ``domain -> ARN`` map, and yields each zone enriched
-    with the resolved ``alias_cloudfront_arns`` so ``ROUTES_TRAFFIC``
-    names its target by natural key with no transform (the make-it-work
-    natural-key discipline; req-aws-collector-edges-7). The raw
-    ``alias_cloudfront_domains`` stay lossless in ``configuration``.
+    CloudFront is listed once (its domains map to ARNs; it does not exist in GovCloud, where nothing resolves to
+    it). Load balancers are listed lazily, per region an alias hostname names, both ELBv2 and Classic: an
+    Application Load Balancer is keyed by its ARN, the others by their DNS name. A region the partition does not
+    have is never asked.
+    """
 
-    CloudFront and Route 53 are global; their clients are bound to the RUN's
-    region (a region of the credential's own partition — ``us-east-1`` in the
-    commercial partition, ``us-gov-*`` in GovCloud). CloudFront does not exist
-    in GovCloud: the join is skipped there (zones still collect, with their raw
-    ``alias_cloudfront_domains`` and no resolved ARNs).
+    def __init__(self, session: Any, client_for: Any, r53: Any) -> None:
+        self._session, self._client_for = session, client_for
+        self._partition = _client_partition(r53)
+        self._lb_by_dns: dict[str, dict[str, Any]] = {}
+        self._lb_regions: set[str] = set()
+        self._cloudfront: dict[str, str] = {}
+        if service_unavailable_reason(self._partition, "cloudfront") is None:
+            try:
+                cf = _run_client(session, client_for, "cloudfront")
+                for page in _pages(cf, "list_distributions"):
+                    for dist in (page.get("DistributionList", {}) or {}).get("Items", []) or []:
+                        domain = (dist.get("DomainName") or "").rstrip(".").lower()
+                        if domain and dist.get("ARN"):
+                            self._cloudfront[domain] = str(dist["ARN"])
+            except BotoCoreError, ClientError:
+                # No distributions read: every CloudFront hostname stays unmatched (partial), and every other
+                # record set is still described (aws-core-tap PR 223 review).
+                self._cloudfront = {}
+
+    def _load_region(self, region: str) -> None:
+        if region in self._lb_regions:
+            return
+        self._lb_regions.add(region)
+        try:
+            for lb in _elbv2_load_balancers(_elbv2_in_region(self._session, self._client_for, region)):
+                self._lb_by_dns[str(lb.get("DNSName", "")).lower()] = lb
+        except BotoCoreError, ClientError:
+            pass  # no load balancers read in this region: its aliases stay unmatched (partial)
+        try:  # Classic load balancers share the hostname form of Application ones and are keyed by DNS name
+            classic = _elbv2_in_region(self._session, self._client_for, region, "elb")
+            for page in _pages(classic, "describe_load_balancers"):
+                for lb in page.get("LoadBalancerDescriptions", []):
+                    self._lb_by_dns.setdefault(str(lb.get("DNSName", "")).lower(), {"DNSName": lb.get("DNSName"), "Type": "classic"})
+        except BotoCoreError, ClientError:
+            pass
+
+    def resolve(self, hostname: str) -> tuple[str, str] | None | bool:
+        """``(slot, key)`` for a hostname that names a load balancer or distribution; ``None`` for a hostname that
+        is neither; ``False`` for one that looks like a load balancer or distribution this run could not match."""
+        domain = hostname.rstrip(".").lower()
+        lb_region = _elb_alias_region(domain)
+        if lb_region is not None:
+            if lb_region not in _partition_regions(self._partition):
+                return False
+            self._load_region(lb_region)
+            found = self._lb_by_dns.get(domain.removeprefix("dualstack."))
+            if found is None:
+                return False
+            if found.get("Type") == "application":
+                return ("_resolves_alb", str(found["LoadBalancerArn"]))
+            return ("_resolves_elb", str(found["DNSName"]))
+        if domain.endswith(".cloudfront.net"):
+            arn = self._cloudfront.get(domain)
+            return ("_resolves_cloudfront", arn) if arn is not None else False
+        return None
+
+
+_RESOLVES_SLOTS = ("_resolves_alb", "_resolves_elb", "_resolves_cloudfront", "_resolves_record")
+
+
+def route53_record_sets_described(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """Enumerate every record set of every hosted zone (global), with what each resolves to (aws-core-tap#220).
+
+    The record sets come from the run's one Route 53 walk (:mod:`.route53_records`), which also gives each zone
+    its completeness surface. A record resolves through its alias (``AliasTarget``) or, for a CNAME, its value:
+    to an Application Load Balancer, another load balancer, a CloudFront distribution, or another record set in
+    the same zone (an alias whose target is in this zone, or a CNAME whose value is a name in this zone). A
+    hostname that looks like a load balancer or distribution the run could not match, or a same-zone name with no
+    record set, leaves the record's resolution partial, never 'resolves to nothing'. Once every record set has been
+    yielded the walk is marked projected, which is what lets the zones' surfaces say their record sets were carried.
     """
     r53 = _run_client(session, client_for, "route53")
-    lb_by_dns: dict[str, dict[str, str]] = {}
-    lb_regions_read: set[str] = set()
-    arn_by_domain: dict[str, str] = {}
-    if service_unavailable_reason(_client_partition(r53), "cloudfront") is None:
-        cf = _run_client(session, client_for, "cloudfront")
-        for page in _pages(cf, "list_distributions"):
-            for dist in (page.get("DistributionList", {}) or {}).get("Items", []) or []:
-                domain = (dist.get("DomainName") or "").rstrip(".").lower()
-                arn = dist.get("ARN")
-                if domain and arn:
-                    arn_by_domain[domain] = arn
+    walk = shared_records_walk(session, r53)
+    names: dict[tuple[str, str, str], list[str]] = {}
+    any_type: dict[tuple[str, str], list[str]] = {}
+    for zone, record in walk.records:
+        name = str(record.get("Name", "")).lower()
+        key = record_set_key(str(zone["Id"]), record)
+        names.setdefault((str(zone["Id"]), name, str(record.get("Type", ""))), []).append(key)
+        any_type.setdefault((str(zone["Id"]), name), []).append(key)
+    targets = _AliasTargets(session, client_for, r53) if walk.records else None
+    for zone, record in walk.records:
+        zone_id = str(zone["Id"])
+        slots: dict[str, list[dict[str, Any]]] = {slot: [] for slot in _RESOLVES_SLOTS}
+        read = COMPLETE
+        alias = record.get("AliasTarget") or {}
+        hostnames: list[tuple[str, str]] = []
+        if alias.get("DNSName"):
+            hostnames.append(("alias", str(alias["DNSName"])))
+        elif record.get("Type") == "CNAME":
+            hostnames.extend(("cname", str(v.get("Value"))) for v in record.get("ResourceRecords") or [] if v.get("Value"))
+        for via, hostname in hostnames:
+            properties = {"via": via, "evaluate_target_health": alias.get("EvaluateTargetHealth") if via == "alias" else None}
+            if via == "alias":
+                in_zone = bare_zone_id(str(alias.get("HostedZoneId") or "")) == bare_zone_id(zone_id)
+            else:  # a CNAME's value is in this zone when it is the zone's apex or a name under it
+                apex = str(zone.get("Name") or "").lower()
+                fqdn = hostname.lower() if hostname.endswith(".") else hostname.lower() + "."
+                in_zone = bool(apex) and (fqdn == apex or fqdn.endswith("." + apex))
+            if in_zone:
+                if via == "alias":  # an alias names a record set of its own type
+                    keys = names.get((zone_id, hostname.lower(), str(record.get("Type", ""))), [])
+                else:  # a CNAME names every record set at that name
+                    keys = any_type.get((zone_id, fqdn), [])
+                slots["_resolves_record"].extend({"key": key, "properties": properties} for key in keys)
+                if not keys:
+                    read = PARTIAL
+                continue
+            if targets is None:
+                continue
+            resolved = targets.resolve(hostname)
+            if resolved is False:
+                read = PARTIAL
+            elif resolved is not None:
+                slot, key = resolved
+                slots[slot].append({"key": key, "properties": properties})
+        yield with_edge_reads(
+            {
+                **record,
+                "_record_set_key": record_set_key(zone_id, record),
+                "_zone_id": zone_id,
+                **slots,
+            },
+            {"_zone_id": COMPLETE, **dict.fromkeys(_RESOLVES_SLOTS, read)},
+        )
+        if read != COMPLETE:
+            walk.unresolved.add(zone_id)
+    walk.projected = True
 
-    for zpage in _pages(r53, "list_hosted_zones"):
-        for zone in zpage.get("HostedZones", []):
-            zone_id = zone.get("Id")
-            domains: list[str] = []
-            arns: list[str] = []
-            alb_arns: list[str] = []
-            elb_names: list[str] = []
-            # How the zone's ROUTES_TRAFFIC scope was read (authority.py). A record-set listing that
-            # raises still fails the whole entry, as before; one that stops on a page saying "more",
-            # or an alias whose distribution is not in this account's listing (another account's, or
-            # a partition without CloudFront), leaves the scope partial: a routing the collector saw
-            # but could not wire is not an absence.
-            routes_read = COMPLETE
-            last_page: Any = None
-            for rpage in _pages(r53, "list_resource_record_sets", HostedZoneId=zone_id):
-                last_page = rpage
-                for rr in rpage.get("ResourceRecordSets", []):
-                    dns = (rr.get("AliasTarget") or {}).get("DNSName") or ""
-                    domain = dns.rstrip(".").lower()
-                    lb_region = _elb_alias_region(domain)
-                    if lb_region is not None and lb_region not in _partition_regions(_client_partition(r53)):
-                        # A record can name any region-shaped label; only a region the partition has is asked.
-                        routes_read = PARTIAL
-                        continue
-                    if lb_region is not None:
-                        if lb_region not in lb_regions_read:
-                            lb_regions_read.add(lb_region)
-                            try:
-                                regional = _elbv2_in_region(session, client_for, lb_region)
-                                for lb in _elbv2_load_balancers(regional):
-                                    lb_by_dns[str(lb.get("DNSName", "")).lower()] = lb
-                            except BotoCoreError, ClientError:
-                                pass  # no load balancers read in this region: the aliases below stay unmatched (partial)
-                            try:  # Classic load balancers share the hostname form of Application ones and are keyed by DNS name
-                                classic = _elbv2_in_region(session, client_for, lb_region, "elb")
-                                for page in _pages(classic, "describe_load_balancers"):
-                                    for lb in page.get("LoadBalancerDescriptions", []):
-                                        lb_by_dns.setdefault(str(lb.get("DNSName", "")).lower(), {"DNSName": lb.get("DNSName"), "Type": "classic"})
-                            except BotoCoreError, ClientError:
-                                pass
-                        found = lb_by_dns.get(domain.removeprefix("dualstack."))
-                        if found is not None and found.get("Type") == "application":
-                            alb_arns.append(str(found["LoadBalancerArn"]))
-                        elif found is not None:
-                            elb_names.append(str(found["DNSName"]))
-                        else:
-                            routes_read = PARTIAL
-                        continue
-                    if not domain.endswith(".cloudfront.net"):
-                        continue
-                    domains.append(domain)
-                    arn = arn_by_domain.get(domain)
-                    if arn is not None:
-                        arns.append(arn)
-                    else:
-                        routes_read = PARTIAL
-            if page_says_more(last_page):
-                routes_read = PARTIAL
-            # Dedupe order-preserving: a zone routing to one distribution
-            # via BOTH an A and an AAAA alias (the standard IPv4+IPv6
-            # setup) yields the domain/ARN twice. Without dedup, edge
-            # fan-out emits the same relationship twice, which GRIFT
-            # rejects the whole batch over. One CF distribution -> one edge.
-            yield with_edge_reads(
-                {
-                    **zone,
-                    "alias_cloudfront_domains": list(dict.fromkeys(domains)),
-                    "alias_cloudfront_arns": list(dict.fromkeys(arns)),
-                    "alias_alb_arns": list(dict.fromkeys(alb_arns)),
-                    "alias_elb_dns_names": list(dict.fromkeys(elb_names)),
-                    # Bare zone ID (last path segment of Id like "/hostedzone/Z…").
-                    # list_tags_for_resource wants ResourceId in this form; Id
-                    # itself stays as boto3 returned it so existing identity and
-                    # downstream consumers don't shift.
-                    "_zone_resource_id": (zone_id or "").rsplit("/", 1)[-1],
-                },
-                {"alias_cloudfront_arns": routes_read, "alias_alb_arns": routes_read, "alias_elb_dns_names": routes_read},
-            )
+
+#: The zone's direct routes the record sets replaced (aws-core-tap#220): still declared, read complete and empty,
+#: so a reconcile-armed run proposes removing the edges earlier runs wrote. Drop them once a release has carried it.
+_REPLACED_ZONE_ROUTES = ("alias_cloudfront_arns", "alias_alb_arns", "alias_elb_dns_names")
+
+
+def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """Enumerate Route 53 hosted zones (global) from the run's one Route 53 walk.
+
+    What a zone's records resolve to now lives on the record set nodes (:func:`route53_record_sets_described`),
+    which the zone contains (``HOLDS_RECORD_SET``). The zone's former direct ``ROUTES_TRAFFIC`` slots are empty for
+    one release, read complete when the zone's record listing reached its end and failed when it did not; once
+    every reader has run, the collector also fails them for a zone whose record sets did not all resolve or were
+    not all carried (``withhold_unreplaced_zone_routes``). The name is kept because the manifest and the run
+    ledger name it.
+    """
+    r53 = _run_client(session, client_for, "route53")
+    walk = shared_records_walk(session, r53)
+    listed = {listing.zone_id for listing in walk.listings if listing.walk.complete}
+    for zone in walk.zones:
+        # The replaced slots are claimed only when the record sets that replace them were read: a zone whose
+        # listing failed or stopped short keeps its old edges (aws-core-tap PR 221 review).
+        read = COMPLETE if str(zone.get("Id") or "") in listed else FAILED
+        yield with_edge_reads(
+            {
+                **zone,
+                **{slot: [] for slot in _REPLACED_ZONE_ROUTES},
+                # Bare zone ID (last path segment of Id like "/hostedzone/Z…"). list_tags_for_resource wants
+                # ResourceId in this form; Id itself stays as boto3 returned it, the zone's identity.
+                "_zone_resource_id": bare_zone_id(str(zone.get("Id") or "")),
+            },
+            dict.fromkeys(_REPLACED_ZONE_ROUTES, read),
+        )
 
 
 def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
@@ -3358,6 +3417,7 @@ _CUSTOM_FNS = {
     "elbv2_albs_described": elbv2_albs_described,
     "elb_family_described": elb_family_described,
     "elbv2_target_groups_described": elbv2_target_groups_described,
+    "route53_record_sets_described": route53_record_sets_described,
     "iam_groups_listed": iam_groups_listed,
     "iam_instance_profiles_listed": iam_instance_profiles_listed,
     "iam_saml_providers_described": iam_saml_providers_described,

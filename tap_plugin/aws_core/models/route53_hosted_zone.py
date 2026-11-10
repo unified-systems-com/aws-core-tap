@@ -18,6 +18,13 @@ class Route53HostedZone(BaseModel):
     # Identity (req-grid-entity-natural-key): The hosted zone ID, the boto3 collector's identity for
     # it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("hosted_zone_id",)
+    # A zone contains its record sets (aws-core-tap#220): a record set the zone's complete listing no longer names
+    # is a retirement candidate, and retiring the zone cascades to its record sets. Literals, for validate_plugin's
+    # AST reader.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_route53_record_set"}], "edges": [{"type": "HOLDS_RECORD_SET__aws_core"}]},
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("HOLDS_RECORD_SET__aws_core",)
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

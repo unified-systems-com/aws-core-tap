@@ -99,6 +99,8 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import walks_of
+from .route53_records import walk_of as route53_walk_of
+from .route53_records import withhold_unreplaced_zone_routes
 from .endpoint_probe import EndpointProbe, request_host
 from .envelope import jsonable
 from .hydrate import hydrate_item
@@ -1141,6 +1143,9 @@ class Boto3Collector(CollectorBase):
         # fails here rather than send it. Permissive dangling mode: an endpoint naming a node no
         # live row matches skips that edge and core records a skip event, never a failure.
         progress.reads_finished(nodes=len(node_envelopes), edges=len(edge_envelopes))
+        # The zones' replaced direct routes are claimed only for a zone whose record sets all resolved and reached the
+        # batch, which is known only now that every reader has run (aws-core-tap PR 223 review).
+        withhold_unreplaced_zone_routes(judged, route53_walk_of(session))
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:
@@ -1249,7 +1254,22 @@ class Boto3Collector(CollectorBase):
                         applied_batches=applied_batches,
                     )
                 )
-            if not org_tree.listings and not landing_zone.listings and not ecs_listings:
+            # Route 53: each hosted zone's record sets (aws-core-tap#220), the zone node as the parent.
+            record_walk = route53_walk_of(session)
+            zone_listings = record_walk.surface_listings() if record_walk is not None else []
+            for zone_listing in zone_listings:
+                self.record_surface(
+                    **surface_statement(
+                        zone_listing.walk,
+                        relation=zone_listing.relation,
+                        edge_type=zone_listing.edge_type,
+                        subject=resolve_subject(
+                            node_ref(zone_listing.parent_type, zone_listing.parent_key), addressed, resolved_refs
+                        ),
+                        applied_batches=applied_batches,
+                    )
+                )
+            if not org_tree.listings and not landing_zone.listings and not ecs_listings and not zone_listings:
                 self.declare_no_surfaces()
 
         imported = result.counts.batches_imported
