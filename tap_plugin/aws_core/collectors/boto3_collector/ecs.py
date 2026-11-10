@@ -181,11 +181,16 @@ def _walked_listing(client: Any, method: str, key: str, **kwargs: Any) -> tuple[
     return arns, _slot(op), walk
 
 
-def _container_walk(task: dict[str, Any] | None, gap: dict[str, Any] | None) -> ListingWalk:
+def _container_walk(
+    task: dict[str, Any] | None, gap: dict[str, Any] | None, lookup_failed: str | None = None
+) -> ListingWalk:
     """How completely one task's containers were read: from its own ``DescribeTasks`` entry.
 
     A task that was not described lists no containers, so its surface is not complete; a container that came
-    back without an ARN was listed but could not be carried, so the surface is complete but not admitted.
+    back without an ARN was listed but could not be carried, so the surface is complete but not admitted. A
+    stopped task whose container could not be looked up on the grid (``lookup_failed``) left that container out
+    for a reason that is not AWS's answer, so the surface is not complete either: an omitted container must never
+    read as one the source no longer lists.
     """
     walk = ListingWalk()
     if task is None:
@@ -206,6 +211,11 @@ def _container_walk(task: dict[str, Any] | None, gap: dict[str, Any] | None) -> 
     walk.reached_end(len(containers))
     if any(not c.get("containerArn") for c in containers):
         walk.drop("a container came back without a containerArn")
+    if lookup_failed:
+        walk.complete = False
+        walk.admitted = False
+        walk.reasons["enumeration_complete"] = f"grid_lookup_failed: {lookup_failed}: a listed container was not looked up"
+        walk.reasons["admitted"] = f"grid_lookup_failed: {lookup_failed}: a listed container was not processed"
     return walk
 
 
@@ -286,23 +296,32 @@ def _task_item(
 
 def _container_items(
     task: dict[str, Any], *, stopped: bool = False, held: Held = _held_by_none
-) -> tuple[list[dict[str, Any]], bool]:
-    """``(container items, every container named itself)`` for one described task.
+) -> tuple[list[dict[str, Any]], bool, str | None]:
+    """``(container items, every container named itself, the grid lookup failure if any)`` for one described task.
 
     The item is the container as ECS described it plus ``_task_arn`` (the ``RUNS_CONTAINER`` source). It
     does not carry the task's ``overrides``. An empty ``imageDigest`` is left out, so it projects to null.
 
     For a ``stopped`` task, only the containers the grid already holds are yielded, with no ``_task_arn`` and
-    that read ``partial``: they record their stopped ``lastStatus`` and assert no ``RUNS_CONTAINER`` edge.
+    that read ``partial``: they record their stopped ``lastStatus`` and assert no ``RUNS_CONTAINER`` edge. A
+    lookup that fails (an ambiguous key included) skips that container and is returned, so its task's container
+    surface can say it is not complete.
     """
     items: list[dict[str, Any]] = []
     named = True
+    lookup_failed: str | None = None
     for container in task.get("containers") or []:
         if not container.get("containerArn"):
             named = False
             continue
-        if stopped and not held(CONTAINER_TYPE, container["containerArn"]):
-            continue
+        if stopped:
+            try:
+                is_held = held(CONTAINER_TYPE, container["containerArn"])
+            except Exception as exc:  # noqa: BLE001 — recorded on the surface, never a crash and never a guess
+                lookup_failed = lookup_failed or type(exc).__name__
+                continue
+            if not is_held:
+                continue
         item = dict(container)
         if not item.get("imageDigest"):
             item.pop("imageDigest", None)
@@ -312,7 +331,7 @@ def _container_items(
             continue
         item["_task_arn"] = task["taskArn"]
         items.append(with_edge_reads(item, {"_task_arn": COMPLETE}))
-    return items, named
+    return items, named, lookup_failed
 
 
 def _held_stopped(
@@ -342,19 +361,6 @@ def _held_stopped(
     return kept, gap
 
 
-def _container_held(held: Held) -> Held:
-    """``held`` for containers, where a failed grid read must not stop the walk: any failure, an ambiguous
-    key included, reads as not held, so the container keeps whatever the grid last recorded."""
-
-    def check(entity_type: str, arn: str) -> bool:
-        try:
-            return held(entity_type, arn)
-        except Exception:  # noqa: BLE001 — see the docstring
-            return False
-
-    return check
-
-
 def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
     """Read one region's clusters, services, tasks and containers (req-aws-collector-ecs-1, -2, -3, -15).
 
@@ -366,7 +372,6 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
             caller records the entry as skipped, which is not the same as the region having no clusters.
     """
     walk = EcsWalk()
-    container_held = _container_held(held)
     try:
         cluster_arns = _list_all(client, "list_clusters", "clusterArns")
     except _IncompleteListing:
@@ -423,16 +428,19 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
             stopped = arn in stopped_set
             task_item = _task_item(arn, cluster_arn, tasks.get(arn), task_gaps.get(arn), by_name, stopped=stopped)
             walk.tasks.append(task_item)
-            walk.listings.append(
-                EcsListing(TASK_TYPE, arn, RUNS_CONTAINER, _container_walk(tasks.get(arn), task_gaps.get(arn)))
-            )
+            lookup_failed: str | None = None
             if arn in tasks:
-                containers, named = _container_items(tasks[arn], stopped=stopped, held=container_held)
+                containers, named, lookup_failed = _container_items(tasks[arn], stopped=stopped, held=held)
                 walk.containers.extend(containers)
                 if not named:
                     task_item.setdefault("_hydrate", {})["containers"] = _slot(
                         "DescribeTasks", code="ContainerWithoutArn"
                     )
+            walk.listings.append(
+                EcsListing(
+                    TASK_TYPE, arn, RUNS_CONTAINER, _container_walk(tasks.get(arn), task_gaps.get(arn), lookup_failed)
+                )
+            )
     return walk
 
 

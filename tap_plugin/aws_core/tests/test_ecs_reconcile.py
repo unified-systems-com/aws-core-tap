@@ -172,6 +172,25 @@ class TestTaskContainerSurface:
         assert surface["scope_authorized"] is False
         assert surface["reasons"]["enumeration_complete"].startswith("describe_failed")
 
+    @pytest.mark.spec("req-aws-core-contained-type-triple-3")
+    def test_a_failed_container_lookup_leaves_the_surface_incomplete(self) -> None:
+        """PR 216 review (Codex): a held stopped task's container that could not be looked up is left out for a
+        reason that is not AWS's answer, so the surface must not read complete (it would make it a candidate)."""
+        stopped_arn = _task_arn("halted")
+        stopped = {**_task(stopped_arn, container_arn=_container_arn("halted", "c1")), "lastStatus": "STOPPED"}
+
+        def held(entity_type, arn):
+            if entity_type == CONTAINER:
+                raise RuntimeError("grid unavailable")
+            return arn == stopped_arn
+
+        walk = walk_ecs(_FakeEcs(stopped={stopped_arn: stopped}), held=held)
+        surface = _surfaces(walk)[(TASK_TYPE, stopped_arn, RUNS_CONTAINER)]
+        assert surface["enumeration_complete"] is False
+        assert surface["admitted"] is False
+        assert surface["reasons"]["enumeration_complete"].startswith("grid_lookup_failed: RuntimeError")
+        assert _container_arn("halted", "c1") not in [c["containerArn"] for c in walk.containers]
+
     def test_a_container_without_an_arn_is_complete_but_not_admitted(self) -> None:
         task = _task()
         task["containers"].append({"name": "sidecar", "image": "x"})
@@ -326,6 +345,17 @@ class TestEcsTaskFalsifier:
         arn = f"arn:aws:ecs:{REGION}:{ACCOUNT_ID}:task/0123456789abcdef"  # the older short form
         [verdict] = EcsTaskFalsifier(session=FakeSession(ecs), account_id=ACCOUNT_ID).batch_falsify(
             [_candidate(_task_row(arn), TASK)], _context()
+        )
+        assert verdict.verdict == UNDETERMINED and verdict.reason == "scope_unknown"
+        assert ecs.calls == []
+
+    def test_an_arn_from_another_account_is_not_probed_even_if_the_dimension_agrees(self) -> None:
+        """PR 216 review (Codex): the ARN's own account is checked, not only the row's aws_account dimension."""
+        ecs = FakeEcsProbe()
+        arn = f"arn:aws:ecs:{REGION}:{OTHER_ACCOUNT_ID}:task/prod/foreign"
+        ecs.answers[arn] = "MISSING"
+        [verdict] = EcsTaskFalsifier(session=FakeSession(ecs), account_id=ACCOUNT_ID).batch_falsify(
+            [_candidate(_task_row(arn, account_id=ACCOUNT_ID), TASK)], _context()
         )
         assert verdict.verdict == UNDETERMINED and verdict.reason == "scope_unknown"
         assert ecs.calls == []

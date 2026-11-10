@@ -2725,6 +2725,16 @@ class _EcsFalsifier(_AwsFalsifier):
                     candidate, "scope_unknown", "the ARN does not name its task's cluster and region, so it cannot be probed"
                 )
                 continue
+            # The ARN's own account, not only the row's dimension, must be this credential's: a node another
+            # collector created carries dimensions it derived, and a MISSING from a foreign account's ARN is no
+            # evidence about that account.
+            if _arn_account(task_arn) != account_id:
+                verdicts[candidate.entity_id] = _undetermined(
+                    candidate,
+                    "scope_unknown",
+                    f"the ARN names account {_arn_account(task_arn) or '<none>'}, not this credential's {account_id}",
+                )
+                continue
             expected = Expected(source_id=arn, owner=None, name=None)
             name = str(getattr(row, "name", "") or "")
             groups.setdefault((region, cluster), []).append((candidate, expected, task_arn, name))
