@@ -174,8 +174,8 @@ class TestTaskContainerSurface:
 
     @pytest.mark.spec("req-aws-core-contained-type-triple-3")
     def test_a_failed_container_lookup_leaves_the_surface_incomplete(self) -> None:
-        """PR 216 review (Codex): a held stopped task's container that could not be looked up is left out for a
-        reason that is not AWS's answer, so the surface must not read complete (it would make it a candidate)."""
+        """A held stopped task's container that could not be looked up is left out for a reason that is not AWS's
+        answer, so the surface must not read complete (it would make the container a candidate)."""
         stopped_arn = _task_arn("halted")
         stopped = {**_task(stopped_arn, container_arn=_container_arn("halted", "c1")), "lastStatus": "STOPPED"}
 
@@ -212,12 +212,15 @@ class FakeEcsProbe:
         self.answers: dict[str, dict[str, Any] | str] = {}
         self.renamed: dict[str, dict[str, Any]] = {}
         self.denied: set[str] = set()
+        self.cluster_errors: dict[str, str] = {}
         self.calls: list[tuple[str, list[str]]] = []
 
     def describe_tasks(self, cluster: str, tasks: list[str]) -> dict[str, Any]:
         self.calls.append((cluster, list(tasks)))
         if cluster in self.denied:
             raise ClientError({"Error": {"Code": "AccessDeniedException", "Message": "no"}}, "DescribeTasks")
+        if cluster in self.cluster_errors:
+            raise ClientError({"Error": {"Code": self.cluster_errors[cluster], "Message": "no"}}, "DescribeTasks")
         found: list[dict[str, Any]] = []
         failures: list[dict[str, Any]] = []
         for arn in tasks:
@@ -349,8 +352,18 @@ class TestEcsTaskFalsifier:
         assert verdict.verdict == UNDETERMINED and verdict.reason == "scope_unknown"
         assert ecs.calls == []
 
+    def test_a_cluster_that_is_gone_is_undetermined_not_absence(self) -> None:
+        """Only STOPPED or MISSING retires a task; ClusterNotFoundException, though shaped like a not-found, does not."""
+        ecs = FakeEcsProbe()
+        arn = _task_arn("orphan", "deleted")
+        ecs.cluster_errors["deleted"] = "ClusterNotFoundException"
+        [verdict] = EcsTaskFalsifier(session=FakeSession(ecs), account_id=ACCOUNT_ID).batch_falsify(
+            [_candidate(_task_row(arn), TASK)], _context()
+        )
+        assert verdict.verdict == UNDETERMINED
+
     def test_an_arn_from_another_account_is_not_probed_even_if_the_dimension_agrees(self) -> None:
-        """PR 216 review (Codex): the ARN's own account is checked, not only the row's aws_account dimension."""
+        """The ARN's own account is checked, not only the row's aws_account dimension."""
         ecs = FakeEcsProbe()
         arn = f"arn:aws:ecs:{REGION}:{OTHER_ACCOUNT_ID}:task/prod/foreign"
         ecs.answers[arn] = "MISSING"

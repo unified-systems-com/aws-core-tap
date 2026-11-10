@@ -2654,6 +2654,7 @@ class ConformancePackFalsifier(_GetByArnFalsifier):
 _ECS_TASKS_PER_CALL = 100
 _ECS_STOPPED = "STOPPED"
 _ECS_MISSING = "MISSING"
+_ECS_CLUSTER_NOT_FOUND = "ClusterNotFoundException"
 
 
 def _ecs_task_of_container(container_arn: str) -> str | None:
@@ -2682,8 +2683,10 @@ class _EcsFalsifier(_AwsFalsifier):
     A deploy replaces every task of a service at once, so a run can hold many candidates: one call per 100 is
     the probe budget, not one per candidate. Region and cluster come from the task's own ARN (the resource's own
     attribute, so a not-found there is a real absence). A call that raises answers every candidate it covered
-    through ``_failed_probe``: ``ClusterNotFoundException`` is a not-found (the cluster named in the task's own
-    ARN is gone), a refusal or throttle is ``UNDETERMINED``, never absence.
+    ``UNDETERMINED``, never absence: a refusal or throttle through ``_failed_probe``, and ``ClusterNotFoundException``
+    explicitly, although ``_failed_probe`` would read its ``*NotFoundException`` shape as gone. Only ``STOPPED`` or a
+    ``MISSING`` failure retires a task; a deleted cluster is out of scope until footprint containment covers it
+    (spec), and the next run, which no longer observes the cluster, derives no candidate under it anyway.
 
     Subclasses say which row field holds the candidate's ARN, which task that ARN belongs to, and what a
     described task (or a failure entry for it) means for the candidate.
@@ -2748,7 +2751,14 @@ class _EcsFalsifier(_AwsFalsifier):
                     response = client.describe_tasks(cluster=cluster, tasks=sorted(chunk))
                 except Exception as exc:  # noqa: BLE001 — every candidate the call covered gets an answer, never a crash
                     for candidate, expected, _, _ in covered:
-                        verdicts[candidate.entity_id] = _failed_probe(candidate, expected, exc)
+                        if isinstance(exc, ClientError) and error_code_of(exc) == _ECS_CLUSTER_NOT_FOUND:
+                            verdicts[candidate.entity_id] = _undetermined(
+                                candidate,
+                                "errored",
+                                f"the cluster {cluster} is gone; a deleted cluster's tasks are not retired by this falsifier",
+                            )
+                        else:
+                            verdicts[candidate.entity_id] = _failed_probe(candidate, expected, exc)
                     continue
                 described = {str(t.get("taskArn")): t for t in response.get("tasks") or []}
                 failures = {str(f.get("arn")): str(f.get("reason") or "Unknown") for f in response.get("failures") or []}
