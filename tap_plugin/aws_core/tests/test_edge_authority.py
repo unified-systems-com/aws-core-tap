@@ -422,6 +422,10 @@ class TestRoute53Reads:
         assert _record_items(_denied("ListResourceRecordSets")) == []
         assert _zone_item(_denied("ListResourceRecordSets"))["Id"] == "/hostedzone/Z1"
 
+    def test_a_failed_record_listing_never_claims_the_zone_s_replaced_routes(self):
+        # Its old direct edges are kept: the record sets that replace them were not read (PR 221 review).
+        assert _reads(_ZONE, _zone_item(_denied("ListResourceRecordSets")))[_ROUTES] == FAILED
+
 
 # ---------------------------------------------------------------------------
 # S3: the edge reads a hydrate slot

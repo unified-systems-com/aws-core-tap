@@ -510,11 +510,16 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
     """Enumerate Route 53 hosted zones (global) from the run's one Route 53 walk.
 
     What a zone's records resolve to now lives on the record set nodes (:func:`route53_record_sets_described`),
-    which the zone contains (``HOLDS_RECORD_SET``). The zone's former direct ``ROUTES_TRAFFIC`` slots are read
-    complete and empty for one release. The name is kept because the manifest and the run ledger name it.
+    which the zone contains (``HOLDS_RECORD_SET``). The zone's former direct ``ROUTES_TRAFFIC`` slots are empty for
+    one release, read complete when the zone's record listing reached its end and failed when it did not. The name is kept because the manifest and the run ledger name it.
     """
     r53 = _run_client(session, client_for, "route53")
-    for zone in shared_records_walk(session, r53).zones:
+    walk = shared_records_walk(session, r53)
+    listed = {listing.zone_id for listing in walk.listings if listing.walk.complete}
+    for zone in walk.zones:
+        # The replaced slots are claimed only when the record sets that replace them were read: a zone whose
+        # listing failed or stopped short keeps its old edges (aws-core-tap PR 221 review).
+        read = COMPLETE if str(zone.get("Id") or "") in listed else FAILED
         yield with_edge_reads(
             {
                 **zone,
@@ -523,7 +528,7 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
                 # ResourceId in this form; Id itself stays as boto3 returned it, the zone's identity.
                 "_zone_resource_id": bare_zone_id(str(zone.get("Id") or "")),
             },
-            dict.fromkeys(_REPLACED_ZONE_ROUTES, COMPLETE),
+            dict.fromkeys(_REPLACED_ZONE_ROUTES, read),
         )
 
 
