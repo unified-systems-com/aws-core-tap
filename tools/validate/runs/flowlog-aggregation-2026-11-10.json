@@ -25,5 +25,33 @@
   "volume beyond two instances; cost was not measured, only estimated in cost.md",
   "flow-log fields newer than the trial's format (pkt-src/dst-aws-service, next-hop-interface-id)"
  ],
- "method": "Each query was rendered from the live configuration with terraform console and the filter variables, run with aws athena start-query-execution in the wave's workgroup, and its output read back from S3. Output was scrubbed of 12-digit numbers and ARNs before it was read."
+ "method": "Each query was rendered from the live configuration with terraform console and the filter variables, run with aws athena start-query-execution in the wave's workgroup, and its output read back from S3. Output was scrubbed of 12-digit numbers and ARNs before it was read.",
+ "retrial": {
+  "description": "Re-trial after the prior-art fixes (aws-core-tap#218 comment 6757895267) and George's source, destination and pair filters: same wave, same account and identity, rewritten query (one row per conversation, flags decide the client, lagged hourly window, UNLOAD to an empty per-run prefix, newer fields).",
+  "time_box": "applied 14:35:54Z, destroyed 15:47:47Z (72 minutes of a 2-hour box)",
+  "verdict": "pass after one fix: every filter, the re-run refusal, the cross-interface count and the scheduled path worked; the first scheduled run failed on a module defect (below), fixed and re-run green",
+  "checks": {
+   "plan creates only this run's resources": "21 to create, 0 to change or destroy (the named query is gone)",
+   "newer flow-log fields in GovCloud": "the flow log was accepted with pkt-src-aws-service, pkt-dst-aws-service and next-hop-interface-id (version 11) in its format; next-hop-interface-id arrived populated, naming the interface at the other end",
+   "unfiltered, fixed window": "SUCCEEDED; 3 conversations (8080 and 9090 ACCEPT, 9443 refused), every connection decided by flags",
+   "filter_sources=client": "SUCCEEDED; the same 3 conversations, each with the client as client",
+   "filter_destinations=server": "SUCCEEDED; the same 3 conversations",
+   "filter_pairs client>server with filter_ports 9443": "SUCCEEDED; 1 conversation, 9443",
+   "filter_pairs server>client": "SUCCEEDED; 0 rows and no object written, correct because the server never opens a connection to the client",
+   "re-run with the same run time": "FAILED as intended: HIVE_PATH_ALREADY_EXISTS, nothing written, the first run's object untouched",
+   "counted once across both interfaces": "port 8080 over 14:30-14:50: 35 connections, 12,145 bytes client to server and 25,200 back, exactly 35 x 347 and 35 x 720 in a raw per-record query; each connection appears on both interfaces",
+   "scheduled path": "the 15:25Z run FAILED (defect below); after the fix the 15:45Z run SUCCEEDED under the schedule's role and summarised the lagged window 14:00:00Z-15:00:00Z (61-62 connections per port, all decided by flags) into summaries/run=2026-11-10T15:45:00Z/",
+   "destroy and leftovers": "21 destroyed; no role, buckets, workgroup, schedule or Glue database left; the tagging API still listed 8 deleted entries (2 terminated instances, 2 volumes, 3 security-group rules, the flow log), each confirmed gone or terminated by a direct describe"
+  },
+  "findings": [
+   "Terraform jsonencode writes < and > as \\u003c and \\u003e, so the scheduler's <aws.scheduler.scheduled-time> keyword was hidden and Athena received the keyword itself (INVALID_FUNCTION_ARGUMENT). Fixed by restoring the two characters after encoding; the stored input then held no escapes and the next run passed.",
+   "A refused conversation reads action MIXED, not REJECT: the client's interface accepted each packet out and the server's interface rejected it. Accurate per hop; a reader wanting 'was it refused' should read rejected_records."
+  ],
+  "not_checked": [
+   "the collector side (reading summaries onto the grid): not built yet",
+   "volume beyond two instances, and cost",
+   "traffic through an internet gateway, load balancer, NAT gateway or endpoint (aws-core-tap#218 Q14 extension)"
+  ],
+  "method": "As the first trial. The expected account was again derived from the collector identity's STS answer rather than typed (stated deviation). Output scrubbed of 12-digit numbers and ARNs before it was read."
+ }
 }

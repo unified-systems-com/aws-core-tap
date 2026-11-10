@@ -257,9 +257,11 @@ resource "aws_scheduler_schedule" "summarise" {
   target {
     arn      = "arn:${data.aws_partition.current.partition}:scheduler:::aws-sdk:athena:startQueryExecution"
     role_arn = aws_iam_role.scheduler.arn
-    input = jsonencode({
+    # jsonencode writes < and > as < and >, which hides the scheduled-time keyword from Scheduler (seen in
+    # the 2026-11-10 re-trial: Athena received the keyword itself); putting them back lets Scheduler replace it.
+    input = replace(replace(jsonencode({
       QueryString = local.summarise["scheduled"]
       WorkGroup   = aws_athena_workgroup.flows.name
-    })
+    }), "\\u003c", "<"), "\\u003e", ">")
   }
 }
