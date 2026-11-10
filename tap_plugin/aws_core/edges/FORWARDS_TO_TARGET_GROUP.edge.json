@@ -1,0 +1,82 @@
+{
+  "slug": "FORWARDS_TO_TARGET_GROUP__aws_core",
+  "name": "Forwards To Target Group",
+  "description": "A load balancer forwards traffic to a target group through one listener rule (load balancer -> target group). One edge per rule: an Application Load Balancer's rules come from DescribeRules on each listener, its default rule among them; a Network or Gateway Load Balancer has no rules, so its listener's default action is the route. The edge carries the listener, the rule's priority and conditions (host header, path, HTTP header, method, query string, source IP) and the forward's weight, so 'which hostnames and paths reach this target group' is read off the edge. A rule that forwards to two groups by weight is two edges. Replaces the load balancer's direct ROUTES_TRAFFIC to instances and functions (aws-core-tap#220).",
+  "sources": [
+    "aws_core__aws_alb",
+    "aws_core__aws_elb"
+  ],
+  "targets": [
+    "aws_core__aws_target_group"
+  ],
+  "property_schema": {
+    "type": "object",
+    "properties": {
+      "route_id": {
+        "type": "string",
+        "description": "What forwards: the rule's ARN, or, for a listener with no rules (Network and Gateway Load Balancers), the listener's ARN."
+      },
+      "listener_arn": {
+        "type": "string",
+        "description": "The listener the rule belongs to."
+      },
+      "listener_port": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "The listener's port; null when DescribeListeners gave none (a Gateway Load Balancer listener)."
+      },
+      "listener_protocol": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The listener's protocol (HTTP, HTTPS, TCP, TLS, UDP, TCP_UDP, GENEVE); null when not given."
+      },
+      "rule_arn": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The rule's ARN; null for a listener's default action on a load balancer type that has no rules."
+      },
+      "priority": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The rule's priority as AWS returns it: a number as text, or 'default' for the default rule; null when the route is not a rule."
+      },
+      "is_default": {
+        "type": "boolean",
+        "description": "Whether this is the listener's default rule or default action, which applies when no other rule matches."
+      },
+      "conditions": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        },
+        "description": "The rule's conditions exactly as DescribeRules returns them (Field and its HostHeaderConfig, PathPatternConfig, HttpHeaderConfig, HttpRequestMethodConfig, QueryStringConfig or SourceIpConfig). Empty for a default rule or action."
+      },
+      "weight": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "description": "The forward's weight among the rule's target groups (ForwardConfig); null when the action names a single group with no weight."
+      }
+    }
+  },
+  "identity": {
+    "discriminators": [
+      {
+        "path": "route_id",
+        "description": "The rule (or, where a load balancer has no rules, the listener) that forwards. In the key because two rules, on one listener or two, can forward to the same target group at once, each with its own conditions; set by the collector from DescribeRules or DescribeListeners."
+      }
+    ]
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

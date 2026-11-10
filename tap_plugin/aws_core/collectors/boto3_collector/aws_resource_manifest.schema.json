@@ -444,8 +444,19 @@
         "key_kind": { "type": "string", "enum": ["arn", "id", "name"] },
         "edge_type": { "type": "string", "minLength": 1 },
         "direction": { "type": "string", "enum": ["outbound", "inbound"] },
-        "transform": { "type": "string", "minLength": 1 }
-      }
+        "transform": { "type": "string", "minLength": 1 },
+        "key_path": {
+          "description": "For a value_path whose values are objects: where in each object the target's key is. Read before any transform (req-aws-collector-edges-9).",
+          "type": "string",
+          "minLength": 1
+        },
+        "properties_path": {
+          "description": "With key_path: where in each object the edge's properties are, an object the edge type's property_schema validates (req-aws-collector-edges-9).",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "dependentRequired": { "properties_path": ["key_path"] }
     },
     "sensitivity": {
       "description": "Whether this entry's raw AWS response (the item the source yields, which becomes the node's configuration envelope) may carry sensitive values, and where. Required on every entry. Three states, and absence is none of them: an entry without this block fails schema validation, so 'nobody has looked' can never read as 'safe'. Tracking only: it does not decide persistence (persist_configuration does). An entry that persists its configuration while listing a credential location here is a known, reviewed risk (req-aws-collector-manifest-6). Masking is not the remedy; the raw response is future audit evidence.",

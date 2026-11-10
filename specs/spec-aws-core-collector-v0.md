@@ -96,6 +96,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-hydrate | [Fan-Out Hydrate Seam](#fan-out-hydrate-seam) | Approved for Development | First named seam; per-op error-swallow; S3-style many-call |
 | req-aws-collector-s3-bucket-size | [S3 Bucket Size Metrics](#s3-bucket-size-metrics) | Approved for Development | Aggregate size/count from CloudWatch storage metrics; `size_observed_at` data-currency disclosure |
 | req-aws-collector-ecs | [ECS Clusters, Tasks And Container Images](#ecs-clusters-tasks-and-container-images) | Proposed | Collect ECS clusters, services, tasks and containers; per-container image and image digest as the join key to builds, SBOMs and findings; credential-bearing overrides declared, configuration off |
+| req-aws-collector-lb-topology | [Load Balancer Topology](#load-balancer-topology) | In Development | A load balancer reaches its targets through its target groups, one edge per listener rule carrying the rule; each target edge carries its port and health; load balancer and Lambda targets are linked; Route 53 record sets become nodes between a zone and what they resolve to |
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
@@ -664,6 +665,8 @@ the target writes it.
 | req-aws-collector-edges-5 | Policy Edges Excluded | Approved for Development | Edges requiring policy-document parsing are not emitted in v0. | Deferred resolver, named seam. |
 | req-aws-collector-edges-6 | Two-Phase, Unmodeled-Safe | Approved for Development | Nodes are emitted before edges; an edge to an unmodeled `target_type` is dropped with a `warn`, never a failure; uncollected modeled targets follow GRIFT dangling-edge mode. | Single chokepoint for the v0-fence gap. |
 | req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no identifier resolver of its own: core finds an endpoint by its exact natural key only, so an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by its ARN, and both `WRITES_LOGS` referrers reach it through the `log_group_arn` transform (a Lambda's bare log-group name takes region and account from the Lambda's own ARN, handed to a source-aware transform). `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
+| req-aws-collector-edges-9 | Edge Properties From Object Values | Implemented | A rule whose `value_path` yields objects names `key_path`, where in each object the target's key is, and may name `properties_path`, where the edge's properties are; the edge carries those properties. A value that is not an object, or whose key is absent or empty, makes no edge. A rule without `key_path` behaves as before and sends empty properties. | aws-core-tap#220: one relationship carries what decides it (the listener rule on a load balancer's edge to a target group). `tests/collectors/test_boto3_collector_edges.py::TestObjectValues`. |
+| req-aws-collector-edges-10 | Discriminated Edge Refs | Implemented | An edge whose type declares discriminators has their values in its batch ref, in the envelope the edge pass writes and in the one the batch re-addresses, so two edges of one pair that differ in a discriminator are two edges and neither replaces the other in the batch. A plain-key edge's ref is unchanged. | `req-grid-edge-identity-declaration`. `tests/collectors/test_boto3_collector_edges.py::TestObjectValues`. |
 
 ### Progressive Upload (Future Seam)
 ----
@@ -1024,6 +1027,60 @@ requirement.
 | req-aws-collector-ecs-17 | Cluster And Task Contain | Implemented | `aws_ecs_cluster` declares `RUNS_TASK` and `aws_ecs_task` declares `RUNS_CONTAINER` in `CONTAINMENT_EDGES` (and `OUTBOUND_EDGES`); `aws_ecs_service` declares no containment. | aws-core-tap#211. A deleted cluster is not yet a candidate (no footprint containment). |
 | req-aws-collector-ecs-18 | A Surface Per Parent | Implemented | The walk records a surface for every cluster's running-task listing and every described task's containers; a denied, failed or short listing is recorded incomplete with its reason, never omitted, and a cluster running nothing is complete-empty. A stopped task whose container could not be looked up on the grid records its container surface incomplete (`grid_lookup_failed`), so an omitted container never reads as absent. The stopped-task listing records no surface. | `req-aws-core-contained-type-triple-1`..`-3`. |
 | req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `MISSING` is gone, `STOPPED` is gone only once the row already records `STOPPED` (otherwise undetermined), an error is undetermined, and an ARN that names no cluster, or whose own account is not the credential's (whatever the row's `aws_account` dimension says), is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
+
+### Load Balancer Topology
+----
+RID: `req-aws-collector-lb-topology`
+
+Status: `In Development`
+
+A load balancer is mapped as it actually routes: listener, rule, target group and target, with each hop keeping
+what decides it. Ruled by George on 2026-11-10 (aws-core-tap#220): the target group stays in the path; one edge per
+listener rule; the direct load-balancer edges are replaced; IP addresses become nodes; and every Route 53 record
+set becomes a node between its zone and what it resolves to. The general rule behind it: "when in doubt, map it
+out".
+
+**The path.** `FORWARDS_TO_TARGET_GROUP` runs from an Application, Network or Gateway Load Balancer to a target
+group, one edge per route. An Application Load Balancer's routes are its listeners' rules, read with
+`DescribeListeners` and `DescribeRules`, including each listener's default rule. A Network or Gateway Load Balancer
+has no rules, so each listener's default action is the route. Each edge carries the listener's ARN, port and
+protocol; the rule's ARN, priority and conditions exactly as AWS returns them; whether it is the default; and the
+forward's weight. A rule that forwards to two groups by weight makes two edges. Redirect, fixed-response and
+authenticate actions forward nowhere and make no edge. The key's discriminator is `route_id`: the rule's ARN, or
+the listener's where there are no rules.
+
+From the target group, `DescribeTargetHealth` names the registered targets:
+- an instance is `ROUTES_TO_TARGET` to the instance
+- an Application Load Balancer's ARN (a Network Load Balancer fronting an Application one) is `ROUTES_TO_TARGET`
+  to that load balancer
+- a Lambda function is `INVOKES_LAMBDA`
+
+Each edge carries the target's port (the `ROUTES_TO_TARGET` discriminator, since one instance can be registered on
+two ports), its availability zone, and its health state, reason and description. Health changes in place from run
+to run. An IP target is kept on the target group's item, with no edge, until the IP address node's key is settled
+(see -4).
+
+**Replacing the direct edges.** Before this, `ROUTES_TRAFFIC` ran from a load balancer straight to the instances
+and functions in its target groups, and IP and load-balancer targets were dropped. Those rules stay declared for
+one release, read complete and empty, so a reconcile-armed run proposes removing the edges earlier runs wrote.
+A Classic load balancer has no target groups. It keeps `ROUTES_TRAFFIC` to the instances registered on it, which
+are now read from its own listing.
+
+**The engine.** The rules above are manifest rules whose values are objects, carrying `key_path` and
+`properties_path` (`req-aws-collector-edges-9`). Their batch refs carry the discriminators
+(`req-aws-collector-edges-10`).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-lb-topology-1 | One Edge Per Rule | Implemented | An Application Load Balancer has a `FORWARDS_TO_TARGET_GROUP` edge for each (rule, target group) a forward action names, the default rule included. It carries `route_id`, `listener_arn`, `listener_port`, `listener_protocol`, `rule_arn`, `priority`, `is_default`, `conditions` (verbatim) and `weight`. A Network or Gateway Load Balancer has one per listener default forward, with `route_id` the listener's ARN and `rule_arn` null. A non-forward action makes no edge. A listener or rule read that fails reads the slot `failed`. | `tests/test_elb_collection.py::TestForwards` |
+| req-aws-collector-lb-topology-2 | Targets With Port And Health | Implemented | A target group has `ROUTES_TO_TARGET` to each registered instance and Application Load Balancer, one per port, and `INVOKES_LAMBDA` to a registered function. Each carries `health_state`, `health_reason`, `health_description` and `availability_zone` from `DescribeTargetHealth`, with null where AWS gave nothing. An IP target is kept on the item with no edge. A failed `DescribeTargetHealth` reads every target slot `failed`. | `tests/test_gap_sweep.py::test_a_target_group_sorts_its_targets_by_kind_with_port_and_health`, `::test_a_target_read_that_failed_is_not_an_absence` |
+| req-aws-collector-lb-topology-3 | Direct Edges Replaced | Implemented | An Application, Network or Gateway Load Balancer's `ROUTES_TRAFFIC` slots read complete and empty, so earlier runs' direct edges become removal proposals under armed reconcile. A Classic load balancer's slot holds the instances its own listing registers. | `tests/test_elb_collection.py::TestForwards::test_the_replaced_direct_routes_read_complete_and_empty`, `::test_a_classic_load_balancer_keeps_its_direct_routes_to_its_instances`. Drop the empty rules after one release. |
+| req-aws-collector-lb-topology-4 | IP Targets As Nodes | Proposed | An IP target becomes an IP address node, with an edge from the target group, and edges from the address to the network interface holding it and to that interface's owner. Both move when the address moves. | Blocked on the IP address node's key: `network_name` plus address in computing_core, a joint question with the tenable session (aws-core-tap#220). |
+| req-aws-collector-lb-topology-5 | Record Sets As Nodes | Proposed | Every record set `ListResourceRecordSets` returns is an `aws_route53_record_set` node, keyed `<zone id>/<name>/<type>/<set identifier>`, contained by its zone through `HAS_RECORD_SET`, with a completeness surface per zone so a record set the zone no longer lists is a retirement candidate. | Next change on aws-core-tap#220. |
+| req-aws-collector-lb-topology-6 | Records Resolve | Proposed | A record set has `RESOLVES_TO` to the Application Load Balancer, other load balancer, CloudFront distribution or record set its alias names, or a CNAME value names by DNS name, with `via` and `evaluate_target_health`. The zone's direct `ROUTES_TRAFFIC` rules are replaced, as in -3. | Next change on aws-core-tap#220. |
+| req-aws-collector-lb-topology-7 | Live Trial | Proposed | A staging seed wave with an Application Load Balancer that has host and path rules and a weighted forward, a Network Load Balancer in front of it, instance and Lambda targets, and a private hosted zone with alias, CNAME and weighted records is collected, and each edge above is found on the grid. | |
 
 ### Credential Resolution
 ----

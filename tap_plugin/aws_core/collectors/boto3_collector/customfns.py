@@ -1161,32 +1161,71 @@ def _az_subnet_ids(lb: dict[str, Any]) -> list[str]:
     return sorted({str(az["SubnetId"]) for az in lb.get("AvailabilityZones", []) if az.get("SubnetId")})
 
 
-def _with_routed_targets(item: dict[str, Any], client: Any, lb_arn: str) -> dict[str, Any]:
-    """What a load balancer routes to: the instances and Lambda functions registered in its target groups.
+#: The direct load-balancer edges the target-group path replaced (aws-core-tap#220). Each is still declared, read
+#: complete and empty, so a reconcile-armed run proposes removing the edges earlier runs wrote; drop them once a
+#: release has carried this.
+_REPLACED_DIRECT_ROUTES: dict[str, Any] = {"_target_instance_ids": [], "_target_lambda_arns": []}
 
-    ``DescribeTargetGroups`` for the load balancer, then ``DescribeTargetHealth`` for each group. A target is
-    an instance (``i-...``), an IP address, a Lambda function ARN or another load balancer's ARN; only the
-    first and third are nodes this plugin links, so IP and load balancer targets are left out. The reads are
-    ``failed`` when any call did not answer: a partial list is not 'routes to nothing else'.
+
+def _forward_targets(action: dict[str, Any]) -> list[tuple[str, int | None]]:
+    """The target groups a ``forward`` action sends to, each with its weight (``None`` when the action names one
+    group without a ``ForwardConfig``). Any other action type (redirect, fixed response, authenticate) forwards
+    nowhere."""
+    if action.get("Type") != "forward":
+        return []
+    groups = (action.get("ForwardConfig") or {}).get("TargetGroups") or []
+    if groups:
+        return [(str(g["TargetGroupArn"]), g.get("Weight")) for g in groups if g.get("TargetGroupArn")]
+    return [(str(action["TargetGroupArn"]), None)] if action.get("TargetGroupArn") else []
+
+
+def _forward(listener: dict[str, Any], route: dict[str, Any], group_arn: str, weight: int | None) -> dict[str, Any]:
+    """One load balancer -> target group route, as the ``FORWARDS_TO_TARGET_GROUP`` rule reads it."""
+    rule_arn = route.get("RuleArn")
+    return {
+        "target_group_arn": group_arn,
+        "properties": {
+            "route_id": str(rule_arn or listener["ListenerArn"]),
+            "listener_arn": str(listener["ListenerArn"]),
+            "listener_port": listener.get("Port"),
+            "listener_protocol": listener.get("Protocol"),
+            "rule_arn": rule_arn,
+            "priority": route.get("Priority"),
+            "is_default": bool(route.get("IsDefault", rule_arn is None)),
+            "conditions": list(route.get("Conditions") or []),
+            "weight": weight,
+        },
+    }
+
+
+def _with_forwards(item: dict[str, Any], client: Any, lb: dict[str, Any]) -> dict[str, Any]:
+    """Where a load balancer forwards: one route per listener rule and target group (aws-core-tap#220).
+
+    ``DescribeListeners`` for the load balancer, then, for an Application Load Balancer, ``DescribeRules`` for each
+    listener (its default rule among them). A Network or Gateway Load Balancer has no rules: a listener's default
+    actions are its route. Each route carries the listener, the rule's priority and conditions, and the forward's
+    weight. The read is ``failed`` when any call did not answer, since a partial list is not 'forwards nowhere
+    else'. The replaced direct routes to instances and functions are read complete and empty.
     """
-    instances: set[str] = set()
-    functions: set[str] = set()
+    forwards: list[dict[str, Any]] = []
     read = COMPLETE
     try:
-        for page in _pages(client, "describe_target_groups", LoadBalancerArn=lb_arn):
-            for group in page.get("TargetGroups", []):
-                health = without_response_metadata(client.describe_target_health(TargetGroupArn=group["TargetGroupArn"]))
-                for description in health.get("TargetHealthDescriptions", []):
-                    target = str((description.get("Target") or {}).get("Id") or "")
-                    if target.startswith("i-"):
-                        instances.add(target)
-                    elif target.startswith("arn:") and ":lambda:" in target:
-                        functions.add(target)
+        for page in _pages(client, "describe_listeners", LoadBalancerArn=lb["LoadBalancerArn"]):
+            for listener in page.get("Listeners", []):
+                if not listener.get("ListenerArn"):
+                    continue
+                if lb.get("Type") == "application":
+                    rules = [r for rp in _pages(client, "describe_rules", ListenerArn=listener["ListenerArn"]) for r in rp.get("Rules", [])]
+                    routes = [(rule, action) for rule in rules for action in rule.get("Actions") or []]
+                else:
+                    routes = [({}, action) for action in listener.get("DefaultActions") or []]
+                for route, action in routes:
+                    forwards.extend(_forward(listener, route, arn, weight) for arn, weight in _forward_targets(action))
     except BotoCoreError, ClientError:
         read = FAILED
     return with_edge_reads(
-        {**item, "_target_instance_ids": sorted(instances), "_target_lambda_arns": sorted(functions)},
-        {**(item.get("_edge_reads") or {}), "_target_instance_ids": read, "_target_lambda_arns": read},
+        {**item, "_forwards": forwards, **_REPLACED_DIRECT_ROUTES},
+        {**(item.get("_edge_reads") or {}), "_forwards": read, **dict.fromkeys(_REPLACED_DIRECT_ROUTES, COMPLETE)},
     )
 
 
@@ -1202,7 +1241,7 @@ def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in albs])
     for lb in albs:
         item = _lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
-        yield _with_routed_targets(item, client, str(lb["LoadBalancerArn"]))
+        yield _with_forwards(item, client, lb)
 
 
 def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -1217,7 +1256,7 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     v2_tags = _batched_tags(v2, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in others])
     for lb in others:
         item = _lb_item(lb, v2_tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
-        yield _with_routed_targets({**item, "_lb_type": lb["Type"]}, v2, str(lb["LoadBalancerArn"]))
+        yield _with_forwards({**item, "_lb_type": lb["Type"]}, v2, lb)
     classic = client_for("elb")
     described = [
         lb for page in _pages(classic, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])
@@ -1227,17 +1266,70 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     )
     for lb in described:
         item = _lb_item(lb, classic_tags, str(lb["LoadBalancerName"]), sorted(str(i) for i in lb.get("Subnets", [])))
-        yield {**item, "_lb_type": "classic"}
+        # A Classic load balancer has no target groups: its registered instances are its routes, read with it.
+        instances = sorted({str(i["InstanceId"]) for i in lb.get("Instances", []) if i.get("InstanceId")})
+        yield with_edge_reads(
+            {**item, "_lb_type": "classic", "_target_instance_ids": instances, "_target_lambda_arns": [], "_forwards": []},
+            {**item["_edge_reads"], "_target_instance_ids": COMPLETE, "_target_lambda_arns": COMPLETE, "_forwards": COMPLETE},
+        )
+
+
+#: The target slots a target group's DescribeTargetHealth fills, by the kind of target each holds.
+_TARGET_SLOTS = ("_instance_targets", "_alb_targets", "_lambda_targets", "_ip_targets")
+
+
+def _target_slot(target_id: str) -> str:
+    """Which slot a registered target belongs in, by the shape of its id: an instance id, an Application Load
+    Balancer's ARN, a Lambda function's ARN, or else an IP address."""
+    if target_id.startswith("i-"):
+        return "_instance_targets"
+    if target_id.startswith("arn:") and ":loadbalancer/app/" in target_id:
+        return "_alb_targets"
+    if target_id.startswith("arn:") and ":lambda:" in target_id:
+        return "_lambda_targets"
+    return "_ip_targets"
+
+
+def _with_targets(group: dict[str, Any], client: Any) -> dict[str, Any]:
+    """A target group's registered targets with their port and health (``DescribeTargetHealth``, aws-core-tap#220).
+
+    Each target becomes ``{"id", "properties"}`` in the slot for its kind, so an edge carries the port and health.
+    IP targets are kept, with no edge, until the IP address node's key is settled. Every slot reads ``failed`` when
+    the call did not answer.
+    """
+    slots: dict[str, list[dict[str, Any]]] = {slot: [] for slot in _TARGET_SLOTS}
+    read = COMPLETE
+    try:
+        health = without_response_metadata(client.describe_target_health(TargetGroupArn=group["TargetGroupArn"]))
+        for description in health.get("TargetHealthDescriptions", []):
+            target = description.get("Target") or {}
+            target_id = str(target.get("Id") or "")
+            if not target_id:
+                continue
+            state = description.get("TargetHealth") or {}
+            properties = {
+                "health_state": state.get("State"),
+                "health_reason": state.get("Reason"),
+                "health_description": state.get("Description"),
+                "availability_zone": target.get("AvailabilityZone"),
+            }
+            if target.get("Port") is not None:
+                properties["port"] = target["Port"]
+            slots[_target_slot(target_id)].append({"id": target_id, "properties": properties})
+    except BotoCoreError, ClientError:
+        read = FAILED
+    return with_edge_reads({**group, **slots}, {slot: read for slot in _TARGET_SLOTS})
 
 
 def elbv2_target_groups_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate ELBv2 target groups (regional) with their tags (``DescribeTags``, 20 ARNs to a call)."""
+    """Enumerate ELBv2 target groups (regional) with their tags (``DescribeTags``, 20 ARNs to a call) and their
+    registered targets (:func:`_with_targets`)."""
     client = client_for("elbv2")
     groups = [tg for page in _pages(client, "describe_target_groups") for tg in page.get("TargetGroups", [])]
     tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(tg["TargetGroupArn"]) for tg in groups])
     for group in groups:
         arn = str(group["TargetGroupArn"])
-        yield {**group, "_tags": tags.get(arn, {}), "_tags_unread": arn not in tags}
+        yield _with_targets({**group, "_tags": tags.get(arn, {}), "_tags_unread": arn not in tags}, client)
 
 
 def dx_gateways_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:

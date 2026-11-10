@@ -1,7 +1,7 @@
 {
   "slug": "ROUTES_TRAFFIC__aws_core",
   "name": "Routes Traffic",
-  "description": "A load balancer, DNS zone, route table or PrivateLink endpoint service routes traffic to a target (source -> target). A load balancer routes to the instances and functions in its target groups (DescribeTargetHealth); a hosted zone to the load balancers and CloudFront distributions its alias records name; an endpoint service forwards its consumers' traffic to the Network or Gateway Load Balancer behind it. One edge per source and target. A route-table emitter, when one is written, routes by destination: it must declare its own identity discriminators (the destination CIDR) before it emits, as one edge per source and target would collapse its routes.",
+  "description": "A load balancer, DNS zone, route table or PrivateLink endpoint service routes traffic to a target (source -> target). A Classic load balancer routes to the instances registered on it (an Application, Network or Gateway Load Balancer reaches its targets through FORWARDS_TO_TARGET_GROUP and its target groups instead, aws-core-tap#220; its ROUTES_TRAFFIC rules remain, read empty, for one release so earlier edges are proposed for removal); a hosted zone to the load balancers and CloudFront distributions its alias records name; an endpoint service forwards its consumers' traffic to the Network or Gateway Load Balancer behind it. One edge per source and target. A route-table emitter, when one is written, routes by destination: it must declare its own identity discriminators (the destination CIDR) before it emits, as one edge per source and target would collapse its routes.",
   "sources": [
     "aws_core__aws_route_table",
     "aws_core__aws_alb",

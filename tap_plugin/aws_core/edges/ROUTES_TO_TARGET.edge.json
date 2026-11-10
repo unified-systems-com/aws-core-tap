@@ -1,0 +1,60 @@
+{
+  "slug": "ROUTES_TO_TARGET__aws_core",
+  "name": "Routes To Target",
+  "description": "A target group routes traffic to a registered target (target group -> instance, or -> Application Load Balancer when the target's id is that load balancer's ARN, as when a Network Load Balancer fronts an Application one). One edge per registered port, carrying the target's health from DescribeTargetHealth. A Lambda target is INVOKES_LAMBDA; an IP target waits on the IP address node's key (aws-core-tap#220).",
+  "sources": [
+    "aws_core__aws_target_group"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_alb"
+  ],
+  "property_schema": {
+    "type": "object",
+    "properties": {
+      "port": {
+        "type": "integer",
+        "description": "The port the target is registered on (DescribeTargetHealth Target.Port)."
+      },
+      "health_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The target's health as DescribeTargetHealth reports it (initial, healthy, unhealthy, unused, draining, unavailable, unhealthy.draining); null when health was not read. Changes in place run to run; not part of the key."
+      },
+      "health_reason": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "DescribeTargetHealth's reason code for a state other than healthy (Target.ResponseCodeMismatch, Target.NotInUse and so on); null when none was given."
+      },
+      "health_description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "DescribeTargetHealth's description of that reason; null when none was given."
+      },
+      "availability_zone": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The zone the target is registered in, or 'all' for an IP target outside the VPC; null when not given."
+      }
+    }
+  },
+  "identity": {
+    "discriminators": [
+      {
+        "path": "port",
+        "description": "The registered port. In the key because one instance can be registered in one target group on two ports at once, each a separate route with its own health; set by the collector from DescribeTargetHealth."
+      }
+    ]
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}
