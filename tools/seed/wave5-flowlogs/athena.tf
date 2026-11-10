@@ -91,7 +91,8 @@ resource "aws_glue_catalog_table" "raw" {
   }
 }
 
-# The summaries: gzip-free JSON lines, one partition per run (`window_end`), so a reader needs no Parquet library.
+# The summaries: JSON lines, one partition per run (`window_end`), so a reader needs no Parquet library. Athena
+# writes them gzipped (`.gz`; seen in the 2026-11-10 trial), so a reader must gunzip.
 resource "aws_glue_catalog_table" "summary" {
   name          = "flow_summaries"
   database_name = aws_glue_catalog_database.flows.name
