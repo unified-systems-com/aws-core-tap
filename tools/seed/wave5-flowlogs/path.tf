@@ -72,13 +72,14 @@ resource "aws_vpc_security_group_egress_rule" "visitor_http" {
   to_port           = 80
 }
 
+# nosemgrep: terraform.aws.security.aws-ec2-has-public-ip.aws-ec2-has-public-ip
 resource "aws_instance" "visitor" {
   count                       = local.path
   ami                         = data.aws_ssm_parameter.al2023.value
   instance_type               = "t3.nano"
   subnet_id                   = aws_subnet.public[0].id
   vpc_security_group_ids      = [aws_security_group.visitor[0].id]
-  associate_public_ip_address = true
+  associate_public_ip_address = true # NOSONAR: the visitor must reach the load balancer over the internet; it accepts no inbound and lives under an hour
   user_data                   = <<-EOT
     #!/bin/bash
     cat > /usr/local/bin/seed-visit <<'LOOP'
@@ -118,15 +119,15 @@ resource "aws_vpc_security_group_ingress_rule" "alb_from_visitor" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_server" {
-  count             = local.path
+  for_each          = var.edge_path ? toset(["8080", "9090"]) : toset([])
   security_group_id = aws_security_group.alb[0].id
   cidr_ipv4         = aws_vpc.seed.cidr_block
   ip_protocol       = "tcp"
-  from_port         = 8080
-  to_port           = 9090
+  from_port         = tonumber(each.key)
+  to_port           = tonumber(each.key)
 }
 
-resource "aws_lb" "path" {
+resource "aws_lb" "path" { # NOSONAR: admits only the visitor's /32, run-scoped and destroyed within the hour; flow logs are the record this trial reads
   count              = local.path
   name               = "${local.prefix}-alb"
   internal           = false
@@ -162,7 +163,8 @@ resource "aws_lb_listener" "path" {
   count             = local.path
   load_balancer_arn = aws_lb.path[0].arn
   port              = 80
-  protocol          = "HTTP"
+  # nosemgrep: terraform.aws.security.insecure-load-balancer-tls-version.insecure-load-balancer-tls-version
+  protocol = "HTTP" # NOSONAR: plain HTTP so the trial needs no certificate; only the visitor's /32 can reach it, and it carries no data
 
   default_action {
     type             = "forward"
@@ -189,7 +191,8 @@ resource "aws_lb_listener_rule" "b" {
 
 # --- DynamoDB through a gateway endpoint ---
 
-resource "aws_dynamodb_table" "path" {
+# nosemgrep: terraform.aws.security.aws-dynamodb-table-unencrypted.aws-dynamodb-table-unencrypted
+resource "aws_dynamodb_table" "path" { # encrypted at rest by default with an AWS-owned key; holds only ping timestamps
   count        = local.path
   name         = "${local.prefix}-pings"
   billing_mode = "PAY_PER_REQUEST"
@@ -245,7 +248,7 @@ resource "aws_iam_role_policy" "server" {
   role  = aws_iam_role.server[0].id
   policy = jsonencode({
     Version   = "2012-10-17"
-    Statement = [{ Effect = "Allow", Action = ["dynamodb:PutItem", "dynamodb:GetItem"], Resource = aws_dynamodb_table.path[0].arn }]
+    Statement = [{ Effect = "Allow", Action = ["dynamodb:PutItem"], Resource = aws_dynamodb_table.path[0].arn }]
   })
 }
 
