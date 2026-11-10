@@ -1,8 +1,13 @@
 # What a run needs to drive and check the trial. None of these holds the account number.
 
 output "summarise_sql" {
-  description = "The summarising query as rendered from the filter variables."
+  description = "The summarising query for a run by hand at run_time, as rendered from the filter variables; null without a run_time."
   value       = local.summarise_sql
+}
+
+output "summarise_sql_scheduled" {
+  description = "The query the schedule runs; Scheduler substitutes its scheduled time for the placeholder."
+  value       = local.summarise["scheduled"]
 }
 
 output "workgroup" {

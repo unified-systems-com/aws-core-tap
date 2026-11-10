@@ -1,6 +1,6 @@
-# The customer-side summarising plumbing (aws-core-tap#218): a Glue table over the flow logs, a summary table the query
-# appends to, an Athena workgroup, the query itself (a named query for a run by hand, and a schedule), and the role the
-# schedule runs as. The collector never runs any of this; it would only read the summary objects.
+# The customer-side summarising plumbing (aws-core-tap#218): a Glue table over the flow logs, a table over the summaries
+# the query writes, an Athena workgroup, the query itself (rendered for a run by hand, and run by a schedule), and the
+# role the schedule runs as. The collector never runs any of this; it would only read the summary objects.
 
 resource "aws_s3_bucket" "work" { # NOSONAR: private, run-scoped and destroyed within the time box; only Athena writes to it
   bucket        = "${local.prefix}-work"
@@ -32,12 +32,17 @@ locals {
     end = "bigint", action = "string", log_status = "string", vpc_id = "string", subnet_id = "string",
     instance_id = "string", tcp_flags = "int", type = "string", pkt_srcaddr = "string", pkt_dstaddr = "string",
     flow_direction = "string", traffic_path = "int",
+    pkt_src_aws_service = "string", pkt_dst_aws_service = "string", next_hop_interface_id = "string",
   }
   summary_columns = [
-    ["interface_id", "string"], ["vpc_id", "string"], ["subnet_id", "string"], ["instance_id", "string"],
-    ["flow_direction", "string"], ["action", "string"], ["client_address", "string"], ["server_address", "string"],
-    ["server_port", "int"], ["protocol", "bigint"], ["packets", "bigint"], ["bytes", "bigint"], ["records", "bigint"],
-    ["syn_seen", "boolean"], ["first_seen", "bigint"], ["last_seen", "bigint"],
+    ["client_address", "string"], ["server_address", "string"], ["server_port", "int"], ["protocol", "bigint"],
+    ["connections", "bigint"], ["decided_by_flags", "bigint"], ["decided_by_port", "bigint"], ["undecided", "bigint"],
+    ["client_to_server_bytes", "bigint"], ["server_to_client_bytes", "bigint"], ["client_to_server_packets", "bigint"],
+    ["server_to_client_packets", "bigint"], ["records", "bigint"], ["rejected_records", "bigint"],
+    ["client_interface_id", "string"], ["client_instance_id", "string"], ["client_aws_service", "string"],
+    ["server_interface_id", "string"], ["server_instance_id", "string"], ["server_aws_service", "string"],
+    ["next_hop_interface_ids", "array<string>"], ["first_seen", "bigint"], ["last_seen", "bigint"], ["action", "string"],
+    ["window_start", "string"], ["window_end", "string"],
   ]
 }
 
@@ -91,16 +96,22 @@ resource "aws_glue_catalog_table" "raw" {
   }
 }
 
-# The summaries: JSON lines, one partition per run (`window_end`), so a reader needs no Parquet library. Athena
-# writes them gzipped (`.gz`; seen in the 2026-11-10 trial), so a reader must gunzip.
+# The summaries: JSON lines, one conversation per line, one prefix per run (`run=<run time>`), so a reader needs no
+# Parquet library. UNLOAD writes them gzipped (`.gz`), so a reader must gunzip. The table is for a person querying them;
+# the run's prefix is a projected partition the query names (`WHERE run = '...'`).
 resource "aws_glue_catalog_table" "summary" {
   name          = "flow_summaries"
   database_name = aws_glue_catalog_database.flows.name
   table_type    = "EXTERNAL_TABLE"
-  parameters    = { "EXTERNAL" = "TRUE" }
+  parameters = {
+    "EXTERNAL"                  = "TRUE"
+    "projection.enabled"        = "true"
+    "projection.run.type"       = "injected"
+    "storage.location.template" = "s3://${aws_s3_bucket.work.bucket}/summaries/run=$${run}/"
+  }
 
   partition_keys {
-    name = "window_end"
+    name = "run"
     type = "string"
   }
 
@@ -139,25 +150,36 @@ resource "aws_athena_workgroup" "flows" {
 }
 
 locals {
-  summarise_sql = templatefile("${path.module}/summarise.sql.tftpl", {
-    database       = aws_glue_catalog_database.flows.name
-    raw_table      = aws_glue_catalog_table.raw.name
-    summary_table  = aws_glue_catalog_table.summary.name
-    interface_ids  = var.filter_interface_ids
-    instance_ids   = var.filter_instance_ids
-    addresses      = var.filter_addresses
-    ports          = var.filter_ports
-    lookback_hours = var.lookback_hours
-    window_start   = var.window_start
-    window_end     = var.window_end
-  })
-}
-
-resource "aws_athena_named_query" "summarise" {
-  name      = "${local.prefix}-summarise"
-  database  = aws_glue_catalog_database.flows.name
-  workgroup = aws_athena_workgroup.flows.name
-  query     = local.summarise_sql
+  # The query twice: for a run by hand at var.run_time, and for the schedule, which substitutes its own scheduled time
+  # for the placeholder when it calls Athena. The run time names the output prefix and, without a fixed end, places the
+  # window: its end is the hour boundary at or before the run time less the lag.
+  run_times = { by_hand = var.run_time, scheduled = "<aws.scheduler.scheduled-time>" }
+  window_end_sql = { for k, t in local.run_times : k => (
+    var.window_end != "" ? "from_iso8601_timestamp('${var.window_end}')" :
+    "date_trunc('hour', from_iso8601_timestamp('${t}') - INTERVAL '${var.lag_minutes}' MINUTE)"
+  ) }
+  window_start_sql = { for k, t in local.run_times : k => (
+    var.window_start != "" ? "from_iso8601_timestamp('${var.window_start}')" :
+    "(${local.window_end_sql[k]}) - INTERVAL '${var.lookback_hours}' HOUR"
+  ) }
+  output_names = { by_hand = var.output_name, scheduled = "summaries" }
+  summarise = { for k, t in local.run_times : k => templatefile("${path.module}/summarise.sql.tftpl", {
+    database           = aws_glue_catalog_database.flows.name
+    raw_table          = aws_glue_catalog_table.raw.name
+    output_location    = "s3://${aws_s3_bucket.work.bucket}/${local.output_names[k]}/run=${t}/"
+    window_start_sql   = local.window_start_sql[k]
+    window_end_sql     = local.window_end_sql[k]
+    interface_ids      = var.filter_interface_ids
+    instance_ids       = var.filter_instance_ids
+    addresses          = var.filter_addresses
+    sources            = var.filter_sources
+    destinations       = var.filter_destinations
+    pairs              = var.filter_pairs
+    endpoint_addresses = distinct(concat(var.filter_sources, var.filter_destinations, [for p in var.filter_pairs : p.source], [for p in var.filter_pairs : p.destination]))
+    ports              = var.filter_ports
+  }) }
+  # A run by hand needs a run time; without one there is no query to render.
+  summarise_sql = var.run_time == "" ? null : local.summarise["by_hand"]
 }
 
 # --- the schedule: EventBridge Scheduler calls Athena itself (a universal target), no function or workflow in between ---
@@ -173,6 +195,12 @@ data "aws_iam_policy_document" "scheduler_trust" {
       test     = "StringEquals"
       variable = "aws:SourceAccount"
       values   = [data.aws_caller_identity.current.account_id]
+    }
+    # Scheduler's confused-deputy guidance names the schedule group, never a schedule, as the source.
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceArn"
+      values   = ["arn:${data.aws_partition.current.partition}:scheduler:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:schedule-group/default"]
     }
   }
 }
@@ -191,8 +219,8 @@ data "aws_iam_policy_document" "scheduler" {
     resources = [aws_athena_workgroup.flows.arn]
   }
   statement {
-    sid     = "ReadAndAppendTheTables"
-    actions = ["glue:GetDatabase", "glue:GetTable", "glue:GetPartition", "glue:GetPartitions", "glue:CreatePartition", "glue:BatchCreatePartition"]
+    sid     = "ReadTheTables"
+    actions = ["glue:GetDatabase", "glue:GetTable", "glue:GetPartition", "glue:GetPartitions"]
     resources = [
       "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:catalog",
       "arn:${data.aws_partition.current.partition}:glue:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:database/${aws_glue_catalog_database.flows.name}",
@@ -230,7 +258,7 @@ resource "aws_scheduler_schedule" "summarise" {
     arn      = "arn:${data.aws_partition.current.partition}:scheduler:::aws-sdk:athena:startQueryExecution"
     role_arn = aws_iam_role.scheduler.arn
     input = jsonencode({
-      QueryString = local.summarise_sql
+      QueryString = local.summarise["scheduled"]
       WorkGroup   = aws_athena_workgroup.flows.name
     })
   }

@@ -1,48 +1,148 @@
-INSERT INTO "${database}"."${summary_table}"
-SELECT
-  interface_id,
-  vpc_id,
-  subnet_id,
-  instance_id,
-  flow_direction,
-  action,
-  CASE WHEN srcport >= dstport THEN srcaddr ELSE dstaddr END AS client_address,
-  CASE WHEN srcport >= dstport THEN dstaddr ELSE srcaddr END AS server_address,
-  CASE WHEN srcport >= dstport THEN dstport ELSE srcport END AS server_port,
-  protocol,
-  sum(packets) AS packets,
-  sum(bytes) AS bytes,
-  count(*) AS records,
-  bool_or(bitwise_and(tcp_flags, 2) <> 0) AS syn_seen,
-  min("start") AS first_seen,
-  max("end") AS last_seen,
-  date_format(current_timestamp AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%i:%sZ') AS window_end
-FROM "${database}"."${raw_table}"
-WHERE log_status = 'OK'
-%{ if window_start != "" ~}
-  AND "start" >= to_unixtime(from_iso8601_timestamp('${window_start}'))
-%{ else ~}
-  AND "start" >= to_unixtime(current_timestamp - INTERVAL '${lookback_hours}' HOUR)
-%{ endif ~}
-%{ if window_end != "" ~}
-  AND "start" < to_unixtime(from_iso8601_timestamp('${window_end}'))
-%{ endif ~}
+UNLOAD (
+WITH rec AS (
+  -- One flow log record is one direction of one connection, seen on one interface, over one aggregation interval.
+  SELECT
+    interface_id, instance_id, flow_direction, action, srcaddr, dstaddr, srcport, dstport, protocol, packets, bytes,
+    "start", "end", nullif(pkt_src_aws_service, '-') AS src_service, nullif(pkt_dst_aws_service, '-') AS dst_service,
+    nullif(next_hop_interface_id, '-') AS next_hop,
+    -- The connection's two ends in a fixed order (a before b), so both directions of it share one key.
+    (srcaddr < dstaddr OR (srcaddr = dstaddr AND srcport <= dstport)) AS src_is_a,
+    -- Who opened it, where the handshake fell inside this record: tcp-flags cannot log a bare ACK, so SYN without ACK
+    -- (2, or 3 with FIN) is the client's direction and SYN-ACK (18, 19) is the server's.
+    CASE bitwise_and(tcp_flags, 18) WHEN 2 THEN 'src' WHEN 18 THEN 'dst' END AS opener
+  FROM "${database}"."${raw_table}"
+  WHERE log_status = 'OK'
+    AND "start" >= to_unixtime(${window_start_sql})
+    AND "start" < to_unixtime(${window_end_sql})
+    -- The hourly partitions that can hold those records (one either side, for records that straddle or arrive late).
+    AND concat(year, '-', month, '-', day, 'T', hour) >= date_format((${window_start_sql}) - INTERVAL '1' HOUR, '%Y-%m-%dT%H')
+    AND concat(year, '-', month, '-', day, 'T', hour) <= date_format((${window_end_sql}) + INTERVAL '1' HOUR, '%Y-%m-%dT%H')
 %{ if length(interface_ids) + length(instance_ids) + length(addresses) > 0 ~}
-  AND (
-    false
+    AND (
+      false
 %{ if length(interface_ids) > 0 ~}
-    OR interface_id IN (${join(", ", [for v in interface_ids : "'${v}'"])})
+      OR interface_id IN (${join(", ", [for v in interface_ids : "'${v}'"])})
 %{ endif ~}
 %{ if length(instance_ids) > 0 ~}
-    OR instance_id IN (${join(", ", [for v in instance_ids : "'${v}'"])})
+      OR instance_id IN (${join(", ", [for v in instance_ids : "'${v}'"])})
 %{ endif ~}
 %{ if length(addresses) > 0 ~}
-    OR srcaddr IN (${join(", ", [for v in addresses : "'${v}'"])})
-    OR dstaddr IN (${join(", ", [for v in addresses : "'${v}'"])})
+      OR srcaddr IN (${join(", ", [for v in addresses : "'${v}'"])})
+      OR dstaddr IN (${join(", ", [for v in addresses : "'${v}'"])})
 %{ endif ~}
-  )
+    )
+%{ endif ~}
+%{ if length(endpoint_addresses) > 0 ~}
+    -- Only records touching an address the source, destination or pair filters name; they are decided exactly below.
+    AND (srcaddr IN (${join(", ", [for v in endpoint_addresses : "'${v}'"])}) OR dstaddr IN (${join(", ", [for v in endpoint_addresses : "'${v}'"])}))
 %{ endif ~}
 %{ if length(ports) > 0 ~}
-  AND (srcport IN (${join(", ", [for p in ports : tostring(p)])}) OR dstport IN (${join(", ", [for p in ports : tostring(p)])}))
+    AND (srcport IN (${join(", ", [for p in ports : tostring(p)])}) OR dstport IN (${join(", ", [for p in ports : tostring(p)])}))
 %{ endif ~}
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+),
+per_interface AS (
+  -- Each connection as one interface saw it. The same traffic is seen again on the interface at the other end.
+  SELECT
+    IF(src_is_a, srcaddr, dstaddr) AS a_addr, IF(src_is_a, srcport, dstport) AS a_port,
+    IF(src_is_a, dstaddr, srcaddr) AS b_addr, IF(src_is_a, dstport, srcport) AS b_port,
+    protocol, interface_id,
+    arbitrary(instance_id) AS instance_id,
+    -- The interface holds a when a's packets leave through it, or b's packets arrive through it.
+    bool_or(src_is_a = (flow_direction = 'egress')) AS holds_a,
+    bool_or(src_is_a <> (flow_direction = 'egress')) AS holds_b,
+    sum(IF(src_is_a, bytes, 0)) AS a_to_b_bytes, sum(IF(src_is_a, 0, bytes)) AS b_to_a_bytes,
+    sum(IF(src_is_a, packets, 0)) AS a_to_b_packets, sum(IF(src_is_a, 0, packets)) AS b_to_a_packets,
+    count(*) AS records, count_if(action = 'REJECT') AS rejected_records,
+    count_if((opener = 'src') = src_is_a) AS a_opened, count_if((opener = 'dst') = src_is_a) AS b_opened,
+    arbitrary(IF(src_is_a, src_service, dst_service)) AS a_service,
+    arbitrary(IF(src_is_a, dst_service, src_service)) AS b_service,
+    arbitrary(next_hop) AS next_hop,
+    min("start") AS first_seen, max("end") AS last_seen
+  FROM rec
+  GROUP BY 1, 2, 3, 4, 5, 6
+),
+connection AS (
+  -- One row per connection. Volumes take the larger interface's count, not the sum, so traffic seen at both ends is
+  -- counted once.
+  SELECT
+    a_addr, a_port, b_addr, b_port, protocol,
+    max(a_to_b_bytes) AS a_to_b_bytes, max(b_to_a_bytes) AS b_to_a_bytes,
+    max(a_to_b_packets) AS a_to_b_packets, max(b_to_a_packets) AS b_to_a_packets,
+    sum(records) AS records, sum(rejected_records) AS rejected_records,
+    sum(a_opened) AS a_opened, sum(b_opened) AS b_opened,
+    arbitrary(IF(holds_a, interface_id)) AS a_interface, arbitrary(IF(holds_a, instance_id)) AS a_instance,
+    arbitrary(IF(holds_b, interface_id)) AS b_interface, arbitrary(IF(holds_b, instance_id)) AS b_instance,
+    arbitrary(a_service) AS a_service, arbitrary(b_service) AS b_service, arbitrary(next_hop) AS next_hop,
+    min(first_seen) AS first_seen, max(last_seen) AS last_seen
+  FROM per_interface
+  GROUP BY 1, 2, 3, 4, 5
+),
+decided AS (
+  -- The flags decide when they point one way; the higher port is the client only when they do not (no handshake in
+  -- the window, or not TCP); equal ports leave it undecided, and a is named client.
+  SELECT *,
+    CASE
+      WHEN (a_opened > 0) <> (b_opened > 0) THEN 'flags'
+      WHEN a_port <> b_port THEN 'port'
+      ELSE 'undecided'
+    END AS rule,
+    CASE
+      WHEN (a_opened > 0) <> (b_opened > 0) THEN a_opened > 0
+      ELSE a_port >= b_port
+    END AS a_is_client
+  FROM connection
+),
+conversation AS (
+  -- One row per client, server, server port and protocol: the conversation, all its connections together.
+  SELECT
+    IF(a_is_client, a_addr, b_addr) AS client_address,
+    IF(a_is_client, b_addr, a_addr) AS server_address,
+    IF(a_is_client, b_port, a_port) AS server_port,
+    protocol,
+    count(*) AS connections,
+    count_if(rule = 'flags') AS decided_by_flags,
+    count_if(rule = 'port') AS decided_by_port,
+    count_if(rule = 'undecided') AS undecided,
+    sum(IF(a_is_client, a_to_b_bytes, b_to_a_bytes)) AS client_to_server_bytes,
+    sum(IF(a_is_client, b_to_a_bytes, a_to_b_bytes)) AS server_to_client_bytes,
+    sum(IF(a_is_client, a_to_b_packets, b_to_a_packets)) AS client_to_server_packets,
+    sum(IF(a_is_client, b_to_a_packets, a_to_b_packets)) AS server_to_client_packets,
+    sum(records) AS records,
+    sum(rejected_records) AS rejected_records,
+    arbitrary(IF(a_is_client, a_interface, b_interface)) AS client_interface_id,
+    arbitrary(IF(a_is_client, a_instance, b_instance)) AS client_instance_id,
+    arbitrary(IF(a_is_client, a_service, b_service)) AS client_aws_service,
+    arbitrary(IF(a_is_client, b_interface, a_interface)) AS server_interface_id,
+    arbitrary(IF(a_is_client, b_instance, a_instance)) AS server_instance_id,
+    arbitrary(IF(a_is_client, b_service, a_service)) AS server_aws_service,
+    array_agg(DISTINCT next_hop) FILTER (WHERE next_hop IS NOT NULL) AS next_hop_interface_ids,
+    min(first_seen) AS first_seen,
+    max(last_seen) AS last_seen
+  FROM decided
+  GROUP BY 1, 2, 3, 4
+)
+SELECT
+  *,
+  CASE WHEN rejected_records = 0 THEN 'ACCEPT' WHEN rejected_records = records THEN 'REJECT' ELSE 'MIXED' END AS action,
+  date_format((${window_start_sql}) AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%i:%sZ') AS window_start,
+  date_format((${window_end_sql}) AT TIME ZONE 'UTC', '%Y-%m-%dT%H:%i:%sZ') AS window_end
+FROM conversation
+WHERE true
+%{ if length(sources) > 0 ~}
+  AND client_address IN (${join(", ", [for v in sources : "'${v}'"])})
+%{ endif ~}
+%{ if length(destinations) > 0 ~}
+  AND server_address IN (${join(", ", [for v in destinations : "'${v}'"])})
+%{ endif ~}
+%{ if length(pairs) > 0 ~}
+  AND (
+    false
+%{ for p in pairs ~}
+    OR (client_address = '${p.source}' AND server_address = '${p.destination}')
+%{ endfor ~}
+  )
+%{ endif ~}
+)
+-- UNLOAD writes only to an empty prefix, so a second run for the same run time fails instead of duplicating.
+TO '${output_location}'
+WITH (format = 'JSON')

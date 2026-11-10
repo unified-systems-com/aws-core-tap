@@ -60,6 +60,42 @@ variable "filter_addresses" {
   }
 }
 
+# Source and destination mean the conversation's client (who opened it) and server, as the query decides them, not a
+# packet's srcaddr and dstaddr: a reply's packets travel server to client but belong to the same conversation.
+
+variable "filter_sources" {
+  description = "Only conversations opened by one of these IPv4 addresses (the client)."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for v in var.filter_sources : can(cidrhost("${v}/32", 0))])
+    error_message = "Each filter_sources value must be one IPv4 address."
+  }
+}
+
+variable "filter_destinations" {
+  description = "Only conversations whose server is one of these IPv4 addresses."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for v in var.filter_destinations : can(cidrhost("${v}/32", 0))])
+    error_message = "Each filter_destinations value must be one IPv4 address."
+  }
+}
+
+variable "filter_pairs" {
+  description = "Only conversations between these client and server pairs, each {source = \"10.0.0.1\", destination = \"10.0.0.2\"}. A pair is directed; list both orders to match either."
+  type        = list(object({ source = string, destination = string }))
+  default     = []
+
+  validation {
+    condition     = alltrue([for p in var.filter_pairs : can(cidrhost("${p.source}/32", 0)) && can(cidrhost("${p.destination}/32", 0))])
+    error_message = "Each filter_pairs entry must be {source, destination}, each one IPv4 address."
+  }
+}
+
 variable "filter_ports" {
   description = "Only flows whose source or destination port is one of these."
   type        = list(number)
@@ -72,7 +108,7 @@ variable "filter_ports" {
 }
 
 variable "lookback_hours" {
-  description = "The window each run summarises, ending when it runs. Ignored when window_start is set."
+  description = "The window each run summarises, in hours, ending at window_end. Ignored when window_start is set."
   type        = number
   default     = 1
 
@@ -94,7 +130,7 @@ variable "window_start" {
 }
 
 variable "window_end" {
-  description = "The fixed window's end, as YYYY-MM-DDTHH:MM:SSZ. Empty means the time the query runs."
+  description = "The fixed window's end, as YYYY-MM-DDTHH:MM:SSZ. Empty means the hour boundary at or before run_time less lag_minutes."
   type        = string
   default     = ""
 
@@ -102,6 +138,45 @@ variable "window_end" {
     condition     = var.window_end == "" || can(regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$", var.window_end))
     error_message = "window_end must be empty or YYYY-MM-DDTHH:MM:SSZ."
   }
+}
+
+variable "lag_minutes" {
+  description = "How far behind the run's time the window ends, because flow log records reach S3 several minutes late (about 10, best effort). The end is then rounded down to the hour, so runs in the same hour summarise the same window."
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.lag_minutes == floor(var.lag_minutes) && var.lag_minutes >= 0 && var.lag_minutes <= 1440
+    error_message = "lag_minutes must be a whole number from 0 to 1440."
+  }
+}
+
+variable "run_time" {
+  description = "The run's time, as YYYY-MM-DDTHH:MM:SSZ, for a run by hand: it names the run's output prefix and, with no fixed window_end, places the window. The schedule supplies its own scheduled time instead. Empty renders no hand-run query."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.run_time == "" || can(regex("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$", var.run_time))
+    error_message = "run_time must be empty or YYYY-MM-DDTHH:MM:SSZ."
+  }
+}
+
+variable "output_name" {
+  description = "The top-level prefix in the work bucket a run writes under. The schedule always writes under summaries; a focused extraction by hand should name its own, so it never mixes with the hourly summaries."
+  type        = string
+  default     = "summaries"
+
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9-]{0,39}$", var.output_name)) && var.output_name != "athena-results"
+    error_message = "output_name must be 1 to 40 lowercase letters, digits or hyphens, and not athena-results."
+  }
+}
+
+variable "newer_fields" {
+  description = "Also log pkt-src-aws-service, pkt-dst-aws-service (version 5) and next-hop-interface-id (version 11). Turn off where the region rejects a field; the query reads them as null either way."
+  type        = bool
+  default     = true
 }
 
 variable "aggregation_interval" {
@@ -116,9 +191,9 @@ variable "aggregation_interval" {
 }
 
 variable "schedule_expression" {
-  description = "When the summarising query runs (EventBridge Scheduler syntax)."
+  description = "When the summarising query runs (EventBridge Scheduler syntax). Once an hour, at a minute past lag_minutes, gives one run per window; a second run in the same hour summarises the same window again under its own prefix."
   type        = string
-  default     = "rate(1 hour)"
+  default     = "cron(25 * * * ? *)"
 }
 
 variable "schedule_state" {

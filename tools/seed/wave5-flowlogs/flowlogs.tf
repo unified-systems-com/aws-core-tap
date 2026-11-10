@@ -17,12 +17,13 @@ resource "aws_s3_bucket_public_access_block" "flow" {
 
 locals {
   # The fields the default format lacks are the ones the summary needs: interface, VPC, subnet and instance ids, the TCP
-  # flags (who opened the connection) and the direction. `$$` is a literal `$` in HCL.
-  flow_fields = [
+  # flags (who opened the connection) and the direction; and, where the region has them, the AWS service an address
+  # belongs to and the interface at the other end of the hop. `$$` is a literal `$` in HCL.
+  flow_fields = concat([
     "version", "account-id", "interface-id", "srcaddr", "dstaddr", "srcport", "dstport", "protocol", "packets", "bytes",
     "start", "end", "action", "log-status", "vpc-id", "subnet-id", "instance-id", "tcp-flags", "type", "pkt-srcaddr",
     "pkt-dstaddr", "flow-direction", "traffic-path",
-  ]
+  ], var.newer_fields ? ["pkt-src-aws-service", "pkt-dst-aws-service", "next-hop-interface-id"] : [])
   flow_log_format = join(" ", [for f in local.flow_fields : "$${${f}}"])
 }
 
