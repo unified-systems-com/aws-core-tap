@@ -18,6 +18,13 @@ class EcsCluster(BaseModel):
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster name is unique only within
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)
+    # A cluster contains the tasks it runs (aws-core-tap#211): a task the cluster's complete running listing
+    # no longer names is a retirement candidate, and retiring the cluster cascades to its tasks. RUNS_TASK from
+    # a service is a reference, not containment. Literals, for validate_plugin's AST reader.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_ecs_task"}], "edges": [{"type": "RUNS_TASK__aws_core"}]},
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("RUNS_TASK__aws_core",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -1675,7 +1675,10 @@
         "desired_status": "desiredStatus",
         "started_at": "_started_at",
         "platform_version": "platformVersion",
-        "group": "group"
+        "group": "group",
+        "stopped_at": "_stopped_at",
+        "stopped_reason": "stoppedReason",
+        "stop_code": "stopCode"
       },
       "tags": {
         "source": "field",
@@ -1685,7 +1688,7 @@
       },
       "edges": [
         {
-          "value_path": "clusterArn",
+          "value_path": "_cluster_arn_running",
           "target_type": "aws_core__aws_ecs_cluster",
           "key_kind": "arn",
           "edge_type": "RUNS_TASK__aws_core",
