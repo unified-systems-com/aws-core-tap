@@ -41,7 +41,8 @@ locals {
     ["server_to_client_packets", "bigint"], ["records", "bigint"], ["rejected_records", "bigint"],
     ["client_interface_id", "string"], ["client_instance_id", "string"], ["client_aws_service", "string"],
     ["server_interface_id", "string"], ["server_instance_id", "string"], ["server_aws_service", "string"],
-    ["next_hop_interface_ids", "array<string>"], ["first_seen", "bigint"], ["last_seen", "bigint"], ["action", "string"],
+    ["next_hop_interface_ids", "array<string>"], ["traffic_path_bits", "bigint"], ["first_seen", "bigint"],
+    ["last_seen", "bigint"], ["action", "string"], ["traffic_paths", "array<int>"],
     ["window_start", "string"], ["window_end", "string"],
   ]
 }
