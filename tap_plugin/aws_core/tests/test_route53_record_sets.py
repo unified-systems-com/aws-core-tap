@@ -17,11 +17,13 @@ from tap_plugin.aws_core.collectors.boto3_collector.route53_records import (
     CONTAINMENT_SURFACES,
     HOLDS_RECORD_SET,
     RECORD_SET_TYPE,
+    REPLACED_ZONE_SCOPE,
     ZONE_TYPE,
     record_set_key,
     shared_walk,
     walk_of,
     walk_zones,
+    withhold_unreplaced_zone_routes,
 )
 from tap_plugin.aws_core.falsifiers import Route53RecordSetFalsifier
 
@@ -121,6 +123,30 @@ class TestWalk:
         walk = walk_zones(_FakeRoute53({"/hostedzone/ZA": [{"Name": "a.", "Type": "A"}]}))
         walk.projected = True
         assert all(listing.walk.admitted for listing in walk.surface_listings())
+
+    def test_a_zone_whose_records_did_not_all_resolve_or_reach_the_batch_keeps_its_old_routes(self) -> None:
+        walk = walk_zones(_FakeRoute53({"/hostedzone/ZA": [{"Name": "a.", "Type": "A"}], "/hostedzone/ZB": [{"Name": "b.", "Type": "A"}]}))
+
+        def judged() -> list[Any]:
+            return [
+                ({"entity": {"entity_type": ZONE_TYPE}, "node": {"hosted_zone_id": zone}}, {REPLACED_ZONE_SCOPE: "complete"})
+                for zone in ("/hostedzone/ZA", "/hostedzone/ZB")
+            ]
+
+        def reads(rows: list[Any]) -> list[str]:
+            return [r[REPLACED_ZONE_SCOPE] for _envelope, r in rows]
+
+        # The reader did not finish: no zone's old routes are claimed.
+        rows = judged()
+        assert withhold_unreplaced_zone_routes(rows, walk) == 2 and reads(rows) == ["failed", "failed"]
+        # The reader finished, but a record set in ZA resolved only partly: ZA keeps its old routes, ZB is claimed.
+        walk.projected, walk.unresolved = True, {"/hostedzone/ZA"}
+        rows = judged()
+        assert withhold_unreplaced_zone_routes(rows, walk) == 1 and reads(rows) == ["failed", "complete"]
+        # No walk at all: nothing is claimed.
+        rows = judged()
+        withhold_unreplaced_zone_routes(rows, None)
+        assert reads(rows) == ["failed", "failed"]
 
     def test_a_walk_that_raised_is_kept_and_has_no_listings(self) -> None:
         class _Denied(_FakeRoute53):

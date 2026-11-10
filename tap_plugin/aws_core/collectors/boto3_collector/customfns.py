@@ -516,6 +516,8 @@ def route53_record_sets_described(session: Any, *, client_for: Any = None) -> It
             },
             {"_zone_id": COMPLETE, **dict.fromkeys(_RESOLVES_SLOTS, read)},
         )
+        if read != COMPLETE:
+            walk.unresolved.add(zone_id)
     walk.projected = True
 
 
@@ -529,7 +531,10 @@ def route53_zones_with_alias_targets(session: Any, *, client_for: Any = None) ->
 
     What a zone's records resolve to now lives on the record set nodes (:func:`route53_record_sets_described`),
     which the zone contains (``HOLDS_RECORD_SET``). The zone's former direct ``ROUTES_TRAFFIC`` slots are empty for
-    one release, read complete when the zone's record listing reached its end and failed when it did not. The name is kept because the manifest and the run ledger name it.
+    one release, read complete when the zone's record listing reached its end and failed when it did not; once
+    every reader has run, the collector also fails them for a zone whose record sets did not all resolve or were
+    not all carried (``withhold_unreplaced_zone_routes``). The name is kept because the manifest and the run
+    ledger name it.
     """
     r53 = _run_client(session, client_for, "route53")
     walk = shared_records_walk(session, r53)

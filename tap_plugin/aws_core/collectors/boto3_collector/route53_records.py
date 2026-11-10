@@ -16,6 +16,8 @@ from weakref import WeakKeyDictionary
 
 from botocore.exceptions import BotoCoreError, ClientError
 
+from .authority import FAILED
+from .batch import node_key
 from .envelope import without_response_metadata
 from .listing import ListingWalk, page_says_more
 
@@ -26,6 +28,8 @@ HOLDS_RECORD_SET = "HOLDS_RECORD_SET__aws_core"
 #: The parent type -> the containment edges it records a surface for (``req-aws-core-contained-type-triple``).
 CONTAINMENT_SURFACES: dict[str, tuple[str, ...]] = {ZONE_TYPE: (HOLDS_RECORD_SET,)}
 RELATION = "route53_zone.record_sets"
+#: The zone's former direct routes, replaced by its record sets' ``RESOLVES_TO_TARGET`` (one claim scope).
+REPLACED_ZONE_SCOPE = ("ROUTES_TRAFFIC__aws_core", "outbound")
 
 
 def bare_zone_id(zone_id: str) -> str:
@@ -65,6 +69,14 @@ class RecordWalk:
     #: The record set reader yielded every record set to the end. Until it has, no zone's surface may say its
     #: record sets reached the batch: a reader that raised partway imported none of the ones it missed.
     projected: bool = False
+    #: Zones holding a record set whose resolution was not complete (a target the run could not match).
+    unresolved: set[str] = field(default_factory=set)
+
+    def carried(self, zone_id: str) -> bool:
+        """The zone's record sets, and what each resolves to, all reached the batch: its listing reached its end,
+        the reader finished, and no record set of it left its resolution partial."""
+        listed = any(listing.zone_id == zone_id and listing.walk.complete for listing in self.listings)
+        return listed and self.projected and zone_id not in self.unresolved
 
     def surface_listings(self) -> list[ZoneListing]:
         """The listings to record as the zones' surfaces. When the reader did not finish, every listing says its
@@ -116,6 +128,26 @@ def walk_zones(client: Any) -> RecordWalk:
 #: One walk per session: the zone reader and the record set reader share one set of Route 53 calls. A walk that
 #: raised is kept too, so a denied ``ListHostedZones`` is not retried by the second reader.
 _WALKS: WeakKeyDictionary[Any, RecordWalk | BaseException] = WeakKeyDictionary()
+
+
+def withhold_unreplaced_zone_routes(judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]], walk: RecordWalk | None) -> int:
+    """Mark a zone's replaced ``ROUTES_TRAFFIC`` read failed unless its replacement reached the batch.
+
+    Run once every reader has finished and before claims are made, so it sees what the zone reader could not when
+    it yielded: whether the record set reader finished and whether each zone's record sets all resolved. A zone
+    whose replacement was not carried keeps its old direct edges rather than lose them with nothing in their place
+    (aws-core-tap PR 223 review). Returns how many zones were withheld.
+    """
+    withheld = 0
+    for envelope, reads in judged:
+        if envelope["entity"]["entity_type"] != ZONE_TYPE or REPLACED_ZONE_SCOPE not in reads:
+            continue
+        zone_id = str(next(iter(node_key(envelope).values()), "") or "")
+        if walk is None or not walk.carried(zone_id):
+            if reads[REPLACED_ZONE_SCOPE] != FAILED:
+                withheld += 1
+            reads[REPLACED_ZONE_SCOPE] = FAILED
+    return withheld
 
 
 def walk_of(session: Any) -> RecordWalk | None:

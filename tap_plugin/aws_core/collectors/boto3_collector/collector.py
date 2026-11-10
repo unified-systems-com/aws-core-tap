@@ -100,6 +100,7 @@ from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import walks_of
 from .route53_records import walk_of as route53_walk_of
+from .route53_records import withhold_unreplaced_zone_routes
 from .endpoint_probe import EndpointProbe, request_host
 from .envelope import jsonable
 from .hydrate import hydrate_item
@@ -1142,6 +1143,9 @@ class Boto3Collector(CollectorBase):
         # fails here rather than send it. Permissive dangling mode: an endpoint naming a node no
         # live row matches skips that edge and core records a skip event, never a failure.
         progress.reads_finished(nodes=len(node_envelopes), edges=len(edge_envelopes))
+        # The zones' replaced direct routes are claimed only for a zone whose record sets all resolved and reached the
+        # batch, which is known only now that every reader has run (aws-core-tap PR 223 review).
+        withhold_unreplaced_zone_routes(judged, route53_walk_of(session))
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:

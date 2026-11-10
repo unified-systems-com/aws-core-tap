@@ -229,8 +229,12 @@ class TestRoute53RecordSets:
             {"Name": "samsite.unified-systems.com.", "Type": "A", "AliasTarget": {"DNSName": f"{_CF_DOMAIN}.", "HostedZoneId": "Z2FDTNDATAQYW2"}},
             {"Name": "txt.samsite.unified-systems.com.", "Type": "TXT", "ResourceRecords": [{"Value": '"x"'}]},
         ]
-        items = _records(rrs, _Session(rrs))
+        session = _Session(rrs)
+        items = _records(rrs, session)
         assert items[("samsite.unified-systems.com.", "A", None)]["_edge_reads"]["_resolves_cloudfront"] == "partial"
+        # The zone is recorded unresolved, so its old direct routes are not claimed (withhold_unreplaced_zone_routes).
+        walk = walk_of(session)
+        assert walk is not None and walk.unresolved == {"/hostedzone/Z1SAMSITE"} and not walk.carried("/hostedzone/Z1SAMSITE")
         assert set(items[("txt.samsite.unified-systems.com.", "TXT", None)]["_edge_reads"].values()) == {"complete"}
 
     @pytest.mark.spec("req-aws-collector-lb-topology-5")
