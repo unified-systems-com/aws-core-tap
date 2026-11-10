@@ -258,8 +258,11 @@ def _row(entity_type: str, fields: dict[str, Any], *, account_id: str = ACCOUNT_
     return entity_id
 
 
-def _task_row(task_arn: str, **kw: Any) -> uuid.UUID:
-    return _row(TASK, {"task_arn": task_arn, "name": task_arn.rsplit("/", 1)[-1]}, **kw)
+def _task_row(task_arn: str, *, last_status: str | None = None, **kw: Any) -> uuid.UUID:
+    fields: dict[str, Any] = {"task_arn": task_arn, "name": task_arn.rsplit("/", 1)[-1]}
+    if last_status is not None:
+        fields["last_status"] = last_status
+    return _row(TASK, fields, **kw)
 
 
 def _container_row(container_arn: str, name: str = "app", **kw: Any) -> uuid.UUID:
@@ -310,14 +313,26 @@ class TestEcsTaskFalsifier:
         verdicts = run_four_cases(EcsTaskFalsifier(session=FakeSession(ecs), account_id=ACCOUNT_ID), cases, _context())
         _supported(verdicts)
 
-    def test_a_stopped_task_is_gone(self) -> None:
+    def test_a_stopped_task_whose_stop_is_recorded_is_gone(self) -> None:
         ecs = FakeEcsProbe()
         arn = _task_arn("stopped")
         ecs.answers[arn] = _described(arn, status="STOPPED")
         [verdict] = EcsTaskFalsifier(session=FakeSession(ecs), account_id=ACCOUNT_ID).batch_falsify(
-            [_candidate(_task_row(arn), TASK)], _context()
+            [_candidate(_task_row(arn, last_status="STOPPED"), TASK)], _context()
         )
         assert verdict.verdict == DROPPED_FROM_OBSERVATION
+
+    def test_a_stop_not_yet_recorded_is_undetermined(self) -> None:
+        """Record first, retire after (ruled 2026-11-09): if the run that should have recorded the stop could not
+        (stopped listing or grid lookup failed), ECS's STOPPED answer does not retire the row yet."""
+        ecs = FakeEcsProbe()
+        arn = _task_arn("stopped-unrecorded")
+        ecs.answers[arn] = _described(arn, status="STOPPED")
+        [verdict] = EcsTaskFalsifier(session=FakeSession(ecs), account_id=ACCOUNT_ID).batch_falsify(
+            [_candidate(_task_row(arn, last_status="RUNNING"), TASK)], _context()
+        )
+        assert verdict.verdict == UNDETERMINED
+        assert "not recorded the stop" in verdict.note
 
     def test_an_unexplained_failure_is_undetermined_never_absence(self) -> None:
         ecs = FakeEcsProbe()

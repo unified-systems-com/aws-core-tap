@@ -2698,13 +2698,19 @@ class _EcsFalsifier(_AwsFalsifier):
         raise NotImplementedError
 
     def _judge_task(
-        self, candidate: Candidate, expected: Expected, task: dict[str, Any] | None, failure: str | None, name: str
+        self,
+        candidate: Candidate,
+        expected: Expected,
+        task: dict[str, Any] | None,
+        failure: str | None,
+        name: str,
+        recorded_status: str,
     ) -> Verdict:
         raise NotImplementedError
 
     def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
         verdicts: dict[Any, Verdict] = {}
-        groups: dict[tuple[str, str], list[tuple[Candidate, Expected, str, str]]] = {}
+        groups: dict[tuple[str, str], list[tuple[Candidate, Expected, str, str, str]]] = {}
         for candidate in candidates:
             row = _row_of(candidate.entity_id)
             if row is None:
@@ -2740,7 +2746,8 @@ class _EcsFalsifier(_AwsFalsifier):
                 continue
             expected = Expected(source_id=arn, owner=None, name=None)
             name = str(getattr(row, "name", "") or "")
-            groups.setdefault((region, cluster), []).append((candidate, expected, task_arn, name))
+            recorded_status = str(getattr(row, "last_status", "") or "")
+            groups.setdefault((region, cluster), []).append((candidate, expected, task_arn, name, recorded_status))
         for (region, cluster), members in groups.items():
             task_arns = list(dict.fromkeys(member[2] for member in members))
             for start in range(0, len(task_arns), _ECS_TASKS_PER_CALL):
@@ -2750,7 +2757,7 @@ class _EcsFalsifier(_AwsFalsifier):
                     client = session.client("ecs", region_name=region)
                     response = client.describe_tasks(cluster=cluster, tasks=sorted(chunk))
                 except Exception as exc:  # noqa: BLE001 — every candidate the call covered gets an answer, never a crash
-                    for candidate, expected, _, _ in covered:
+                    for candidate, expected, *_ in covered:
                         if isinstance(exc, ClientError) and error_code_of(exc) == _ECS_CLUSTER_NOT_FOUND:
                             verdicts[candidate.entity_id] = _undetermined(
                                 candidate,
@@ -2768,9 +2775,9 @@ class _EcsFalsifier(_AwsFalsifier):
                 unasked = [arn for arn in described if arn not in chunk]
                 if len(unanswered) == 1 and len(unasked) == 1:
                     described[unanswered[0]] = described[unasked[0]]
-                for candidate, expected, task_arn, name in covered:
+                for candidate, expected, task_arn, name, recorded_status in covered:
                     verdicts[candidate.entity_id] = self._judge_task(
-                        candidate, expected, described.get(task_arn), failures.get(task_arn), name
+                        candidate, expected, described.get(task_arn), failures.get(task_arn), name, recorded_status
                     )
         return [verdicts[candidate.entity_id] for candidate in candidates]
 
@@ -2783,9 +2790,11 @@ class _EcsFalsifier(_AwsFalsifier):
 
 
 class EcsTaskFalsifier(_EcsFalsifier):
-    """A task is gone when ECS reports it ``STOPPED`` or answers ``MISSING`` (it no longer shows it); any other
-    state is present. Ruled 2026-11-09 (aws-core-tap#211): a stopped task retires, unlike a stopped EC2 instance,
-    because a task never runs again; the collector records the stop first, while ECS still lists it."""
+    """A task is gone when ECS answers ``MISSING`` (it no longer shows it), or reports it ``STOPPED`` and the grid
+    already records that stop; any other state is present. Ruled 2026-11-09 (aws-core-tap#211): record the stop
+    while ECS lists the task, retire it after. So a ``STOPPED`` answer for a row that does not yet say ``STOPPED`` (the
+    run that should have recorded it could not: the stopped listing or the grid lookup failed) is ``UNDETERMINED``:
+    a later run records the stop, and the task retires once it is recorded or ECS answers ``MISSING``."""
 
     id_field = "task_arn"
 
@@ -2793,11 +2802,23 @@ class EcsTaskFalsifier(_EcsFalsifier):
         return arn
 
     def _judge_task(
-        self, candidate: Candidate, expected: Expected, task: dict[str, Any] | None, failure: str | None, name: str
+        self,
+        candidate: Candidate,
+        expected: Expected,
+        task: dict[str, Any] | None,
+        failure: str | None,
+        name: str,
+        recorded_status: str,
     ) -> Verdict:
         if task is not None:
             if str(task.get("lastStatus") or "") == _ECS_STOPPED:
-                return self._absent(candidate, expected, "lastStatus=STOPPED")
+                if recorded_status != _ECS_STOPPED:
+                    return _undetermined(
+                        candidate,
+                        "errored",
+                        "ECS reports the task STOPPED but the grid has not recorded the stop yet; record first, retire after",
+                    )
+                return self._absent(candidate, expected, "lastStatus=STOPPED, already recorded")
             probe = Probe(status="found", source_id=str(task.get("taskArn") or "") or None, detail="DescribeTasks 200")
             return verdict_from_probe(candidate, expected, probe)
         if failure == _ECS_MISSING:
@@ -2816,7 +2837,13 @@ class EcsContainerFalsifier(_EcsFalsifier):
         return _ecs_task_of_container(arn)
 
     def _judge_task(
-        self, candidate: Candidate, expected: Expected, task: dict[str, Any] | None, failure: str | None, name: str
+        self,
+        candidate: Candidate,
+        expected: Expected,
+        task: dict[str, Any] | None,
+        failure: str | None,
+        name: str,
+        recorded_status: str,
     ) -> Verdict:
         if task is not None:
             if str(task.get("lastStatus") or "") == _ECS_STOPPED:
