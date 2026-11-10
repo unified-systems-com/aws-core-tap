@@ -1144,6 +1144,11 @@ aws_core__aws_securityhub_standards_subscription = "tap_plugin.aws_core.falsifie
 aws_core__aws_access_analyzer_finding = "tap_plugin.aws_core.falsifiers.AccessAnalyzerFindingFalsifier"
 aws_core__aws_config_rule = "tap_plugin.aws_core.falsifiers.ConfigRuleFalsifier"
 aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.falsifiers.ConformancePackFalsifier"
+# ECS (aws-core-tap#211): EcsCluster -> RUNS_TASK -> task, EcsTask -> RUNS_CONTAINER -> container, each with a
+# per-parent surface recorded by the ECS walk (collectors/boto3_collector/ecs.py). A stopped task is recorded
+# while ECS lists it and retired after (ruled 2026-11-09). Registered, not armed: reconcile authority stays off.
+aws_core__aws_ecs_task = "tap_plugin.aws_core.falsifiers.EcsTaskFalsifier"
+aws_core__aws_ecs_container = "tap_plugin.aws_core.falsifiers.EcsContainerFalsifier"
 
 [grift]
 dimension = "grift/dimension.grift.json"

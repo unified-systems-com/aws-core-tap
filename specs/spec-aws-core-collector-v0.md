@@ -925,8 +925,9 @@ manifest).
 
 **Calls (one walk, four `custom_fn`s).** The fan-out is made once per run and region by `walk_ecs` (`ecs.py`); `ecs_clusters_described`, `ecs_services_described`, `ecs_tasks_described` and `ecs_containers_described` each take their slice of it, because a manifest entry yields exactly one node type. A multi-call fan-out is what `custom_fn` is for
 ([Source Primitive](#source-primitive)). Per swept region: `ListClusters`, then `DescribeClusters`; per cluster
-`ListServices` then `DescribeServices` (at most 10 per call), and `ListTasks` then `DescribeTasks` (at most
-100 per call), the Describe calls with `include=["TAGS"]`. Every paginated call is read to its end
+`ListServices` then `DescribeServices` (at most 10 per call), and `ListTasks` (once with
+`desiredStatus="RUNNING"`, once with `desiredStatus="STOPPED"`) then one `DescribeTasks` sequence (at most 100
+per call) over the running tasks and the held stopped ones, the Describe calls with `include=["TAGS"]`. Every paginated call is read to its end
 ([Every Paginated Call Read To Its End](#every-paginated-call-read-to-its-end)). A denied or failed
 sub-call degrades that slot to unknown and never fails the run
 ([Fan-Out Hydrate Seam](#fan-out-hydrate-seam)).
@@ -942,7 +943,8 @@ string (the hybrid nullable-field pattern, `req-aws-core-fields-3`: null is unob
 - `aws_ecs_container` (new, aws_core-owned, keyed on `container_arn`): `name`, `image`, `image_digest`,
   `runtime_id`, `last_status`.
 - `aws_ecs_task` gains `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version` and
-  `group` (the `service:<name>` string ECS sets for a service-launched task).
+  `group` (the `service:<name>` string ECS sets for a service-launched task), and `stopped_at`,
+  `stopped_reason` and `stop_code`, which are null until ECS reports the task stopped (`-15`).
 - `aws_ecs_cluster`, `aws_ecs_service` and `aws_ecs_task` each gain the mandatory `tags` field. They have none
   today, and the collector writes `tags` on every node, so adding the entries without it would reject whole
   batches (the v0.4.0 trap named in the `add-aws-type` skill).
@@ -954,17 +956,42 @@ task) and `RUNS_CONTAINER` (task to container), declared in the manifest as edge
 
 **Sensitivity.** `DescribeTasks` returns `overrides.containerOverrides[].environment` and `.command`, which
 callers use to pass secrets to a container. These are declared `reviewed_may_contain` with category
-`credential`, and the entry ships with `persist_configuration: false`. Typed fields, tags and edges carry
-every fact this requirement needs, so nothing is read back from the stored blob. Whether to store
+`credential` and are removed before storage (`req-aws-collector-redaction-1`); the rest of the response is
+stored as `configuration` (`persist_configuration: true`, since aws-core-tap#207). Typed fields, tags and
+edges carry every fact this requirement needs, so nothing is read back from the stored blob. Whether to store
 `configuration` is the requester's decision and storing a `credential` location is the owner's
 ([the `add-aws-type` skill](../tap_plugin/aws_core/skills/add-aws-type/SKILL.md), step 1).
 
-**Deployed, and the limit of it.** A run lists RUNNING and PENDING tasks. A task that stops disappears from
-the next run, but absence never deletes a node
-([Collector Scope](#collector-scope), `req-aws-collector-scope-3`), so a stopped task's row remains. A consumer
-that needs "deployed now" reads the observation time of the row against the last complete run for its cluster;
-the collector adds no field for it. Stopped-task history, task-definition revisions as nodes, ECS Anywhere
-and EKS are out of scope.
+**Running, stopped, and the limit of it.** `ListTasks` with `desiredStatus="RUNNING"` returns running and
+pending tasks; with `desiredStatus="STOPPED"` it returns the tasks ECS still shows after they stopped (at
+least an hour, per the `DescribeTasks` API reference). A stopped task is described and recorded only when the
+grid already holds a live node for it (`tap_grid.services.find_by_natural_key`). It records `last_status`,
+`desired_status`, `stopped_at`, `stopped_reason` and `stop_code` (`-15`), and asserts no `RUNS_TASK` edge,
+nor its containers a `RUNS_CONTAINER` edge, with those edge reads `partial` so the run claims none of them
+absent (`-16`), so its earlier `RUNS_TASK` edge is kept. A run that writes the task has observed it, so it is
+not a retirement candidate while ECS still lists it (`req-grid-reconcile-candidates-1`: observed is every
+entity the run wrote). Once ECS stops listing it, the run writes nothing for it, and reconciliation finds it
+through that kept edge: the stop is recorded first and the task retired after, by the falsifier, at least an
+hour after it stopped (ruled 2026-11-09, aws-core-tap#211). A task that
+started and stopped between two runs is never created, because with no `RUNS_TASK` edge it would be held by
+nothing and could never be reconciled. A task absent from both listings is not deleted or modified
+([Collector Scope](#collector-scope), `req-aws-collector-scope-3`); retiring it is the task falsifier's and
+reconcile's job (aws-core-tap#211), not this collector's. Stopped-task history beyond the last recorded state,
+task-definition revisions as nodes, ECS Anywhere and EKS are out of scope.
+
+**Retirement path (aws-core-tap#211).** A cluster contains its tasks (`RUNS_TASK`) and a task its containers
+(`RUNS_CONTAINER`); `RUNS_TASK` from a service is a reference, not containment (`-17`). The walk records a
+completeness surface for every cluster's running-task listing (relation `ecs_cluster.tasks`) and every described
+task's containers (`ecs_task.containers`), complete only when the listing reached its end, incomplete with the
+reason when it was denied, failed or stopped short, and complete-empty for a cluster running nothing (`-18`;
+`req-aws-core-contained-type-triple`). Core derives the candidates: a task the grid holds under a cluster whose
+listing this run completed, and which this run did not write. `EcsTaskFalsifier` and `EcsContainerFalsifier` probe
+`DescribeTasks` (already granted), 100 ARNs a call per region and cluster, reading region and cluster from the
+task's own ARN: a `MISSING` failure is gone, and so is `STOPPED` once the grid has recorded that stop (record first,
+retire after); any other state is present, and an error, refusal or throttle is undetermined, never absence (`-19`). A container is gone with its task or when its running task no
+longer lists it. Nothing retires until an operator arms reconcile authority for the collector (off by default,
+`req-grid-reconcile-verb-2`). Not covered: a deleted cluster. It is not contained by anything, so its tasks are
+not candidates until a later change adds footprint-to-cluster containment and a cluster falsifier.
 
 **Read-only permissions added to the collector role:** `ecs:ListClusters`, `ecs:DescribeClusters`,
 `ecs:ListServices`, `ecs:DescribeServices`, `ecs:ListTasks`, `ecs:DescribeTasks`.
@@ -979,19 +1006,24 @@ requirement.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-ecs-1 | Three Types Collected | Implemented | A run collects `aws_ecs_cluster`, `aws_ecs_service` and `aws_ecs_task` from every swept region through manifest entries backed by `custom_fn`s that share one ECS walk. | Before this requirement none had a manifest entry; now each does. One entry yields one node type, so the container node has its own entry (`-3`). |
-| req-aws-collector-ecs-2 | Call Shape And Pagination | Implemented | The calls are `ListClusters`/`DescribeClusters`, `ListServices`/`DescribeServices` (10 per call) and `ListTasks`/`DescribeTasks` (100 per call, `include=["TAGS"]`), each read to its end. | `req-aws-collector-pagination-1`. |
+| req-aws-collector-ecs-2 | Call Shape And Pagination | Implemented | The calls are `ListClusters`/`DescribeClusters`, `ListServices`/`DescribeServices` (10 per call) and `ListTasks` (`desiredStatus` `RUNNING`, then `STOPPED`)/`DescribeTasks` (100 per call, `include=["TAGS"]`, one sequence for running and held stopped tasks), each read to its end. | `req-aws-collector-pagination-1`. |
 | req-aws-collector-ecs-3 | Container Node | Implemented | Each container in a described task is an `aws_ecs_container` node keyed on `container_arn`, with `name`, `image`, `image_digest`, `runtime_id` and `last_status`. | |
 | req-aws-collector-ecs-4 | Digest Verbatim | Implemented | `image` and `image_digest` are stored as ECS reports them. The collector makes no registry call and never resolves a tag to a digest. | The tag may move; the digest is what ran. |
 | req-aws-collector-ecs-5 | Unreported Is Null | Implemented | A container with no `imageDigest` has `image_digest` null, never an empty string and never copied from the tag. | Grid null convention: null is unobserved. |
-| req-aws-collector-ecs-6 | Task Fields | Implemented | `aws_ecs_task` carries `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version` and `group`. | Additive migration. |
+| req-aws-collector-ecs-6 | Task Fields | Implemented | `aws_ecs_task` carries `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version`, `group`, `stopped_at`, `stopped_reason` and `stop_code`. | Additive migrations (`0051` adds the three stop fields). |
 | req-aws-collector-ecs-7 | Tags Field On All Three | Implemented | The cluster, service and task models each declare `tags` (field, create schema and validation schema) and are listed in the always-on tags guard. | The v0.4.0 reject-the-batch trap. |
-| req-aws-collector-ecs-8 | Edges | Implemented | `RUNS_TASK` (cluster or service to task) and `RUNS_CONTAINER` (task to container) exist, declared as manifest edge rules. A task whose `group` is not `service:<name>` attaches to its cluster only. | `RUNS_SERVICE` is unchanged. |
-| req-aws-collector-ecs-9 | Sensitivity Declared, Configuration Off | Implemented | The entry declares `overrides.containerOverrides[].environment` and `.command` as `reviewed_may_contain` credential locations with `persist_configuration: false`, and a planted canary at each location never reaches the GRIFT document or the stored row. | Requester decides storing; owner decides a credential location. |
+| req-aws-collector-ecs-8 | Edges | Implemented | `RUNS_TASK` (cluster or service to task) and `RUNS_CONTAINER` (task to container) exist, declared as manifest edge rules, and are asserted for running tasks. A task whose `group` is not `service:<name>` attaches to its cluster only. | `RUNS_SERVICE` is unchanged. Stopped tasks: `-16`. |
+| req-aws-collector-ecs-9 | Sensitivity Declared, Credentials Removed | Implemented | The entry declares `overrides.containerOverrides[].environment` and `.command` as `reviewed_may_contain` credential locations, removed before storage while the rest of the response is stored (`persist_configuration: true`), and a planted canary at each location never reaches the GRIFT document or the stored row. | `req-aws-collector-redaction-1` (aws-core-tap#207); requester decides storing, owner decides a credential location. |
 | req-aws-collector-ecs-10 | Denial Degrades, Never Cleans | Implemented | An `AccessDenied` on any ECS sub-call leaves the fields that call supplies null and records a warning. The task or container is still collected, and the denial is distinguishable from an empty result. | Mirrors `req-aws-collector-hydrate-2`. |
-| req-aws-collector-ecs-11 | Absence Is Not Deletion | Implemented | A task absent from a later run is not deleted or modified, and the collector adds no "currently running" flag. | `req-aws-collector-scope-3`; reconcile stays Backlog. |
+| req-aws-collector-ecs-11 | Absence Is Not Deletion | Implemented | A task absent from both listings of a later run is not deleted or modified, and the collector adds no "currently running" flag of its own: a task's state is ECS's `lastStatus`, recorded when ECS lists it. | `req-aws-collector-scope-3`; retirement is aws-core-tap#211's falsifier and reconcile. |
 | req-aws-collector-ecs-12 | Read-Only Permissions | Implemented | The collector's permission list adds exactly the six `ecs:List*`/`ecs:Describe*` actions named above and no write action. | The repo's only action list is the trial policy's read section (`handoff/trial-provisioner-policy.json`); the cross-account handoff grants AWS-managed `SecurityAudit`, which already covers these reads. |
 | req-aws-collector-ecs-13 | Live Trial Before Release | Proposed | The change passes the `add-aws-type` trial run against a real cluster and Fargate task (or carries a named `deferred_reason`) and a collected container's digest is shown equal to the digest `DescribeTasks` returns for it. | Needs a human to approve what is provisioned. |
 | req-aws-collector-ecs-14 | Digest Join Not Made Here | Implemented | This requirement adds no import of github_core or computing_core types and no digest-matching logic. | The join home is an open computing_core question. |
+| req-aws-collector-ecs-15 | Held Stopped Task Records Its Stop | Implemented | Each cluster is listed with `desiredStatus="STOPPED"`. A listed task the grid already holds is described and records `last_status`, `desired_status`, `stopped_at`, `stopped_reason` and `stop_code`; one the grid does not hold is neither described nor created. A grid read that fails, or finds two live rows for one ARN, records no stopped task and leaves a `stopped_tasks` gap on the cluster naming why. | Ruled 2026-11-09, aws-core-tap#211. A task listed under both filters is read as running. |
+| req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge, the containment a reconcile candidate is derived from once ECS stops listing the task (aws-core-tap#211). Not what makes it a candidate: a written task is observed (`req-grid-reconcile-candidates-1`). |
+| req-aws-collector-ecs-17 | Cluster And Task Contain | Implemented | `aws_ecs_cluster` declares `RUNS_TASK` and `aws_ecs_task` declares `RUNS_CONTAINER` in `CONTAINMENT_EDGES` (and `OUTBOUND_EDGES`); `aws_ecs_service` declares no containment. | aws-core-tap#211. A deleted cluster is not yet a candidate (no footprint containment). |
+| req-aws-collector-ecs-18 | A Surface Per Parent | Implemented | The walk records a surface for every cluster's running-task listing and every described task's containers; a denied, failed or short listing is recorded incomplete with its reason, never omitted, and a cluster running nothing is complete-empty. A stopped task whose container could not be looked up on the grid records its container surface incomplete (`grid_lookup_failed`), so an omitted container never reads as absent. The stopped-task listing records no surface. | `req-aws-core-contained-type-triple-1`..`-3`. |
+| req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `MISSING` is gone, `STOPPED` is gone only once the row already records `STOPPED` (otherwise undetermined), an error is undetermined, and an ARN that names no cluster, or whose own account is not the credential's (whatever the row's `aws_account` dimension says), is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
 
 ### Credential Resolution
 ----
