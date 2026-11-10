@@ -1161,9 +1161,9 @@ def _az_subnet_ids(lb: dict[str, Any]) -> list[str]:
     return sorted({str(az["SubnetId"]) for az in lb.get("AvailabilityZones", []) if az.get("SubnetId")})
 
 
-#: The direct load-balancer edges the target-group path replaced (aws-core-tap#220). Each is still declared, read
-#: complete and empty, so a reconcile-armed run proposes removing the edges earlier runs wrote; drop them once a
-#: release has carried this.
+#: The direct load-balancer edges the target-group path replaced (aws-core-tap#220). Each is still declared and read
+#: empty, with the forwards' own read, so a reconcile-armed run that read the forwards proposes removing the edges
+#: earlier runs wrote; drop them once a release has carried this.
 _REPLACED_DIRECT_ROUTES: dict[str, Any] = {"_target_instance_ids": [], "_target_lambda_arns": []}
 
 
@@ -1205,7 +1205,9 @@ def _with_forwards(item: dict[str, Any], client: Any, lb: dict[str, Any]) -> dic
     listener (its default rule among them). A Network or Gateway Load Balancer has no rules: a listener's default
     actions are its route. Each route carries the listener, the rule's priority and conditions, and the forward's
     weight. The read is ``failed`` when any call did not answer, since a partial list is not 'forwards nowhere
-    else'. The replaced direct routes to instances and functions are read complete and empty.
+    else'. The replaced direct routes to instances and functions are empty and take that same read: complete when
+    the routes that replace them were read, ``failed`` when they were not, so a failed read never proposes removing
+    the old edges with nothing written in their place.
     """
     forwards: list[dict[str, Any]] = []
     read = COMPLETE
@@ -1225,7 +1227,7 @@ def _with_forwards(item: dict[str, Any], client: Any, lb: dict[str, Any]) -> dic
         read = FAILED
     return with_edge_reads(
         {**item, "_forwards": forwards, **_REPLACED_DIRECT_ROUTES},
-        {**(item.get("_edge_reads") or {}), "_forwards": read, **dict.fromkeys(_REPLACED_DIRECT_ROUTES, COMPLETE)},
+        {**(item.get("_edge_reads") or {}), "_forwards": read, **dict.fromkeys(_REPLACED_DIRECT_ROUTES, read)},
     )
 
 

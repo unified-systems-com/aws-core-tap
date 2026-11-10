@@ -260,6 +260,15 @@ class TestForwards:
         assert (item["_forwards"], item[EDGE_READS]["_forwards"]) == ([], FAILED)
 
     @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_a_failed_listener_read_never_claims_the_replaced_routes(self) -> None:
+        """The old direct edges are only proposed for removal when the routes replacing them were read: a failed
+        read leaves them failed, so an armed reconcile keeps the old edges (PR 221 review)."""
+        alb = _lb("app", "web")
+        client = _Client({"lbs": {"LoadBalancers": [alb]}, "listeners": {alb["LoadBalancerArn"]: _denied("DescribeListeners")}})
+        [item] = _run(elbv2_albs_described, elbv2=client)
+        assert (item[EDGE_READS]["_target_instance_ids"], item[EDGE_READS]["_target_lambda_arns"]) == (FAILED, FAILED)
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
     def test_the_replaced_direct_routes_read_complete_and_empty(self) -> None:
         _, client = self._alb_with_rules()
         [alb] = _run(elbv2_albs_described, elbv2=client)
