@@ -33,6 +33,7 @@ class AwsIdentityCenterGroup(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("identity_store_id", "group_id")
+    ARN_RESOURCE: ClassVar[str | None] = "identitystore:Group"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

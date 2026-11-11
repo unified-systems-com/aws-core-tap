@@ -21,6 +21,7 @@ class CognitoUserPool(BaseModel):
     # Identity (req-grid-entity-natural-key): The user pool ID, the boto3 collector's identity for it
     # (region-prefixed, for example us-gov-west-1_Ab12).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pool_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "cognito-idp:userpool"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

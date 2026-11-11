@@ -17,6 +17,7 @@ class QuicksightDataSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("quicksight_data_set_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "quicksight:dataset"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

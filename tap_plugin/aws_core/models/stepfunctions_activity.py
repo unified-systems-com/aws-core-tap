@@ -17,6 +17,7 @@ class StepfunctionsActivity(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (activityArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stepfunctions_activity_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "states:activity"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

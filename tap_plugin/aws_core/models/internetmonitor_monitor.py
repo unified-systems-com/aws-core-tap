@@ -17,6 +17,7 @@ class InternetmonitorMonitor(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (MonitorArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("internetmonitor_monitor_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "internetmonitor:Monitor"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

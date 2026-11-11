@@ -17,6 +17,7 @@ class IotCaCertificate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (certificateArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_ca_certificate_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iot:cacert"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

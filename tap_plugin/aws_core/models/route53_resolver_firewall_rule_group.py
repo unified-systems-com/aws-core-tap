@@ -39,6 +39,7 @@ class Route53ResolverFirewallRuleGroup(BaseModel):
 
     # AWS's rule group id (rslvr-frg-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_group_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53resolver:firewall-rule-group"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

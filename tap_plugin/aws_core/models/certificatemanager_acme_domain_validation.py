@@ -17,6 +17,7 @@ class CertificatemanagerAcmeDomainValidation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AcmeDomainValidationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificatemanager_acme_domain_validation_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "acm:acme-domain-validation"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -35,6 +35,7 @@ class AwsConfigRule(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:ConfigRule"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

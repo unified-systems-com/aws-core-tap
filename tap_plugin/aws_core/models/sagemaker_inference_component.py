@@ -17,6 +17,7 @@ class SagemakerInferenceComponent(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (InferenceComponentArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("inference_component_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:inference-component"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

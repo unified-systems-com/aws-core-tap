@@ -28,8 +28,9 @@ env), NOT the plugin's runtime secret envelopes.
 Add the entry: `entity_type` (`aws_core__aws_<type>`), `service` (boto3 service
 name), `scope` (`regional` | `global`), `source`, `why` (one honest sentence —
 what relationship or risk does collecting this illuminate?), `items_path`,
-`natural_key` (an ARN or the service's canonical id — the node is identified
-by it, and it must be the field the model declares as its `NATURAL_KEY`), `fields` (model field → jsonpath), `edges`, and the three
+`natural_key` (the ARN wherever AWS defines one, `req-aws-collector-identity-10`; else a composite scoped to
+partition, account and region — the node is identified by it, and it must be the field the model declares as its
+`NATURAL_KEY`), `fields` (model field → jsonpath), `edges`, and the three
 declarations below. The schema requires all three, so an entry without them
 fails manifest load.
 
@@ -143,6 +144,22 @@ subclass, `ENTITY_TYPE = "aws_core__aws_<type>"` (== `db_table`), `ENTITY_NAME`,
 `ENTITY_DESCRIPTION`, `ENTITY_ICON` (then run the `get-aws-icons` skill),
 `DEFAULT_DIMENSIONS = {"tap.cloud": "aws"}`, `DEFAULT_DISPLAY`, fields,
 `get_name`, `__str__`.
+
+**Name the ARN's resource type** (`req-aws-collector-identity-11`). Look the resource up in AWS's Service
+Authorization Reference (`https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json`,
+`Resources[]`) and declare it on the model:
+
+- it has a resource type there: `ARN_RESOURCE: ClassVar[str | None] = "<service>:<resource>"`, using the reference's
+  own service prefix and resource name (`"ec2:vpc"`, `"elasticloadbalancing:targetgroup"`), then run
+  `uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh` so `arn_formats.json`
+  vendors its formats;
+- AWS returns an ARN for it but the reference lists no resource type (or has no file for the service):
+  `ARN_RESOURCE = None`, and add the type to `RETURNED_ONLY` in `tests/test_arn_resources.py` with which gap it is;
+- it has no ARN at all: declare nothing, add it to `NO_ARN` there with the reason, and key it on a scoped composite
+  (`req-aws-collector-identity-8`).
+
+The ARN is the natural key wherever one exists (`req-aws-collector-identity-10`), so prefer it over any id the
+listing returns.
 
 **THE TRAP (v0.4.0, named):** the collector emits `tags` on EVERY node
 unless the tag read did not answer — `batch.node_envelope` writes `"tags": tags or {}`

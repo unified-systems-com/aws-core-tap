@@ -18,6 +18,7 @@ class EcrRepository(BaseModel):
     # Identity (req-grid-entity-natural-key): The repository's ARN: a repository name is unique only
     # within a registry.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("repository_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecr:repository"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

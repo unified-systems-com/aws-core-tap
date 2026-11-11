@@ -18,6 +18,7 @@ class IamPolicy(BaseModel):
     # Identity (req-grid-entity-natural-key): The policy's ARN: AWS-managed policies share a name
     # across accounts but not an ARN with customer policies.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:policy"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

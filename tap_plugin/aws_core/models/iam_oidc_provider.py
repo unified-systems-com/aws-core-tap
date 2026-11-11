@@ -28,6 +28,7 @@ class IamOidcProvider(BaseModel):
     # Identity (req-grid-entity-natural-key): The provider's ARN, the boto3 collector's identity for
     # it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("provider_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:oidc-provider"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

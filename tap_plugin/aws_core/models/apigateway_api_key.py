@@ -17,6 +17,7 @@ class ApigatewayApiKey(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The key's ARN (built from the key id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("api_key_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:ApiKey"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -18,6 +18,7 @@ class NetworkFirewall(BaseModel):
     # Identity (req-grid-entity-natural-key): The firewall's ARN: a firewall name is unique only
     # within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("firewall_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "network-firewall:Firewall"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

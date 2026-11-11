@@ -17,6 +17,7 @@ class Ec2LocalGatewayRouteTable(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LocalGatewayRouteTableArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("local_gateway_route_table_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:local-gateway-route-table"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

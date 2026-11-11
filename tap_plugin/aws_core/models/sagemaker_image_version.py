@@ -17,6 +17,7 @@ class SagemakerImageVersion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ImageVersionArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_image_version_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:image-version"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

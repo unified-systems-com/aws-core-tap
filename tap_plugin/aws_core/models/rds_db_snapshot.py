@@ -17,6 +17,7 @@ class RdsDbSnapshot(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The snapshot's ARN: a snapshot identifier is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_snapshot_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:snapshot"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

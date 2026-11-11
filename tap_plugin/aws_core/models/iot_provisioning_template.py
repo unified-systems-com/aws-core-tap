@@ -17,6 +17,7 @@ class IotProvisioningTemplate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (templateArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_provisioning_template_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iot:provisioningtemplate"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

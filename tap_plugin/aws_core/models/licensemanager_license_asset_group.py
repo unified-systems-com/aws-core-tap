@@ -17,6 +17,7 @@ class LicensemanagerLicenseAssetGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LicenseAssetGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("license_asset_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "license-manager:license-asset-group"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

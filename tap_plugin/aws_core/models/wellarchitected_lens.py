@@ -17,6 +17,7 @@ class WellarchitectedLens(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LensArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wellarchitected_lens_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "wellarchitected:lens"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

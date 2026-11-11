@@ -17,6 +17,7 @@ class SecurityhubHubV2(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (HubV2Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("securityhub_hub_v2_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "securityhub:hubv2"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

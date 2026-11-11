@@ -17,6 +17,7 @@ class SsmCloudConnector(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The connector's CloudConnectorId: ListCloudConnectors returns no ARN, and the id is service-generated.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_cloud_connector_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ssm:cloud-connector"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

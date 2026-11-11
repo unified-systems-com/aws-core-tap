@@ -17,6 +17,7 @@ class SagemakerDataQualityJobDefinition(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (MonitoringJobDefinitionArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_data_quality_job_definition_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:data-quality-job-definition"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

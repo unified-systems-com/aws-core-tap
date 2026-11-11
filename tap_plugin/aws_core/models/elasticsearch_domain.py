@@ -18,6 +18,7 @@ class ElasticsearchDomain(BaseModel):
     # Identity (req-grid-entity-natural-key): The domain's ARN: a domain name is unique only within an
     # account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("domain_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "es:domain"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

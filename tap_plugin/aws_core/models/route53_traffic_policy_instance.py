@@ -17,6 +17,7 @@ class Route53TrafficPolicyInstance(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The traffic policy instance's Id: ListTrafficPolicyInstances returns no ARN, and a Route 53 instance id is unique across accounts.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53_traffic_policy_instance_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53:trafficpolicyinstance"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

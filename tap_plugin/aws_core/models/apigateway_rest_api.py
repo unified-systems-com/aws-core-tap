@@ -17,6 +17,7 @@ class ApigatewayRestApi(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The API's ARN (built from the API id): an API id is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rest_api_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:RestApi"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

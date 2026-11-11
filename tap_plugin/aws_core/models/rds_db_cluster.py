@@ -17,6 +17,7 @@ class RdsDbCluster(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster identifier is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:cluster"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

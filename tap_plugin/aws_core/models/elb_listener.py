@@ -17,6 +17,7 @@ class ElbListener(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The listener's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("listener_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:listener/app"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

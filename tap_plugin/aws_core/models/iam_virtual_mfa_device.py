@@ -19,6 +19,7 @@ class IamVirtualMfaDevice(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The device's serial number, an ARN that embeds the user name for a virtual device.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("serial_number",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:mfa"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

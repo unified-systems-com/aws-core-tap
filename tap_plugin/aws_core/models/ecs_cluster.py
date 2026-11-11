@@ -18,6 +18,7 @@ class EcsCluster(BaseModel):
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster name is unique only within
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecs:cluster"
     # A cluster contains the tasks it runs (aws-core-tap#211): a task the cluster's complete running listing
     # no longer names is a retirement candidate, and retiring the cluster cascades to its tasks. RUNS_TASK from
     # a service is a reference, not containment. Literals, for validate_plugin's AST reader.

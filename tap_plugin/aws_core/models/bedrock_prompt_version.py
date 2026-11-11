@@ -17,6 +17,7 @@ class BedrockPromptVersion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The prompt version ARN, arn:<partition>:bedrock:<region>:<account>:prompt/<id>:<version>, built from the listed id and version (Service Authorization Reference resource prompt-version).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_prompt_version_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "bedrock:prompt-version"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

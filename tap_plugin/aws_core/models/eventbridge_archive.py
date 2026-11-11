@@ -17,6 +17,7 @@ class EventbridgeArchive(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The archive's ARN, built from its source bus's ARN: an archive name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("archive_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "events:archive"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

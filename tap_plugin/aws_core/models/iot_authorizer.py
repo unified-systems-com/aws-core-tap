@@ -17,6 +17,7 @@ class IotAuthorizer(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (authorizerArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_authorizer_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iot:authorizer"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class SesMailManagerRuleSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RuleSetArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_mail_manager_rule_set_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ses:mailmanager-rule-set"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

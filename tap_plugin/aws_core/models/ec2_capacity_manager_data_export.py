@@ -17,6 +17,7 @@ class Ec2CapacityManagerDataExport(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (CapacityManagerDataExportId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_capacity_manager_data_export_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:capacity-manager-data-export"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

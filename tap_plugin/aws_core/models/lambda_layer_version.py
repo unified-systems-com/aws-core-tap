@@ -17,6 +17,7 @@ class LambdaLayerVersion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The layer version's ARN: a layer name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("layer_version_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "lambda:layerVersion"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

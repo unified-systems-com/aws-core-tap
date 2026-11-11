@@ -14,6 +14,10 @@ The operation-to-action mapping is AWS's own: the Service Authorization Referenc
 ``--refresh`` reads it (network) and writes ``iam_operation_actions.json`` for the operations the collector makes;
 generating the documents is offline. An action that writes, manages permissions or reads the data plane is dropped from
 a read operation's list and recorded under ``dropped``.
+
+The same refresh writes ``arn_formats.json``: the reference's ARN formats for every resource type a model names in its
+``ARN_RESOURCE`` (``"<service>:<resource>"``, ``req-aws-collector-identity-11``), so building an ARN is offline and
+reads the same data every time.
 """
 
 from __future__ import annotations
@@ -35,6 +39,8 @@ HERE = Path(__file__).resolve().parent
 MANIFEST = HERE / "aws_resource_manifest.json"
 OVERRIDES = HERE / "iam_policy_overrides.json"
 CATALOG = HERE / "iam_operation_actions.json"
+ARN_FORMATS = HERE / "arn_formats.json"
+MODELS_DIR = HERE.parent.parent / "models"
 OUT_DIR = HERE / "handoff"
 PART_NAME = "collector-policy-{n:02d}.json"
 REFERENCE = "https://servicereference.us-east-1.amazonaws.com/v1/"
@@ -286,12 +292,48 @@ def refresh() -> dict[str, Any]:
                         entry["actions"].append(action)
     for entry in operations.values():
         entry["actions"].sort()
+    write_arn_formats(docs)
     data = {
         "description": "For each operation the collector makes, the IAM actions that authorise it, from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/). Rebuilt by iam_policy.py --refresh. 'dropped' lists actions the reference attaches to the operation that write, manage permissions or read the data plane; a read operation does not need them and the collector is not granted them.",
         "operations": dict(sorted(operations.items())),
     }
     CATALOG.write_text(json.dumps(data, indent=1) + "\n")
     return data
+
+
+def arn_resources() -> set[str]:
+    """Every ``ARN_RESOURCE`` a model names, read from the model sources (nothing is imported)."""
+    named: set[str] = set()
+    for path in MODELS_DIR.glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id == "ARN_RESOURCE"
+                and isinstance(node.value, ast.Constant)
+                and isinstance(node.value.value, str)
+            ):
+                named.add(node.value.value)
+    return named
+
+
+def arn_formats_from(docs: list[dict[str, Any]], wanted: set[str]) -> dict[str, Any]:
+    """The reference's ARN formats for each wanted ``<service>:<resource>``; one the reference lacks is left out, and
+    the test over the models names it."""
+    formats = {
+        f"{doc['Name']}:{resource['Name']}": resource.get("ARNFormats", [])
+        for doc in docs
+        for resource in doc.get("Resources", [])
+        if f"{doc['Name']}:{resource['Name']}" in wanted
+    }
+    return {
+        "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh; do not edit.",
+        "resources": dict(sorted(formats.items())),
+    }
+
+
+def write_arn_formats(docs: list[dict[str, Any]]) -> None:
+    ARN_FORMATS.write_text(json.dumps(arn_formats_from(docs, arn_resources()), indent=1) + "\n")
 
 
 def main(argv: list[str]) -> int:

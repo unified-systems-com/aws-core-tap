@@ -17,6 +17,7 @@ class Ec2TransitGatewayVpcAttachment(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (TransitGatewayAttachmentId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_transit_gateway_vpc_attachment_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:transit-gateway-attachment"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

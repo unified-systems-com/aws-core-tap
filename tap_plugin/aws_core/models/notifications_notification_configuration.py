@@ -17,6 +17,7 @@ class NotificationsNotificationConfiguration(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("notification_configuration_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "notifications:NotificationConfiguration"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

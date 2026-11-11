@@ -17,6 +17,7 @@ class S3AccessGrant(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AccessGrantArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("s3_access_grant_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "s3:accessgrant"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
