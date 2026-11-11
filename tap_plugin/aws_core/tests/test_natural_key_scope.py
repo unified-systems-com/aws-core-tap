@@ -166,7 +166,10 @@ GLOBALLY_UNIQUE: dict[str, tuple[str, str]] = {
 
 #: Scoped in code, where the manifest cannot see: the custom_fn builds ``_key`` with ``customfns._scoped_key``
 #: (pinned by ``test_the_logs_filters_are_keyed_under_the_run_scope`` below).
-SCOPED_IN_CODE: frozenset[str] = frozenset({"logs_metric_filter", "logs_subscription_filter"})
+SCOPED_IN_CODE: frozenset[str] = frozenset({"logs_metric_filter", "logs_subscription_filter", "elb_classic_listener"})
+#: Of those, the types that were scoped from their first release, so no row of theirs predates 0053 and the migration
+#: has nothing to re-key (``test_the_classic_listener_is_keyed_under_the_run_scope`` pins the Classic listener).
+BORN_SCOPED: frozenset[str] = frozenset({"elb_classic_listener"})
 
 
 def _short(entry: dict) -> str:
@@ -297,6 +300,32 @@ def test_the_logs_filters_are_keyed_under_the_run_scope() -> None:
     assert keys(logs_subscription_filters_described, "us-east-1") == ["aws:123456789012:us-east-1:/aws/cloudtrail:to-siem"]
 
 
+def test_the_classic_listener_is_keyed_under_the_run_scope() -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector.customfns import elb_classic_listeners_described
+
+    class _Elb:
+        def __init__(self, region: str) -> None:
+            self.meta = type("Meta", (), {"region_name": region})()
+
+        def can_paginate(self, name: str) -> bool:
+            return False
+
+        def describe_load_balancers(self, **_: object) -> dict:
+            return {"LoadBalancerDescriptions": [{"LoadBalancerName": "legacy", "DNSName": "legacy.elb.amazonaws.com",
+                                                  "ListenerDescriptions": [{"Listener": {"Protocol": "https", "LoadBalancerPort": 443}}]}]}
+
+    class _Sts:
+        def get_caller_identity(self) -> dict:
+            return {"Account": "123456789012"}
+
+    def keys(region: str) -> list[str]:
+        clients = {"elb": _Elb(region), "sts": _Sts()}
+        return [item["_key"] for item in elb_classic_listeners_described(None, client_for=clients.__getitem__)]
+
+    assert keys("us-gov-west-1") == ["aws-us-gov:123456789012:us-gov-west-1:legacy:HTTPS:443"]
+    assert keys("us-east-1") == ["aws:123456789012:us-east-1:legacy:HTTPS:443"]
+
+
 # --- the migration (0053) that re-keys rows already on the grid ---------------------------------------------------
 
 
@@ -332,7 +361,7 @@ def test_the_migration_names_every_re_keyed_model_and_its_key_column() -> None:
 
     m = _migration()
     scoped = {e["entity_type"] for e in manifest_entries() if _how_keyed(e) == "scoped"} | {
-        f"aws_core__aws_{n}" for n in SCOPED_IN_CODE
+        f"aws_core__aws_{n}" for n in SCOPED_IN_CODE - BORN_SCOPED
     }
     declared = {}
     for entity_type in scoped:

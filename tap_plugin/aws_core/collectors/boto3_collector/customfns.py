@@ -2297,9 +2297,9 @@ def elbv2_listener_rules_described(session: Any, *, client_for: Any) -> Iterator
 def classic_listener_key(partition: str, account: str, region: str, lb_name: str, protocol: str, port: Any) -> str:
     """A Classic listener's natural key: ``<partition>:<account>:<region>:<load balancer name>:<protocol>:<port>``.
     A Classic listener has no ARN or id; its load balancer is unique by name within an account and region, and the
-    listener by its protocol and load balancer port (aws-core-tap#224's convention: a composite leads with the
-    partition, account and region)."""
-    return f"{partition}:{account}:{region}:{lb_name}:{str(protocol).upper()}:{port}"
+    listener by its protocol and load balancer port, so the key is the run's scope (:func:`_scoped_key`,
+    req-aws-collector-identity-8) followed by those three."""
+    return _scoped_key(partition, account, region, f"{lb_name}:{str(protocol).upper()}:{port}")
 
 
 def elb_classic_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -2309,15 +2309,13 @@ def elb_classic_listeners_described(session: Any, *, client_for: Any) -> Iterato
     The listener carries its protocol and port, the instance protocol and port it forwards to, its policies, and its
     certificate's ARN (never the certificate or its key). ``_elb_dns_name`` is its load balancer's key;
     ``_acm_certificate_arns`` its certificate when ACM issued it. The key needs the account, which the listing does
-    not name, so it is read from ``sts:GetCallerIdentity``; a run that cannot read it raises rather than key every
-    listener without its account."""
+    not name, so it is read from ``sts:GetCallerIdentity``; a run that cannot read it raises (:func:`_scoped_key`)
+    rather than key a listener without its account."""
     client = client_for("elb")
     described = [lb for page in _pages(client, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])]
     if not described:
         return
     account = _account_id(client_for)
-    if not account:
-        raise SourceError("the calling account could not be read, so no Classic listener can be keyed")
     partition, region = _client_partition(client), _client_region(client)
     for lb in described:
         name = str(lb.get("LoadBalancerName") or "")
