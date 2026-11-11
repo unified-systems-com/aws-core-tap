@@ -222,7 +222,7 @@ class TestWalk:
         session, client = _Session(), _Denied([])
         for _ in range(2):
             with pytest.raises(ClientError):
-                shared_walk(session, client)
+                shared_walk(session, lambda _service: client)
         assert client.lb_calls == 1 and walks_of(session) == []
 
 

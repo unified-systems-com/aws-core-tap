@@ -140,8 +140,9 @@ def _region(client: Any) -> str:
     return str(getattr(getattr(client, "meta", None), "region_name", "") or "")
 
 
-def shared_walk(session: Any, client: Any) -> ListenerWalk:
-    """The run's :class:`ListenerWalk` for the client's region, made once per session and region."""
+def shared_walk(session: Any, client_for: Any) -> ListenerWalk:
+    """The run's :class:`ListenerWalk` for the region ``client_for`` is bound to, made once per session and region."""
+    client = client_for("elbv2")
     region = _region(client)
     try:
         regions = _WALKS.setdefault(session, {}) if session is not None else None

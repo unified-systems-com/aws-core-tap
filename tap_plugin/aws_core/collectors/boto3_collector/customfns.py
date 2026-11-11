@@ -2204,7 +2204,7 @@ def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict
     (``_forwards``, each carrying the forward's weight). A load balancer whose listeners cannot be listed is a gap
     (:func:`_undescribed`)."""
     client = client_for("elbv2")
-    walk = shared_listener_walk(session, client)
+    walk = shared_listener_walk(session, client_for)
     listeners: list[tuple[LoadBalancerListeners, dict[str, Any]]] = []
     failed: list[str] = []
     for lb in walk.lbs:
@@ -2262,7 +2262,7 @@ def elbv2_listener_rules_described(session: Any, *, client_for: Any) -> Iterator
     each with the forward's weight, the one fact that belongs to the rule and group together. A listener whose rules
     cannot be listed, or a load balancer whose listeners cannot, is a gap (:func:`_undescribed`)."""
     client = client_for("elbv2")
-    walk = shared_listener_walk(session, client)
+    walk = shared_listener_walk(session, client_for)
     rules: list[tuple[str, str, dict[str, Any]]] = []
     failed: list[str] = []
     for lb in walk.lbs:
