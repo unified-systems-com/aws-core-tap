@@ -10,6 +10,9 @@ entity id, its edges and its history, and the next collection matches it instead
 retiring the old. A row without both dimensions, or whose old key does not have the shape expected for its type,
 is left as it is and named in a warning: a key built from a guessed account or region would be worse than a row
 the next run replaces. History rows are not rewritten; they record the key each version actually had.
+
+Reversing it strips the scope again, except from rows whose old keys would collide: once two regions' resources
+are on the grid, they keep their scoped keys rather than become one identity again (see :func:`_rewrite`).
 """
 
 import logging
@@ -100,21 +103,37 @@ def old_key(new: str, shape: str, partition: str, account: str, region: str) -> 
 
 
 def _rewrite(apps, convert, direction: str) -> None:
+    """Re-key every row of each model (tombstoned rows too: the migration state carries no live-only manager).
+
+    A key two rows would share is written to neither. Going forward that cannot happen (each row's own scope makes
+    its key), but going back it can: once a run has collected ``default.dax1.0`` in two regions, both rows would
+    return to the one bare name and recreate the collision this migration removes, so those rows keep their scoped
+    keys and are named instead.
+    """
     for model_name, (column, shape) in REKEYED.items():
         model = apps.get_model("aws_core", model_name)
         left: list[str] = []
+        planned: dict[object, tuple[str, str]] = {}
         for row in model._default_manager.select_related("entity").iterator():
             old = getattr(row, column) or ""
             scope = _scope(row)
             key = convert(old, shape, *scope) if scope else None
             if key is None:
                 left.append(str(row.pk))
+            else:
+                planned[row.pk] = (old, key)
+        holders: dict[str, list[object]] = {}
+        for pk, (_, key) in planned.items():
+            holders.setdefault(key, []).append(pk)
+        for pk, (old, key) in planned.items():
+            if len(holders[key]) > 1:
+                left.append(str(pk))
             elif key != old:
-                model._default_manager.filter(pk=row.pk).update(**{column: key})
+                model._default_manager.filter(pk=pk).update(**{column: key})
         if left:
             log.warning(
-                "aws_core 0053 (%s): %d %s row(s) kept their key, no account and region dimensions or an unexpected "
-                "key shape: %s",
+                "aws_core 0053 (%s): %d %s row(s) kept their key: no account and region dimensions, an unexpected "
+                "key shape, or a key another row would share: %s",
                 direction,
                 len(left),
                 model_name,

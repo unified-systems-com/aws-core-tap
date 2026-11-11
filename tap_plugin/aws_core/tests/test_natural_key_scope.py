@@ -353,7 +353,41 @@ def test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope() -
     assert SesReceiptRuleSet.all_objects.get(entity_id=rules).ses_receipt_rule_set_key == "aws-us-gov:123456789012:us-gov-west-1:inbound"
     assert DaxParameterGroup.all_objects.get(entity_id=orphan).dax_parameter_group_id == "x"
 
+    # The next collection finds the re-keyed row by the key it now builds: core's lookup reads the model column.
+    assert DaxParameterGroup.find_existing(dax_parameter_group_id="aws-us-gov:123456789012:us-gov-west-1:default.dax1.0").entity_id == dax
+
     m.scope_keys(live_apps, None)  # idempotent
     m.unscope_keys(live_apps, None)
     assert DaxParameterGroup.all_objects.get(entity_id=dax).dax_parameter_group_id == "default.dax1.0"
     assert SesReceiptRuleSet.all_objects.get(entity_id=rules).ses_receipt_rule_set_key == "123456789012/us-gov-west-1/inbound"
+
+
+@pytest.mark.django_db
+def test_going_back_never_recreates_the_collision_the_scoped_keys_removed() -> None:
+    """Once default.dax1.0 is on the grid from two regions, both would return to the one bare name: neither does."""
+    from django.apps import apps as live_apps
+    from tap_plugin.aws_core.models import DaxParameterGroup
+
+    from tap_grid.caller_context import CallerContext
+    from tap_grid.services import WriteOperation, write_batch
+
+    ids = []
+    for region in ("us-gov-west-1", "us-gov-east-1"):
+        key = f"aws-us-gov:123456789012:{region}:default.dax1.0"
+        [result] = write_batch(
+            [
+                WriteOperation(
+                    verb="create_node",
+                    type_slug="aws_core__aws_dax_parameter_group",
+                    payload={"name": "default.dax1.0", "dax_parameter_group_id": key},
+                    dimensions={"cloud": "aws", "aws_account": "123456789012", "aws_region": region},
+                )
+            ],
+            caller_context=CallerContext(),
+        ).results
+        assert result.success, result
+        ids.append((result.entity_id, key))
+
+    _migration().unscope_keys(live_apps, None)
+    for entity_id, key in ids:
+        assert DaxParameterGroup.all_objects.get(entity_id=entity_id).dax_parameter_group_id == key
