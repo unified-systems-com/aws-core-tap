@@ -105,30 +105,35 @@ def old_key(new: str, shape: str, partition: str, account: str, region: str) -> 
 def _rewrite(apps, convert, direction: str) -> None:
     """Re-key every row of each model (tombstoned rows too: the migration state carries no live-only manager).
 
-    A key two rows would share is written to neither. Going forward that cannot happen (each row's own scope makes
-    its key), but going back it can: once a run has collected ``default.dax1.0`` in two regions, both rows would
-    return to the one bare name and recreate the collision this migration removes, so those rows keep their scoped
-    keys and are named instead.
+    A row is never moved onto a key another row holds or is moving to, whether that other row could be converted
+    or not. Going forward that happens when a new collector has already written the scoped row beside the old one;
+    going back, once a run has collected ``default.dax1.0`` in two regions, both rows would return to the one bare
+    name and recreate the collision this migration removes. Either way the row keeps its key and is named.
     """
     for model_name, (column, shape) in REKEYED.items():
         model = apps.get_model("aws_core", model_name)
         left: list[str] = []
         planned: dict[object, tuple[str, str]] = {}
+        # Every key some row holds now, whether or not that row can be converted: a row this migration leaves
+        # alone, or one a new collector already wrote under the scoped key, still occupies its key.
+        holders: dict[str, set[object]] = {}
         for row in model._default_manager.select_related("entity").iterator():
             old = getattr(row, column) or ""
+            holders.setdefault(old, set()).add(row.pk)
             scope = _scope(row)
             key = convert(old, shape, *scope) if scope else None
             if key is None:
                 left.append(str(row.pk))
             else:
                 planned[row.pk] = (old, key)
-        holders: dict[str, list[object]] = {}
         for pk, (_, key) in planned.items():
-            holders.setdefault(key, []).append(pk)
+            holders.setdefault(key, set()).add(pk)
         for pk, (old, key) in planned.items():
-            if len(holders[key]) > 1:
+            if key == old:
+                continue
+            if holders[key] - {pk}:
                 left.append(str(pk))
-            elif key != old:
+            else:
                 model._default_manager.filter(pk=pk).update(**{column: key})
         if left:
             log.warning(

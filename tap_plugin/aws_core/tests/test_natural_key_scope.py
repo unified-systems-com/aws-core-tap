@@ -391,3 +391,44 @@ def test_going_back_never_recreates_the_collision_the_scoped_keys_removed() -> N
     _migration().unscope_keys(live_apps, None)
     for entity_id, key in ids:
         assert DaxParameterGroup.all_objects.get(entity_id=entity_id).dax_parameter_group_id == key
+
+
+@pytest.mark.django_db
+def test_a_row_is_never_moved_onto_a_key_a_row_it_cannot_convert_already_holds() -> None:
+    """Going forward, a new collector may already have written the scoped row; going back, a row with no dimensions
+    may still hold the bare name. Either occupant blocks the move, and both rows keep their keys."""
+    from django.apps import apps as live_apps
+    from tap_plugin.aws_core.models import DaxParameterGroup
+
+    from tap_grid.caller_context import CallerContext
+    from tap_grid.services import WriteOperation, write_batch
+
+    def create(key: str, dimensions: dict) -> uuid.UUID:
+        [result] = write_batch(
+            [
+                WriteOperation(
+                    verb="create_node",
+                    type_slug="aws_core__aws_dax_parameter_group",
+                    payload={"name": "default.dax1.0", "dax_parameter_group_id": key},
+                    dimensions=dimensions,
+                )
+            ],
+            caller_context=CallerContext(),
+        ).results
+        assert result.success, result
+        return result.entity_id
+
+    scope = {"cloud": "aws", "aws_account": "123456789012", "aws_region": "us-gov-west-1"}
+    scoped = "aws-us-gov:123456789012:us-gov-west-1:default.dax1.0"
+    old = create("default.dax1.0", scope)
+    occupant = create(scoped, {"cloud": "aws"})  # written under the scoped key, but with no dimensions to undo it by
+    m = _migration()
+
+    m.scope_keys(live_apps, None)
+    assert DaxParameterGroup.all_objects.get(entity_id=old).dax_parameter_group_id == "default.dax1.0"
+
+    DaxParameterGroup.all_objects.filter(entity_id=old).update(dax_parameter_group_id=scoped + "-x")
+    DaxParameterGroup.all_objects.filter(entity_id=occupant).update(dax_parameter_group_id="default.dax1.0-x")
+    m.unscope_keys(live_apps, None)  # old would return to default.dax1.0-x, which the orphan holds
+    assert DaxParameterGroup.all_objects.get(entity_id=old).dax_parameter_group_id == scoped + "-x"
+    assert DaxParameterGroup.all_objects.get(entity_id=occupant).dax_parameter_group_id == "default.dax1.0-x"
