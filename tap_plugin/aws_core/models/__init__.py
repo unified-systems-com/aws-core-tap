@@ -335,6 +335,7 @@ from tap_plugin.aws_core.models.elasticbeanstalk_environment import Elasticbeans
 from tap_plugin.aws_core.models.elasticsearch_domain import ElasticsearchDomain
 from tap_plugin.aws_core.models.elb import Elb
 from tap_plugin.aws_core.models.elb_listener import ElbListener
+from tap_plugin.aws_core.models.elb_classic_listener import ElbClassicListener
 from tap_plugin.aws_core.models.emr_cluster import EmrCluster
 from tap_plugin.aws_core.models.emr_security_configuration import EmrSecurityConfiguration
 from tap_plugin.aws_core.models.emr_studio import EmrStudio
@@ -1329,6 +1330,7 @@ __all__ = [
     "ElasticsearchDomain",
     "Elb",
     "ElbListener",
+    "ElbClassicListener",
     "EmrCluster",
     "EmrSecurityConfiguration",
     "EmrStudio",

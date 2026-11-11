@@ -2520,12 +2520,12 @@
       "source": {
         "custom_fn": "elb_family_described"
       },
-      "why": "Enumerate Network, Gateway and Classic Load Balancers — the non-HTTP and legacy front doors, including Classic ones that have no ARN and are easy to lose track of.",
+      "why": "Enumerate Network, Gateway and Classic Load Balancers — the non-HTTP and legacy front doors, including Classic ones that have no ARN and are easy to lose track of. A Classic load balancer routes to its registered instances, each with its health from DescribeInstanceHealth.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore elbv2 DescribeLoadBalancers, elb DescribeLoadBalancers and both DescribeTags output shapes and custom_fn elb_family_described, 2026-10-29; no sensitive-flagged member. A Classic DescribeLoadBalancers item carries its listeners, so they are stored with the configuration: ports, protocols and the certificate's ARN, never its body or key.",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers, elb DescribeLoadBalancers and both DescribeTags output shapes, elb DescribeInstanceHealth, and custom_fn elb_family_described, 2026-11-10; no sensitive-flagged member. A Classic DescribeLoadBalancers item carries its listeners, so they are stored with the configuration: ports, protocols and the certificate's ARN, never its body or key.",
         "locations": [
           {
             "path": "ListenerDescriptions[].Listener.SSLCertificateId",
@@ -2584,6 +2584,15 @@
           "target_type": "aws_core__aws_target_group",
           "key_kind": "arn",
           "edge_type": "FORWARDS_TO_TARGET_GROUP__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_instance_targets[]",
+          "key_path": "id",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "ROUTES_TO_TARGET__aws_core",
           "direction": "outbound"
         }
       ]
@@ -5355,7 +5364,7 @@
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: DefaultActions[].AuthenticateOidcConfig.ClientSecret; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore elbv2 DescribeLoadBalancers, DescribeListeners and DescribeTags output shapes and custom_fn elbv2_listeners_described, 2026-10-29. botocore flags no member sensitive, but an authenticate-oidc action carries the identity provider's client secret.",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers, DescribeListeners, DescribeRules and DescribeTags output shapes and custom_fn elbv2_listeners_described, 2026-11-10; only the rules' ARNs are kept on the listener. botocore flags no member sensitive, but an authenticate-oidc action carries the identity provider's client secret.",
         "locations": [
           {
             "path": "DefaultActions[].AuthenticateOidcConfig.ClientSecret",
@@ -5388,7 +5397,8 @@
         "ssl_policy": "SslPolicy",
         "certificate_arns": "_certificate_arns",
         "action_types": "_action_types",
-        "mutual_authentication_mode": "MutualAuthentication.Mode"
+        "mutual_authentication_mode": "MutualAuthentication.Mode",
+        "lb_type": "_lb_type"
       },
       "tags": {
         "source": "field",
@@ -5416,6 +5426,77 @@
           "target_type": "aws_core__aws_elb",
           "key_kind": "id",
           "edge_type": "LISTENS_ON_LOAD_BALANCER__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_rule_arns",
+          "target_type": "aws_core__aws_elasticloadbalancingv2_listener_rule",
+          "key_kind": "arn",
+          "edge_type": "EVALUATES_LISTENER_RULE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_forwards[]",
+          "key_path": "target_group_arn",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_target_group",
+          "key_kind": "arn",
+          "edge_type": "FORWARDS_TO_TARGET_GROUP__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_elb_classic_listener",
+      "service": "elb",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "elb_classic_listeners_described"
+      },
+      "why": "Enumerate Classic load balancer listeners — the ports a Classic load balancer exposes, the instance port each forwards to, its policies and its certificate, mapped as nodes as the ELBv2 listeners are (aws-core-tap#220).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore elb DescribeLoadBalancers ListenerDescriptions output shape and custom_fn elb_classic_listeners_described, 2026-11-10; no sensitive-flagged member. A listener names its certificate by ARN, never its body or key.",
+        "locations": [
+          {
+            "path": "SSLCertificateId",
+            "category": "other",
+            "reason": "The listener names its server certificate by ARN (an IAM or ACM certificate). A reference to a certificate, not the certificate or its key.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "fields": {
+        "listener_key": "_key",
+        "load_balancer_name": "LoadBalancerName",
+        "protocol": "Protocol",
+        "port": "LoadBalancerPort",
+        "instance_protocol": "InstanceProtocol",
+        "instance_port": "InstancePort",
+        "certificate_id": "SSLCertificateId",
+        "policy_names": "PolicyNames"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A Classic listener is not a taggable resource: the elb service model's AddTags and DescribeTags address a load balancer by name, never one of its listeners (botocore 1.43.121); the load balancer's tags are on its own node."
+      },
+      "edges": [
+        {
+          "value_path": "_elb_dns_name",
+          "target_type": "aws_core__aws_elb",
+          "key_kind": "id",
+          "edge_type": "LISTENS_ON_LOAD_BALANCER__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_acm_certificate_arns",
+          "target_type": "aws_core__aws_acm_certificate",
+          "key_kind": "arn",
+          "edge_type": "PRESENTS_CERTIFICATE__aws_core",
           "direction": "outbound"
         }
       ]
@@ -41245,73 +41326,64 @@
       "service": "elbv2",
       "scope": "regional",
       "source": {
-        "aws_op": "DescribeRules",
-        "where": [
-          {
-            "path": "IsDefault",
-            "equals": false
-          }
-        ],
-        "per": {
-          "aws_op": "DescribeListeners",
-          "items_path": "Listeners[]",
-          "per": {
-            "aws_op": "DescribeLoadBalancers",
-            "items_path": "LoadBalancers[]",
-            "where": [
-              {
-                "path": "Type",
-                "equals": "application"
-              }
-            ]
-          },
-          "bind": {
-            "LoadBalancerArn": "LoadBalancerArn"
-          }
-        },
-        "bind": {
-          "ListenerArn": "ListenerArn"
-        }
+        "custom_fn": "elbv2_listener_rules_described"
       },
-      "why": "Enumerate ElasticLoadBalancingV2 Listener Rule objects with DescribeLoadBalancers, DescribeListeners and DescribeRules — an inventory of the account's listener rules and how each is tagged. Rules are listed per listener of each Application Load Balancer; the default rule of a listener (IsDefault true) is part of the listener, not a ListenerRule resource, so it is dropped.",
+      "why": "Enumerate the listener rules of every Application Load Balancer listener, each listener's default rule among them — the hop between a listener and the target groups it forwards to, holding what decides the route: priority, conditions (host, path, header, method, query string, source IP) and actions (aws-core-tap#220).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: Actions[].AuthenticateOidcConfig.ClientSecret; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore elbv2 DescribeRules item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Read botocore elbv2 DescribeLoadBalancers, DescribeListeners, DescribeRules and DescribeTags output shapes and custom_fn elbv2_listener_rules_described, 2026-11-10. botocore flags no member sensitive, but an authenticate-oidc action carries the identity provider's client secret, as a listener's default action does.",
         "locations": [
           {
             "path": "Actions[].AuthenticateOidcConfig.ClientSecret",
-            "category": "other",
-            "reason": "Names or points to a secret held elsewhere (an ARN, id or name); the member is not the secret value, and botocore does not mark it.",
+            "category": "credential",
+            "reason": "The OIDC identity provider's client secret on an authenticate-oidc action. botocore does not mark it sensitive.",
+            "evidence": "reviewer_judgement",
+            "redact": true
+          },
+          {
+            "path": "Actions[].FixedResponseConfig.MessageBody",
+            "category": "customer_content",
+            "reason": "Operator-authored response body.",
             "evidence": "reviewer_judgement"
           },
           {
-            "path": "_hydrate.tags",
+            "path": "_tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Rules[]",
+      "items_path": "[]",
       "natural_key": "RuleArn",
       "fields": {
-        "elasticloadbalancingv2_listener_rule_arn": "RuleArn"
+        "elasticloadbalancingv2_listener_rule_arn": "RuleArn",
+        "listener_arn": "_listener_arn",
+        "load_balancer_arn": "_load_balancer_arn",
+        "priority": "Priority",
+        "is_default": "IsDefault",
+        "conditions": "Conditions",
+        "action_types": "_action_types"
       },
       "tags": {
-        "source": "service",
-        "op": "DescribeTags",
-        "params": {
-          "ResourceArns": {
-            "from": "RuleArn",
-            "list": true
-          }
-        },
-        "path": "TagDescriptions[].Tags",
-        "shape": "list_kv",
-        "why": "Resource tags — DescribeTags by the rule's ARN (sent as a one-element list); the listing carries none."
-      }
+        "source": "field",
+        "from": "_tags",
+        "shape": "map",
+        "why": "Resource tags — the custom fn reads DescribeTags (20 ARNs to a call) into _tags; the field lane reads it without a second fetch."
+      },
+      "edges": [
+        {
+          "value_path": "_forwards[]",
+          "key_path": "target_group_arn",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_target_group",
+          "key_kind": "arn",
+          "edge_type": "FORWARDS_TO_TARGET_GROUP__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_elasticloadbalancingv2_trust_store",

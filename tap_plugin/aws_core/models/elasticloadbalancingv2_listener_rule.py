@@ -8,7 +8,7 @@ from tap_grid.models import BaseModel
 
 
 class Elasticloadbalancingv2ListenerRule(BaseModel):
-    """An AWS ElasticLoadBalancingV2 Listener Rule, listed by DescribeLoadBalancers, DescribeListeners and DescribeRules. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An Application Load Balancer listener rule, listed by DescribeLoadBalancers, DescribeListeners and DescribeRules, the listener's default rule among them: the hop between a listener and the target groups it forwards to (load balancer -> listener -> rule -> target group). It holds what decides the route: its priority, its conditions exactly as AWS returns them, and its actions. The whole response is stored, with an OIDC action's client secret removed."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_elasticloadbalancingv2_listener_rule"
     ENTITY_NAME: ClassVar[str] = "AWS ElasticLoadBalancingV2 Listener Rule"
@@ -29,6 +29,12 @@ class Elasticloadbalancingv2ListenerRule(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "elasticloadbalancingv2_listener_rule_arn": {"type": "string"},
+        "listener_arn": {"type": ["string", "null"]},
+        "load_balancer_arn": {"type": ["string", "null"]},
+        "priority": {"type": ["string", "null"]},
+        "is_default": {"type": ["boolean", "null"]},
+        "conditions": {"type": ["array", "null"]},
+        "action_types": {"type": ["array", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -40,6 +46,19 @@ class Elasticloadbalancingv2ListenerRule(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     elasticloadbalancingv2_listener_rule_arn = models.CharField(max_length=2048, blank=True, default="")
+    # The listener whose rule this is. NULL = not observed.
+    listener_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    # The Application Load Balancer the listener is on. NULL = not observed.
+    load_balancer_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    # The priority as AWS returns it: a number as text, or 'default' for the default rule. NULL = not observed.
+    priority = models.CharField(max_length=64, null=True, blank=True, default=None)
+    # Whether this is the listener's default rule, which applies when no other rule matches. NULL = not observed.
+    is_default = models.BooleanField(null=True, blank=True, default=None)
+    # The conditions exactly as DescribeRules returns them (host header, path, HTTP header, method, query string,
+    # source IP). NULL = not observed.
+    conditions = models.JSONField(null=True, blank=True, default=None)
+    # The types of the rule's actions (forward, redirect, fixed-response, authenticate-oidc, ...). NULL = not observed.
+    action_types = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

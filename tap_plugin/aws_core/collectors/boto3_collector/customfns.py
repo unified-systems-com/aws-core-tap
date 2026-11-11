@@ -30,6 +30,9 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads
 from .ecs import shared_walk
+from .elb_topology import LoadBalancerListeners
+from .elb_topology import forwards as elb_forwards
+from .elb_topology import shared_walk as shared_listener_walk
 from .route53_records import bare_zone_id, record_set_key
 from .route53_records import shared_walk as shared_records_walk
 from .envelope import jsonable, without_response_metadata
@@ -1220,74 +1223,17 @@ def _az_subnet_ids(lb: dict[str, Any]) -> list[str]:
     return sorted({str(az["SubnetId"]) for az in lb.get("AvailabilityZones", []) if az.get("SubnetId")})
 
 
-#: The direct load-balancer edges the target-group path replaced (aws-core-tap#220). Each is still declared and read
-#: empty, with the forwards' own read, so a reconcile-armed run that read the forwards proposes removing the edges
-#: earlier runs wrote; drop them once a release has carried this.
-_REPLACED_DIRECT_ROUTES: dict[str, Any] = {"_target_instance_ids": [], "_target_lambda_arns": []}
+#: The direct load-balancer edges the target-group path replaced (aws-core-tap#220), and the load balancer ->
+#: target group edges the listener and rule nodes replaced in turn. Each is still declared and read empty, so a
+#: reconcile-armed run proposes removing the edges earlier runs wrote; the read is withheld (made ``failed``) for a
+#: load balancer whose listeners and rules did not all reach the batch (``withhold_unreplaced_lb_routes``). Drop them
+#: once a release has carried this.
+_REPLACED_LB_ROUTES: dict[str, Any] = {"_target_instance_ids": [], "_target_lambda_arns": [], "_forwards": []}
 
 
-def _forward_targets(action: dict[str, Any]) -> list[tuple[str, int | None]]:
-    """The target groups a ``forward`` action sends to, each with its weight (``None`` when the action names one
-    group without a ``ForwardConfig``). Any other action type (redirect, fixed response, authenticate) forwards
-    nowhere."""
-    if action.get("Type") != "forward":
-        return []
-    groups = (action.get("ForwardConfig") or {}).get("TargetGroups") or []
-    if groups:
-        return [(str(g["TargetGroupArn"]), g.get("Weight")) for g in groups if g.get("TargetGroupArn")]
-    return [(str(action["TargetGroupArn"]), None)] if action.get("TargetGroupArn") else []
-
-
-def _forward(listener: dict[str, Any], route: dict[str, Any], group_arn: str, weight: int | None) -> dict[str, Any]:
-    """One load balancer -> target group route, as the ``FORWARDS_TO_TARGET_GROUP`` rule reads it."""
-    rule_arn = route.get("RuleArn")
-    return {
-        "target_group_arn": group_arn,
-        "properties": {
-            "route_id": str(rule_arn or listener["ListenerArn"]),
-            "listener_arn": str(listener["ListenerArn"]),
-            "listener_port": listener.get("Port"),
-            "listener_protocol": listener.get("Protocol"),
-            "rule_arn": rule_arn,
-            "priority": route.get("Priority"),
-            "is_default": bool(route.get("IsDefault", rule_arn is None)),
-            "conditions": list(route.get("Conditions") or []),
-            "weight": weight,
-        },
-    }
-
-
-def _with_forwards(item: dict[str, Any], client: Any, lb: dict[str, Any]) -> dict[str, Any]:
-    """Where a load balancer forwards: one route per listener rule and target group (aws-core-tap#220).
-
-    ``DescribeListeners`` for the load balancer, then, for an Application Load Balancer, ``DescribeRules`` for each
-    listener (its default rule among them). A Network or Gateway Load Balancer has no rules: a listener's default
-    actions are its route. Each route carries the listener, the rule's priority and conditions, and the forward's
-    weight. The read is ``failed`` when any call did not answer, since a partial list is not 'forwards nowhere
-    else'. The replaced direct routes to instances and functions are empty and take that same read: complete when
-    the routes that replace them were read, ``failed`` when they were not, so a failed read never proposes removing
-    the old edges with nothing written in their place.
-    """
-    forwards: list[dict[str, Any]] = []
-    read = COMPLETE
-    try:
-        for page in _pages(client, "describe_listeners", LoadBalancerArn=lb["LoadBalancerArn"]):
-            for listener in page.get("Listeners", []):
-                if not listener.get("ListenerArn"):
-                    continue
-                if lb.get("Type") == "application":
-                    rules = [r for rp in _pages(client, "describe_rules", ListenerArn=listener["ListenerArn"]) for r in rp.get("Rules", [])]
-                    routes = [(rule, action) for rule in rules for action in rule.get("Actions") or []]
-                else:
-                    routes = [({}, action) for action in listener.get("DefaultActions") or []]
-                for route, action in routes:
-                    forwards.extend(_forward(listener, route, arn, weight) for arn, weight in _forward_targets(action))
-    except BotoCoreError, ClientError:
-        read = FAILED
-    return with_edge_reads(
-        {**item, "_forwards": forwards, **_REPLACED_DIRECT_ROUTES},
-        {**(item.get("_edge_reads") or {}), "_forwards": read, **dict.fromkeys(_REPLACED_DIRECT_ROUTES, read)},
-    )
+def _without_routes(item: dict[str, Any]) -> dict[str, Any]:
+    """A load balancer's item with its replaced route slots empty: where it forwards is on its listeners and rules."""
+    return with_edge_reads({**item, **_REPLACED_LB_ROUTES}, {**(item.get("_edge_reads") or {}), **dict.fromkeys(_REPLACED_LB_ROUTES, COMPLETE)})
 
 
 def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -1301,8 +1247,7 @@ def elbv2_albs_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     albs = [lb for lb in _elbv2_load_balancers(client) if lb.get("Type") == "application"]
     tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in albs])
     for lb in albs:
-        item = _lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
-        yield _with_forwards(item, client, lb)
+        yield _without_routes(_lb_item(lb, tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb)))
 
 
 def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
@@ -1317,7 +1262,7 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     v2_tags = _batched_tags(v2, "ResourceArns", "ResourceArn", [str(lb["LoadBalancerArn"]) for lb in others])
     for lb in others:
         item = _lb_item(lb, v2_tags, str(lb["LoadBalancerArn"]), _az_subnet_ids(lb))
-        yield _with_forwards({**item, "_lb_type": lb["Type"]}, v2, lb)
+        yield _without_routes({**item, "_lb_type": lb["Type"]})
     classic = client_for("elb")
     described = [
         lb for page in _pages(classic, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])
@@ -1327,12 +1272,42 @@ def elb_family_described(session: Any, *, client_for: Any) -> Iterator[dict[str,
     )
     for lb in described:
         item = _lb_item(lb, classic_tags, str(lb["LoadBalancerName"]), sorted(str(i) for i in lb.get("Subnets", [])))
-        # A Classic load balancer has no target groups: its registered instances are its routes, read with it.
-        instances = sorted({str(i["InstanceId"]) for i in lb.get("Instances", []) if i.get("InstanceId")})
-        yield with_edge_reads(
-            {**item, "_lb_type": "classic", "_target_instance_ids": instances, "_target_lambda_arns": [], "_forwards": []},
-            {**item["_edge_reads"], "_target_instance_ids": COMPLETE, "_target_lambda_arns": COMPLETE, "_forwards": COMPLETE},
-        )
+        yield _classic_with_targets({**item, "_lb_type": "classic"}, classic, lb)
+
+
+def _classic_with_targets(item: dict[str, Any], client: Any, lb: dict[str, Any]) -> dict[str, Any]:
+    """A Classic load balancer's routes: it has no target groups, so it routes to the instances registered on it,
+    one ``ROUTES_TO_TARGET`` per instance and instance port its listeners forward to, each carrying the instance's
+    health from ``DescribeInstanceHealth`` (aws-core-tap#220). A health read that fails leaves the health null, not
+    observed; the instances still come from the load balancer's own listing, so the routes are read either way.
+    ``_target_instance_ids``, the direct edges these replace, is empty and read complete."""
+    instances = sorted({str(i["InstanceId"]) for i in lb.get("Instances", []) if i.get("InstanceId")})
+    ports = sorted({int(d["Listener"]["InstancePort"]) for d in lb.get("ListenerDescriptions", []) if (d.get("Listener") or {}).get("InstancePort") is not None})
+    health: dict[str, dict[str, Any]] = {}
+    if instances:
+        try:
+            answer = without_response_metadata(client.describe_instance_health(LoadBalancerName=lb["LoadBalancerName"]))
+            health = {str(s["InstanceId"]): s for s in answer.get("InstanceStates", []) if s.get("InstanceId")}
+        except BotoCoreError, ClientError:
+            health = {}
+    targets = [
+        {
+            "id": instance,
+            "properties": {
+                "port": port,
+                "health_state": health.get(instance, {}).get("State"),
+                "health_reason": health.get(instance, {}).get("ReasonCode"),
+                "health_description": health.get(instance, {}).get("Description"),
+                "availability_zone": None,
+            },
+        }
+        for instance in instances
+        for port in ports
+    ]
+    return with_edge_reads(
+        {**item, "_instance_targets": targets, **_REPLACED_LB_ROUTES},
+        {**item["_edge_reads"], "_instance_targets": COMPLETE, **dict.fromkeys(_REPLACED_LB_ROUTES, COMPLETE)},
+    )
 
 
 #: The target slots a target group's DescribeTargetHealth fills, by the kind of target each holds.
@@ -2216,25 +2191,28 @@ def efs_mount_targets_described(session: Any, *, client_for: Any) -> Iterator[di
 
 
 def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """Enumerate ELBv2 listeners (regional): ``DescribeListeners`` for each load balancer, tags 20 ARNs to a
-    call. The listener is the TLS fact (protocol, policy, certificates) and carries the authentication action
-    (an OIDC action holds a client secret). ``_certificate_arns`` and ``_action_types`` are derived; ``_alb_arn``
-    is the load balancer's ARN for an Application Load Balancer, the one kind whose node is keyed by it; ``_elb_dns_name`` is the DNS name of a Network or Gateway Load Balancer, the key of its ``aws_elb`` node.
-    A load balancer whose listeners cannot be listed is a gap (:func:`_undescribed`)."""
+    """Enumerate ELBv2 listeners (regional): ``DescribeListeners`` for each load balancer, from the run's shared
+    walk (:mod:`.elb_topology`), tags 20 ARNs to a call. The listener is the TLS fact (protocol, policy,
+    certificates) and carries the authentication action (an OIDC action holds a client secret). ``_certificate_arns``
+    and ``_action_types`` are derived; ``_alb_arn`` is the load balancer's ARN for an Application Load Balancer, the
+    one kind whose node is keyed by it; ``_elb_dns_name`` is the DNS name of a Network or Gateway Load Balancer, the
+    key of its ``aws_elb`` node.
+
+    Where the listener sends traffic (aws-core-tap#220): an Application listener evaluates its rules
+    (``_rule_arns``, its default rule among them, read ``failed`` when ``DescribeRules`` did not answer); a Network
+    or Gateway listener has no rules, so its default actions forward straight to their target groups
+    (``_forwards``, each carrying the forward's weight). A load balancer whose listeners cannot be listed is a gap
+    (:func:`_undescribed`)."""
     client = client_for("elbv2")
-    listeners: list[dict[str, Any]] = []
+    walk = shared_listener_walk(session, client)
+    listeners: list[tuple[LoadBalancerListeners, dict[str, Any]]] = []
     failed: list[str] = []
-    for lb in _elbv2_load_balancers(client):
-        lb_arn = lb.get("LoadBalancerArn")
-        if not lb_arn:
-            continue
-        try:
-            for page in _pages(client, "describe_listeners", LoadBalancerArn=lb_arn):
-                listeners.extend({**listener, "_lb_type": lb.get("Type"), "_lb_dns_name": lb.get("DNSName")} for listener in page.get("Listeners", []) if listener.get("ListenerArn"))
-        except BotoCoreError, ClientError:
-            failed.append(str(lb_arn))
-    tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(x["ListenerArn"]) for x in listeners])
-    for listener in listeners:
+    for lb in walk.lbs:
+        if not lb.listeners_read:
+            failed.append(str(lb.lb["LoadBalancerArn"]))
+        listeners.extend((lb, listener) for listener in lb.listeners)
+    tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(x["ListenerArn"]) for _, x in listeners])
+    for lb, listener in listeners:
         arn = str(listener["ListenerArn"])
         actions = listener.get("DefaultActions") or []
         # DescribeListeners names the default certificate only; the others (SNI) are DescribeListenerCertificates'.
@@ -2246,20 +2224,119 @@ def elbv2_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict
                     certificates.update(str(c["CertificateArn"]) for c in cert_page.get("Certificates", []) if c.get("CertificateArn"))
             except BotoCoreError, ClientError:
                 certificates_read = PARTIAL
+        application = lb.is_application
+        rule_arns = sorted(str(r["RuleArn"]) for r in lb.rules.get(arn, []))
         yield with_edge_reads(
             {
                 **listener,
+                "_lb_type": lb.lb.get("Type"),
                 "_certificate_arns": sorted(certificates),
                 "_action_types": [a.get("Type") for a in actions if a.get("Type")],
-                "_alb_arn": listener.get("LoadBalancerArn") if listener.get("_lb_type") == "application" else None,
-                "_elb_dns_name": listener.get("_lb_dns_name") if listener.get("_lb_type") != "application" else None,
+                "_alb_arn": listener.get("LoadBalancerArn") if application else None,
+                "_elb_dns_name": lb.lb.get("DNSName") if not application else None,
+                "_rule_arns": rule_arns,
+                "_forwards": [] if application else elb_forwards(arn, actions),
                 "_tags": tags.get(arn, {}),
                 "_tags_unread": arn not in tags,
             },
-            {"_certificate_arns": certificates_read, "_alb_arn": COMPLETE, "_elb_dns_name": COMPLETE},
+            {
+                "_certificate_arns": certificates_read,
+                "_alb_arn": COMPLETE,
+                "_elb_dns_name": COMPLETE,
+                "_rule_arns": FAILED if arn in lb.rules_failed else COMPLETE,
+                "_forwards": COMPLETE,
+            },
         )
+    walk.listeners_projected = True
     if failed:
         raise _undescribed("load balancers whose listeners", failed)
+
+
+def elbv2_listener_rules_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate ELBv2 listener rules (regional): ``DescribeRules`` for each Application listener, from the run's
+    shared walk (:mod:`.elb_topology`), tags 20 ARNs to a call (aws-core-tap#220).
+
+    Every rule is a node, the listener's default rule among them: it is the route traffic takes when no other rule
+    matches, so it is mapped like any other (``is_default``). The rule carries its priority, its conditions exactly
+    as AWS returns them and its action types; ``_forwards`` names the target groups its forward action sends to,
+    each with the forward's weight, the one fact that belongs to the rule and group together. A listener whose rules
+    cannot be listed, or a load balancer whose listeners cannot, is a gap (:func:`_undescribed`)."""
+    client = client_for("elbv2")
+    walk = shared_listener_walk(session, client)
+    rules: list[tuple[str, str, dict[str, Any]]] = []
+    failed: list[str] = []
+    for lb in walk.lbs:
+        if not lb.is_application:
+            continue
+        if not lb.listeners_read:
+            failed.append(str(lb.lb["LoadBalancerArn"]))
+        failed.extend(sorted(lb.rules_failed))
+        for listener_arn, listener_rules in lb.rules.items():
+            rules.extend((str(lb.lb["LoadBalancerArn"]), listener_arn, rule) for rule in listener_rules)
+    tags = _batched_tags(client, "ResourceArns", "ResourceArn", [str(r["RuleArn"]) for _, _, r in rules])
+    for lb_arn, listener_arn, rule in rules:
+        arn = str(rule["RuleArn"])
+        actions = rule.get("Actions") or []
+        yield with_edge_reads(
+            {
+                **rule,
+                "_listener_arn": listener_arn,
+                "_load_balancer_arn": lb_arn,
+                "_action_types": [a.get("Type") for a in actions if a.get("Type")],
+                "_forwards": elb_forwards(arn, actions),
+                "_tags": tags.get(arn, {}),
+                "_tags_unread": arn not in tags,
+            },
+            {"_forwards": COMPLETE},
+        )
+    walk.rules_projected = True
+    if failed:
+        raise _undescribed("load balancers or listeners whose rules", failed)
+
+
+def classic_listener_key(partition: str, account: str, region: str, lb_name: str, protocol: str, port: Any) -> str:
+    """A Classic listener's natural key: ``<partition>:<account>:<region>:<load balancer name>:<protocol>:<port>``.
+    A Classic listener has no ARN or id; its load balancer is unique by name within an account and region, and the
+    listener by its protocol and load balancer port (aws-core-tap#224's convention: a composite leads with the
+    partition, account and region)."""
+    return f"{partition}:{account}:{region}:{lb_name}:{str(protocol).upper()}:{port}"
+
+
+def elb_classic_listeners_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Enumerate Classic load balancer listeners (regional): each ``ListenerDescriptions`` entry of the Classic
+    ``DescribeLoadBalancers`` answer, as the ELBv2 listeners are nodes (aws-core-tap#220).
+
+    The listener carries its protocol and port, the instance protocol and port it forwards to, its policies, and its
+    certificate's ARN (never the certificate or its key). ``_elb_dns_name`` is its load balancer's key;
+    ``_acm_certificate_arns`` its certificate when ACM issued it. The key needs the account, which the listing does
+    not name, so it is read from ``sts:GetCallerIdentity``; a run that cannot read it raises rather than key every
+    listener without its account."""
+    client = client_for("elb")
+    described = [lb for page in _pages(client, "describe_load_balancers") for lb in page.get("LoadBalancerDescriptions", [])]
+    if not described:
+        return
+    account = _account_id(client_for)
+    if not account:
+        raise SourceError("the calling account could not be read, so no Classic listener can be keyed")
+    partition, region = _client_partition(client), _client_region(client)
+    for lb in described:
+        name = str(lb.get("LoadBalancerName") or "")
+        for description in lb.get("ListenerDescriptions", []):
+            listener = description.get("Listener") or {}
+            if not name or listener.get("LoadBalancerPort") is None:
+                continue
+            certificate = str(listener.get("SSLCertificateId") or "")
+            yield with_edge_reads(
+                {
+                    **listener,
+                    "PolicyNames": list(description.get("PolicyNames") or []),
+                    "LoadBalancerName": name,
+                    "_key": classic_listener_key(partition, account, region, name, listener.get("Protocol") or "", listener["LoadBalancerPort"]),
+                    "_elb_dns_name": lb.get("DNSName"),
+                    "_acm_certificate_arns": [certificate] if ":acm:" in certificate else [],
+                },
+                {"_elb_dns_name": COMPLETE, "_acm_certificate_arns": COMPLETE},
+            )
 
 
 def _backup_tags(client: Any, arn: str) -> tuple[dict[str, str], bool]:
@@ -3382,6 +3459,8 @@ _CUSTOM_FNS = {
     "efs_access_points_described": efs_access_points_described,
     "efs_mount_targets_described": efs_mount_targets_described,
     "elbv2_listeners_described": elbv2_listeners_described,
+    "elbv2_listener_rules_described": elbv2_listener_rules_described,
+    "elb_classic_listeners_described": elb_classic_listeners_described,
     "backup_vaults_described": backup_vaults_described,
     "backup_plans_described": backup_plans_described,
     "backup_frameworks_described": backup_frameworks_described,

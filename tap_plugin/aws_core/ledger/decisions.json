@@ -2536,6 +2536,10 @@
         "AWS::ElasticLoadBalancing::LoadBalancer"
       ]
     },
+    "aws_core__aws_elb_classic_listener": {
+      "cfn": [],
+      "reason": "A Classic load balancer's listener: an entry of AWS::ElasticLoadBalancing::LoadBalancer's Listeners property, with no CloudFormation resource of its own."
+    },
     "aws_core__aws_elb_listener": {
       "cfn": [
         "AWS::ElasticLoadBalancingV2::Listener"
