@@ -46,7 +46,7 @@ SQS = "aws_core__aws_sqs_queue"
 SNS = "aws_core__aws_sns_topic"
 DYNAMO = "aws_core__aws_dynamodb_table"
 KMS_ALIAS = "aws_core__aws_kms_alias"
-SECRETS_MANAGER_SECRET = "aws_core__aws_secrets_manager_secret"
+SECRETS_MANAGER_TYPE = "aws_core__aws_secrets_manager_secret"
 RULE = "aws_core__aws_eventbridge_rule"
 S3 = "aws_core__aws_s3_bucket"
 GOV = "us-gov-west-1"
@@ -393,7 +393,7 @@ class TestIdDerivation:
             self.asked(KMS_ALIAS, {"name": "seed", "alias_arn": f"arn:aws-us-gov:kms:{GOV}:{acct}:alias/seed", "alias_name": "alias/seed"})
             == "AWS::KMS::Alias|alias/seed"
         )
-        assert self.asked(SECRETS_MANAGER_SECRET, {"name": "seed-secret", "secret_arn": secret}) == f"AWS::SecretsManager::Secret|{secret}"
+        assert self.asked(SECRETS_MANAGER_TYPE, {"name": "seed-secret", "secret_arn": secret}) == f"AWS::SecretsManager::Secret|{secret}"
         assert (
             self.asked(RULE, {"name": "seed-rule", "rule_arn": f"arn:aws-us-gov:events:{GOV}:{acct}:rule/seed-rule"})
             == "AWS::Events::Rule|seed-rule"
