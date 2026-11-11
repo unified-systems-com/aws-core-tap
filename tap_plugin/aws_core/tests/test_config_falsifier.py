@@ -14,7 +14,15 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from botocore.exceptions import BotoCoreError, ClientError
+from botocore.exceptions import BotoCoreError
+from tap_grid.falsifiers import (
+    DROPPED_FROM_OBSERVATION,
+    UNDETERMINED,
+    Verdict,
+    unsupported,
+)
+from tap_grid.models import Entity
+
 from tap_plugin.aws_core.config_falsifier import (
     TYPES_PATH,
     ConfigHistoryFalsifier,
@@ -33,15 +41,12 @@ from tap_plugin.aws_core.tests.test_falsifiers import (
     _iam_candidate,
 )
 
-from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, UNDETERMINED, Verdict, unsupported
-from tap_grid.models import Entity
-
 LAMBDA = "aws_core__aws_lambda"
 SQS = "aws_core__aws_sqs_queue"
 SNS = "aws_core__aws_sns_topic"
 DYNAMO = "aws_core__aws_dynamodb_table"
 KMS_ALIAS = "aws_core__aws_kms_alias"
-SECRET = "aws_core__aws_secrets_manager_secret"
+SECRET = "aws_core__aws_secrets_manager_secret"  # nosec B105 - an entity-type slug, not a credential
 RULE = "aws_core__aws_eventbridge_rule"
 S3 = "aws_core__aws_s3_bucket"
 GOV = "us-gov-west-1"
