@@ -15,7 +15,7 @@ class LogsSubscriptionFilter(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "A CloudWatch Logs subscription filter."
     ENTITY_ICON: ClassVar[str] = "aws-cloudwatch"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The log group name and the filter name together (group:filter): a filter name is unique only within a log group.
+    # Identity (req-grid-entity-natural-key): The log group name and the filter name together (group:filter): a filter name is unique only within a log group. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("filter_key",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

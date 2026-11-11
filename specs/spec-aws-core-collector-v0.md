@@ -525,6 +525,24 @@ is simply created again. Core owns the ids (`req-grid-entity-natural-key`,
   The readers that are not manifest-driven (Organizations, landing zone, findings) send the same
   shape, and some of their types declare composite keys (`(account_id, region_code)` for the
   footprint, `(organization_id, account_id, service_principal)` for a delegation, and others).
+- A key names one resource across every partition, account and region a run can reach
+  (`req-aws-collector-identity-8`, aws-core-tap#224). A bare name does not: AWS creates
+  `default.dax1.0` in every region, and three regions each held a metric filter with the same log
+  group and filter name, so a multi-region run kept the first and dropped the rest as duplicates,
+  and across runs the regions overwrote one another's row. Each entry is keyed, in order of
+  preference, on the **ARN** where AWS defines one (built by `derive` when the API does not return
+  it); else on an **id AWS generates** (`vpc-…`, a detector id, a user pool id) or a composite led
+  by one; else on a **scoped composite**, `<partition>:<account>:<region>:<rest>`, built by `derive`
+  (`{partition}:{account}:{region}:…`) or, inside a custom function, by `customfns._scoped_key`. A
+  global entry's composite carries the literal `global` for its region, never the region the call
+  happened to be made in. `tests/test_natural_key_scope.py` checks every manifest entry against
+  this, and lists each generated-id entry with its reason, so a new name-keyed entry fails until it
+  is scoped.
+- Rows already on the grid under an unscoped key are re-keyed in place by migration `0053`, from
+  their own `aws_account` and `aws_region` dimensions, so they keep their entity ids, edges and
+  history, and the next run matches them (`req-aws-collector-identity-9`). A row without both
+  dimensions, or whose old key does not have its type's expected shape, is left alone and named in
+  a warning; the next run then writes the scoped row beside it.
 - An edge is sent with a `ref` too and is found by its type's declared identity
   (`req-grid-edge-identity`; every aws_core edge type declares the plain key, `{"discriminators":
   []}`, except `ROUTES_TRAFFIC`). An endpoint naming a node the same batch carries is a `from_ref` /
@@ -570,6 +588,8 @@ holds from before this change keep their `uuid5` ids, because they are found by 
 | req-aws-collector-identity-5 | An Incomplete Key Fails The Run | Implemented | A node whose declared key has an absent, null or empty part, or an edge naming a composite-key node the batch does not carry, fails the run with `IDENTITY_INCOMPLETE` before anything is submitted; nothing is minted. | `tests/test_natural_key_refs.py::test_a_node_with_a_hole_in_its_key_fails_the_run_and_writes_nothing`, `tests/test_boto3_collector_batch.py::TestAddressBatch`. |
 | req-aws-collector-identity-6 | A Deleted Resource Returns | Implemented | A resource tombstoned on the grid and collected again is written as a new row under the same natural key; the tombstone is left alone, the batch succeeds, and the edges that named the resource follow the new row. | aws-core-tap#14. `tests/test_natural_key_refs.py::test_a_tombstoned_resource_returns_with_a_new_id_and_the_batch_does_not_wedge`. |
 | req-aws-collector-identity-7 | Completeness Subjects Are Grid Ids | Implemented | A completeness surface's subject is the grid id its parent's ref resolved to in the imported batch; a parent the batch did not carry keeps its ref as the source locator. | `tests/test_natural_key_refs.py::test_a_tombstoned_parent_is_the_new_id_in_its_completeness_surface`, `tests/test_boto3_collector_batch.py::TestResolveSubject`. |
+| req-aws-collector-identity-8 | Unique Across Partition, Account And Region | Implemented | Every natural key names one resource across every partition, account and region: the ARN where AWS defines one (synthesised by `derive` when the API omits it); else an id AWS generates, or a composite led by one; else a composite led by `<partition>:<account>:<region>:` (`global` in the region place for a global entry). A customer-chosen or AWS-default name is never a key on its own. Every manifest entry is checked; a generated-id entry is listed with its reason. | aws-core-tap#224 (George's Q20a ruling, 2026-11-10). 28 entries re-keyed: 7 bare names (DAX parameter and subnet groups, three Redshift types, Glue security configuration, LF-tag), the two Logs filters, 4 unscoped composites, and 15 `<account>/<region>/` composites given the partition and the common shape. `tests/test_natural_key_scope.py::test_every_entry_is_keyed_on_an_arn_a_generated_id_or_the_scoped_prefix`, `::test_a_global_entry_never_puts_the_run_region_in_its_key`, `::test_a_name_aws_repeats_in_every_region_is_one_resource_per_region`, `::test_the_logs_filters_are_keyed_under_the_run_scope`. |
+| req-aws-collector-identity-9 | Re-Keyed In Place | Implemented | A row stored under a key that `-8` replaced is re-keyed by migration from its own `aws_account` and `aws_region` dimensions, keeping its entity id, edges and history (history rows keep the key each version had). A row lacking either dimension, or whose old key has an unexpected shape, keeps its key and is named in a warning. The migration is idempotent and reversible, except that going back leaves scoped any rows whose old keys would collide, so a rollback never recreates the collision. | George's Q20b ruling, 2026-11-10. `migrations/0053_region_unique_natural_keys.py`; `tests/test_natural_key_scope.py::test_the_migration_scopes_each_old_key_from_the_rows_dimensions`, `::test_the_migration_names_every_re_keyed_model_and_its_key_column`, `::test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope`, `::test_going_back_never_recreates_the_collision_the_scoped_keys_removed`. |
 
 ### Declarative Edge Rules
 ----

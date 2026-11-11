@@ -15,7 +15,7 @@ class BackupRestoreTestingSelection(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Backup Restore Testing Selection."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The plan name and selection name joined with a slash: the CloudFormation primary identifier of the type is that pair, and the list item carries no ARN of its own. Unique within the account and region.
+    # Identity (req-grid-entity-natural-key): The plan name and selection name joined with a slash: the CloudFormation primary identifier of the type is that pair, and the list item carries no ARN of its own. Unique within the account and region. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("backup_restore_testing_selection_key",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

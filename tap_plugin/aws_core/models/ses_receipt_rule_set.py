@@ -15,7 +15,7 @@ class SesReceiptRuleSet(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SES Receipt Rule Set."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The account, the region and the rule set name (RuleSetName, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the name.
+    # Identity (req-grid-entity-natural-key): The account, the region and the rule set name (RuleSetName, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the name. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_receipt_rule_set_key",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

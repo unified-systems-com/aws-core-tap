@@ -2502,9 +2502,18 @@ def _log_group_arn(partition: str, region: str, account: str, name: str) -> str:
     return build_arn(partition, "logs", region, account, f"log-group:{name}")
 
 
+def _scoped_key(partition: str, account: str, region: str, rest: str) -> str:
+    """The natural key of a resource with no ARN and no AWS-generated id: ``<partition>:<account>:<region>:<rest>``,
+    so the same names in another region or account are another resource (req-aws-collector-identity-8). A missing
+    part fails the item loudly, as a ``derive`` template does: a key with a hole in it would merge resources again."""
+    if not (partition and account and region):
+        raise SourceError(f"no partition, account or region to key {rest!r} under")
+    return f"{partition}:{account}:{region}:{rest}"
+
+
 def logs_metric_filters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate CloudWatch Logs metric filters (regional), every log group's at once. ``_key`` is
-    ``<log group>:<filter>`` and ``_log_group_arn`` the log group's ARN (the form the log group node is keyed
+    ``<log group>:<filter>`` under the run's scope (:func:`_scoped_key`) and ``_log_group_arn`` the log group's ARN (the form the log group node is keyed
     by). The first metric transformation's name and namespace are ``_metric_name`` and ``_metric_namespace``."""
     client = client_for("logs")
     region = _client_region(client)
@@ -2518,7 +2527,7 @@ def logs_metric_filters_described(session: Any, *, client_for: Any) -> Iterator[
             yield with_edge_reads(
                 {
                     **item,
-                    "_key": f"{group}:{name}",
+                    "_key": _scoped_key(partition, account, region, f"{group}:{name}"),
                     "_log_group_arn": _log_group_arn(partition, region, account, group),
                     "_metric_name": first.get("metricName"),
                     "_metric_namespace": first.get("metricNamespace"),
@@ -2546,7 +2555,11 @@ def logs_subscription_filters_described(session: Any, *, client_for: Any) -> Ite
                     for item in page.get("subscriptionFilters", []):
                         if item.get("filterName"):
                             yield with_edge_reads(
-                                {**item, "_key": f"{name}:{item['filterName']}", "_log_group_arn": _log_group_arn(partition, region, account, name)},
+                                {
+                                    **item,
+                                    "_key": _scoped_key(partition, account, region, f"{name}:{item['filterName']}"),
+                                    "_log_group_arn": _log_group_arn(partition, region, account, name),
+                                },
                                 {"_log_group_arn": COMPLETE, "roleArn": COMPLETE},
                             )
             except BotoCoreError, ClientError:

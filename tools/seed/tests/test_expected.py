@@ -221,6 +221,21 @@ def test_load_context_reads_the_caller_identity_and_region_data_sources(tmp_path
     assert expected.load_context(p) == {"account_id": "ACCOUNT-ID", "region": "us-gov-west-1"}
 
 
+def test_load_context_reads_the_partition_from_the_caller_identity_arn(tmp_path):
+    """Scoped keys lead with the partition (req-aws-collector-identity-8); the caller's ARN names it."""
+    doc = {"values": {"root_module": {"resources": [
+        {"mode": "data", "type": "aws_caller_identity", "values": {"account_id": "ACCOUNT-ID", "arn": "arn:aws-us-gov:sts::ACCOUNT-ID:assumed-role/seeder/s"}},
+        {"mode": "data", "type": "aws_region", "values": {"region": "us-gov-west-1"}},
+    ]}}}
+    p = tmp_path / "state.json"
+    p.write_text(json.dumps(doc))
+    context = expected.load_context(p)
+    assert context == {"account_id": "ACCOUNT-ID", "partition": "aws-us-gov", "region": "us-gov-west-1"}
+    r = res("aws_dax_parameter_group.seed", "aws_dax_parameter_group", name="default.dax1.0")
+    spec = {"concat": [{"context": "partition"}, {"const": ":"}, {"context": "account_id"}, {"const": ":"}, {"context": "region"}, {"const": ":"}, {"path": "name"}]}
+    assert expected.evaluate(spec, r, [r], context) == "aws-us-gov:ACCOUNT-ID:us-gov-west-1:default.dax1.0"
+
+
 def test_load_context_refuses_a_state_whose_data_sources_disagree(tmp_path):
     doc = {"values": {"root_module": {"resources": [
         {"mode": "data", "type": "aws_caller_identity", "values": {"account_id": "ACCOUNT-ONE"}},
