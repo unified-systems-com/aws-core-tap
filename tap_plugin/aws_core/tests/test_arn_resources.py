@@ -74,6 +74,7 @@ NO_ARN: dict[str, str] = {
     "opensearchserverless_lifecycle_policy": "the service reference defines no ARN for a serverless policy",
     "opensearchserverless_security_config": "the service reference defines no ARN for a serverless security configuration",
     "opensearchserverless_security_policy": "the service reference defines no ARN for a serverless policy",
+    "opensearch_data_source": "the reference's es:datasource is a direct-query data source (opensearch:…:datasource/…); it lists no resource type for a domain's data source, whose key the manifest builds under the domain",
     "opensearchserverless_vpc_endpoint": "the service reference defines no ARN for a serverless VPC endpoint",
     "policy_statement": "a statement inside a policy document, which has no ARN of its own",
     "redshift_cluster_security_group": "the service reference's securitygroup ARN names an EC2 group's ingress into it, not the group",
@@ -118,6 +119,23 @@ RETURNED_ONLY: dict[str, str] = {
     "securityhub_insight": "the service reference lists no resource type for it; the ARN AWS returns is kept",
     "securityhub_standards_subscription": "the service reference lists no resource type for it; the ARN AWS returns is kept",
     "sns_subscription": "the service reference lists no resource type for it; the ARN AWS returns is kept",
+}
+
+#: Resource types whose only reference format ends in a policy wildcard (``…:cert:*``): it names every resource of the
+#: type at once, so an ARN is never built from it. The models still name the resource type; the ARN AWS returns is used.
+WILDCARD_ONLY: dict[str, str] = {
+    resource: "the reference gives only an IAM policy wildcard for the resource id; the ARN AWS returns is used"
+    for resource in (
+        "dms:Certificate",
+        "dms:DataMigration",
+        "dms:DataProvider",
+        "dms:Endpoint",
+        "dms:InstanceProfile",
+        "dms:MigrationProject",
+        "dms:ReplicationConfig",
+        "dms:ReplicationInstance",
+        "dms:ReplicationTask",
+    )
 }
 
 _UNSET = object()
@@ -183,6 +201,15 @@ def test_every_vendored_format_is_an_arn_with_its_partition_left_open() -> None:
         if not re.match(r"arn:\$\{Partition\}:[a-z0-9-]+:", fmt)
     ]
     assert not bad
+
+
+def test_a_wildcard_format_is_listed_so_no_arn_is_ever_built_from_it() -> None:
+    """A format whose resource id is ``*`` would build one ARN for every resource of the type: each such resource type
+    is listed, with every one of its formats a wildcard, and a listed type that gains a real format drops off."""
+    wildcard = {r for r, formats in FORMATS.items() if formats and all("*" in f for f in formats)}
+    partly = {r for r, formats in FORMATS.items() if any("*" in f for f in formats) and r not in wildcard}
+    assert wildcard == set(WILDCARD_ONLY)
+    assert not partly
 
 
 def test_the_refresh_takes_each_wanted_resource_from_the_reference() -> None:

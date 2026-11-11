@@ -17,7 +17,7 @@ class S3outpostsAccessPoint(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AccessPointArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("s3outposts_access_point_arn",)
-    ARN_RESOURCE: ClassVar[str | None] = "s3:accesspoint"
+    ARN_RESOURCE: ClassVar[str | None] = "s3-outposts:accesspoint"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

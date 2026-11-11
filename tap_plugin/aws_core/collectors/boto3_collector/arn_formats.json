@@ -942,9 +942,6 @@
   "es:application": [
    "arn:${Partition}:opensearch:${Region}:${Account}:application/${AppId}"
   ],
-  "es:datasource": [
-   "arn:${Partition}:opensearch:${Region}:${Account}:datasource/${DataSourceName}"
-  ],
   "es:domain": [
    "arn:${Partition}:es:${Region}:${Account}:domain/${DomainName}"
   ],
@@ -1940,6 +1937,12 @@
   "rum:AppMonitorResource": [
    "arn:${Partition}:rum:${Region}:${Account}:appmonitor/${Name}"
   ],
+  "s3-outposts:accesspoint": [
+   "arn:${Partition}:s3-outposts:${Region}:${Account}:outpost/${OutpostId}/accesspoint/${AccessPointName}"
+  ],
+  "s3-outposts:bucket": [
+   "arn:${Partition}:s3-outposts:${Region}:${Account}:outpost/${OutpostId}/bucket/${BucketName}"
+  ],
   "s3-outposts:endpoint": [
    "arn:${Partition}:s3-outposts:${Region}:${Account}:outpost/${OutpostId}/endpoint/${EndpointId}"
   ],
@@ -1957,6 +1960,9 @@
   ],
   "s3:bucket": [
    "arn:${Partition}:s3:::${BucketName}"
+  ],
+  "s3:objectlambdaaccesspoint": [
+   "arn:${Partition}:s3-object-lambda:${Region}:${Account}:accesspoint/${AccessPointName}"
   ],
   "s3:storagelensconfiguration": [
    "arn:${Partition}:s3:${Region}:${Account}:storage-lens/${ConfigId}"
