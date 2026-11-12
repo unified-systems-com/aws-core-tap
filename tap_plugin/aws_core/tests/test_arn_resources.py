@@ -18,6 +18,8 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 from tap_plugin.aws_core.collectors.boto3_collector import iam_policy
 
 MODELS = Path(iam_policy.MODELS_DIR)
@@ -257,3 +259,14 @@ def test_the_arn_refresh_reads_only_named_services_and_writes_only_the_formats(m
     assert iam_policy.refresh_arn_formats() == 1
     assert "u/unnamed" not in fetched
     assert sorted(p.name for p in tmp_path.iterdir()) == ["arn_formats.json"]
+
+
+def test_the_arn_refresh_refuses_and_writes_nothing_when_a_named_type_is_missing(monkeypatch, tmp_path) -> None:
+    listing = [{"service": "ec2", "url": "u/ec2"}]
+    doc = {"Name": "ec2", "Resources": [{"Name": "subnet", "ARNFormats": ["x"]}]}
+    monkeypatch.setattr(iam_policy, "_fetch", lambda url: listing if url.endswith("service-list.json") else doc)
+    monkeypatch.setattr(iam_policy, "arn_resources", lambda: {"ec2:vpc"})
+    monkeypatch.setattr(iam_policy, "ARN_FORMATS", tmp_path / "arn_formats.json")
+    with pytest.raises(SystemExit, match="ec2:vpc"):
+        iam_policy.refresh_arn_formats()
+    assert not list(tmp_path.iterdir())

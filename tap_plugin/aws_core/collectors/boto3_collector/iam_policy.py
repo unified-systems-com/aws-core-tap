@@ -335,7 +335,14 @@ def arn_formats_from(docs: list[dict[str, Any]], wanted: set[str]) -> dict[str, 
 
 
 def write_arn_formats(docs: list[dict[str, Any]]) -> None:
-    ARN_FORMATS.write_text(json.dumps(arn_formats_from(docs, arn_resources()), indent=1) + "\n")
+    """Write the formats, or refuse and write nothing when the reference is missing a resource type a model names: a
+    short or failed fetch must not shrink the vendored file."""
+    wanted = arn_resources()
+    data = arn_formats_from(docs, wanted)
+    missing = sorted(wanted - set(data["resources"]))
+    if missing:
+        raise SystemExit(f"the reference has no entry for {', '.join(missing)}; {ARN_FORMATS.name} left as it was")
+    ARN_FORMATS.write_text(json.dumps(data, indent=1) + "\n")
 
 
 def refresh_arn_formats() -> int:
@@ -346,7 +353,7 @@ def refresh_arn_formats() -> int:
     with concurrent.futures.ThreadPoolExecutor(4) as pool:
         docs = list(pool.map(lambda s: _fetch(s["url"]), services))
     write_arn_formats(docs)
-    return len(arn_formats_from(docs, wanted)["resources"])
+    return len(wanted)
 
 
 def main(argv: list[str]) -> int:
