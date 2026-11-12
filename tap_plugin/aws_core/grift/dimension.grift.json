@@ -6,29 +6,71 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "019dd143-3e8f-73e4-b0fa-e629e288cd8f",
+        "entity_id": "01a1d109-3ae5-77e3-857e-41a8da8c041c",
         "entity_type": "batch",
-        "name": "AWS Cloud dimension v0.1.0",
+        "name": "AWS dimensions v0.2.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.aws_core",
-        "name": "AWS Cloud dimension v0.1.0",
-        "description": "Dimension node anchoring the tap.cloud=aws dimension."
+        "name": "AWS dimensions v0.2.0",
+        "description": "Declares every dimension aws_core writes: tap.cloud (the model and edge default) and cloud, aws_account and aws_region (stamped by the collector on every node it writes). v0.2.0 renames the v0.1.0 node from 'tap.cloud: aws' to its key 'tap.cloud' (same entity id) and adds the three collector keys, so each key in use has a declared Dimension node before core's dimension-map reshape (tap#708, #711). A new batch id, because an already-imported batch is skipped on re-seed."
       },
       "nodes": [
         {
           "entity": {
             "entity_id": "019dd143-3e8f-73e4-b0fa-e62ac923065d",
             "entity_type": "dimension",
-            "name": "tap.cloud: aws",
+            "name": "tap.cloud",
             "dimensions": {
               "tap.meta": "dimension"
             }
           },
           "node": {
-            "name": "tap.cloud: aws",
-            "description": "The AWS cloud dimension. All entity types and edges from the AWS Core plugin are tagged with {\"tap.cloud\": \"aws\"} as their default dimension. This dimension covers the 37 resource-type models common to most major AWS deployments — compute (EC2, Lambda, ECS, EKS), storage (S3, EBS), databases (RDS, DynamoDB, ElastiCache, OpenSearch), networking (VPC, Subnet, Security Group, ALB, ELB, Route 53, etc.), identity and access (IAM User, Role, Policy), security (ACM, Secrets Manager, SSM Parameter Store), AI (Bedrock, SageMaker), and infrastructure reference (Region, Availability Zone, Account). GovCloud, China partition, and non-core services are excluded from v0. This plugin is maintained at github.com/notgeorge/tap-plugin-aws and integrated into TAP as a git submodule."
+            "name": "tap.cloud",
+            "description": "Which cloud provider an entity belongs to. Every aws_core model and edge type declares it as a default dimension with the value \"aws\", so every AWS node and edge carries {\"tap.cloud\": \"aws\"} from the moment it is created."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a1d109-3ae5-77e3-857e-41a95eabf4b1",
+            "entity_type": "dimension",
+            "name": "cloud",
+            "dimensions": {
+              "tap.meta": "dimension"
+            }
+          },
+          "node": {
+            "name": "cloud",
+            "description": "The cloud provider, as the aws_core collector stamps it on every node it writes in a run (value \"aws\"), alongside aws_account and aws_region. It carries the same fact as tap.cloud, which comes from the model defaults rather than the collector. Declared under its current name; whether to keep both is an open question."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a1d109-3ae5-77e3-857e-41aac951274e",
+            "entity_type": "dimension",
+            "name": "aws_account",
+            "dimensions": {
+              "tap.meta": "dimension"
+            }
+          },
+          "node": {
+            "name": "aws_account",
+            "description": "The AWS account a resource is in: the twelve-digit account id of the collector's credential (STS GetCallerIdentity), stamped on every node and edge the collector writes. It replaces a BELONGS_TO_ACCOUNT edge from every resource, which would make the account node a hub (req-aws-core-account-dimension). For a resource shared in from another account through AWS RAM it records the observing account, and the BELONGS_TO_ACCOUNT edge names the owner. The falsifiers compare it with their own credential's account to decide whether they can speak to a resource's absence."
+          }
+        },
+        {
+          "entity": {
+            "entity_id": "01a1d109-3ae5-77e3-857e-41abf1031159",
+            "entity_type": "dimension",
+            "name": "aws_region",
+            "dimensions": {
+              "tap.meta": "dimension"
+            }
+          },
+          "node": {
+            "name": "aws_region",
+            "description": "The AWS region a resource was read in (for example us-east-1 or us-gov-west-1), stamped by the collector on every node it writes. A global-scope resource, and the Organizations tree, carry the value \"global\". The falsifiers read it as the region to probe."
           }
         }
       ],

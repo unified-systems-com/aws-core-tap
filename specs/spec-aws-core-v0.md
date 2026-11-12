@@ -1292,6 +1292,7 @@ Which account a resource is in is recorded **once**, as the `aws_account` dimens
 | req-aws-core-account-dimension-4 | No Manifest Rule Writes The Edge | Implemented | No manifest entry's `edges` rule has `BELONGS_TO_ACCOUNT` as its `edge_type`. | `tests/test_account_dimension.py` |
 | req-aws-core-account-dimension-5 | The Baseline Panel Joins By Account Id | Implemented | The baseline panel matches a footprint to its account node by `account_id`, not by an edge. | `tests/test_baseline_panel.py` |
 | req-aws-core-account-dimension-6 | Existing Same-Account Edges Retire By Identity | Proposed | The same-account `BELONGS_TO_ACCOUNT` edges already on a grid are removed by identity in a separate change. | aws-core-tap#109; not part of this requirement's code. |
+| req-aws-core-account-dimension-7 | Every Key Written Has A Declared Dimension Node | Implemented | `grift/dimension.grift.json` declares one Dimension node per dimension key aws_core writes, named exactly as the key: `tap.cloud` (the model and edge default) and `cloud`, `aws_account` and `aws_region` (the collector's stamp). Nodes are never minted on the fly (George, 2026-11-12, aws-build Q50), so core's id-keyed dimension map (tap#711) can resolve every key. The v0.1.0 node named `tap.cloud: aws` keeps its id and is renamed to its key; the seed batch id changed so an existing grid re-seeds it. | `tests/test_dimension_seed.py` |
 
 ### Direct Connect
 ----
