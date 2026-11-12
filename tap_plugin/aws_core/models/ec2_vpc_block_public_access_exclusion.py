@@ -17,6 +17,7 @@ class Ec2VpcBlockPublicAccessExclusion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (ExclusionId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_vpc_block_public_access_exclusion_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-block-public-access-exclusion"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

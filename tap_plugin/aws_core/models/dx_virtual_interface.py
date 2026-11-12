@@ -37,6 +37,7 @@ class DxVirtualInterface(BaseModel):
 
     # AWS's virtual interface id (dxvif-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("virtual_interface_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "directconnect:dxvif"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

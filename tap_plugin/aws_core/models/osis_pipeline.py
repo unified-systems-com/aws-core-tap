@@ -17,6 +17,7 @@ class OsisPipeline(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (PipelineArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pipeline_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "osis:pipeline"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

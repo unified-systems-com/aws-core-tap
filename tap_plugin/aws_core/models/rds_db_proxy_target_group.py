@@ -17,6 +17,7 @@ class RdsDbProxyTargetGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TargetGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rds_db_proxy_target_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:target-group"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

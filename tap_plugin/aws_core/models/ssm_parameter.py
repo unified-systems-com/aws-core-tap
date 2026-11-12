@@ -18,6 +18,7 @@ class SsmParameter(BaseModel):
     # Identity (req-grid-entity-natural-key): The parameter's ARN: a parameter name is unique only
     # within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("parameter_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ssm:parameter"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

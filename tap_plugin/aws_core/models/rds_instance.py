@@ -18,6 +18,7 @@ class RdsInstance(BaseModel):
     # Identity (req-grid-entity-natural-key): The DB instance's ARN: db_instance_id is chosen by its
     # owner and unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_instance_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:db"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

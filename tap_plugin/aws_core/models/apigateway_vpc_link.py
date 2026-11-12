@@ -17,6 +17,7 @@ class ApigatewayVpcLink(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The link's ARN (built from the link id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_link_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:VpcLink"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

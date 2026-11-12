@@ -22,6 +22,7 @@ class ApiGatewayHttpApi(BaseModel):
     # Identity (req-grid-entity-natural-key): The API's ARN, the boto3 collector's identity for it
     # (derived as _api_arn); api_id alone is unique only within a region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("api_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:Api"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

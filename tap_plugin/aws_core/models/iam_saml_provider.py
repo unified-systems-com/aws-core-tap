@@ -20,6 +20,7 @@ class IamSamlProvider(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The provider's ARN, the collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("provider_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:saml-provider"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

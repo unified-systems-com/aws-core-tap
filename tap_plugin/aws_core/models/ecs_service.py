@@ -18,6 +18,7 @@ class EcsService(BaseModel):
     # Identity (req-grid-entity-natural-key): The service's ARN: a service name is unique only within
     # its cluster.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("service_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecs:service"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

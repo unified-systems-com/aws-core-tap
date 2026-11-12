@@ -17,6 +17,7 @@ class IotSoftwarePackage(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The package's ARN, built as arn:{partition}:iot:{region}:{account}:package/{packageName} (the AWS Service Authorization Reference iot 'package' resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_software_package_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iot:package"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

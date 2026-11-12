@@ -17,6 +17,7 @@ class AutoscalingAutoScalingGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AutoScalingGroupARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("auto_scaling_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "autoscaling:autoScalingGroup"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

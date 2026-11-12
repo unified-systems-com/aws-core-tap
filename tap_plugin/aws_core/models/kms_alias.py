@@ -17,6 +17,7 @@ class KmsAlias(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The alias's ARN: an alias name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("alias_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kms:alias"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

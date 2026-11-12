@@ -20,6 +20,7 @@ class NatGateway(BaseModel):
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("nat_gateway_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:natgateway"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

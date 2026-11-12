@@ -17,6 +17,7 @@ class RdsDbSubnetGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subnet group's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_subnet_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:subgrp"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

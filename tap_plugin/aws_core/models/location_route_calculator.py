@@ -17,6 +17,7 @@ class LocationRouteCalculator(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:route-calculator/{CalculatorName} (the AWS Service Authorization Reference 'geo' route-calculator resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_route_calculator_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "geo:route-calculator"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

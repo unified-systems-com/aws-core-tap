@@ -21,6 +21,7 @@ class CloudtrailTrail(BaseModel):
     # Identity (req-grid-entity-natural-key): The trail's ARN, the boto3 collector's identity for it
     # (TrailARN).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("trail_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudtrail:trail"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

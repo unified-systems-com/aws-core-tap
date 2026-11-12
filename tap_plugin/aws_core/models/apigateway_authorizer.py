@@ -17,6 +17,7 @@ class ApigatewayAuthorizer(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The authorizer's ARN (the API's ARN plus /authorizers/<id>).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("authorizer_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:Authorizer"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

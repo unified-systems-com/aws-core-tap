@@ -37,6 +37,7 @@ class DxGateway(BaseModel):
 
     # AWS's Direct Connect gateway id, a UUID.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("direct_connect_gateway_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "directconnect:dx-gateway"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

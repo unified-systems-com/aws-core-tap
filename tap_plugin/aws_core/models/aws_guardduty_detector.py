@@ -38,6 +38,7 @@ class AwsGuardDutyDetector(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "detector_id")
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:detector"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "REPORTS_TO_ADMINISTRATOR__aws_core"}]},

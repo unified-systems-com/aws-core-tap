@@ -32,6 +32,7 @@ class CloudwatchLogGroup(BaseModel):
     # (or two accounts) one identity; the ARN carries partition, region and account
     # (req-aws-collector-identity-2, req-aws-collector-edges-7).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("log_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "logs:log-group"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

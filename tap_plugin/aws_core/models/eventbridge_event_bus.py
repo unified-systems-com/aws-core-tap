@@ -17,6 +17,7 @@ class EventbridgeEventBus(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The bus's ARN: a bus name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bus_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "events:event-bus"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

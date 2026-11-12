@@ -18,6 +18,7 @@ class EksCluster(BaseModel):
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster name is unique only within
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "eks:cluster"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class CognitoIdentityPool(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The pool's id (region:uuid), unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("identity_pool_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "cognito-identity:identitypool"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

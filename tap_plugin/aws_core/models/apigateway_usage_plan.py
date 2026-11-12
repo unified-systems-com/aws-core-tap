@@ -17,6 +17,7 @@ class ApigatewayUsagePlan(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The plan's ARN (built from the plan id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("usage_plan_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:UsagePlan"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

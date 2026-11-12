@@ -53,6 +53,7 @@ class TransitGatewayAttachment(BaseModel):
     # AWS's attachment id (tgw-attach-…). A peering attachment is one object with one id, reported
     # from both sides.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("attachment_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:transit-gateway-attachment"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

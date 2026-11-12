@@ -18,6 +18,7 @@ class ElasticacheCluster(BaseModel):
     # Identity (req-grid-entity-natural-key): The cluster's ARN: the cluster ID is chosen by its owner
     # and unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticache:cluster"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

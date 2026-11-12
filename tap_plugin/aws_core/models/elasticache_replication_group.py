@@ -17,6 +17,7 @@ class ElasticacheReplicationGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("elasticache_replication_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticache:replicationgroup"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

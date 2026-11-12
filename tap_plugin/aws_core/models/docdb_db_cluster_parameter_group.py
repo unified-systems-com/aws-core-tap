@@ -17,6 +17,7 @@ class DocdbDbClusterParameterGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (DBClusterParameterGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dbcluster_parameter_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:cluster-pg"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

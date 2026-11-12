@@ -17,6 +17,7 @@ class ComprehendDocumentClassifierEndpoint(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (EndpointArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("comprehend_document_classifier_endpoint_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "comprehend:document-classifier-endpoint"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

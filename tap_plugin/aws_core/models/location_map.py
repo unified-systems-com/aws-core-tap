@@ -17,6 +17,7 @@ class LocationMap(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:map/{MapName} (the AWS Service Authorization Reference 'geo' map resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_map_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "geo:map"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

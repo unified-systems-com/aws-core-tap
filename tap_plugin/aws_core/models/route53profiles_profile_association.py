@@ -17,6 +17,7 @@ class Route53profilesProfileAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53profiles_profile_association_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53profiles:profile-association"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

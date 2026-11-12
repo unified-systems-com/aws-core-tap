@@ -20,6 +20,7 @@ class IamGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The group's ARN: a group name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:group"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

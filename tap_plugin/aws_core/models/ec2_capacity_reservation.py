@@ -17,6 +17,7 @@ class Ec2CapacityReservation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (CapacityReservationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("capacity_reservation_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:capacity-reservation"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

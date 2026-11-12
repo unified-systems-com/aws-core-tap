@@ -17,6 +17,7 @@ class ApigatewayDomainNameAccessAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (domainNameAccessAssociationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("apigateway_domain_name_access_association_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:DomainNameAccessAssociation"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

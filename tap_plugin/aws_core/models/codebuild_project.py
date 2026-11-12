@@ -50,6 +50,7 @@ class CodebuildProject(BaseModel):
     # The project's ARN (BatchGetProjects arn). A project name is unique only within one account and
     # region, so the ARN, which carries both, is the identity.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("project_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "codebuild:project"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

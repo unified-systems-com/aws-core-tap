@@ -48,6 +48,7 @@ class AwsOrganization(BaseModel):
 
     # AWS's organization id (o-…). Blank ids never converge: identity_lock_key treats "" as a hole.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("organization_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:organization"
 
     # Containment (tap-plugin-aws-core#50, req-aws-core-organizations-reconcile). The two existing
     # tree edges point child -> parent (NESTED_UNDER_PARENT) and stay references: an account moves

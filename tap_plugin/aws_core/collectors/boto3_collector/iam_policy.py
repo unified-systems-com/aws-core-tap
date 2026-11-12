@@ -8,12 +8,18 @@ one role, plus an explicit deny for the actions that return secret material or r
 
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --write      # regenerate the documents
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh    # rebuild the action data
+    uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh-arns   # rebuild the ARN formats only
 
 The operation-to-action mapping is AWS's own: the Service Authorization Reference
 (https://servicereference.us-east-1.amazonaws.com/) names, for each SDK method, the actions that authorise it.
 ``--refresh`` reads it (network) and writes ``iam_operation_actions.json`` for the operations the collector makes;
 generating the documents is offline. An action that writes, manages permissions or reads the data plane is dropped from
 a read operation's list and recorded under ``dropped``.
+
+The same refresh writes ``arn_formats.json``: the reference's ARN formats for every resource type a model names in its
+``ARN_RESOURCE`` (``"<service>:<resource>"``, ``req-aws-collector-identity-11``), so building an ARN is offline and
+reads the same data every time. ``--refresh-arns`` rebuilds ``arn_formats.json`` alone, reading only the services the
+models name, so adding a model never rewrites the IAM action data as a side effect.
 """
 
 from __future__ import annotations
@@ -35,6 +41,8 @@ HERE = Path(__file__).resolve().parent
 MANIFEST = HERE / "aws_resource_manifest.json"
 OVERRIDES = HERE / "iam_policy_overrides.json"
 CATALOG = HERE / "iam_operation_actions.json"
+ARN_FORMATS = HERE / "arn_formats.json"
+MODELS_DIR = HERE.parent.parent / "models"
 OUT_DIR = HERE / "handoff"
 PART_NAME = "collector-policy-{n:02d}.json"
 REFERENCE = "https://servicereference.us-east-1.amazonaws.com/v1/"
@@ -286,6 +294,7 @@ def refresh() -> dict[str, Any]:
                         entry["actions"].append(action)
     for entry in operations.values():
         entry["actions"].sort()
+    write_arn_formats(docs)
     data = {
         "description": "For each operation the collector makes, the IAM actions that authorise it, from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/). Rebuilt by iam_policy.py --refresh. 'dropped' lists actions the reference attaches to the operation that write, manage permissions or read the data plane; a read operation does not need them and the collector is not granted them.",
         "operations": dict(sorted(operations.items())),
@@ -294,7 +303,76 @@ def refresh() -> dict[str, Any]:
     return data
 
 
+def arn_resources() -> set[str]:
+    """Every ``ARN_RESOURCE`` a model names, read from the model sources (nothing is imported)."""
+    named: set[str] = set()
+    for path in MODELS_DIR.glob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.target.id == "ARN_RESOURCE"
+                and isinstance(node.value, ast.Constant)
+                and isinstance(node.value.value, str)
+            ):
+                named.add(node.value.value)
+    return named
+
+
+def arn_formats_from(docs: list[dict[str, Any]], wanted: set[str]) -> dict[str, Any]:
+    """The reference's ARN formats for each wanted ``<service>:<resource>``; one the reference lacks is left out, and
+    the test over the models names it."""
+    formats = {
+        f"{doc['Name']}:{resource['Name']}": resource.get("ARNFormats", [])
+        for doc in docs
+        for resource in doc.get("Resources", [])
+        if f"{doc['Name']}:{resource['Name']}" in wanted
+    }
+    return {
+        "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh or --refresh-arns; do not edit.",
+        "resources": dict(sorted(formats.items())),
+    }
+
+
+#: A whole ARN template: the partition left open, a service, region and account parts (either may be empty), and a
+#: non-empty resource; every ``${`` closes, and nothing has whitespace.
+ARN_FORMAT = re.compile(
+    r"arn:\$\{Partition\}:[a-z0-9-]+:(?:[^:\s$]|\$\{\w+\})*:(?:[^:\s$]|\$\{\w+\})*:(?:[^\s$]|\$\{\w+\})+"
+)
+
+
+def write_arn_formats(docs: list[dict[str, Any]]) -> None:
+    """Write the formats, or refuse and write nothing when the reference is missing a resource type a model names: a
+    short, failed or malformed fetch must not change the vendored file, and the file is replaced whole."""
+    wanted = arn_resources()
+    data = arn_formats_from(docs, wanted)
+    missing = sorted(wanted - set(data["resources"]))
+    if missing:
+        raise SystemExit(f"the reference has no entry for {', '.join(missing)}; {ARN_FORMATS.name} left as it was")
+    malformed = sorted(
+        r for r, formats in data["resources"].items() if not formats or not all(ARN_FORMAT.fullmatch(f) for f in formats)
+    )
+    if malformed:
+        raise SystemExit(f"the reference gives no usable ARN format for {', '.join(malformed)}; {ARN_FORMATS.name} left as it was")
+    staged = ARN_FORMATS.with_suffix(".json.tmp")
+    staged.write_text(json.dumps(data, indent=1) + "\n")
+    staged.replace(ARN_FORMATS)
+
+
+def refresh_arn_formats() -> int:
+    """Rebuild ``arn_formats.json`` alone, from the reference files of the services the models name (network)."""
+    wanted = arn_resources()
+    prefixes = {r.split(":", 1)[0] for r in wanted}
+    services = [s for s in _fetch(REFERENCE + "service-list.json") if s["service"] in prefixes]
+    with concurrent.futures.ThreadPoolExecutor(4) as pool:
+        docs = list(pool.map(lambda s: _fetch(s["url"]), services))
+    write_arn_formats(docs)
+    return len(wanted)
+
+
 def main(argv: list[str]) -> int:
+    if "--refresh-arns" in argv:
+        print(f"wrote {refresh_arn_formats()} resource types to {ARN_FORMATS.name}")
     if "--refresh" in argv:
         data = refresh()
         print(f"wrote {len(data['operations'])} operations to {CATALOG.name}")

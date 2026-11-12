@@ -17,6 +17,7 @@ class DmsReplicationTask(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ReplicationTaskArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dms_replication_task_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "dms:ReplicationTask"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class IotScheduledAudit(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (scheduledAuditArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_scheduled_audit_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iot:scheduledaudit"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -34,6 +34,7 @@ class AwsControlTowerLandingZone(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("landing_zone_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "controltower:LandingZone"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {

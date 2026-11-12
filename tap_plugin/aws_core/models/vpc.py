@@ -19,6 +19,7 @@ class Vpc(BaseModel):
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "round-rectangle",

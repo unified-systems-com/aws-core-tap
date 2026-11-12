@@ -17,6 +17,7 @@ class EcsDaemon(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (daemonArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("daemon_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecs:daemon"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

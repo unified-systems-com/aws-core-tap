@@ -17,6 +17,7 @@ class SagemakerWorkteam(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (WorkteamArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("workteam_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:workteam"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
