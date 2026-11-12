@@ -40,6 +40,7 @@ class AcmPrivateCa(BaseModel):
 
     # AWS's CA ARN; there is no shorter id.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ca_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "acm-pca:certificate-authority"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
@@ -47,11 +48,11 @@ class AcmPrivateCa(BaseModel):
             "type": "string",
             "pattern": "^(arn:aws(-us-gov|-cn)?:acm-pca:[a-z0-9-]+:[0-9]{12}:certificate-authority/[0-9a-f-]{36})?$",
         },
-        "ca_type": {"type": "string", "enum": ["", *CA_TYPES]},
-        "key_algorithm": {"type": "string", "enum": ["", *KEY_ALGORITHMS]},
-        "status": {"type": "string", "enum": ["", *STATUSES]},
-        "usage_mode": {"type": "string", "enum": ["", *USAGE_MODES]},
-        "subject_common_name": {"type": "string"},
+        "ca_type": {"type": ["string", "null"], "enum": [None, "", *CA_TYPES]},
+        "key_algorithm": {"type": ["string", "null"], "enum": [None, "", *KEY_ALGORITHMS]},
+        "status": {"type": ["string", "null"], "enum": [None, "", *STATUSES]},
+        "usage_mode": {"type": ["string", "null"], "enum": [None, "", *USAGE_MODES]},
+        "subject_common_name": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -65,11 +66,11 @@ class AcmPrivateCa(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     ca_arn = models.CharField(max_length=200, blank=True, default="", db_index=True)
     # Blank means not observed for each enum (the aws_elb.lb_type convention).
-    ca_type = models.CharField(max_length=16, blank=True, default="")
-    key_algorithm = models.CharField(max_length=16, blank=True, default="")
-    status = models.CharField(max_length=24, blank=True, default="")
-    usage_mode = models.CharField(max_length=32, blank=True, default="")
-    subject_common_name = models.CharField(max_length=64, blank=True, default="")
+    ca_type = models.CharField(max_length=16, null=True, blank=True, default=None)
+    key_algorithm = models.CharField(max_length=16, null=True, blank=True, default=None)
+    status = models.CharField(max_length=24, null=True, blank=True, default=None)
+    usage_mode = models.CharField(max_length=32, null=True, blank=True, default=None)
+    subject_common_name = models.CharField(max_length=64, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: acm-pca:ListTags.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.

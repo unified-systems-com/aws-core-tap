@@ -46,7 +46,8 @@ def commit_of(root: Path) -> str:
     """The checkout's HEAD commit, read from the .git files directly (no git process), or 'unknown'.
 
     Only a value shaped like a commit id is ever returned, and a ref must live under refs/, so a hostile tree
-    cannot make the report quote some other file.
+    cannot make the report quote some other file. A ``.git`` file, ``commondir`` or symlink that leads outside the
+    tree is not followed: a worktree of a checkout therefore reports 'unknown'; use a clone.
     """
     sha = _commit_of(root)
     return sha if _SHA.match(sha) else "unknown"
@@ -64,26 +65,80 @@ def tree_digest(root: Path, patterns: list[str]) -> str:
     return h.hexdigest()
 
 
-def _commit_of(root: Path) -> str:
+def _plain(path: Path, root: Path) -> Path:
+    """``path``, or an OSError (answered as 'unknown' by the caller) if it is outside ``root`` or if it, or any
+    directory between ``root`` and it, is a symlink: nothing in an analysed tree is read through a link, because
+    the link, not the tree, would choose the file. A leaf check alone misses ``refs`` pointing elsewhere."""
     try:
-        git = root / ".git"
+        parts = path.relative_to(root).parts
+    except ValueError:
+        raise OSError(f"outside the analysed tree: {path.name}") from None
+    here = root
+    for part in parts:
+        here = here / part
+        if here.is_symlink():
+            raise OSError(f"refusing to read through a symlink: {here.name}")
+    return path
+
+
+_TAG = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
+
+
+def tag_commit(root: Path, tag: str) -> str | None:
+    """The commit that tag ``tag`` of the checkout at ``root`` names, or None when the tag is not there or the
+    checkout cannot be read plainly (a link anywhere on the way, a worktree pointer). A packed tag carries its
+    peeled commit. A loose tag file holds the tag object when the tag is annotated, which is not followed: the
+    value is returned as it stands and so will not equal the checkout's commit, which reads as not bound."""
+    if not _TAG.match(tag):
+        return None
+    rroot = root.resolve()
+    try:
+        git = _plain(rroot / ".git", rroot)
+        if not git.is_dir():
+            return None
+        loose = _plain(git / "refs" / "tags" / tag, rroot)
+        if loose.is_file():
+            value = loose.read_text().strip()
+            return value if _SHA.match(value) else None
+        packed = _plain(git / "packed-refs", rroot)
+        if packed.is_file():
+            lines = packed.read_text().splitlines()
+            for i, line in enumerate(lines):
+                if line.endswith(" refs/tags/" + tag) and not line.startswith(("#", "^")):
+                    sha = line.split()[0]
+                    if i + 1 < len(lines) and lines[i + 1].startswith("^"):
+                        sha = lines[i + 1][1:].strip()
+                    return sha if _SHA.match(sha) else None
+    except OSError:
+        pass
+    return None
+
+
+def _commit_of(root: Path) -> str:
+    rroot = root.resolve()
+    try:
+        git = _plain(rroot / ".git", rroot)
         if git.is_file():  # a worktree or submodule: ".git" is a file pointing at the real directory
             line = git.read_text().strip()
             if line.startswith("gitdir:"):
                 git = (root / line.split(":", 1)[1].strip()).resolve()
-        head = (git / "HEAD").read_text().strip()
+        if not git.resolve().is_relative_to(root.resolve()):
+            return "unknown"  # a pointer out of the analysed tree is untrusted input, so a worktree reports no commit
+        head = _plain(git / "HEAD", rroot).read_text().strip()
         if not head.startswith("ref:"):
             return head
         ref = head.split(":", 1)[1].strip()
         if not ref.startswith("refs/") or ".." in ref.split("/"):
             return "unknown"
         common = git
-        if (git / "commondir").is_file():  # a worktree keeps shared refs in the main git directory
-            common = (git / (git / "commondir").read_text().strip()).resolve()
+        if _plain(git / "commondir", rroot).is_file():  # a worktree keeps shared refs in the main git directory
+            common = (git / _plain(git / "commondir", rroot).read_text().strip()).resolve()
+            if not common.is_relative_to(root.resolve()):
+                return "unknown"
         for base in (git, common):
-            if (base / ref).is_file():
-                return (base / ref).read_text().strip()
-        packed = common / "packed-refs"
+            if _plain(base / ref, rroot).is_file():
+                return _plain(base / ref, rroot).read_text().strip()
+        packed = _plain(common / "packed-refs", rroot)
         if packed.is_file():
             for line in packed.read_text().splitlines():
                 if line.endswith(" " + ref) and not line.startswith(("#", "^")):

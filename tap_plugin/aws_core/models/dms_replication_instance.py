@@ -17,6 +17,7 @@ class DmsReplicationInstance(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ReplicationInstanceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dms_replication_instance_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "dms:ReplicationInstance"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

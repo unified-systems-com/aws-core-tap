@@ -17,6 +17,7 @@ class DynamoDbTable(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The table's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("table_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "dynamodb:table"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -28,8 +29,8 @@ class DynamoDbTable(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "table_arn": {"type": "string"},
-        "status": {"type": "string"},
-        "billing_mode": {"type": "string"},
+        "status": {"type": ["string", "null"]},
+        "billing_mode": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -37,8 +38,8 @@ class DynamoDbTable(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "table_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "billing_mode": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "billing_mode": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -46,8 +47,8 @@ class DynamoDbTable(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     table_arn = models.CharField(max_length=512, blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
-    billing_mode = models.CharField(max_length=32, blank=True, default="")
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
+    billing_mode = models.CharField(max_length=32, null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

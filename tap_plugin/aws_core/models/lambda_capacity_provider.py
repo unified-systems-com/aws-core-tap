@@ -17,6 +17,7 @@ class LambdaCapacityProvider(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (CapacityProviderArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("lambda_capacity_provider_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "lambda:capacityProvider"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class IamRole(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The role's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("role_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:role"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -28,7 +29,7 @@ class IamRole(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "role_arn": {"type": "string"},
-        "path": {"type": "string"},
+        "path": {"type": ["string", "null"]},
         "max_session_duration": {"type": ["integer", "null"]},
         "role_id": {"type": ["string", "null"]},
         "permissions_boundary_arn": {"type": ["string", "null"]},
@@ -44,7 +45,7 @@ class IamRole(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "role_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "path": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "max_session_duration": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "role_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "permissions_boundary_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
@@ -60,17 +61,17 @@ class IamRole(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     role_arn = models.CharField(max_length=512, blank=True, default="")
-    path = models.CharField(max_length=512, blank=True, default="/")
-    max_session_duration = models.IntegerField(blank=True, null=True)
+    path = models.CharField(max_length=512, null=True, blank=True, default=None)
+    max_session_duration = models.IntegerField(null=True, blank=True, default=None)
     # AWS's immutable role id (AROA...). The ARN is the natural key and is reused when a role is deleted and
     # recreated under the same name and path; the RoleId is not, so it is what tells a recreation from the same
     # role (the falsifier's REIDENTIFIED case). NULL = not observed, never "has no id".
-    role_id = models.CharField(max_length=64, blank=True, null=True, default=None, db_index=True)
+    role_id = models.CharField(max_length=64, db_index=True, null=True, blank=True, default=None)
     # NULL = GetRole did not answer (ListRoles omits this attribute by AWS's own contract, so it is read per
     # role); "" = GetRole answered and the role has no permissions boundary.
-    permissions_boundary_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    permissions_boundary_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # RoleLastUsed.LastUsedDate from GetRole, ISO 8601 UTC; "" = observed, never used; NULL = not observed.
-    last_used_at = models.CharField(max_length=32, blank=True, null=True, default=None)
+    last_used_at = models.CharField(max_length=32, null=True, blank=True, default=None)
     # ARNs of the managed policies attached to the role (AWS-managed and customer-managed alike). NULL = not
     # observed; [] = observed, none attached. The graph edge ATTACHES_POLICY__aws_core covers only the
     # customer-managed ones, whose nodes this collector holds.
@@ -82,7 +83,7 @@ class IamRole(BaseModel):
     # or not a Condition narrows it: the field says the door is unnamed, the trust policy says what guards it.
     trusted_account_ids = models.JSONField(blank=True, null=True, default=None)
     trusted_services = models.JSONField(blank=True, null=True, default=None)
-    trusts_wildcard_principal = models.BooleanField(blank=True, null=True, default=None)
+    trusts_wildcard_principal = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

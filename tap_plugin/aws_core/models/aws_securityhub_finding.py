@@ -57,27 +57,27 @@ class AwsSecurityHubFinding(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "finding_id": {"type": "string"},
         "product_arn": {"type": "string"},
-        "product_name": {"type": "string"},
-        "generator_id": {"type": "string"},
-        "aws_account_id": {"type": "string"},
-        "region": {"type": "string"},
-        "title": {"type": "string"},
+        "product_name": {"type": ["string", "null"]},
+        "generator_id": {"type": ["string", "null"]},
+        "aws_account_id": {"type": ["string", "null"]},
+        "region": {"type": ["string", "null"]},
+        "title": {"type": ["string", "null"]},
         # INFORMATIONAL, LOW, MEDIUM, HIGH or CRITICAL, verbatim.
-        "severity_label": {"type": "string"},
+        "severity_label": {"type": ["string", "null"]},
         # NEW, NOTIFIED, RESOLVED or SUPPRESSED, verbatim.
-        "workflow_status": {"type": "string"},
-        "record_state": {"type": "string"},
+        "workflow_status": {"type": ["string", "null"]},
+        "record_state": {"type": ["string", "null"]},
         # PASSED, WARNING, FAILED or NOT_AVAILABLE on a control finding; "" otherwise.
-        "compliance_status": {"type": "string"},
-        "security_control_id": {"type": "string"},
+        "compliance_status": {"type": ["string", "null"]},
+        "security_control_id": {"type": ["string", "null"]},
         # Compliance.AssociatedStandards[].StandardsId: the resource portion of each standard's ARN.
         "associated_standards": {"type": "array", "items": {"type": "string"}},
         "resource_types": {"type": "array", "items": {"type": "string"}},
         "resource_ids": {"type": "array", "items": {"type": "string"}},
-        "first_observed_at": {"type": "string"},
-        "last_observed_at": {"type": "string"},
-        "created_at": {"type": "string"},
-        "updated_at": {"type": "string"},
+        "first_observed_at": {"type": ["string", "null"]},
+        "last_observed_at": {"type": ["string", "null"]},
+        "created_at": {"type": ["string", "null"]},
+        "updated_at": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -90,23 +90,23 @@ class AwsSecurityHubFinding(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     finding_id = models.CharField(max_length=512, blank=True, default="", db_index=True)
     product_arn = models.CharField(max_length=2048, blank=True, default="")
-    product_name = models.CharField(max_length=255, blank=True, default="")
-    generator_id = models.CharField(max_length=512, blank=True, default="")
-    aws_account_id = models.CharField(max_length=12, blank=True, default="")
-    region = models.CharField(max_length=32, blank=True, default="")
-    title = models.CharField(max_length=1024, blank=True, default="")
-    severity_label = models.CharField(max_length=16, blank=True, default="")
-    workflow_status = models.CharField(max_length=16, blank=True, default="")
-    record_state = models.CharField(max_length=16, blank=True, default="")
-    compliance_status = models.CharField(max_length=16, blank=True, default="")
-    security_control_id = models.CharField(max_length=64, blank=True, default="")
+    product_name = models.CharField(max_length=255, null=True, blank=True, default=None)
+    generator_id = models.CharField(max_length=512, null=True, blank=True, default=None)
+    aws_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
+    title = models.CharField(max_length=1024, null=True, blank=True, default=None)
+    severity_label = models.CharField(max_length=16, null=True, blank=True, default=None)
+    workflow_status = models.CharField(max_length=16, null=True, blank=True, default=None)
+    record_state = models.CharField(max_length=16, null=True, blank=True, default=None)
+    compliance_status = models.CharField(max_length=16, null=True, blank=True, default=None)
+    security_control_id = models.CharField(max_length=64, null=True, blank=True, default=None)
     associated_standards = models.JSONField(default=list, blank=True)
     resource_types = models.JSONField(default=list, blank=True)
     resource_ids = models.JSONField(default=list, blank=True)
-    first_observed_at = models.CharField(max_length=40, blank=True, default="")
-    last_observed_at = models.CharField(max_length=40, blank=True, default="")
-    created_at = models.CharField(max_length=40, blank=True, default="")
-    updated_at = models.CharField(max_length=40, blank=True, default="")
+    first_observed_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    last_observed_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    created_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    updated_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     # AWS cannot tag a finding: always {} (tag_lanes.json, lane `none`).
     tags = models.JSONField(null=True, blank=True, default=None)
 

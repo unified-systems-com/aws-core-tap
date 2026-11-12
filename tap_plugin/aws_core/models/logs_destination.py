@@ -17,6 +17,7 @@ class LogsDestination(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The destination's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "logs:destination"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -45,9 +46,9 @@ class LogsDestination(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     destination_arn = models.CharField(max_length=512, blank=True, default="")
     # The Kinesis stream or Firehose the destination delivers to. NULL = not observed.
-    target_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    target_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The role CloudWatch Logs assumes to deliver. NULL = not observed.
-    role_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    role_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

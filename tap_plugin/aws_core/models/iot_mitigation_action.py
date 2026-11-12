@@ -17,6 +17,7 @@ class IotMitigationAction(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (actionArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_mitigation_action_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iot:mitigationaction"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -28,6 +28,7 @@ class IamOidcProvider(BaseModel):
     # Identity (req-grid-entity-natural-key): The provider's ARN, the boto3 collector's identity for
     # it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("provider_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:oidc-provider"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -39,7 +40,7 @@ class IamOidcProvider(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "provider_arn": {"type": "string"},
-        "url": {"type": "string"},
+        "url": {"type": ["string", "null"]},
         "client_ids": {"type": "array"},
         "thumbprints": {"type": "array"},
         "tags": {"type": ["object", "null"]},
@@ -49,7 +50,7 @@ class IamOidcProvider(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "provider_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "url": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "url": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "client_ids": {"validation": "jsonschema", "schema": {"type": "array"}},
         "thumbprints": {"validation": "jsonschema", "schema": {"type": "array"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
@@ -59,7 +60,7 @@ class IamOidcProvider(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     provider_arn = models.CharField(max_length=512, blank=True, default="")
-    url = models.CharField(max_length=512, blank=True, default="")
+    url = models.CharField(max_length=512, null=True, blank=True, default=None)
     client_ids = models.JSONField(default=list, blank=True)
     thumbprints = models.JSONField(default=list, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)

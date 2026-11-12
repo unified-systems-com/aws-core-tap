@@ -606,9 +606,8 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert len(ledger_entries) == 1
     assert isinstance(ledger_entries[0]["message_data"]["calls"], list)
 
-    # The Lambda node landed, typed, found by its natural key. Its manifest
-    # entry has persist_configuration: false, so configuration is empty while
-    # every typed field is still projected.
+    # The Lambda node landed, typed, found by its natural key. Its configuration is stored (every entry stores its
+    # response) without the environment variables, which AWS marks sensitive.
     fn = get_node(node_id("aws_core__aws_lambda", _FN_ARN))
     assert fn.name == "sam-handler"
     assert fn.function_arn == _FN_ARN
@@ -616,7 +615,9 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert fn.handler == "app.handler"
     assert fn.memory_size == 256
     assert fn.timeout == 30
-    assert fn.configuration == {}
+    assert fn.configuration["FunctionName"] == "sam-handler"
+    assert "Variables" not in fn.configuration.get("Environment", {})
+    assert "Environment.Variables" in fn.configuration["_redacted"]
 
     # Lambda tags came via the RGTA path (joined by FunctionArn).
     assert fn.tags == {"Owner": "sam"}
@@ -652,22 +653,22 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert str(log_edge.from_entity_id) == str(node_id("aws_core__aws_lambda", _FN_ARN))
     assert str(log_edge.to_entity_id) == str(node_id("aws_core__aws_cloudwatch_log_group", _LOG_GROUP_ARN))
 
-    # ROUTES_TRAFFIC resolves non-dangling through the route53 custom_fn's
-    # CloudFront cross-join: the zone's A-alias domain -> the already-
-    # collected CloudFront node by ARN identity. No transform — the
-    # custom_fn did the domain->ARN join (req-aws-collector-edges-7). Note
-    # the manifest-registered type is aws_route53_zone (model + plugin),
-    # which the collector manifest was reconciled to.
+    # The zone holds its record sets (HOLDS_RECORD_SET), and each alias record RESOLVES_TO_TARGET the already-collected
+    # CloudFront node by ARN identity (aws-core-tap#220): the custom_fn did the domain->ARN join
+    # (req-aws-collector-edges-7). The A and AAAA aliases are two record sets, so two edges, not a duplicate.
     zone = get_node(node_id("aws_core__aws_route53_zone", _ZONE_ID))
     assert zone.name == "samsite.unified-systems.com."
-    route_edge = get_edge(
-        edge_between(
-            "ROUTES_TRAFFIC__aws_core", "aws_core__aws_route53_zone", _ZONE_ID, "aws_core__aws_cloudfront_distribution", _DIST_ARN
-        ).entity_id
-    )
-    assert route_edge.edge_type == "ROUTES_TRAFFIC__aws_core"
-    assert str(route_edge.from_entity_id) == str(node_id("aws_core__aws_route53_zone", _ZONE_ID))
-    assert str(route_edge.to_entity_id) == str(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+    for record_type in ("A", "AAAA"):
+        key = f"ZSLICE000001/samsite.unified-systems.com./{record_type}/"
+        record = get_node(node_id("aws_core__aws_route53_record_set", key))
+        assert (record.record_name, record.record_type) == ("samsite.unified-systems.com.", record_type)
+        held = get_edge(edge_between("HOLDS_RECORD_SET__aws_core", "aws_core__aws_route53_zone", _ZONE_ID, "aws_core__aws_route53_record_set", key).entity_id)
+        assert str(held.from_entity_id) == str(node_id("aws_core__aws_route53_zone", _ZONE_ID))
+        resolves = get_edge(
+            edge_between("RESOLVES_TO_TARGET__aws_core", "aws_core__aws_route53_record_set", key, "aws_core__aws_cloudfront_distribution", _DIST_ARN).entity_id
+        )
+        assert str(resolves.to_entity_id) == str(node_id("aws_core__aws_cloudfront_distribution", _DIST_ARN))
+        assert resolves.properties == {"via": "alias", "evaluate_target_health": None}
 
 
 @pytest.mark.django_db
@@ -846,17 +847,23 @@ def _row_dump(node) -> str:
     return json.dumps(values, default=str)
 
 
+#: Canaries planted where the response holds operator-authored content that AWS does not mark sensitive and no secret
+#: key names: a header mapping, a command line, a WAF match string. These are collected (req-aws-collector-redaction-4).
+_STORED_BY_POLICY = {_ECS_CMD_CANARY, _WAF_CANARY}
+
+
 @pytest.mark.django_db
 @pytest.mark.parametrize(("entity_type", "natural_key", "canary", "field", "value"), _OFF_CASES, ids=_OFF_IDS)
-def test_credential_canary_is_not_persisted(_stub_aws, monkeypatch, entity_type, natural_key, canary, field, value):
-    """A persist_configuration: false entry stores none of its raw response.
+def test_secret_material_is_removed_and_the_rest_is_stored(_stub_aws, monkeypatch, entity_type, natural_key, canary, field, value):
+    """Every entry stores its response (req-aws-collector-redaction-1). A secret planted in it (a password, a key, an
+    environment variable, a client secret) is in neither the GRIFT document nor the stored row nor its history; content an
+    operator wrote that is not secret material is stored.
 
-    Checked at both boundaries: the GRIFT document handed to submit_grift,
-    and the stored node row with its history rows. Typed fields still land.
+    Checked at both boundaries: the document handed to submit_grift, and the stored node row with its history rows.
     """
     from tap_grid.services import get_node
 
-    assert _entry(entity_type)["persist_configuration"] is False
+    assert _entry(entity_type)["persist_configuration"] is True
     submitted: list[str] = []
     real_submit = Boto3Collector.submit_grift
 
@@ -868,28 +875,26 @@ def test_credential_canary_is_not_persisted(_stub_aws, monkeypatch, entity_type,
     _run_collector()
 
     assert len(submitted) == 1
-    assert canary not in submitted[0]
-
     node = get_node(node_id(entity_type, natural_key))
-    assert node.configuration == {}
+    assert node.configuration["_source"]["why"] == _entry(entity_type)["why"]
     assert getattr(node, field) == value  # typed projection unaffected
-    assert canary not in _row_dump(node)
+    if canary in _STORED_BY_POLICY:
+        assert canary in json.dumps(node.configuration)
+    else:
+        assert canary not in submitted[0]
+        assert canary not in _row_dump(node)
+        assert node.configuration["_redacted"]
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(("entity_type", "natural_key", "canary", "field", "value"), _OFF_CASES, ids=_OFF_IDS)
-def test_flag_is_what_keeps_the_canary_out(_stub_aws, monkeypatch, entity_type, natural_key, canary, field, value):
-    """The entry's flag is the only control, and the canary really is in the
-    canned response: set true, the canary is stored; back to false (the
-    shipped value), the next collection replaces it with ``{}``."""
+def test_flag_is_what_stores_the_response(_stub_aws, monkeypatch, entity_type, natural_key, canary, field, value):
+    """The entry's flag is the only switch: false, the next collection replaces the stored configuration with ``{}``."""
     from tap_grid.services import get_node
 
     entry = _entry(entity_type)
-    monkeypatch.setitem(entry, "persist_configuration", True)
     _run_collector()
-    node = get_node(node_id(entity_type, natural_key))
-    assert canary in json.dumps(node.configuration)
-    assert node.configuration["_source"]["why"] == entry["why"]
+    assert get_node(node_id(entity_type, natural_key)).configuration != {}
 
     monkeypatch.setitem(entry, "persist_configuration", False)
     _run_collector()
@@ -899,10 +904,9 @@ def test_flag_is_what_keeps_the_canary_out(_stub_aws, monkeypatch, entity_type, 
 
 
 @pytest.mark.django_db
-def test_promoted_security_facts_land_while_configuration_stays_empty(_stub_aws):
-    """The security facts the off types would lose
-    with configuration not stored are typed fields, and configuration is still
-    ``{}`` for all four off types."""
+def test_promoted_security_facts_land_with_the_stored_configuration(_stub_aws):
+    """The security facts are typed fields, and the four types that used to be off now store their configuration
+    without the secret material."""
     from tap_grid.services import get_node
 
     _run_collector()
@@ -921,8 +925,8 @@ def test_promoted_security_facts_land_while_configuration_stays_empty(_stub_aws)
     assert api.route_authorization_types == {"POST /orders": "JWT", "GET /health": "NONE"}
 
     for node in (fn, edge_fn, dist, api):
-        assert node.configuration == {}
-    assert get_node(node_id("aws_core__aws_cognito_user_pool", _POOL_ID)).configuration == {}
+        assert node.configuration["_source"]
+    assert get_node(node_id("aws_core__aws_cognito_user_pool", _POOL_ID)).configuration["_source"]
 
 
 @pytest.mark.django_db
@@ -969,10 +973,10 @@ def test_origin_header_presence_lands_and_the_value_never_does(_stub_aws, monkey
     assert dist.origin_custom_headers_present["sam-api"] is False  # absence, not unobserved
 
     assert len(submitted) == 1
-    for secret in (_CF_CANARY, "X-Origin-Verify"):
-        assert secret not in json.dumps(dist.origin_custom_headers_present)
-        assert secret not in submitted[0]
-        assert secret not in _row_dump(dist)
+    assert _CF_CANARY not in json.dumps(dist.origin_custom_headers_present)
+    assert _CF_CANARY not in submitted[0]
+    assert _CF_CANARY not in _row_dump(dist)
+    assert "X-Origin-Verify" not in json.dumps(dist.origin_custom_headers_present)  # the typed field holds presence only
     assert dist.history.exists()
 
 
@@ -987,7 +991,7 @@ def test_ecs_tree_lands_with_the_digest_and_its_edges(_stub_aws):
     container = get_node(node_id("aws_core__aws_ecs_container", _ECS_CONTAINER))
     assert container.image == "registry.example/app:latest"
     assert container.image_digest == _ECS_DIGEST
-    assert container.configuration == {}
+    assert container.configuration["_source"]
     task = get_node(node_id("aws_core__aws_ecs_task", _ECS_TASK))
     assert (task.cluster_arn, task.group, task.platform_version) == (_ECS_CLUSTER, "service:web", "1.4.0")
     assert task.tags == {"team": "core"}

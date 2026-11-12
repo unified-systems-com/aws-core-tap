@@ -17,6 +17,7 @@ class S3AccessPoint(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The access point's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("access_point_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "s3:accesspoint"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -51,15 +52,15 @@ class S3AccessPoint(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     access_point_arn = models.CharField(max_length=512, blank=True, default="")
     # The bucket the access point is in front of. NULL = not observed.
-    bucket = models.CharField(max_length=512, blank=True, null=True, default=None)
+    bucket = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Internet or VPC. NULL = not observed.
-    network_origin = models.CharField(max_length=512, blank=True, null=True, default=None)
+    network_origin = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The VPC an access point is restricted to. NULL = none, or not observed.
-    vpc_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    vpc_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the access point's policy makes it public (GetAccessPointPolicyStatus). NULL = not observed.
     is_public = models.BooleanField(null=True, blank=True, default=None)
     # The access point's alias, usable where a bucket name is. NULL = not observed.
-    alias = models.CharField(max_length=512, blank=True, null=True, default=None)
+    alias = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

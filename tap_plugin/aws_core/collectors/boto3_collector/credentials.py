@@ -43,6 +43,7 @@ import boto3
 import botocore.session
 from botocore.config import Config
 
+from tap_cares.exceptions import SecretValidationError
 from tap_cares.secrets import SecretRef, require_secret_kind, resolve_secret
 from tap_cares.secrets.models import Secret
 
@@ -54,6 +55,7 @@ from .partition import (
     parse_arn,
     partition_of_region,
 )
+from .selection import ACCOUNT_REFERENCE_PATTERN, TYPE_PATTERN, SelectionError, parse_selection
 
 # The well-known SecretRef for the AWS collector. v0 has no per-instance
 # config (CollectorConfig carries only entity ids), so the key is a constant;
@@ -94,6 +96,18 @@ _EXPECTED_ACCOUNT_PROPS: dict[str, Any] = {
     "expected_account_id": {"type": "string", "pattern": "^[0-9]{12}$"},
 }
 
+# Collection selection is scope, not credential, and is shared by both kinds for the same reason region scope is
+# (req-aws-core-secret-selection-2): one fragment, so the two schemas cannot drift. The grammar and the checks the schema
+# cannot express (an ARN's partition, a contradiction with `expected_account_id`, the retire flag) live in
+# `selection.parse_selection`, which `resolve_aws_secret` runs on every resolved secret.
+_SELECTION_PROPS: dict[str, Any] = {
+    "include_types": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": TYPE_PATTERN}},
+    "exclude_types": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": TYPE_PATTERN}},
+    "accounts_allowed": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": ACCOUNT_REFERENCE_PATTERN}},
+    # Refused when true until core honours it (req-aws-collector-selection-13); `parse_selection` says why.
+    "retire_within_selection": {"type": "boolean"},
+}
+
 # The static-credential fragment: reused verbatim as the `aws_assumed_role`
 # kind's `data.base` (the identity that CALLS AssumeRole).
 _STATIC_CREDS_PROPS: dict[str, Any] = {
@@ -110,7 +124,7 @@ AWS_STATIC_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "required": ["access_key_id", "secret_access_key"],
-    "properties": {**_STATIC_CREDS_PROPS, **_REGION_SCOPE_PROPS, **_EXPECTED_ACCOUNT_PROPS},
+    "properties": {**_STATIC_CREDS_PROPS, **_REGION_SCOPE_PROPS, **_EXPECTED_ACCOUNT_PROPS, **_SELECTION_PROPS},
 }
 
 # aws_core owns this schema for the cross-account kind's `data`
@@ -144,6 +158,7 @@ AWS_ASSUMED_ROLE_SCHEMA: dict[str, Any] = {
         # AssumeRole DurationSeconds bounds (15 min .. 12 h).
         "duration_seconds": {"type": "integer", "minimum": 900, "maximum": 43200},
         **_REGION_SCOPE_PROPS,
+        **_SELECTION_PROPS,
     },
 }
 
@@ -178,6 +193,13 @@ def resolve_aws_secret(ref: SecretRef = AWS_SECRET_REF) -> Secret:
         # (Only reachable when kind is neither of ours; this call always raises.)
         require_secret_kind(secret, AWS_SECRET_KIND, data_schema=AWS_STATIC_SCHEMA)
     require_secret_kind(secret, secret.kind, data_schema=_KIND_SCHEMAS[secret.kind])
+    try:
+        # Grammar, account forms, the contradiction with `expected_account_id`, and the retire flag, where the
+        # operator reads them (req-aws-core-secret-selection-3, -4, -5, -7). The run checks an ARN's partition once
+        # it has one.
+        parse_selection(secret.data)
+    except SelectionError as exc:
+        raise SecretValidationError(f"AWS secret selection is invalid: {exc}") from exc
     return secret
 
 
@@ -305,6 +327,42 @@ def fips_requested(data: Mapping[str, Any]) -> bool:
     return bool(botocore.session.Session().get_config_variable("use_fips_endpoint"))
 
 
+#: Connection timeout of every collection client, seconds. Reaching an AWS regional endpoint takes well
+#: under a second; ten times that is generous, and it bounds what an endpoint that does not answer
+#: (Inspector classic in GovCloud) costs per attempt. botocore's default of 60 s made one such service
+#: cost ~312 s of a run (five attempts), measured in the 2026-11-01 GovCloud wave-0 run.
+CONNECT_TIMEOUT_SECONDS = 5
+#: Read timeout, seconds: the longest a call may wait for the response once connected. botocore's own
+#: default, kept explicit so it is not an accident; the slowest legitimate listing page seen returns
+#: in a few seconds.
+READ_TIMEOUT_SECONDS = 60
+#: Retry posture of every collection client. ``adaptive`` is ``standard`` plus client-side rate
+#: limiting that slows the caller when the service throttles, which absorbs the burst a fan-out makes
+#: (Athena ``ListCapacityReservations`` and SageMaker ``ListDevices`` exhausted botocore's default five
+#: attempts in the wave-0 run). Eight attempts is deliberately finite: a connection error is retried
+#: too, so an unreachable endpoint costs at most ~8 x ``CONNECT_TIMEOUT_SECONDS`` plus backoff (about a
+#: minute) instead of five minutes, and the collector learns the endpoint is unreachable once per
+#: (service, region) rather than once per entry. botocore offers no separate budget for connection
+#: errors; this is the smallest finite one that still leaves room to absorb throttling.
+# ``total_max_attempts`` counts the first request; ``max_attempts`` counts only the retries after it (nine requests).
+RETRIES: dict[str, Any] = {"mode": "adaptive", "total_max_attempts": 8}
+
+
+def client_config(**overrides: Any) -> Config:
+    """The one ``Config`` every collection client is built with: timeouts and retry posture above.
+
+    ``overrides`` replace a keyword (``Config`` is built from the merged mapping); none of the callers
+    in this package passes one today, the parameter exists so a caller that must differ says so by name.
+    """
+    options: dict[str, Any] = {
+        "connect_timeout": CONNECT_TIMEOUT_SECONDS,
+        "read_timeout": READ_TIMEOUT_SECONDS,
+        "retries": dict(RETRIES),
+    }
+    options.update(overrides)
+    return Config(**options)
+
+
 def _botocore_session(use_fips_endpoint: bool | None) -> botocore.session.Session:
     """A botocore session with FIPS pinned when the secret says so.
 
@@ -316,6 +374,10 @@ def _botocore_session(use_fips_endpoint: bool | None) -> botocore.session.Sessio
     session = botocore.session.Session()
     if use_fips_endpoint is not None:
         session.set_config_variable("use_fips_endpoint", use_fips_endpoint)
+    # The same single Config as a default of the session, so a client a custom fn builds directly
+    # (``session.client("s3")``) has the timeouts and retry posture too. A client built with an
+    # explicit ``config=`` merges over it.
+    session.set_default_client_config(client_config())
     return session
 
 
@@ -404,7 +466,7 @@ def client_factory(session: boto3.session.Session, region: str) -> Callable[[str
     """A ``client_for(service)`` bound to ``region`` (for ``iter_source``)."""
 
     def client_for(service: str) -> Any:
-        return session.client(service, region_name=region)
+        return session.client(service, region_name=region, config=client_config())
 
     return client_for
 

@@ -17,6 +17,7 @@ class Ec2TrafficMirrorTarget(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (TrafficMirrorTargetId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_traffic_mirror_target_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:traffic-mirror-target"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

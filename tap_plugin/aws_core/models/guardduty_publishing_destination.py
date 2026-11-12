@@ -17,6 +17,7 @@ class GuarddutyPublishingDestination(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'destination' and the destination id: a destination id is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_key",)
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:publishingDestination"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
@@ -51,15 +52,15 @@ class GuarddutyPublishingDestination(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     destination_key = models.CharField(max_length=512, blank=True, default="")
     # The detector the destination belongs to. NULL = not observed.
-    detector_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    detector_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The kind of destination (S3). NULL = not observed.
-    destination_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    destination_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's status (PUBLISHING, UNABLE_TO_PUBLISH_FIX_DESTINATION_PROPERTY, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The bucket findings are written to. NULL = not observed.
-    destination_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    destination_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The key that encrypts the export. NULL = not observed.
-    kms_key_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    kms_key_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

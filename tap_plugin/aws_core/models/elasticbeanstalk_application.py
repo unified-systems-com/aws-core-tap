@@ -17,6 +17,7 @@ class ElasticbeanstalkApplication(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ApplicationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("elasticbeanstalk_application_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticbeanstalk:application"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

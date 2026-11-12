@@ -1,0 +1,662 @@
+{
+ "_description": "Reviewed mapping from Terraform AWS provider resource types to aws_core entity types where the names differ. Several Terraform resources may map to one of our types (the provider splits one AWS resource over several: S3 bucket settings, security group rules, file systems); their attributes are merged for the comparison. An empty list is a reviewed gap: the Terraform resource looks like one of ours by name but is not the same thing. A Terraform resource in neither this map nor name-matched (strip aws_core__aws_ and aws_, compare lower-case alphanumerics) is not compared. Terraform is a reference, not ground truth; every entry is a first judgement from names and the schema, to be corrected when a pair's report shows it is wrong. Each entry is checked against the schema dump and the plugin's types by the tests and by every run.",
+ "aliases": {
+  "aws_accessanalyzer_analyzer": [
+   "aws_core__aws_access_analyzer"
+  ],
+  "aws_alb_listener_rule": [
+   "aws_core__aws_elasticloadbalancingv2_listener_rule"
+  ],
+  "aws_alb_target_group": [
+   "aws_core__aws_target_group"
+  ],
+  "aws_apigatewayv2_api": [
+   "aws_core__aws_apigateway_http_api"
+  ],
+  "aws_autoscaling_group": [
+   "aws_core__aws_autoscaling_auto_scaling_group"
+  ],
+  "aws_autoscaling_policy": [
+   "aws_core__aws_autoscaling_scaling_policy"
+  ],
+  "aws_autoscaling_schedule": [
+   "aws_core__aws_autoscaling_scheduled_action"
+  ],
+  "aws_backup_logically_air_gapped_vault": [
+   "aws_core__aws_backup_logically_air_gapped_backup_vault"
+  ],
+  "aws_backup_selection": [
+   "aws_core__aws_backup_backup_selection"
+  ],
+  "aws_bedrock_inference_profile": [
+   "aws_core__aws_bedrock_application_inference_profile"
+  ],
+  "aws_bedrockagent_agent": [
+   "aws_core__aws_bedrock_agent"
+  ],
+  "aws_bedrockagent_agent_alias": [
+   "aws_core__aws_bedrock_agent_alias"
+  ],
+  "aws_bedrockagent_data_source": [
+   "aws_core__aws_bedrock_data_source"
+  ],
+  "aws_bedrockagent_flow": [
+   "aws_core__aws_bedrock_flow"
+  ],
+  "aws_bedrockagent_knowledge_base": [
+   "aws_core__aws_bedrock_knowledge_base"
+  ],
+  "aws_bedrockagent_prompt": [
+   "aws_core__aws_bedrock_prompt"
+  ],
+  "aws_cloudformation_type": [],
+  "aws_cloudhsm_v2_cluster": [
+   "aws_core__aws_cloudhsm_cluster"
+  ],
+  "aws_cloudtrail": [
+   "aws_core__aws_cloudtrail_trail"
+  ],
+  "aws_cloudwatch_contributor_insight_rule": [
+   "aws_core__aws_cloudwatch_insight_rule"
+  ],
+  "aws_cloudwatch_event_api_destination": [
+   "aws_core__aws_eventbridge_api_destination"
+  ],
+  "aws_cloudwatch_event_archive": [
+   "aws_core__aws_eventbridge_archive"
+  ],
+  "aws_cloudwatch_event_bus": [
+   "aws_core__aws_eventbridge_event_bus"
+  ],
+  "aws_cloudwatch_event_connection": [
+   "aws_core__aws_eventbridge_connection"
+  ],
+  "aws_cloudwatch_event_endpoint": [
+   "aws_core__aws_events_endpoint"
+  ],
+  "aws_cloudwatch_event_rule": [
+   "aws_core__aws_eventbridge_rule"
+  ],
+  "aws_cloudwatch_log_anomaly_detector": [
+   "aws_core__aws_logs_log_anomaly_detector"
+  ],
+  "aws_cloudwatch_log_delivery": [
+   "aws_core__aws_logs_delivery"
+  ],
+  "aws_cloudwatch_log_delivery_destination": [
+   "aws_core__aws_logs_delivery_destination"
+  ],
+  "aws_cloudwatch_log_delivery_source": [
+   "aws_core__aws_logs_delivery_source"
+  ],
+  "aws_cloudwatch_log_destination": [
+   "aws_core__aws_logs_destination"
+  ],
+  "aws_cloudwatch_log_metric_filter": [
+   "aws_core__aws_logs_metric_filter"
+  ],
+  "aws_cloudwatch_log_subscription_filter": [
+   "aws_core__aws_logs_subscription_filter"
+  ],
+  "aws_cloudwatch_metric_alarm": [
+   "aws_core__aws_cloudwatch_alarm"
+  ],
+  "aws_cloudwatch_query_definition": [
+   "aws_core__aws_logs_query_definition"
+  ],
+  "aws_codedeploy_app": [
+   "aws_core__aws_codedeploy_application"
+  ],
+  "aws_codepipeline": [
+   "aws_core__aws_codepipeline_pipeline"
+  ],
+  "aws_cognito_resource_server": [
+   "aws_core__aws_cognito_user_pool_resource_server"
+  ],
+  "aws_cognito_user_group": [
+   "aws_core__aws_cognito_user_pool_group"
+  ],
+  "aws_config_aggregate_authorization": [
+   "aws_core__aws_config_aggregation_authorization"
+  ],
+  "aws_config_config_rule": [
+   "aws_core__aws_config_rule"
+  ],
+  "aws_config_configuration_aggregator": [
+   "aws_core__aws_config_aggregator"
+  ],
+  "aws_config_configuration_recorder": [
+   "aws_core__aws_config_recorder"
+  ],
+  "aws_config_organization_custom_policy_rule": [
+   "aws_core__aws_config_organization_rule"
+  ],
+  "aws_config_organization_custom_rule": [
+   "aws_core__aws_config_organization_rule"
+  ],
+  "aws_config_organization_managed_rule": [
+   "aws_core__aws_config_organization_rule"
+  ],
+  "aws_controltower_baseline": [
+   "aws_core__aws_controltower_enabled_baseline"
+  ],
+  "aws_controltower_control": [
+   "aws_core__aws_controltower_enabled_control"
+  ],
+  "aws_customer_gateway": [
+   "aws_core__aws_ec2_customer_gateway"
+  ],
+  "aws_datasync_location_azure_blob": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_efs": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_fsx_lustre_file_system": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_fsx_ontap_file_system": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_fsx_openzfs_file_system": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_fsx_windows_file_system": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_hdfs": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_nfs": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_object_storage": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_s3": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_datasync_location_smb": [
+   "aws_core__aws_datasync_location"
+  ],
+  "aws_db_cluster_snapshot": [
+   "aws_core__aws_rds_db_cluster_snapshot"
+  ],
+  "aws_db_event_subscription": [
+   "aws_core__aws_rds_event_subscription"
+  ],
+  "aws_db_instance": [
+   "aws_core__aws_rds_instance"
+  ],
+  "aws_db_option_group": [
+   "aws_core__aws_rds_option_group"
+  ],
+  "aws_db_parameter_group": [
+   "aws_core__aws_rds_db_parameter_group"
+  ],
+  "aws_db_proxy": [
+   "aws_core__aws_rds_db_proxy"
+  ],
+  "aws_db_proxy_default_target_group": [
+   "aws_core__aws_rds_db_proxy_target_group"
+  ],
+  "aws_db_proxy_endpoint": [
+   "aws_core__aws_rds_db_proxy_endpoint"
+  ],
+  "aws_db_snapshot": [
+   "aws_core__aws_rds_db_snapshot"
+  ],
+  "aws_db_subnet_group": [
+   "aws_core__aws_rds_db_subnet_group"
+  ],
+  "aws_docdb_cluster_parameter_group": [
+   "aws_core__aws_docdb_db_cluster_parameter_group"
+  ],
+  "aws_docdb_subnet_group": [
+   "aws_core__aws_docdb_db_subnet_group"
+  ],
+  "aws_dx_hosted_private_virtual_interface": [
+   "aws_core__aws_dx_virtual_interface"
+  ],
+  "aws_dx_hosted_public_virtual_interface": [
+   "aws_core__aws_dx_virtual_interface"
+  ],
+  "aws_dx_hosted_transit_virtual_interface": [
+   "aws_core__aws_dx_virtual_interface"
+  ],
+  "aws_dx_private_virtual_interface": [
+   "aws_core__aws_dx_virtual_interface"
+  ],
+  "aws_dx_public_virtual_interface": [
+   "aws_core__aws_dx_virtual_interface"
+  ],
+  "aws_dx_transit_virtual_interface": [
+   "aws_core__aws_dx_virtual_interface"
+  ],
+  "aws_ec2_fleet": [],
+  "aws_ec2_managed_prefix_list": [
+   "aws_core__aws_ec2_prefix_list"
+  ],
+  "aws_ec2_network_insights_analysis": [],
+  "aws_ec2_transit_gateway": [
+   "aws_core__aws_transit_gateway"
+  ],
+  "aws_ec2_transit_gateway_connect": [
+   "aws_core__aws_transit_gateway_attachment"
+  ],
+  "aws_ec2_transit_gateway_peering_attachment": [
+   "aws_core__aws_transit_gateway_attachment"
+  ],
+  "aws_ec2_transit_gateway_vpc_attachment": [
+   "aws_core__aws_transit_gateway_attachment"
+  ],
+  "aws_egress_only_internet_gateway": [
+   "aws_core__aws_ec2_egress_only_internet_gateway"
+  ],
+  "aws_flow_log": [
+   "aws_core__aws_ec2_flow_log"
+  ],
+  "aws_fsx_lustre_file_system": [
+   "aws_core__aws_fsx_file_system"
+  ],
+  "aws_fsx_ontap_file_system": [
+   "aws_core__aws_fsx_file_system"
+  ],
+  "aws_fsx_ontap_storage_virtual_machine": [
+   "aws_core__aws_fsx_storage_virtual_machine"
+  ],
+  "aws_fsx_ontap_volume": [
+   "aws_core__aws_fsx_volume"
+  ],
+  "aws_fsx_openzfs_file_system": [
+   "aws_core__aws_fsx_file_system"
+  ],
+  "aws_fsx_openzfs_snapshot": [
+   "aws_core__aws_fsx_snapshot"
+  ],
+  "aws_fsx_openzfs_volume": [
+   "aws_core__aws_fsx_volume"
+  ],
+  "aws_fsx_windows_file_system": [
+   "aws_core__aws_fsx_file_system"
+  ],
+  "aws_glue_catalog_database": [
+   "aws_core__aws_glue_database"
+  ],
+  "aws_glue_catalog_table": [
+   "aws_core__aws_glue_table"
+  ],
+  "aws_iam_openid_connect_provider": [
+   "aws_core__aws_iam_oidc_provider"
+  ],
+  "aws_identitystore_group": [
+   "aws_core__aws_identity_center_group"
+  ],
+  "aws_identitystore_user": [
+   "aws_core__aws_identity_center_user"
+  ],
+  "aws_inspector2_filter": [
+   "aws_core__aws_inspectorv2_filter"
+  ],
+  "aws_instance": [
+   "aws_core__aws_ec2_instance"
+  ],
+  "aws_key_pair": [
+   "aws_core__aws_ec2_key_pair"
+  ],
+  "aws_lakeformation_lf_tag": [
+   "aws_core__aws_lakeformation_tag"
+  ],
+  "aws_lambda_function": [
+   "aws_core__aws_lambda"
+  ],
+  "aws_launch_configuration": [
+   "aws_core__aws_autoscaling_launch_configuration"
+  ],
+  "aws_launch_template": [
+   "aws_core__aws_ec2_launch_template"
+  ],
+  "aws_lb_listener_rule": [
+   "aws_core__aws_elasticloadbalancingv2_listener_rule"
+  ],
+  "aws_lb_target_group": [
+   "aws_core__aws_target_group"
+  ],
+  "aws_lexv2models_bot_version": [
+   "aws_core__aws_lex_bot_version"
+  ],
+  "aws_mailmanager_archive": [
+   "aws_core__aws_ses_mail_manager_archive"
+  ],
+  "aws_mailmanager_ingress_point": [
+   "aws_core__aws_ses_mail_manager_ingress_point"
+  ],
+  "aws_mailmanager_relay": [
+   "aws_core__aws_ses_mail_manager_relay"
+  ],
+  "aws_mailmanager_rule_set": [
+   "aws_core__aws_ses_mail_manager_rule_set"
+  ],
+  "aws_mailmanager_traffic_policy": [
+   "aws_core__aws_ses_mail_manager_traffic_policy"
+  ],
+  "aws_mq_configuration": [
+   "aws_core__aws_amazonmq_configuration"
+  ],
+  "aws_mskconnect_connector": [
+   "aws_core__aws_kafkaconnect_connector"
+  ],
+  "aws_mskconnect_custom_plugin": [
+   "aws_core__aws_kafkaconnect_custom_plugin"
+  ],
+  "aws_mskconnect_worker_configuration": [
+   "aws_core__aws_kafkaconnect_worker_configuration"
+  ],
+  "aws_neptune_cluster_parameter_group": [
+   "aws_core__aws_neptune_db_cluster_parameter_group"
+  ],
+  "aws_neptune_parameter_group": [
+   "aws_core__aws_neptune_db_parameter_group"
+  ],
+  "aws_neptune_subnet_group": [
+   "aws_core__aws_neptune_db_subnet_group"
+  ],
+  "aws_network_interface": [
+   "aws_core__aws_ec2_network_interface"
+  ],
+  "aws_networkfirewall_firewall": [
+   "aws_core__aws_network_firewall"
+  ],
+  "aws_opensearch_application": [
+   "aws_core__aws_opensearchservice_application"
+  ],
+  "aws_opensearch_domain": [
+   "aws_core__aws_opensearchservice_domain"
+  ],
+  "aws_organizations_organization": [
+   "aws_core__aws_organization"
+  ],
+  "aws_organizations_organizational_unit": [
+   "aws_core__aws_organizational_unit"
+  ],
+  "aws_organizations_policy": [
+   "aws_core__aws_service_control_policy"
+  ],
+  "aws_placement_group": [
+   "aws_core__aws_ec2_placement_group"
+  ],
+  "aws_prometheus_anomaly_detector": [
+   "aws_core__aws_aps_anomaly_detector"
+  ],
+  "aws_prometheus_rule_group_namespace": [
+   "aws_core__aws_aps_rule_groups_namespace"
+  ],
+  "aws_rds_cluster": [
+   "aws_core__aws_rds_db_cluster"
+  ],
+  "aws_rds_cluster_endpoint": [
+   "aws_core__aws_rds_db_cluster_endpoint"
+  ],
+  "aws_rds_cluster_parameter_group": [
+   "aws_core__aws_rds_db_cluster_parameter_group"
+  ],
+  "aws_rds_shard_group": [
+   "aws_core__aws_rds_db_shard_group"
+  ],
+  "aws_redshift_cluster_snapshot": [
+   "aws_core__aws_redshift_snapshot"
+  ],
+  "aws_redshift_idc_application": [
+   "aws_core__aws_redshift_redshift_idc_application"
+  ],
+  "aws_redshift_parameter_group": [
+   "aws_core__aws_redshift_cluster_parameter_group"
+  ],
+  "aws_redshift_subnet_group": [
+   "aws_core__aws_redshift_cluster_subnet_group"
+  ],
+  "aws_route53_query_log": [
+   "aws_core__aws_route53_query_logging_config"
+  ],
+  "aws_route53_resolver_config": [
+   "aws_core__aws_route53resolver_resolver_config"
+  ],
+  "aws_route53_resolver_dnssec_config": [
+   "aws_core__aws_route53resolver_resolver_dnssec_config"
+  ],
+  "aws_route53_resolver_endpoint": [
+   "aws_core__aws_route53resolver_resolver_endpoint"
+  ],
+  "aws_route53_resolver_query_log_config": [
+   "aws_core__aws_route53resolver_resolver_query_log_config"
+  ],
+  "aws_route53_resolver_rule": [
+   "aws_core__aws_route53resolver_resolver_rule"
+  ],
+  "aws_route53profiles_association": [
+   "aws_core__aws_route53profiles_profile_association"
+  ],
+  "aws_s3_bucket_abac": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_accelerate_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_acl": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_analytics_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_cors_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_intelligent_tiering_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_inventory": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_lifecycle_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_logging": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_metadata_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_metric": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_notification": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_object_lock_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_ownership_controls": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_policy": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_public_access_block": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_replication_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_request_payment_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_server_side_encryption_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_versioning": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3_bucket_website_configuration": [
+   "aws_core__aws_s3_bucket"
+  ],
+  "aws_s3control_access_grant": [
+   "aws_core__aws_s3_access_grant"
+  ],
+  "aws_s3control_access_grants_instance": [
+   "aws_core__aws_s3_access_grants_instance"
+  ],
+  "aws_s3control_access_grants_location": [
+   "aws_core__aws_s3_access_grants_location"
+  ],
+  "aws_s3control_object_lambda_access_point": [
+   "aws_core__aws_s3objectlambda_access_point"
+  ],
+  "aws_sagemaker_endpoint_configuration": [
+   "aws_core__aws_sagemaker_endpoint_config"
+  ],
+  "aws_sagemaker_notebook_instance_lifecycle_configuration": [
+   "aws_core__aws_sagemaker_notebook_instance_lifecycle_config"
+  ],
+  "aws_schemas_discoverer": [
+   "aws_core__aws_eventschemas_discoverer"
+  ],
+  "aws_schemas_registry": [
+   "aws_core__aws_eventschemas_registry"
+  ],
+  "aws_schemas_schema": [
+   "aws_core__aws_eventschemas_schema"
+  ],
+  "aws_security_group_rule": [
+   "aws_core__aws_ec2_security_group_rule"
+  ],
+  "aws_sesv2_contact_list": [
+   "aws_core__aws_ses_contact_list"
+  ],
+  "aws_sesv2_dedicated_ip_pool": [
+   "aws_core__aws_ses_dedicated_ip_pool"
+  ],
+  "aws_sesv2_multi_region_endpoint": [
+   "aws_core__aws_ses_multi_region_endpoint"
+  ],
+  "aws_sesv2_tenant": [
+   "aws_core__aws_ses_tenant"
+  ],
+  "aws_sfn_state_machine": [
+   "aws_core__aws_stepfunctions_state_machine"
+  ],
+  "aws_sns_topic_policy": [
+   "aws_core__aws_sns_topic"
+  ],
+  "aws_sns_topic_subscription": [
+   "aws_core__aws_sns_subscription"
+  ],
+  "aws_spot_fleet_request": [
+   "aws_core__aws_ec2_spot_fleet"
+  ],
+  "aws_sqs_queue_policy": [
+   "aws_core__aws_sqs_queue"
+  ],
+  "aws_sqs_queue_redrive_allow_policy": [
+   "aws_core__aws_sqs_queue"
+  ],
+  "aws_sqs_queue_redrive_policy": [
+   "aws_core__aws_sqs_queue"
+  ],
+  "aws_storagegateway_cached_iscsi_volume": [
+   "aws_core__aws_storagegateway_volume"
+  ],
+  "aws_storagegateway_nfs_file_share": [
+   "aws_core__aws_storagegateway_file_share"
+  ],
+  "aws_storagegateway_smb_file_share": [
+   "aws_core__aws_storagegateway_file_share"
+  ],
+  "aws_storagegateway_stored_iscsi_volume": [
+   "aws_core__aws_storagegateway_volume"
+  ],
+  "aws_timestreaminfluxdb_db_cluster": [
+   "aws_core__aws_timestream_influx_db_cluster"
+  ],
+  "aws_timestreaminfluxdb_db_instance": [
+   "aws_core__aws_timestream_influx_db_instance"
+  ],
+  "aws_timestreamquery_scheduled_query": [
+   "aws_core__aws_timestream_scheduled_query"
+  ],
+  "aws_timestreamwrite_database": [
+   "aws_core__aws_timestream_database"
+  ],
+  "aws_timestreamwrite_table": [
+   "aws_core__aws_timestream_table"
+  ],
+  "aws_verifiedaccess_endpoint": [
+   "aws_core__aws_ec2_verified_access_endpoint"
+  ],
+  "aws_verifiedaccess_group": [
+   "aws_core__aws_ec2_verified_access_group"
+  ],
+  "aws_verifiedaccess_instance": [
+   "aws_core__aws_ec2_verified_access_instance"
+  ],
+  "aws_verifiedaccess_trust_provider": [
+   "aws_core__aws_ec2_verified_access_trust_provider"
+  ],
+  "aws_vpc_block_public_access_exclusion": [
+   "aws_core__aws_ec2_vpc_block_public_access_exclusion"
+  ],
+  "aws_vpc_dhcp_options": [
+   "aws_core__aws_ec2_dhcp_options"
+  ],
+  "aws_vpc_encryption_control": [
+   "aws_core__aws_ec2_vpc_encryption_control"
+  ],
+  "aws_vpc_endpoint_connection_notification": [
+   "aws_core__aws_ec2_vpc_endpoint_connection_notification"
+  ],
+  "aws_vpc_ipam_pool": [
+   "aws_core__aws_ec2_ipam_pool"
+  ],
+  "aws_vpc_ipam_pool_cidr": [
+   "aws_core__aws_ec2_ipam_pool_cidr"
+  ],
+  "aws_vpc_ipam_resource_discovery": [
+   "aws_core__aws_ec2_ipam_resource_discovery"
+  ],
+  "aws_vpc_ipam_resource_discovery_association": [
+   "aws_core__aws_ec2_ipam_resource_discovery_association"
+  ],
+  "aws_vpc_ipam_scope": [
+   "aws_core__aws_ec2_ipam_scope"
+  ],
+  "aws_vpc_network_performance_metric_subscription": [
+   "aws_core__aws_ec2_network_performance_metric_subscription"
+  ],
+  "aws_vpc_peering_connection": [
+   "aws_core__aws_ec2_vpc_peering_connection"
+  ],
+  "aws_vpc_route_server": [
+   "aws_core__aws_ec2_route_server"
+  ],
+  "aws_vpc_route_server_endpoint": [
+   "aws_core__aws_ec2_route_server_endpoint"
+  ],
+  "aws_vpc_route_server_peer": [
+   "aws_core__aws_ec2_route_server_peer"
+  ],
+  "aws_vpc_security_group_egress_rule": [
+   "aws_core__aws_ec2_security_group_rule"
+  ],
+  "aws_vpc_security_group_ingress_rule": [
+   "aws_core__aws_ec2_security_group_rule"
+  ],
+  "aws_vpn_concentrator": [
+   "aws_core__aws_ec2_vpn_concentrator"
+  ],
+  "aws_vpn_connection": [
+   "aws_core__aws_ec2_vpn_connection"
+  ],
+  "aws_vpn_gateway": [
+   "aws_core__aws_ec2_vpn_gateway"
+  ]
+ }
+}

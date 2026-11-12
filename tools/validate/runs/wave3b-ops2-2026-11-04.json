@@ -1,0 +1,128 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 8
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (9 destroyed). Checked directly afterwards with each service's own listing (all calls succeeded): no ECR creation template, Auto Scaling group, launch template, Insight rule, log group or VPC of the run remains.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Fourth run. The first (w3q11041229) applied everything but an Insight rule whose body was refused, then failed to destroy: the SSM resource data sync writes the account's managed-instance inventory into its bucket, and the seed's no-force-destroy rule (rightly) refuses to delete content outside the state. I emptied that run's own bucket (seven inventory objects) and destroyed the rest by hand; nothing is left. That run also found Logs::DeliveryDestination applies but its tags read back different (tags-differ). SSM::ResourceDataSync and Logs::DeliveryDestination are not seeded; the Insight rule body was fixed; see wave3b-ops2/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3q11041238",
+  "seeds": "tools/seed/wave3b-ops2"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::AutoScaling::AutoScalingGroup",
+   "compared_fields": [
+    "auto_scaling_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_autoscaling_auto_scaling_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::AutoScaling::LifecycleHook",
+   "compared_fields": [
+    "autoscaling_lifecycle_hook_key",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_autoscaling_lifecycle_hook",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::InsightRule",
+   "compared_fields": [
+    "cloudwatch_insight_rule_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_insight_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Logs::LogGroup",
+   "compared_fields": [
+    "log_group_arn",
+    "name",
+    "retention_in_days"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_log_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::LaunchTemplate",
+   "compared_fields": [
+    "ec2_launch_template_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_launch_template",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECR::RepositoryCreationTemplate",
+   "compared_fields": [
+    "ecr_repository_creation_template_key",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecr_repository_creation_template",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-ops2"
+}

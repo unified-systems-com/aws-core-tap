@@ -74,13 +74,12 @@ class TestDeclarations:
     @pytest.mark.parametrize(("model", "_key", "_good", "_bad"), TYPES)
     def test_no_blob_and_no_duplicated_owner(self, model, _key, _good, _bad) -> None:
         # The owning account is the BELONGS_TO_ACCOUNT edge, never a second copy in a field. These models hold
-        # the collector's configuration envelope (batch.node_envelope always sends the key), but the manifest
-        # entries store nothing in it: a CodeBuild project's would carry environment variables and a pipeline's
-        # action configuration carries tokens, so both entries are persist_configuration: false.
+        # the collector's configuration envelope. The manifest entries store the response with the declared
+        # credential paths removed (req-aws-collector-redaction-1): environment variables and action tokens.
         fields = {f.name for f in model._meta.get_fields()}
         assert "configuration" in fields
         entry = next(e for e in manifest_entries() if e["entity_type"] == model.ENTITY_TYPE)
-        assert entry["persist_configuration"] is False
+        assert entry["persist_configuration"] is True
         assert "owner_account_id" not in fields
         assert set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
 

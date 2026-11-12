@@ -17,6 +17,7 @@ class Ec2PrefixList(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (PrefixListArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_prefix_list_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:prefix-list"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

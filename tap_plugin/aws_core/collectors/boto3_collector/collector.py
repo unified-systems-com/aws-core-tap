@@ -31,7 +31,6 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 from tap_cares.collectors import (
     CollectorBase,
@@ -47,6 +46,12 @@ from tap_cares.exceptions import (
     SecretValidationError,
 )
 
+from .selection import (
+    SelectionError,
+    apply_type_selection,
+    echo as selection_echo,
+    parse_selection,
+)
 from .authority import (
     COMPLETE,
     anchor_reads,
@@ -60,6 +65,7 @@ from .batch import (
     Unread,
     address_batch,
     assemble_batch,
+    entry_redact_paths,
     envelope_ref,
     node_anchor,
     node_envelope,
@@ -82,6 +88,7 @@ from .credentials import (
     base_creds,
     build_session,
     caller_account_id,
+    client_config,
     client_factory,
     fips_requested,
     is_assumed_role,
@@ -91,15 +98,22 @@ from .credentials import (
 )
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
+from .ecs import walks_of
+from .route53_records import walk_of as route53_walk_of
+from .route53_records import withhold_unreplaced_zone_routes
+from .endpoint_probe import EndpointProbe, request_host
+from .envelope import jsonable
 from .hydrate import hydrate_item
-from .identity import IdentityError
+from .identity import IdentityError, node_ref
 from .landing_zone import LandingZoneRead, collect_landing_zone
 from .ledger import CallLedger
 from .listing import ListingWalk, surface_statement
 from .manifest import load_manifest, manifest_entries
+from .outcomes import NOT_CONFIGURED, NOT_READABLE, NOT_TAGGABLE, THROTTLED, UNSUPPORTED_IN_PARTITION, Outcome, classify, classify_tag_read
 from .organizations import OrganizationTree, collect_organization, organizations_client
-from .partition import PARTITION_AWS, service_unavailable_reason
+from .partition import PARTITION_AWS, entry_unavailable_reason
 from .paths import eval_path
+from .progress import Progress
 from .projection import ProjectionError, project_item
 from .regions import (
     STATUS_DISABLED,
@@ -128,6 +142,9 @@ _SITE_ABORT_REGIONS = "b528"
 _SITE_ABORT_IDENTITY = "0623"
 _SITE_ABORT_ACCOUNT_MISMATCH = "005c"
 _SITE_HYDRATE_GAP = "bfd4"
+# The hydrate-slot statuses that are a gap: a read that should have answered and did not. `absent`, `not_taggable` and
+# `not_readable` are answers (or permanent, expected refusals) and raise none.
+HYDRATE_GAP_STATUSES = ("denied", "error")
 _SITE_CALL_LEDGER = "bdf3"
 _SITE_RGTA_SKIPPED = "f74e"
 _SITE_REGION_INVARIANT = "b349"
@@ -146,6 +163,15 @@ _SITE_LZ_READ_FAILED = "b3c6"
 _SITE_EDGE_AUTHORITY = "f237"
 _SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
 _SITE_ADDRESSING = "7f5b"
+_SITE_ENTRY_NOT_CONFIGURED = "d4e8"
+_SITE_ENTRY_THROTTLED = "a9c3"
+_SITE_SELECTION_APPLIED = "5e1c"
+_SITE_GAP_LEARNED = "b81d"
+_SITE_LIST_STALE = "e07a"
+_SITE_PROBE_SUMMARY = "8c2f"
+_SITE_EDGES_NOT_SELECTED = "c47e"
+_SITE_ABORT_SELECTION = "d2a9"
+_SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -158,6 +184,21 @@ _DOCS = (
         label="AWS Core collector self-test",
     ),
 )
+
+
+def enrich_item(block: dict[str, Any], item: Any, *, service: str, client_for: Any) -> dict[str, Any]:
+    """The detail call of one listed resource (``req-aws-collector-enrich-1``): the slot that goes under
+    ``_hydrate.detail``, with the status of any hydrate slot. Parameters are read off the listed item.
+
+    The slot is attached to ``configuration`` after projection, which is where the rest of it is made
+    JSON-safe, so it is normalised here: a raw ``datetime`` in a detail response rejects the whole batch
+    (aws-core-tap#213).
+    """
+    call_kwargs: dict[str, Any] = {}
+    for name, spec in block["params"].items():
+        call_kwargs[name] = spec["literal"] if "literal" in spec else eval_path(item, spec["from"])
+    env = hydrate_item(client_for(service), {}, [{"key": "detail", "op": block["op"], "why": block["why"]}], call_kwargs=call_kwargs)
+    return jsonable(env["_hydrate"]["detail"])
 
 
 def resolve_node_tags(
@@ -220,13 +261,20 @@ def resolve_node_tags(
         {},
         [{"key": "tags", "op": block["op"], "why": block.get("why", "resource tags")}],
         call_kwargs=call_kwargs,
+        # A refusal that a reviewed row names is an answer, not a failed read (req-aws-collector-tags): the
+        # resource cannot hold tags (none), or its tags are another account's to read (unread, no gap).
+        reclassify=lambda exc: outcome.kind if (outcome := classify_tag_read(entry, exc)) else None,
     )
     slot = env["_hydrate"]["tags"]
     mapping = env["_hydrate_mapping"]["tags"]
     status = slot.get("status")
     if status in ("denied", "error"):
         return UNREAD, slot, mapping
+    if status == NOT_READABLE:
+        return UNREAD, slot, mapping  # a shared resource's tags are its owner's to read; unread, and no gap to raise
     tags: dict[str, str] = {}
+    if status == NOT_TAGGABLE:
+        return {}, slot, mapping
     if status == "ok":
         tags = normalize_tags(eval_path(slot.get("data"), block["path"]), block["shape"])
     return tags, slot, mapping
@@ -267,13 +315,69 @@ class Boto3Collector(CollectorBase):
         self.record_error(site, code, message, message_data=context)
         raise Boto3CollectorError(message)
 
+    def _settle_outcome(
+        self,
+        entry: Mapping[str, Any],
+        region_label: str,
+        partition: str,
+        outcome: Outcome,
+        *,
+        listing: Listing | None,
+        walk: ListingWalk | None,
+    ) -> None:
+        """Record a listing that yielded nothing for a named reason that is not a failed call.
+
+        The completeness consequence first (``Listing``/``ListingWalk`` say "not complete" with the
+        reason, so nothing is licensed to retire), then the structured result: an info for
+        ``not_configured`` and ``unsupported_in_partition`` (the existing
+        ``SERVICE_NOT_AVAILABLE_IN_PARTITION`` code for the latter), a warning for ``throttled``,
+        which is a defect of the run (retry it), not a fact about the account.
+        """
+        if walk is not None:
+            walk.not_observed(outcome.kind, outcome.reason, authorized=True if outcome.kind == NOT_CONFIGURED else None)
+        if listing is not None:
+            listing.outcome = outcome
+            listing.done()
+        data = {
+            "entity_type": entry["entity_type"],
+            "service": entry["service"],
+            "region": region_label,
+            "partition": partition,
+            "outcome": outcome.kind,
+            "error_code": outcome.code,
+        }
+        label = f"{entry['entity_type']} in {region_label}"
+        if outcome.kind == THROTTLED:
+            self.record_warn(
+                _SITE_ENTRY_THROTTLED,
+                "ENTRY_THROTTLED",
+                f"{label}: throttled past the client's retries ({outcome.code}); nothing was listed and the "
+                "result is not an empty listing.",
+                message_data=data,
+            )
+        elif outcome.kind == UNSUPPORTED_IN_PARTITION:
+            self.record_info(
+                _SITE_SERVICE_UNAVAILABLE,
+                "SERVICE_NOT_AVAILABLE_IN_PARTITION",
+                f"{label}: not available in partition {partition} ({outcome.code}) — {outcome.why}",
+                message_data=data,
+            )
+        else:
+            self.record_info(
+                _SITE_ENTRY_NOT_CONFIGURED,
+                "ENTRY_NOT_CONFIGURED",
+                f"{label}: not configured in this account ({outcome.code}) — {outcome.why} "
+                "Nothing was listed; this is not an observation that the set is empty.",
+                message_data=data,
+            )
+
     def _read_region_facts(self, session: Any, regions: list[str]) -> dict[str, RegionFacts]:
         """Region facts for the run's scope, warning once for what could not be established.
 
         The client is built inside the guard: botocore can refuse a region name before any call.
         """
         try:
-            client = session.client("ec2", region_name=regions[0], config=Config(retries={"mode": "standard"}))
+            client = session.client("ec2", region_name=regions[0], config=client_config())
             facts, error = read_region_facts(client, regions)
         except (BotoCoreError, ValueError) as exc:
             facts = read_region_facts(_Unreadable(exc), regions)[0]
@@ -334,6 +438,80 @@ class Boto3Collector(CollectorBase):
             },
         )
 
+    @staticmethod
+    def _probe_target(entry: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+        """The operation and parameters to build a request from, for an entry one call can read: no parent to fan out
+        from and no custom function. Anything else cannot be probed, and the probe says nothing."""
+        source = entry.get("source") or {}
+        if "aws_op" not in source or "per" in source or "bind" in source:
+            return None
+        return str(source["aws_op"]), dict(source.get("params") or {})
+
+    def _entry_host(self, entry: dict[str, Any], region: str, fips: bool | None) -> str | None:
+        target = self._probe_target(entry)
+        if target is None:
+            return None
+        # Building the request costs a client; an operation's host is worked out once per run.
+        key = (entry["service"], region, target[0], json.dumps(target[1], sort_keys=True, default=str), fips)
+        cache = self.__dict__.setdefault("_host_cache", {})
+        if key not in cache:
+            cache[key] = request_host(entry["service"], region, target[0], target[1], use_fips=fips)
+        return cache[key]
+
+    def _check_listed_host(
+        self, probe: EndpointProbe, entry: dict[str, Any], regions: list[str], partition: str, fips: bool | None
+    ) -> None:
+        """An entry the manifest marks not offered whose host now resolves in any region of the run: the claim may no
+        longer hold there. A claim is made for the partition on evidence from one region and one FIPS setting, so every
+        selected region is checked (not only the first); a host is reported once per entry."""
+        if not probe.usable:  # DNS here cannot be trusted: build nothing
+            return
+        reported: set[str] = set()
+        probed = False
+        for region in regions:
+            host = self._entry_host(entry, region, fips)
+            if host is None:
+                continue
+            probed = True
+            if host not in reported and probe.resolves(host):
+                reported.add(host)
+                probe.stale += 1
+                self.record_warn(
+                    _SITE_LIST_STALE,
+                    "PARTITION_LIST_STALE",
+                    f"{entry['entity_type']} is marked not offered in partition {partition}, but the host its call would "
+                    f"use in {region}, {host}, resolves; re-run wave 0 with WAVE0_IGNORE_AVAILABILITY=1 to see whether it can be read.",
+                    message_data={"entity_type": entry["entity_type"], "service": entry["service"], "host": host, "region": region, "partition": partition},
+                )
+        if not probed:
+            probe.not_probed += 1
+
+    def _check_unlisted_host(
+        self, probe: EndpointProbe, entry: dict[str, Any], region: str, region_label: str, partition: str, fips: bool | None
+    ) -> None:
+        """A service the manifest does not mark whose host does not resolve: a gap nobody has listed. Each distinct host
+        of a service is checked (its operations can go to different hosts) and reported once per (service, region, host);
+        the entry is still called, as it was before the probe."""
+        if not probe.usable:  # DNS here cannot be trusted: build nothing
+            return
+        host = self._entry_host(entry, region, fips)
+        if host is None:
+            if entry["entity_type"] not in probe.unprobed:
+                probe.unprobed.add(entry["entity_type"])
+                probe.not_probed += 1
+            return
+        key = (entry["service"], region_label, host)
+        if probe.resolves(host) is False and key not in probe.reported:
+            probe.reported.add(key)
+            probe.gaps += 1
+            self.record_warn(
+                _SITE_GAP_LEARNED,
+                "PARTITION_GAP_LEARNED",
+                f"{entry['service']} in {region_label}: the host {host} does not resolve in partition {partition}, and "
+                f"{entry['entity_type']} is not marked not offered. Add a not_offered block for it to the manifest.",
+                message_data={"entity_type": entry["entity_type"], "service": entry["service"], "region": region_label, "host": host, "partition": partition},
+            )
+
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
 
@@ -359,6 +537,23 @@ class Boto3Collector(CollectorBase):
             partition = resolve_partition(data, regions)
         except CredentialError as exc:
             self._abort(_SITE_ABORT_PARTITION, "PARTITION_UNUSABLE", str(exc))
+        # --- collection selection (req-aws-collector-selection): which entries and which account this run reads ---
+        # Decided from the manifest and the secret alone, before the first call: a pattern that matches no entry
+        # stops the run here, naming it, rather than narrow or widen it silently (`-4`).
+        manifest = load_manifest()
+        all_entries = manifest_entries()
+        try:
+            selection = parse_selection(data, partition=partition)
+            type_selection = apply_type_selection(all_entries, selection)
+        except SelectionError as exc:
+            self._abort(_SITE_ABORT_SELECTION, exc.code, f"Collection selection unusable: {exc}")
+            raise  # unreachable: _abort raises; keeps the names bound for the type checker
+        entries = type_selection.selected
+        # A run that leaves any type unselected states no completeness (`-5`): core reads a surface the run leaves out
+        # as a narrowed scope and would withdraw what the run chose not to read.
+        selected_run = type_selection.leaves_unselected
+        unselected_types = frozenset(e["entity_type"] for e in type_selection.skipped)
+        edges_not_selected = 0
         # Attach the audit ledger before any client/STS call so every AWS call
         # this run makes is recorded — including a cross-account AssumeRole,
         # which is captured on the base session
@@ -398,6 +593,12 @@ class Boto3Collector(CollectorBase):
         mismatch = account_mismatch_error(data, account_id)
         if mismatch:
             self._abort(_SITE_ABORT_ACCOUNT_MISMATCH, "ACCOUNT_MISMATCH", mismatch)
+        if not selection.account_selected(account_id):
+            self._abort(
+                _SITE_ABORT_ACCOUNT_NOT_SELECTED,
+                "ACCOUNT_NOT_SELECTED",
+                f"resolved AWS account {account_id} is not in accounts_allowed; nothing was collected",
+            )
         self.record_info(
             _SITE_IDENTITY,
             "IDENTITY_RESOLVED",
@@ -409,11 +610,28 @@ class Boto3Collector(CollectorBase):
                 "use_fips_endpoint": fips_requested(data),
             },
         )
+        # The effective selection, once and aggregated (`-9`): the secret cannot be inspected by the operators who
+        # would audit it, so the run is where the scope it had is read. Scope, not secret material.
+        echoed = selection_echo(selection, entries_total=len(all_entries), type_selection=type_selection)
+        self.record_info(
+            _SITE_SELECTION_APPLIED,
+            "SELECTION_APPLIED",
+            (
+                f"Collection selection: {echoed['entries_selected']} of {echoed['entries_total']} manifest entries selected"
+                + (f", {len(selection.accounts_allowed)} account(s) allowed" if selection.accounts_allowed else "")
+                + (
+                    "; this run states no completeness and retires nothing."
+                    if selected_run
+                    else "; every entry is selected."
+                )
+            ),
+            message_data=echoed,
+        )
 
         # --- manifest + engine collaborators ---
-        manifest = load_manifest()
-        entries = manifest_entries()
-        modeled_types = {e["entity_type"] for e in entries}
+        # The manifest was loaded and the selection applied above. An edge to a type this run did not select is not
+        # emitted (`req-aws-collector-selection-3`): the type is still modelled, but the run never read the far end.
+        modeled_types = {e["entity_type"] for e in all_entries}
         custom_fns = build_custom_fn_registry()
         transforms = build_transform_registry(partition)
 
@@ -457,7 +675,7 @@ class Boto3Collector(CollectorBase):
                         session.client(
                             "resourcegroupstaggingapi",
                             region_name=region,
-                            config=Config(retries={"mode": "standard"}),
+                            config=client_config(),
                         ),
                         rgta_filters,
                     )
@@ -475,6 +693,11 @@ class Boto3Collector(CollectorBase):
         edge_envelopes: list[dict[str, Any]] = []
         skipped = 0
         unavailable = 0
+        not_configured = 0
+        #: (service, region) -> the outcome of the first connection-level "not offered here" answer. A
+        #: service whose endpoint does not respond is learned once, not once per entry that reads it
+        #: (qbusiness has seven entries, each of which would otherwise wait out its own timeouts).
+        unreachable: dict[tuple[str, str], Outcome] = {}
         # Refs already in this batch. Two refs describing one source object are a batch-fatal
         # duplicate_entity_id at import (the whole run's data lost); skip the repeat and say so instead.
         seen_nodes: set[str] = set()
@@ -492,7 +715,7 @@ class Boto3Collector(CollectorBase):
         #: Held as (sent node envelope, its per-scope reads) and made into claims once the batch is
         #: addressed, when every node's key is known to be whole.
         judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]] = []
-        unclaimable = shared_scopes(entries)
+        unclaimable = shared_scopes(all_entries)
 
         # The parent of every regional containment: one footprint per (account, region) in scope,
         # emitted whether or not the region turned out readable.
@@ -507,9 +730,19 @@ class Boto3Collector(CollectorBase):
                 (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
                 bucket.append(envelope)
 
-        for entry in entries:
+        # The endpoint probe (`req-aws-collector-partition-13`): a detector for the manifest's "not offered" claims, never a
+        # reason to skip. Its control host is STS's, which this run has already called.
+        fips = fips_requested(data)
+        probe = EndpointProbe(request_host("sts", regions[0], "GetCallerIdentity", use_fips=fips))
+        listed_checked: set[str] = set()
+        listed_checked_regions: set[tuple[str, str]] = set()
+        # The footprints are built; read the entries.
+        progress = Progress(len(entries))
+        progress.start(regions=len(regions), partition=partition, selected_run=selected_run)
+        for done, entry in enumerate(entries):
+            progress.tick(done, entry, nodes=len(node_envelopes), edges=len(edge_envelopes))
             # A service the partition does not offer is a clear result, not a failed call.
-            not_offered = service_unavailable_reason(partition, entry["service"])
+            not_offered = entry_unavailable_reason(partition, entry, None, fips)
             if not_offered:
                 unavailable += 1
                 self.record_info(
@@ -522,16 +755,44 @@ class Boto3Collector(CollectorBase):
                         "partition": partition,
                     },
                 )
+                if entry["entity_type"] not in listed_checked:
+                    listed_checked.add(entry["entity_type"])
+                    entry_regions_for_probe = regions if entry["scope"] == "regional" else [regions[0]]
+                    self._check_listed_host(probe, entry, entry_regions_for_probe, partition, fips)
                 continue
             entry_regions = regions if entry["scope"] == "regional" else [regions[0]]
             contained = entry.get("containment")
             for region in entry_regions:
                 region_label = region if entry["scope"] == "regional" else "global"
+                # A block limited to some regions of the partition (offered in gov-west, not in gov-east).
+                region_reason = (
+                    entry_unavailable_reason(partition, entry, region, fips)
+                    if "regions" in ((entry.get("not_offered") or {}).get(partition) or {})
+                    else None
+                )
+                if region_reason:
+                    unavailable += 1
+                    self.record_info(
+                        _SITE_SERVICE_UNAVAILABLE,
+                        "SERVICE_NOT_AVAILABLE_IN_PARTITION",
+                        f"{entry['entity_type']} in {region_label}: not available in partition {partition} — {region_reason}",
+                        message_data={
+                            "entity_type": entry["entity_type"],
+                            "service": entry["service"],
+                            "partition": partition,
+                            "region": region_label,
+                        },
+                    )
+                    if (entry["entity_type"], region) not in listed_checked_regions:
+                        listed_checked_regions.add((entry["entity_type"], region))
+                        self._check_listed_host(probe, entry, [region], partition, fips)
+                    continue
                 dimensions = {
                     "cloud": "aws",
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
+                self._check_unlisted_host(probe, entry, region, region_label, partition, fips)
                 region_facts = facts[region]
                 if entry["scope"] == "regional" and region_facts.status == STATUS_DISABLED:
                     # Positively known not opted in: no call would be honoured, and an "empty" answer
@@ -557,6 +818,21 @@ class Boto3Collector(CollectorBase):
                 if walk is not None:
                     listings.append((contained, walk))
                 listed = False
+                known_unreachable = unreachable.get((entry["service"], region))
+                if known_unreachable is not None:
+                    self._settle_outcome(entry, region_label, partition, known_unreachable, listing=listing, walk=walk)
+                    unavailable += 1
+                    if contained and entry["scope"] == "regional":
+                        surfaces.append(
+                            surface_of(
+                                relation=contained["relation"],
+                                edge_type=contained["edge_type"],
+                                subject=footprint_ref(account_id, region),
+                                facts=region_facts,
+                                listing=listing,
+                            )
+                        )
+                    continue
                 try:
                     items = list(
                         iter_source(
@@ -575,7 +851,7 @@ class Boto3Collector(CollectorBase):
                         listing.count = len(items)
                         listing.done()
                     for item in items:
-                        node = project_item(entry, item)
+                        node = project_item(entry, item, {"region": region if entry["scope"] == "regional" else None})
                         if node.ref in seen_nodes:
                             self.record_warn(
                                 _SITE_DUPLICATE_IDENTITY,
@@ -598,16 +874,21 @@ class Boto3Collector(CollectorBase):
                         if tag_slot is not None:
                             node.configuration.setdefault("_hydrate", {})["tags"] = tag_slot
                             node.configuration.setdefault("_hydrate_mapping", {})["tags"] = tag_mapping
+                        if entry.get("enrich"):
+                            node.configuration.setdefault("_hydrate", {})["detail"] = enrich_item(
+                                entry["enrich"], item, service=entry["service"], client_for=client_factory(session, region)
+                            )
                         node_envelopes.append(
                             node_envelope(
                                 node,
                                 dimensions,
                                 tags,
                                 persist_configuration=entry["persist_configuration"],
+                                redact_paths=entry_redact_paths(entry),
                             )
                         )
                         for slot, rec in node.configuration.get("_hydrate", {}).items():
-                            if rec.get("status") in ("denied", "error"):
+                            if rec.get("status") in HYDRATE_GAP_STATUSES:
                                 self.record_warn(
                                     _SITE_HYDRATE_GAP,
                                     "HYDRATE_GAP",
@@ -626,7 +907,9 @@ class Boto3Collector(CollectorBase):
                             modeled_types=modeled_types,
                             transforms=transforms,
                             dimensions=dimensions,
+                            unselected_types=unselected_types,
                         )
+                        edges_not_selected += emission.skipped_unselected
                         new_edges = list(emission.envelopes)
                         if contained and entry["scope"] == "regional":
                             new_edges.extend(
@@ -669,38 +952,53 @@ class Boto3Collector(CollectorBase):
                     BotoCoreError,
                     ClientError,
                 ) as exc:
-                    if walk is not None:
-                        # A listing that ended before the failure was read to the end but not carried
-                        # to the batch (admitted=false); one that had not ended is simply not known
-                        # to be complete (fail).
-                        if walk.complete is True:
-                            walk.drop(f"{type(exc).__name__} while processing the listed items")
+                    outcome = None if listed else classify(entry, exc, partition)
+                    if outcome is not None:
+                        # A named result, not a failed call (outcomes.py): the listing yielded nothing and
+                        # says why, and it is not a complete one. The walk, if any, is told so with the
+                        # named reason in place of the generic `fail` ones.
+                        self._settle_outcome(entry, region_label, partition, outcome, listing=listing, walk=walk)
+                        if outcome.kind == NOT_CONFIGURED:
+                            not_configured += 1
+                        elif outcome.kind == UNSUPPORTED_IN_PARTITION:
+                            unavailable += 1
+                            if isinstance(exc, BotoCoreError):
+                                unreachable[(entry["service"], region)] = outcome
                         else:
-                            walk.fail(exc)
-                    skipped += 1
-                    hint = ""
-                    if isinstance(exc, EndpointConnectionError) and partition != PARTITION_AWS:
-                        hint = (
-                            f" (no reachable {entry['service']} endpoint in partition {partition}: "
-                            "the service may not be offered there)"
+                            skipped += 1
+                    else:
+                        if walk is not None:
+                            # A listing that ended before the failure was read to the end but not carried
+                            # to the batch (admitted=false); one that had not ended is simply not known
+                            # to be complete (fail).
+                            if walk.complete is True:
+                                walk.drop(f"{type(exc).__name__} while processing the listed items")
+                            else:
+                                walk.fail(exc)
+                        skipped += 1
+                        hint = ""
+                        if isinstance(exc, EndpointConnectionError) and partition != PARTITION_AWS:
+                            hint = (
+                                f" (no reachable {entry['service']} endpoint in partition {partition}: "
+                                "the service may not be offered there)"
+                            )
+                        self.record_warn(
+                            _SITE_ENTRY_SKIPPED,
+                            "ENTRY_SKIPPED",
+                            f"Skipped {entry['entity_type']} in {region_label}: {exc}{hint}",
+                            message_data={
+                                "entity_type": entry["entity_type"],
+                                "region": region_label,
+                            },
                         )
-                    self.record_warn(
-                        _SITE_ENTRY_SKIPPED,
-                        "ENTRY_SKIPPED",
-                        f"Skipped {entry['entity_type']} in {region_label}: {exc}{hint}",
-                        message_data={
-                            "entity_type": entry["entity_type"],
-                            "region": region_label,
-                        },
-                    )
-                    if listing:
-                        listing.done()
-                        if not listed:
-                            # The source could not be read to its end: a fact about the source.
-                            listing.error = exc
-                        else:
-                            # The listing was read; what was done with it was not finished.
-                            listing.processing.append(f"{type(exc).__name__}: {exc}")
+                        if listing:
+                            listing.done()
+                            if not listed:
+                                # The source could not be read to its end: a fact about the source.
+                                listing.error = exc
+                            else:
+                                # The listing was read; what was done with it was not finished.
+                                listing.processing.append(f"{type(exc).__name__}: {exc}")
                 if contained and entry["scope"] == "regional":
                     # `listing` is always set here (`Listing() if ... else None`, above) —
                     # `surface_of`'s own `listing: Listing | None` parameter tolerates None
@@ -716,6 +1014,26 @@ class Boto3Collector(CollectorBase):
                         )
                     )
 
+        # One line that says whether the probe could speak: a run that found nothing and a run whose DNS could not be trusted
+        # would otherwise look the same (`req-aws-collector-partition-13`).
+        self.record_info(
+            _SITE_PROBE_SUMMARY,
+            "ENDPOINT_PROBE",
+            (
+                f"Endpoint probe: {probe.hosts_checked} host(s) checked, {probe.gaps} unmarked gap(s), "
+                f"{probe.stale} marked entr(ies) now resolving, {probe.not_probed} entr(ies) it could not probe."
+                if probe.usable
+                else "Endpoint probe disabled for this run: the control host did not resolve, so DNS here cannot be believed."
+            ),
+            message_data={
+                "usable": probe.usable,
+                "hosts_checked": probe.hosts_checked,
+                "gaps": probe.gaps,
+                "stale": probe.stale,
+                "not_probed": probe.not_probed,
+            },
+        )
+
         # --- AWS Organizations tree (req-aws-core-organizations-collect, tap-plugin-aws-core#50) ---
         # One structure, not a per-account resource list, so it is its own read rather than a
         # manifest entry — see collectors/boto3_collector/organizations.py. Global scope, the run's
@@ -730,7 +1048,12 @@ class Boto3Collector(CollectorBase):
         # fail the whole run and lose every already-gathered resource.
         org_dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
         try:
-            org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
+            if selected_run:
+                # Neither the Organizations tree nor the landing-zone read is a manifest entry, so the type patterns
+                # cannot name them; a run that chose its types reads neither (it makes no call it did not select).
+                org_tree = OrganizationTree()
+            else:
+                org_tree = collect_organization(organizations_client(session, regions[0]), org_dimensions)
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(
                 _SITE_ORG_READ_FAILED,
@@ -777,17 +1100,17 @@ class Boto3Collector(CollectorBase):
         # landing_zone.py). Collect-only: every surface it records is inert until reconcile authority is
         # armed. It never lets an AWS call escape; this guard isolates a defect in its own shaping code,
         # exactly as the Organizations read above is isolated.
+        landing_zone = LandingZoneRead()
         try:
-            landing_zone = collect_landing_zone(
-                lambda service, region: session.client(
-                    service, region_name=region, config=Config(retries={"mode": "standard"})
-                ),
-                account_id=account_id,
-                partition=partition,
-                regions=regions,
-                facts=facts,
-                member_accounts=org_tree.member_accounts,
-            )
+            if not selected_run:  # not a manifest entry: a run that chose its types does not read it
+                landing_zone = collect_landing_zone(
+                    lambda service, region: session.client(service, region_name=region, config=client_config()),
+                    account_id=account_id,
+                    partition=partition,
+                    regions=regions,
+                    facts=facts,
+                    member_accounts=org_tree.member_accounts,
+                )
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(
                 _SITE_LZ_READ_FAILED,
@@ -819,6 +1142,10 @@ class Boto3Collector(CollectorBase):
         # A node whose declared key has a hole would be created afresh on every run, so the run
         # fails here rather than send it. Permissive dangling mode: an endpoint naming a node no
         # live row matches skips that edge and core records a skip event, never a failure.
+        progress.reads_finished(nodes=len(node_envelopes), edges=len(edge_envelopes))
+        # The zones' replaced direct routes are claimed only for a zone whose record sets all resolved and reached the
+        # batch, which is known only now that every reader has run (aws-core-tap PR 223 review).
+        withhold_unreplaced_zone_routes(judged, route53_walk_of(session))
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:
@@ -828,10 +1155,16 @@ class Boto3Collector(CollectorBase):
         for code, message in addressed.notices:
             self.record_warn(_SITE_ADDRESSING, code, message)
         node_envelopes, edge_envelopes = addressed.nodes, addressed.edges
-        claims = merge_claims(
-            claim
-            for envelope, reads in judged
-            for claim in claims_for(node_anchor(envelope), reads, unclaimable=unclaimable)
+        # A selected run claims no edge authority: a claim for a source it did not read would propose removing edges it
+        # never looked at (`req-aws-collector-selection-5`).
+        claims = (
+            []
+            if selected_run
+            else merge_claims(
+                claim
+                for envelope, reads in judged
+                for claim in claims_for(node_anchor(envelope), reads, unclaimable=unclaimable)
+            )
         )
         authority_emitted = bool(claims) and importer_accepts_edge_cases()
         document = assemble_batch(
@@ -862,27 +1195,38 @@ class Boto3Collector(CollectorBase):
         resolved_refs: dict[str, str] = {}
         for imported_batch in result.imported_batches:
             resolved_refs.update(imported_batch.resolved_refs)
-        for surface in surfaces:
-            surface = {**surface, "subject": resolve_subject(surface["subject"], addressed, resolved_refs)}
-            self.record_surface(**surface, applied_batches=[collection_batch_id])
-        for containment, walk in listings:
-            self.record_surface(
-                **surface_statement(
-                    walk,
-                    relation=containment["relation"],
-                    edge_type=containment["edge_type"],
-                    subject=resolve_subject(account_ref(account_id), addressed, resolved_refs),
-                    applied_batches=[collection_batch_id],
+        # A selected run states no completeness at all: no surface, and not `declare_no_surfaces` either, which would
+        # say "this run covered nothing" (`req-aws-collector-selection-5`). Every row of an unselected type is left as
+        # it was (keep-absent upsert).
+        if not selected_run:
+            for surface in surfaces:
+                surface = {**surface, "subject": resolve_subject(surface["subject"], addressed, resolved_refs)}
+                self.record_surface(**surface, applied_batches=[collection_batch_id])
+            for containment, walk in listings:
+                self.record_surface(
+                    **surface_statement(
+                        walk,
+                        relation=containment["relation"],
+                        edge_type=containment["edge_type"],
+                        subject=resolve_subject(account_ref(account_id), addressed, resolved_refs),
+                        applied_batches=[collection_batch_id],
+                    )
                 )
-            )
-        if not surfaces and not listings:
-            self.declare_no_surfaces()
+            if not surfaces and not listings:
+                self.declare_no_surfaces()
         self.record_info(
             _SITE_GRIFT_SUBMITTED,
             "GRIFT_SUBMITTED",
             "AWS Core GRIFT batch submitted.",
             message_data={"imported": [str(b.batch_entity_id) for b in result.imported_batches]},
         )
+        if edges_not_selected:
+            self.record_info(
+                _SITE_EDGES_NOT_SELECTED,
+                "EDGES_NOT_SELECTED",
+                f"{edges_not_selected} edge(s) to a type this run did not select were not emitted.",
+                message_data={"edges": edges_not_selected, "types": sorted(unselected_types)},
+            )
 
         # Completeness surfaces for the Organizations tree and the landing zone
         # (req-grid-reconcile-evidence): each `subject` was recorded as the parent's ref and becomes
@@ -890,18 +1234,51 @@ class Boto3Collector(CollectorBase):
         # carries their observations has imported, which `submit_grift` above just did (a rejected
         # batch aborts the run before this line is reached — `submit_grift`'s default `on_rejection`).
         applied_batches = [str(b.batch_entity_id) for b in result.imported_batches]
-        for parent_listing in [*org_tree.listings, *landing_zone.listings]:
-            statement = parent_listing.surface(applied_batches)
-            statement["subject"] = resolve_subject(statement["subject"], addressed, resolved_refs)
-            self.record_surface(**statement)
-        if not org_tree.listings and not landing_zone.listings:
-            self.declare_no_surfaces()
+        if not selected_run:
+            for parent_listing in [*org_tree.listings, *landing_zone.listings]:
+                statement = parent_listing.surface(applied_batches)
+                statement["subject"] = resolve_subject(statement["subject"], addressed, resolved_refs)
+                self.record_surface(**statement)
+            # ECS: a cluster's running tasks and each task's containers (aws-core-tap#211). The parent is
+            # the cluster or task node itself, so its ref resolves to its grid id like any other subject.
+            ecs_listings = [listing for ecs_walk in walks_of(session) for listing in ecs_walk.listings]
+            for ecs_listing in ecs_listings:
+                self.record_surface(
+                    **surface_statement(
+                        ecs_listing.walk,
+                        relation=ecs_listing.relation,
+                        edge_type=ecs_listing.edge_type,
+                        subject=resolve_subject(
+                            node_ref(ecs_listing.parent_type, ecs_listing.parent_key), addressed, resolved_refs
+                        ),
+                        applied_batches=applied_batches,
+                    )
+                )
+            # Route 53: each hosted zone's record sets (aws-core-tap#220), the zone node as the parent.
+            record_walk = route53_walk_of(session)
+            zone_listings = record_walk.surface_listings() if record_walk is not None else []
+            for zone_listing in zone_listings:
+                self.record_surface(
+                    **surface_statement(
+                        zone_listing.walk,
+                        relation=zone_listing.relation,
+                        edge_type=zone_listing.edge_type,
+                        subject=resolve_subject(
+                            node_ref(zone_listing.parent_type, zone_listing.parent_key), addressed, resolved_refs
+                        ),
+                        applied_batches=applied_batches,
+                    )
+                )
+            if not org_tree.listings and not landing_zone.listings and not ecs_listings and not zone_listings:
+                self.declare_no_surfaces()
 
         imported = result.counts.batches_imported
+        progress.finished(batches_imported=imported)
         self.summary = (
             f"Collected {len(node_envelopes)} nodes, {len(edge_envelopes)} "
             f"edges for account {account_id} ({partition}) across {len(regions)} region(s) "
-            f"({skipped} skipped, {unavailable} not offered in this partition, {imported} batch imported)."
+            f"({skipped} skipped, {unavailable} not offered in this partition, {not_configured} not configured, "
+            f"{imported} batch imported)."
         )
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for

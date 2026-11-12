@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -39,6 +39,7 @@ from .identity import (
     split_node_ref,
     undeclared_edge_id,
 )
+from .envelope import jsonable, redact_configuration
 from .projection import ProjectedNode
 
 # The description_json format tag for this collector's provenance payload —
@@ -51,7 +52,15 @@ COLLECTION_FORMAT = "tap.aws_core.collection-v0"
 _GRIFT_VERSION = "0"
 
 
-def persisted_configuration(node: ProjectedNode, *, persist_configuration: bool) -> dict[str, Any]:
+def entry_redact_paths(entry: Mapping[str, Any]) -> list[str]:
+    """The paths of the entry's response that are removed before it is stored: its ``sensitivity.locations`` marked
+    ``redact`` (``req-aws-collector-redaction``)."""
+    return [loc["path"] for loc in (entry.get("sensitivity") or {}).get("locations", []) if loc.get("redact")]
+
+
+def persisted_configuration(
+    node: ProjectedNode, *, persist_configuration: bool, redact_paths: Iterable[str] = ()
+) -> dict[str, Any]:
     """The ``configuration`` value to persist for ``node``.
 
     ``persist_configuration`` is the node's manifest entry's flag
@@ -62,7 +71,7 @@ def persisted_configuration(node: ProjectedNode, *, persist_configuration: bool)
     with ``{}`` the next time it is collected.
     """
     if persist_configuration:
-        return node.configuration
+        return redact_configuration(node.configuration, redact_paths)
     return {}
 
 
@@ -85,6 +94,7 @@ def node_envelope(
     tags: dict[str, str] | None | Unread = None,
     *,
     persist_configuration: bool,
+    redact_paths: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Build a GRIFT node envelope from a projected node.
 
@@ -107,7 +117,12 @@ def node_envelope(
         payload.pop("tags", None)
     else:
         payload["tags"] = tags or {}
-    payload["configuration"] = persisted_configuration(node, persist_configuration=persist_configuration)
+    # Made JSON-safe here, once, after every slot is attached and redaction has run: a slot attached after
+    # projection (tags, detail) can carry a raw boto3 datetime, and one such value rejects the whole batch
+    # (aws-core-tap#213, #215).
+    payload["configuration"] = jsonable(
+        persisted_configuration(node, persist_configuration=persist_configuration, redact_paths=redact_paths)
+    )
     return {
         "entity": {
             "ref": node.ref,
@@ -245,7 +260,7 @@ def address_batch(node_envelopes: list[dict[str, Any]], edge_envelopes: list[dic
             )
             result.undeclared_edges += 1
         else:
-            entity["ref"] = edge_ref(edge_type, ends["from"], ends["to"])
+            entity["ref"] = edge_ref(edge_type, ends["from"], ends["to"], values)
         result.edges.append({**envelope, "entity": entity, "edge": payload})
     return result
 

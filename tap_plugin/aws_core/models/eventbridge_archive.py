@@ -17,6 +17,7 @@ class EventbridgeArchive(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The archive's ARN, built from its source bus's ARN: an archive name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("archive_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "events:archive"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -50,9 +51,9 @@ class EventbridgeArchive(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     archive_arn = models.CharField(max_length=512, blank=True, default="")
     # The bus the archive stores events from. NULL = not observed.
-    event_source_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    event_source_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's archive state (ENABLED, DISABLED, CREATING, ...). NULL = not observed.
-    state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    state = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many days events are kept; 0 means indefinitely. NULL = not observed.
     retention_days = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

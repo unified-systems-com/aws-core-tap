@@ -18,6 +18,7 @@ class TargetGroup(BaseModel):
     # Identity (req-grid-entity-natural-key): The target group's ARN: a target group name is unique
     # only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("target_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:targetgroup"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,10 +30,10 @@ class TargetGroup(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "target_group_arn": {"type": "string"},
-        "protocol": {"type": "string"},
+        "protocol": {"type": ["string", "null"]},
         "port": {"type": ["integer", "null"]},
-        "target_type": {"type": "string"},
-        "health_check_path": {"type": "string"},
+        "target_type": {"type": ["string", "null"]},
+        "health_check_path": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -40,10 +41,10 @@ class TargetGroup(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "target_group_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "protocol": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "protocol": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "port": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "target_type": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "health_check_path": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "target_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "health_check_path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -51,10 +52,10 @@ class TargetGroup(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     target_group_arn = models.CharField(max_length=512, blank=True, default="")
-    protocol = models.CharField(max_length=16, blank=True, default="")
-    port = models.IntegerField(blank=True, null=True)
-    target_type = models.CharField(max_length=32, blank=True, default="")
-    health_check_path = models.CharField(max_length=255, blank=True, default="")
+    protocol = models.CharField(max_length=16, null=True, blank=True, default=None)
+    port = models.IntegerField(null=True, blank=True, default=None)
+    target_type = models.CharField(max_length=32, null=True, blank=True, default=None)
+    health_check_path = models.CharField(max_length=255, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

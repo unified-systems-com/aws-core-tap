@@ -17,6 +17,7 @@ class RdsDbClusterParameterGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The parameter group's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_cluster_parameter_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:cluster-pg"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -42,7 +43,7 @@ class RdsDbClusterParameterGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_cluster_parameter_group_arn = models.CharField(max_length=2048, blank=True, default="")
     # The engine family (aurora-postgresql16, docdb5.0, ...). NULL = not observed.
-    family = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    family = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

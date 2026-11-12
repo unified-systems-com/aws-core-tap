@@ -17,6 +17,7 @@ class CloudwatchDashboard(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The dashboard's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dashboard_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:dashboard"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

@@ -17,6 +17,7 @@ class MgnNetworkMigrationDefinition(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("network_migration_definition_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "mgn:NetworkMigrationDefinitionResource"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

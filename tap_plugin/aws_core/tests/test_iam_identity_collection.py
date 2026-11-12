@@ -12,7 +12,7 @@ from typing import Any
 import pytest
 from botocore.exceptions import ClientError
 from tap_plugin.aws_core.collectors.boto3_collector.authority import COMPLETE, EDGE_READS, FAILED, PARTIAL
-from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
+from tap_plugin.aws_core.collectors.boto3_collector.batch import entry_redact_paths, node_envelope
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     iam_groups_listed,
     iam_instance_profiles_listed,
@@ -340,19 +340,20 @@ class TestVirtualMfaDevices:
         assert node.fields["user_arn"] == self.USER
         assert node.fields["enable_date"] == WHEN_TEXT
 
-    def test_the_entry_stores_nothing_and_says_why(self) -> None:
+    def test_the_entry_stores_the_response_without_the_seed(self) -> None:
         entry = _entry(MFA)
-        assert entry["persist_configuration"] is False
+        assert entry["persist_configuration"] is True
         assert {loc["path"] for loc in entry["sensitivity"]["locations"] if loc["category"] == "credential"} == {
             "VirtualMFADevices[].Base32StringSeed",
             "VirtualMFADevices[].QRCodePNG",
         }
 
-    def test_the_envelope_carries_no_configuration_and_no_canary(self) -> None:
+    def test_the_envelope_carries_the_response_and_no_canary(self) -> None:
         items, _ = _run(iam_virtual_mfa_devices_listed, self._iam())
-        node = project_item(_entry(MFA), items[0])
-        payload = node_envelope(node, {}, {}, persist_configuration=False)["node"]
-        assert payload["configuration"] == {}
+        entry = _entry(MFA)
+        node = project_item(entry, items[0])
+        payload = node_envelope(node, {}, {}, persist_configuration=True, redact_paths=entry_redact_paths(entry))["node"]
+        assert payload["configuration"]
         assert SEED_CANARY not in json.dumps(payload, default=str)
 
 

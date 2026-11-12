@@ -39,14 +39,15 @@ class VpcEndpoint(BaseModel):
 
     # AWS's endpoint id (vpce-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_endpoint_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-endpoint"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "vpc_endpoint_id": {"type": "string", "pattern": "^(vpce-[0-9a-f]{8,17})?$"},
-        "endpoint_type": {"type": "string", "enum": ["", *ENDPOINT_TYPES]},
-        "service_name": {"type": "string"},
+        "endpoint_type": {"type": ["string", "null"], "enum": [None, "", *ENDPOINT_TYPES]},
+        "service_name": {"type": ["string", "null"]},
         "private_dns_enabled": {"type": ["boolean", "null"]},
-        "region": {"type": "string"},
+        "region": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
@@ -60,11 +61,11 @@ class VpcEndpoint(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     vpc_endpoint_id = models.CharField(max_length=32, blank=True, default="", db_index=True)
     # Blank means not observed (the aws_elb.lb_type convention).
-    endpoint_type = models.CharField(max_length=32, blank=True, default="")
+    endpoint_type = models.CharField(max_length=32, null=True, blank=True, default=None)
     # The service it connects to, as AWS names it (an AWS service or a vpce-svc endpoint service).
-    service_name = models.CharField(max_length=255, blank=True, default="")
+    service_name = models.CharField(max_length=255, null=True, blank=True, default=None)
     private_dns_enabled = models.BooleanField(null=True, blank=True, default=None)
-    region = models.CharField(max_length=32, blank=True, default="")
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeVpcEndpoints Tags.

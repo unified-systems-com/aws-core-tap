@@ -17,6 +17,7 @@ class AmazonmqBroker(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (BrokerArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("broker_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "mq:brokers"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

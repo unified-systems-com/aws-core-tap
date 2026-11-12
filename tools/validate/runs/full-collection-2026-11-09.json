@@ -1,0 +1,112 @@
+{
+ "description": "Live full collection of the GovCloud staging account (us-gov-west-1 and us-gov-east-1, 898 manifest entries, partition aws-us-gov) with the real Boto3Collector.run(), the collector's read-only identity and the read guard installed, writing to the local grid only. Run 1 on main 34267db; run 2 on the fix for aws-core-tap#213 (main + 65fdcce). Counts, codes and booleans only; no account number, resource id or message.",
+ "date": "2026-11-09",
+ "script": "not committed: a scratch wrapper around Boto3Collector.run() like tools/validate/selection_live.py, with no include_types, that also captures the submitted GRIFT document for counts and a secret-material scan",
+ "verdict": "fail on main, pass with the aws-core-tap#213 fix",
+ "checks": {
+  "the batch imports": "run 1: rejected whole (GriftRejectedError, 'Value must be valid JSON' on an aws_iot_domain_configuration node; cause: a raw datetime at configuration._hydrate.detail.data.lastStatusChangeDate on 4 of 4 such nodes, found by a one-type probe that submitted nothing); run 2: imported, 0 import errors",
+  "the run completes with no run-log error": "run 2: failed null, 0 error records",
+  "no secret material is stored": "run 2: 9 matching paths in 1687 nodes, none secret material: access key IDs as IAM user tag keys and as Security Hub finding resource ids (identifiers, not secrets), a GitHub OIDC trust-policy condition key and two EC2 settings matched on name only. Patterns are limited: a negative result, not proof",
+  "the aws-core-tap#209 edges appear on real data": {
+   "USES_CACHE_SUBNET_GROUP": 0,
+   "RESIDES_IN_SUBNET": 4,
+   "ATTACHED_TO_INSTANCE": 2,
+   "MANAGES_EC2_INSTANCE": 0,
+   "USES_LAUNCH_TEMPLATE": 0,
+   "BELONGS_TO_SECURITY_GROUP": 7,
+   "REFERENCES_SECURITY_GROUP": 3,
+   "SNAPSHOTS_DATABASE": 0,
+   "LISTENS_ON_LOAD_BALANCER": 0,
+   "ROUTES_TRAFFIC": 0
+  }
+ },
+ "trials": [
+  {
+   "run": 1,
+   "code": "main 34267db",
+   "reads_seconds": 1408,
+   "nodes_assembled": 1687,
+   "edges_assembled": 2323,
+   "imported": false,
+   "note": "The plugin checkout was switched to another branch partway through this run; modules were mostly loaded and the failure is unrelated, but it is not cited as a measurement. The harness exited on the rejection, so no ledger counts were kept."
+  },
+  {
+   "run": 2,
+   "code": "main 34267db + 65fdcce",
+   "wall_seconds": 1501.9,
+   "calls": 2831,
+   "call_outcomes": {
+    "ok": 2416,
+    "denied": 201,
+    "absent": 4,
+    "error": 204,
+    "throttled": 6
+   },
+   "throttled_ops": {
+    "sagemaker:ListDevices": 2,
+    "sagemaker:ListDeviceFleets": 2,
+    "athena:ListCapacityReservations": 2
+   },
+   "info": {
+    "RUN_STARTED": 1,
+    "IDENTITY_RESOLVED": 1,
+    "SELECTION_APPLIED": 1,
+    "SERVICE_NOT_AVAILABLE_IN_PARTITION": 201,
+    "ENTRY_NOT_CONFIGURED": 49,
+    "ENDPOINT_PROBE": 1,
+    "ORG_LISTING_FAILED": 2,
+    "LANDING_ZONE_READ_FAILED": 3,
+    "LANDING_ZONE_TAGS_DENIED": 1,
+    "EDGE_AUTHORITY_CLAIMS": 1,
+    "EDGE_AUTHORITY_PROPOSED": 1,
+    "GRIFT_SUBMITTED": 1,
+    "AWS_CALL_LEDGER": 1,
+    "RUN_COMPLETED": 1
+   },
+   "warn": {
+    "ENTRY_SKIPPED": 235,
+    "DUPLICATE_IDENTITY": 116,
+    "PARTITION_GAP_LEARNED": 2,
+    "ENTRY_THROTTLED": 6,
+    "LANDING_ZONE_NODE_SKIPPED": 1,
+    "GRIFT_EDGES_SKIPPED": 1
+   },
+   "surfaces": 50,
+   "manifest_entries_with_enrich": 104,
+   "calls_to_enrich_ops": 12,
+   "calls_target_group_reads": 2,
+   "nodes_submitted": 1687,
+   "edges_submitted": 2323,
+   "node_types_with_rows": 90,
+   "import_counts": {
+    "batches_imported": 1,
+    "nodes_imported": 1687,
+    "edges_imported": 2309,
+    "edges_skipped": 14,
+    "errors": 0,
+    "warnings": 14
+   },
+   "top_error_codes": {
+    "AccessDeniedException": 181,
+    "UnknownOperationException": 48,
+    "BadRequestException": 16,
+    "InvalidAction": 14,
+    "ResourceNotFoundException": 14,
+    "404": 13,
+    "UninitializedAccountException": 12,
+    "UnsupportedOperation": 11,
+    "UnsupportedUserEditionException": 10,
+    "InvalidRequestException": 9,
+    "ValidationException": 8,
+    "UnauthorizedException": 8
+   }
+  }
+ ],
+ "not_checked": [
+  "that pre-existing empty values are rewritten to null: the grid on this host was fresh, with no older rows",
+  "the 116 DUPLICATE_IDENTITY warnings (aws_ram_permission, 111 nodes, is a guess at the source, not verified)",
+  "a per-region split of calls: the call ledger records no region",
+  "ECS: the account held no ECS resources"
+ ],
+ "method": "Both runs are the same harness; run 2 catches a rejected batch so its counts survive one. Call counts and outcomes are the run's AWS_CALL_LEDGER; node, edge and secret-scan figures are read from the GRIFT document the collector submitted (what is stored). Output was scrubbed of 12-digit numbers and ARNs before it was read."
+}

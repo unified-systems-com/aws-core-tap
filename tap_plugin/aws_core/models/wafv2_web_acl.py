@@ -17,6 +17,7 @@ class Wafv2WebAcl(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The web ACL's ARN: a name is unique only within an account, region and scope.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("web_acl_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "wafv2:webacl"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -51,9 +52,9 @@ class Wafv2WebAcl(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     web_acl_arn = models.CharField(max_length=512, blank=True, default="")
     # REGIONAL, or CLOUDFRONT for a global (CloudFront) object read through us-east-1. NULL = not observed.
-    scope = models.CharField(max_length=512, blank=True, null=True, default=None)
+    scope = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ALLOW or BLOCK: what happens to a request no rule matches. NULL = not observed.
-    default_action = models.CharField(max_length=512, blank=True, null=True, default=None)
+    default_action = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many rules the web ACL holds. NULL = not observed.
     rule_count = models.IntegerField(null=True, blank=True, default=None)
     # The web ACL's capacity units in use. NULL = not observed.

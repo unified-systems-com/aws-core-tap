@@ -32,15 +32,16 @@ class AwsConfigConformancePack(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pack_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:ConformancePack"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "pack_arn": {"type": "string"},
-        "pack_name": {"type": "string"},
-        "pack_id": {"type": "string"},
-        "created_by": {"type": "string"},
-        "delivery_s3_bucket": {"type": "string"},
-        "last_update_requested_at": {"type": "string"},
+        "pack_name": {"type": ["string", "null"]},
+        "pack_id": {"type": ["string", "null"]},
+        "created_by": {"type": ["string", "null"]},
+        "delivery_s3_bucket": {"type": ["string", "null"]},
+        "last_update_requested_at": {"type": ["string", "null"]},
         # COMPLIANT, NON_COMPLIANT or INSUFFICIENT_DATA, verbatim; null when unread.
         "compliance_status": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
@@ -54,11 +55,11 @@ class AwsConfigConformancePack(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     pack_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    pack_name = models.CharField(max_length=256, blank=True, default="")
-    pack_id = models.CharField(max_length=1024, blank=True, default="")
-    created_by = models.CharField(max_length=256, blank=True, default="")
-    delivery_s3_bucket = models.CharField(max_length=63, blank=True, default="")
-    last_update_requested_at = models.CharField(max_length=40, blank=True, default="")
+    pack_name = models.CharField(max_length=256, null=True, blank=True, default=None)
+    pack_id = models.CharField(max_length=1024, null=True, blank=True, default=None)
+    created_by = models.CharField(max_length=256, null=True, blank=True, default=None)
+    delivery_s3_bucket = models.CharField(max_length=63, null=True, blank=True, default=None)
+    last_update_requested_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     compliance_status = models.CharField(max_length=32, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
     tags = models.JSONField(null=True, blank=True, default=None)

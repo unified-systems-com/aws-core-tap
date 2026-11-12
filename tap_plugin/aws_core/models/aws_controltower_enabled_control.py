@@ -29,6 +29,7 @@ class AwsControlTowerEnabledControl(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("enabled_control_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "controltower:EnabledControl"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {
@@ -40,12 +41,12 @@ class AwsControlTowerEnabledControl(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "enabled_control_arn": {"type": "string"},
-        "control_identifier": {"type": "string"},
+        "control_identifier": {"type": ["string", "null"]},
         # The OU or account ARN the control is enabled on, verbatim.
-        "target_identifier": {"type": "string"},
-        "parent_identifier": {"type": "string"},
-        "status": {"type": "string"},
-        "drift_status": {"type": "string"},
+        "target_identifier": {"type": ["string", "null"]},
+        "parent_identifier": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "drift_status": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -57,11 +58,11 @@ class AwsControlTowerEnabledControl(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     enabled_control_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    control_identifier = models.CharField(max_length=2048, blank=True, default="")
-    target_identifier = models.CharField(max_length=2048, blank=True, default="")
-    parent_identifier = models.CharField(max_length=2048, blank=True, default="")
-    status = models.CharField(max_length=32, blank=True, default="")
-    drift_status = models.CharField(max_length=32, blank=True, default="")
+    control_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    target_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    parent_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    status = models.CharField(max_length=32, null=True, blank=True, default=None)
+    drift_status = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: controltower:ListTagsForResource (`tags` map).
     tags = models.JSONField(null=True, blank=True, default=None)
 

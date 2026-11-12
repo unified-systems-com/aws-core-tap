@@ -17,6 +17,7 @@ class SsmAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The association's AssociationId: ListAssociations returns no ARN, and an association id is a service-generated UUID.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_association_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ssm:association"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

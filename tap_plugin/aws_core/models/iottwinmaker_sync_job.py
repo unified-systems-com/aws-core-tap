@@ -17,6 +17,7 @@ class IottwinmakerSyncJob(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iottwinmaker_sync_job_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iottwinmaker:syncJob"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -1,0 +1,393 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 27
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (37 destroyed). Checked directly afterwards: no bucket, Storage Lens configuration, backup vault, plan, framework or report plan, WAFv2 object, trail, aggregation authorization, Security Hub action target or insight, flow log, VPC, role or policy of the run is left. The resource tagging index still listed three EC2 items of the run for a while; describing them directly returns not found.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Third cycle, on the collector with the Storage Lens tag fix (aws-core-tap#178). Cycle 2 passed 26 of 28 compared types: Storage Lens failed because ListTagsForResource answers InvalidURI for a Storage Lens configuration, which the collector now reads with GetStorageLensConfigurationTagging; the other failure was the OIDC provider, which the seeder policy refuses to create and which is out of this module. Of the 27 compared types, 21 are wave 1b catalog types and 6 are wave 1 types the module needs (VPC, subnet, security group, role, managed policy, bucket).",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w1b11021342",
+  "seeds": "tools/seed/wave1b",
+  "wave": "1b"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::Backup::BackupSelection",
+   "compared_fields": [
+    "backup_backup_selection_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_backup_backup_selection",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Backup::Framework",
+   "compared_fields": [
+    "deployment_status",
+    "framework_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_backup_framework",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Backup::BackupPlan",
+   "compared_fields": [
+    "name",
+    "plan_arn",
+    "plan_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_backup_plan",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Backup::ReportPlan",
+   "compared_fields": [
+    "name",
+    "report_plan_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_backup_report_plan",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Backup::BackupVault",
+   "compared_fields": [
+    "name",
+    "vault_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_backup_vault",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudTrail::Trail",
+   "compared_fields": [
+    "is_logging",
+    "is_multi_region",
+    "log_file_validation_enabled",
+    "name",
+    "s3_bucket_name",
+    "trail_arn"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_cloudtrail_trail",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Config::AggregationAuthorization",
+   "compared_fields": [
+    "authorization_arn",
+    "authorized_account_id",
+    "authorized_region"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_config_aggregation_authorization",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::FlowLog",
+   "compared_fields": [
+    "ec2_flow_log_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_flow_log",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::NetworkInterface",
+   "compared_fields": [
+    "ec2_network_interface_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_network_interface",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroupIngress",
+   "compared_fields": [
+    "ec2_security_group_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_security_group_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::ManagedPolicy",
+   "compared_fields": [
+    "name",
+    "path",
+    "policy_arn",
+    "policy_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_policy",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::AccessGrant",
+   "compared_fields": [
+    "s3_access_grant_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_access_grant",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::AccessGrantsInstance",
+   "compared_fields": [
+    "s3_access_grants_instance_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_access_grants_instance",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::AccessGrantsLocation",
+   "compared_fields": [
+    "s3_access_grants_location_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_access_grants_location",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::AccessPoint",
+   "compared_fields": [
+    "access_point_arn",
+    "alias",
+    "bucket",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_s3_access_point",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::Bucket",
+   "compared_fields": [
+    "bucket_arn",
+    "name",
+    "public_access_blocked"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_bucket",
+   "expected": 4,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::StorageLens",
+   "compared_fields": [
+    "name",
+    "s3_storage_lens_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_storage_lens",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SecurityHub::ActionTarget",
+   "compared_fields": [
+    "action_target_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_securityhub_action_target",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SecurityHub::Insight",
+   "compared_fields": [
+    "group_by_attribute",
+    "insight_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_securityhub_insight",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFv2::IPSet",
+   "compared_fields": [
+    "ip_address_version",
+    "ip_set_arn",
+    "name",
+    "scope"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafv2_ip_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFv2::RegexPatternSet",
+   "compared_fields": [
+    "name",
+    "regex_pattern_set_arn",
+    "scope"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafv2_regex_pattern_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFv2::RuleGroup",
+   "compared_fields": [
+    "capacity",
+    "name",
+    "rule_group_arn",
+    "scope"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafv2_rule_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::WAFv2::WebACL",
+   "compared_fields": [
+    "capacity",
+    "name",
+    "scope",
+    "web_acl_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_wafv2_web_acl",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "1b"
+}

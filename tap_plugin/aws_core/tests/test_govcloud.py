@@ -25,6 +25,7 @@ import boto3
 import jsonschema
 import pytest
 from botocore.awsrequest import AWSResponse
+from botocore.exceptions import ClientError
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
@@ -37,6 +38,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     cloudfront_distributions_with_oac,
     eventbridge_rules_with_targets,
     iam_oidc_providers_described,
+    route53_record_sets_described,
     route53_zones_with_alias_targets,
     s3_buckets_hydrated,
 )
@@ -508,10 +510,17 @@ class TestCustomFnsUseTheRunsPartition:
             get_caller_identity=lambda: {"Account": ACCOUNT, "Arn": "arn:aws-us-gov:sts::123456789012:assumed-role/r/s"}
         )
         iam = _gov_client(list_account_aliases=lambda: {"AccountAliases": ["govco"]})
+
+        def _refused(**_kw):
+            raise ClientError({"Error": {"Code": "AccessDeniedException", "Message": "no"}}, "DescribeAccount")
+
+        organizations = _gov_client(describe_account=_refused)
         items = list(
-            aws_account_singleton(_NoDirectClientSession(), client_for=_client_for({"sts": sts, "iam": iam}, asked))
+            aws_account_singleton(
+                _NoDirectClientSession(), client_for=_client_for({"sts": sts, "iam": iam, "organizations": organizations}, asked)
+            )
         )
-        assert asked == ["sts", "iam"]
+        assert asked == ["sts", "iam", "organizations"]
         assert items[0]["Account"] == ACCOUNT and items[0]["_account_name"] == "govco"
 
     def test_iam_oidc_providers_use_client_for(self) -> None:
@@ -534,12 +543,15 @@ class TestCustomFnsUseTheRunsPartition:
                 ]
             },
         )
-        zones = list(
-            route53_zones_with_alias_targets(_NoDirectClientSession(), client_for=_client_for({"route53": r53}, asked))
-        )
+        session = _NoDirectClientSession()
+        client_for = _client_for({"route53": r53}, asked)
+        zones = list(route53_zones_with_alias_targets(session, client_for=client_for))
+        records = list(route53_record_sets_described(session, client_for=client_for))
         assert "cloudfront" not in asked
-        assert zones[0]["alias_cloudfront_domains"] == ["dabc.cloudfront.net"]  # raw fact kept
-        assert zones[0]["alias_cloudfront_arns"] == []  # nothing resolvable without CloudFront
+        assert [z["Id"] for z in zones] == ["/hostedzone/ZGOV1"]
+        assert records[0]["AliasTarget"]["DNSName"] == "dabc.cloudfront.net."  # raw fact kept
+        assert records[0]["_resolves_cloudfront"] == []  # nothing resolvable without CloudFront
+        assert records[0]["_edge_reads"]["_resolves_cloudfront"] == "partial"  # unresolved, not 'resolves nowhere'
 
     def test_cloudfront_distribution_fn_yields_nothing_in_govcloud(self) -> None:
         cf = _gov_client(list_distributions=lambda: (_ for _ in ()).throw(AssertionError("must not be called")))
@@ -777,8 +789,14 @@ class TestCollectorRunInGovCloud:
 
         # CloudFront: a clear "not available in this partition" result — not a skipped-with-error warn.
         info = [e for e in collector.results["info"] if e["message_code"] == "SERVICE_NOT_AVAILABLE_IN_PARTITION"]
-        assert [e["message_data"]["service"] for e in info] == ["cloudfront"]
-        assert "not available in partition aws-us-gov" in info[0]["message"]
+        # The 22 entries wave 0 could not reach are on the list as well (req-aws-collector-partition-8), except the two
+        # kinesisvideo entries, which resolve at their FIPS host and are skipped only with FIPS endpoints off. This run
+        # has FIPS on, so the 19 entries of the services with no FIPS endpoint in either GovCloud region are skipped too
+        # (req-aws-collector-partition-15): 23 - 2 + 19.
+        cloudfront = [e for e in info if e["message_data"]["service"] == "cloudfront"]
+        assert len(cloudfront) == 1 and len(info) == 40
+        assert not [e for e in info if e["message_data"]["service"] == "kinesisvideo"]
+        assert "not available in partition aws-us-gov" in cloudfront[0]["message"]
         assert not [
             w for w in collector.results["warn"] if w["message_code"] == "ENTRY_SKIPPED" and "cloudfront" in w["message"]
         ]

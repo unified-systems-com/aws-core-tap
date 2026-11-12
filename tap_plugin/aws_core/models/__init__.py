@@ -672,6 +672,7 @@ from tap_plugin.aws_core.models.route53_cidr_collection import Route53CidrCollec
 from tap_plugin.aws_core.models.route53_delegation_set import Route53DelegationSet
 from tap_plugin.aws_core.models.route53_health_check import Route53HealthCheck
 from tap_plugin.aws_core.models.route53_hosted_zone import Route53HostedZone
+from tap_plugin.aws_core.models.route53_record_set import Route53RecordSet
 from tap_plugin.aws_core.models.route53_query_logging_config import Route53QueryLoggingConfig
 from tap_plugin.aws_core.models.route53_resolver_firewall_rule_group import Route53ResolverFirewallRuleGroup
 from tap_plugin.aws_core.models.route53_traffic_policy_instance import Route53TrafficPolicyInstance
@@ -1665,6 +1666,7 @@ __all__ = [
     "Route53DelegationSet",
     "Route53HealthCheck",
     "Route53HostedZone",
+    "Route53RecordSet",
     "Route53QueryLoggingConfig",
     "Route53ResolverFirewallRuleGroup",
     "Route53TrafficPolicyInstance",

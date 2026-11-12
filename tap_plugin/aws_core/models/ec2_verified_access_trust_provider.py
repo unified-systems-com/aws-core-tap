@@ -17,6 +17,7 @@ class Ec2VerifiedAccessTrustProvider(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (VerifiedAccessTrustProviderId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_verified_access_trust_provider_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:verified-access-trust-provider"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

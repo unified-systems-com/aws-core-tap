@@ -17,6 +17,11 @@ scalar or list; a list fans out one edge per element), ``target_type``,
 *named, registered* callable mapping the raw value to the target's natural
 key — never code from manifest data, mirroring ``req-aws-collector-source-3``).
 
+A rule whose values are objects names, with ``key_path``, where in each object the target's key is,
+and with ``properties_path``, where the edge's properties are (``req-aws-collector-edges-9``). That is
+how one relationship carries what decides it: a load balancer's edge to a target group carries the
+listener rule that forwards to it.
+
 This module is the **single chokepoint** for the v0-fence gap: an edge whose
 ``target_type`` is not a type this collector models is dropped with a
 structured warning, never a run failure (``req-aws-collector-edges-6``). Edges
@@ -89,6 +94,7 @@ def edge_envelope(
     from_ref: str,
     to_ref: str,
     dimensions: dict[str, str],
+    properties: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """One GRIFT edge envelope, addressed by ref with both endpoints named by node ref.
 
@@ -99,9 +105,10 @@ def edge_envelope(
     """
     from_key = split_node_ref(from_ref)[1]
     to_key = split_node_ref(to_ref)[1]
+    properties = dict(properties or {})
     return {
         "entity": {
-            "ref": edge_ref(edge_type, from_ref, to_ref),
+            "ref": edge_ref(edge_type, from_ref, to_ref, _discriminator_values(edge_type, properties)),
             "entity_type": "edge",
             "name": f"{from_key} {edge_type} {to_key}",
             "dimensions": dict(dimensions),
@@ -110,9 +117,19 @@ def edge_envelope(
             "from_ref": from_ref,
             "to_ref": to_ref,
             "edge_type": edge_type,
-            "properties": {},
+            "properties": properties,
         },
     }
+
+
+def _discriminator_values(edge_type: str, properties: dict[str, Any]) -> dict[str, object]:
+    """The declared discriminators' values in ``properties``; none for a plain, keyless or undeclared type."""
+    if not properties:
+        return {}
+    from tap_grid.edge_identity import edge_identity_values, get_edge_identity
+
+    declaration = get_edge_identity(edge_type)
+    return edge_identity_values(declaration, properties) if declaration is not None else {}
 
 
 @dataclass(frozen=True)
@@ -125,6 +142,8 @@ class EdgeEmission:
 
     envelopes: list[dict[str, Any]]
     warnings: list[str]
+    #: Edge values left out because the rule's target type is not selected (``req-aws-collector-selection``).
+    skipped_unselected: int = 0
 
 
 def _as_value_list(raw: Any) -> list[Any]:
@@ -170,6 +189,7 @@ def emit_edges(
     modeled_types: set[str],
     transforms: TransformRegistry,
     dimensions: dict[str, str],
+    unselected_types: frozenset[str] = frozenset(),
 ) -> EdgeEmission:
     """Emit GRIFT edge envelopes for one projected node.
 
@@ -180,9 +200,12 @@ def emit_edges(
             ``target_type`` outside this set is dropped with a warning.
         transforms: The plugin-local transform registry.
         dimensions: Dimensions stamped on every emitted edge entity.
+        unselected_types: Entity types a selected run left out. An edge to one is not emitted: the run never read
+            the far end, so it cannot state the relationship (``req-aws-collector-selection``). Counted, not warned.
     """
     envelopes: list[dict[str, Any]] = []
     warnings: list[str] = []
+    skipped = 0
 
     for rule in entry.get("edges", []):
         target_type = rule["target_type"]
@@ -199,7 +222,20 @@ def emit_edges(
         transform = transforms.get(transform_name) if transform_name else None
         source_aware = bool(transform_name) and transforms.is_source_aware(str(transform_name))
 
-        for raw_value in _as_value_list(raw):
+        for element in _as_value_list(raw):
+            properties: dict[str, Any] = {}
+            if "key_path" in rule:
+                # An object value: the target's key and the edge's properties are both inside it.
+                if not isinstance(element, dict):
+                    continue
+                raw_value = eval_path(element, rule["key_path"])
+                if raw_value is None or raw_value == "":
+                    continue
+                if "properties_path" in rule:
+                    found = eval_path(element, rule["properties_path"])
+                    properties = dict(found) if isinstance(found, dict) else {}
+            else:
+                raw_value = element
             # The transform maps each extracted value to the target's
             # natural key. It is applied per-element AFTER fan-out
             # expansion: a list value_path (e.g. Origins.Items[]) must feed
@@ -215,12 +251,19 @@ def emit_edges(
                 value = transform(raw_value)
             if value is None:
                 continue
+            if target_type in unselected_types:
+                skipped += 1
+                continue
             target_ref = node_ref(target_type, str(value))
             if rule["direction"] == "inbound":
                 from_ref, to_ref = target_ref, node.ref
             else:  # outbound
                 from_ref, to_ref = node.ref, target_ref
 
-            envelopes.append(edge_envelope(rule["edge_type"], from_ref=from_ref, to_ref=to_ref, dimensions=dimensions))
+            envelopes.append(
+                edge_envelope(
+                    rule["edge_type"], from_ref=from_ref, to_ref=to_ref, dimensions=dimensions, properties=properties
+                )
+            )
 
-    return EdgeEmission(envelopes=envelopes, warnings=warnings)
+    return EdgeEmission(envelopes=envelopes, warnings=warnings, skipped_unselected=skipped)

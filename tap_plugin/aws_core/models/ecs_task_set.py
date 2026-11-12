@@ -17,6 +17,7 @@ class EcsTaskSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (taskSetArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ecs_task_set_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecs:task-set"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

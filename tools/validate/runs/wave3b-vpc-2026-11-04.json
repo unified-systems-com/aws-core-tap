@@ -1,0 +1,260 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 19
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (22 destroyed). Checked directly afterwards: no NAT gateway of the run in any state but deleted, no VPN connection, peering, VPC, Elastic IP, key pair, placement group or launch template remains. The tagging API still listed several destroyed resources, which is its known lag.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Third run, after review: the launch template requires IMDSv2 and has no public address, and the customer gateway uses the module's own Elastic IP rather than a third party's address. The first (w3x11040540) applied 20 of 22 resources: the customer gateway was refused at the documentation address 192.0.2.10 (InvalidParameterValue), and the traffic mirror target was refused for a detached network interface (NetworkInterfaceNotSupported). The target is dropped; the gateway now holds a public address that is only recorded. See wave3b-vpc/cost.md. Run 2 (w3x11040546) also passed 19 of 19.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3x11040628",
+  "seeds": "tools/seed/wave3b-vpc"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::EC2::CustomerGateway",
+   "compared_fields": [
+    "ec2_customer_gateway_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_customer_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::DHCPOptions",
+   "compared_fields": [
+    "ec2_dhcp_options_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_dhcp_options",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::EgressOnlyInternetGateway",
+   "compared_fields": [
+    "ec2_egress_only_internet_gateway_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_egress_only_internet_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::KeyPair",
+   "compared_fields": [
+    "ec2_key_pair_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_key_pair",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::LaunchTemplate",
+   "compared_fields": [
+    "ec2_launch_template_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_launch_template",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::NetworkInsightsPath",
+   "compared_fields": [
+    "network_insights_path_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_network_insights_path",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::NetworkInterface",
+   "compared_fields": [
+    "ec2_network_interface_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_network_interface",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::PlacementGroup",
+   "compared_fields": [
+    "name",
+    "placement_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_placement_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::PrefixList",
+   "compared_fields": [
+    "ec2_prefix_list_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_prefix_list",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TrafficMirrorFilter",
+   "compared_fields": [
+    "ec2_traffic_mirror_filter_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_traffic_mirror_filter",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TrafficMirrorFilterRule",
+   "compared_fields": [
+    "ec2_traffic_mirror_filter_rule_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_traffic_mirror_filter_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPCPeeringConnection",
+   "compared_fields": [
+    "ec2_vpc_peering_connection_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_vpc_peering_connection",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPNConnection",
+   "compared_fields": [
+    "ec2_vpn_connection_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_vpn_connection",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPNGateway",
+   "compared_fields": [
+    "ec2_vpn_gateway_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_vpn_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::EIP",
+   "compared_fields": [
+    "allocation_id",
+    "public_ip"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elastic_ip",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::InternetGateway",
+   "compared_fields": [
+    "igw_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_internet_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::NatGateway",
+   "compared_fields": [
+    "connectivity_type",
+    "nat_gateway_id",
+    "state"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_nat_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-vpc"
+}

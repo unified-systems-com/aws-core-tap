@@ -18,6 +18,7 @@ class EcrRepository(BaseModel):
     # Identity (req-grid-entity-natural-key): The repository's ARN: a repository name is unique only
     # within a registry.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("repository_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecr:repository"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,7 +30,7 @@ class EcrRepository(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "repository_arn": {"type": "string"},
-        "repository_uri": {"type": "string"},
+        "repository_uri": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -37,7 +38,7 @@ class EcrRepository(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "repository_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "repository_uri": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "repository_uri": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -45,7 +46,7 @@ class EcrRepository(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     repository_arn = models.CharField(max_length=512, blank=True, default="")
-    repository_uri = models.CharField(max_length=512, blank=True, default="")
+    repository_uri = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

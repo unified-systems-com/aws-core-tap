@@ -17,6 +17,7 @@ class MskChannel(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ChannelArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("msk_channel_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kafka:channel"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

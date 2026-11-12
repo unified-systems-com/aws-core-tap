@@ -17,6 +17,7 @@ class Ec2CustomerGateway(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (CustomerGatewayId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_customer_gateway_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:customer-gateway"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

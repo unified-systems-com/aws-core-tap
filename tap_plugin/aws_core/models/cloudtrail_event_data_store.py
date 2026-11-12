@@ -17,6 +17,7 @@ class CloudtrailEventDataStore(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The event data store's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("event_data_store_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudtrail:eventdatastore"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -54,7 +55,7 @@ class CloudtrailEventDataStore(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     event_data_store_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's status (ENABLED, CREATED, PENDING_DELETION, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the store collects events from every region. NULL = not observed.
     multi_region_enabled = models.BooleanField(null=True, blank=True, default=None)
     # Whether the store collects events for every account of the organization. NULL = not observed.

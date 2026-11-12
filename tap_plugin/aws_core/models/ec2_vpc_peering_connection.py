@@ -17,6 +17,7 @@ class Ec2VpcPeeringConnection(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (VpcPeeringConnectionId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_vpc_peering_connection_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-peering-connection"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class SnsTopic(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The topic's ARN: a topic name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("topic_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sns:topic"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -52,7 +53,7 @@ class SnsTopic(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     topic_arn = models.CharField(max_length=512, blank=True, default="")
     # The KMS key (id, ARN or alias) that encrypts messages at rest. NULL = no key, or not observed.
-    kms_master_key_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    kms_master_key_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the topic is FIFO. NULL = not observed.
     fifo_topic = models.BooleanField(null=True, blank=True, default=None)
     # Confirmed subscriptions. NULL = not observed.

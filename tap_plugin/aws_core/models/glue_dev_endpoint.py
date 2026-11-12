@@ -17,6 +17,7 @@ class GlueDevEndpoint(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_dev_endpoint_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "glue:devendpoint"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

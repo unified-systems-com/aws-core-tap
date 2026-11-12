@@ -277,6 +277,26 @@ class TestArnListings:
         assert client.calls[0] == ("list_storage_lens_groups", {"AccountId": "123456789012"})
         assert client.calls[1][1]["AccountId"] == "123456789012"
 
+    def test_a_storage_lens_configurations_tags_come_from_its_own_call_by_id(self) -> None:
+        # ListTagsForResource answers InvalidURI for a Storage Lens configuration ARN (read live, GovCloud, 2026-11-02).
+        client = _Client(
+            list_storage_lens_configurations={"StorageLensConfigurationList": [{"Id": "lens-1", "StorageLensArn": "arn:aws:s3:us-east-1:123456789012:storage-lens/lens-1"}]},
+            list_tags_for_resource=_denied("ListTagsForResource"),
+            get_storage_lens_configuration_tagging={"Tags": [{"Key": "owner", "Value": "net-team"}]},
+        )
+        [lens] = _run(LONGTAIL_FNS["s3_storage_lens_configurations_described"], s3control=client)
+        assert lens["_tags"] == {"owner": "net-team"} and lens["_tags_unread"] is False
+        assert ("get_storage_lens_configuration_tagging", {"AccountId": "123456789012", "ConfigId": "lens-1"}) in client.calls
+        assert all(call[0] != "list_tags_for_resource" for call in client.calls)
+
+    def test_a_storage_lens_tag_read_that_fails_is_marked_unread_not_empty(self) -> None:
+        client = _Client(
+            list_storage_lens_configurations={"StorageLensConfigurationList": [{"Id": "lens-1", "StorageLensArn": "arn:aws:s3:us-east-1:123456789012:storage-lens/lens-1"}]},
+            get_storage_lens_configuration_tagging=_denied("GetStorageLensConfigurationTagging"),
+        )
+        [lens] = _run(LONGTAIL_FNS["s3_storage_lens_configurations_described"], s3control=client)
+        assert lens["_tags"] == {} and lens["_tags_unread"] is True
+
     def test_an_s3_control_tag_read_that_fails_is_marked_unread_not_empty(self) -> None:
         client = _Client(
             list_access_grants={"AccessGrantsList": [{"AccessGrantArn": "arn:aws:s3:us-east-1:123456789012:access-grants/default/grant/x"}]},

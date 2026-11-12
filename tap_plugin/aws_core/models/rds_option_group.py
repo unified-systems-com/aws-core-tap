@@ -17,6 +17,7 @@ class RdsOptionGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The option group's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("option_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:og"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -43,9 +44,9 @@ class RdsOptionGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     option_group_arn = models.CharField(max_length=2048, blank=True, default="")
     # The engine. NULL = not observed.
-    engine_name = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine_name = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The major engine version. NULL = not observed.
-    major_engine_version = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    major_engine_version = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -17,6 +17,7 @@ class BackupVault(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The vault's ARN: a vault name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vault_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "backup:backupVault"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -56,9 +57,9 @@ class BackupVault(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     vault_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's vault state. NULL = not observed.
-    vault_state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    vault_state = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The key that encrypts the vault. NULL = not observed.
-    encryption_key_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    encryption_key_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether Vault Lock is enabled. NULL = not observed.
     locked = models.BooleanField(null=True, blank=True, default=None)
     # Vault Lock's minimum retention in days. NULL = none, or not observed.

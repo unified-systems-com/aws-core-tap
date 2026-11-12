@@ -1,0 +1,166 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 11
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (12 destroyed). Checked directly afterwards with each service's own listing (all calls succeeded): no OpenSearch Serverless policy, EMR security configuration, Route 53 delegation set, Direct Connect gateway, CodeDeploy configuration or DAX group of the run remains.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Fourth run. The first (w3z11041107) compared 14 types: 11 passed and 3 failed. SES::ReceiptRuleSet and ReceiptFilter answer InvalidAction (classic SES receiving is not available in this region); LicenseManager::LicenseConfiguration answers AccessDeniedException (service role not found). A rerun died on a full disk (Terraform provider caches) before anything was created. None of the three is seeded; see wave3b-misc2/cost.md. This module is the first to use the {context: account_id | region} value spec of expected.py, for keys the collector builds as <account>/<region>/...",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3z11041114",
+  "seeds": "tools/seed/wave3b-misc2"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::CodeDeploy::DeploymentConfig",
+   "compared_fields": [
+    "codedeploy_deployment_config_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_codedeploy_deployment_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DAX::ParameterGroup",
+   "compared_fields": [
+    "dax_parameter_group_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_dax_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DAX::SubnetGroup",
+   "compared_fields": [
+    "dax_subnet_group_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_dax_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DirectConnect::Gateway",
+   "compared_fields": [
+    "amazon_side_asn",
+    "direct_connect_gateway_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_dx_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EMR::SecurityConfiguration",
+   "compared_fields": [
+    "emr_security_configuration_key",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_emr_security_configuration",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::OpenSearchServerless::AccessPolicy",
+   "compared_fields": [
+    "name",
+    "opensearchserverless_access_policy_key"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_opensearchserverless_access_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::OpenSearchServerless::LifecyclePolicy",
+   "compared_fields": [
+    "name",
+    "opensearchserverless_lifecycle_policy_key"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_opensearchserverless_lifecycle_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::OpenSearchServerless::SecurityPolicy",
+   "compared_fields": [
+    "name",
+    "opensearchserverless_security_policy_key"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_opensearchserverless_security_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53::DelegationSet",
+   "compared_fields": [
+    "route53_delegation_set_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53_delegation_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-misc2"
+}

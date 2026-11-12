@@ -17,6 +17,7 @@ class ApigatewayStage(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The stage's ARN (the API's ARN plus /stages/<name>): a stage name is unique only within an API.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stage_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:Stage"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -50,11 +51,11 @@ class ApigatewayStage(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     stage_arn = models.CharField(max_length=2048, blank=True, default="")
     # rest for a REST API, http for an HTTP or WebSocket API. NULL = not observed.
-    api_kind = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    api_kind = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The stage's name. NULL = not observed.
-    stage_name = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    stage_name = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The deployment the stage serves. NULL = not observed.
-    deployment_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    deployment_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether the stage has a cache cluster (REST only). NULL = not applicable, or not observed.
     cache_cluster_enabled = models.BooleanField(null=True, blank=True, default=None)
     # Whether X-Ray tracing is on (REST only). NULL = not applicable, or not observed.
@@ -62,11 +63,11 @@ class ApigatewayStage(BaseModel):
     # Whether changes deploy automatically (HTTP/WebSocket only). NULL = not applicable, or not observed.
     auto_deploy = models.BooleanField(null=True, blank=True, default=None)
     # The WAF web ACL protecting the stage (REST only). NULL = none, or not observed.
-    web_acl_arn = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    web_acl_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The client certificate the stage presents to its backend. NULL = none, or not observed.
-    client_certificate_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    client_certificate_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Where access logs are written. NULL = access logging is off, or not observed.
-    access_log_destination_arn = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    access_log_destination_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

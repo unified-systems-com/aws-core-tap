@@ -33,6 +33,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .manifest import manifest_entries
+
 PARTITION_AWS = "aws"
 PARTITION_US_GOV = "aws-us-gov"
 PARTITION_CN = "aws-cn"
@@ -91,26 +93,63 @@ _HOME_REGIONS = {
     PARTITION_CN: "cn-north-1",
 }
 
-#: Services the manifest collects that DO NOT EXIST in a partition. A run scoped to that
-#: partition records a clear "not available in this partition" result for the entry instead
-#: of calling an endpoint that is not there (botocore will happily synthesise a hostname such
-#: as ``cloudfront.us-gov-west-1.amazonaws.com`` that no DNS server knows).
-#: CloudFront: "not available in AWS GovCloud (US)" (AWS GovCloud (US) User Guide,
-#: "Setting Up Amazon CloudFront with Your AWS GovCloud (US) Resources"); botocore's
-#: endpoints.json carries no ``aws-us-gov`` CloudFront endpoint.
-_UNAVAILABLE_SERVICES: dict[str, dict[str, str]] = {
+#: Entries the collector does not call in a partition (``req-aws-collector-partition-7``): the manifest entries that carry
+#: a ``not_offered`` block for it, because the service or the endpoint that serves the entry is not offered there
+#: (botocore will happily synthesise a hostname such as ``cloudfront.us-gov-west-1.amazonaws.com`` that no DNS server
+#: knows, and a call to it waits out its retries). A run scoped to the partition records a clear "not available in this
+#: partition" result for the entry instead of calling it. The manifest is the one place this is held, so a new entry is
+#: authored with the question in front of the author.
+#:
+#: A service with no manifest entry that the landing-zone reader calls is not in the manifest, so it is named here.
+_NON_MANIFEST_UNAVAILABLE: dict[str, dict[str, str]] = {
     PARTITION_US_GOV: {
-        "cloudfront": (
-            "Amazon CloudFront is not offered in AWS GovCloud (US); a GovCloud account cannot list "
-            "distributions. Distributions that front GovCloud resources live in a commercial account."
-        ),
-        # Not collected anywhere (req-aws-landing-zone-nongoals); named so the gap is data.
         "macie2": (
             "Amazon Macie is not offered in AWS GovCloud (US): no GovCloud endpoint "
-            "(https://docs.aws.amazon.com/general/latest/gr/macie.html)."
+            "(https://docs.aws.amazon.com/general/latest/gr/macie.html). Not collected anywhere "
+            "(req-aws-landing-zone-nongoals); named so the gap is data."
         ),
     },
 }
+
+
+def _unconditional(block: dict) -> bool:
+    """A ``not_offered`` block that holds for the whole partition, in every region and with FIPS either way."""
+    return "regions" not in block and "fips" not in block
+
+
+def _block_applies(block: dict, region: str | None, fips: bool | None) -> bool:
+    """Whether a block holds for this region and FIPS setting. ``regions`` limits it to the regions named (a call with
+    no region in hand is not covered); ``fips`` limits it to runs with FIPS endpoints on (``true``) or off (``false``).
+    An unknown setting (``None``) is not guessed at: a block limited by FIPS does not apply, and the entry is called.
+    The collector always passes the effective setting (``credentials.fips_requested`` resolves the secret, the
+    environment and the shared config to a boolean)."""
+    if "regions" in block and (region is None or region not in block["regions"]):
+        return False
+    return not ("fips" in block and (fips is None or fips != block["fips"]))
+
+
+def _unavailable_from_manifest(
+    entries: list[dict],
+) -> tuple[dict[str, dict[str, str]], dict[str, dict[str, str]]]:
+    """Two maps per partition, from the entries' ``not_offered`` blocks: single entity types, and whole services (a
+    service all of whose manifest entries carry the block), each to the reason it is listed."""
+    entities: dict[str, dict[str, str]] = {}
+    for entry in entries:
+        for partition, block in (entry.get("not_offered") or {}).items():
+            if _unconditional(block):
+                entities.setdefault(partition, {})[entry["entity_type"]] = block["why"]
+    services: dict[str, dict[str, str]] = {p: dict(m) for p, m in _NON_MANIFEST_UNAVAILABLE.items()}
+    by_service: dict[str, list[dict]] = {}
+    for entry in entries:
+        by_service.setdefault(entry["service"], []).append(entry)
+    for service, members in by_service.items():
+        for partition in entities:
+            if all(partition in (m.get("not_offered") or {}) and _unconditional(m["not_offered"][partition]) for m in members):
+                services.setdefault(partition, {})[service] = members[0]["not_offered"][partition]["why"]
+    return services, entities
+
+
+_UNAVAILABLE_SERVICES, _UNAVAILABLE_ENTITIES = _unavailable_from_manifest(manifest_entries())
 
 
 @dataclass(frozen=True)
@@ -308,3 +347,15 @@ def service_unavailable_reason(partition: str, service: str) -> str | None:
     """Why ``service`` cannot be collected in ``partition``, or ``None`` if it can (or if we
     do not know it cannot — an unknown gap surfaces as a normal per-entry skip at run time)."""
     return _UNAVAILABLE_SERVICES.get(partition, {}).get(service)
+
+
+def entry_unavailable_reason(partition: str, entry: dict, region: str | None = None, fips: bool | None = None) -> str | None:
+    """Why the manifest ``entry`` is not called in ``partition`` (in ``region``, with FIPS ``fips``), or ``None``: its
+    service is listed whole, or its entity type is (``req-aws-collector-partition-7``), or its block is limited to a
+    region or a FIPS setting that this call is in (``req-aws-collector-partition-15``)."""
+    block = (entry.get("not_offered") or {}).get(partition)
+    if block is not None and not _unconditional(block):
+        return block["why"] if _block_applies(block, region, fips) else None
+    return service_unavailable_reason(partition, entry["service"]) or _UNAVAILABLE_ENTITIES.get(partition, {}).get(
+        entry["entity_type"]
+    )

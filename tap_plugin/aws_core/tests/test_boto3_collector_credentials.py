@@ -202,3 +202,73 @@ def test_account_mismatch_error():
     msg = cred.account_mismatch_error({"expected_account_id": "123456789012"}, "999999999999")
     assert msg is not None
     assert "999999999999" in msg and "123456789012" in msg
+
+
+# --- collection selection keys (req-aws-core-secret-selection) --------------------------------------------
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-2")
+def test_both_kinds_share_one_selection_fragment_and_still_refuse_other_keys():
+    for schema in (cred.AWS_STATIC_SCHEMA, cred.AWS_ASSUMED_ROLE_SCHEMA):
+        for key, spec in cred._SELECTION_PROPS.items():
+            assert schema["properties"][key] is spec
+        assert schema["additionalProperties"] is False
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-1")
+def test_a_secret_without_selection_keys_validates_as_before(monkeypatch):
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: _secret(cred.AWS_ASSUMED_ROLE_KIND, dict(_VALID_ASSUMED)))
+    assert cred.resolve_aws_secret().kind == cred.AWS_ASSUMED_ROLE_KIND
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-3")
+@pytest.mark.parametrize("kind", [cred.AWS_SECRET_KIND, cred.AWS_ASSUMED_ROLE_KIND])
+def test_both_kinds_accept_valid_selection_keys(monkeypatch, kind):
+    base = dict(_VALID_ASSUMED) if kind == cred.AWS_ASSUMED_ROLE_KIND else {**_BASE, "regions_allowed": ["us-east-1"]}
+    data = {**base, "include_types": ["ec2:*", "*:*_policy"], "exclude_types": ["ec2:vpc"], "accounts_allowed": ["123456789012"]}
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: _secret(kind, data))
+    assert cred.resolve_aws_secret().data["include_types"] == ["ec2:*", "*:*_policy"]
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-3")
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"include_types": []},
+        {"exclude_types": ["ec2"]},
+        {"include_types": ["EC2:vpc"]},
+        {"include_types": ["ec2:v[a-z]c"]},
+        {"accounts_allowed": []},
+        {"accounts_allowed": ["12345"]},
+    ],
+)
+def test_a_selection_outside_the_grammar_is_refused_at_validation(monkeypatch, bad):
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: _secret(cred.AWS_ASSUMED_ROLE_KIND, {**_VALID_ASSUMED, **bad}))
+    with pytest.raises(SecretValidationError):
+        cred.resolve_aws_secret()
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-5")
+def test_expected_account_id_outside_accounts_allowed_is_refused(monkeypatch):
+    data = {**_VALID_ASSUMED, "expected_account_id": "210987654321", "accounts_allowed": ["123456789012"]}
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: _secret(cred.AWS_ASSUMED_ROLE_KIND, data))
+    with pytest.raises(SecretValidationError, match="expected_account_id"):
+        cred.resolve_aws_secret()
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-7")
+@pytest.mark.spec("req-aws-collector-selection-13")
+@pytest.mark.parametrize("extra", [{}, {"include_types": ["ec2:*"]}])
+def test_retire_within_selection_true_is_refused_naming_tap_1156(monkeypatch, extra):
+    data = {**_VALID_ASSUMED, "retire_within_selection": True, **extra}
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: _secret(cred.AWS_ASSUMED_ROLE_KIND, data))
+    with pytest.raises(SecretValidationError, match="tap#1156"):
+        cred.resolve_aws_secret()
+
+
+@pytest.mark.spec("req-aws-core-secret-selection-7")
+def test_retire_within_selection_must_be_a_boolean(monkeypatch):
+    data = {**_VALID_ASSUMED, "retire_within_selection": "yes"}
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: _secret(cred.AWS_ASSUMED_ROLE_KIND, data))
+    with pytest.raises(SecretValidationError):
+        cred.resolve_aws_secret()

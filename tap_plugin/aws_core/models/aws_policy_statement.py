@@ -78,8 +78,8 @@ class AwsPolicyStatement(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "policy_arn": {"type": "string", "maxLength": 512},
         "statement_key": {"type": "string", "pattern": "^((sid|content|dupsid):.+)?$", "maxLength": 512},
-        "sid": {"type": "string"},
-        "effect": {"type": "string", "enum": ["", "Allow", "Deny"]},
+        "sid": {"type": ["string", "null"]},
+        "effect": {"type": ["string", "null"], "enum": [None, "", "Allow", "Deny"]},
         "actions": _string_list("Action, lowercased (IAM matches action names case-insensitively), de-duplicated, sorted."),
         "not_actions": _string_list("NotAction, lowercased, de-duplicated, sorted."),
         "resources": _string_list("Resource ARN patterns, case kept, de-duplicated, sorted."),
@@ -111,7 +111,7 @@ class AwsPolicyStatement(BaseModel):
             "items": {"type": "integer", "minimum": 0, "description": "One position in the Statement array."},
         },
         "occurrences": {"type": ["integer", "null"], "minimum": 1},
-        "content_sha256": {"type": "string", "pattern": "^([0-9a-f]{64})?$"},
+        "content_sha256": {"type": ["string", "null"], "pattern": "^([0-9a-f]{64})?$"},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -124,8 +124,8 @@ class AwsPolicyStatement(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     policy_arn = models.CharField(max_length=512, blank=True, default="", db_index=True)
     statement_key = models.CharField(max_length=512, blank=True, default="")
-    sid = models.CharField(max_length=255, blank=True, default="")
-    effect = models.CharField(max_length=8, blank=True, default="")
+    sid = models.CharField(max_length=255, null=True, blank=True, default=None)
+    effect = models.CharField(max_length=8, null=True, blank=True, default=None)
     # Structured facts default to null, "not observed" (req-aws-core-fields-8); the collector
     # always writes a list, [] being an observed empty.
     actions = models.JSONField(null=True, blank=True, default=None)
@@ -137,7 +137,7 @@ class AwsPolicyStatement(BaseModel):
     conditions = models.JSONField(null=True, blank=True, default=None)
     positions = models.JSONField(null=True, blank=True, default=None)
     occurrences = models.IntegerField(null=True, blank=True, default=None)
-    content_sha256 = models.CharField(max_length=64, blank=True, default="")
+    content_sha256 = models.CharField(max_length=64, null=True, blank=True, default=None)
     # Canonical {str: str} (req-aws-core-fields-4). A statement is not an AWS resource: always {}.
     tags = models.JSONField(null=True, blank=True, default=None)
 

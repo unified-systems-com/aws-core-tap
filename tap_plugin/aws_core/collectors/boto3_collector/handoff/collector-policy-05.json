@@ -1,0 +1,304 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadIot",
+      "Effect": "Allow",
+      "Action": [
+        "iot:DescribeAuthorizer",
+        "iot:DescribeBillingGroup",
+        "iot:DescribeCertificate",
+        "iot:DescribeCertificateProvider",
+        "iot:DescribeCustomMetric",
+        "iot:DescribeDimension",
+        "iot:DescribeDomainConfiguration",
+        "iot:DescribeFleetMetric",
+        "iot:DescribeJobTemplate",
+        "iot:DescribeMitigationAction",
+        "iot:DescribeProvisioningTemplate",
+        "iot:DescribeRoleAlias",
+        "iot:DescribeStream",
+        "iot:DescribeThingGroup",
+        "iot:DescribeTunnel",
+        "iot:GetCommand",
+        "iot:GetOTAUpdate",
+        "iot:GetPolicy",
+        "iot:ListAuthorizers",
+        "iot:ListBillingGroups",
+        "iot:ListCACertificates",
+        "iot:ListCertificateProviders",
+        "iot:ListCertificates",
+        "iot:ListCommands",
+        "iot:ListCustomMetrics",
+        "iot:ListDimensions",
+        "iot:ListDomainConfigurations",
+        "iot:ListFleetMetrics",
+        "iot:ListJobTemplates",
+        "iot:ListMitigationActions",
+        "iot:ListOTAUpdates",
+        "iot:ListPackageVersions",
+        "iot:ListPackages",
+        "iot:ListPolicies",
+        "iot:ListProvisioningTemplates",
+        "iot:ListRoleAliases",
+        "iot:ListScheduledAudits",
+        "iot:ListSecurityProfiles",
+        "iot:ListStreams",
+        "iot:ListTagsForResource",
+        "iot:ListThingGroups",
+        "iot:ListThingTypes",
+        "iot:ListTopicRuleDestinations",
+        "iot:ListTopicRules",
+        "iot:ListTunnels"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadIotsitewise",
+      "Effect": "Allow",
+      "Action": [
+        "iotsitewise:DescribeApplication",
+        "iotsitewise:ListAccessPolicies",
+        "iotsitewise:ListApplications",
+        "iotsitewise:ListAssetModels",
+        "iotsitewise:ListAssets",
+        "iotsitewise:ListComputationModels",
+        "iotsitewise:ListDashboards",
+        "iotsitewise:ListDatasets",
+        "iotsitewise:ListGateways",
+        "iotsitewise:ListPipelines",
+        "iotsitewise:ListPortals",
+        "iotsitewise:ListProjects",
+        "iotsitewise:ListTagsForResource",
+        "iotsitewise:ListTasks",
+        "iotsitewise:ListWorkspaces"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadIottwinmaker",
+      "Effect": "Allow",
+      "Action": [
+        "iottwinmaker:ListComponentTypes",
+        "iottwinmaker:ListEntities",
+        "iottwinmaker:ListScenes",
+        "iottwinmaker:ListSyncJobs",
+        "iottwinmaker:ListTagsForResource",
+        "iottwinmaker:ListWorkspaces"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKafka",
+      "Effect": "Allow",
+      "Action": [
+        "kafka:DescribeReplicator",
+        "kafka:DescribeVpcConnection",
+        "kafka:ListChannels",
+        "kafka:ListClusters",
+        "kafka:ListClustersV2",
+        "kafka:ListConfigurations",
+        "kafka:ListReplicators",
+        "kafka:ListTagsForResource",
+        "kafka:ListVpcConnections"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKafkaCluster",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:DescribeTopic"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKafkaconnect",
+      "Effect": "Allow",
+      "Action": [
+        "kafkaconnect:ListConnectors",
+        "kafkaconnect:ListCustomPlugins",
+        "kafkaconnect:ListTagsForResource",
+        "kafkaconnect:ListWorkerConfigurations"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKendra",
+      "Effect": "Allow",
+      "Action": [
+        "kendra:ListDataSources",
+        "kendra:ListFaqs",
+        "kendra:ListFeaturedResultsSets",
+        "kendra:ListIndices",
+        "kendra:ListQuerySuggestionsBlockLists",
+        "kendra:ListTagsForResource",
+        "kendra:ListThesauri"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKendraRanking",
+      "Effect": "Allow",
+      "Action": [
+        "kendra-ranking:DescribeRescoreExecutionPlan",
+        "kendra-ranking:ListRescoreExecutionPlans",
+        "kendra-ranking:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKinesis",
+      "Effect": "Allow",
+      "Action": [
+        "kinesis:DescribeChannel",
+        "kinesis:ListChannels",
+        "kinesis:ListStreamConsumers",
+        "kinesis:ListStreams",
+        "kinesis:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKinesisanalytics",
+      "Effect": "Allow",
+      "Action": [
+        "kinesisanalytics:DescribeApplication",
+        "kinesisanalytics:ListApplications",
+        "kinesisanalytics:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKinesisvideo",
+      "Effect": "Allow",
+      "Action": [
+        "kinesisvideo:ListSignalingChannels",
+        "kinesisvideo:ListStreams",
+        "kinesisvideo:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadKms",
+      "Effect": "Allow",
+      "Action": [
+        "kms:DescribeKey",
+        "kms:ListAliases",
+        "kms:ListKeys",
+        "kms:ListResourceTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLakeformation",
+      "Effect": "Allow",
+      "Action": [
+        "lakeformation:ListDataCellsFilter",
+        "lakeformation:ListLFTags",
+        "lakeformation:ListResources"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLambda",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:ListAliases",
+        "lambda:ListCapacityProviders",
+        "lambda:ListCodeSigningConfigs",
+        "lambda:ListEventSourceMappings",
+        "lambda:ListFunctionUrlConfigs",
+        "lambda:ListFunctions",
+        "lambda:ListLayerVersions",
+        "lambda:ListLayers",
+        "lambda:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLex",
+      "Effect": "Allow",
+      "Action": [
+        "lex:ListBotVersions",
+        "lex:ListBots",
+        "lex:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLicenseManager",
+      "Effect": "Allow",
+      "Action": [
+        "license-manager:ListLicenseAssetGroups",
+        "license-manager:ListLicenseAssetRulesets",
+        "license-manager:ListLicenseConfigurations",
+        "license-manager:ListLicenseManagerReportGenerators",
+        "license-manager:ListLicenses",
+        "license-manager:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLicenseManagerLinuxSubscriptions",
+      "Effect": "Allow",
+      "Action": [
+        "license-manager-linux-subscriptions:ListRegisteredSubscriptionProviders",
+        "license-manager-linux-subscriptions:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLicenseManagerUserSubscriptions",
+      "Effect": "Allow",
+      "Action": [
+        "license-manager-user-subscriptions:ListLicenseServerEndpoints",
+        "license-manager-user-subscriptions:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeDeliveries",
+        "logs:DescribeDeliveryDestinations",
+        "logs:DescribeDeliverySources",
+        "logs:DescribeDestinations",
+        "logs:DescribeLogGroups",
+        "logs:DescribeMetricFilters",
+        "logs:DescribeQueryDefinitions",
+        "logs:DescribeSubscriptionFilters",
+        "logs:ListIntegrations",
+        "logs:ListLogAnomalyDetectors",
+        "logs:ListScheduledQueries",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadM2",
+      "Effect": "Allow",
+      "Action": [
+        "m2:GetApplication",
+        "m2:GetEnvironment",
+        "m2:ListApplications",
+        "m2:ListEnvironments",
+        "m2:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadManagedblockchain",
+      "Effect": "Allow",
+      "Action": [
+        "managedblockchain:ListAccessors",
+        "managedblockchain:ListMembers",
+        "managedblockchain:ListNetworks",
+        "managedblockchain:ListNodes",
+        "managedblockchain:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

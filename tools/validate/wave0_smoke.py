@@ -37,7 +37,9 @@ from tap_plugin.aws_core.collectors.boto3_collector.credentials import (
 from tap_plugin.aws_core.collectors.boto3_collector.customfns import build_custom_fn_registry
 from tap_plugin.aws_core.collectors.boto3_collector.ledger import CallLedger
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
-from tap_plugin.aws_core.collectors.boto3_collector.partition import service_unavailable_reason
+from tap_plugin.aws_core.collectors.boto3_collector.outcomes import classify as collector_outcome
+from tap_plugin.aws_core.collectors.boto3_collector.credentials import fips_requested
+from tap_plugin.aws_core.collectors.boto3_collector.partition import entry_unavailable_reason
 from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectionError, project_item
 from tap_plugin.aws_core.collectors.boto3_collector.source import SourceError, iter_source
 
@@ -53,12 +55,22 @@ def _scrub(text):
     return re.sub(r"\b\d{12}\b", "<account>", str(text))
 
 
-def _classify(exc):
+def _classify(exc, entry=None, partition=None):
     if isinstance(exc, NonReadCall):
         return "blocked-non-read-call", str(exc)
+    if entry is not None and partition is not None:
+        # The collector's own named outcomes come first, so the smoke reports what a real run would record
+        # (not configured in this account, not offered in this partition, throttled) and not a second opinion.
+        named = collector_outcome(entry, exc, partition)
+        if named is not None:
+            return named.kind.replace("_", "-"), named.code
     if isinstance(exc, ClientError):
         code = exc.response.get("Error", {}).get("Code", "ClientError")
-        if code in ("AccessDenied", "AccessDeniedException", "UnauthorizedOperation", "AuthorizationError", "UnauthorizedAccess"):
+        if code in (
+            "AccessDenied", "AccessDeniedException", "UnauthorizedOperation", "AuthorizationError", "UnauthorizedAccess",
+            # The service's own spelling of a refused caller (IoT, API Gateway, License Manager, Translate, Resource Groups).
+            "UnauthorizedException", "AuthorizationException", "NotAuthorizedException", "ForbiddenException",
+        ):
             return "access-denied", code
         if code in ("ThrottlingException", "Throttling", "RequestLimitExceeded", "TooManyRequestsException"):
             return "throttled", code
@@ -81,6 +93,7 @@ def main():
     data = dict(secret.data)
     regions = resolve_regions(data)
     partition = resolve_partition(data, regions)
+    fips = fips_requested(data)
     ledger = CallLedger()
     session = build_session(data)
     ledger.attach(session)
@@ -104,11 +117,16 @@ def main():
     start = time.time()
     for n, entry in enumerate(entries, 1):
         etype = entry["entity_type"]
-        not_offered = service_unavailable_reason(partition, entry["service"])
-        if not_offered:
+        not_offered = entry_unavailable_reason(partition, entry, None, fips)
+        if not_offered and not os.environ.get("WAVE0_IGNORE_AVAILABILITY"):
             results.append({"entity_type": etype, "region": None, "outcome": "unsupported-in-partition", "error_class": "ledger-says-not-offered", "rows": 0, "calls": 0, "seconds": 0.0})
             continue
         for region in regions if entry["scope"] == "regional" else regions[:1]:
+            # A block limited to some regions (req-aws-collector-partition-15) is applied per region.
+            region_reason = entry_unavailable_reason(partition, entry, region, fips)
+            if region_reason and not os.environ.get("WAVE0_IGNORE_AVAILABILITY"):
+                results.append({"entity_type": etype, "region": region, "outcome": "unsupported-in-partition", "error_class": "ledger-says-not-offered", "rows": 0, "calls": 0, "seconds": 0.0})
+                continue
             before = len(ledger.entries)
             t0 = time.time()
             rec = {"entity_type": etype, "region": region if entry["scope"] == "regional" else "global", "rows": 0, "projection_errors": 0, "tag_errors": 0}
@@ -139,10 +157,13 @@ def main():
                         rec["tag_errors"] += 1
                         rec.setdefault("tag_error_class", _classify(exc)[1])
             except Exception as exc:  # noqa: BLE001 - every failure is a result, none stops the wave
-                rec["outcome"], rec["error_class"] = _classify(exc)
+                rec["outcome"], rec["error_class"] = _classify(exc, entry, partition)
                 if os.environ.get("WAVE0_MESSAGES"):  # local debugging only: messages can name resources, so they are never recorded by default
                     rec["error_message"] = _scrub(str(exc)[:200])
             new = ledger.entries[before:]
+            if rec.get("outcome") == "collector-error" and any(c["outcome"] == "denied" for c in new):
+                # The engine wraps a refused call in a SourceError that drops the error code; the ledger kept it.
+                rec["outcome"], rec["error_class"] = "access-denied", "AccessDenied"
             rec["calls"] = len(new)
             rec["failed_calls"] = sorted({f"{c['service']}.{c['operation']}:{c['outcome']}" for c in new if c["outcome"] not in ("ok", "absent")})
             rec["calls_made"] = sorted({f"{c['service']}.{c['operation']}" for c in new})

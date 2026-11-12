@@ -32,6 +32,7 @@ class CloudwatchLogGroup(BaseModel):
     # (or two accounts) one identity; the ARN carries partition, region and account
     # (req-aws-collector-identity-2, req-aws-collector-edges-7).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("log_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "logs:log-group"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",
@@ -58,7 +59,7 @@ class CloudwatchLogGroup(BaseModel):
 
     name = models.CharField(max_length=512, blank=True, default="")
     log_group_arn = models.CharField(max_length=512, blank=True, default="")
-    retention_in_days = models.IntegerField(blank=True, null=True)
+    retention_in_days = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

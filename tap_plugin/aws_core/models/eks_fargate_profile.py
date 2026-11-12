@@ -17,6 +17,7 @@ class EksFargateProfile(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (fargateProfileArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("eks_fargate_profile_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "eks:fargateprofile"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

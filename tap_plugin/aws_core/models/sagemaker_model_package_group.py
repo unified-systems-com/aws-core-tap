@@ -17,6 +17,7 @@ class SagemakerModelPackageGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ModelPackageGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("model_package_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:model-package-group"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

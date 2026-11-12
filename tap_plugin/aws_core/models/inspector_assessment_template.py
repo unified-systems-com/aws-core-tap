@@ -17,6 +17,9 @@ class InspectorAssessmentTemplate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("inspector_assessment_template_arn",)
+    # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
+    # so it cannot be built when absent.
+    ARN_RESOURCE: ClassVar[str | None] = None
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

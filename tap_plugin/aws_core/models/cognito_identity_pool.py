@@ -17,6 +17,7 @@ class CognitoIdentityPool(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The pool's id (region:uuid), unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("identity_pool_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "cognito-identity:identitypool"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -54,7 +55,7 @@ class CognitoIdentityPool(BaseModel):
     # Whether the classic (basic) authentication flow is allowed. NULL = not observed.
     allow_classic_flow = models.BooleanField(null=True, blank=True, default=None)
     # The developer authenticated identity provider name, if set. NULL = none, or not observed.
-    developer_provider_name = models.CharField(max_length=512, blank=True, null=True, default=None)
+    developer_provider_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -17,6 +17,7 @@ class Ec2VpcEncryptionControl(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (VpcEncryptionControlId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_vpc_encryption_control_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-encryption-control"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

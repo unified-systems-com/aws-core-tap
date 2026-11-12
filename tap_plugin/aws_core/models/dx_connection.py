@@ -36,14 +36,15 @@ class DxConnection(BaseModel):
 
     # AWS's connection id (dxcon-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connection_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "directconnect:dxcon"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "connection_id": {"type": "string", "pattern": "^(dxcon-[a-z0-9]{8,12})?$"},
-        "location": {"type": "string"},
-        "bandwidth": {"type": "string", "pattern": "^([0-9]+(Mbps|Gbps))?$"},
+        "location": {"type": ["string", "null"]},
+        "bandwidth": {"type": ["string", "null"], "pattern": "^([0-9]+(Mbps|Gbps))?$"},
         "is_hosted": {"type": ["boolean", "null"]},
-        "region": {"type": "string"},
+        "region": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -57,12 +58,12 @@ class DxConnection(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     connection_id = models.CharField(max_length=32, blank=True, default="", db_index=True)
     # The Direct Connect location code (e.g. EqDC2), as AWS reports it.
-    location = models.CharField(max_length=64, blank=True, default="")
+    location = models.CharField(max_length=64, null=True, blank=True, default=None)
     # AWS's bandwidth string (e.g. 1Gbps, 10Gbps, 500Mbps for a hosted connection).
-    bandwidth = models.CharField(max_length=16, blank=True, default="")
+    bandwidth = models.CharField(max_length=16, null=True, blank=True, default=None)
     # True for a hosted connection provisioned by a Direct Connect partner; null when not observed.
     is_hosted = models.BooleanField(null=True, blank=True, default=None)
-    region = models.CharField(max_length=32, blank=True, default="")
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: DescribeConnections tags.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.

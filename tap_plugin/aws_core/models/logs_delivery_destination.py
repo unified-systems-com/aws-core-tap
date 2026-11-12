@@ -17,6 +17,7 @@ class LogsDeliveryDestination(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "logs:delivery-destination"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -47,11 +48,11 @@ class LogsDeliveryDestination(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     destination_arn = models.CharField(max_length=512, blank=True, default="")
     # CWL, S3 or FH. NULL = not observed.
-    destination_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    destination_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The log output format. NULL = not observed.
-    output_format = models.CharField(max_length=512, blank=True, null=True, default=None)
+    output_format = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The log group, bucket or stream the logs are written to. NULL = not observed.
-    destination_resource_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    destination_resource_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

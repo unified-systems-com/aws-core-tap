@@ -1,0 +1,40 @@
+{
+  "slug": "RESOLVES_TO_TARGET__aws_core",
+  "name": "Resolves To Target",
+  "description": "A Route 53 record set resolves to a resource (record set -> Application Load Balancer, other load balancer, CloudFront distribution, or another record set in the same zone). From an alias record's AliasTarget, or from a CNAME whose value is a load balancer's or distribution's DNS name. The record names the hostname; this edge names what answers it. Replaces the zone's direct ROUTES_TRAFFIC (aws-core-tap#220).",
+  "sources": [
+    "aws_core__aws_route53_record_set"
+  ],
+  "targets": [
+    "aws_core__aws_alb",
+    "aws_core__aws_elb",
+    "aws_core__aws_cloudfront_distribution",
+    "aws_core__aws_route53_record_set"
+  ],
+  "property_schema": {
+    "type": "object",
+    "properties": {
+      "via": {
+        "type": "string",
+        "enum": [
+          "alias",
+          "cname"
+        ],
+        "description": "How the record names its target: an alias (AliasTarget) or a CNAME value."
+      },
+      "evaluate_target_health": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "An alias's EvaluateTargetHealth; null for a CNAME."
+      }
+    }
+  },
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

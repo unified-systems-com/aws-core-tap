@@ -1,0 +1,306 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "NeverReturnSecretsOrContents",
+      "Effect": "Deny",
+      "Action": [
+        "appsync:GetFunction",
+        "athena:GetQueryResults",
+        "cloudfront:GetFunction",
+        "cognito-identity:GetCredentialsForIdentity",
+        "cognito-identity:GetOpenIdToken",
+        "cognito-identity:GetOpenIdTokenForDeveloperIdentity",
+        "connect:GetFederationToken",
+        "dynamodb:BatchGetItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "ec2:GetPasswordData",
+        "ecr-public:GetAuthorizationToken",
+        "ecr:GetAuthorizationToken",
+        "gamelift:GetComputeAccess",
+        "gamelift:GetComputeAuthToken",
+        "kinesis:GetRecords",
+        "kms:Decrypt",
+        "lambda:GetFunction",
+        "lambda:GetFunctionConfiguration",
+        "lightsail:GetInstanceAccessDetails",
+        "lightsail:GetRelationalDatabaseMasterUserPassword",
+        "logs:GetLogEvents",
+        "redshift:CreateClusterUser",
+        "redshift:GetClusterCredentials",
+        "redshift:GetClusterCredentialsWithIAM",
+        "redshift:JoinGroup",
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "secretsmanager:BatchGetSecretValue",
+        "secretsmanager:GetRandomPassword",
+        "secretsmanager:GetSecretValue",
+        "sqs:ReceiveMessage",
+        "ssm:GetParameter",
+        "ssm:GetParameterHistory",
+        "ssm:GetParameters",
+        "ssm:GetParametersByPath",
+        "sts:GetFederationToken",
+        "sts:GetServiceBearerToken",
+        "sts:GetSessionToken",
+        "sts:TagSession"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAccessAnalyzer",
+      "Effect": "Allow",
+      "Action": [
+        "access-analyzer:ListAnalyzers",
+        "access-analyzer:ListArchiveRules",
+        "access-analyzer:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAcm",
+      "Effect": "Allow",
+      "Action": [
+        "acm:DescribeCertificate",
+        "acm:ListAcmeDomainValidations",
+        "acm:ListAcmeEndpoints",
+        "acm:ListAcmeExternalAccountBindings",
+        "acm:ListCertificates",
+        "acm:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAcmPca",
+      "Effect": "Allow",
+      "Action": [
+        "acm-pca:ListCertificateAuthorities",
+        "acm-pca:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAoss",
+      "Effect": "Allow",
+      "Action": [
+        "aoss:ListAccessPolicies",
+        "aoss:ListCollectionGroups",
+        "aoss:ListCollections",
+        "aoss:ListLifecyclePolicies",
+        "aoss:ListSecurityConfigs",
+        "aoss:ListSecurityPolicies",
+        "aoss:ListTagsForResource",
+        "aoss:ListVpcEndpoints"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadApigateway",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:GET",
+        "apigateway:ListPortalProducts",
+        "apigateway:ListRoutingRules"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAppconfig",
+      "Effect": "Allow",
+      "Action": [
+        "appconfig:ListExtensions",
+        "appconfig:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadApplicationAutoscaling",
+      "Effect": "Allow",
+      "Action": [
+        "application-autoscaling:DescribeScalableTargets",
+        "application-autoscaling:DescribeScalingPolicies",
+        "application-autoscaling:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAppstream",
+      "Effect": "Allow",
+      "Action": [
+        "appstream:DescribeAppBlockBuilders",
+        "appstream:DescribeAppBlocks",
+        "appstream:DescribeApplications",
+        "appstream:DescribeDirectoryConfigs",
+        "appstream:DescribeEntitlements",
+        "appstream:DescribeFleets",
+        "appstream:DescribeImageBuilders",
+        "appstream:DescribeStacks",
+        "appstream:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAps",
+      "Effect": "Allow",
+      "Action": [
+        "aps:ListAnomalyDetectors",
+        "aps:ListRuleGroupsNamespaces",
+        "aps:ListScrapers",
+        "aps:ListWorkspaces"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAthena",
+      "Effect": "Allow",
+      "Action": [
+        "athena:GetCatalogs",
+        "athena:GetNamedQuery",
+        "athena:GetTables",
+        "athena:ListCapacityReservations",
+        "athena:ListDataCatalogs",
+        "athena:ListNamedQueries",
+        "athena:ListTagsForResource",
+        "athena:ListWorkGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAutoscaling",
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling:DescribeAutoScalingGroups",
+        "autoscaling:DescribeLaunchConfigurations",
+        "autoscaling:DescribeLifecycleHooks",
+        "autoscaling:DescribePolicies",
+        "autoscaling:DescribeScheduledActions"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadAutoscalingPlans",
+      "Effect": "Allow",
+      "Action": [
+        "autoscaling-plans:DescribeScalingPlans"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadBackup",
+      "Effect": "Allow",
+      "Action": [
+        "backup:DescribeBackupVault",
+        "backup:GetBackupPlan",
+        "backup:ListBackupPlans",
+        "backup:ListBackupSelections",
+        "backup:ListBackupVaults",
+        "backup:ListFrameworks",
+        "backup:ListLegalHolds",
+        "backup:ListReportPlans",
+        "backup:ListRestoreTestingPlans",
+        "backup:ListRestoreTestingSelections",
+        "backup:ListTags",
+        "backup:ListTieringConfigurations"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadBackupGateway",
+      "Effect": "Allow",
+      "Action": [
+        "backup-gateway:GetHypervisor",
+        "backup-gateway:ListHypervisors",
+        "backup-gateway:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadBatch",
+      "Effect": "Allow",
+      "Action": [
+        "batch:DescribeComputeEnvironments",
+        "batch:DescribeJobDefinitions",
+        "batch:DescribeJobQueues",
+        "batch:DescribeServiceEnvironments",
+        "batch:ListConsumableResources",
+        "batch:ListQuotaShares",
+        "batch:ListSchedulingPolicies",
+        "batch:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadBedrock",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:GetAgent",
+        "bedrock:GetBlueprint",
+        "bedrock:GetDataAutomationLibrary",
+        "bedrock:GetDataAutomationProject",
+        "bedrock:GetKnowledgeBase",
+        "bedrock:GetRetrievalInstruction",
+        "bedrock:ListAgentAliases",
+        "bedrock:ListAgents",
+        "bedrock:ListAutomatedReasoningPolicies",
+        "bedrock:ListBlueprints",
+        "bedrock:ListDataAutomationLibraries",
+        "bedrock:ListDataAutomationProjects",
+        "bedrock:ListDataSources",
+        "bedrock:ListFlowAliases",
+        "bedrock:ListFlowVersions",
+        "bedrock:ListFlows",
+        "bedrock:ListGuardrails",
+        "bedrock:ListInferenceProfiles",
+        "bedrock:ListKnowledgeBases",
+        "bedrock:ListPromptRouters",
+        "bedrock:ListPrompts",
+        "bedrock:ListRetrievalInstructions",
+        "bedrock:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCassandra",
+      "Effect": "Allow",
+      "Action": [
+        "cassandra:Select"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCloudformation",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:DescribeGeneratedTemplate",
+        "cloudformation:DescribeStackSet",
+        "cloudformation:DescribeStacks",
+        "cloudformation:ListChangeSets",
+        "cloudformation:ListGeneratedTemplates",
+        "cloudformation:ListStackSets",
+        "cloudformation:ListStacks",
+        "cloudformation:ListTypeVersions",
+        "cloudformation:ListTypes"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCloudfront",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCloudhsm",
+      "Effect": "Allow",
+      "Action": [
+        "cloudhsm:DescribeClusters"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ class SsmParameter(BaseModel):
     # Identity (req-grid-entity-natural-key): The parameter's ARN: a parameter name is unique only
     # within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("parameter_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ssm:parameter"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,8 +30,8 @@ class SsmParameter(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "parameter_arn": {"type": "string"},
-        "type": {"type": "string"},
-        "tier": {"type": "string"},
+        "type": {"type": ["string", "null"]},
+        "tier": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -38,8 +39,8 @@ class SsmParameter(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "parameter_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "type": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "tier": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "tier": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -47,8 +48,8 @@ class SsmParameter(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     parameter_arn = models.CharField(max_length=512, blank=True, default="")
-    type = models.CharField(max_length=32, blank=True, default="")
-    tier = models.CharField(max_length=32, blank=True, default="")
+    type = models.CharField(max_length=32, null=True, blank=True, default=None)
+    tier = models.CharField(max_length=32, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

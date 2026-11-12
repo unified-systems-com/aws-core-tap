@@ -17,6 +17,7 @@ class DatasyncLocation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LocationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("datasync_location_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "datasync:location"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

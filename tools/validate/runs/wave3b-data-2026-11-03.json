@@ -1,0 +1,555 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 41
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (45 destroyed). Checked directly afterwards, with each service's own listing: no Glue, Athena, Step Functions, AppConfig, DocumentDB, Neptune, MemoryDB, Service Catalog or Managed Prometheus object, bucket, IAM role, topic or VPC of the run remains. The tagging API still listed the run's Managed Prometheus workspace afterwards, but DescribeWorkspace answers ResourceNotFoundException and ListWorkspaces is empty, so that is a stale index entry.",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Fourth run. The first (w3d11032157) created 46 of 48 resources and compared 45 types: 40 passed and 5 failed. Glue connection and Glue data quality ruleset failed on the read (the collector's role is denied glue:GetConnections and glue:ListDataQualityRulesets, both already in extended-read-actions.json); the Verified Permissions policy store failed on tags-unread (the role is denied verifiedpermissions:ListTagsForResource, checked with one call as the collector's credential; not in extended-read-actions.json yet); the Glue crawler was refused because its S3 target did not exist (the later runs create an empty bucket); Neptune CreateGlobalCluster is not supported in GovCloud. The second run (w3d11032205) passed all 41. After review, the third (w3d11032244) scoped the event subscriptions: Neptune's, set to the module's own parameter group, was created, and DocumentDB's was refused (SourceNotFound: DocumentDB has no instance parameter group), so DocumentDB's is created disabled in this run. Its recording rule is now one that returns no series. The types that cannot pass are not seeded; see wave3b-data/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3d11032251",
+  "seeds": "tools/seed/wave3b-data",
+  "wave": "3b-data"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::AppConfig::Application",
+   "compared_fields": [
+    "appconfig_application_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_appconfig_application",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::AppConfig::ConfigurationProfile",
+   "compared_fields": [
+    "appconfig_configuration_profile_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_appconfig_configuration_profile",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::AppConfig::DeploymentStrategy",
+   "compared_fields": [
+    "appconfig_deployment_strategy_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_appconfig_deployment_strategy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::AppConfig::Environment",
+   "compared_fields": [
+    "appconfig_environment_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_appconfig_environment",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::APS::RuleGroupsNamespace",
+   "compared_fields": [
+    "aps_rule_groups_namespace_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_aps_rule_groups_namespace",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::APS::Workspace",
+   "compared_fields": [
+    "workspace_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_aps_workspace",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Athena::DataCatalog",
+   "compared_fields": [
+    "athena_data_catalog_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_athena_data_catalog",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Athena::NamedQuery",
+   "compared_fields": [
+    "athena_named_query_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_athena_named_query",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Athena::WorkGroup",
+   "compared_fields": [
+    "athena_work_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_athena_work_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DocDB::DBClusterParameterGroup",
+   "compared_fields": [
+    "dbcluster_parameter_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_docdb_db_cluster_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DocDB::DBSubnetGroup",
+   "compared_fields": [
+    "dbsubnet_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_docdb_db_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DocDB::EventSubscription",
+   "compared_fields": [
+    "event_subscription_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_docdb_event_subscription",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::DocDB::GlobalCluster",
+   "compared_fields": [
+    "docdb_global_cluster_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_docdb_global_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Crawler",
+   "compared_fields": [
+    "glue_crawler_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_crawler",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Database",
+   "compared_fields": [
+    "glue_database_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_database",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Job",
+   "compared_fields": [
+    "glue_job_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_job",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Registry",
+   "compared_fields": [
+    "glue_registry_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_registry",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Schema",
+   "compared_fields": [
+    "glue_schema_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_schema",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::SecurityConfiguration",
+   "compared_fields": [
+    "glue_security_configuration_name",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_security_configuration",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Table",
+   "compared_fields": [
+    "glue_table_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_table",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Trigger",
+   "compared_fields": [
+    "glue_trigger_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_trigger",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Glue::Workflow",
+   "compared_fields": [
+    "glue_workflow_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_glue_workflow",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::MemoryDB::ACL",
+   "compared_fields": [
+    "memorydb_acl_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_memorydb_acl",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::MemoryDB::ParameterGroup",
+   "compared_fields": [
+    "memorydb_parameter_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_memorydb_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::MemoryDB::SubnetGroup",
+   "compared_fields": [
+    "memorydb_subnet_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_memorydb_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::MemoryDB::User",
+   "compared_fields": [
+    "memorydb_user_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_memorydb_user",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Neptune::DBClusterParameterGroup",
+   "compared_fields": [
+    "name",
+    "neptune_db_cluster_parameter_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_neptune_db_cluster_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Neptune::DBParameterGroup",
+   "compared_fields": [
+    "name",
+    "neptune_db_parameter_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_neptune_db_parameter_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Neptune::DBSubnetGroup",
+   "compared_fields": [
+    "name",
+    "neptune_db_subnet_group_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_neptune_db_subnet_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Neptune::EventSubscription",
+   "compared_fields": [
+    "neptune_event_subscription_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_neptune_event_subscription",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::Bucket",
+   "compared_fields": [
+    "bucket_arn",
+    "name",
+    "public_access_blocked"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_bucket",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ServiceCatalog::Portfolio",
+   "compared_fields": [
+    "name",
+    "servicecatalog_portfolio_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_servicecatalog_portfolio",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ServiceCatalog::ServiceAction",
+   "compared_fields": [
+    "name",
+    "servicecatalog_service_action_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_servicecatalog_service_action",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ServiceCatalog::TagOption",
+   "compared_fields": [
+    "servicecatalog_tag_option_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_servicecatalog_tag_option",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SNS::Topic",
+   "compared_fields": [
+    "kms_master_key_id",
+    "topic_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sns_topic",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::StepFunctions::Activity",
+   "compared_fields": [
+    "name",
+    "stepfunctions_activity_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_stepfunctions_activity",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::StepFunctions::StateMachine",
+   "compared_fields": [
+    "name",
+    "stepfunctions_state_machine_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_stepfunctions_state_machine",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::StepFunctions::StateMachineAlias",
+   "compared_fields": [
+    "stepfunctions_state_machine_alias_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_stepfunctions_state_machine_alias",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-data"
+}

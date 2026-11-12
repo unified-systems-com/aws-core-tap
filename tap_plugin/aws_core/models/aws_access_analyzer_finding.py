@@ -52,21 +52,21 @@ class AwsAccessAnalyzerFinding(BaseModel):
         "name": {"type": "string", "minLength": 1},
         "finding_id": {"type": "string"},
         "analyzer_arn": {"type": "string"},
-        "resource_arn": {"type": "string"},
+        "resource_arn": {"type": ["string", "null"]},
         # AWS::S3::Bucket, AWS::IAM::Role, ... verbatim.
-        "resource_type": {"type": "string"},
-        "resource_owner_account": {"type": "string"},
+        "resource_type": {"type": ["string", "null"]},
+        "resource_owner_account": {"type": ["string", "null"]},
         # ExternalAccess, UnusedIAMRole, UnusedPermission, InternalAccess, ... verbatim.
-        "finding_type": {"type": "string"},
-        "status": {"type": "string"},
+        "finding_type": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
         "is_public": {"type": ["boolean", "null"]},
         "principal": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "actions": {"type": ["array", "null"], "items": {"type": "string"}},
         "condition_keys": {"type": ["array", "null"], "items": {"type": "string"}},
-        "error": {"type": "string"},
-        "created_at": {"type": "string"},
-        "updated_at": {"type": "string"},
-        "analyzed_at": {"type": "string"},
+        "error": {"type": ["string", "null"]},
+        "created_at": {"type": ["string", "null"]},
+        "updated_at": {"type": ["string", "null"]},
+        "analyzed_at": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -79,19 +79,19 @@ class AwsAccessAnalyzerFinding(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     finding_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
     analyzer_arn = models.CharField(max_length=2048, blank=True, default="")
-    resource_arn = models.CharField(max_length=2048, blank=True, default="")
-    resource_type = models.CharField(max_length=64, blank=True, default="")
-    resource_owner_account = models.CharField(max_length=12, blank=True, default="")
-    finding_type = models.CharField(max_length=64, blank=True, default="")
-    status = models.CharField(max_length=16, blank=True, default="")
+    resource_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    resource_type = models.CharField(max_length=64, null=True, blank=True, default=None)
+    resource_owner_account = models.CharField(max_length=12, null=True, blank=True, default=None)
+    finding_type = models.CharField(max_length=64, null=True, blank=True, default=None)
+    status = models.CharField(max_length=16, null=True, blank=True, default=None)
     is_public = models.BooleanField(null=True, blank=True, default=None)
     principal = models.JSONField(null=True, blank=True, default=None)
     actions = models.JSONField(null=True, blank=True, default=None)
     condition_keys = models.JSONField(null=True, blank=True, default=None)
-    error = models.CharField(max_length=255, blank=True, default="")
-    created_at = models.CharField(max_length=40, blank=True, default="")
-    updated_at = models.CharField(max_length=40, blank=True, default="")
-    analyzed_at = models.CharField(max_length=40, blank=True, default="")
+    error = models.CharField(max_length=255, null=True, blank=True, default=None)
+    created_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    updated_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    analyzed_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     # AWS cannot tag a finding: always {} (tag_lanes.json, lane `none`).
     tags = models.JSONField(null=True, blank=True, default=None)
 

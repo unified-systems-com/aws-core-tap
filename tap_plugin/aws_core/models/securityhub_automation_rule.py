@@ -17,6 +17,7 @@ class SecurityhubAutomationRule(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The rule's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "securityhub:automation-rule"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
@@ -47,7 +48,7 @@ class SecurityhubAutomationRule(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     rule_arn = models.CharField(max_length=512, blank=True, default="")
     # ENABLED or DISABLED. NULL = not observed.
-    rule_status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    rule_status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The rule's order among automation rules. NULL = not observed.
     rule_order = models.IntegerField(null=True, blank=True, default=None)
     # Whether no later rule runs after this one matches. NULL = not observed.

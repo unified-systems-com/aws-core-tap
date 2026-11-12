@@ -92,15 +92,20 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-edges | [Declarative Edge Rules](#declarative-edge-rules) | Approved for Development | Endpoints named by natural key, resolved by core; v0 make-it-work = mutually-available natural keys |
 | req-aws-collector-edge-resolver | [Edge Identifier Resolution (Future Seam)](#edge-identifier-resolution-future-seam) | Backlog | The durable fix: pre-batch resolution pass; `key_kind`-driven; misses become observable warnings |
 | req-aws-collector-reconcile | [Grid-State Reconciliation (Future Seam)](#v0-non-goals) | Backlog | Implied-absence/tombstone via the same grid-read primitive as the resolver; one generic reconcile vs Cartography per-type cleanup |
+| req-aws-collector-progressive-upload | [Progressive Upload (Future Seam)](#progressive-upload-future-seam) | Backlog | Write to the grid as the run works, not in one batch at the end: either by phase (nodes, edges, completeness) or by self-contained units the manifest or collector declares complete |
 | req-aws-collector-hydrate | [Fan-Out Hydrate Seam](#fan-out-hydrate-seam) | Approved for Development | First named seam; per-op error-swallow; S3-style many-call |
 | req-aws-collector-s3-bucket-size | [S3 Bucket Size Metrics](#s3-bucket-size-metrics) | Approved for Development | Aggregate size/count from CloudWatch storage metrics; `size_observed_at` data-currency disclosure |
 | req-aws-collector-ecs | [ECS Clusters, Tasks And Container Images](#ecs-clusters-tasks-and-container-images) | Proposed | Collect ECS clusters, services, tasks and containers; per-container image and image digest as the join key to builds, SBOMs and findings; credential-bearing overrides declared, configuration off |
+| req-aws-collector-lb-topology | [Load Balancer Topology](#load-balancer-topology) | In Development | A load balancer reaches its targets through its target groups, one edge per listener rule carrying the rule; each target edge carries its port and health; load balancer and Lambda targets are linked; Route 53 record sets become nodes between a zone and what they resolve to |
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
-| req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in |
+| req-aws-collector-selection | [Collection Selection](#collection-selection) | Proposed | A run collects only the types and accounts the credential's `include_types`, `exclude_types` and `accounts_allowed` select; an unselected type or account is unobserved, never empty, and retires nothing; the effective selection is echoed in every run |
+| req-aws-collector-partition | [AWS Partitions](#aws-partitions) | Implemented | Commercial and GovCloud: partition derived from the region scope, refused when mixed or unsupported; partition-aware ARNs and global-service routing; CloudFront degrade; FIPS opt-in; entries a partition does not offer are marked per entry in the manifest (`not_offered`) and kept honest by a test against the newest wave 0 record |
+| req-aws-collector-outcome | [Listing Outcomes And Client Posture](#listing-outcomes-and-client-posture) | Approved for Development | A listing that yields nothing for a named reason that is not a failed call (`not_configured`, `unsupported_in_partition`, `throttled`) is a recorded result and never a complete-empty observation; one `Config` for timeouts and retries |
 | req-aws-collector-grift-batch | [GRIFT Batch Assembly](#grift-batch-assembly) | Approved for Development | One batch/run; provenance; no deletion semantics |
 | req-aws-collector-edge-authority | [Edge Authority Claims](#edge-authority-claims) | Implemented | Per anchor, how each manifest edge rule's source, and each Organizations placement and attachment read, was read (complete, partial, failed); one `edge_cases.authority` claim per scope, sent only to an importer that accepts the section; a failed or truncated sub-call is never `complete` |
+| req-aws-collector-progress | [Run Progress](#run-progress) | Proposed | A run writes progress lines to the process log while it works: a start line, a throttled heartbeat naming the entry being read, a line when the reads end, and a line when the batch is imported; counts only |
 | req-aws-collector-audit-ledger | [Audit Verifiability](#audit-verifiability) | Approved for Development | Per-run AWS call ledger → `CollectionJob.results`; step one of the verifiability theme |
 | req-aws-collector-tags | [Resource Tags](#resource-tags) | Approved for Development | Per-node `tags.source` (RGTA default / per-service side-quest); one canonical `{str:str}` field. Proposed amendment ACs `-9`..`-15` (landing-zone epic): declared lanes including `none`, the Organizations lane, AWS-reserved keys kept, untaggable declared, every new type declares its lane, a per-entity-type lane registry for types with no manifest entry, the `service` lane reads every page |
 | req-aws-collector-fanout | [Multi-Account Fan-Out](#multi-account-fan-out) | Proposed | From the organization's management account: list members, `AssumeRole` into each with a partition-aware role ARN, collect each, report per account; one batch per account |
@@ -240,16 +245,17 @@ entry with a `credential` location, or any entry that persists while listing a
 location is surfaced to the person who requested the work, who decides it
 (the `add-aws-type` skill, step 1).
 
-An entry whose `sensitivity` has a `credential`
-location defaults to `persist_configuration: false`, and its
-`persist_configuration_why` names the credential location. An entry that lists a
-`credential` location and is persisted anyway is a **known, reviewed risk**: that
-is only allowed with a reason that names every such location, so the acceptance
-is visible where the decision is made. As shipped there are none — Lambda
-and CloudFront, API Gateway HTTP API and Cognito user pool are off, and a
-test fails if any credential-bearing entry is persisted. The canonical `tags`
-model field is persisted independently ([Resource Tags](#resource-tags)) and is
-not governed by `persist_configuration`.
+**Redaction (`req-aws-collector-redaction`).** The collector stores everything AWS returns and removes only obvious
+secret material: keys, passwords and credentials (George, 2026-11-05: the more data on the grid the better the map;
+a secret an operator typed into a tag, a description or a policy is the operator's). Every entry therefore sets
+`persist_configuration: true`. Two things are removed from a stored `configuration`: the paths the entry's
+`sensitivity.locations` mark `redact: true` (the members AWS itself marks sensitive, and the reviewed secrets such as
+`ClientSecret`, `PreSharedKey`, `UserData`), and any string whose key names a secret (`password`, `secret`, `private
+key`, `API key`, `token`) unless the key is a reference, flag, date or URL (`SecretArn`, `PasswordLastUsed`, `TokenUrl`).
+What was removed is listed under `_redacted`, so a reader can tell a withheld value from an absent one. Categories other
+than `credential` (customer content, free text, access policies, personal data) are never redacted. The contents of a
+resource (S3 objects, Parameter Store values, table items) are not collected at all, because no operation that reads
+them is made. The canonical `tags` model field is persisted independently ([Resource Tags](#resource-tags)).
 
 #### Acceptance Criteria
 
@@ -260,7 +266,7 @@ not governed by `persist_configuration`.
 | req-aws-collector-manifest-3 | Order Independent | Approved for Development | Collection results are identical regardless of manifest entry order. | Enabled by identity by natural key. |
 | req-aws-collector-manifest-4 | Versioned | Approved for Development | The manifest carries a version recorded in the GRIFT batch provenance. | Supports drift tracking. |
 | req-aws-collector-manifest-5 | Self-Describing Entries | Approved for Development | Each entry carries a `why`, and each `hydrate` element a `{key, op, why}`; the schema requires `why` so every collected call's rationale is authorable and visible in the manifest. | Materialized per-node (`_source`) so a grid object is legible without the manifest, for every entry that persists its configuration (`req-aws-collector-field-projection-7`). |
-| req-aws-collector-manifest-6 | Response Sensitivity Declared | Approved for Development | Every entry declares `sensitivity` in one of three states (`unreviewed`, `reviewed_none_known`, `reviewed_may_contain`); a missing declaration fails schema validation; `reviewed_may_contain` lists `{path, category, reason, evidence}` locations. | Ruling 2026-09-23. Credential locations default the entry to not persisting (see `req-aws-collector-field-projection-7`). `tests/test_boto3_collector_sensitivity.py`. |
+| req-aws-collector-manifest-6 | Response Sensitivity Declared | Approved for Development | Every entry declares `sensitivity` in one of three states (`unreviewed`, `reviewed_none_known`, `reviewed_may_contain`); a missing declaration fails schema validation; `reviewed_may_contain` lists `{path, category, reason, evidence}` locations. | Ruling 2026-09-23. A location may carry `redact: true` (see `req-aws-collector-redaction`). `tests/test_boto3_collector_sensitivity.py`. |
 | req-aws-collector-manifest-7 | Unreviewed Is Not Stored | Approved for Development | An entry whose `sensitivity.status` is `unreviewed` has `persist_configuration: false`; the manifest schema rejects an unreviewed entry that persists, so the manifest fails load. | Enforced in `aws_resource_manifest.schema.json` (entry `allOf`). `tests/test_boto3_collector_sensitivity.py::TestSchema::test_unreviewed_entry_that_persists_is_rejected`. |
 
 ### Source Primitive
@@ -319,6 +325,8 @@ Seam](#fan-out-hydrate-seam) rather than hand-rolling pagination/error handling.
 | req-aws-collector-source-7 | Account Parameter | Approved for Development | A plain `aws_op` source may carry literal `params`, and any `params` value in a source (plain or `per`) equal to the string `$account_id` is replaced by the account being collected. A source that names it when the collector has no account id fails the listing. | `source.py::_with_account`; `tests/test_boto3_collector_source.py::TestAccountParam`. Opens the list calls that ask for the account (QuickSight `AwsAccountId`). |
 | req-aws-collector-source-8 | Derived Item Keys | Approved for Development | An entry may carry `derive`, a map of item key (must start with `_`, so it cannot shadow an AWS member) to a template. `{partition}`, `{region}` and `{account}` are the scope being collected; any other `{Path}` is a path on the item. The built keys are added to each item before projection, so `natural_key`, `fields` and the tags lane read them like any member; they are not stored in `configuration`. A missing value fails the listing. For a resource a listing names but gives no ARN, with the ARN format cited per service from botocore or IAM documentation. | `source.py::iter_source`, `render_template`; `tests/test_boto3_collector_source.py::TestDerive`. Prior art: Steampipe builds the Glue job ARN from partition, region, account and name; Cartography's `build_arn`. |
 | req-aws-collector-source-9 | Item Filter | Approved for Development | A plain `aws_op` source, a `per` level, or the final `per` call may carry `where`, a list of conditions every item must satisfy: a `path` on the item and one of `equals`, `not_equals`, `in`, `prefix`, `contains`. For a listing that mixes kinds of one resource with no request filter (Comprehend's document-classifier and entity-recognizer endpoints), or that returns a mutable working copy beside the numbered versions (`not_equals: DRAFT` on a version listing). A tags-lane `service` param may carry `list: true` to send the value as a one-element list. | `source.py::_passes`; `tests/test_boto3_collector_source.py::TestWhere`. |
+| req-aws-collector-source-10 | Request Forms The API Insists On | Approved for Development | A listing the API refuses without a parameter carries it in `params` (`DescribeVpcBlockPublicAccessExclusions` takes `MaxResults`, which it requires when no `ExclusionIds` are given); a listing the API cannot make account-wide fans out per parent (`ListAssets` of IoT SiteWise requires an asset model, so it runs per `ListAssetModels` item of type `ASSET_MODEL`, as AWS documents). | `tests/test_boto3_collector_outcomes.py::TestRequestFixes`. Both found by the 2026-11-01 GovCloud wave-0 run. |
+| req-aws-collector-source-11 | AWS-Owned Registry Not The Account's | Approved for Development | The EventSchemas registry `aws.events` is AWS's, its schemas carry no `SchemaArn` and it no `RegistryArn`; both entries filter it out by exact name (`where` `not_equals: aws.events`, never a prefix, so a registry the account owns is never dropped from a listing that reports itself complete) and say so in `why`. This is the only AWS-owned-default filtering the manifest does; any other is a separate decision. | `TestRequestFixes::test_the_aws_owned_registry_is_not_read_as_the_accounts`, `::test_the_schemas_of_the_aws_owned_registry_are_not_listed`. |
 
 ### Field Projection
 ----
@@ -476,7 +484,16 @@ custom origin header exists, never what it says.
 | req-aws-collector-field-projection-4 | No Silent Coercion | Approved for Development | Values are passed through; model/service-layer validation is the sole gate. | |
 | req-aws-collector-field-projection-5 | One Canonical Timestamp | Approved for Development | All date input shapes normalize at collection into one ISO 8601 UTC envelope field; "created/updated after X" is one query, never per-resource spelunking. | Grid-native time is the always-present spine; AWS-source time is null where AWS omits it. |
 | req-aws-collector-field-projection-6 | Reserved Keys & Stable Blob | Approved for Development | `_source`/`_hydrate`/`_hydrate_mapping` are engine-reserved (not authored jsonpath targets); `ResponseMetadata` stripped; deterministic serialization ⇒ unchanged resource = byte-identical `configuration`. | Protects idempotent upsert + History/FLIP. Reserved keys are in-memory only for an entry whose `persist_configuration` is false. |
-| req-aws-collector-field-projection-7 | Per-Entry Configuration Persistence | Approved for Development | Each manifest entry's required `persist_configuration` boolean and non-empty `persist_configuration_why` decide whether the emitted node payload carries the in-memory envelope or `{}`; typed fields, tags and edges are unchanged either way; an entry with a `credential` sensitivity location defaults to false; an `unreviewed` entry is always false (`req-aws-collector-manifest-7`); no model field is removed and no migration is written. | `tests/test_boto3_collector_batch.py`, `tests/test_boto3_collector_slice.py::test_credential_canary_is_not_persisted`, `::test_s3_bucket_persists_its_configuration_with_posture`, `tests/test_boto3_collector_sensitivity.py`. |
+| req-aws-collector-field-projection-7 | Per-Entry Configuration Persistence | Approved for Development | Each manifest entry's required `persist_configuration` boolean and non-empty `persist_configuration_why` decide whether the emitted node payload carries the in-memory envelope or `{}`; typed fields, tags and edges are unchanged either way; every entry is `true` (`req-aws-collector-redaction-1`): a credential location no longer turns persistence off, it is removed from the stored copy (`req-aws-collector-redaction-2`); no model field is removed and no migration is written. | `tests/test_boto3_collector_batch.py`, `tests/test_boto3_collector_slice.py::test_secret_material_is_removed_and_the_rest_is_stored`, `::test_flag_is_what_stores_the_response`, `tests/test_boto3_collector_sensitivity.py`. |
+| req-aws-collector-redaction-1 | Everything Is Stored | Proposed | Every manifest entry has `persist_configuration: true`: a node's `configuration` carries the whole response, `_source`, `_hydrate` and `_hydrate_mapping`, less what `-2` and `-3` remove. | A test fails if any entry is off. The size and import time are measured on a full run. |
+| req-aws-collector-redaction-2 | Declared Secret Paths Are Removed | Proposed | A `sensitivity.locations` entry with `redact: true` names a path (the manifest's path dialect, `[]` to flatten) that is removed from the stored configuration. Only `credential` locations may be redacted. Every location AWS marks sensitive is redacted except four named non-secrets (an app client id, two claim names, a directory account name). | `tests/test_boto3_collector_sensitivity.py`: a canary planted at every redacted path of every entry is absent from what is stored. |
+| req-aws-collector-redaction-3 | Secret-Named Keys Are Scrubbed | Proposed | Any string value whose key names a secret is removed from every stored configuration, wherever it sits, unless the key is a reference, a flag, a date, a URL or a number. | `tests/test_boto3_collector_redaction.py`. A net for what no location declares; the list of removed paths is `_redacted`. |
+| req-aws-collector-redaction-4 | Only Secrets | Proposed | Operator-authored content (tags, names, descriptions, comments, policies, personal data) is stored. | Test: representative content passes through unchanged. |
+| req-aws-collector-enrich-1 | Detail Enrichment | Proposed | An entry whose list call returns a summary and whose Describe/Get call returns more carries an `enrich` block `{op, params, why}`: one read call per listed resource, parameters taken from the listed item, the response stored under `configuration._hydrate.detail` with the status of any hydrate slot (`ok`, `absent`, `denied`, `error`; a refused call is a `HYDRATE_GAP`). Secret members of the detail response are declared as `_hydrate.detail.data.<path>` redact locations and removed before storage (`req-aws-collector-redaction-2`). The detail op must be a Get/Describe read that names no secret, and every required input must be supplied. 104 types are enriched; 32 are listed in the PR as not mappable. | `tests/test_boto3_collector_enrich.py`. |
+| req-aws-collector-tags-17 | Untaggable Refusal Is An Answer | Proposed | A tag read the service refuses because the resource cannot hold tags (an AWS-owned object) is the outcome `not_taggable`, named by a reviewed row of `error_outcomes.json` (service, operation, error code and message text), authored from an observed refusal: the node's tags are `{}`, the slot records `not_taggable` with the error code, and no `HYDRATE_GAP` is raised. A refusal because the resource is shared in from another account is `not_readable`: the owner's tags may exist and are not visible, so the tags stay unread (not `{}`), the slot records `not_readable`, and no gap is raised. A refusal no row names stays a failed read. | `tests/test_gap_sweep.py`. |
+| req-aws-collector-ledger-4 | Ledger Keeps The Error Code | Proposed | Each call-ledger entry carries the `error_code` of a refused call (null for a call that answered), so an outcome can be named from the ledger without re-running the call. | `tests/test_gap_sweep.py`. |
+| req-aws-collector-edges-8 | Reference Edges For Exposure | Proposed | The manifest declares an edge for each reference the exposure work follows: ElastiCache cluster to its subnet group and the group to its subnets; network interface to its subnet and instance; EBS volume to its instance; Auto Scaling group to its instances and launch template; security group rule to its group and to the group it references; RDS snapshot to its database; Network and Gateway load balancer listener to its load balancer by DNS name. `ROUTES_TRAFFIC` is written from load balancers to the instances and functions in their target groups and from hosted zones to the load balancers their aliases name, with a plain identity. | `tests/test_gap_sweep.py`; checked live against a seeded GovCloud stack (`tools/seed/wave4-gapsweep`). |
+| req-aws-collector-iam-policy-1 | Generated Collector Policy | Proposed | The IAM policy the collector needs is generated, not hand-written: the inventory is every operation the manifest names (list, parent, tag, hydrate, detail) plus the operations the collector's Python makes, mapped to IAM actions through AWS's Service Authorization Reference (overrides for the few that differ), written as customer-managed policy documents of at most 6,000 characters each with an explicit `Deny` on actions that return secret values or a resource's contents. The committed documents must equal the generator's output, every inventory operation must be granted, no write verb may appear, and no granted action may be denied. Operations whose action name is only the default `<prefix>:<Operation>` are listed by `unverified()` until a live round trip with the role. | `tests/test_iam_policy.py`. |
 | req-aws-collector-field-projection-8 | Off-Type Security Facts Kept | Approved for Development | For entries whose `persist_configuration` is false, the Lambda VPC attachment (`vpc_subnet_ids`, `vpc_security_group_ids`), CloudFront per-origin access mode (`origin_access`) and API Gateway HTTP API per-route authorization type (`route_authorization_types`) are typed fields derived from data already fetched; configuration stays `{}`. | Migration 0007. `tests/test_boto3_collector_slice.py::test_promoted_security_facts_land_while_configuration_stays_empty`, `tests/test_boto3_collector_customfns.py::TestCloudfrontDistributionsWithOac::test_origin_access_mode_per_origin`, `tests/test_boto3_collector_new_service_types.py::TestApiGatewayHttpApisDetailed`. |
 | req-aws-collector-field-projection-9 | CloudFront Origin Header Presence | Approved for Development | Each CloudFront origin's custom-header presence is the typed field `origin_custom_headers_present` (`{origin Id: bool}`), derived from the `ListDistributions` origin with no extra call; an origin without headers is `false`, not absent or `null`; no header value or name reaches the field, the GRIFT batch, the stored row or its history. | Migration 0008 (additive `AddField` only). `tests/test_boto3_collector_slice.py::test_origin_header_presence_lands_and_the_value_never_does`, `tests/test_boto3_collector_customfns.py::TestCloudfrontDistributionsWithOac::test_custom_header_presence_per_origin`. |
 
@@ -508,6 +525,37 @@ is simply created again. Core owns the ids (`req-grid-entity-natural-key`,
   The readers that are not manifest-driven (Organizations, landing zone, findings) send the same
   shape, and some of their types declare composite keys (`(account_id, region_code)` for the
   footprint, `(organization_id, account_id, service_principal)` for a delegation, and others).
+- A key names one resource across every partition, account and region a run can reach
+  (`req-aws-collector-identity-8`, aws-core-tap#224). A bare name does not: AWS creates
+  `default.dax1.0` in every region, and three regions each held a metric filter with the same log
+  group and filter name, so a multi-region run kept the first and dropped the rest as duplicates,
+  and across runs the regions overwrote one another's row. Each entry is keyed, in order of
+  preference, on the **ARN** where AWS defines one (built by `derive` when the API does not return
+  it); else on an **id AWS generates** (`vpc-…`, a detector id, a user pool id) or a composite led
+  by one; else on a **scoped composite**, `<partition>:<account>:<region>:<rest>`, built by `derive`
+  (`{partition}:{account}:{region}:…`) or, inside a custom function, by `customfns._scoped_key`. A
+  global entry's composite carries the literal `global` for its region, never the region the call
+  happened to be made in. `tests/test_natural_key_scope.py` checks every manifest entry against
+  this, and lists each generated-id entry with its reason, so a new name-keyed entry fails until it
+  is scoped.
+- Rows already on the grid under an unscoped key are re-keyed in place by migration `0053`, from
+  their own `aws_account` and `aws_region` dimensions, so they keep their entity ids, edges and
+  history, and the next run matches them (`req-aws-collector-identity-9`). A row without both
+  dimensions, or whose old key does not have its type's expected shape, is left alone and named in
+  a warning; the next run then writes the scoped row beside it.
+- The ARN is the natural key wherever AWS gives a resource one (`req-aws-collector-identity-10`):
+  the identifier CloudTrail, Config and IAM policies name it by, unique in every partition, account
+  and region, and the one a search across the grid can start from. Every key field holding an ARN
+  is named `arn`. A resource type with no ARN keeps its scoped key.
+- Every model names the resource type its ARN belongs to, as `ARN_RESOURCE =
+  "<service>:<resource>"` from AWS's Service Authorization Reference, and `arn_formats.json`
+  vendors that resource type's ARN formats, refreshed by `iam_policy.py --refresh-arns` (or by `--refresh` with the IAM
+  action data) (`req-aws-collector-identity-11`). Building an ARN therefore reads the same
+  checked-in data on every run. A type whose ARN AWS returns but which the reference lists no
+  resource type for declares `ARN_RESOURCE = None`; its ARN is kept and never built. A type with no
+  ARN declares nothing. A type that names its resource type but keeps a key that is not the ARN,
+  because some of its rows have none (an account outside an Organization), is listed too.
+  `tests/test_arn_resources.py` lists all three with their reasons.
 - An edge is sent with a `ref` too and is found by its type's declared identity
   (`req-grid-edge-identity`; every aws_core edge type declares the plain key, `{"discriminators":
   []}`, except `ROUTES_TRAFFIC`). An endpoint naming a node the same batch carries is a `from_ref` /
@@ -553,6 +601,10 @@ holds from before this change keep their `uuid5` ids, because they are found by 
 | req-aws-collector-identity-5 | An Incomplete Key Fails The Run | Implemented | A node whose declared key has an absent, null or empty part, or an edge naming a composite-key node the batch does not carry, fails the run with `IDENTITY_INCOMPLETE` before anything is submitted; nothing is minted. | `tests/test_natural_key_refs.py::test_a_node_with_a_hole_in_its_key_fails_the_run_and_writes_nothing`, `tests/test_boto3_collector_batch.py::TestAddressBatch`. |
 | req-aws-collector-identity-6 | A Deleted Resource Returns | Implemented | A resource tombstoned on the grid and collected again is written as a new row under the same natural key; the tombstone is left alone, the batch succeeds, and the edges that named the resource follow the new row. | aws-core-tap#14. `tests/test_natural_key_refs.py::test_a_tombstoned_resource_returns_with_a_new_id_and_the_batch_does_not_wedge`. |
 | req-aws-collector-identity-7 | Completeness Subjects Are Grid Ids | Implemented | A completeness surface's subject is the grid id its parent's ref resolved to in the imported batch; a parent the batch did not carry keeps its ref as the source locator. | `tests/test_natural_key_refs.py::test_a_tombstoned_parent_is_the_new_id_in_its_completeness_surface`, `tests/test_boto3_collector_batch.py::TestResolveSubject`. |
+| req-aws-collector-identity-8 | Unique Across Partition, Account And Region | Implemented | Every natural key names one resource across every partition, account and region: the ARN where AWS defines one (synthesised by `derive` when the API omits it); else an id AWS generates, or a composite led by one; else a composite led by `<partition>:<account>:<region>:` (`global` in the region place for a global entry). A customer-chosen or AWS-default name is never a key on its own. Every manifest entry is checked; a generated-id entry is listed with its reason. | aws-core-tap#224 (George's Q20a ruling, 2026-11-10). 28 entries re-keyed: 7 bare names (DAX parameter and subnet groups, three Redshift types, Glue security configuration, LF-tag), the two Logs filters, 4 unscoped composites, and 15 `<account>/<region>/` composites given the partition and the common shape. `tests/test_natural_key_scope.py::test_every_entry_is_keyed_on_an_arn_a_generated_id_or_the_scoped_prefix`, `::test_a_global_entry_never_puts_the_run_region_in_its_key`, `::test_a_name_aws_repeats_in_every_region_is_one_resource_per_region`, `::test_the_logs_filters_are_keyed_under_the_run_scope`. |
+| req-aws-collector-identity-9 | Re-Keyed In Place | Implemented | A row stored under a key that `-8` replaced is re-keyed by migration from its own `aws_account` and `aws_region` dimensions, keeping its entity id, edges and history (history rows keep the key each version had). A row lacking either dimension, or whose old key has an unexpected shape, keeps its key and is named in a warning. The migration is idempotent and reversible, except that going back leaves scoped any rows whose old keys would collide, so a rollback never recreates the collision. | George's Q20b ruling, 2026-11-10. `migrations/0053_region_unique_natural_keys.py`; `tests/test_natural_key_scope.py::test_the_migration_scopes_each_old_key_from_the_rows_dimensions`, `::test_the_migration_names_every_re_keyed_model_and_its_key_column`, `::test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope`, `::test_going_back_never_recreates_the_collision_the_scoped_keys_removed`. |
+| req-aws-collector-identity-10 | The ARN Is The Natural Key | Approved for Development | Wherever AWS gives a resource an ARN, the node is keyed on it, in a field named `arn`: the ARN the response returns, or else the ARN built from the vendored format (`-11`) and the run's partition, region and account. A type whose ARN cannot be built (`ARN_RESOURCE = None`) keeps a null `arn` when the response lacks one. Rows already on the grid are re-keyed in place. A type with no ARN keeps its scoped key (`-8`). | George's rulings, 2026-11-11 ("store the ARN everywhere it has one … the data comes with a globally unique identifier, we should absolutely use it"; ARN as the key wherever it exists). |
+| req-aws-collector-identity-11 | ARN Resource Types Are Declared And Vendored | Implemented | Every model either names its resource type's entry in AWS's Service Authorization Reference as `ARN_RESOURCE = "<service>:<resource>"`, which `arn_formats.json` holds; or declares `ARN_RESOURCE = None` because the reference lists no resource type (or has no file) for an ARN AWS returns; or declares nothing because the resource has no ARN. A type that names its resource type but keeps a key that is not the ARN, because some of its rows have no ARN (an account outside an Organization), is listed in `KEY_NOT_ARN` with the reason. `arn_formats.json` holds exactly the resource types the models name and is rebuilt by `iam_policy.py --refresh-arns`, which writes no other file. A resource type whose only formats end in a policy wildcard (`dms:Endpoint`'s `…:endpoint:*`) is listed, and no ARN is ever built from it. | `collectors/boto3_collector/arn_formats.json`, `iam_policy.py::arn_formats_from`; `tests/test_arn_resources.py::test_every_model_names_its_arn_resource_or_says_why_it_has_none`, `::test_the_vendored_formats_are_exactly_the_resources_the_models_name`, `::test_a_returned_only_reason_says_which_gap_it_is`, `::test_a_type_keyed_off_its_arn_still_names_its_arn_resource`, `::test_the_arn_refresh_reads_only_named_services_and_writes_only_the_formats`, `::test_the_arn_refresh_refuses_and_writes_nothing_when_a_named_type_is_missing`, `::test_the_arn_refresh_refuses_a_named_type_with_no_usable_format`. |
 
 ### Declarative Edge Rules
 ----
@@ -648,6 +700,54 @@ the target writes it.
 | req-aws-collector-edges-5 | Policy Edges Excluded | Approved for Development | Edges requiring policy-document parsing are not emitted in v0. | Deferred resolver, named seam. |
 | req-aws-collector-edges-6 | Two-Phase, Unmodeled-Safe | Approved for Development | Nodes are emitted before edges; an edge to an unmodeled `target_type` is dropped with a `warn`, never a failure; uncollected modeled targets follow GRIFT dangling-edge mode. | Single chokepoint for the v0-fence gap. |
 | req-aws-collector-edges-7 | Mutually-Available Natural Keys (v0 make-it-work) | Approved for Development | v0 has no identifier resolver of its own: core finds an endpoint by its exact natural key only, so an edge connects iff both ends derive the byte-identical `natural_key`. Every demo-required edge satisfies this by manifest choice alone. `aws_cloudwatch_log_group` is keyed by its ARN, and both `WRITES_LOGS` referrers reach it through the `log_group_arn` transform (a Lambda's bare log-group name takes region and account from the Lambda's own ARN, handed to a source-aware transform). `key_kind` stays truthful but inert. | Deliberate, documented; durable fix is the backlogged `req-aws-collector-edge-resolver` seam. |
+| req-aws-collector-edges-9 | Edge Properties From Object Values | Implemented | A rule whose `value_path` yields objects names `key_path`, where in each object the target's key is, and may name `properties_path`, where the edge's properties are; the edge carries those properties. A value that is not an object, or whose key is absent or empty, makes no edge. A rule without `key_path` behaves as before and sends empty properties. | aws-core-tap#220: one relationship carries what decides it (the listener rule on a load balancer's edge to a target group). `tests/collectors/test_boto3_collector_edges.py::TestObjectValues`. |
+| req-aws-collector-edges-10 | Discriminated Edge Refs | Implemented | An edge whose type declares discriminators has their values in its batch ref, in the envelope the edge pass writes and in the one the batch re-addresses, so two edges of one pair that differ in a discriminator are two edges and neither replaces the other in the batch. A plain-key edge's ref is unchanged. | `req-grid-edge-identity-declaration`. `tests/collectors/test_boto3_collector_edges.py::TestObjectValues`. |
+
+### Progressive Upload (Future Seam)
+----
+RID: `req-aws-collector-progressive-upload`
+
+Status: `Backlog`
+
+Backlogged on George's request, 2026-11-04. Nothing here is built or approved. Today a run reads everything, then
+submits **one** GRIFT batch (`address_batch`, `assemble_batch`, `submit_grift`). The question was whether rows could
+reach the grid as the run works. The full collection of 2026-11-04 took 676 seconds, 643 of them reading and 31 of them
+importing about 1,200 nodes and 1,600 edges (measured in the stack on that date; no run record is committed), so the case rests on
+visibility and on what a failure loses, not on import time today.
+
+**Two directions, not exclusive.**
+
+1. **Split by phase.** Nodes, then edges, then the completeness statement and edge authority. The cheapest cut. It keeps
+   one statement of completeness, written once after the last batch, and makes the edge ordering explicit (an edge
+   whose far end is not in its own batch is sent by key and skipped by core if that node does not exist yet).
+2. **Self-contained units.** Reorganise collection so that a unit (a service, a service in a region, a group of
+   entries that depend on one another) carries its nodes, its edges and its completeness surfaces, and the manifest or
+   the collector says when the unit is done, so it can be uploaded then. George's reasoning: AWS is organised by
+   service and region, so a unit likely exists. **Not verified.** The cross-unit dependencies to find are edges between
+   services (a Lambda to its IAM role), the per-account footprints every regional containment hangs from, the
+   `per` parents some entries fan out from, the tag sweep that spans services (`shared_scopes`), and the account anchor.
+
+**What a design has to settle** (the strengths and weaknesses weighed on 2026-11-04):
+
+- **Edges depend on nodes.** Order or a later pass, as above.
+- **Completeness is recorded against the batch that carries a listing's observations.** A half-uploaded run must not
+  state completeness it has not earned; the statement is written when the last unit is in.
+- **Retirement candidates and edge authority** are only sound once a whole listing is known, so they cannot go early.
+- **Identity** is deduplicated across the run (`duplicate_entity_id` is batch-fatal at import), so splitting needs the
+  seen-set to span batches.
+- **A crash leaves a partial, mixed-age grid** where today it leaves nothing. A unit that fails must say so.
+- **More batches** are more writes and more audit records. The collection job already links several
+  (`PRODUCED_BATCH` carries a disposition per batch); how core treats several batches in one run, and what the
+  importer needs to be told, has to be read before approval.
+- **Alternatives that need no upload change:** the progress lines (`req-aws-collector-progress`), and a read-only "nodes
+  so far by type" count.
+
+#### Requirements
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-progressive-upload-1 | Phased Batches | Backlog | A run submits its nodes, then its edges, then its completeness statement and edge authority, as separate batches, and states completeness only after the last. | Direction 1. |
+| req-aws-collector-progressive-upload-2 | Units Declare Completion | Backlog | The manifest or the collector names the self-contained units of a run and declares each complete; a complete unit is uploaded with its nodes and edges, and with the completeness surfaces of the listings it contains whole. A listing that more than one unit contributes to (the tag sweep, the per-account footprints, a `per` parent) is stated complete, and its retirement candidates and edge authority are written, only when the last unit that contributes to it is in; a run that stops early states no completeness for a listing an unfinished unit contributes to. | Direction 2; needs the dependency survey above. Read with the constraints above: completeness is never stated for a part of a listing, so no unit can authorise retirement by itself. |
 
 ### Edge Identifier Resolution (Future Seam)
 ----
@@ -863,8 +963,9 @@ manifest).
 
 **Calls (one walk, four `custom_fn`s).** The fan-out is made once per run and region by `walk_ecs` (`ecs.py`); `ecs_clusters_described`, `ecs_services_described`, `ecs_tasks_described` and `ecs_containers_described` each take their slice of it, because a manifest entry yields exactly one node type. A multi-call fan-out is what `custom_fn` is for
 ([Source Primitive](#source-primitive)). Per swept region: `ListClusters`, then `DescribeClusters`; per cluster
-`ListServices` then `DescribeServices` (at most 10 per call), and `ListTasks` then `DescribeTasks` (at most
-100 per call), the Describe calls with `include=["TAGS"]`. Every paginated call is read to its end
+`ListServices` then `DescribeServices` (at most 10 per call), and `ListTasks` (once with
+`desiredStatus="RUNNING"`, once with `desiredStatus="STOPPED"`) then one `DescribeTasks` sequence (at most 100
+per call) over the running tasks and the held stopped ones, the Describe calls with `include=["TAGS"]`. Every paginated call is read to its end
 ([Every Paginated Call Read To Its End](#every-paginated-call-read-to-its-end)). A denied or failed
 sub-call degrades that slot to unknown and never fails the run
 ([Fan-Out Hydrate Seam](#fan-out-hydrate-seam)).
@@ -880,7 +981,8 @@ string (the hybrid nullable-field pattern, `req-aws-core-fields-3`: null is unob
 - `aws_ecs_container` (new, aws_core-owned, keyed on `container_arn`): `name`, `image`, `image_digest`,
   `runtime_id`, `last_status`.
 - `aws_ecs_task` gains `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version` and
-  `group` (the `service:<name>` string ECS sets for a service-launched task).
+  `group` (the `service:<name>` string ECS sets for a service-launched task), and `stopped_at`,
+  `stopped_reason` and `stop_code`, which are null until ECS reports the task stopped (`-15`).
 - `aws_ecs_cluster`, `aws_ecs_service` and `aws_ecs_task` each gain the mandatory `tags` field. They have none
   today, and the collector writes `tags` on every node, so adding the entries without it would reject whole
   batches (the v0.4.0 trap named in the `add-aws-type` skill).
@@ -892,17 +994,42 @@ task) and `RUNS_CONTAINER` (task to container), declared in the manifest as edge
 
 **Sensitivity.** `DescribeTasks` returns `overrides.containerOverrides[].environment` and `.command`, which
 callers use to pass secrets to a container. These are declared `reviewed_may_contain` with category
-`credential`, and the entry ships with `persist_configuration: false`. Typed fields, tags and edges carry
-every fact this requirement needs, so nothing is read back from the stored blob. Whether to store
+`credential` and are removed before storage (`req-aws-collector-redaction-1`); the rest of the response is
+stored as `configuration` (`persist_configuration: true`, since aws-core-tap#207). Typed fields, tags and
+edges carry every fact this requirement needs, so nothing is read back from the stored blob. Whether to store
 `configuration` is the requester's decision and storing a `credential` location is the owner's
 ([the `add-aws-type` skill](../tap_plugin/aws_core/skills/add-aws-type/SKILL.md), step 1).
 
-**Deployed, and the limit of it.** A run lists RUNNING and PENDING tasks. A task that stops disappears from
-the next run, but absence never deletes a node
-([Collector Scope](#collector-scope), `req-aws-collector-scope-3`), so a stopped task's row remains. A consumer
-that needs "deployed now" reads the observation time of the row against the last complete run for its cluster;
-the collector adds no field for it. Stopped-task history, task-definition revisions as nodes, ECS Anywhere
-and EKS are out of scope.
+**Running, stopped, and the limit of it.** `ListTasks` with `desiredStatus="RUNNING"` returns running and
+pending tasks; with `desiredStatus="STOPPED"` it returns the tasks ECS still shows after they stopped (at
+least an hour, per the `DescribeTasks` API reference). A stopped task is described and recorded only when the
+grid already holds a live node for it (`tap_grid.services.find_by_natural_key`). It records `last_status`,
+`desired_status`, `stopped_at`, `stopped_reason` and `stop_code` (`-15`), and asserts no `RUNS_TASK` edge,
+nor its containers a `RUNS_CONTAINER` edge, with those edge reads `partial` so the run claims none of them
+absent (`-16`), so its earlier `RUNS_TASK` edge is kept. A run that writes the task has observed it, so it is
+not a retirement candidate while ECS still lists it (`req-grid-reconcile-candidates-1`: observed is every
+entity the run wrote). Once ECS stops listing it, the run writes nothing for it, and reconciliation finds it
+through that kept edge: the stop is recorded first and the task retired after, by the falsifier, at least an
+hour after it stopped (ruled 2026-11-09, aws-core-tap#211). A task that
+started and stopped between two runs is never created, because with no `RUNS_TASK` edge it would be held by
+nothing and could never be reconciled. A task absent from both listings is not deleted or modified
+([Collector Scope](#collector-scope), `req-aws-collector-scope-3`); retiring it is the task falsifier's and
+reconcile's job (aws-core-tap#211), not this collector's. Stopped-task history beyond the last recorded state,
+task-definition revisions as nodes, ECS Anywhere and EKS are out of scope.
+
+**Retirement path (aws-core-tap#211).** A cluster contains its tasks (`RUNS_TASK`) and a task its containers
+(`RUNS_CONTAINER`); `RUNS_TASK` from a service is a reference, not containment (`-17`). The walk records a
+completeness surface for every cluster's running-task listing (relation `ecs_cluster.tasks`) and every described
+task's containers (`ecs_task.containers`), complete only when the listing reached its end, incomplete with the
+reason when it was denied, failed or stopped short, and complete-empty for a cluster running nothing (`-18`;
+`req-aws-core-contained-type-triple`). Core derives the candidates: a task the grid holds under a cluster whose
+listing this run completed, and which this run did not write. `EcsTaskFalsifier` and `EcsContainerFalsifier` probe
+`DescribeTasks` (already granted), 100 ARNs a call per region and cluster, reading region and cluster from the
+task's own ARN: a `MISSING` failure is gone, and so is `STOPPED` once the grid has recorded that stop (record first,
+retire after); any other state is present, and an error, refusal or throttle is undetermined, never absence (`-19`). A container is gone with its task or when its running task no
+longer lists it. Nothing retires until an operator arms reconcile authority for the collector (off by default,
+`req-grid-reconcile-verb-2`). Not covered: a deleted cluster. It is not contained by anything, so its tasks are
+not candidates until a later change adds footprint-to-cluster containment and a cluster falsifier.
 
 **Read-only permissions added to the collector role:** `ecs:ListClusters`, `ecs:DescribeClusters`,
 `ecs:ListServices`, `ecs:DescribeServices`, `ecs:ListTasks`, `ecs:DescribeTasks`.
@@ -917,19 +1044,86 @@ requirement.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-ecs-1 | Three Types Collected | Implemented | A run collects `aws_ecs_cluster`, `aws_ecs_service` and `aws_ecs_task` from every swept region through manifest entries backed by `custom_fn`s that share one ECS walk. | Before this requirement none had a manifest entry; now each does. One entry yields one node type, so the container node has its own entry (`-3`). |
-| req-aws-collector-ecs-2 | Call Shape And Pagination | Implemented | The calls are `ListClusters`/`DescribeClusters`, `ListServices`/`DescribeServices` (10 per call) and `ListTasks`/`DescribeTasks` (100 per call, `include=["TAGS"]`), each read to its end. | `req-aws-collector-pagination-1`. |
+| req-aws-collector-ecs-2 | Call Shape And Pagination | Implemented | The calls are `ListClusters`/`DescribeClusters`, `ListServices`/`DescribeServices` (10 per call) and `ListTasks` (`desiredStatus` `RUNNING`, then `STOPPED`)/`DescribeTasks` (100 per call, `include=["TAGS"]`, one sequence for running and held stopped tasks), each read to its end. | `req-aws-collector-pagination-1`. |
 | req-aws-collector-ecs-3 | Container Node | Implemented | Each container in a described task is an `aws_ecs_container` node keyed on `container_arn`, with `name`, `image`, `image_digest`, `runtime_id` and `last_status`. | |
 | req-aws-collector-ecs-4 | Digest Verbatim | Implemented | `image` and `image_digest` are stored as ECS reports them. The collector makes no registry call and never resolves a tag to a digest. | The tag may move; the digest is what ran. |
 | req-aws-collector-ecs-5 | Unreported Is Null | Implemented | A container with no `imageDigest` has `image_digest` null, never an empty string and never copied from the tag. | Grid null convention: null is unobserved. |
-| req-aws-collector-ecs-6 | Task Fields | Implemented | `aws_ecs_task` carries `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version` and `group`. | Additive migration. |
+| req-aws-collector-ecs-6 | Task Fields | Implemented | `aws_ecs_task` carries `cluster_arn`, `last_status`, `desired_status`, `started_at`, `platform_version`, `group`, `stopped_at`, `stopped_reason` and `stop_code`. | Additive migrations (`0051` adds the three stop fields). |
 | req-aws-collector-ecs-7 | Tags Field On All Three | Implemented | The cluster, service and task models each declare `tags` (field, create schema and validation schema) and are listed in the always-on tags guard. | The v0.4.0 reject-the-batch trap. |
-| req-aws-collector-ecs-8 | Edges | Implemented | `RUNS_TASK` (cluster or service to task) and `RUNS_CONTAINER` (task to container) exist, declared as manifest edge rules. A task whose `group` is not `service:<name>` attaches to its cluster only. | `RUNS_SERVICE` is unchanged. |
-| req-aws-collector-ecs-9 | Sensitivity Declared, Configuration Off | Implemented | The entry declares `overrides.containerOverrides[].environment` and `.command` as `reviewed_may_contain` credential locations with `persist_configuration: false`, and a planted canary at each location never reaches the GRIFT document or the stored row. | Requester decides storing; owner decides a credential location. |
+| req-aws-collector-ecs-8 | Edges | Implemented | `RUNS_TASK` (cluster or service to task) and `RUNS_CONTAINER` (task to container) exist, declared as manifest edge rules, and are asserted for running tasks. A task whose `group` is not `service:<name>` attaches to its cluster only. | `RUNS_SERVICE` is unchanged. Stopped tasks: `-16`. |
+| req-aws-collector-ecs-9 | Sensitivity Declared, Credentials Removed | Implemented | The entry declares `overrides.containerOverrides[].environment` and `.command` as `reviewed_may_contain` credential locations, removed before storage while the rest of the response is stored (`persist_configuration: true`), and a planted canary at each location never reaches the GRIFT document or the stored row. | `req-aws-collector-redaction-1` (aws-core-tap#207); requester decides storing, owner decides a credential location. |
 | req-aws-collector-ecs-10 | Denial Degrades, Never Cleans | Implemented | An `AccessDenied` on any ECS sub-call leaves the fields that call supplies null and records a warning. The task or container is still collected, and the denial is distinguishable from an empty result. | Mirrors `req-aws-collector-hydrate-2`. |
-| req-aws-collector-ecs-11 | Absence Is Not Deletion | Implemented | A task absent from a later run is not deleted or modified, and the collector adds no "currently running" flag. | `req-aws-collector-scope-3`; reconcile stays Backlog. |
+| req-aws-collector-ecs-11 | Absence Is Not Deletion | Implemented | A task absent from both listings of a later run is not deleted or modified, and the collector adds no "currently running" flag of its own: a task's state is ECS's `lastStatus`, recorded when ECS lists it. | `req-aws-collector-scope-3`; retirement is aws-core-tap#211's falsifier and reconcile. |
 | req-aws-collector-ecs-12 | Read-Only Permissions | Implemented | The collector's permission list adds exactly the six `ecs:List*`/`ecs:Describe*` actions named above and no write action. | The repo's only action list is the trial policy's read section (`handoff/trial-provisioner-policy.json`); the cross-account handoff grants AWS-managed `SecurityAudit`, which already covers these reads. |
 | req-aws-collector-ecs-13 | Live Trial Before Release | Proposed | The change passes the `add-aws-type` trial run against a real cluster and Fargate task (or carries a named `deferred_reason`) and a collected container's digest is shown equal to the digest `DescribeTasks` returns for it. | Needs a human to approve what is provisioned. |
 | req-aws-collector-ecs-14 | Digest Join Not Made Here | Implemented | This requirement adds no import of github_core or computing_core types and no digest-matching logic. | The join home is an open computing_core question. |
+| req-aws-collector-ecs-15 | Held Stopped Task Records Its Stop | Implemented | Each cluster is listed with `desiredStatus="STOPPED"`. A listed task the grid already holds is described and records `last_status`, `desired_status`, `stopped_at`, `stopped_reason` and `stop_code`; one the grid does not hold is neither described nor created. A grid read that fails, or finds two live rows for one ARN, records no stopped task and leaves a `stopped_tasks` gap on the cluster naming why. | Ruled 2026-11-09, aws-core-tap#211. A task listed under both filters is read as running. |
+| req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge, the containment a reconcile candidate is derived from once ECS stops listing the task (aws-core-tap#211). Not what makes it a candidate: a written task is observed (`req-grid-reconcile-candidates-1`). |
+| req-aws-collector-ecs-17 | Cluster And Task Contain | Implemented | `aws_ecs_cluster` declares `RUNS_TASK` and `aws_ecs_task` declares `RUNS_CONTAINER` in `CONTAINMENT_EDGES` (and `OUTBOUND_EDGES`); `aws_ecs_service` declares no containment. | aws-core-tap#211. A deleted cluster is not yet a candidate (no footprint containment). |
+| req-aws-collector-ecs-18 | A Surface Per Parent | Implemented | The walk records a surface for every cluster's running-task listing and every described task's containers; a denied, failed or short listing is recorded incomplete with its reason, never omitted, and a cluster running nothing is complete-empty. A stopped task whose container could not be looked up on the grid records its container surface incomplete (`grid_lookup_failed`), so an omitted container never reads as absent. The stopped-task listing records no surface. | `req-aws-core-contained-type-triple-1`..`-3`. |
+| req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `MISSING` is gone, `STOPPED` is gone only once the row already records `STOPPED` (otherwise undetermined), an error is undetermined, and an ARN that names no cluster, or whose own account is not the credential's (whatever the row's `aws_account` dimension says), is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
+
+### Load Balancer Topology
+----
+RID: `req-aws-collector-lb-topology`
+
+Status: `In Development`
+
+A load balancer is mapped as it actually routes: listener, rule, target group and target, with each hop keeping
+what decides it. Ruled by George on 2026-11-10 (aws-core-tap#220): the target group stays in the path; one edge per
+listener rule; the direct load-balancer edges are replaced; IP addresses become nodes; and every Route 53 record
+set becomes a node between its zone and what it resolves to. The general rule behind it: "when in doubt, map it
+out".
+
+**The path.** `FORWARDS_TO_TARGET_GROUP` runs from an Application, Network or Gateway Load Balancer to a target
+group, one edge per route. An Application Load Balancer's routes are its listeners' rules, read with
+`DescribeListeners` and `DescribeRules`, including each listener's default rule. A Network or Gateway Load Balancer
+has no rules, so each listener's default action is the route. Each edge carries the listener's ARN, port and
+protocol; the rule's ARN, priority and conditions exactly as AWS returns them; whether it is the default; and the
+forward's weight. A rule that forwards to two groups by weight makes two edges. Redirect, fixed-response and
+authenticate actions forward nowhere and make no edge. The key's discriminator is `route_id`: the rule's ARN, or
+the listener's where there are no rules.
+
+From the target group, `DescribeTargetHealth` names the registered targets:
+- an instance is `ROUTES_TO_TARGET` to the instance
+- an Application Load Balancer's ARN (a Network Load Balancer fronting an Application one) is `ROUTES_TO_TARGET`
+  to that load balancer
+- a Lambda function is `INVOKES_LAMBDA`
+
+Each edge carries the target's port (the `ROUTES_TO_TARGET` discriminator, since one instance can be registered on
+two ports), its availability zone, and its health state, reason and description. Health changes in place from run
+to run. An IP target is kept on the target group's item, with no edge, until the IP address node's key is settled
+(see -4).
+
+**Replacing the direct edges.** Before this, `ROUTES_TRAFFIC` ran from a load balancer straight to the instances
+and functions in its target groups, and IP and load-balancer targets were dropped. Those rules stay declared for
+one release, read empty with the forwards' own read, so a reconcile-armed run that read the forwards proposes removing
+the edges earlier runs wrote, and one that could not read them keeps them.
+A Classic load balancer has no target groups. It keeps `ROUTES_TRAFFIC` to the instances registered on it, which
+are now read from its own listing.
+
+**Record sets.** Every record set in every hosted zone is a node: the hostname is the thing a reader asks about,
+and it sits between the zone that holds it and whatever answers it. A record set is keyed by its zone, name, type
+and set identifier, which is how Route 53 itself addresses one. Its zone contains it, so a record set that a
+complete listing of the zone no longer names is a retirement candidate, judged by `Route53RecordSetFalsifier`.
+`RESOLVES_TO_TARGET` runs from the record set to what its alias or CNAME names. The zone's former direct `ROUTES_TRAFFIC`
+edges are replaced the same way the load balancers' are.
+
+**The engine.** The rules above are manifest rules whose values are objects, carrying `key_path` and
+`properties_path` (`req-aws-collector-edges-9`). Their batch refs carry the discriminators
+(`req-aws-collector-edges-10`).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-lb-topology-1 | One Edge Per Rule | Implemented | An Application Load Balancer has a `FORWARDS_TO_TARGET_GROUP` edge for each (rule, target group) a forward action names, the default rule included. It carries `route_id`, `listener_arn`, `listener_port`, `listener_protocol`, `rule_arn`, `priority`, `is_default`, `conditions` (verbatim) and `weight`. A Network or Gateway Load Balancer has one per listener default forward, with `route_id` the listener's ARN and `rule_arn` null. A non-forward action makes no edge. A listener or rule read that fails reads the slot `failed`. | `tests/test_elb_collection.py::TestForwards` |
+| req-aws-collector-lb-topology-2 | Targets With Port And Health | Implemented | A target group has `ROUTES_TO_TARGET` to each registered instance and Application Load Balancer, one per port, and `INVOKES_LAMBDA` to a registered function. Each carries `health_state`, `health_reason`, `health_description` and `availability_zone` from `DescribeTargetHealth`, with null where AWS gave nothing. An IP target is kept on the item with no edge. A failed `DescribeTargetHealth` reads every target slot `failed`. | `tests/test_gap_sweep.py::test_a_target_group_sorts_its_targets_by_kind_with_port_and_health`, `::test_a_target_read_that_failed_is_not_an_absence` |
+| req-aws-collector-lb-topology-3 | Direct Edges Replaced | Implemented | An Application, Network or Gateway Load Balancer's `ROUTES_TRAFFIC` slots are empty and take the forwards' own read: complete when the forwards were read, so earlier runs' direct edges become removal proposals under armed reconcile, and `failed` when they were not, so a failed read never removes the old edges with nothing in their place. A Classic load balancer's slot holds the instances its own listing registers. | `tests/test_elb_collection.py::TestForwards::test_the_replaced_direct_routes_read_complete_and_empty`, `::test_a_classic_load_balancer_keeps_its_direct_routes_to_its_instances`. Drop the empty rules after one release. |
+| req-aws-collector-lb-topology-4 | IP Targets As Nodes | Proposed | An IP target becomes an IP address node, with an edge from the target group, and edges from the address to the network interface holding it and to that interface's owner. Both move when the address moves. | Blocked on the IP address node's key: `network_name` plus address in computing_core, a joint question with the tenable session (aws-core-tap#220). |
+| req-aws-collector-lb-topology-5 | Record Sets As Nodes | Implemented | Every record set `ListResourceRecordSets` returns is an `aws_route53_record_set` node, keyed `<zone id>/<name>/<type>/<set identifier>` (the set identifier empty for a simple record), with its name, type, set identifier, TTL and alias target as fields and the whole record stored. The zone contains it (`HOLDS_RECORD_SET`, `CONTAINMENT_EDGES`), and the run records a completeness surface per zone (`route53_zone.record_sets`): complete when the listing reached its end, incomplete when it failed or stopped short, in which case none of that zone's record sets are sent. A run whose record set reader did not yield every record set records each zone's surface as not admitted, so it licenses no retirement. One walk serves the zone and record set readers. `Route53RecordSetFalsifier` reads a record set gone when a listing started at its own name, type and set identifier returns another record first; a deleted zone is `UNDETERMINED`. | `tests/test_route53_record_sets.py`; `tests/test_boto3_collector_customfns.py::TestRoute53RecordSets` |
+| req-aws-collector-lb-topology-6 | Records Resolve | Implemented | A record set has `RESOLVES_TO_TARGET` to the Application Load Balancer (by ARN), other load balancer (by DNS name), CloudFront distribution (by ARN) or same-zone record set its alias or CNAME value names (an alias names the record set of its own type at that name; a CNAME names every record set at that name), carrying `via` and `evaluate_target_health`. A hostname shaped like a load balancer or distribution the run could not match, a same-zone name with no record set, or a CloudFront listing that failed leaves the read partial; it never stops the other record sets being described. The zone's direct `ROUTES_TRAFFIC` slots are empty for one release. They read complete only for a zone whose record listing reached its end, whose record sets all reached the batch, and none of whose record sets left its resolution partial; otherwise `failed`, as in -3, so the old edges stay until their replacement is on the grid. | `tests/test_boto3_collector_customfns.py::TestRoute53RecordSets`, `tests/test_edge_authority.py::TestRoute53Reads`, `tests/test_boto3_collector_slice.py` |
+| req-aws-collector-lb-topology-7 | Live Trial | Proposed | A staging seed wave with an Application Load Balancer that has host and path rules and a weighted forward, a Network Load Balancer in front of it, instance and Lambda targets, and a private hosted zone with alias, CNAME and weighted records is collected, and each edge above is found on the grid. | |
 
 ### Credential Resolution
 ----
@@ -1077,8 +1271,158 @@ resilience shape, implemented as TAP code against `record_warn`.
 | req-aws-collector-regions-1 | Per-Region / Global Split | Approved for Development | Regional entries sweep configured regions; global entries collect once. | |
 | req-aws-collector-regions-5 | Secret-Scoped Region Set | Approved for Development | The swept region set is `data.regions_allowed` if non-empty, else `[data.region]`, else the run fails visibly. | Operator-owned scope; `req-aws-core-secret-aws-static-4`. |
 | req-aws-collector-regions-2 | Classify-And-Skip | Approved for Development | Expected permission/region errors record a `warn` and skip; the run continues. | |
-| req-aws-collector-regions-3 | Bounded Throttle Backoff | Approved for Development | Throttling retries with bounded backoff; unbroken throttle fails per protocol. | |
+| req-aws-collector-regions-3 | Bounded Throttle Backoff | Approved for Development | Throttling retries with bounded backoff; unbroken throttle fails per protocol. | Realised by `req-aws-collector-outcome-4` and `-6`: the adaptive retry budget, then the named `throttled` outcome. |
 | req-aws-collector-regions-4 | No Data Corruption On Skip | Approved for Development | A skipped region/resource never alters previously collected data. | v0 has no deletes; reaping must honor this. |
+
+### Collection Selection
+----
+RID: `req-aws-collector-selection`
+
+Status: `Proposed`
+
+A run can be narrowed to chosen types and chosen accounts. Requested by George on 2026-11-03 for field testing;
+the keys live in the credential's `data` for now (`req-aws-core-secret-selection`, which defines the grammar of a
+type pattern and of an account reference). Built for a single-account run (`-1` to `-6`, `-9`, `-13` and `-14`; tests in
+`test_boto3_collector_selection.py` and `test_boto3_collector_selection_run.py`) and run live once (`tools/validate/runs/selection-2026-11-04.json`: keep-absent, no completeness and the edge count; not the retirement control). Not built: the
+fan-out parts (`-7`, `-8`, `-10`, `-11`), which wait on `req-aws-collector-fanout` itself, and `-12`, which waits on
+unified-systems-com/tap#1156. It carries the type selection that `req-aws-core-livevalidation-selection` first proposed for validation, with one change of
+grammar (`<service>:<entity>`, not an `fnmatch` pattern over the raw entity type).
+
+#### Type Selection
+
+A manifest entry is **selected** when it matches at least one pattern of `include_types` (or `include_types` is
+absent) and matches no pattern of `exclude_types`. Exclusion wins. The match string is `<service>:<entity>`.
+
+**Exclusions are entry filters, not service-call boundaries.** `exclude_types` decides which manifest entries are read. It
+does not promise that no call reaches the service: a selected entry whose source needs an excluded entry as its parent
+causes that parent's list call (next bullets). An operator who needs a service never called must also keep the grant
+out of the role; the echo (`-9`) names every parent read on a selected child's behalf so the gap is visible.
+
+- An unselected entry makes no call **of its own**: it is absent from the batch, and from the run's call ledger except where a
+  selected entry's source needs it as a parent (next bullet). A call made for that purpose is the selected child's: the
+  ledger records it against the child, and the role's grant must include it. An operator who excludes a service whose
+  list call a selected child depends on still needs that permission; the echo (`-9`) names such parents.
+- A parent that a selected type fans out from (a `per` or `bind` source) is read as the input of that type and
+  emits nothing unless it is itself selected.
+- Some things are not manifest entries and are never filtered: the per-(account, region) footprints every
+  regional containment hangs from, and the run's own account node (the `sts:account` entry, an anchor that is always
+  selected and never counted as skipped).
+- Two reads are not manifest entries and no pattern can name them: the Organizations tree and the landing-zone read. A
+  run whose type patterns leave anything unselected skips both, so that it makes no call it did not select. A run
+  narrowed by `accounts_allowed` alone keeps them (the tree is what fan-out lists members from).
+- A pattern, in `include_types` or `exclude_types`, that matches no manifest entry stops the run before any call,
+  naming the pattern (`SELECTION_PATTERN_UNMATCHED`). An exclude that matched nothing would widen the run silently
+  (a typo, or a manifest rename), and the selection lives in a secret the operator cannot inspect, so both fail closed.
+
+**Unselected is unobserved, not empty, and a selected run states no completeness.** Core reads a run's
+completeness statement against the previous run's, and a surface the run leaves out, or marks not authorized,
+reads as a **narrowed scope**: the previously observed children become `scope_withdrawn` candidates
+(`spec-grid-reconcile.md`, *Withdrawal is not absence*; `tap_grid/candidates.py` `_scope_of`). Core cannot tell
+"this run read less" from "the credential's scope was narrowed", so a selection must not leave a partial
+statement. A run in which the selection leaves anything unselected (a type or an account) therefore records **no completeness statement at all**: no surface, no `declare_no_surfaces`, and no
+edge authority claim for a source it did not read. This is the course `-21` takes for a rejected base batch, and
+for the same reason. The keep-absent upsert semantics (tap#1128) hold for every row of an unselected type. The
+cost is stated: a selected run retires nothing, even within what it read; retirement comes from runs that
+select everything. Retiring the old scope on purpose, by narrowing it, is not offered through selection (open
+question below). Retirement *within* a selection is the flag `retire_within_selection` (below), which waits on core. This is the rule `req-aws-core-livevalidation-lifecycle`'s second negative control tests.
+
+Regions are not a selector in this amendment. `regions_allowed` is the existing region scope
+(`req-aws-collector-regions-5`); it is unchanged, does not trigger the no-statement rule, and a run restricted by it
+states its completeness as it does today.
+
+#### Account Selection
+
+- **Single account.** When `accounts_allowed` is set, the account `GetCallerIdentity` resolves must be in it, or
+  the run fails visibly before any collection, as an `expected_account_id` mismatch does today
+  (`account_mismatch_error`).
+- **Fan-out** (`req-aws-collector-fanout`). The member set is the organization's `ACTIVE` members from this run's
+  `ListAccounts`, restricted to `accounts_allowed` when set, minus the secret's `exclude_account_ids`. Exclusion
+  wins. Every listed account still has exactly one `ACCOUNT_RESULT`; one the selection left out is
+  `skipped` with reason `not_selected`. It does **not** record the `scope_authorized: false` surfaces
+  `req-aws-collector-fanout-7` gives a member that failed: the run records no completeness statement at all
+  (above), so there is nothing to read as a withdrawal. `max_member_accounts` bounds the **selected**
+  member count; an explicit list is not a silent prefix.
+- **`exclude_account_ids` is not a selection.** The existing exclude list (`req-aws-core-secret-member-fanout`) is
+  a scope control: an excluded account is `skipped: excluded` and keeps the `scope_authorized: false` surfaces of
+  `req-aws-collector-fanout-7`, as it does today, so a run with only an exclude list states its completeness and
+  an excluded account reads as withdrawn from scope. The no-statement rule applies when `accounts_allowed`,
+  `include_types` or `exclude_types` leaves anything unselected; in such a run nothing is recorded for any
+  account, the excluded ones included. `-7` governs the failure case (a member that could not be read) and the
+  exclude list; selection omissions are governed by this section.
+- **Unselected members still appear in the organization tree, and `accounts_allowed` is a collection scope, not a
+  disclosure control.** It limits which accounts are assumed into and read; it does not limit which accounts the
+  organization listing writes to the grid. See the open question on the tree.
+- **The tree.** The tree is the organization's observation, not
+  the account's: it carries each member's org-sourced fields (`req-aws-collector-fanout-8`) whether or not the
+  account is selected. "Unobserved" here means the account's own resources, surfaces and account-sourced fields
+  (`-16`): none is read, none is written, none is withdrawn.
+- **An account the organization does not list.** An `accounts_allowed` entry that is not an `ACTIVE` member of
+  the organization (and is not the base account) stops the run before any member is assumed
+  (`SELECTION_ACCOUNT_UNKNOWN`), naming the id. A typo must not narrow a run silently.
+- **The base account.** When `accounts_allowed` is set and omits the base account, the base account's own
+  resources are not collected. The organization tree is still read, because fan-out needs it to list members.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-selection-1 | Include, Exclude, Exclusion Wins | Proposed | An entry is read exactly when it matches an include pattern (or none is given) and no exclude pattern; a test over the committed manifest asserts the selected set for `ec2:*`, `eks:*`, `*:*_policy`, an include with an overlapping exclude, and neither. | |
+| req-aws-collector-selection-2 | Unselected Makes No Call | Proposed | With a selection that excludes a service no selected entry depends on, the fake-client harness records zero calls for that service and the ledger holds none; with one a selected child's `per`/`bind` source reads as its parent, the call is made, is ledgered against the child, and the echo names the parent. | |
+| req-aws-collector-selection-3 | Anchors Are Never Filtered | Proposed | With `include_types: ["ec2:vpc"]`, the account and region footprint nodes and the account node are still emitted. | |
+| req-aws-collector-selection-4 | Typos Fail Loudly | Proposed | Any include or exclude pattern matching no entry stops the run before any call (`SELECTION_PATTERN_UNMATCHED`); a test feeds a typo in each list. | |
+| req-aws-collector-selection-5 | A Selected Run States No Completeness | Proposed | A run whose selection leaves any type or account unselected records no completeness statement (no surface, no `declare_no_surfaces`, no edge authority claim for an unread source), derives no candidate, and writes no tombstone; every row of an unselected type keeps its fields (keep-absent). A test runs a full run, then a restricted run over a grid holding the unselected type's rows, and asserts no statement, no candidate, and those rows untouched; and that a run selecting everything records its statement as before. | The first of two tests: the second is live, `req-aws-core-livevalidation-lifecycle`'s negative control (2). This must hold before the status moves past Proposed. |
+| req-aws-collector-selection-6 | Single-Account Assertion | Proposed | A resolved account outside `accounts_allowed` fails the run before collection; one inside it proceeds. | |
+| req-aws-collector-selection-7 | Fan-Out Member Set | Proposed | The member set is `ACTIVE` members, restricted to `accounts_allowed`, minus the base account and `exclude_account_ids`; a member in both lists is excluded; each left-out listed account has one `ACCOUNT_RESULT` of `skipped`/`not_selected` and records no surface; `max_member_accounts` bounds the selected count. | Amends `req-aws-collector-fanout-1`, `-5` and `-10`. |
+| req-aws-collector-selection-8 | Unknown Account Stops The Run | Proposed | An `accounts_allowed` id that is not an `ACTIVE` member or the base account stops the run before any `AssumeRole` (`SELECTION_ACCOUNT_UNKNOWN`). | |
+| req-aws-collector-selection-9 | Effective Selection Is Echoed | Proposed | The run's start message and its `CollectionJob.results` carry the effective selection: the type patterns, the normalised account ids, and counts (entries total, selected, skipped by type selection; accounts listed, selected, skipped). One aggregated info line, not one per skipped entry. | The secret cannot be inspected, so the run is where an auditor reads the scope it had. Account ids are runtime output; none is committed. |
+| req-aws-collector-selection-10 | Base Account Omitted | Proposed | With `accounts_allowed` set and omitting the base account, no base-account resource is collected, the organization tree is read, and the base batch carries the tree. | See the open question below. |
+| req-aws-collector-selection-11 | Exclude List And Tree Distinguished | Proposed | A run with only `exclude_account_ids` records its statement and an excluded account carries the `fanout-7` surfaces; a run with `accounts_allowed` records no statement and no account, excluded or not, carries a surface; in both, every listed member has its org-sourced fields from the tree and no unselected member has an account-sourced field written. | Settles the first review's `exclude` question and the second's tree question. |
+
+#### Retirement Within The Selection
+
+`data.retire_within_selection` (`req-aws-core-secret-selection-7`, default `false`). Requested by George on 2026-11-03.
+With it `false`, a selected run states no completeness (above) and retires nothing. With it `true`, the run states its
+completeness **for the surfaces it read**, and also declares its selection in grid terms: the entity types it listed,
+and the accounts it covered. A surface the selection did not cover is then neither in the
+statement nor read as withdrawn.
+
+This cannot be done by the collector alone. Core derives withdrawal from the previous statement and the grid
+(`tap_grid/candidates.py` `_scope_of`, `derive_candidates`), and a producer cannot name a surface under a subject it
+did not read. It needs core to accept a selection block in the completeness statement and skip, with the reason
+`not_selected`, any previous surface outside it. Filed as unified-systems-com/tap#1156 (an L: whether the block is
+its own or part of the reach block of #683 is unsettled). Until core takes it, the flag is rejected at validation
+when `true`, so no operator sets a value the collector cannot honour.
+
+What the flag does and does not do. It **permits candidates** for what the run read; a candidate still passes the
+falsifier, the operator-armed authority and the budget (`spec-grid-reconcile.md`). Retirement stays off by default,
+per collector. Falsification is per candidate and needs no change: a candidate inside the selection is probed as any
+other, and nothing outside it is a candidate.
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-selection-12 | Retirement Only Within The Selection | Proposed | With `retire_within_selection: true` and core's selection block, a run records its statement for the surfaces it read and its selection; a previous surface outside the selection is skipped as `not_selected`, never `scope_withdrawn`; a surface inside it compares as today. Live: collect everything, delete one object of a selected type and one of an unselected type, run with the flag on, and only the first becomes a candidate (and retires, with authority armed). | Blocked on unified-systems-com/tap#1156. Extends `req-aws-core-livevalidation-lifecycle`'s negative control (2). |
+| req-aws-collector-selection-13 | Flag Refused Until Core Honours It | Proposed | Until core accepts the selection block, a secret with `retire_within_selection: true` fails validation with a message naming tap#1156, whether or not a narrowing key is set; `false` or absent behaves as `-5`. | A flag that is accepted and silently ignored would read as "retirement is on". |
+| req-aws-collector-selection-14 | Edges To An Unselected Type Are Not Emitted | Proposed | A run whose selection leaves a type unselected emits no edge whose far end is of that type, counts them in one `EDGES_NOT_SELECTED` info line, and writes no `EDGE_DROPPED` warning for them; an edge between two selected types, and the account containment edges, are emitted as before. A run that selects everything records no such line. | The run never read the far end, so it cannot state the relationship. Edges from earlier full runs are untouched (keep-absent). |
+
+#### Open Questions
+
+- **Limiting what the organization tree writes.** The tree lists every member with its org-sourced fields whatever
+  `accounts_allowed` says, so an operator who scopes a run to a few accounts still has the others' ids, names and
+  organizational placement in the grid. Whether the allowlist should also limit the tree (a disclosure control, with
+  consequences for the org-unit structure the tree draws) is not decided; until it is, the secret's wording says the
+  allowlist selects accounts to collect, and no one should read it as a way to keep other accounts out of the grid.
+- **The organization tree under a type selection.** The tree and the landing-zone readers are not manifest
+  entries, so no pattern can name them, and a run whose type patterns leave anything unselected skips both. Whether they
+  should become selectable (pseudo-entries such as `organizations:account`) waits for someone who wants an
+  organization-only run.
+- **Retiring a scope on purpose.** Because a selected run states no completeness, narrowing the selection cannot
+  withdraw what the wider selection observed. If an operator wants that (the credential's scope really did
+  shrink), it needs either a full-scope run under the new credential or a core notion of a filter-level scope,
+  which `spec-grid-reconcile.md` names and does not specify (Issue# 599 - tap). Not settled here.
+- **Vocabulary.** The type pattern uses botocore service names. An alias table for IAM prefixes
+  (`elasticloadbalancing:*`) is possible and not specified.
+- **An exclude pattern that no longer matches** after a manifest rename now stops the run (`-4`). If field use shows that is too
+  brittle, the alternative is a pinned manifest version in the selection; not specified here.
 
 ### AWS Partitions
 ----
@@ -1130,6 +1474,35 @@ choice follows from it.
   own precedence. The effective setting is reported in `IDENTITY_RESOLVED` and
   the `self_test` `AWS_PARTITION` check. Per-service FIPS exceptions are not
   modelled.
+- **Entries a partition does not offer (`-7` to `-14`).** Wave 0 on GovCloud (`runs/wave0-2026-11-02.json`, measured)
+  found 22 entries in 10 services whose endpoint does not resolve there (`EndpointConnectionError`, 20 to 52 seconds
+  each, the client's five-second connect timeout across its eight attempts). The smoke test drives each entry on its
+  own, so it paid that 22 times (815 of 1,385 seconds). The collector already learns an unreachable service once per
+  (service, region) in a run (`unreachable` in `collector.py`, built in #163, `-9`), so a full collection pays it once
+  per service and region: the full collection of 2026-11-04 took 1,090 seconds, 1,008 of them reading, and the listed
+  entries were called in it. The list removes that remaining first call (about 35 seconds a service, 10 services, per
+  region) and, more important, the **masking** that learning causes in a service served in part: `wellarchitected`
+  serves `lens`, `profile`, `review_template` and `workload` but not its three `agent_*` entries, and because
+  `agent_profile` is read first, the first connection error marks the whole service unreachable and the four served
+  entries are settled as "not offered" without a call (`-12`, shown by a probe run on 2026-11-04). The list is per
+  entry, with a whole service listed only when none of its entries is served. The connect timeout and retry budget are
+  **not** shortened (George, 2026-11-04): a slow network must not read as an absent service. The list is held in
+  the manifest, the source of truth for what is collected: an optional `not_offered` block on the entry, keyed by
+  partition, with why, how it was established, the evidence and the date (George, 2026-11-04). A new entry is authored
+  with the question in front of the author, and the schema refuses a malformed block. A service all of whose entries
+  carry the block is answered as a whole service (`service_unavailable_reason`); `macie2`, which has no manifest entry,
+  stays named in `partition.py`. The test in `-10` keeps the blocks honest: it reads the newest wave 0 record and fails when an entry that record shows unreachable is neither
+  listed nor named as an exception.
+
+  Keeping the blocks current over time is layered. The offline test in `-14` runs on every botocore bump. The probe in `-13`
+  reports, during ordinary runs, a service the manifest does not know is unreachable and a marked service that now
+  resolves, so neither needs a wave 0 re-run to be noticed. A wave 0 re-run with the blocks ignored remains the way to
+  prove a marked entry reachable, and runs after a batch of manifest additions and before a release. Measured on
+  2026-11-04 from the stack's container: of the ten services wave 0 could not reach, three are absent from botocore's
+  GovCloud data and unresolved, five (`qbusiness`, `datazone`, `internetmonitor`, `kendra-ranking`, `notifications`)
+  are listed by botocore at `*.api.aws` hosts that do not resolve, `kinesisvideo` resolves only at its FIPS host, and
+  `wellarchitected` resolves at its main host though its `agent_*` entries failed (which host they called was not
+  established), so the host has to be the operation's, not the service's, to see a service served in part (`-12`).
 
 #### Acceptance Criteria
 
@@ -1141,6 +1514,76 @@ choice follows from it.
 | req-aws-collector-partition-4 | Global Services In Partition | Implemented | Global-service clients bind to a region of the run's partition; the partition's home region is the only fallback literal. | `TestGovCloudEndpoints`, `test_no_hardcoded_commercial_partition_or_region_in_collector_code`. Offline against botocore's endpoint data; no live GovCloud run observed. The falsifiers are outside the guard. |
 | req-aws-collector-partition-5 | CloudFront Degrades In GovCloud | Implemented | A service the partition does not offer is recorded as not available and never called. | `test_run_lands_govcloud_shaped_nodes_and_says_cloudfront_is_not_offered` |
 | req-aws-collector-partition-6 | FIPS Opt-In | Implemented | `use_fips_endpoint` true/false is pinned on the session and reaches every client; absent defers to botocore's environment/shared-config resolution; the effective value is reported. | `TestGovCloudEndpoints`, `TestSelfTestReportsPartition` |
+| req-aws-collector-partition-7 | Unavailable Entries Are Listed Per Entry | Proposed | For each supported partition the manifest marks the entries it knows are not offered there (`not_offered`), each with how it was established (`ran`, `web` or `read`, and the evidence) and the date. An entry so marked makes no call, records one `SERVICE_NOT_AVAILABLE_IN_PARTITION` info line carrying the reason, and is counted under "not offered" in the run summary. A service is marked on every entry only when none of its entries is served; `wellarchitected` marks its `agent_*` entries and not the others. | Replaces the service-keyed `_UNAVAILABLE_SERVICES`; the list is the manifest entry's optional `not_offered` block (schema-validated; no separate file). The landing zone's `Availability` record is the model for the method vocabulary. |
+| req-aws-collector-partition-8 | Initial GovCloud List From The Wave 0 Record | Proposed | The GovCloud list opens with the 22 entries of `runs/wave0-2026-11-02.json` that failed with `EndpointConnectionError`, plus CloudFront and Macie, each marked `ran` with the record as evidence. A run over the manifest against GovCloud makes no call for any of them. | The other 46 entries that record labels unsupported-in-partition are not listed (CloudFront among them is listed already): the service answers and the refusal is per call (`UnknownOperationException`, `InvalidAction` and the like), at no cost in time. |
+| req-aws-collector-partition-9 | Unreachable Service Is Learned Once Per Run | Implemented | In one run, the first connection-level failure for a (service, region) settles every later entry of that service in that region as not offered, with no further call; the state is per run. | `test_boto3_collector_outcomes.py::TestCollectorRun::test_an_unreachable_service_is_learned_once_not_once_per_entry`. Built in #163. It is keyed by service, which is what `-12` corrects. |
+| req-aws-collector-partition-10 | List Is Checked Against The Latest Record | Proposed | A test reads the newest `runs/wave0-*.json` for each supported partition and fails when an entry it records as `EndpointConnectionError` is neither on that partition's list nor named in a short exception list with a reason; and fails when a listed entry that record shows reachable (`ok` or `empty`) is not named in the same exception list. | Keeps the list from rotting in either direction; a re-run of wave 0 updates the record and the test says what to change. |
+| req-aws-collector-partition-11 | Not Offered Is Not Selection | Proposed | An entry skipped as not offered is reported as not offered and never counted as skipped by type selection (`req-aws-collector-selection-9`), and does not by itself make a run a selected run: a full run over a partition that does not offer an entry still states its completeness for every entry it can read, and records no surface for the one it does not. | Without this, the first listed entry would turn every GovCloud run into a run that states no completeness. |
+| req-aws-collector-partition-12 | A Service Served In Part Is Not Masked | Proposed | A connection failure learned for a (service, region) applies only to entries that would call the endpoint that failed. With the three `agent_*` entries unlisted and failing, `lens`, `profile`, `review_template` and `workload` are still called and collected. | Today the first failure marks the whole service: with the list emptied, a probe run made one `wellarchitected` call and settled all seven entries as not offered. The list covers the known case; an unlisted service served in part is still masked until this is built. Keying by the failing endpoint's host is one way. |
+| req-aws-collector-partition-13 | Endpoint Probe Checks The Claims | Proposed | In a run, the collector works out the host a call for an entry would be sent to (the request is built unsigned and stopped before it is sent, so no credential is needed; the client's default endpoint is not that host) and resolves it. It records `PARTITION_GAP_LEARNED` (once per service and region) when the host has no record and the entry is not marked `not_offered`, and `PARTITION_LIST_STALE` (once per marked entry) when a marked entry's host resolves. An entry one call cannot read (a parent to fan out from, a custom function, a required parameter it lacks) is not probed and the probe says nothing. The probe never skips a call and never makes one. Every run records one `ENDPOINT_PROBE` info line with whether the probe was usable and the hosts checked, gaps and stale claims found, and entries it could not probe, so a run that found nothing is distinguishable from one whose DNS could not be trusted. It first resolves the host of STS, which the run has already called; if that does not resolve, the probe is disabled for the run and records nothing. | A first build used each client's default endpoint and was wrong in all five warnings of the 2026-11-04 full run: `s3control`, `iottwinmaker` and `location` carry a host prefix per operation, `wellarchitected`'s agent operations go to `wellarchitected-agent`, and `kinesisvideo`'s FIPS client reports one host and calls another. The lookup is a detector: a collector behind a proxy or on private DNS may not resolve public hosts, which is why a failed lookup alone is never a reason to skip. Each host is looked up once per run. |
+| req-aws-collector-partition-14 | Botocore Cannot Contradict A Documented Claim | Proposed | A test fails when a manifest entry's `not_offered` block rests on `web`, `read` or `inferred` evidence and botocore's own endpoint data lists the service for that partition; a block marked `ran` rests on a live failed call and is not held to botocore. | Botocore's silence proves nothing (it synthesises hostnames) and its listing does not prove a service is reachable: seven of the ten services wave 0 could not reach in GovCloud are listed by it. The test runs on every botocore bump. |
+| req-aws-collector-partition-15 | A Block May Hold In One Region Or One FIPS Setting | Proposed | A `not_offered` block may carry `regions` (the regions of the partition it holds in) and `fips` (`true` or `false`: only with FIPS endpoints on, or only off). With neither it holds for the whole partition, as before. A block limited to regions is applied inside the region loop: the entry makes no call in those regions, records one `SERVICE_NOT_AVAILABLE_IN_PARTITION` line naming the region, and is called in the others; a block limited by `fips` is applied when the run's FIPS setting matches. The endpoint probe checks a marked entry in every region the block covers, and reports `PARTITION_LIST_STALE` when its host resolves there. A conditional block is not a whole-service listing. The collector always passes the effective FIPS setting (the secret, else the environment, else the shared config, resolved to a boolean); a call that does not know the setting (`None`) is not guessed at: a block limited by `fips` does not apply and the entry is called. `wave0_smoke.py` applies region-limited blocks per region. | `tools/validate/availability_matrix.py` looked up the host of every service one call can read, in us-gov-west-1 and us-gov-east-1 with FIPS off and on (`runs/availability-matrix-2026-11-05.json`, DNS only, no AWS call): 15 services resolve in gov-west and not in gov-east, 9 have no FIPS host in either region, bedrock-agent has none at the gov-east FIPS host, and kinesisvideo resolves only at its FIPS host. `tools/validate/availability_calls.py` then made one signed read call per service in each of the four variants (`runs/availability-calls-2026-11-05.json`): 133 of 140 agreed with the DNS result; the timestream-query and timestream-write gov-east blocks were removed because those calls were answered, and managedblockchain, which has an endpoint in gov-west only (not with FIPS endpoints on), is marked for gov-east. The remaining variant (gov-west with FIPS) needs two conditions at once and is learned at run time; the ratchet carries it as an accepted difference. 124 entries carry such a block. A host that resolves, or a call that connects, says the service has an endpoint, not that every operation works. |
+
+### Listing Outcomes And Client Posture
+----
+RID: `req-aws-collector-outcome`
+
+Status: `Approved for Development`
+
+A listing that raised is not always a failed call. Four results are kept apart, and only the
+first is a failure:
+
+- **failed** — any error no reviewed row names. Recorded as `ENTRY_SKIPPED` (a warning), as before.
+- **`not_configured`** — the feature is not set up in this account (DRS and MGN never initialised, no
+  QuickSight subscription, S3 Access Grants without an instance, Security Hub V2 or Security Lake not
+  enabled). Zero rows, an `ENTRY_NOT_CONFIGURED` info, no warning.
+- **`unsupported_in_partition`** — the partition does not offer the service or the operation
+  (`EndpointConnectionError`, `UnknownOperationException`, `InvalidAction`,
+  `UnsupportedOperation`, a 404 Unknown Operation, "not supported in this region"). A connect timeout is not on
+  this list: it shows the endpoint was unreachable, which a transient fault also does, so it stays a failed call
+  (bounded by the client's connect timeout). Zero rows, the
+  existing `SERVICE_NOT_AVAILABLE_IN_PARTITION` info (carrying `outcome`), no warning. A service whose
+  endpoint could not be reached is learned once per (service, region) and its other entries are settled
+  without a call.
+- **`throttled`** — the service rate-limited past the client's retries. A distinct `ENTRY_THROTTLED`
+  warning; never read as empty.
+
+#### Implementation
+
+- **Data, not code, not a broad catch.** `error_outcomes.json` (schema `error_outcomes.schema.json`,
+  validated at load by `outcomes.load_rows`) holds one reviewed row per case with a `why`. A
+  `not_configured` row must name its service, its error code and its operations or entity types. The
+  `unsupported_in_partition` rows apply only in the partitions they were observed in (`partitions`, today `aws-us-gov`; an observation in one partition says nothing about another), always name
+  their service (no wildcard) and one of its operations, entity types or, for a connection failure, the exception
+  class, and record only what a run observed for that service (the schema refuses a wildcard row). The same error
+  code on a service or operation no row names stays a failed call. They are a stopgap until availability is derived
+  from data; they are small and meant to be replaced. A transient network fault on a service a row names is read
+  the same way, for that run only: the listing is never complete, so nothing is retired on it.
+  Throttling is classified from the error code alone.
+- **Never an authoritative empty listing.** `Listing.outcome` (region-scoped containment) and
+  `ListingWalk.not_observed` (account-scoped) record the outcome; the surface is then
+  `enumeration_complete: false`, `admitted: false`, with the named reason, so
+  `tap_grid.completeness` derives `reconcilable` false and no candidate is derived: an account that
+  has not set a feature up must never license retiring what the grid holds for it. The credential was
+  allowed to ask for `not_configured` (`scope_authorized: true`); for the other two it is not determinable.
+- **One client `Config`.** `credentials.client_config` is the only place connect timeout (5 s: a regional
+  endpoint answers in well under a second), read timeout (60 s) and retry posture (`adaptive`, 8 attempts in all, set as `total_max_attempts` because botocore's `max_attempts` counts retries after the first request:
+  client-side rate limiting absorbs a fan-out's burst, and the budget stays finite) are set. Every client
+  the collector builds takes it, and it is the session's default client config so a client a `custom_fn`
+  builds directly has it too. botocore has no separate budget for connection errors, so an endpoint that
+  never answers costs at most ~8 connect timeouts plus backoff per (service, region), about a minute,
+  where botocore's defaults cost ~312 s per entry (Inspector classic, GovCloud, measured).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-outcome-1 | Reviewed Data Rows | Approved for Development | An error is a `not_configured` or `unsupported_in_partition` result only where a row of `error_outcomes.json` matches its service, error code or exception, operation or entity type, and message text; every row has a `why`, and a `not_configured` row cannot omit its service, code or operation. An unmatched error fails the listing as before. | `tests/test_boto3_collector_outcomes.py::TestTheShippedRows`, `::TestClassify` |
+| req-aws-collector-outcome-2 | Empty Plus Info | Approved for Development | A matching listing yields zero rows and an info (`ENTRY_NOT_CONFIGURED`, or `SERVICE_NOT_AVAILABLE_IN_PARTITION` with `outcome`), never an `ENTRY_SKIPPED` warning. | `::TestCollectorRun::test_a_mapped_error_is_empty_plus_an_info_and_not_a_complete_listing` |
+| req-aws-collector-outcome-3 | Not A Complete Empty Observation | Approved for Development | A named outcome makes the listing's completeness surface `enumeration_complete: false` and `admitted: false` with the reason, region-scoped and account-scoped alike, so it licenses no retirement. | `::TestCompletenessConsequence` |
+| req-aws-collector-outcome-4 | Throttling Is Named | Approved for Development | A throttling error that outlasts the client's retries is `throttled`: an `ENTRY_THROTTLED` warning and an incomplete surface, never an empty one. | `::TestCollectorRun::test_a_throttled_listing_is_a_named_warning_and_not_an_empty_one` |
+| req-aws-collector-outcome-5 | Unreachable Learned Once | Approved for Development | An unreachable endpoint (outside commercial) is recorded `unsupported_in_partition` and the service's remaining entries in that region are settled without a call. | `::TestCollectorRun::test_an_unreachable_service_is_learned_once_not_once_per_entry` |
+| req-aws-collector-outcome-6 | One Client Config | Approved for Development | Every collection client has an explicit connect timeout, read timeout and finite adaptive retry budget from `credentials.client_config`; no module builds its own retry `Config`. | `::TestClientConfig` |
 
 ### GRIFT Batch Assembly
 ----
@@ -1253,6 +1696,31 @@ are never the same value.
 | req-aws-collector-edge-authority-6 | Sent Only Where Accepted | Implemented | The `edge_cases` section is written only when the importer's own schema defines it; the run record says whether it was sent. | Drop the check when `requires_tap` reaches a release that has the section. |
 | req-aws-collector-edge-authority-7 | Organizations Placement Is Claimed | Implemented | Every account and OU the Organizations reader writes carries one `NESTED_UNDER_PARENT` outbound claim: `complete` only when the read behind its one parent was whole (an OU: the listing that named it; an account: the whole placement walk, and named under exactly one parent); an errored page is `failed`, an account named under no parent or two is `partial`. | aws-core-tap#88: the stale parent edge a `MoveAccount` leaves. `tests/test_organizations_edge_authority.py::TestPlacement`. |
 | req-aws-collector-edge-authority-8 | Organizations Attachments Are Claimed | Implemented | Every customer-managed Organizations policy the reader writes carries one `ATTACHED_TO_TARGET` outbound claim from its `ListTargetsForPolicy` read: an errored page is `failed`, an unmappable target `partial`; an AWS-managed policy (shared by every organization in the partition) is never claimed. | `tests/test_organizations_edge_authority.py::TestAttachments`. |
+
+### Run Progress
+----
+RID: `req-aws-collector-progress`
+
+Status: `Proposed`
+
+Requested by George on 2026-11-04 ("interim logging so that we know that it's cooking"). The run log (`CollectionJob.results`)
+is persisted once, when the run ends, so a long run is silent until then. Progress goes to the process log, where it can
+be followed as it happens. Built in `progress.py`; tested in `test_boto3_collector_progress.py`.
+
+- **Lines.** A start line (manifest entries, regions, partition, and whether a selection is applied); a heartbeat at most
+  once per 30 seconds, written at the start of an entry, naming that entry's service and entity type, the entries finished
+  and the percentage, the nodes and edges so far, and the seconds elapsed; a line when the reads end and the batch is
+  about to be submitted; a line when the import returns.
+- **Counts only.** A line holds counts, an entity type, a partition and seconds. Never an account number, a resource
+  id or name, or response content.
+- **Limit.** The heartbeat is written between entries, not from a side thread (a thread would outlive an aborted run). During
+  one long call nothing is written; the last line names the entry being read.
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-progress-1 | Start, Reads-Finished And Finished Lines | Proposed | A run writes a start line, a line when the reads end and a line when the import returns, to the process log. | Tests read the log records of a real `run()`. |
+| req-aws-collector-progress-2 | Throttled Heartbeat | Proposed | A run faster than the interval writes no heartbeat; a slower one writes one per interval, naming the entry about to be read, the entries finished, the nodes and edges so far and the seconds elapsed. | Tests drive a fake clock. |
+| req-aws-collector-progress-3 | Counts Only | Proposed | No progress line carries an account number, a resource id or name, or response content. | A test asserts no 12-digit number in the lines of a real run. |
 
 ### Audit Verifiability
 ----
@@ -1819,7 +2287,7 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-collector-fanout-1 | Organization Listing Drives Fan-Out | Proposed | The member set is this run's organization-wide `ListAccounts`, `ACTIVE` members only, minus the base account and the secret's exclude list. It is never read from grid state, and fan-out does not run unless that listing read to its end and the base account is the organization's `MasterAccountId`. | |
+| req-aws-collector-fanout-1 | Organization Listing Drives Fan-Out | Proposed | The member set is this run's organization-wide `ListAccounts`, `ACTIVE` members only, minus the base account and the secret's exclude list, restricted to the secret's `accounts_allowed` when set (`req-aws-collector-selection-7`). It is never read from grid state, and fan-out does not run unless that listing read to its end and the base account is the organization's `MasterAccountId`. | |
 | req-aws-collector-fanout-2 | Partition-Aware Role ARN | Proposed | The member role ARN is `arn:<run partition>:iam::<member>:role/<member_role_name>`, with the partition from the run's resolved partition; no literal `arn:aws:` appears in the fan-out path. | A GovCloud test captures `arn:aws-us-gov:iam::…` on the wire, as `test_govcloud.py:351-399` does for the single role. |
 | req-aws-collector-fanout-3 | Assert-On-Land Per Member | Proposed | After `AssumeRole`, the member session's `GetCallerIdentity` account equals the member id, or the member is skipped as `MEMBER_ACCOUNT_MISMATCH` and nothing from it is written. | Reuses `account_mismatch_error`. |
 | req-aws-collector-fanout-4 | Member Failure Is Local | Proposed | A denied or failed `AssumeRole`, a member identity mismatch, or a member's rejected batch is recorded as that account's outcome and the run continues. A base-credential, partition or base-identity failure, or a rejected base batch (`-21`), still aborts. | |
@@ -1828,7 +2296,7 @@ GovCloud members only, and the paired commercial accounts are a separate organiz
 | req-aws-collector-fanout-7 | Surfaces Per Account | Proposed | Completeness surfaces are recorded per account against that account's own batch. A listed member that was not collected records, for each containment edge type declared on its `aws_account` node (observed this run through the base batch's tree envelope), a surface with `scope_authorized: false` and the reason, never omitting one; it records no surface for parents below the account, which this run did not observe. With no submitted batch those surfaces carry `applied_batches: []`; with a rejected batch they cite it, so core derives `applied: false` either way. | Consistent with `req-aws-core-contained-type-triple` (no surface for an unobserved parent). Core counts only `scope_authorized: true` surfaces as in scope (`tap_grid/candidates.py` `_scope_of`), so recording a not-authorized surface and omitting one read the same to withdrawal: core still derives `scope_withdrawn` candidates for the member's previous surfaces, and the falsifier is the backstop (`-9`). The not-authorized surfaces carry the reason on the record. Nothing is armed (unified-systems-com/aws-core-tap#14). |
 | req-aws-collector-fanout-8 | Account Node Merged In A Run | Proposed | For every account both the organization tree and a member collection describe in one run, the member's batch carries one envelope whose fields are the union by source (the org-sourced values from this run's tree plus the account-sourced ones); neither reader's fields are dropped or blanked, and the base batch's earlier tree envelope is superseded by it. | Generalizes `collector.py:635-653`, which keeps the tree node and drops the singleton's fields. |
 | req-aws-collector-fanout-9 | Falsifier Reach Per Account | Proposed | A falsifier resolves the candidate's account credentials through the base-then-member-role path, with assert-on-land; an unreachable account is `UNDETERMINED(scope_unknown)`. | Today every falsifier resolves the one secret (`falsifiers.py:449-485`). |
-| req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
+| req-aws-collector-fanout-10 | Bounded, Never A Silent Prefix | Proposed | Members are collected serially; a selected member count above `max_member_accounts` refuses the fan-out with `FANOUT_CAP_EXCEEDED` and still collects the base account. | |
 | req-aws-collector-fanout-11 | Ledgered Per Account | Proposed | Every `AssumeRole` and every member-session call is in the run's call ledger tagged with the member account id. | `req-aws-core-secret-aws-assumed-role-6`. |
 | req-aws-collector-fanout-12 | Dedicated Read-Only Member Role | Proposed | The member role is a dedicated role trusting only the collector's management-account principal with a required External ID, whose only permissions are the repo-owned read-only policy of `-17`; a test fails on a collector call in a member that the policy does not grant. `OrganizationAccountAccessRole` and `AWSControlTowerExecution` are never assumed by default. | Ruling 2026-10-01 (dedicated read-only role). How read-only is enforced is refined by `-17`: no AWS-managed policy. |
 | req-aws-collector-fanout-13 | Partition-Neutral Handoff Templates | Proposed | Every committed handoff artifact builds its ARNs from the deploying partition: no `arn:aws:` literal in a template value, parameter pattern or policy ARN decides the partition, and the README shows a GovCloud example beside each commercial one. | In scope for this step by the 2026-10-01 ruling; overlaps unified-systems-com/aws-core-tap#51, which named the same templates. |
@@ -2178,6 +2646,8 @@ Deferred from v0:
 
 ## Open Questions
 
+- **Commercial partition list.** Nothing is listed for `aws`. A list for it is wanted (George, 2026-11-04) but not yet:
+  the record shape in `-7` holds one, and it waits for a commercial run to show which entries need it.
 - **Derived-key edge transforms.** The Route 53-alias → CloudFront-by-domain
   edge needs a small transform on `value_path` (domain normalization), not a raw
   jsonpath. v0 supports a minimal declared transform; how expressive that

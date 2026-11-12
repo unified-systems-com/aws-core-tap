@@ -17,6 +17,7 @@ import pytest
 from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
 from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector, Boto3CollectorError
 from tap_plugin.aws_core.collectors.boto3_collector.identity import NAMESPACE_AWS_COLLECTOR
+from tap_plugin.aws_core.tests.undeclared_edge import read_as_undeclared
 from tap_plugin.aws_core.tests.grid_keys import edge_between, find_node_id, live_edges, node_id
 
 from tap_cares.collectors.config import CollectorConfig
@@ -28,7 +29,6 @@ from .test_boto3_collector_slice import (
     _DIST_ARN,
     _FN_ARN,
     _ROLE_ARN,
-    _ZONE_ID,
 )
 
 #: The vertical-slice test's canned-AWS fixture, which every test here runs under.
@@ -37,11 +37,13 @@ pytestmark = pytest.mark.usefixtures("_stub_aws")
 
 LAMBDA = "aws_core__aws_lambda"
 ROLE = "aws_core__aws_iam_role"
-ZONE = "aws_core__aws_route53_zone"
 DIST = "aws_core__aws_cloudfront_distribution"
 FOOTPRINT = "aws_core__aws_account_region"
 ASSUMES_ROLE = "ASSUMES_ROLE__aws_core"
-ROUTES_TRAFFIC = "ROUTES_TRAFFIC__aws_core"
+RESOLVES = "RESOLVES_TO_TARGET__aws_core"
+RECORD = "aws_core__aws_route53_record_set"
+#: The slice's A alias record set, which RESOLVES_TO_TARGET its CloudFront distribution.
+_RECORD_KEY = "ZSLICE000001/samsite.unified-systems.com./A/"
 REGION = "us-east-1"
 
 
@@ -270,37 +272,55 @@ def test_a_node_with_a_hole_in_its_key_fails_the_run_and_writes_nothing(monkeypa
 
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-collector-identity-3")
-def test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs() -> None:
-    """ROUTES_TRAFFIC declares no identity (aws-core-tap#64): it keeps the explicit uuid5 id it had, so
+def test_an_edge_type_with_no_identity_keeps_its_uuid5_id_across_runs(monkeypatch) -> None:
+    """An edge type with no declared identity (RESOLVES_TO_TARGET, read as undeclared here): it keeps the explicit uuid5 id it had, so
     a re-run replaces it in place instead of adding a ref-addressed copy each time."""
+    read_as_undeclared(monkeypatch)
     assert _run().results["error"] == []
-    expected = _legacy_id(f"edge:{ROUTES_TRAFFIC}:{_ZONE_ID}->{_DIST_ARN}")
-    assert edge_between(ROUTES_TRAFFIC, ZONE, _ZONE_ID, DIST, _DIST_ARN).entity_id == expected
+    expected = _legacy_id(f"edge:{RESOLVES}:{_RECORD_KEY}->{_DIST_ARN}")
+    assert edge_between(RESOLVES, RECORD, _RECORD_KEY, DIST, _DIST_ARN).entity_id == expected
     assert _run().results["error"] == []
-    assert edge_between(ROUTES_TRAFFIC, ZONE, _ZONE_ID, DIST, _DIST_ARN).entity_id == expected
+    assert edge_between(RESOLVES, RECORD, _RECORD_KEY, DIST, _DIST_ARN).entity_id == expected
 
 
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-collector-identity-3")
-def test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge() -> None:
-    """Deleting the zone ends its ROUTES_TRAFFIC edge. Re-sending that edge's fixed uuid5 id would fail
-    the whole batch (entity_tombstoned), so the run leaves it out and says so; the zone itself returns
+def test_an_edge_written_while_its_type_was_undeclared_is_found_again_once_the_type_declares_its_identity(monkeypatch) -> None:
+    """A type that gains its identity declaration: an edge stored under the old explicit uuid5 id must be the
+    edge a later run finds by (type, source, target), not a second one beside it."""
+    with monkeypatch.context() as old:
+        read_as_undeclared(old)
+        assert _run().results["error"] == []
+    record, dist = node_id(RECORD, _RECORD_KEY), node_id(DIST, _DIST_ARN)
+    (before,) = live_edges(RESOLVES, record, dist)
+    assert _run().results["error"] == []  # now the real, declared definition
+    after = live_edges(RESOLVES, record, dist)
+    assert len(after) == 1, "the upgrade left a second live edge beside the one the old definition wrote"
+    assert after[0].entity_id == before.entity_id
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-identity-3")
+def test_an_undeclared_edge_ended_on_the_grid_is_left_out_not_a_wedge(monkeypatch) -> None:
+    """Deleting the record set ends its RESOLVES_TO_TARGET edge. Re-sending that edge's fixed uuid5 id would fail
+    the whole batch (entity_tombstoned), so the run leaves it out and says so; the record set itself returns
     under a new id. The edge comes back once the type declares an identity (aws-core-tap#64)."""
     from tap_grid.models import Entity
     from tap_grid.services import delete_node
 
+    read_as_undeclared(monkeypatch)
     assert _run().results["error"] == []
-    old_zone = node_id(ZONE, _ZONE_ID)
-    edge_id = _legacy_id(f"edge:{ROUTES_TRAFFIC}:{_ZONE_ID}->{_DIST_ARN}")
-    assert delete_node(old_zone).success
+    old_record = node_id(RECORD, _RECORD_KEY)
+    edge_id = _legacy_id(f"edge:{RESOLVES}:{_RECORD_KEY}->{_DIST_ARN}")
+    assert delete_node(old_record).success
     assert Entity.objects.get(pk=edge_id).deleted_at is not None
 
     again = _run()
     assert again.results["error"] == []
-    assert node_id(ZONE, _ZONE_ID) != old_zone
+    assert node_id(RECORD, _RECORD_KEY) != old_record
     (notice,) = [w for w in again.results["warn"] if w["message_code"] == "UNDECLARED_EDGE_RETIRED"]
     assert str(edge_id) in notice["message"]
-    assert live_edges(ROUTES_TRAFFIC, node_id(ZONE, _ZONE_ID), node_id(DIST, _DIST_ARN)) == []
+    assert live_edges(RESOLVES, node_id(RECORD, _RECORD_KEY), node_id(DIST, _DIST_ARN)) == []
 
 
 @pytest.mark.django_db
@@ -311,6 +331,7 @@ def test_retired_ids_are_asked_of_the_grid_read_service_and_a_missing_id_is_sent
     the edge is sent and created under it."""
     import tap_grid.services as grid_services
 
+    read_as_undeclared(monkeypatch)
     real = grid_services.entity_liveness
     asked: list[list[Any]] = []
     answers: list[dict[uuid.UUID, str]] = []
@@ -322,7 +343,7 @@ def test_retired_ids_are_asked_of_the_grid_read_service_and_a_missing_id_is_sent
 
     monkeypatch.setattr(grid_services, "entity_liveness", _spy)
     assert _run().results["error"] == []
-    expected = _legacy_id(f"edge:{ROUTES_TRAFFIC}:{_ZONE_ID}->{_DIST_ARN}")
+    expected = _legacy_id(f"edge:{RESOLVES}:{_RECORD_KEY}->{_DIST_ARN}")
     assert len(asked) == 1
     assert answers[0][expected] == "missing"
-    assert edge_between(ROUTES_TRAFFIC, ZONE, _ZONE_ID, DIST, _DIST_ARN).entity_id == expected
+    assert edge_between(RESOLVES, RECORD, _RECORD_KEY, DIST, _DIST_ARN).entity_id == expected

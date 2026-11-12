@@ -17,6 +17,7 @@ class BedrockAgentAlias(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (agent-alias/<agentId>/<agentAliasId>, ids from the parent agent and the alias): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_agent_alias_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "bedrock:agent-alias"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

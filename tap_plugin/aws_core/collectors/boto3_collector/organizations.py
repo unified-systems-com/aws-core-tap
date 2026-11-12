@@ -110,7 +110,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 from tap_plugin.aws_core.policy_types import (
     OTHER_POLICY_TYPES,
@@ -123,6 +122,7 @@ from tap_plugin.aws_core.policy_types import (
 )
 
 from .authority import COMPLETE, FAILED, PARTIAL, worst
+from .credentials import client_config
 from .edges import edge_envelope
 from .identity import node_ref
 from .policy_documents import PolicyDocumentError, parse_statements, parse_tag_rules
@@ -266,10 +266,10 @@ def organizations_client(session: Any, region: str) -> Any:
     """An ``organizations`` client in the run's own region, with retry headroom.
 
     The region comes from the credential's region scope, so the endpoint and the partition follow
-    the credential (see the module docstring); Organizations has a low request quota, so the
-    standard retry mode is given more attempts than the default.
+    the credential (see the module docstring); Organizations has a low request quota, so it
+    uses the collector's adaptive retry posture (``credentials.client_config``).
     """
-    return session.client("organizations", region_name=region, config=Config(retries={"mode": "standard", "max_attempts": 8}))
+    return session.client("organizations", region_name=region, config=client_config())
 
 
 def error_code(exc: BaseException) -> str:

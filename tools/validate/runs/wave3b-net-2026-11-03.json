@@ -1,0 +1,296 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 20
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (31 destroyed). Checked directly afterwards, account-wide with no name filter where the service lists by name: no resolver endpoint, query log configuration, firewall rule group or association, Kinesis stream, Logs destination, run log group, Firehose stream, metric stream, IAM role, S3 bucket or VPC for the run remains, and the tagging API lists nothing tagged tap-seed=wave3b-net. Resolver rule and firewall domain list listings show only AWS-owned entries (the Internet Resolver rule and the four AWSManagedDomains lists).",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Third run of the module. The first two (w3r11032109, w3r11032117) used the prefix w3r, which wave3-redshift already holds; they were destroyed and the prefix renamed to w3n. The first run passed 19 of 20: the Firehose role's second collection pass differed from its first. The field was not named then (compare.py now names it) and the second run passed all 20, so the cause is not confirmed; the role entity carries last_used_at and Firehose assumes the role when it creates the stream, which fits but was not observed. Types the module does not seed are listed in wave3b-net/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3n11032124",
+  "seeds": "tools/seed/wave3b-net",
+  "wave": "3b-net"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::Logs::LogGroup",
+   "compared_fields": [
+    "log_group_arn",
+    "name",
+    "retention_in_days"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_log_group",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::MetricStream",
+   "compared_fields": [
+    "firehose_arn",
+    "name",
+    "output_format",
+    "state",
+    "stream_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_metric_stream",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 3,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Kinesis::Stream",
+   "compared_fields": [
+    "kinesis_stream_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_kinesis_stream",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::KinesisFirehose::DeliveryStream",
+   "compared_fields": [
+    "kinesisfirehose_delivery_stream_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_kinesisfirehose_delivery_stream",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Logs::Destination",
+   "compared_fields": [
+    "destination_arn",
+    "name",
+    "role_arn",
+    "target_arn"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_logs_destination",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Logs::SubscriptionFilter",
+   "compared_fields": [
+    "destination_arn",
+    "filter_key",
+    "log_group_name",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_logs_subscription_filter",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "ASSUMES_ROLE__aws_core->aws_core__aws_iam_role"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::FirewallRuleGroup",
+   "compared_fields": [
+    "name",
+    "rule_group_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53_resolver_firewall_rule_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::FirewallConfig",
+   "compared_fields": [
+    "route53resolver_firewall_config_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_firewall_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::FirewallDomainList",
+   "compared_fields": [
+    "name",
+    "route53resolver_firewall_domain_list_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_firewall_domain_list",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::FirewallRuleGroupAssociation",
+   "compared_fields": [
+    "name",
+    "route53resolver_firewall_rule_group_association_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_firewall_rule_group_association",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::ResolverConfig",
+   "compared_fields": [
+    "route53resolver_resolver_config_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_resolver_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::ResolverDNSSECConfig",
+   "compared_fields": [
+    "route53resolver_resolver_dnssec_config_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_resolver_dnssec_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::ResolverEndpoint",
+   "compared_fields": [
+    "name",
+    "route53resolver_resolver_endpoint_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_resolver_endpoint",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::ResolverQueryLogConfig",
+   "compared_fields": [
+    "name",
+    "route53resolver_resolver_query_log_config_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_resolver_query_log_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Route53Resolver::ResolverRule",
+   "compared_fields": [
+    "name",
+    "route53resolver_resolver_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_route53resolver_resolver_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::S3::Bucket",
+   "compared_fields": [
+    "bucket_arn",
+    "name",
+    "public_access_blocked"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_s3_bucket",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-net"
+}

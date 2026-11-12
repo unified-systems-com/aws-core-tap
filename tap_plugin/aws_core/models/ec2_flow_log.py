@@ -17,6 +17,7 @@ class Ec2FlowLog(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (FlowLogId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_flow_log_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-flow-log"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

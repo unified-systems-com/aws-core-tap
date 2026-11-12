@@ -20,6 +20,7 @@ class RouteTable(BaseModel):
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route_table_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:route-table"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -31,7 +32,7 @@ class RouteTable(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "route_table_id": {"type": "string"},
-        "is_main": {"type": "boolean"},
+        "is_main": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -39,7 +40,7 @@ class RouteTable(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "route_table_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "is_main": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "is_main": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -47,7 +48,7 @@ class RouteTable(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     route_table_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    is_main = models.BooleanField(default=False)
+    is_main = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

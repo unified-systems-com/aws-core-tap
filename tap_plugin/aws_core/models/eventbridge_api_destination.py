@@ -17,6 +17,7 @@ class EventbridgeApiDestination(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The destination's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "events:api-destination"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -50,11 +51,11 @@ class EventbridgeApiDestination(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     destination_arn = models.CharField(max_length=512, blank=True, default="")
     # The external URL the destination calls. NULL = not observed.
-    invocation_endpoint = models.TextField(blank=True, null=True, default=None)
+    invocation_endpoint = models.TextField(null=True, blank=True, default=None)
     # The HTTP method used. NULL = not observed.
-    http_method = models.CharField(max_length=512, blank=True, null=True, default=None)
+    http_method = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ACTIVE or INACTIVE. NULL = not observed.
-    state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    state = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

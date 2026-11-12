@@ -48,9 +48,9 @@ class CognitoUserPoolResourceServer(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     server_key = models.CharField(max_length=512, blank=True, default="")
     # The user pool the server belongs to. NULL = not observed.
-    user_pool_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    user_pool_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The server's identifier (usually a URL). NULL = not observed.
-    identifier = models.CharField(max_length=512, blank=True, null=True, default=None)
+    identifier = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

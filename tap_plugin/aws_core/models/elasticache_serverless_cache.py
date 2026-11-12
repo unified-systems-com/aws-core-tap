@@ -17,6 +17,7 @@ class ElasticacheServerlessCache(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("elasticache_serverless_cache_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticache:serverlesscache"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class RdsEventSubscription(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subscription's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("event_subscription_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:es"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -45,13 +46,13 @@ class RdsEventSubscription(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     event_subscription_arn = models.CharField(max_length=2048, blank=True, default="")
     # The SNS topic events are sent to. NULL = not observed.
-    sns_topic_arn = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    sns_topic_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # db-instance, db-cluster, db-snapshot, ... NULL = all source types, or not observed.
-    source_type = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    source_type = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether the subscription is enabled. NULL = not observed.
     enabled = models.BooleanField(null=True, blank=True, default=None)
     # AWS's status. NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

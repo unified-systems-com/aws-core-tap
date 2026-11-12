@@ -17,6 +17,7 @@ class ConfigStoredQuery(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The stored query's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("query_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:StoredQuery"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -43,7 +44,7 @@ class ConfigStoredQuery(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     query_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's query id. NULL = not observed.
-    query_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    query_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -1,0 +1,332 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 22
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (24 destroyed). Checked directly afterwards: no resource tagged for the run, and no log group, queue, event bus, stack, Auto Scaling group, maintenance window or repository named for it remains.",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first run created 20 of 27 resources and was destroyed: CreateLogAnomalyDetector, CreateConnection and CreateLaunchConfiguration were refused, so those types and their dependants (API destination, Auto Scaling group, policy and scheduled action) were removed or moved to a launch template. The types the module does not seed are listed in wave3b-ops/cost.md. The launch template then set associate_public_ip_address to false (a SonarCloud finding) and the cycle was run a third time (w3p11030704) and a fourth time (w3p11030740) after a review finding: the SSM association now targets a tag value that includes the run id, so no managed instance can match it (no instance carried the old tag; checked with ssm describe-instance-information before the run). Both runs:: 22/22 pass, 24 destroyed, leftovers clean.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3p11030740",
+  "seeds": "tools/seed/wave3b-ops",
+  "wave": "3b-ops"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::AutoScaling::AutoScalingGroup",
+   "compared_fields": [
+    "auto_scaling_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_autoscaling_auto_scaling_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::AutoScaling::ScalingPolicy",
+   "compared_fields": [
+    "autoscaling_scaling_policy_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_autoscaling_scaling_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::AutoScaling::ScheduledAction",
+   "compared_fields": [
+    "autoscaling_scheduled_action_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_autoscaling_scheduled_action",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudFormation::Stack",
+   "compared_fields": [
+    "cloudformation_stack_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudformation_stack",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::Alarm",
+   "compared_fields": [
+    "actions_enabled",
+    "alarm_arn",
+    "comparison_operator",
+    "metric_name",
+    "name",
+    "namespace",
+    "threshold"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_alarm",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "NOTIFIES_TOPIC__aws_core->aws_core__aws_sns_topic"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::CompositeAlarm",
+   "compared_fields": [
+    "actions_enabled",
+    "alarm_arn",
+    "alarm_rule",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_composite_alarm",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "NOTIFIES_TOPIC__aws_core->aws_core__aws_sns_topic"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::CloudWatch::Dashboard",
+   "compared_fields": [
+    "dashboard_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_dashboard",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Logs::LogGroup",
+   "compared_fields": [
+    "log_group_arn",
+    "name",
+    "retention_in_days"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_cloudwatch_log_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECR::Repository",
+   "compared_fields": [
+    "name",
+    "repository_arn",
+    "repository_uri"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecr_repository",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Events::Archive",
+   "compared_fields": [
+    "archive_arn",
+    "event_source_arn",
+    "name",
+    "retention_days"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_eventbridge_archive",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Events::EventBus",
+   "compared_fields": [
+    "bus_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_eventbridge_event_bus",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Logs::MetricFilter",
+   "compared_fields": [
+    "filter_key",
+    "filter_pattern",
+    "log_group_name",
+    "metric_name",
+    "metric_namespace",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_logs_metric_filter",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Logs::QueryDefinition",
+   "compared_fields": [
+    "logs_query_definition_id",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_logs_query_definition",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SNS::Subscription",
+   "compared_fields": [
+    "protocol",
+    "subscription_arn",
+    "topic_arn"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_sns_subscription",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SNS::Topic",
+   "compared_fields": [
+    "kms_master_key_id",
+    "topic_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sns_topic",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SQS::Queue",
+   "compared_fields": [
+    "message_retention_period",
+    "queue_arn",
+    "queue_url",
+    "visibility_timeout"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sqs_queue",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SSM::Association",
+   "compared_fields": [
+    "name",
+    "ssm_association_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ssm_association",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SSM::Document",
+   "compared_fields": [
+    "name",
+    "ssm_document_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ssm_document",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SSM::MaintenanceWindow",
+   "compared_fields": [
+    "name",
+    "ssm_maintenance_window_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ssm_maintenance_window",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SSM::PatchBaseline",
+   "compared_fields": [
+    "name",
+    "ssm_patch_baseline_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ssm_patch_baseline",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-ops"
+}

@@ -1,0 +1,193 @@
+{
+  "description": "Read actions the collector's role (SecurityAudit plus ReadOnlyAccess) does not allow, found in live runs against the GovCloud staging account. The collector ships on that role alone, so nothing here is in the default policy: the 26 collection gaps are KNOWN MISSES (aws-core-tap#172), left out on purpose and granted only if a policy owner asks for them with --include-known-misses. Each section says why its actions are listed. This is a worklist for the policy owner, not a grant: nothing here is applied by the plugin. iam_prefix_of_service maps a boto service name to the IAM prefix where they differ, so a listed action can be matched to the manifest entry that makes the call. A printed policy allows these actions on Resource *: list and describe calls take no resource-level permission, and the collector reads the whole account. Whether the six Bedrock Get actions support a narrower resource type was not checked in AWS's Service Authorization Reference, so the policy owner may scope those.",
+  "iam_prefix_of_service": {
+    "bedrock-agent": "bedrock",
+    "location": "geo",
+    "sso-admin": "sso"
+  },
+  "provenance": {
+    "ran": "2026-11-01, collector credential, us-gov-west-1: wave 0 (898 manifest types, 1,338 read calls) and the probe generator run (made-up ids, 189 types). Collection-gap and probe-read actions are the AccessDenied replies for the collector IAM user. Wave 0 re-run 2026-11-02 on main: the 105 types with a denied call were re-read with their full denial messages (kept local), which name 28 actions; the 2026-11-01 reading cut the messages at 200 characters and so named 20.",
+    "not_established": "Wave 0 recorded only the error class (AccessDeniedException), not the action, so the first version derived the collection-gap names from the manifest. Every one of them has since been read from a denial message (2026-11-02). The probe-read and unfixable entries are quoted from messages that named the action. Whether adding the actions clears each denial has not been tried. A denial can also come from a service-control policy or a permissions boundary, which an allow in the role does not override. Check with iam:SimulatePrincipalPolicy before asking for the change.",
+    "scope": "One account, one partition. Commercial regions were not run."
+  },
+  "sections": [
+    {
+      "id": "collection-gaps",
+      "in_policy": false,
+      "description": "Known misses (aws-core-tap#172). List or describe calls the collection makes for a manifest type; each returned AccessDenied under SecurityAudit plus ReadOnlyAccess because no identity-based policy allows the action. Left out on purpose: the collector ships on SecurityAudit alone, so the types these feed stay thin or uncollected. Granting them (--include-known-misses) would let those types be collected at all.",
+      "actions": [
+        {
+          "action": "bedrock:ListRetrievalInstructions",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "drs:ListRecoveryPlans",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "emr-containers:ListJobTemplates",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "emr-containers:ListSecurityConfigurations",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "fms:ListResourceSets",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "geo:ListGeofenceCollections",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "geo:ListPlaceIndexes",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "geo:ListRouteCalculators",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "geo:ListTrackers",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:DescribeIntegrations",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:ListBlueprints",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:ListConnectionTypes",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:ListCustomEntityTypes",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:ListDataQualityRulesets",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:ListIntegrationResourceProperties",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "glue:ListUsageProfiles",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "license-manager-linux-subscriptions:ListRegisteredSubscriptionProviders",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "license-manager-user-subscriptions:ListLicenseServerEndpoints",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "managedblockchain:ListAccessors",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "mgn:ListConnectors",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "mgn:ListNetworkMigrationDefinitions",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "network-firewall:ListContainerAssociations",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "network-firewall:ListVpcEndpointAssociations",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "sso:ListApplications",
+          "custom_fn": "identity_center_applications_described",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "textract:ListAdapters",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        },
+        {
+          "action": "verifiedpermissions:ListPolicyStoreAliases",
+          "reason": "Known miss: outside SecurityAudit, left out on purpose (aws-core-tap#172)."
+        }
+      ],
+      "opt_in": false,
+      "known_miss": true
+    },
+    {
+      "id": "opt-in-probe-reads",
+      "in_policy": false,
+      "description": "Get calls the generic falsifier would make to ask whether one object still exists. The collection does not make them. They returned AccessDeniedException for a made-up id, which says nothing about whether the object exists, so without them those types cannot be retired by a probe. Left out of the default policy because a Get returns the object's content (a flow definition, a prompt), more than the existence check needs; adding them is a decision for the policy owner, taken with --include-opt-in.",
+      "actions": [
+        {
+          "action": "bedrock:GetAgentAlias",
+          "reason": "Returns the object's configuration, not only whether it exists."
+        },
+        {
+          "action": "bedrock:GetFlow",
+          "reason": "Returns the object's configuration, not only whether it exists."
+        },
+        {
+          "action": "bedrock:GetFlowAlias",
+          "reason": "Returns the object's configuration, not only whether it exists."
+        },
+        {
+          "action": "bedrock:GetFlowVersion",
+          "reason": "Returns the object's configuration, not only whether it exists."
+        },
+        {
+          "action": "bedrock:GetPrompt",
+          "reason": "Returns the object's configuration, not only whether it exists."
+        },
+        {
+          "action": "bedrock:GetRetrievalInstruction",
+          "reason": "Returns the object's configuration, not only whether it exists."
+        }
+      ],
+      "opt_in": true
+    },
+    {
+      "id": "opt-in-credential-bearing",
+      "in_policy": false,
+      "description": "An action the response of which can carry secrets. Left out of the printed policy unless asked for with --include-opt-in, because the plugin would then receive them.",
+      "actions": [
+        {
+          "action": "glue:GetConnections",
+          "reason": "Returns connection properties, which can include a password or a secret reference."
+        }
+      ],
+      "opt_in": true
+    },
+    {
+      "id": "not-fixable-by-this-role",
+      "in_policy": false,
+      "description": "Denied for a reason an allow in the collector's role does not remove. Listed so the denial is not read as a missing permission.",
+      "actions": [
+        {
+          "action": "bedrock:GetAutomatedReasoningPolicy",
+          "reason": "The reply is 'Your account is not authorized to invoke this API operation': an account-level restriction, not the role."
+        },
+        {
+          "action": "connect:ListTrafficDistributionGroups",
+          "reason": "The denial message names an explicit deny, which an allow in the collector's role does not override (a service control policy, a permissions boundary or a deny statement)."
+        },
+        {
+          "action": "securityhub:GetConfigurationPolicy",
+          "reason": "The reply names an explicit deny in a resource-based policy; an explicit deny wins over any allow."
+        }
+      ],
+      "opt_in": false
+    }
+  ]
+}

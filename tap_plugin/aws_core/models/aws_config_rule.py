@@ -35,21 +35,22 @@ class AwsConfigRule(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:ConfigRule"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "rule_arn": {"type": "string"},
-        "rule_name": {"type": "string"},
-        "rule_id": {"type": "string"},
-        "description": {"type": "string"},
+        "rule_name": {"type": ["string", "null"]},
+        "rule_id": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
         # AWS, CUSTOM_LAMBDA or CUSTOM_POLICY, verbatim.
-        "source_owner": {"type": "string"},
+        "source_owner": {"type": ["string", "null"]},
         # The managed rule's identifier (for example S3_BUCKET_PUBLIC_READ_PROHIBITED) or a Lambda ARN.
-        "source_identifier": {"type": "string"},
-        "state": {"type": "string"},
+        "source_identifier": {"type": ["string", "null"]},
+        "state": {"type": ["string", "null"]},
         # The service principal that created a service-linked rule; "" for a rule an operator made.
-        "created_by": {"type": "string"},
-        "maximum_execution_frequency": {"type": "string"},
+        "created_by": {"type": ["string", "null"]},
+        "maximum_execution_frequency": {"type": ["string", "null"]},
         # COMPLIANT, NON_COMPLIANT, NOT_APPLICABLE or INSUFFICIENT_DATA, verbatim.
         "compliance_type": {"type": ["string", "null"]},
         "non_compliant_resource_count": {"type": ["integer", "null"]},
@@ -65,14 +66,14 @@ class AwsConfigRule(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     rule_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    rule_name = models.CharField(max_length=128, blank=True, default="")
-    rule_id = models.CharField(max_length=64, blank=True, default="")
-    description = models.CharField(max_length=256, blank=True, default="")
-    source_owner = models.CharField(max_length=32, blank=True, default="")
-    source_identifier = models.CharField(max_length=256, blank=True, default="")
-    state = models.CharField(max_length=32, blank=True, default="")
-    created_by = models.CharField(max_length=256, blank=True, default="")
-    maximum_execution_frequency = models.CharField(max_length=32, blank=True, default="")
+    rule_name = models.CharField(max_length=128, null=True, blank=True, default=None)
+    rule_id = models.CharField(max_length=64, null=True, blank=True, default=None)
+    description = models.CharField(max_length=256, null=True, blank=True, default=None)
+    source_owner = models.CharField(max_length=32, null=True, blank=True, default=None)
+    source_identifier = models.CharField(max_length=256, null=True, blank=True, default=None)
+    state = models.CharField(max_length=32, null=True, blank=True, default=None)
+    created_by = models.CharField(max_length=256, null=True, blank=True, default=None)
+    maximum_execution_frequency = models.CharField(max_length=32, null=True, blank=True, default=None)
     compliance_type = models.CharField(max_length=32, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", "" is "not evaluated"
     non_compliant_resource_count = models.IntegerField(null=True, blank=True, default=None)
     non_compliant_count_capped = models.BooleanField(null=True, blank=True, default=None)

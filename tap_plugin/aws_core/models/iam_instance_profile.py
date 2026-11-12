@@ -17,6 +17,7 @@ class IamInstanceProfile(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The instance profile's ARN: a name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_profile_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:instance-profile"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -28,7 +29,7 @@ class IamInstanceProfile(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "instance_profile_arn": {"type": "string"},
-        "path": {"type": "string"},
+        "path": {"type": ["string", "null"]},
         "instance_profile_id": {"type": ["string", "null"]},
         "role_arns": {"type": ["array", "null"]},
         "configuration": {"type": "object"},
@@ -38,7 +39,7 @@ class IamInstanceProfile(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "instance_profile_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "path": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "instance_profile_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "role_arns": {"validation": "jsonschema", "schema": {"type": ["array", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -48,9 +49,9 @@ class IamInstanceProfile(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     instance_profile_arn = models.CharField(max_length=512, blank=True, default="")
-    path = models.CharField(max_length=512, blank=True, default="/")
+    path = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's immutable instance profile id (AIPA...); NULL = not observed.
-    instance_profile_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    instance_profile_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ARNs of the roles in the profile. NULL = not observed; [] = observed, no role.
     role_arns = models.JSONField(blank=True, null=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

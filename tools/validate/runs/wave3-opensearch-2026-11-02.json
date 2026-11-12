@@ -1,0 +1,77 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 4
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (5 destroyed). Checked directly afterwards: no domain, VPC or network interface of the run is left.",
+  "date": "2026-11-02",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "OpenSearch: 1 entity type, the VPC domain (4 compared with the wave 1 types the module needs). The service-linked role for OpenSearch was created before the apply because the API refuses a VPC domain without it. Not seeded: the Serverless policies (their keys need the account and region, which the harness cannot build yet), the Serverless collection (2 OCU minimum) and VPC endpoint.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3o11021745",
+  "seeds": "tools/seed/wave3-opensearch",
+  "wave": "3a-opensearch"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::OpenSearchService::Domain",
+   "compared_fields": [
+    "name",
+    "opensearchservice_domain_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_opensearchservice_domain",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3a-opensearch"
+}

@@ -17,6 +17,7 @@ class Ec2LocalGatewayRouteTableVpcAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (LocalGatewayRouteTableVpcAssociationId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_local_gateway_route_table_vpc_association_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:local-gateway-route-table-vpc-association"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

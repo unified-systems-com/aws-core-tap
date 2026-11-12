@@ -45,6 +45,7 @@ class AwsServiceControlPolicy(BaseModel):
     # (arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess), because it is one
     # AWS-owned object: one node, with each organization's use of it its own ATTACHED_TO_TARGET edge.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:policy"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_policy_statement"}], "edges": [{"type": "DECLARES_STATEMENT__aws_core"}]},
@@ -63,8 +64,8 @@ class AwsServiceControlPolicy(BaseModel):
                 "service_control_policy/p-[0-9a-zA-Z_]{8,128})?$"
             ),
         },
-        "policy_id": {"type": "string", "pattern": "^(p-[0-9a-zA-Z_]{8,128})?$"},
-        "description": {"type": "string"},
+        "policy_id": {"type": ["string", "null"], "pattern": "^(p-[0-9a-zA-Z_]{8,128})?$"},
+        "description": {"type": ["string", "null"]},
         "aws_managed": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
@@ -79,8 +80,8 @@ class AwsServiceControlPolicy(BaseModel):
     policy_arn = models.CharField(max_length=512, blank=True, default="", db_index=True)
     # The id AttachPolicy takes; also the last segment of policy_arn, kept because it is what AWS's
     # policy APIs and the console show.
-    policy_id = models.CharField(max_length=130, blank=True, default="")
-    description = models.CharField(max_length=512, blank=True, default="")
+    policy_id = models.CharField(max_length=130, null=True, blank=True, default=None)
+    description = models.CharField(max_length=512, null=True, blank=True, default=None)
     # PolicySummary.AwsManaged; null when not observed, so a designed policy is not asserted customer-managed.
     aws_managed = models.BooleanField(null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: organizations:ListTagsForResource.

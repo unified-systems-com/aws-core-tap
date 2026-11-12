@@ -11,6 +11,7 @@ exactly what the manifest needs:
 - nested flatten + project: ``Origins.Items[].DomainName`` (-> list)
 - whole value is the list:  ``[]`` (custom_fn yielding a top-level list)
 - scalars:                  ``FunctionArn``
+- first of a list:          ``Attachments[].State|first`` (the first non-null element, ``None`` when none)
 
 Graceful-missing is the contract: a path that does not resolve yields
 ``None`` (scalar context) or ``[]`` (list context) — never an exception.
@@ -75,4 +76,9 @@ def eval_path(data: Any, expr: str) -> Any:
         data: The object to resolve against (a response dict or one item).
         expr: A manifest path expression (see module docstring).
     """
+    if expr.endswith("|first"):
+        found = _walk(data, _parse(expr[: -len("|first")]))
+        if isinstance(found, list):
+            return next((v for v in found if v is not None), None)
+        return found
     return _walk(data, _parse(expr))

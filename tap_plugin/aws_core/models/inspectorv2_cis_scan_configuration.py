@@ -17,6 +17,7 @@ class Inspectorv2CisScanConfiguration(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (scanConfigurationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("inspectorv2_cis_scan_configuration_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "inspector2:CIS Scan Configuration"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
