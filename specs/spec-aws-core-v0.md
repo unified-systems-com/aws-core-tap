@@ -62,6 +62,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-network-plane | [Network Plane Collection](#network-plane-collection) | Proposed | Route tables + routes, IGW, NAT, EIP, NACLs + entries, SG rules, VPC endpoints, flow logs, ENIs, TGW + attachments + route tables + routes, peering, Route 53 Resolver; each with tags lane and retirement path |
 | req-aws-core-account-footprint | [Account Owns Its Region Footprints](#account-owns-its-region-footprints) | Proposed | `OWNS_REGION_FOOTPRINT` account → footprint containment; a never-drop `FootprintFalsifier` |
 | req-aws-core-contained-type-triple | [Every Contained Type Has Its Three Parts](#every-contained-type-has-its-three-parts) | Proposed | Every (parent, edge type) the epic adds has containment, a completeness surface and a falsifier; empty parents are complete-empty; unfinished listings are incomplete |
+| req-aws-core-reconcile-coverage | [Reconcile Coverage Of Collected Types](#reconcile-coverage-of-collected-types) | Proposed | What each collected type needs to become retirable; the lifecycle trial's evidence; partition-correct probes; a manifest-declared generic falsifier; an ordered worklist |
 | req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
 | req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
 
@@ -2224,6 +2225,69 @@ per-region rules.
 | req-aws-core-contained-type-triple-4 | Regional Child Listings Cover Each Parent | Proposed | For children read by one regional listing grouped by parent (SG rules, TGW attachments, TGW route tables), each observed parent's surface is complete only when that regional listing read to its end. | |
 | req-aws-core-contained-type-triple-5 | TGW Route Search Is Controlled | Proposed | The `DECLARES_TGW_ROUTE` surface is complete only when `SearchTransitGatewayRoutes` reached its paginator's stop condition (no `NextToken` and `AdditionalRoutesAvailable` false on the last page), was called at the maximum `MaxResults`, and its required filter's positive control passed. `AdditionalRoutesAvailable: true` with no token leaves the surface incomplete, never partially complete. If the search is split by narrower filters to get under the cap, every filtered search must reach its stop condition and the union must be controlled. | `SearchTransitGatewayRoutes` requires `Filters`, and has `NextToken` in input and output with a paginator whose `more_results` is `AdditionalRoutesAvailable` (read: botocore 1.43.103). `req-aws-collector-pagination`. |
 | req-aws-core-contained-type-triple-6 | Listings Read Their Full Set | Proposed | Every listing in *Listings read their full set* is called with the stated widening flag (or replacement call), never its narrowed default. Tests: a child enabled baseline and a control enabled on a nested OU and on an account appear; an AWS-managed network interface appears; a service-linked Config recorder appears; an analyzer of each `Type` appears; a provisioned permission set of either provisioning status is listed. | Read: botocore 1.43.103 input shapes. A default-narrowed listing read as complete would nominate what it omitted. |
+
+### Reconcile Coverage Of Collected Types
+----
+RID: `req-aws-core-reconcile-coverage`
+
+Status: `Proposed`
+
+A type is retirable only when it has all three parts of `req-aws-core-contained-type-triple` and the
+parts work for the partition the account is in. Today few collected types do, and the lifecycle trial
+showed what that costs: a resource deleted in AWS stays live on the grid for as long as its type lacks a
+part.
+
+**Provenance.**
+
+- Read 2026-11-01: `aws_resource_manifest.json` (898 entries, 898 types), of which 13 declare a
+  `containment` block (`collectors/boto3_collector/containment.py`); `tap-plugin.toml` `[falsifiers]`
+  (39 rows); `regional.py` `REGIONAL_CHILDREN` (15 rows). The 13 containment entries are the
+  account-scoped IAM and S3 types and the four EC2 types; the Organizations, landing-zone and
+  security-service surfaces are recorded by `organizations.py`, `landing_zone.py` and `findings.py`.
+- Run 2026-11-01 (aws-core-tap lifecycle trial, GovCloud test account, run id `w111011127`): one
+  collection with 19 seeded resource types, the seeds destroyed in AWS, one more collection with
+  reconcile armed. 13 candidates; 8 retired (VPC, 2 subnets, 3 security groups, IAM group, IAM
+  instance profile); 5 undetermined (IAM role, user and policy: `InvalidClientTokenId`; 2 S3 buckets:
+  `head_bucket` answered forbidden). The other 10 seeded types were never candidates.
+- Designed, not observed: the error codes named per type below, the order, and the generic falsifier.
+  None was exercised against a live account.
+
+**What the trial showed.**
+
+| Seeded type | State after the destroy | Why | Part missing |
+| --- | --- | --- | --- |
+| VPC, subnet, security group | retired | surface and falsifier both present (`HOSTS_*`) | none |
+| IAM group, instance profile | retired | surface and falsifier, IAM client built for the ARN's partition | none |
+| IAM role, user, policy | live | surface present; the falsifier asked `us-east-1` and a GovCloud key was refused | fixed in aws-core-tap#164; to be shown by a repeat trial |
+| S3 bucket (2) | live | surface present; `head_bucket` answered forbidden, read as "gone or not visible" | hypothesis only: the probe also uses `us-east-1` (`falsifiers.py`, `S3BucketFalsifier`) |
+| Lambda function, function version | live | no `containment` block, no surface, no falsifier | both |
+| SQS queue, SNS topic, DynamoDB table | live | same | both |
+| KMS alias, Secrets Manager secret, SSM parameter | live | same | both |
+| CloudWatch log group, EventBridge rule | live | same | both |
+
+**Requirement.**
+
+| RID | Name | Status | Notes |
+| --- | --- | :---: | --- |
+| req-aws-core-reconcile-coverage-1 | Partition-Correct Probes | Proposed | Every falsifier builds its client for the partition of the candidate's own ARN or of the account. A test per falsifier asks for a GovCloud candidate and asserts the endpoint region. S3 (`head_bucket`) is checked live first; if it fails the same way, it is fixed here. |
+| req-aws-core-reconcile-coverage-2 | Worklist Is Ordered By Value And Effort | Proposed | The worklist below is the order types get a surface and a falsifier. A type moves up when it holds security-relevant configuration. Each addition ships with its triple (`req-aws-core-contained-type-triple-1`) and a seed in `tools/seed` that the lifecycle trial destroys. |
+| req-aws-core-reconcile-coverage-3 | One Generic Falsifier From Manifest Data | Proposed | A manifest entry may declare `falsifier: {operation, key, not_found_codes, absent_when}`, where `absent_when` is an optional `{path, equals}` for a read that answers a missing object with success and no matching item instead of an error code: the object is gone when **no element at `path` equals the object's identity**, compared exactly on each returned value, never by testing whether a filtered or prefix-matched result is empty (`DescribeLogGroups` matches by prefix, so a deleted `/app` is not gone while `/app-worker` is returned; `DescribeParameters` filters are likewise applied and the returned names compared); an entry with neither a not-found code nor an `absent_when` is refused; one registered class judges any such entry by that read and reuses `probe_status_of`. A type needs a hand-written falsifier only when a not-found answer is ambiguous (as S3's forbidden is). Without this, 885 types need 885 classes. **The declared operation is validated when the manifest loads, and a failure refuses the manifest:** it must be a read verb (`Describe`, `Get`, `List`, `Head`), must exist in botocore's model for the entry's service, must not be one that returns credentials or a secret value, and its parameters may not include one that asks the service to reveal a secret; `key` must name a request parameter of that operation and `not_found_codes` must be error codes that operation can raise. A manifest edit cannot make the falsifier call a mutating or secret-returning API. |
+| req-aws-core-reconcile-coverage-4 | Coverage Is Reported | Proposed | A run reports the count of collected types that are reconcilable (surface and falsifier), and the crosscheck/ledger names the rest, so a deleted resource that stays live is explained by a row, not found by a trial. |
+| req-aws-core-reconcile-coverage-5 | Retiring On Absence From A Complete Run Is Backlogged | Backlog | Retiring many nodes at once because a later run's listing no longer contains them is not built. Each retirement is confirmed per node by that type's own probe (`req-aws-core-reconcile-coverage-3`, or AWS Config deletion evidence). The idea held for later: a type's listing in a run qualifies as a second, weaker class of evidence only if every page and every enabled region completed without a denied, throttled or partial response, the principal ARN and the attached managed-policy versions (`SecurityAudit`, `ReadOnlyAccess`, which AWS revises) match the earlier run, and the type was seen in it; a listing with eventual consistency would need two consecutive complete runs. It conflicts with `req-grid-reconcile-falsifier` (no probe means not reconcilable) in `tap_grid/specs/spec-grid-reconcile.md`, so it needs a ruling on that requirement before any code; a retirement would also have to record which evidence class licensed it. | Backlog. Not designed beyond this paragraph. |
+
+**Worklist** (designed order; read-operation names and error codes are from the service models and are
+unverified until the trial).
+
+| Step | Types | Listing for the surface | Probe for the falsifier | Notes |
+| --- | --- | --- | --- | --- |
+| 0 | IAM role, user, policy; S3 bucket | already recorded | `GetRole`, `GetUser`, `GetPolicy`; `HeadBucket` | partition fix (`-1`) |
+| 1 | Lambda function, then version, alias, URL | function: `ListFunctions`; version: `ListFunctions` with `FunctionVersion=ALL`, or `ListVersionsByFunction` per function; alias: `ListAliases` per function; URL: `ListFunctionUrlConfigs` per function; all paginated, per region | function: `GetFunctionCodeSigningConfig` (`ResourceNotFoundException`; it names the function and returns no code, environment or configuration); version: `GetRuntimeManagementConfig` with `Qualifier`; alias: `GetAlias`; URL: `GetFunctionUrlConfig` | versions, aliases and URLs are children of a function, not of the footprint, and each needs its own probe: a function existing says nothing about a deleted alias or URL. `GetFunction` and `GetFunctionConfiguration` are not used: the first returns a presigned link to the deployment package, the second the function's environment variables in plain text. The not-found behaviour of each probe is to be confirmed live |
+| 2 | SQS queue, SNS topic, DynamoDB table | `ListQueues`, `ListTopics`, `ListTables`, paginated, per region | `GetQueueAttributes`, `GetTopicAttributes`, `DescribeTable` | queue-not-found code to confirm live |
+| 3 | Secrets Manager secret, SSM parameter, KMS alias | `ListSecrets` (include planned deletion), `DescribeParameters`, `ListAliases` | `DescribeSecret`, `DescribeParameters` filtered to the parameter's name, read as absent when the result is empty (`absent_when`; not `GetParameter`, which returns the value), `DescribeKey` with the alias name (`KeyId=alias/...`, which answers not-found once the alias is deleted even though its target key remains; the target key's id is never the probe) | a secret scheduled for deletion is still described and can be restored, so it is NOT gone: record it as pending deletion (from `DeletedDate`) and retire it only when `DescribeSecret` answers not-found, after the recovery window. The same holds for a KMS key in `PendingDeletion` |
+| 4 | CloudWatch log group, EventBridge rule | `DescribeLogGroups`, `ListRules` for every event bus | `DescribeLogGroups` with `logGroupNamePrefix` set to the name, read through `absent_when` as gone only when no returned `logGroupName` equals it; `DescribeRule` | rule listing is per bus |
+| 5 | The network plane | as `req-aws-core-network-plane-5` | as that requirement | already specified, not yet built |
+| 6 | EBS volume, RDS instance and cluster, EKS and ECS clusters, load balancers | each service's paginated list | each service's describe by id | named in `regional.py` as the worklist |
+| 7 | The remaining regional types, by service count (SageMaker, Connect, IoT, QuickSight, Glue, ...) | per entry | the generic falsifier (`-3`) | only where the entry has a keyed read |
 
 ### Reference Edges Declare What They Derive From
 ----
