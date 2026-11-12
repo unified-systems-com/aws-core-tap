@@ -55,6 +55,7 @@ NO_ARN: dict[str, str] = {
     "ecr_repository_creation_template": "the service reference defines no ARN for a repository creation template",
     "efs_mount_target": "the service reference defines no ARN for a mount target",
     "eks_certificate_authority": "the service reference defines no ARN for a cluster's certificate authority",
+    "elb_classic_listener": "a Classic Load Balancer listener has no ARN; DescribeLoadBalancers returns it inside its load balancer",
     "emr_security_configuration": "the service reference defines no ARN for a security configuration",
     "fsx_s3_access_point_attachment": "the service reference defines no ARN for an S3 access point attachment",
     "glue_schema_version": "the service reference defines no ARN for a schema version",
