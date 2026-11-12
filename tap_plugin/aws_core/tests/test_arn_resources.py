@@ -26,7 +26,6 @@ FORMATS = json.loads(iam_policy.ARN_FORMATS.read_text())["resources"]
 #: A resource type with no ARN of its own: the model declares no ARN_RESOURCE and keeps its scoped key.
 NO_ARN: dict[str, str] = {
     "access_analyzer_finding": "the service reference defines no ARN for an Access Analyzer finding",
-    "account": "the service reference gives an account an ARN only under Organizations, which needs the organization id",
     "account_region": "an account's footprint in one Region, which the collector records; not an AWS resource",
     "appstream_directory_config": "the service reference defines no ARN for a directory config",
     "appstream_entitlement": "the service reference defines no ARN for an entitlement",
@@ -119,6 +118,13 @@ RETURNED_ONLY: dict[str, str] = {
     "securityhub_insight": "the service reference lists no resource type for it; the ARN AWS returns is kept",
     "securityhub_standards_subscription": "the service reference lists no resource type for it; the ARN AWS returns is kept",
     "sns_subscription": "the service reference lists no resource type for it; the ARN AWS returns is kept",
+    "servicecatalog_provisioned_product": "the service reference lists no resource type for a provisioned product (servicecatalog:Product is the catalog product, a different ARN); the ARN AWS returns is kept",
+}
+
+#: A type that names its ARN resource type but keeps a key that is not the ARN, because some of its rows have no ARN.
+KEY_NOT_ARN: dict[str, str] = {
+    "account": "an account has an ARN only as a member of an Organization (the format needs the organization id); a "
+    "standalone account has none, so the key stays the 12-digit account id and the ARN is stored when Organizations returns it",
 }
 
 #: Resource types whose only reference format ends in a policy wildcard (``…:cert:*``): it names every resource of the
@@ -180,6 +186,13 @@ def test_the_lists_hold_only_types_that_need_them() -> None:
     stale += [n for n in RETURNED_ONLY if declared.get(n, _UNSET) is not None]
     assert not stale
     assert not set(NO_ARN) & set(RETURNED_ONLY)
+
+
+def test_a_type_keyed_off_its_arn_still_names_its_arn_resource() -> None:
+    """KEY_NOT_ARN is for a type that has an ARN resource type, not a way out of naming one."""
+    declared = _declarations()
+    assert all(isinstance(declared.get(n), str) for n in KEY_NOT_ARN)
+    assert not set(KEY_NOT_ARN) & (set(NO_ARN) | set(RETURNED_ONLY))
 
 
 def test_a_returned_only_reason_says_which_gap_it_is() -> None:

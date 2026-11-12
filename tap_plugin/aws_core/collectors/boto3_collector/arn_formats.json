@@ -1616,6 +1616,9 @@
   "oam:Sink": [
    "arn:${Partition}:oam:${Region}:${Account}:sink/${ResourceId}"
   ],
+  "organizations:account": [
+   "arn:${Partition}:organizations::${Account}:account/o-${OrganizationId}/${AccountId}"
+  ],
   "organizations:organization": [
    "arn:${Partition}:organizations::${Account}:organization/o-${OrganizationId}"
   ],

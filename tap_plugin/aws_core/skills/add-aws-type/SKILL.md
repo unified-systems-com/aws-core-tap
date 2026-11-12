@@ -155,6 +155,8 @@ Authorization Reference (`https://servicereference.us-east-1.amazonaws.com/v1/<s
   vendors its formats;
 - AWS returns an ARN for it but the reference lists no resource type (or has no file for the service):
   `ARN_RESOURCE = None`, and add the type to `RETURNED_ONLY` in `tests/test_arn_resources.py` with which gap it is;
+- it has a resource type, but some of its rows have no ARN (an account outside an Organization): name the resource
+  type anyway, keep a key that every row has, and add the type to `KEY_NOT_ARN` there with the reason;
 - it has no ARN at all: declare nothing, add it to `NO_ARN` there with the reason, and key it on a scoped composite
   (`req-aws-collector-identity-8`).
 
