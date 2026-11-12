@@ -17,6 +17,7 @@ class CloudtrailEventDataStore(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The event data store's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("event_data_store_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudtrail:eventdatastore"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

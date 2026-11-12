@@ -17,6 +17,7 @@ class GuarddutyFilter(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'filter' and the filter name: a filter name is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("filter_key",)
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:filter"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

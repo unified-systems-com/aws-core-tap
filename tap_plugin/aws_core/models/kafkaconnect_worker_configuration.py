@@ -17,6 +17,7 @@ class KafkaconnectWorkerConfiguration(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (workerConfigurationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("worker_configuration_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kafkaconnect:worker configuration"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -18,6 +18,7 @@ class LambdaFunction(BaseModel):
     # Identity (req-grid-entity-natural-key): The function's ARN, the boto3 collector's identity for
     # it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("function_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "lambda:function"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

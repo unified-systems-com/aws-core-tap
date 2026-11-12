@@ -17,6 +17,7 @@ class RedshiftserverlessNamespace(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (namespaceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshiftserverless_namespace_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "redshift-serverless:namespace"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class EcsTaskDefinition(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The task definition revision's ARN (taskDefinitionArn): unique across accounts and regions, and one per revision.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ecs_task_definition_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecs:task-definition"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

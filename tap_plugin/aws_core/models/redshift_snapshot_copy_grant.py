@@ -17,6 +17,7 @@ class RedshiftSnapshotCopyGrant(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_snapshot_copy_grant_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "redshift:snapshotcopygrant"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

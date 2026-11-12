@@ -17,6 +17,7 @@ class LambdaCodeSigningConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The configuration's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("code_signing_config_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "lambda:code signing config"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class MskServerlessCluster(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ClusterArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("msk_serverless_cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kafka:cluster"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

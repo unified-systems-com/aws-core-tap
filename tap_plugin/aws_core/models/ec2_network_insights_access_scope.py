@@ -17,6 +17,7 @@ class Ec2NetworkInsightsAccessScope(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (NetworkInsightsAccessScopeArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("network_insights_access_scope_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:network-insights-access-scope"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

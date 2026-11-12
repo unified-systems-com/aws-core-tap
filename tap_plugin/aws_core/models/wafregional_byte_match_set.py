@@ -17,6 +17,7 @@ class WafregionalByteMatchSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (ByteMatchSetId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wafregional_byte_match_set_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "waf-regional:bytematchset"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

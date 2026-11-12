@@ -17,6 +17,7 @@ class BatchComputeEnvironment(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (computeEnvironmentArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("compute_environment_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "batch:compute-environment"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class Inspectorv2Connector(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (connectorArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connector_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "inspector2:Connector"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

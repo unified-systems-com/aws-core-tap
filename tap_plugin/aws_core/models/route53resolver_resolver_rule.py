@@ -17,6 +17,7 @@ class Route53resolverResolverRule(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53resolver_resolver_rule_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53resolver:resolver-rule"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

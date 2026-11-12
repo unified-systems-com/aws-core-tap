@@ -17,6 +17,7 @@ class EfsAccessPoint(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The access point's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("access_point_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticfilesystem:access-point"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

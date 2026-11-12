@@ -17,6 +17,7 @@ class MskReplicator(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ReplicatorArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("replicator_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kafka:replicator"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

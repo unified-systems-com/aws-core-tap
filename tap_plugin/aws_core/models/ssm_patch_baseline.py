@@ -17,6 +17,7 @@ class SsmPatchBaseline(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The baseline's BaselineId: DescribePatchBaselines returns no ARN, and a patch baseline id is service-generated.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_patch_baseline_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ssm:patchbaseline"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

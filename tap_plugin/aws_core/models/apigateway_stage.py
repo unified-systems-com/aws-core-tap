@@ -17,6 +17,7 @@ class ApigatewayStage(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The stage's ARN (the API's ARN plus /stages/<name>): a stage name is unique only within an API.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stage_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:Stage"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

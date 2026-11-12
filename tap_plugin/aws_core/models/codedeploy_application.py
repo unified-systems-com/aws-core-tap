@@ -17,6 +17,7 @@ class CodedeployApplication(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (application:<applicationName>): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("codedeploy_application_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "codedeploy:application"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

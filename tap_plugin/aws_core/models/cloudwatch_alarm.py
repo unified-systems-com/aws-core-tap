@@ -17,6 +17,7 @@ class CloudwatchAlarm(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The alarm's ARN: an alarm name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("alarm_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:alarm"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

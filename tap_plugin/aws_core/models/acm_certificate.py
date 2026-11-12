@@ -18,6 +18,7 @@ class AcmCertificate(BaseModel):
     # Identity (req-grid-entity-natural-key): The certificate's ARN, the boto3 collector's identity
     # for it (CertificateArn).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificate_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "acm:certificate"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

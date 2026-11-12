@@ -17,6 +17,7 @@ class TimestreamInfluxDbBackup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("timestream_influx_db_backup_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "timestream-influxdb:db-backup"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

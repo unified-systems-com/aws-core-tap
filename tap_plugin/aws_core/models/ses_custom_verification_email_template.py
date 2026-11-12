@@ -17,6 +17,7 @@ class SesCustomVerificationEmailTemplate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_custom_verification_email_template_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ses:custom-verification-email-template"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

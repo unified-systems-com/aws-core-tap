@@ -38,6 +38,7 @@ class TransitGateway(BaseModel):
 
     # AWS's transit gateway id (tgw-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("transit_gateway_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:transit-gateway"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

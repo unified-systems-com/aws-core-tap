@@ -17,6 +17,7 @@ class StepfunctionsStateMachineAlias(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (stateMachineAliasArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stepfunctions_state_machine_alias_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "states:statemachinealias"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

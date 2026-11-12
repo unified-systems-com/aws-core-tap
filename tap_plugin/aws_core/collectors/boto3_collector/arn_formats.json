@@ -1,0 +1,2442 @@
+{
+ "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh or --refresh-arns; do not edit.",
+ "resources": {
+  "access-analyzer:Analyzer": [
+   "arn:${Partition}:access-analyzer:${Region}:${Account}:analyzer/${AnalyzerName}"
+  ],
+  "access-analyzer:ArchiveRule": [
+   "arn:${Partition}:access-analyzer:${Region}:${Account}:analyzer/${AnalyzerName}/archive-rule/${RuleName}"
+  ],
+  "acm-pca:certificate-authority": [
+   "arn:${Partition}:acm-pca:${Region}:${Account}:certificate-authority/${CertificateAuthorityId}"
+  ],
+  "acm:acme-domain-validation": [
+   "arn:${Partition}:acm:${Region}:${Account}:acme-endpoint/${AcmeEndpointId}/acme-domain-validation/${AcmeDomainValidationId}"
+  ],
+  "acm:acme-endpoint": [
+   "arn:${Partition}:acm:${Region}:${Account}:acme-endpoint/${AcmeEndpointId}"
+  ],
+  "acm:acme-external-account-binding": [
+   "arn:${Partition}:acm:${Region}:${Account}:acme-endpoint/${AcmeEndpointId}/acme-external-account-binding/${ExternalAccountBindingId}"
+  ],
+  "acm:certificate": [
+   "arn:${Partition}:acm:${Region}:${Account}:certificate/${CertificateId}"
+  ],
+  "aoss:Collection": [
+   "arn:${Partition}:aoss:${Region}:${Account}:collection/${CollectionId}"
+  ],
+  "aoss:CollectionGroup": [
+   "arn:${Partition}:aoss:${Region}:${Account}:collection-group/${CollectionGroupId}"
+  ],
+  "apigateway:Api": [
+   "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}"
+  ],
+  "apigateway:ApiKey": [
+   "arn:${Partition}:apigateway:${Region}::/apikeys/${ApiKeyId}"
+  ],
+  "apigateway:Authorizer": [
+   "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/authorizers/${AuthorizerId}",
+   "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/authorizers/${AuthorizerId}"
+  ],
+  "apigateway:ClientCertificate": [
+   "arn:${Partition}:apigateway:${Region}::/clientcertificates/${ClientCertificateId}"
+  ],
+  "apigateway:DomainName": [
+   "arn:${Partition}:apigateway:${Region}::/domainnames/${DomainName}"
+  ],
+  "apigateway:DomainNameAccessAssociation": [
+   "arn:${Partition}:apigateway:${Region}:${Account}:/domainnameaccessassociations/domainname/${DomainName}/${SourceType}/${SourceId}"
+  ],
+  "apigateway:PortalProduct": [
+   "arn:${Partition}:apigateway:${Region}:${Account}:/portalproducts/${PortalProductId}"
+  ],
+  "apigateway:RestApi": [
+   "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}"
+  ],
+  "apigateway:RoutingRule": [
+   "arn:${Partition}:apigateway:${Region}:${Account}:/domainnames/${DomainName}/routingrules/${RoutingRuleId}"
+  ],
+  "apigateway:Stage": [
+   "arn:${Partition}:apigateway:${Region}::/apis/${ApiId}/stages/${StageName}",
+   "arn:${Partition}:apigateway:${Region}::/restapis/${RestApiId}/stages/${StageName}"
+  ],
+  "apigateway:UsagePlan": [
+   "arn:${Partition}:apigateway:${Region}::/usageplans/${UsagePlanId}"
+  ],
+  "apigateway:VpcLink": [
+   "arn:${Partition}:apigateway:${Region}::/vpclinks/${VpcLinkId}"
+  ],
+  "appconfig:application": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:application/${ApplicationId}"
+  ],
+  "appconfig:configurationprofile": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:application/${ApplicationId}/configurationprofile/${ConfigurationProfileId}"
+  ],
+  "appconfig:deploymentstrategy": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:deploymentstrategy/${DeploymentStrategyId}"
+  ],
+  "appconfig:environment": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:application/${ApplicationId}/environment/${EnvironmentId}"
+  ],
+  "appconfig:experimentdefinition": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:application/${ApplicationId}/experimentdefinition/${ExperimentDefinitionId}"
+  ],
+  "appconfig:extension": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:extension/${ExtensionId}/${ExtensionVersionNumber}"
+  ],
+  "appconfig:extensionassociation": [
+   "arn:${Partition}:appconfig:${Region}:${Account}:extensionassociation/${ExtensionAssociationId}"
+  ],
+  "application-autoscaling:ScalableTarget": [
+   "arn:${Partition}:application-autoscaling:${Region}:${Account}:scalable-target/${ResourceId}"
+  ],
+  "appstream:app-block": [
+   "arn:${Partition}:appstream:${Region}:${Account}:app-block/${AppBlockName}"
+  ],
+  "appstream:app-block-builder": [
+   "arn:${Partition}:appstream:${Region}:${Account}:app-block-builder/${AppBlockBuilderName}"
+  ],
+  "appstream:application": [
+   "arn:${Partition}:appstream:${Region}:${Account}:application/${ApplicationName}"
+  ],
+  "appstream:fleet": [
+   "arn:${Partition}:appstream:${Region}:${Account}:fleet/${FleetName}"
+  ],
+  "appstream:image-builder": [
+   "arn:${Partition}:appstream:${Region}:${Account}:image-builder/${ImageBuilderName}"
+  ],
+  "appstream:stack": [
+   "arn:${Partition}:appstream:${Region}:${Account}:stack/${StackName}"
+  ],
+  "aps:anomalydetector": [
+   "arn:${Partition}:aps:${Region}:${Account}:anomalydetector/${WorkspaceId}/${AnomalyDetectorId}"
+  ],
+  "aps:rulegroupsnamespace": [
+   "arn:${Partition}:aps:${Region}:${Account}:rulegroupsnamespace/${WorkspaceId}/${Namespace}"
+  ],
+  "aps:scraper": [
+   "arn:${Partition}:aps:${Region}:${Account}:scraper/${ScraperId}"
+  ],
+  "aps:workspace": [
+   "arn:${Partition}:aps:${Region}:${Account}:workspace/${WorkspaceId}"
+  ],
+  "athena:capacity-reservation": [
+   "arn:${Partition}:athena:${Region}:${Account}:capacity-reservation/${CapacityReservationName}"
+  ],
+  "athena:datacatalog": [
+   "arn:${Partition}:athena:${Region}:${Account}:datacatalog/${DataCatalogName}"
+  ],
+  "athena:workgroup": [
+   "arn:${Partition}:athena:${Region}:${Account}:workgroup/${WorkGroupName}"
+  ],
+  "autoscaling:autoScalingGroup": [
+   "arn:${Partition}:autoscaling:${Region}:${Account}:autoScalingGroup:${GroupId}:autoScalingGroupName/${GroupFriendlyName}"
+  ],
+  "autoscaling:launchConfiguration": [
+   "arn:${Partition}:autoscaling:${Region}:${Account}:launchConfiguration:${Id}:launchConfigurationName/${LaunchConfigurationName}"
+  ],
+  "backup-gateway:hypervisor": [
+   "arn:${Partition}:backup-gateway:${Region}:${Account}:hypervisor/${HypervisorId}"
+  ],
+  "backup:backupPlan": [
+   "arn:${Partition}:backup:${Region}:${Account}:backup-plan:${BackupPlanId}"
+  ],
+  "backup:backupVault": [
+   "arn:${Partition}:backup:${Region}:${Account}:backup-vault:${BackupVaultName}"
+  ],
+  "backup:framework": [
+   "arn:${Partition}:backup:${Region}:${Account}:framework:${FrameworkName}-${FrameworkId}"
+  ],
+  "backup:legalHold": [
+   "arn:${Partition}:backup:${Region}:${Account}:legal-hold:${LegalHoldId}"
+  ],
+  "backup:reportPlan": [
+   "arn:${Partition}:backup:${Region}:${Account}:report-plan:${ReportPlanName}-${ReportPlanId}"
+  ],
+  "backup:restoreTestingPlan": [
+   "arn:${Partition}:backup:${Region}:${Account}:restore-testing-plan:${RestoreTestingPlanName}-${RestoreTestingPlanId}"
+  ],
+  "backup:tieringConfiguration": [
+   "arn:${Partition}:backup:${Region}:${Account}:tiering-configuration:${TieringConfigurationName}-${TieringConfigurationId}"
+  ],
+  "batch:compute-environment": [
+   "arn:${Partition}:batch:${Region}:${Account}:compute-environment/${ComputeEnvironmentName}"
+  ],
+  "batch:consumable-resource": [
+   "arn:${Partition}:batch:${Region}:${Account}:consumable-resource/${ConsumableResourceName}"
+  ],
+  "batch:job-definition": [
+   "arn:${Partition}:batch:${Region}:${Account}:job-definition/${JobDefinitionName}"
+  ],
+  "batch:job-queue": [
+   "arn:${Partition}:batch:${Region}:${Account}:job-queue/${JobQueueName}"
+  ],
+  "batch:quota-share": [
+   "arn:${Partition}:batch:${Region}:${Account}:job-queue/${JobQueueName}/quota-share/${QuotaShareName}"
+  ],
+  "batch:scheduling-policy": [
+   "arn:${Partition}:batch:${Region}:${Account}:scheduling-policy/${SchedulingPolicyName}"
+  ],
+  "batch:service-environment": [
+   "arn:${Partition}:batch:${Region}:${Account}:service-environment/${ServiceEnvironmentName}"
+  ],
+  "bedrock:agent": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:agent/${AgentId}"
+  ],
+  "bedrock:agent-alias": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:agent-alias/${AgentId}/${AgentAliasId}"
+  ],
+  "bedrock:application-inference-profile": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:application-inference-profile/${ResourceId}"
+  ],
+  "bedrock:automated-reasoning-policy": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:automated-reasoning-policy/${AutomatedReasoningPolicyId}"
+  ],
+  "bedrock:automated-reasoning-policy-version": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:automated-reasoning-policy/${AutomatedReasoningPolicyId}:${AutomatedReasoningPolicyVersion}"
+  ],
+  "bedrock:blueprint": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:blueprint/${BlueprintId}"
+  ],
+  "bedrock:data-automation-library": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-library/${DataAutomationLibraryId}"
+  ],
+  "bedrock:data-automation-project": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:data-automation-project/${ProjectId}"
+  ],
+  "bedrock:flow": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:flow/${FlowId}"
+  ],
+  "bedrock:flow-alias": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:flow/${FlowId}/alias/${FlowAliasId}"
+  ],
+  "bedrock:foundation-model": [
+   "arn:${Partition}:bedrock:${Region}::foundation-model/${ResourceId}"
+  ],
+  "bedrock:guardrail": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:guardrail/${GuardrailId}"
+  ],
+  "bedrock:knowledge-base": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:knowledge-base/${KnowledgeBaseId}"
+  ],
+  "bedrock:prompt": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:prompt/${PromptId}"
+  ],
+  "bedrock:prompt-router": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:prompt-router/${ResourceId}"
+  ],
+  "bedrock:prompt-version": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:prompt/${PromptId}:${PromptVersion}"
+  ],
+  "bedrock:retrieval-instruction": [
+   "arn:${Partition}:bedrock:${Region}:${Account}:retrieval-instruction/${RetrievalInstructionId}"
+  ],
+  "cassandra:keyspace": [
+   "arn:${Partition}:cassandra:${Region}:${Account}:/keyspace/${KeyspaceName}/"
+  ],
+  "cassandra:table": [
+   "arn:${Partition}:cassandra:${Region}:${Account}:/keyspace/${KeyspaceName}/table/${TableName}"
+  ],
+  "cloudformation:changeset": [
+   "arn:${Partition}:cloudformation:${Region}:${Account}:changeSet/${ChangeSetName}/${Id}"
+  ],
+  "cloudformation:generatedtemplate": [
+   "arn:${Partition}:cloudformation:${Region}:${Account}:generatedTemplate/${Id}"
+  ],
+  "cloudformation:stack": [
+   "arn:${Partition}:cloudformation:${Region}:${Account}:stack/${StackName}/${Id}"
+  ],
+  "cloudformation:stackset": [
+   "arn:${Partition}:cloudformation:${Region}:${Account}:stackset/${StackSetName}:${Id}"
+  ],
+  "cloudformation:type": [
+   "arn:${Partition}:cloudformation:${Region}:${Account}:type/resource/${Type}"
+  ],
+  "cloudformation:typeHook": [
+   "arn:${Partition}:cloudformation:${Region}:${Account}:type/hook/${Type}"
+  ],
+  "cloudfront:distribution": [
+   "arn:${Partition}:cloudfront::${Account}:distribution/${DistributionId}"
+  ],
+  "cloudhsm:cluster": [
+   "arn:${Partition}:cloudhsm:${Region}:${Account}:cluster/${CloudHsmClusterInstanceName}"
+  ],
+  "cloudtrail:channel": [
+   "arn:${Partition}:cloudtrail:${Region}:${Account}:channel/${ChannelId}"
+  ],
+  "cloudtrail:dashboard": [
+   "arn:${Partition}:cloudtrail:${Region}:${Account}:dashboard/${DashboardName}"
+  ],
+  "cloudtrail:eventdatastore": [
+   "arn:${Partition}:cloudtrail:${Region}:${Account}:eventdatastore/${EventDataStoreId}"
+  ],
+  "cloudtrail:trail": [
+   "arn:${Partition}:cloudtrail:${Region}:${Account}:trail/${TrailName}"
+  ],
+  "cloudwatch:alarm": [
+   "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm:${AlarmName}"
+  ],
+  "cloudwatch:alarm-mute-rule": [
+   "arn:${Partition}:cloudwatch:${Region}:${Account}:alarm-mute-rule:${AlarmMuteRuleName}"
+  ],
+  "cloudwatch:dashboard": [
+   "arn:${Partition}:cloudwatch::${Account}:dashboard/${DashboardName}"
+  ],
+  "cloudwatch:insight-rule": [
+   "arn:${Partition}:cloudwatch:${Region}:${Account}:insight-rule/${InsightRuleName}"
+  ],
+  "cloudwatch:metric-stream": [
+   "arn:${Partition}:cloudwatch:${Region}:${Account}:metric-stream/${MetricStreamName}"
+  ],
+  "cloudwatch:omni-dashboard": [
+   "arn:${Partition}:cloudwatch:${Region}:${Account}:omni-dashboard/${DashboardId}"
+  ],
+  "codebuild:fleet": [
+   "arn:${Partition}:codebuild:${Region}:${Account}:fleet/${FleetName}:${FleetId}"
+  ],
+  "codebuild:project": [
+   "arn:${Partition}:codebuild:${Region}:${Account}:project/${ProjectName}"
+  ],
+  "codebuild:report-group": [
+   "arn:${Partition}:codebuild:${Region}:${Account}:report-group/${ReportGroupName}"
+  ],
+  "codecommit:repository": [
+   "arn:${Partition}:codecommit:${Region}:${Account}:${RepositoryName}"
+  ],
+  "codedeploy:application": [
+   "arn:${Partition}:codedeploy:${Region}:${Account}:application:${ApplicationName}"
+  ],
+  "codedeploy:deploymentconfig": [
+   "arn:${Partition}:codedeploy:${Region}:${Account}:deploymentconfig:${DeploymentConfigurationName}"
+  ],
+  "codedeploy:deploymentgroup": [
+   "arn:${Partition}:codedeploy:${Region}:${Account}:deploymentgroup:${ApplicationName}/${DeploymentGroupName}"
+  ],
+  "codepipeline:actiontype": [
+   "arn:${Partition}:codepipeline:${Region}:${Account}:actiontype:${Owner}/${Category}/${Provider}/${Version}"
+  ],
+  "codepipeline:pipeline": [
+   "arn:${Partition}:codepipeline:${Region}:${Account}:${PipelineName}"
+  ],
+  "codepipeline:webhook": [
+   "arn:${Partition}:codepipeline:${Region}:${Account}:webhook:${WebhookName}"
+  ],
+  "codestar-connections:Connection": [
+   "arn:${Partition}:codestar-connections:${Region}:${Account}:connection/${ConnectionId}"
+  ],
+  "codestar-connections:RepositoryLink": [
+   "arn:${Partition}:codestar-connections:${Region}:${Account}:repository-link/${RepositoryLinkId}"
+  ],
+  "cognito-identity:identitypool": [
+   "arn:${Partition}:cognito-identity:${Region}:${Account}:identitypool/${IdentityPoolId}"
+  ],
+  "cognito-idp:userpool": [
+   "arn:${Partition}:cognito-idp:${Region}:${Account}:userpool/${UserPoolId}"
+  ],
+  "comprehend:document-classifier": [
+   "arn:${Partition}:comprehend:${Region}:${Account}:document-classifier/${DocumentClassifierName}"
+  ],
+  "comprehend:document-classifier-endpoint": [
+   "arn:${Partition}:comprehend:${Region}:${Account}:document-classifier-endpoint/${DocumentClassifierEndpointName}"
+  ],
+  "comprehend:entity-recognizer": [
+   "arn:${Partition}:comprehend:${Region}:${Account}:entity-recognizer/${EntityRecognizerName}"
+  ],
+  "comprehend:entity-recognizer-endpoint": [
+   "arn:${Partition}:comprehend:${Region}:${Account}:entity-recognizer-endpoint/${EntityRecognizerEndpointName}"
+  ],
+  "comprehend:flywheel": [
+   "arn:${Partition}:comprehend:${Region}:${Account}:flywheel/${FlywheelName}"
+  ],
+  "config:AggregationAuthorization": [
+   "arn:${Partition}:config:${Region}:${Account}:aggregation-authorization/${AggregatorAccount}/${AggregatorRegion}"
+  ],
+  "config:ConfigRule": [
+   "arn:${Partition}:config:${Region}:${Account}:config-rule/${ConfigRuleId}"
+  ],
+  "config:ConfigurationAggregator": [
+   "arn:${Partition}:config:${Region}:${Account}:config-aggregator/${AggregatorId}"
+  ],
+  "config:ConfigurationRecorder": [
+   "arn:${Partition}:config:${Region}:${Account}:configuration-recorder/${RecorderName}/${RecorderId}"
+  ],
+  "config:ConformancePack": [
+   "arn:${Partition}:config:${Region}:${Account}:conformance-pack/${ConformancePackName}/${ConformancePackId}"
+  ],
+  "config:Connector": [
+   "arn:${Partition}:config:${Region}:${Account}:connector/${Provider}/${ProviderId}/${ConnectorId}"
+  ],
+  "config:OrganizationConfigRule": [
+   "arn:${Partition}:config:${Region}:${Account}:organization-config-rule/${OrganizationConfigRuleId}"
+  ],
+  "config:OrganizationConformancePack": [
+   "arn:${Partition}:config:${Region}:${Account}:organization-conformance-pack/${OrganizationConformancePackId}"
+  ],
+  "config:StoredQuery": [
+   "arn:${Partition}:config:${Region}:${Account}:stored-query/${StoredQueryName}/${StoredQueryId}"
+  ],
+  "connect:agent-status": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/agent-state/${AgentStatusId}"
+  ],
+  "connect:contact-flow": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/contact-flow/${ContactFlowId}"
+  ],
+  "connect:contact-flow-module": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/flow-module/${ContactFlowModuleId}"
+  ],
+  "connect:customer-managed-view": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/view/${ViewId}"
+  ],
+  "connect:customer-managed-view-version": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/view/${ViewId}:${ViewVersion}"
+  ],
+  "connect:data-table": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/data-table/${DataTableId}"
+  ],
+  "connect:email-address": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/email-address/${EmailAddressId}"
+  ],
+  "connect:evaluation-form": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/evaluation-form/${FormId}"
+  ],
+  "connect:hierarchy-group": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/agent-group/${HierarchyGroupId}"
+  ],
+  "connect:hours-of-operation": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/operating-hours/${HoursOfOperationId}"
+  ],
+  "connect:instance": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}"
+  ],
+  "connect:integration-association": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/integration-association/${IntegrationAssociationId}"
+  ],
+  "connect:metric": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/metric/${MetricId}"
+  ],
+  "connect:notification": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/notification/${NotificationId}"
+  ],
+  "connect:phone-number": [
+   "arn:${Partition}:connect:${Region}:${Account}:phone-number/${PhoneNumberId}"
+  ],
+  "connect:prompt": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/prompt/${PromptId}"
+  ],
+  "connect:queue": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/queue/${QueueId}"
+  ],
+  "connect:quick-connect": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/transfer-destination/${QuickConnectId}"
+  ],
+  "connect:routing-profile": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/routing-profile/${RoutingProfileId}"
+  ],
+  "connect:rule": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/rule/${RuleId}"
+  ],
+  "connect:security-profile": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/security-profile/${SecurityProfileId}"
+  ],
+  "connect:task-template": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/task-template/${TaskTemplateId}"
+  ],
+  "connect:traffic-distribution-group": [
+   "arn:${Partition}:connect:${Region}:${Account}:traffic-distribution-group/${TrafficDistributionGroupId}"
+  ],
+  "connect:use-case": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/use-case/${UseCaseId}"
+  ],
+  "connect:user": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/agent/${UserId}"
+  ],
+  "connect:vocabulary": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/vocabulary/${VocabularyId}"
+  ],
+  "connect:workspace": [
+   "arn:${Partition}:connect:${Region}:${Account}:instance/${InstanceId}/workspace/${WorkspaceId}"
+  ],
+  "controltower:EnabledBaseline": [
+   "arn:${Partition}:controltower:${Region}:${Account}:enabledbaseline/${EnabledBaselineId}"
+  ],
+  "controltower:EnabledControl": [
+   "arn:${Partition}:controltower:${Region}:${Account}:enabledcontrol/${EnabledControlId}"
+  ],
+  "controltower:LandingZone": [
+   "arn:${Partition}:controltower:${Region}:${Account}:landingzone/${LandingZoneId}"
+  ],
+  "databrew:Dataset": [
+   "arn:${Partition}:databrew:${Region}:${Account}:dataset/${ResourceId}"
+  ],
+  "databrew:Job": [
+   "arn:${Partition}:databrew:${Region}:${Account}:job/${ResourceId}"
+  ],
+  "databrew:Project": [
+   "arn:${Partition}:databrew:${Region}:${Account}:project/${ResourceId}"
+  ],
+  "databrew:Recipe": [
+   "arn:${Partition}:databrew:${Region}:${Account}:recipe/${ResourceId}"
+  ],
+  "databrew:Ruleset": [
+   "arn:${Partition}:databrew:${Region}:${Account}:ruleset/${ResourceId}"
+  ],
+  "databrew:Schedule": [
+   "arn:${Partition}:databrew:${Region}:${Account}:schedule/${ResourceId}"
+  ],
+  "datasync:agent": [
+   "arn:${Partition}:datasync:${Region}:${AccountId}:agent/${AgentId}"
+  ],
+  "datasync:location": [
+   "arn:${Partition}:datasync:${Region}:${AccountId}:location/${LocationId}"
+  ],
+  "datasync:task": [
+   "arn:${Partition}:datasync:${Region}:${AccountId}:task/${TaskId}"
+  ],
+  "datazone:domain": [
+   "arn:${Partition}:datazone:${Region}:${Account}:domain/${DomainId}"
+  ],
+  "dax:application": [
+   "arn:${Partition}:dax:${Region}:${Account}:cache/${ClusterName}"
+  ],
+  "detective:Graph": [
+   "arn:${Partition}:detective:${Region}:${Account}:graph:${ResourceId}"
+  ],
+  "directconnect:dx-gateway": [
+   "arn:${Partition}:directconnect::${Account}:dx-gateway/${DirectConnectGatewayId}"
+  ],
+  "directconnect:dxcon": [
+   "arn:${Partition}:directconnect:${Region}:${Account}:dxcon/${ConnectionId}"
+  ],
+  "directconnect:dxlag": [
+   "arn:${Partition}:directconnect:${Region}:${Account}:dxlag/${LagId}"
+  ],
+  "directconnect:dxvif": [
+   "arn:${Partition}:directconnect:${Region}:${Account}:dxvif/${VirtualInterfaceId}"
+  ],
+  "dlm:policy": [
+   "arn:${Partition}:dlm:${Region}:${Account}:policy/${ResourceName}"
+  ],
+  "dms:Certificate": [
+   "arn:${Partition}:dms:${Region}:${Account}:cert:*"
+  ],
+  "dms:DataMigration": [
+   "arn:${Partition}:dms:${Region}:${Account}:data-migration:*"
+  ],
+  "dms:DataProvider": [
+   "arn:${Partition}:dms:${Region}:${Account}:data-provider:*"
+  ],
+  "dms:Endpoint": [
+   "arn:${Partition}:dms:${Region}:${Account}:endpoint:*"
+  ],
+  "dms:InstanceProfile": [
+   "arn:${Partition}:dms:${Region}:${Account}:instance-profile:*"
+  ],
+  "dms:MigrationProject": [
+   "arn:${Partition}:dms:${Region}:${Account}:migration-project:*"
+  ],
+  "dms:ReplicationConfig": [
+   "arn:${Partition}:dms:${Region}:${Account}:replication-config:*"
+  ],
+  "dms:ReplicationInstance": [
+   "arn:${Partition}:dms:${Region}:${Account}:rep:*"
+  ],
+  "dms:ReplicationTask": [
+   "arn:${Partition}:dms:${Region}:${Account}:task:*"
+  ],
+  "drs:LaunchConfigurationTemplateResource": [
+   "arn:${Partition}:drs:${Region}:${Account}:launch-configuration-template/${LaunchConfigurationTemplateID}"
+  ],
+  "drs:RecoveryPlanResource": [
+   "arn:${Partition}:drs:${Region}:${Account}:recovery-plan/${RecoveryPlanID}"
+  ],
+  "drs:ReplicationConfigurationTemplateResource": [
+   "arn:${Partition}:drs:${Region}:${Account}:replication-configuration-template/${ReplicationConfigurationTemplateID}"
+  ],
+  "drs:SourceNetworkResource": [
+   "arn:${Partition}:drs:${Region}:${Account}:source-network/${SourceNetworkID}"
+  ],
+  "ds:directory": [
+   "arn:${Partition}:ds:${Region}:${Account}:directory/${DirectoryId}"
+  ],
+  "dynamodb:table": [
+   "arn:${Partition}:dynamodb:${Region}:${Account}:table/${TableName}"
+  ],
+  "ec2:application-status-check": [
+   "arn:${Partition}:ec2:${Region}:${Account}:application-status-check/${ApplicationStatusCheckId}"
+  ],
+  "ec2:capacity-manager-data-export": [
+   "arn:${Partition}:ec2:${Region}:${Account}:capacity-manager-data-export/${CapacityManagerDataExportId}"
+  ],
+  "ec2:capacity-reservation": [
+   "arn:${Partition}:ec2:${Region}:${Account}:capacity-reservation/${CapacityReservationId}"
+  ],
+  "ec2:capacity-reservation-fleet": [
+   "arn:${Partition}:ec2:${Region}:${Account}:capacity-reservation-fleet/${CapacityReservationFleetId}"
+  ],
+  "ec2:carrier-gateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:carrier-gateway/${CarrierGatewayId}"
+  ],
+  "ec2:client-vpn-endpoint": [
+   "arn:${Partition}:ec2:${Region}:${Account}:client-vpn-endpoint/${ClientVpnEndpointId}"
+  ],
+  "ec2:customer-gateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:customer-gateway/${CustomerGatewayId}"
+  ],
+  "ec2:dedicated-host": [
+   "arn:${Partition}:ec2:${Region}:${Account}:dedicated-host/${DedicatedHostId}"
+  ],
+  "ec2:dhcp-options": [
+   "arn:${Partition}:ec2:${Region}:${Account}:dhcp-options/${DhcpOptionsId}"
+  ],
+  "ec2:egress-only-internet-gateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:egress-only-internet-gateway/${EgressOnlyInternetGatewayId}"
+  ],
+  "ec2:elastic-ip": [
+   "arn:${Partition}:ec2:${Region}:${Account}:elastic-ip/${AllocationId}"
+  ],
+  "ec2:fleet": [
+   "arn:${Partition}:ec2:${Region}:${Account}:fleet/${FleetId}"
+  ],
+  "ec2:fpga-image": [
+   "arn:${Partition}:ec2:${Region}:${Account}:fpga-image/${FpgaImageId}"
+  ],
+  "ec2:instance": [
+   "arn:${Partition}:ec2:${Region}:${Account}:instance/${InstanceId}"
+  ],
+  "ec2:instance-connect-endpoint": [
+   "arn:${Partition}:ec2:${Region}:${Account}:instance-connect-endpoint/${InstanceConnectEndpointId}"
+  ],
+  "ec2:instance-event-window": [
+   "arn:${Partition}:ec2:${Region}:${Account}:instance-event-window/${InstanceEventWindowId}"
+  ],
+  "ec2:internet-gateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:internet-gateway/${InternetGatewayId}"
+  ],
+  "ec2:ipam": [
+   "arn:${Partition}:ec2::${Account}:ipam/${IpamId}"
+  ],
+  "ec2:ipam-external-resource-verification-token": [
+   "arn:${Partition}:ec2::${Account}:ipam-external-resource-verification-token/${IpamExternalResourceVerificationTokenId}"
+  ],
+  "ec2:ipam-internet-registry-association": [
+   "arn:${Partition}:ec2::${Account}:ipam-internet-registry-association/${IpamInternetRegistryAssociationId}"
+  ],
+  "ec2:ipam-pool": [
+   "arn:${Partition}:ec2::${Account}:ipam-pool/${IpamPoolId}"
+  ],
+  "ec2:ipam-prefix-list-resolver": [
+   "arn:${Partition}:ec2::${Account}:ipam-prefix-list-resolver/${IpamPrefixListResolverId}"
+  ],
+  "ec2:ipam-prefix-list-resolver-target": [
+   "arn:${Partition}:ec2::${Account}:ipam-prefix-list-resolver-target/${IpamPrefixListResolverTargetId}"
+  ],
+  "ec2:ipam-resource-discovery": [
+   "arn:${Partition}:ec2::${Account}:ipam-resource-discovery/${IpamResourceDiscoveryId}"
+  ],
+  "ec2:ipam-resource-discovery-association": [
+   "arn:${Partition}:ec2::${Account}:ipam-resource-discovery-association/${IpamResourceDiscoveryAssociationId}"
+  ],
+  "ec2:ipam-scope": [
+   "arn:${Partition}:ec2::${Account}:ipam-scope/${IpamScopeId}"
+  ],
+  "ec2:ipv4pool-ec2": [
+   "arn:${Partition}:ec2:${Region}:${Account}:ipv4pool-ec2/${Ipv4PoolEc2Id}"
+  ],
+  "ec2:key-pair": [
+   "arn:${Partition}:ec2:${Region}:${Account}:key-pair/${KeyPairName}"
+  ],
+  "ec2:launch-template": [
+   "arn:${Partition}:ec2:${Region}:${Account}:launch-template/${LaunchTemplateId}"
+  ],
+  "ec2:local-gateway-route-table": [
+   "arn:${Partition}:ec2:${Region}:${Account}:local-gateway-route-table/${LocalGatewayRoutetableId}"
+  ],
+  "ec2:local-gateway-route-table-virtual-interface-group-association": [
+   "arn:${Partition}:ec2:${Region}:${Account}:local-gateway-route-table-virtual-interface-group-association/${LocalGatewayRouteTableVirtualInterfaceGroupAssociationId}"
+  ],
+  "ec2:local-gateway-route-table-vpc-association": [
+   "arn:${Partition}:ec2:${Region}:${Account}:local-gateway-route-table-vpc-association/${LocalGatewayRouteTableVpcAssociationId}"
+  ],
+  "ec2:local-gateway-virtual-interface": [
+   "arn:${Partition}:ec2:${Region}:${Account}:local-gateway-virtual-interface/${LocalGatewayVirtualInterfaceId}"
+  ],
+  "ec2:local-gateway-virtual-interface-group": [
+   "arn:${Partition}:ec2:${Region}:${Account}:local-gateway-virtual-interface-group/${LocalGatewayVirtualInterfaceGroupId}"
+  ],
+  "ec2:natgateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:natgateway/${NatGatewayId}"
+  ],
+  "ec2:network-acl": [
+   "arn:${Partition}:ec2:${Region}:${Account}:network-acl/${NaclId}"
+  ],
+  "ec2:network-insights-access-scope": [
+   "arn:${Partition}:ec2:${Region}:${Account}:network-insights-access-scope/${NetworkInsightsAccessScopeId}"
+  ],
+  "ec2:network-insights-access-scope-analysis": [
+   "arn:${Partition}:ec2:${Region}:${Account}:network-insights-access-scope-analysis/${NetworkInsightsAccessScopeAnalysisId}"
+  ],
+  "ec2:network-insights-analysis": [
+   "arn:${Partition}:ec2:${Region}:${Account}:network-insights-analysis/${NetworkInsightsAnalysisId}"
+  ],
+  "ec2:network-insights-path": [
+   "arn:${Partition}:ec2:${Region}:${Account}:network-insights-path/${NetworkInsightsPathId}"
+  ],
+  "ec2:network-interface": [
+   "arn:${Partition}:ec2:${Region}:${Account}:network-interface/${NetworkInterfaceId}"
+  ],
+  "ec2:placement-group": [
+   "arn:${Partition}:ec2:${Region}:${Account}:placement-group/${PlacementGroupName}"
+  ],
+  "ec2:prefix-list": [
+   "arn:${Partition}:ec2:${Region}:${Account}:prefix-list/${PrefixListId}"
+  ],
+  "ec2:route-server": [
+   "arn:${Partition}:ec2:${Region}:${Account}:route-server/${RouteServerId}"
+  ],
+  "ec2:route-server-endpoint": [
+   "arn:${Partition}:ec2:${Region}:${Account}:route-server-endpoint/${RouteServerEndpointId}"
+  ],
+  "ec2:route-server-peer": [
+   "arn:${Partition}:ec2:${Region}:${Account}:route-server-peer/${RouteServerPeerId}"
+  ],
+  "ec2:route-table": [
+   "arn:${Partition}:ec2:${Region}:${Account}:route-table/${RouteTableId}"
+  ],
+  "ec2:secondary-network": [
+   "arn:${Partition}:ec2:${Region}:${Account}:secondary-network/${SecondaryNetworkId}"
+  ],
+  "ec2:security-group": [
+   "arn:${Partition}:ec2:${Region}:${Account}:security-group/${SecurityGroupId}"
+  ],
+  "ec2:security-group-rule": [
+   "arn:${Partition}:ec2:${Region}:${Account}:security-group-rule/${SecurityGroupRuleId}"
+  ],
+  "ec2:spot-fleet-request": [
+   "arn:${Partition}:ec2:${Region}:${Account}:spot-fleet-request/${SpotFleetRequestId}"
+  ],
+  "ec2:subnet": [
+   "arn:${Partition}:ec2:${Region}:${Account}:subnet/${SubnetId}"
+  ],
+  "ec2:traffic-mirror-filter": [
+   "arn:${Partition}:ec2:${Region}:${Account}:traffic-mirror-filter/${TrafficMirrorFilterId}"
+  ],
+  "ec2:traffic-mirror-filter-rule": [
+   "arn:${Partition}:ec2:${Region}:${Account}:traffic-mirror-filter-rule/${TrafficMirrorFilterRuleId}"
+  ],
+  "ec2:traffic-mirror-session": [
+   "arn:${Partition}:ec2:${Region}:${Account}:traffic-mirror-session/${TrafficMirrorSessionId}"
+  ],
+  "ec2:traffic-mirror-target": [
+   "arn:${Partition}:ec2:${Region}:${Account}:traffic-mirror-target/${TrafficMirrorTargetId}"
+  ],
+  "ec2:transit-gateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway/${TransitGatewayId}"
+  ],
+  "ec2:transit-gateway-attachment": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway-attachment/${TransitGatewayAttachmentId}"
+  ],
+  "ec2:transit-gateway-connect-peer": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway-connect-peer/${TransitGatewayConnectPeerId}"
+  ],
+  "ec2:transit-gateway-metering-policy": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway-metering-policy/${TransitGatewayMeteringPolicyId}"
+  ],
+  "ec2:transit-gateway-multicast-domain": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway-multicast-domain/${TransitGatewayMulticastDomainId}"
+  ],
+  "ec2:transit-gateway-policy-table": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway-policy-table/${TransitGatewayPolicyTableId}"
+  ],
+  "ec2:transit-gateway-route-table": [
+   "arn:${Partition}:ec2:${Region}:${Account}:transit-gateway-route-table/${TransitGatewayRouteTableId}"
+  ],
+  "ec2:verified-access-endpoint": [
+   "arn:${Partition}:ec2:${Region}:${Account}:verified-access-endpoint/${VerifiedAccessEndpointId}"
+  ],
+  "ec2:verified-access-group": [
+   "arn:${Partition}:ec2:${Region}:${Account}:verified-access-group/${VerifiedAccessGroupId}"
+  ],
+  "ec2:verified-access-instance": [
+   "arn:${Partition}:ec2:${Region}:${Account}:verified-access-instance/${VerifiedAccessInstanceId}"
+  ],
+  "ec2:verified-access-trust-provider": [
+   "arn:${Partition}:ec2:${Region}:${Account}:verified-access-trust-provider/${VerifiedAccessTrustProviderId}"
+  ],
+  "ec2:volume": [
+   "arn:${Partition}:ec2:${Region}:${Account}:volume/${VolumeId}"
+  ],
+  "ec2:vpc": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc/${VpcId}"
+  ],
+  "ec2:vpc-block-public-access-exclusion": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc-block-public-access-exclusion/${VpcBlockPublicAccessExclusionId}"
+  ],
+  "ec2:vpc-encryption-control": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc-encryption-control/${VpcEncryptionControlId}"
+  ],
+  "ec2:vpc-endpoint": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc-endpoint/${VpcEndpointId}"
+  ],
+  "ec2:vpc-endpoint-service": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc-endpoint-service/${VpcEndpointServiceId}"
+  ],
+  "ec2:vpc-flow-log": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc-flow-log/${VpcFlowLogId}"
+  ],
+  "ec2:vpc-peering-connection": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpc-peering-connection/${VpcPeeringConnectionId}"
+  ],
+  "ec2:vpn-concentrator": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpn-concentrator/${VpnConcentratorId}"
+  ],
+  "ec2:vpn-connection": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpn-connection/${VpnConnectionId}"
+  ],
+  "ec2:vpn-gateway": [
+   "arn:${Partition}:ec2:${Region}:${Account}:vpn-gateway/${VpnGatewayId}"
+  ],
+  "ecr-public:repository": [
+   "arn:${Partition}:ecr-public::${Account}:repository/${RepositoryName}"
+  ],
+  "ecr:repository": [
+   "arn:${Partition}:ecr:${Region}:${Account}:repository/${RepositoryName}"
+  ],
+  "ecs:capacity-provider": [
+   "arn:${Partition}:ecs:${Region}:${Account}:capacity-provider/${CapacityProviderName}"
+  ],
+  "ecs:cluster": [
+   "arn:${Partition}:ecs:${Region}:${Account}:cluster/${ClusterName}"
+  ],
+  "ecs:daemon": [
+   "arn:${Partition}:ecs:${Region}:${Account}:daemon/${ClusterName}/${DaemonName}"
+  ],
+  "ecs:daemon-task-definition": [
+   "arn:${Partition}:ecs:${Region}:${Account}:daemon-task-definition/${DaemonTaskDefinitionFamilyName}:${DaemonTaskDefinitionRevisionNumber}"
+  ],
+  "ecs:gateway": [
+   "arn:${Partition}:ecs:${Region}:${Account}:gateway/${GatewayName}/${GatewayId}"
+  ],
+  "ecs:service": [
+   "arn:${Partition}:ecs:${Region}:${Account}:service/${ClusterName}/${ServiceName}"
+  ],
+  "ecs:task": [
+   "arn:${Partition}:ecs:${Region}:${Account}:task/${ClusterName}/${TaskId}"
+  ],
+  "ecs:task-definition": [
+   "arn:${Partition}:ecs:${Region}:${Account}:task-definition/${TaskDefinitionFamilyName}:${TaskDefinitionRevisionNumber}"
+  ],
+  "ecs:task-set": [
+   "arn:${Partition}:ecs:${Region}:${Account}:task-set/${ClusterName}/${ServiceName}/${TaskSetId}"
+  ],
+  "eks:access-entry": [
+   "arn:${Partition}:eks:${Region}:${Account}:access-entry/${ClusterName}/${IamIdentityType}/${IamIdentityAccountID}/${IamIdentityName}/${UUID}"
+  ],
+  "eks:addon": [
+   "arn:${Partition}:eks:${Region}:${Account}:addon/${ClusterName}/${AddonName}/${UUID}"
+  ],
+  "eks:capability": [
+   "arn:${Partition}:eks:${Region}:${Account}:capability/${ClusterName}/${CapabilityType}/${CapabilityName}/${UUID}"
+  ],
+  "eks:cluster": [
+   "arn:${Partition}:eks:${Region}:${Account}:cluster/${ClusterName}"
+  ],
+  "eks:fargateprofile": [
+   "arn:${Partition}:eks:${Region}:${Account}:fargateprofile/${ClusterName}/${FargateProfileName}/${UUID}"
+  ],
+  "eks:identityproviderconfig": [
+   "arn:${Partition}:eks:${Region}:${Account}:identityproviderconfig/${ClusterName}/${IdentityProviderType}/${IdentityProviderConfigName}/${UUID}"
+  ],
+  "eks:nodegroup": [
+   "arn:${Partition}:eks:${Region}:${Account}:nodegroup/${ClusterName}/${NodegroupName}/${UUID}"
+  ],
+  "eks:podidentityassociation": [
+   "arn:${Partition}:eks:${Region}:${Account}:podidentityassociation/${ClusterName}/${UUID}"
+  ],
+  "elasticache:cluster": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:cluster:${CacheClusterId}"
+  ],
+  "elasticache:globalreplicationgroup": [
+   "arn:${Partition}:elasticache::${Account}:globalreplicationgroup:${GlobalReplicationGroupId}"
+  ],
+  "elasticache:parametergroup": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:parametergroup:${CacheParameterGroupName}"
+  ],
+  "elasticache:replicationgroup": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:replicationgroup:${ReplicationGroupId}"
+  ],
+  "elasticache:securitygroup": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:securitygroup:${CacheSecurityGroupName}"
+  ],
+  "elasticache:serverlesscache": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:serverlesscache:${ServerlessCacheName}"
+  ],
+  "elasticache:serverlesscachesnapshot": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:serverlesscachesnapshot:${ServerlessCacheSnapshotName}"
+  ],
+  "elasticache:snapshot": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:snapshot:${SnapshotName}"
+  ],
+  "elasticache:subnetgroup": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:subnetgroup:${CacheSubnetGroupName}"
+  ],
+  "elasticache:user": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:user:${UserId}"
+  ],
+  "elasticache:usergroup": [
+   "arn:${Partition}:elasticache:${Region}:${Account}:usergroup:${UserGroupId}"
+  ],
+  "elasticbeanstalk:application": [
+   "arn:${Partition}:elasticbeanstalk:${Region}:${Account}:application/${ApplicationName}"
+  ],
+  "elasticbeanstalk:applicationversion": [
+   "arn:${Partition}:elasticbeanstalk:${Region}:${Account}:applicationversion/${ApplicationName}/${VersionLabel}"
+  ],
+  "elasticbeanstalk:environment": [
+   "arn:${Partition}:elasticbeanstalk:${Region}:${Account}:environment/${ApplicationName}/${EnvironmentName}"
+  ],
+  "elasticfilesystem:access-point": [
+   "arn:${Partition}:elasticfilesystem:${Region}:${Account}:access-point/${AccessPointId}"
+  ],
+  "elasticfilesystem:file-system": [
+   "arn:${Partition}:elasticfilesystem:${Region}:${Account}:file-system/${FileSystemId}"
+  ],
+  "elasticloadbalancing:listener-rule/app": [
+   "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:listener-rule/app/${LoadBalancerName}/${LoadBalancerId}/${ListenerId}/${ListenerRuleId}"
+  ],
+  "elasticloadbalancing:listener/app": [
+   "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:listener/app/${LoadBalancerName}/${LoadBalancerId}/${ListenerId}"
+  ],
+  "elasticloadbalancing:loadbalancer": [
+   "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:loadbalancer/${LoadBalancerName}"
+  ],
+  "elasticloadbalancing:loadbalancer/app/": [
+   "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:loadbalancer/app/${LoadBalancerName}/${LoadBalancerId}"
+  ],
+  "elasticloadbalancing:targetgroup": [
+   "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:targetgroup/${TargetGroupName}/${TargetGroupId}"
+  ],
+  "elasticloadbalancing:truststore": [
+   "arn:${Partition}:elasticloadbalancing:${Region}:${Account}:truststore/${TrustStoreName}/${TrustStoreId}"
+  ],
+  "elasticmapreduce:cluster": [
+   "arn:${Partition}:elasticmapreduce:${Region}:${Account}:cluster/${ClusterId}"
+  ],
+  "elasticmapreduce:studio": [
+   "arn:${Partition}:elasticmapreduce:${Region}:${Account}:studio/${StudioId}"
+  ],
+  "emr-containers:jobTemplate": [
+   "arn:${Partition}:emr-containers:${Region}:${Account}:/jobtemplates/${JobTemplateId}"
+  ],
+  "emr-containers:managedEndpoint": [
+   "arn:${Partition}:emr-containers:${Region}:${Account}:/virtualclusters/${VirtualClusterId}/endpoints/${EndpointId}"
+  ],
+  "emr-containers:securityConfiguration": [
+   "arn:${Partition}:emr-containers:${Region}:${Account}:/securityconfigurations/${SecurityConfigurationId}"
+  ],
+  "emr-containers:virtualCluster": [
+   "arn:${Partition}:emr-containers:${Region}:${Account}:/virtualclusters/${VirtualClusterId}"
+  ],
+  "emr-serverless:application": [
+   "arn:${Partition}:emr-serverless:${Region}:${Account}:/applications/${ApplicationId}"
+  ],
+  "es:application": [
+   "arn:${Partition}:opensearch:${Region}:${Account}:application/${AppId}"
+  ],
+  "es:domain": [
+   "arn:${Partition}:es:${Region}:${Account}:domain/${DomainName}"
+  ],
+  "events:api-destination": [
+   "arn:${Partition}:events:${Region}:${Account}:api-destination/${ApiDestinationName}"
+  ],
+  "events:archive": [
+   "arn:${Partition}:events:${Region}:${Account}:archive/${ArchiveName}"
+  ],
+  "events:connection": [
+   "arn:${Partition}:events:${Region}:${Account}:connection/${ConnectionName}"
+  ],
+  "events:endpoint": [
+   "arn:${Partition}:events:${Region}:${Account}:endpoint/${EndpointName}"
+  ],
+  "events:event-bus": [
+   "arn:${Partition}:events:${Region}:${Account}:event-bus/${EventBusName}"
+  ],
+  "events:rule-on-default-event-bus": [
+   "arn:${Partition}:events:${Region}:${Account}:rule/${RuleName}"
+  ],
+  "firehose:deliverystream": [
+   "arn:${Partition}:firehose:${Region}:${Account}:deliverystream/${DeliveryStreamName}"
+  ],
+  "fms:applications-list": [
+   "arn:${Partition}:fms:${Region}:${Account}:applications-list/${Id}"
+  ],
+  "fms:policy": [
+   "arn:${Partition}:fms:${Region}:${Account}:policy/${Id}"
+  ],
+  "fms:protocols-list": [
+   "arn:${Partition}:fms:${Region}:${Account}:protocols-list/${Id}"
+  ],
+  "fms:resource-set": [
+   "arn:${Partition}:fms:${Region}:${Account}:resource-set/${Id}"
+  ],
+  "fsx:association": [
+   "arn:${Partition}:fsx:${Region}:${Account}:association/${FileSystemIdOrFileCacheId}/${DataRepositoryAssociationId}"
+  ],
+  "fsx:backup": [
+   "arn:${Partition}:fsx:${Region}:${Account}:backup/${BackupId}"
+  ],
+  "fsx:file-cache": [
+   "arn:${Partition}:fsx:${Region}:${Account}:file-cache/${FileCacheId}"
+  ],
+  "fsx:file-system": [
+   "arn:${Partition}:fsx:${Region}:${Account}:file-system/${FileSystemId}"
+  ],
+  "fsx:snapshot": [
+   "arn:${Partition}:fsx:${Region}:${Account}:snapshot/${VolumeId}/${SnapshotId}"
+  ],
+  "fsx:storage-virtual-machine": [
+   "arn:${Partition}:fsx:${Region}:${Account}:storage-virtual-machine/${FileSystemId}/${StorageVirtualMachineId}"
+  ],
+  "fsx:volume": [
+   "arn:${Partition}:fsx:${Region}:${Account}:volume/${FileSystemId}/${VolumeId}"
+  ],
+  "geo:api-key": [
+   "arn:${Partition}:geo:${Region}:${Account}:api-key/${KeyName}"
+  ],
+  "geo:geofence-collection": [
+   "arn:${Partition}:geo:${Region}:${Account}:geofence-collection/${GeofenceCollectionName}"
+  ],
+  "geo:map": [
+   "arn:${Partition}:geo:${Region}:${Account}:map/${MapName}"
+  ],
+  "geo:place-index": [
+   "arn:${Partition}:geo:${Region}:${Account}:place-index/${IndexName}"
+  ],
+  "geo:route-calculator": [
+   "arn:${Partition}:geo:${Region}:${Account}:route-calculator/${CalculatorName}"
+  ],
+  "geo:tracker": [
+   "arn:${Partition}:geo:${Region}:${Account}:tracker/${TrackerName}"
+  ],
+  "glue:blueprint": [
+   "arn:${Partition}:glue:${Region}:${Account}:blueprint/${BlueprintName}"
+  ],
+  "glue:catalog": [
+   "arn:${Partition}:glue:${Region}:${Account}:catalog/${CatalogName}"
+  ],
+  "glue:connection": [
+   "arn:${Partition}:glue:${Region}:${Account}:connection/${ConnectionName}"
+  ],
+  "glue:connectionType": [
+   "arn:${Partition}:glue:${Region}:${Account}:connectionType:${ConnectionTypeName}"
+  ],
+  "glue:crawler": [
+   "arn:${Partition}:glue:${Region}:${Account}:crawler/${CrawlerName}"
+  ],
+  "glue:customEntityType": [
+   "arn:${Partition}:glue:${Region}:${Account}:customEntityType/${CustomEntityTypeId}"
+  ],
+  "glue:dataQualityRuleset": [
+   "arn:${Partition}:glue:${Region}:${Account}:dataQualityRuleset/${RulesetName}"
+  ],
+  "glue:database": [
+   "arn:${Partition}:glue:${Region}:${Account}:database/${DatabaseName}"
+  ],
+  "glue:devendpoint": [
+   "arn:${Partition}:glue:${Region}:${Account}:devEndpoint/${DevEndpointName}"
+  ],
+  "glue:integration": [
+   "arn:${Partition}:glue:${Region}:${Account}:integration:${IntegrationId}"
+  ],
+  "glue:integrationResourceProperty": [
+   "arn:${Partition}:glue:${Region}:${Account}:integrationresourceproperty/${ResourceType}/${ResourceName}"
+  ],
+  "glue:job": [
+   "arn:${Partition}:glue:${Region}:${Account}:job/${JobName}"
+  ],
+  "glue:mlTransform": [
+   "arn:${Partition}:glue:${Region}:${Account}:mlTransform/${TransformId}"
+  ],
+  "glue:registry": [
+   "arn:${Partition}:glue:${Region}:${Account}:registry/${RegistryName}"
+  ],
+  "glue:schema": [
+   "arn:${Partition}:glue:${Region}:${Account}:schema/${SchemaName}"
+  ],
+  "glue:session": [
+   "arn:${Partition}:glue:${Region}:${Account}:session/${SessionId}"
+  ],
+  "glue:table": [
+   "arn:${Partition}:glue:${Region}:${Account}:table/${DatabaseName}/${TableName}"
+  ],
+  "glue:trigger": [
+   "arn:${Partition}:glue:${Region}:${Account}:trigger/${TriggerName}"
+  ],
+  "glue:usageProfile": [
+   "arn:${Partition}:glue:${Region}:${Account}:usageProfile/${UsageProfileId}"
+  ],
+  "glue:workflow": [
+   "arn:${Partition}:glue:${Region}:${Account}:workflow/${WorkflowName}"
+  ],
+  "grafana:workspace": [
+   "arn:${Partition}:grafana:${Region}:${Account}:/workspaces/${ResourceId}"
+  ],
+  "greengrass:componentVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:components:${ComponentName}:versions:${ComponentVersion}"
+  ],
+  "greengrass:connectorDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/connectors/${ConnectorDefinitionId}"
+  ],
+  "greengrass:connectorDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/connectors/${ConnectorDefinitionId}/versions/${VersionId}"
+  ],
+  "greengrass:coreDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/cores/${CoreDefinitionId}"
+  ],
+  "greengrass:coreDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/cores/${CoreDefinitionId}/versions/${VersionId}"
+  ],
+  "greengrass:deviceDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/devices/${DeviceDefinitionId}"
+  ],
+  "greengrass:deviceDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/devices/${DeviceDefinitionId}/versions/${VersionId}"
+  ],
+  "greengrass:functionDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/functions/${FunctionDefinitionId}"
+  ],
+  "greengrass:functionDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/functions/${FunctionDefinitionId}/versions/${VersionId}"
+  ],
+  "greengrass:group": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/groups/${GroupId}"
+  ],
+  "greengrass:groupVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/groups/${GroupId}/versions/${VersionId}"
+  ],
+  "greengrass:loggerDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/loggers/${LoggerDefinitionId}"
+  ],
+  "greengrass:loggerDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/loggers/${LoggerDefinitionId}/versions/${VersionId}"
+  ],
+  "greengrass:resourceDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/resources/${ResourceDefinitionId}"
+  ],
+  "greengrass:resourceDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/resources/${ResourceDefinitionId}/versions/${VersionId}"
+  ],
+  "greengrass:subscriptionDefinition": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/subscriptions/${SubscriptionDefinitionId}"
+  ],
+  "greengrass:subscriptionDefinitionVersion": [
+   "arn:${Partition}:greengrass:${Region}:${Account}:/greengrass/definition/subscriptions/${SubscriptionDefinitionId}/versions/${VersionId}"
+  ],
+  "guardduty:customdetectionruleassociation": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detection-rule/custom/${RuleId}/association/${AssociationId}"
+  ],
+  "guardduty:detector": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}"
+  ],
+  "guardduty:filter": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}/filter/${FilterName}"
+  ],
+  "guardduty:ipset": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}/ipset/${IPSetId}"
+  ],
+  "guardduty:malwareprotectionplan": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:malware-protection-plan/${MalwareProtectionPlanId}"
+  ],
+  "guardduty:publishingDestination": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}/publishingdestination/${PublishingDestinationId}"
+  ],
+  "guardduty:threatentityset": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}/threatentityset/${ThreatEntitySetId}"
+  ],
+  "guardduty:threatintelset": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}/threatintelset/${ThreatIntelSetId}"
+  ],
+  "guardduty:trustedentityset": [
+   "arn:${Partition}:guardduty:${Region}:${Account}:detector/${DetectorId}/trustedentityset/${TrustedEntitySetId}"
+  ],
+  "iam:group": [
+   "arn:${Partition}:iam::${Account}:group/${GroupNameWithPath}"
+  ],
+  "iam:instance-profile": [
+   "arn:${Partition}:iam::${Account}:instance-profile/${InstanceProfileNameWithPath}"
+  ],
+  "iam:mfa": [
+   "arn:${Partition}:iam::${Account}:mfa/${MfaTokenIdWithPath}"
+  ],
+  "iam:oidc-provider": [
+   "arn:${Partition}:iam::${Account}:oidc-provider/${OidcProviderName}"
+  ],
+  "iam:policy": [
+   "arn:${Partition}:iam::${Account}:policy/${PolicyNameWithPath}"
+  ],
+  "iam:role": [
+   "arn:${Partition}:iam::${Account}:role/${RoleNameWithPath}"
+  ],
+  "iam:saml-provider": [
+   "arn:${Partition}:iam::${Account}:saml-provider/${SamlProviderName}"
+  ],
+  "iam:server-certificate": [
+   "arn:${Partition}:iam::${Account}:server-certificate/${CertificateNameWithPath}"
+  ],
+  "iam:user": [
+   "arn:${Partition}:iam::${Account}:user/${UserNameWithPath}"
+  ],
+  "identitystore:Group": [
+   "arn:${Partition}:identitystore:::group/${GroupId}"
+  ],
+  "identitystore:User": [
+   "arn:${Partition}:identitystore:::user/${UserId}"
+  ],
+  "inspector2:CIS Scan Configuration": [
+   "arn:${Partition}:inspector2:${Region}:${Account}:owner/${OwnerId}/cis-configuration/${CISScanConfigurationId}"
+  ],
+  "inspector2:Code Security Integration": [
+   "arn:${Partition}:inspector2:${Region}:${Account}:codesecurity-integration/${CodeSecurityIntegrationId}"
+  ],
+  "inspector2:Code Security Scan Configuration": [
+   "arn:${Partition}:inspector2:${Region}:${Account}:owner/${OwnerId}/codesecurity-configuration/${CodeSecurityScanConfigurationId}"
+  ],
+  "inspector2:Connector": [
+   "arn:${Partition}:inspector2:${Region}:${Account}:connector/${ConnectorId}"
+  ],
+  "inspector2:Filter": [
+   "arn:${Partition}:inspector2:${Region}:${Account}:owner/${OwnerId}/filter/${FilterId}"
+  ],
+  "internetmonitor:Monitor": [
+   "arn:${Partition}:internetmonitor:${Region}:${Account}:monitor/${MonitorName}"
+  ],
+  "iot:authorizer": [
+   "arn:${Partition}:iot:${Region}:${Account}:authorizer/${AuthorizerName}"
+  ],
+  "iot:billinggroup": [
+   "arn:${Partition}:iot:${Region}:${Account}:billinggroup/${BillingGroupName}"
+  ],
+  "iot:cacert": [
+   "arn:${Partition}:iot:${Region}:${Account}:cacert/${CACertificate}"
+  ],
+  "iot:cert": [
+   "arn:${Partition}:iot:${Region}:${Account}:cert/${Certificate}"
+  ],
+  "iot:certificateprovider": [
+   "arn:${Partition}:iot:${Region}:${Account}:certificateprovider/${CertificateProviderName}"
+  ],
+  "iot:command": [
+   "arn:${Partition}:iot:${Region}:${Account}:command/${CommandId}"
+  ],
+  "iot:custommetric": [
+   "arn:${Partition}:iot:${Region}:${Account}:custommetric/${MetricName}"
+  ],
+  "iot:destination": [
+   "arn:${Partition}:iot:${Region}:${Account}:ruledestination/${DestinationType}/${Uuid}"
+  ],
+  "iot:dimension": [
+   "arn:${Partition}:iot:${Region}:${Account}:dimension/${DimensionName}"
+  ],
+  "iot:domainconfiguration": [
+   "arn:${Partition}:iot:${Region}:${Account}:domainconfiguration/${DomainConfigurationName}/${Id}"
+  ],
+  "iot:fleetmetric": [
+   "arn:${Partition}:iot:${Region}:${Account}:fleetmetric/${FleetMetricName}"
+  ],
+  "iot:jobtemplate": [
+   "arn:${Partition}:iot:${Region}:${Account}:jobtemplate/${JobTemplateId}"
+  ],
+  "iot:mitigationaction": [
+   "arn:${Partition}:iot:${Region}:${Account}:mitigationaction/${MitigationActionName}"
+  ],
+  "iot:otaupdate": [
+   "arn:${Partition}:iot:${Region}:${Account}:otaupdate/${OtaUpdateId}"
+  ],
+  "iot:package": [
+   "arn:${Partition}:iot:${Region}:${Account}:package/${PackageName}"
+  ],
+  "iot:packageversion": [
+   "arn:${Partition}:iot:${Region}:${Account}:package/${PackageName}/version/${VersionName}"
+  ],
+  "iot:policy": [
+   "arn:${Partition}:iot:${Region}:${Account}:policy/${PolicyName}"
+  ],
+  "iot:provisioningtemplate": [
+   "arn:${Partition}:iot:${Region}:${Account}:provisioningtemplate/${ProvisioningTemplate}"
+  ],
+  "iot:rolealias": [
+   "arn:${Partition}:iot:${Region}:${Account}:rolealias/${RoleAlias}"
+  ],
+  "iot:rule": [
+   "arn:${Partition}:iot:${Region}:${Account}:rule/${RuleName}"
+  ],
+  "iot:scheduledaudit": [
+   "arn:${Partition}:iot:${Region}:${Account}:scheduledaudit/${ScheduleName}"
+  ],
+  "iot:securityprofile": [
+   "arn:${Partition}:iot:${Region}:${Account}:securityprofile/${SecurityProfileName}"
+  ],
+  "iot:stream": [
+   "arn:${Partition}:iot:${Region}:${Account}:stream/${StreamId}"
+  ],
+  "iot:thinggroup": [
+   "arn:${Partition}:iot:${Region}:${Account}:thinggroup/${ThingGroupName}"
+  ],
+  "iot:thingtype": [
+   "arn:${Partition}:iot:${Region}:${Account}:thingtype/${ThingTypeName}"
+  ],
+  "iot:tunnel": [
+   "arn:${Partition}:iot:${Region}:${Account}:tunnel/${TunnelId}"
+  ],
+  "iotsitewise:access-policy": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:access-policy/${AccessPolicyId}"
+  ],
+  "iotsitewise:application": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:workspace/${WorkspaceName}/application/${ApplicationId}"
+  ],
+  "iotsitewise:asset": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:asset/${AssetId}"
+  ],
+  "iotsitewise:asset-model": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:asset-model/${AssetModelId}"
+  ],
+  "iotsitewise:computation-model": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:computation-model/${ComputationModelId}"
+  ],
+  "iotsitewise:dashboard": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:dashboard/${DashboardId}"
+  ],
+  "iotsitewise:dataset": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:dataset/${DatasetId}"
+  ],
+  "iotsitewise:gateway": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:gateway/${GatewayId}"
+  ],
+  "iotsitewise:pipeline": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:workspace/${WorkspaceName}/pipeline/${PipelineName}"
+  ],
+  "iotsitewise:portal": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:portal/${PortalId}"
+  ],
+  "iotsitewise:project": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:project/${ProjectId}"
+  ],
+  "iotsitewise:task": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:workspace/${WorkspaceName}/task/${TaskName}"
+  ],
+  "iotsitewise:workspace": [
+   "arn:${Partition}:iotsitewise:${Region}:${Account}:workspace/${WorkspaceName}"
+  ],
+  "iottwinmaker:componentType": [
+   "arn:${Partition}:iottwinmaker:${Region}:${Account}:workspace/${WorkspaceId}/component-type/${ComponentTypeId}"
+  ],
+  "iottwinmaker:entity": [
+   "arn:${Partition}:iottwinmaker:${Region}:${Account}:workspace/${WorkspaceId}/entity/${EntityId}"
+  ],
+  "iottwinmaker:scene": [
+   "arn:${Partition}:iottwinmaker:${Region}:${Account}:workspace/${WorkspaceId}/scene/${SceneId}"
+  ],
+  "iottwinmaker:syncJob": [
+   "arn:${Partition}:iottwinmaker:${Region}:${Account}:workspace/${WorkspaceId}/sync-job/${SyncJobId}"
+  ],
+  "iottwinmaker:workspace": [
+   "arn:${Partition}:iottwinmaker:${Region}:${Account}:workspace/${WorkspaceId}"
+  ],
+  "kafka:channel": [
+   "arn:${Partition}:kafka:${Region}:${Account}:channel/${ClusterName}/${ClusterUuid}/${ChannelName}/${Uuid}"
+  ],
+  "kafka:cluster": [
+   "arn:${Partition}:kafka:${Region}:${Account}:cluster/${ClusterName}/${Uuid}"
+  ],
+  "kafka:configuration": [
+   "arn:${Partition}:kafka:${Region}:${Account}:configuration/${ConfigurationName}/${Uuid}"
+  ],
+  "kafka:replicator": [
+   "arn:${Partition}:kafka:${Region}:${Account}:replicator/${ReplicatorName}/${Uuid}"
+  ],
+  "kafka:topic": [
+   "arn:${Partition}:kafka:${Region}:${Account}:topic/${ClusterName}/${ClusterUuid}/${TopicName}"
+  ],
+  "kafka:vpc-connection": [
+   "arn:${Partition}:kafka:${Region}:${VpcOwnerAccount}:vpc-connection/${ClusterOwnerAccount}/${ClusterName}/${Uuid}"
+  ],
+  "kafkaconnect:connector": [
+   "arn:${Partition}:kafkaconnect:${Region}:${Account}:connector/${ConnectorName}/${UUID}"
+  ],
+  "kafkaconnect:custom plugin": [
+   "arn:${Partition}:kafkaconnect:${Region}:${Account}:custom-plugin/${CustomPluginName}/${UUID}"
+  ],
+  "kafkaconnect:worker configuration": [
+   "arn:${Partition}:kafkaconnect:${Region}:${Account}:worker-configuration/${WorkerConfigurationName}/${UUID}"
+  ],
+  "kendra-ranking:rescore-execution-plan": [
+   "arn:${Partition}:kendra-ranking:${Region}:${Account}:rescore-execution-plan/${RescoreExecutionPlanId}"
+  ],
+  "kendra:data-source": [
+   "arn:${Partition}:kendra:${Region}:${Account}:index/${IndexId}/data-source/${DataSourceId}"
+  ],
+  "kendra:faq": [
+   "arn:${Partition}:kendra:${Region}:${Account}:index/${IndexId}/faq/${FaqId}"
+  ],
+  "kendra:featured-results-set": [
+   "arn:${Partition}:kendra:${Region}:${Account}:index/${IndexId}/featured-results-set/${FeaturedResultsSetId}"
+  ],
+  "kendra:index": [
+   "arn:${Partition}:kendra:${Region}:${Account}:index/${IndexId}"
+  ],
+  "kendra:query-suggestions-block-list": [
+   "arn:${Partition}:kendra:${Region}:${Account}:index/${IndexId}/query-suggestions-block-list/${QuerySuggestionsBlockListId}"
+  ],
+  "kendra:thesaurus": [
+   "arn:${Partition}:kendra:${Region}:${Account}:index/${IndexId}/thesaurus/${ThesaurusId}"
+  ],
+  "kinesis:channel": [
+   "arn:${Partition}:kinesis:${Region}:${Account}:channel/${ChannelId}"
+  ],
+  "kinesis:consumer": [
+   "arn:${Partition}:kinesis:${Region}:${Account}:${StreamType}/${StreamName}/consumer/${ConsumerName}:${ConsumerCreationTimpstamp}"
+  ],
+  "kinesis:stream": [
+   "arn:${Partition}:kinesis:${Region}:${Account}:stream/${StreamName}"
+  ],
+  "kinesisanalytics:application": [
+   "arn:${Partition}:kinesisanalytics:${Region}:${Account}:application/${ApplicationName}"
+  ],
+  "kinesisvideo:channel": [
+   "arn:${Partition}:kinesisvideo:${Region}:${Account}:channel/${ChannelName}/${CreationTime}"
+  ],
+  "kinesisvideo:stream": [
+   "arn:${Partition}:kinesisvideo:${Region}:${Account}:stream/${StreamName}/${CreationTime}"
+  ],
+  "kms:alias": [
+   "arn:${Partition}:kms:${Region}:${Account}:alias/${Alias}"
+  ],
+  "kms:key": [
+   "arn:${Partition}:kms:${Region}:${Account}:key/${KeyId}"
+  ],
+  "lambda:capacityProvider": [
+   "arn:${Partition}:lambda:${Region}:${Account}:capacity-provider:${CapacityProviderName}"
+  ],
+  "lambda:code signing config": [
+   "arn:${Partition}:lambda:${Region}:${Account}:code-signing-config:${CodeSigningConfigId}"
+  ],
+  "lambda:eventSourceMapping": [
+   "arn:${Partition}:lambda:${Region}:${Account}:event-source-mapping:${UUID}"
+  ],
+  "lambda:function": [
+   "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}"
+  ],
+  "lambda:function alias": [
+   "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}:${Alias}"
+  ],
+  "lambda:function version": [
+   "arn:${Partition}:lambda:${Region}:${Account}:function:${FunctionName}:${Version}"
+  ],
+  "lambda:layerVersion": [
+   "arn:${Partition}:lambda:${Region}:${Account}:layer:${LayerName}:${LayerVersion}"
+  ],
+  "lex:bot": [
+   "arn:${Partition}:lex:${Region}:${Account}:bot/${BotId}",
+   "arn:${Partition}:lex:${Region}:${Account}:bot:${BotName}"
+  ],
+  "lex:bot alias": [
+   "arn:${Partition}:lex:${Region}:${Account}:bot-alias/${BotId}/${BotAliasId}",
+   "arn:${Partition}:lex:${Region}:${Account}:bot:${BotName}:${BotAlias}"
+  ],
+  "license-manager-linux-subscriptions:subscription-provider": [
+   "arn:${Partition}:license-manager-linux-subscriptions:${Region}:${Account}:subscription-provider/${SubscriptionProviderId}"
+  ],
+  "license-manager-user-subscriptions:license-server-endpoint": [
+   "arn:${Partition}:license-manager-user-subscriptions:${Region}:${Account}:license-server-endpoint/${LicenseServerEndpointId}"
+  ],
+  "license-manager:license": [
+   "arn:${Partition}:license-manager::${Account}:license:${LicenseId}"
+  ],
+  "license-manager:license-asset-group": [
+   "arn:${Partition}:license-manager:${Region}:${Account}:license-asset-group:${LicenseAssetGroupId}"
+  ],
+  "license-manager:license-asset-ruleset": [
+   "arn:${Partition}:license-manager:${Region}:${Account}:license-asset-ruleset:${LicenseAssetRulesetId}"
+  ],
+  "license-manager:license-configuration": [
+   "arn:${Partition}:license-manager:${Region}:${Account}:license-configuration:${LicenseConfigurationId}"
+  ],
+  "license-manager:report-generator": [
+   "arn:${Partition}:license-manager:${Region}:${Account}:report-generator:${ReportGeneratorId}"
+  ],
+  "logs:anomaly-detector": [
+   "arn:${Partition}:logs:${Region}:${Account}:anomaly-detector:${DetectorId}"
+  ],
+  "logs:delivery": [
+   "arn:${Partition}:logs:${Region}:${Account}:delivery:${DeliveryName}"
+  ],
+  "logs:delivery-destination": [
+   "arn:${Partition}:logs:${Region}:${Account}:delivery-destination:${DeliveryDestinationName}"
+  ],
+  "logs:delivery-source": [
+   "arn:${Partition}:logs:${Region}:${Account}:delivery-source:${DeliverySourceName}"
+  ],
+  "logs:destination": [
+   "arn:${Partition}:logs:${Region}:${Account}:destination:${DestinationName}"
+  ],
+  "logs:log-group": [
+   "arn:${Partition}:logs:${Region}:${Account}:log-group:${LogGroupName}"
+  ],
+  "logs:scheduled-query": [
+   "arn:${Partition}:logs:${Region}:${Account}:scheduled-query:${ScheduledQueryId}"
+  ],
+  "m2:Application": [
+   "arn:${Partition}:m2:${Region}:${Account}:app/${ApplicationId}"
+  ],
+  "m2:Environment": [
+   "arn:${Partition}:m2:${Region}:${Account}:env/${EnvironmentId}"
+  ],
+  "managedblockchain:accessor": [
+   "arn:${Partition}:managedblockchain:${Region}:${Account}:accessors/${AccessorId}"
+  ],
+  "managedblockchain:member": [
+   "arn:${Partition}:managedblockchain:${Region}:${Account}:members/${MemberId}"
+  ],
+  "managedblockchain:node": [
+   "arn:${Partition}:managedblockchain:${Region}:${Account}:nodes/${NodeId}"
+  ],
+  "mediaconvert:JobTemplate": [
+   "arn:${Partition}:mediaconvert:${Region}:${Account}:jobTemplates/${JobTemplateName}"
+  ],
+  "mediaconvert:Preset": [
+   "arn:${Partition}:mediaconvert:${Region}:${Account}:presets/${PresetName}"
+  ],
+  "mediaconvert:Queue": [
+   "arn:${Partition}:mediaconvert:${Region}:${Account}:queues/${QueueName}"
+  ],
+  "memorydb:acl": [
+   "arn:${Partition}:memorydb:${Region}:${Account}:acl/${AclName}"
+  ],
+  "memorydb:cluster": [
+   "arn:${Partition}:memorydb:${Region}:${Account}:cluster/${ClusterName}"
+  ],
+  "memorydb:multiregioncluster": [
+   "arn:${Partition}:memorydb::${Account}:multiregioncluster/${ClusterName}"
+  ],
+  "memorydb:parametergroup": [
+   "arn:${Partition}:memorydb:${Region}:${Account}:parametergroup/${ParameterGroupName}"
+  ],
+  "memorydb:snapshot": [
+   "arn:${Partition}:memorydb:${Region}:${Account}:snapshot/${SnapshotName}"
+  ],
+  "memorydb:subnetgroup": [
+   "arn:${Partition}:memorydb:${Region}:${Account}:subnetgroup/${SubnetGroupName}"
+  ],
+  "memorydb:user": [
+   "arn:${Partition}:memorydb:${Region}:${Account}:user/${UserName}"
+  ],
+  "mgn:ConnectorResource": [
+   "arn:${Partition}:mgn:${Region}:${Account}:connector/${ConnectorID}"
+  ],
+  "mgn:LaunchConfigurationTemplateResource": [
+   "arn:${Partition}:mgn:${Region}:${Account}:launch-configuration-template/${LaunchConfigurationTemplateID}"
+  ],
+  "mgn:NetworkMigrationDefinitionResource": [
+   "arn:${Partition}:mgn:${Region}:${Account}:network-migration-definition/${NetworkMigrationDefinitionID}"
+  ],
+  "mgn:ReplicationConfigurationTemplateResource": [
+   "arn:${Partition}:mgn:${Region}:${Account}:replication-configuration-template/${ReplicationConfigurationTemplateID}"
+  ],
+  "mgn:WaveResource": [
+   "arn:${Partition}:mgn:${Region}:${Account}:wave/${WaveID}"
+  ],
+  "mobiletargeting:app": [
+   "arn:${Partition}:mobiletargeting:${Region}:${Account}:apps/${AppId}"
+  ],
+  "mobiletargeting:campaign": [
+   "arn:${Partition}:mobiletargeting:${Region}:${Account}:apps/${AppId}/campaigns/${CampaignId}"
+  ],
+  "mobiletargeting:segment": [
+   "arn:${Partition}:mobiletargeting:${Region}:${Account}:apps/${AppId}/segments/${SegmentId}"
+  ],
+  "mobiletargeting:template": [
+   "arn:${Partition}:mobiletargeting:${Region}:${Account}:templates/${TemplateName}/${TemplateType}"
+  ],
+  "mq:brokers": [
+   "arn:${Partition}:mq:${Region}:${Account}:broker:${BrokerName}:${BrokerId}"
+  ],
+  "mq:configurations": [
+   "arn:${Partition}:mq:${Region}:${Account}:configuration:${ConfigurationId}"
+  ],
+  "network-firewall:ContainerAssociation": [
+   "arn:${Partition}:network-firewall:${Region}:${Account}:container-association/${Name}"
+  ],
+  "network-firewall:Firewall": [
+   "arn:${Partition}:network-firewall:${Region}:${Account}:firewall/${Name}"
+  ],
+  "network-firewall:FirewallPolicy": [
+   "arn:${Partition}:network-firewall:${Region}:${Account}:firewall-policy/${Name}"
+  ],
+  "network-firewall:StatefulRuleGroup": [
+   "arn:${Partition}:network-firewall:${Region}:${Account}:stateful-rulegroup/${Name}"
+  ],
+  "network-firewall:TLSInspectionConfiguration": [
+   "arn:${Partition}:network-firewall:${Region}:${Account}:tls-configuration/${Name}"
+  ],
+  "network-firewall:VpcEndpointAssociation": [
+   "arn:${Partition}:network-firewall:${Region}:${Account}:vpc-endpoint-association/${Name}"
+  ],
+  "networkmanager:attachment": [
+   "arn:${Partition}:networkmanager::${Account}:attachment/${ResourceId}"
+  ],
+  "networkmanager:connect-peer": [
+   "arn:${Partition}:networkmanager::${Account}:connect-peer/${ResourceId}"
+  ],
+  "networkmanager:core-network": [
+   "arn:${Partition}:networkmanager::${Account}:core-network/${ResourceId}"
+  ],
+  "networkmanager:device": [
+   "arn:${Partition}:networkmanager::${Account}:device/${GlobalNetworkId}/${ResourceId}"
+  ],
+  "networkmanager:global-network": [
+   "arn:${Partition}:networkmanager::${Account}:global-network/${ResourceId}"
+  ],
+  "networkmanager:link": [
+   "arn:${Partition}:networkmanager::${Account}:link/${GlobalNetworkId}/${ResourceId}"
+  ],
+  "networkmanager:peering": [
+   "arn:${Partition}:networkmanager::${Account}:peering/${ResourceId}"
+  ],
+  "networkmanager:site": [
+   "arn:${Partition}:networkmanager::${Account}:site/${GlobalNetworkId}/${ResourceId}"
+  ],
+  "notifications:EventRule": [
+   "arn:${Partition}:notifications::${Account}:configuration/${NotificationConfigurationId}/rule/${EventRuleId}"
+  ],
+  "notifications:NotificationConfiguration": [
+   "arn:${Partition}:notifications::${Account}:configuration/${NotificationConfigurationId}"
+  ],
+  "oam:Link": [
+   "arn:${Partition}:oam:${Region}:${Account}:link/${ResourceId}"
+  ],
+  "oam:Sink": [
+   "arn:${Partition}:oam:${Region}:${Account}:sink/${ResourceId}"
+  ],
+  "organizations:account": [
+   "arn:${Partition}:organizations::${Account}:account/o-${OrganizationId}/${AccountId}"
+  ],
+  "organizations:organization": [
+   "arn:${Partition}:organizations::${Account}:organization/o-${OrganizationId}"
+  ],
+  "organizations:organizationalunit": [
+   "arn:${Partition}:organizations::${Account}:ou/o-${OrganizationId}/ou-${OrganizationalUnitId}"
+  ],
+  "organizations:policy": [
+   "arn:${Partition}:organizations::${Account}:policy/o-${OrganizationId}/${PolicyType}/p-${PolicyId}"
+  ],
+  "osis:pipeline": [
+   "arn:${Partition}:osis:${Region}:${Account}:pipeline/${PipelineName}"
+  ],
+  "outposts:outpost": [
+   "arn:${Partition}:outposts:${Region}:${Account}:outpost/${OutpostId}"
+  ],
+  "outposts:site": [
+   "arn:${Partition}:outposts:${Region}:${Account}:site/${SiteId}"
+  ],
+  "polly:lexicon": [
+   "arn:${Partition}:polly:${Region}:${Account}:lexicon/${LexiconName}"
+  ],
+  "qbusiness:application": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}"
+  ],
+  "qbusiness:data-accessor": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}/data-accessor/${DataAccessorId}"
+  ],
+  "qbusiness:data-source": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}/index/${IndexId}/data-source/${DataSourceId}"
+  ],
+  "qbusiness:index": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}/index/${IndexId}"
+  ],
+  "qbusiness:plugin": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}/plugin/${PluginId}"
+  ],
+  "qbusiness:retriever": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}/retriever/${RetrieverId}"
+  ],
+  "qbusiness:web-experience": [
+   "arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}/web-experience/${WebExperienceId}"
+  ],
+  "quicksight:actionconnector": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:action-connector/${ResourceId}"
+  ],
+  "quicksight:agent": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:agent/${ResourceId}"
+  ],
+  "quicksight:analysis": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:analysis/${ResourceId}"
+  ],
+  "quicksight:approvalPolicy": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:approval-policy/${ResourceId}"
+  ],
+  "quicksight:brand": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:brand/${ResourceId}"
+  ],
+  "quicksight:custompermissions": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:custompermissions/${ResourceId}"
+  ],
+  "quicksight:dashboard": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:dashboard/${ResourceId}"
+  ],
+  "quicksight:dataset": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:dataset/${ResourceId}"
+  ],
+  "quicksight:datasource": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:datasource/${ResourceId}"
+  ],
+  "quicksight:dlpSetting": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:dlpsetting/${ResourceId}"
+  ],
+  "quicksight:flow": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:flow/${ResourceId}"
+  ],
+  "quicksight:folder": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:folder/${ResourceId}"
+  ],
+  "quicksight:group": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:group/${ResourceId}"
+  ],
+  "quicksight:knowledgeBase": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:knowledge-base/${ResourceId}"
+  ],
+  "quicksight:limitsProfile": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:limits-profile/${ResourceId}"
+  ],
+  "quicksight:oauthClientApplication": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:oauthClientApplication/${ResourceId}"
+  ],
+  "quicksight:refreshschedule": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:dataset/${DatasetId}/refresh-schedule/${ResourceId}"
+  ],
+  "quicksight:space": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:space/${ResourceId}"
+  ],
+  "quicksight:template": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:template/${ResourceId}"
+  ],
+  "quicksight:theme": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:theme/${ResourceId}"
+  ],
+  "quicksight:topic": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:topic/${ResourceId}"
+  ],
+  "quicksight:vpcconnection": [
+   "arn:${Partition}:quicksight:${Region}:${Account}:vpcConnection/${ResourceId}"
+  ],
+  "ram:permission": [
+   "arn:${Partition}:ram::aws:permission/${ResourcePath}"
+  ],
+  "ram:resource-share": [
+   "arn:${Partition}:ram:${Region}:${Account}:resource-share/${ResourcePath}"
+  ],
+  "rbin:rule": [
+   "arn:${Partition}:rbin:${Region}:${Account}:rule/${ResourceName}"
+  ],
+  "rds:cluster": [
+   "arn:${Partition}:rds:${Region}:${Account}:cluster:${DbClusterInstanceName}"
+  ],
+  "rds:cluster-endpoint": [
+   "arn:${Partition}:rds:${Region}:${Account}:cluster-endpoint:${DbClusterEndpoint}"
+  ],
+  "rds:cluster-pg": [
+   "arn:${Partition}:rds:${Region}:${Account}:cluster-pg:${ClusterParameterGroupName}"
+  ],
+  "rds:cluster-snapshot": [
+   "arn:${Partition}:rds:${Region}:${Account}:cluster-snapshot:${ClusterSnapshotName}"
+  ],
+  "rds:db": [
+   "arn:${Partition}:rds:${Region}:${Account}:db:${DbInstanceName}"
+  ],
+  "rds:deployment": [
+   "arn:${Partition}:rds:${Region}:${Account}:deployment:${BlueGreenDeploymentIdentifier}"
+  ],
+  "rds:es": [
+   "arn:${Partition}:rds:${Region}:${Account}:es:${SubscriptionName}"
+  ],
+  "rds:global-cluster": [
+   "arn:${Partition}:rds::${Account}:global-cluster:${GlobalCluster}"
+  ],
+  "rds:integration": [
+   "arn:${Partition}:rds:${Region}:${Account}:integration:${IntegrationIdentifier}"
+  ],
+  "rds:og": [
+   "arn:${Partition}:rds:${Region}:${Account}:og:${OptionGroupName}"
+  ],
+  "rds:pg": [
+   "arn:${Partition}:rds:${Region}:${Account}:pg:${ParameterGroupName}"
+  ],
+  "rds:proxy": [
+   "arn:${Partition}:rds:${Region}:${Account}:db-proxy:${DbProxyId}"
+  ],
+  "rds:proxy-endpoint": [
+   "arn:${Partition}:rds:${Region}:${Account}:db-proxy-endpoint:${DbProxyEndpointId}"
+  ],
+  "rds:secgrp": [
+   "arn:${Partition}:rds:${Region}:${Account}:secgrp:${SecurityGroupName}"
+  ],
+  "rds:shardgrp": [
+   "arn:${Partition}:rds:${Region}:${Account}:shard-group:${DbShardGroupResourceId}"
+  ],
+  "rds:snapshot": [
+   "arn:${Partition}:rds:${Region}:${Account}:snapshot:${SnapshotName}"
+  ],
+  "rds:subgrp": [
+   "arn:${Partition}:rds:${Region}:${Account}:subgrp:${SubnetGroupName}"
+  ],
+  "rds:target-group": [
+   "arn:${Partition}:rds:${Region}:${Account}:target-group:${TargetGroupId}"
+  ],
+  "redshift-serverless:namespace": [
+   "arn:${Partition}:redshift-serverless:${Region}:${Account}:namespace/${NamespaceId}"
+  ],
+  "redshift-serverless:snapshot": [
+   "arn:${Partition}:redshift-serverless:${Region}:${Account}:snapshot/${SnapshotId}"
+  ],
+  "redshift-serverless:workgroup": [
+   "arn:${Partition}:redshift-serverless:${Region}:${Account}:workgroup/${WorkgroupId}"
+  ],
+  "redshift:cluster": [
+   "arn:${Partition}:redshift:${Region}:${Account}:cluster:${ClusterName}"
+  ],
+  "redshift:eventsubscription": [
+   "arn:${Partition}:redshift:${Region}:${Account}:eventsubscription:${EventSubscriptionName}"
+  ],
+  "redshift:integration": [
+   "arn:${Partition}:redshift:${Region}:${Account}:integration:${IntegrationIdentifier}"
+  ],
+  "redshift:parametergroup": [
+   "arn:${Partition}:redshift:${Region}:${Account}:parametergroup:${ParameterGroupName}"
+  ],
+  "redshift:qev2idcapplication": [
+   "arn:${Partition}:redshift:${Region}:${Account}:qev2idcapplication:${Qev2IdcApplicationId}"
+  ],
+  "redshift:redshiftidcapplication": [
+   "arn:${Partition}:redshift:${Region}:${Account}:redshiftidcapplication:${RedshiftIdcApplicationId}"
+  ],
+  "redshift:snapshot": [
+   "arn:${Partition}:redshift:${Region}:${Account}:snapshot:${ClusterName}/${SnapshotName}"
+  ],
+  "redshift:snapshotcopygrant": [
+   "arn:${Partition}:redshift:${Region}:${Account}:snapshotcopygrant:${SnapshotCopyGrantName}"
+  ],
+  "redshift:snapshotschedule": [
+   "arn:${Partition}:redshift:${Region}:${Account}:snapshotschedule:${ScheduleIdentifier}"
+  ],
+  "redshift:subnetgroup": [
+   "arn:${Partition}:redshift:${Region}:${Account}:subnetgroup:${SubnetGroupName}"
+  ],
+  "redshift:usagelimit": [
+   "arn:${Partition}:redshift:${Region}:${Account}:usagelimit:${UsageLimitId}"
+  ],
+  "rekognition:collection": [
+   "arn:${Partition}:rekognition:${Region}:${Account}:collection/${CollectionId}"
+  ],
+  "rekognition:dataset": [
+   "arn:${Partition}:rekognition:${Region}:${Account}:project/${ProjectName}/dataset/${DatasetType}/${CreationTimestamp}"
+  ],
+  "rekognition:project": [
+   "arn:${Partition}:rekognition:${Region}:${Account}:project/${ProjectName}/${CreationTimestamp}"
+  ],
+  "rekognition:streamprocessor": [
+   "arn:${Partition}:rekognition:${Region}:${Account}:streamprocessor/${StreamprocessorId}"
+  ],
+  "resiliencehub:application": [
+   "arn:${Partition}:resiliencehub:${Region}:${Account}:app/${AppId}"
+  ],
+  "resiliencehub:policy": [
+   "arn:${Partition}:resiliencehub:${Region}:${Account}:policy/${PolicyId}"
+  ],
+  "resiliencehub:resiliency-policy": [
+   "arn:${Partition}:resiliencehub:${Region}:${Account}:resiliency-policy/${ResiliencyPolicyId}"
+  ],
+  "resiliencehub:service": [
+   "arn:${Partition}:resiliencehub:${Region}:${Account}:service/${ServiceId}"
+  ],
+  "resiliencehub:system": [
+   "arn:${Partition}:resiliencehub:${Region}:${Account}:system/${SystemId}"
+  ],
+  "resource-explorer-2:index": [
+   "arn:${Partition}:resource-explorer-2:${Region}:${Account}:index/${IndexUuid}"
+  ],
+  "resource-explorer-2:view": [
+   "arn:${Partition}:resource-explorer-2:${Region}:${Account}:view/${ViewName}/${ViewUuid}"
+  ],
+  "resource-groups:group": [
+   "arn:${Partition}:resource-groups:${Region}:${Account}:group/${GroupName}"
+  ],
+  "resource-groups:tagSyncTask": [
+   "arn:${Partition}:resource-groups:${Region}:${Account}:group/${GroupName}/tag-sync-task/${TaskId}"
+  ],
+  "rolesanywhere:crl": [
+   "arn:${Partition}:rolesanywhere:${Region}:${Account}:crl/${CrlId}"
+  ],
+  "rolesanywhere:profile": [
+   "arn:${Partition}:rolesanywhere:${Region}:${Account}:profile/${ProfileId}"
+  ],
+  "rolesanywhere:trust-anchor": [
+   "arn:${Partition}:rolesanywhere:${Region}:${Account}:trust-anchor/${TrustAnchorId}"
+  ],
+  "route53:cidrcollection": [
+   "arn:${Partition}:route53:::cidrcollection/${Id}"
+  ],
+  "route53:delegationset": [
+   "arn:${Partition}:route53:::delegationset/${Id}"
+  ],
+  "route53:healthcheck": [
+   "arn:${Partition}:route53:::healthcheck/${Id}"
+  ],
+  "route53:hostedzone": [
+   "arn:${Partition}:route53:::hostedzone/${Id}"
+  ],
+  "route53:queryloggingconfig": [
+   "arn:${Partition}:route53:::queryloggingconfig/${Id}"
+  ],
+  "route53:trafficpolicy": [
+   "arn:${Partition}:route53:::trafficpolicy/${Id}"
+  ],
+  "route53:trafficpolicyinstance": [
+   "arn:${Partition}:route53:::trafficpolicyinstance/${Id}"
+  ],
+  "route53profiles:profile": [
+   "arn:${Partition}:route53profiles:${Region}:${Account}:profile/${ResourceId}"
+  ],
+  "route53profiles:profile-association": [
+   "arn:${Partition}:route53profiles:${Region}:${Account}:profile-association/${ResourceId}"
+  ],
+  "route53resolver:firewall-config": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-config/${ResourceId}"
+  ],
+  "route53resolver:firewall-domain-list": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-domain-list/${ResourceId}"
+  ],
+  "route53resolver:firewall-rule-group": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-rule-group/${ResourceId}"
+  ],
+  "route53resolver:firewall-rule-group-association": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:firewall-rule-group-association/${ResourceId}"
+  ],
+  "route53resolver:outpost-resolver": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:outpost-resolver/${ResourceId}"
+  ],
+  "route53resolver:resolver-config": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-config/${ResourceId}"
+  ],
+  "route53resolver:resolver-dnssec-config": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-dnssec-config/${ResourceId}"
+  ],
+  "route53resolver:resolver-endpoint": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-endpoint/${ResourceId}"
+  ],
+  "route53resolver:resolver-query-log-config": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-query-log-config/${ResourceId}"
+  ],
+  "route53resolver:resolver-rule": [
+   "arn:${Partition}:route53resolver:${Region}:${Account}:resolver-rule/${ResourceId}"
+  ],
+  "rum:AppMonitorResource": [
+   "arn:${Partition}:rum:${Region}:${Account}:appmonitor/${Name}"
+  ],
+  "s3-outposts:accesspoint": [
+   "arn:${Partition}:s3-outposts:${Region}:${Account}:outpost/${OutpostId}/accesspoint/${AccessPointName}"
+  ],
+  "s3-outposts:bucket": [
+   "arn:${Partition}:s3-outposts:${Region}:${Account}:outpost/${OutpostId}/bucket/${BucketName}"
+  ],
+  "s3-outposts:endpoint": [
+   "arn:${Partition}:s3-outposts:${Region}:${Account}:outpost/${OutpostId}/endpoint/${EndpointId}"
+  ],
+  "s3:accessgrant": [
+   "arn:${Partition}:s3:${Region}:${Account}:access-grants/default/grant/${Token}"
+  ],
+  "s3:accessgrantsinstance": [
+   "arn:${Partition}:s3:${Region}:${Account}:access-grants/default"
+  ],
+  "s3:accessgrantslocation": [
+   "arn:${Partition}:s3:${Region}:${Account}:access-grants/default/location/${Token}"
+  ],
+  "s3:accesspoint": [
+   "arn:${Partition}:s3:${Region}:${Account}:accesspoint/${AccessPointName}"
+  ],
+  "s3:bucket": [
+   "arn:${Partition}:s3:::${BucketName}"
+  ],
+  "s3:objectlambdaaccesspoint": [
+   "arn:${Partition}:s3-object-lambda:${Region}:${Account}:accesspoint/${AccessPointName}"
+  ],
+  "s3:storagelensconfiguration": [
+   "arn:${Partition}:s3:${Region}:${Account}:storage-lens/${ConfigId}"
+  ],
+  "s3:storagelensgroup": [
+   "arn:${Partition}:s3:${Region}:${Account}:storage-lens-group/${Name}"
+  ],
+  "sagemaker:ai-workload-config": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:ai-workload-config/${AIWorkloadConfigName}"
+  ],
+  "sagemaker:algorithm": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:algorithm/${AlgorithmName}"
+  ],
+  "sagemaker:app-image-config": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:app-image-config/${AppImageConfigName}"
+  ],
+  "sagemaker:cluster": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:cluster/${ClusterId}"
+  ],
+  "sagemaker:cluster-scheduler-config": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:cluster-scheduler-config/${ClusterSchedulerConfigId}"
+  ],
+  "sagemaker:code-repository": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:code-repository/${CodeRepositoryName}"
+  ],
+  "sagemaker:compute-quota": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:compute-quota/${ComputeQuotaId}"
+  ],
+  "sagemaker:data-quality-job-definition": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:data-quality-job-definition/${DataQualityJobDefinitionName}"
+  ],
+  "sagemaker:device": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:device-fleet/${DeviceFleetName}/device/${DeviceName}"
+  ],
+  "sagemaker:device-fleet": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:device-fleet/${DeviceFleetName}"
+  ],
+  "sagemaker:domain": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:domain/${DomainId}"
+  ],
+  "sagemaker:endpoint": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:endpoint/${EndpointName}"
+  ],
+  "sagemaker:endpoint-config": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:endpoint-config/${EndpointConfigName}"
+  ],
+  "sagemaker:experiment": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:experiment/${ExperimentName}"
+  ],
+  "sagemaker:experiment-trial-component": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:experiment-trial-component/${TrialComponentName}"
+  ],
+  "sagemaker:feature-group": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:feature-group/${FeatureGroupName}"
+  ],
+  "sagemaker:hub": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:hub/${HubName}"
+  ],
+  "sagemaker:human-task-ui": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:human-task-ui/${HumanTaskUiName}"
+  ],
+  "sagemaker:image": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:image/${ImageName}"
+  ],
+  "sagemaker:image-version": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:image-version/${ImageName}/${Version}"
+  ],
+  "sagemaker:inference-component": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:inference-component/${InferenceComponentName}"
+  ],
+  "sagemaker:inference-experiment": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:inference-experiment/${InferenceExperimentName}"
+  ],
+  "sagemaker:mlflow-app": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:mlflow-app/${MLflowAppId}"
+  ],
+  "sagemaker:mlflow-tracking-server": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:mlflow-tracking-server/${MlflowTrackingServerName}"
+  ],
+  "sagemaker:model": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model/${ModelName}"
+  ],
+  "sagemaker:model-bias-job-definition": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model-bias-job-definition/${ModelBiasJobDefinitionName}"
+  ],
+  "sagemaker:model-card": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model-card/${ModelCardName}"
+  ],
+  "sagemaker:model-explainability-job-definition": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model-explainability-job-definition/${ModelExplainabilityJobDefinitionName}"
+  ],
+  "sagemaker:model-package": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model-package/${ModelPackageName}"
+  ],
+  "sagemaker:model-package-group": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model-package-group/${ModelPackageGroupName}"
+  ],
+  "sagemaker:model-quality-job-definition": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:model-quality-job-definition/${ModelQualityJobDefinitionName}"
+  ],
+  "sagemaker:monitoring-schedule": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:monitoring-schedule/${MonitoringScheduleName}"
+  ],
+  "sagemaker:notebook-instance": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:notebook-instance/${NotebookInstanceName}"
+  ],
+  "sagemaker:notebook-instance-lifecycle-config": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:notebook-instance-lifecycle-config/${NotebookInstanceLifecycleConfigName}"
+  ],
+  "sagemaker:partner-app": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:partner-app/${AppId}"
+  ],
+  "sagemaker:pipeline": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:pipeline/${PipelineName}"
+  ],
+  "sagemaker:processing-job": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:processing-job/${ProcessingJobName}"
+  ],
+  "sagemaker:project": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:project/${ProjectName}"
+  ],
+  "sagemaker:space": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:space/${DomainId}/${SpaceName}"
+  ],
+  "sagemaker:studio-lifecycle-config": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:studio-lifecycle-config/${StudioLifecycleConfigName}"
+  ],
+  "sagemaker:user-profile": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:user-profile/${DomainId}/${UserProfileName}"
+  ],
+  "sagemaker:workforce": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:workforce/${WorkforceName}"
+  ],
+  "sagemaker:workteam": [
+   "arn:${Partition}:sagemaker:${Region}:${Account}:workteam/${WorkteamName}"
+  ],
+  "scheduler:schedule": [
+   "arn:${Partition}:scheduler:${Region}:${Account}:schedule/${GroupName}/${ScheduleName}"
+  ],
+  "scheduler:schedule-group": [
+   "arn:${Partition}:scheduler:${Region}:${Account}:schedule-group/${GroupName}"
+  ],
+  "schemas:discoverer": [
+   "arn:${Partition}:schemas:${Region}:${Account}:discoverer/${DiscovererId}"
+  ],
+  "schemas:registry": [
+   "arn:${Partition}:schemas:${Region}:${Account}:registry/${RegistryName}"
+  ],
+  "schemas:schema": [
+   "arn:${Partition}:schemas:${Region}:${Account}:schema/${RegistryName}/${SchemaName}"
+  ],
+  "secretsmanager:Secret": [
+   "arn:${Partition}:secretsmanager:${Region}:${Account}:secret:${SecretId}"
+  ],
+  "securityhub:aggregatorv2": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:aggregatorv2/${AggregatorV2Id}"
+  ],
+  "securityhub:automation-rule": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:automation-rule/${AutomationRuleId}"
+  ],
+  "securityhub:automation-rulev2": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:automation-rulev2/${AutomationRuleV2Id}"
+  ],
+  "securityhub:configuration-policy": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:configuration-policy/${ConfigurationPolicyId}"
+  ],
+  "securityhub:connector": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:connector/${ConnectorId}"
+  ],
+  "securityhub:connectorv2": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:connectorv2/${ConnectorV2Id}"
+  ],
+  "securityhub:finding-aggregator": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:finding-aggregator/${FindingAggregatorId}"
+  ],
+  "securityhub:hub": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:hub/default"
+  ],
+  "securityhub:hubv2": [
+   "arn:${Partition}:securityhub:${Region}:${Account}:hubv2/${HubV2Id}"
+  ],
+  "securitylake:data-lake": [
+   "arn:${Partition}:securitylake:${Region}:${Account}:data-lake/default"
+  ],
+  "securitylake:subscriber": [
+   "arn:${Partition}:securitylake:${Region}:${Account}:subscriber/${SubscriberId}"
+  ],
+  "serverlessrepo:applications": [
+   "arn:${Partition}:serverlessrepo:${Region}:${Account}:applications/${ResourceId}"
+  ],
+  "servicecatalog:Application": [
+   "arn:${Partition}:servicecatalog:${Region}:${Account}:/applications/${ApplicationId}"
+  ],
+  "servicecatalog:AttributeGroup": [
+   "arn:${Partition}:servicecatalog:${Region}:${Account}:/attribute-groups/${AttributeGroupId}"
+  ],
+  "servicecatalog:Portfolio": [
+   "arn:${Partition}:catalog:${Region}:${Account}:portfolio/${PortfolioId}"
+  ],
+  "servicecatalog:Product": [
+   "arn:${Partition}:catalog:${Region}:${Account}:product/${ProductId}"
+  ],
+  "servicediscovery:namespace": [
+   "arn:${Partition}:servicediscovery:${Region}:${Account}:namespace/${NamespaceId}"
+  ],
+  "servicediscovery:service": [
+   "arn:${Partition}:servicediscovery:${Region}:${Account}:service/${ServiceId}"
+  ],
+  "ses:addon-instance": [
+   "arn:${Partition}:ses:${Region}:${Account}:addon-instance/${AddonInstanceId}"
+  ],
+  "ses:addon-subscription": [
+   "arn:${Partition}:ses:${Region}:${Account}:addon-subscription/${AddonSubscriptionId}"
+  ],
+  "ses:configuration-set": [
+   "arn:${Partition}:ses:${Region}:${Account}:configuration-set/${ConfigurationSetName}"
+  ],
+  "ses:contact-list": [
+   "arn:${Partition}:ses:${Region}:${Account}:contact-list/${ContactListName}"
+  ],
+  "ses:custom-verification-email-template": [
+   "arn:${Partition}:ses:${Region}:${Account}:custom-verification-email-template/${TemplateName}"
+  ],
+  "ses:dedicated-ip-pool": [
+   "arn:${Partition}:ses:${Region}:${Account}:dedicated-ip-pool/${DedicatedIPPool}"
+  ],
+  "ses:identity": [
+   "arn:${Partition}:ses:${Region}:${Account}:identity/${IdentityName}"
+  ],
+  "ses:mailmanager-address-list": [
+   "arn:${Partition}:ses:${Region}:${Account}:mailmanager-address-list/${AddressListId}"
+  ],
+  "ses:mailmanager-archive": [
+   "arn:${Partition}:ses:${Region}:${Account}:mailmanager-archive/${ArchiveId}"
+  ],
+  "ses:mailmanager-ingress-point": [
+   "arn:${Partition}:ses:${Region}:${Account}:mailmanager-ingress-point/${IngressPointId}"
+  ],
+  "ses:mailmanager-rule-set": [
+   "arn:${Partition}:ses:${Region}:${Account}:mailmanager-rule-set/${RuleSetId}"
+  ],
+  "ses:mailmanager-smtp-relay": [
+   "arn:${Partition}:ses:${Region}:${Account}:mailmanager-smtp-relay/${RelayId}"
+  ],
+  "ses:mailmanager-traffic-policy": [
+   "arn:${Partition}:ses:${Region}:${Account}:mailmanager-traffic-policy/${TrafficPolicyId}"
+  ],
+  "ses:multi-region-endpoint": [
+   "arn:${Partition}:ses:${Region}:${Account}:multi-region-endpoint/${EndpointName}"
+  ],
+  "ses:template": [
+   "arn:${Partition}:ses:${Region}:${Account}:template/${TemplateName}"
+  ],
+  "ses:tenant": [
+   "arn:${Partition}:ses:${Region}:${Account}:tenant/${TenantName}/${TenantId}"
+  ],
+  "signer:signing-profile": [
+   "arn:${Partition}:signer:${Region}:${Account}:/signing-profiles/${ProfileName}"
+  ],
+  "sns:topic": [
+   "arn:${Partition}:sns:${Region}:${Account}:${TopicName}"
+  ],
+  "sqs:queue": [
+   "arn:${Partition}:sqs:${Region}:${Account}:${QueueName}"
+  ],
+  "ssm:association": [
+   "arn:${Partition}:ssm:${Region}:${Account}:association/${AssociationId}"
+  ],
+  "ssm:cloud-connector": [
+   "arn:${Partition}:ssm:${Region}:${Account}:cloud-connector/${CloudConnectorId}"
+  ],
+  "ssm:document": [
+   "arn:${Partition}:ssm:${Region}:${Account}:document/${DocumentName}"
+  ],
+  "ssm:maintenancewindow": [
+   "arn:${Partition}:ssm:${Region}:${Account}:maintenancewindow/${ResourceId}"
+  ],
+  "ssm:parameter": [
+   "arn:${Partition}:ssm:${Region}:${Account}:parameter/${ParameterNameWithoutLeadingSlash}"
+  ],
+  "ssm:patchbaseline": [
+   "arn:${Partition}:ssm:${Region}:${Account}:patchbaseline/${PatchBaselineIdResourceId}"
+  ],
+  "ssm:resourcedatasync": [
+   "arn:${Partition}:ssm:${Region}:${Account}:resource-data-sync/${SyncName}"
+  ],
+  "sso:Application": [
+   "arn:${Partition}:sso::${AccountId}:application/${InstanceId}/${ApplicationId}"
+  ],
+  "sso:Instance": [
+   "arn:${Partition}:sso:::instance/${InstanceId}"
+  ],
+  "sso:PermissionSet": [
+   "arn:${Partition}:sso:::permissionSet/${InstanceId}/${PermissionSetId}"
+  ],
+  "states:activity": [
+   "arn:${Partition}:states:${Region}:${Account}:activity:${ActivityName}"
+  ],
+  "states:statemachine": [
+   "arn:${Partition}:states:${Region}:${Account}:stateMachine:${StateMachineName}"
+  ],
+  "states:statemachinealias": [
+   "arn:${Partition}:states:${Region}:${Account}:stateMachine:${StateMachineName}:${StateMachineAliasName}"
+  ],
+  "states:statemachineversion": [
+   "arn:${Partition}:states:${Region}:${Account}:stateMachine:${StateMachineName}:${StateMachineVersionId}"
+  ],
+  "storagegateway:share": [
+   "arn:${Partition}:storagegateway:${Region}:${Account}:share/${ShareId}"
+  ],
+  "storagegateway:tape": [
+   "arn:${Partition}:storagegateway:${Region}:${Account}:tape/${TapeBarcode}"
+  ],
+  "storagegateway:tapepool": [
+   "arn:${Partition}:storagegateway:${Region}:${Account}:tapepool/${PoolId}"
+  ],
+  "storagegateway:volume": [
+   "arn:${Partition}:storagegateway:${Region}:${Account}:gateway/${GatewayId}/volume/${VolumeId}"
+  ],
+  "synthetics:canary": [
+   "arn:${Partition}:synthetics:${Region}:${Account}:canary:${CanaryName}"
+  ],
+  "synthetics:group": [
+   "arn:${Partition}:synthetics:${Region}:${Account}:group:${GroupId}"
+  ],
+  "textract:adapter": [
+   "arn:${Partition}:textract:${Region}:${Account}:/adapters/${AdapterId}"
+  ],
+  "timestream-influxdb:db-backup": [
+   "arn:${Partition}:timestream-influxdb:${Region}:${Account}:db-backup/${DbBackupId}"
+  ],
+  "timestream-influxdb:db-cluster": [
+   "arn:${Partition}:timestream-influxdb:${Region}:${Account}:db-cluster/${DbClusterId}"
+  ],
+  "timestream-influxdb:db-instance": [
+   "arn:${Partition}:timestream-influxdb:${Region}:${Account}:db-instance/${DbInstanceIdentifier}"
+  ],
+  "timestream:database": [
+   "arn:${Partition}:timestream:${Region}:${Account}:database/${DatabaseName}"
+  ],
+  "timestream:scheduled-query": [
+   "arn:${Partition}:timestream:${Region}:${Account}:scheduled-query/${ScheduledQueryName}"
+  ],
+  "timestream:table": [
+   "arn:${Partition}:timestream:${Region}:${Account}:database/${DatabaseName}/table/${TableName}"
+  ],
+  "transcribe:callanalyticscategory": [
+   "arn:${Partition}:transcribe:${Region}:${Account}:analytics-category/${CategoryName}"
+  ],
+  "transcribe:medicalvocabulary": [
+   "arn:${Partition}:transcribe:${Region}:${Account}:medical-vocabulary/${VocabularyName}"
+  ],
+  "transcribe:vocabulary": [
+   "arn:${Partition}:transcribe:${Region}:${Account}:vocabulary/${VocabularyName}"
+  ],
+  "transcribe:vocabularyfilter": [
+   "arn:${Partition}:transcribe:${Region}:${Account}:vocabulary-filter/${VocabularyFilterName}"
+  ],
+  "transfer:agreement": [
+   "arn:${Partition}:transfer:${Region}:${Account}:agreement/${ServerId}/${AgreementId}"
+  ],
+  "transfer:certificate": [
+   "arn:${Partition}:transfer:${Region}:${Account}:certificate/${CertificateId}"
+  ],
+  "transfer:connector": [
+   "arn:${Partition}:transfer:${Region}:${Account}:connector/${ConnectorId}"
+  ],
+  "transfer:host-key": [
+   "arn:${Partition}:transfer:${Region}:${Account}:host-key/${ServerId}/${HostKeyId}"
+  ],
+  "transfer:profile": [
+   "arn:${Partition}:transfer:${Region}:${Account}:profile/${ProfileId}"
+  ],
+  "transfer:server": [
+   "arn:${Partition}:transfer:${Region}:${Account}:server/${ServerId}"
+  ],
+  "transfer:user": [
+   "arn:${Partition}:transfer:${Region}:${Account}:user/${ServerId}/${UserName}"
+  ],
+  "transfer:webapp": [
+   "arn:${Partition}:transfer:${Region}:${Account}:webapp/${WebAppId}"
+  ],
+  "transfer:workflow": [
+   "arn:${Partition}:transfer:${Region}:${Account}:workflow/${WorkflowId}"
+  ],
+  "translate:parallel-data": [
+   "arn:${Partition}:translate:${Region}:${Account}:parallel-data/${ResourceName}"
+  ],
+  "translate:terminology": [
+   "arn:${Partition}:translate:${Region}:${Account}:terminology/${ResourceName}"
+  ],
+  "verifiedpermissions:policy-store": [
+   "arn:${Partition}:verifiedpermissions::${Account}:policy-store/${PolicyStoreId}"
+  ],
+  "verifiedpermissions:policy-store-alias": [
+   "arn:${Partition}:verifiedpermissions:${Region}:${Account}:policy-store-alias/${AliasName}"
+  ],
+  "waf-regional:bytematchset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:bytematchset/${Id}"
+  ],
+  "waf-regional:geomatchset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:geomatchset/${Id}"
+  ],
+  "waf-regional:ipset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:ipset/${Id}"
+  ],
+  "waf-regional:ratebasedrule": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:ratebasedrule/${Id}"
+  ],
+  "waf-regional:regexpatternset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:regexpatternset/${Id}"
+  ],
+  "waf-regional:rule": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:rule/${Id}"
+  ],
+  "waf-regional:sizeconstraintset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:sizeconstraintset/${Id}"
+  ],
+  "waf-regional:sqlinjectionmatchset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:sqlinjectionset/${Id}"
+  ],
+  "waf-regional:webacl": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:webacl/${Id}"
+  ],
+  "waf-regional:xssmatchset": [
+   "arn:${Partition}:waf-regional:${Region}:${Account}:xssmatchset/${Id}"
+  ],
+  "wafv2:ipset": [
+   "arn:${Partition}:wafv2:${Region}:${Account}:${Scope}/ipset/${Name}/${Id}"
+  ],
+  "wafv2:regexpatternset": [
+   "arn:${Partition}:wafv2:${Region}:${Account}:${Scope}/regexpatternset/${Name}/${Id}"
+  ],
+  "wafv2:rulegroup": [
+   "arn:${Partition}:wafv2:${Region}:${Account}:${Scope}/rulegroup/${Name}/${Id}"
+  ],
+  "wafv2:webacl": [
+   "arn:${Partition}:wafv2:${Region}:${Account}:${Scope}/webacl/${Name}/${Id}"
+  ],
+  "wellarchitected:agent-profile": [
+   "arn:${Partition}:wellarchitected:${Region}:${Account}:agent-profile/${ProfileName}"
+  ],
+  "wellarchitected:lens": [
+   "arn:${Partition}:wellarchitected:${Region}:${Account}:lens/${ResourceId}"
+  ],
+  "wellarchitected:profile": [
+   "arn:${Partition}:wellarchitected:${Region}:${Account}:profile/${ResourceId}"
+  ],
+  "wellarchitected:review-template": [
+   "arn:${Partition}:wellarchitected:${Region}:${Account}:review-template/${ResourceId}"
+  ],
+  "wellarchitected:workload": [
+   "arn:${Partition}:wellarchitected:${Region}:${Account}:workload/${ResourceId}"
+  ],
+  "workspaces:connectionalias": [
+   "arn:${Partition}:workspaces:${Region}:${Account}:connectionalias/${ConnectionAliasId}"
+  ],
+  "workspaces:directoryid": [
+   "arn:${Partition}:workspaces:${Region}:${Account}:directory/${DirectoryId}"
+  ],
+  "workspaces:workspaceid": [
+   "arn:${Partition}:workspaces:${Region}:${Account}:workspace/${WorkspaceId}"
+  ],
+  "workspaces:workspaceipgroup": [
+   "arn:${Partition}:workspaces:${Region}:${Account}:workspaceipgroup/${GroupId}"
+  ],
+  "xray:group": [
+   "arn:${Partition}:xray:${Region}:${Account}:group/${GroupName}/${Id}"
+  ],
+  "xray:sampling-rule": [
+   "arn:${Partition}:xray:${Region}:${Account}:sampling-rule/${SamplingRuleName}"
+  ]
+ }
+}

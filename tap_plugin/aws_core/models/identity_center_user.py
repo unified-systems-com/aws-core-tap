@@ -17,6 +17,7 @@ class IdentityCenterUser(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The user's identity store id and user id together (identity_store_id:user_id): a user id is unique only within its identity store.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("user_key",)
+    ARN_RESOURCE: ClassVar[str | None] = "identitystore:User"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "ellipse", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

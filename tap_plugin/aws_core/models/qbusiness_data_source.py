@@ -17,6 +17,7 @@ class QbusinessDataSource(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (application/<applicationId>/index/<indexId>/data-source/<dataSourceId>): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("qbusiness_data_source_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "qbusiness:data-source"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

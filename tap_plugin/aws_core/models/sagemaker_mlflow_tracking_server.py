@@ -17,6 +17,7 @@ class SagemakerMlflowTrackingServer(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TrackingServerArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_mlflow_tracking_server_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:mlflow-tracking-server"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

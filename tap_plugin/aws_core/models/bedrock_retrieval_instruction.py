@@ -17,6 +17,7 @@ class BedrockRetrievalInstruction(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (retrievalInstructionArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_retrieval_instruction_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "bedrock:retrieval-instruction"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

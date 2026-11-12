@@ -17,6 +17,7 @@ class LogsDelivery(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("delivery_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "logs:delivery"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

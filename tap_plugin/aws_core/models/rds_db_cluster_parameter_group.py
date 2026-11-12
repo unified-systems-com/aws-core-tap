@@ -17,6 +17,7 @@ class RdsDbClusterParameterGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The parameter group's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_cluster_parameter_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:cluster-pg"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

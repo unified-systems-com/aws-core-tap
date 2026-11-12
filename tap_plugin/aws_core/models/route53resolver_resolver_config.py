@@ -17,6 +17,7 @@ class Route53resolverResolverConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (Id), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53resolver_resolver_config_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53resolver:resolver-config"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class KinesisvideoSignalingChannel(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ChannelARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("kinesisvideo_signaling_channel_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kinesisvideo:channel"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

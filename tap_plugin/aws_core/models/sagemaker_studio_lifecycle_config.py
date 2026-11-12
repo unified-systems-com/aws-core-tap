@@ -17,6 +17,7 @@ class SagemakerStudioLifecycleConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (StudioLifecycleConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_studio_lifecycle_config_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:studio-lifecycle-config"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

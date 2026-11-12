@@ -47,6 +47,7 @@ class AwsOrganizationsPolicy(BaseModel):
     # Keyed on the ARN, as SCPs are: the p-… id has no documented global uniqueness, and an
     # AWS-managed policy's ARN is one AWS-owned object across every organization.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:policy"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_policy_statement"}], "edges": [{"type": "DECLARES_STATEMENT__aws_core"}]},

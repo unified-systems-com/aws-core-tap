@@ -17,6 +17,7 @@ class RedshiftQev2IdcApplication(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Qev2IdcApplicationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_qev2_idc_application_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "redshift:qev2idcapplication"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class GuarddutyThreatIntelSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'threatintelset' and the list id: a list id is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("threat_intel_set_key",)
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:threatintelset"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

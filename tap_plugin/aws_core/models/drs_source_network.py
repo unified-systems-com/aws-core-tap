@@ -17,6 +17,7 @@ class DrsSourceNetwork(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("source_network_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "drs:SourceNetworkResource"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
