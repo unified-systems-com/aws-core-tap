@@ -191,7 +191,8 @@ def test_re_seeding_over_v020_updates_the_retired_node() -> None:
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-account-dimension-8")
 def test_the_migration_drops_cloud_from_aws_core_rows_only_and_is_idempotent() -> None:
-    """0054 removes only the cloud key, only from aws_core's own rows, and a second run changes nothing."""
+    """0054 removes only the cloud key, only from aws_core's own node and edge rows, and a second run changes
+    nothing."""
     import importlib
     from types import SimpleNamespace
 
@@ -208,9 +209,21 @@ def test_the_migration_drops_cloud_from_aws_core_rows_only_and_is_idempotent() -
             dimensions={"cloud": "aws", "tap.cloud": "aws", "aws_region": "us-east-1"},
         )
         theirs = Entity.objects.create(entity_type="anchore__image", name="i", dimensions={"cloud": "aws"})
+        # An edge's spine row is entity_type "edge"; whose edge it is lives on tap_edge.edge_type.
+        our_edge = Entity.objects.create(entity_type="edge", name="e1", dimensions={"cloud": "aws", "aws_region": "x"})
+        their_edge = Entity.objects.create(entity_type="edge", name="e2", dimensions={"cloud": "aws"})
+    with connection.cursor() as cursor:
+        for edge, edge_type in ((our_edge, "HOSTS_VPC__aws_core"), (their_edge, "SCANS__anchore")):
+            cursor.execute(
+                "INSERT INTO tap_edge (batch_id, flip_map, edge_type, properties, entity_id, from_entity_id, to_entity_id)"
+                " VALUES (%s, '{}', %s, '{}', %s, %s, %s)",
+                ["test", edge_type, edge.pk, ours.pk, theirs.pk],
+            )
     for _ in range(2):
         migration.drop_cloud(None, SimpleNamespace(connection=connection))
-    ours.refresh_from_db()
-    theirs.refresh_from_db()
+    for row in (ours, theirs, our_edge, their_edge):
+        row.refresh_from_db()
     assert ours.dimensions == {"tap.cloud": "aws", "aws_region": "us-east-1"}
+    assert our_edge.dimensions == {"aws_region": "x"}, "aws_core's edges carried the stamp too"
     assert theirs.dimensions == {"cloud": "aws"}, "another plugin's rows are not aws_core's to change"
+    assert their_edge.dimensions == {"cloud": "aws"}
