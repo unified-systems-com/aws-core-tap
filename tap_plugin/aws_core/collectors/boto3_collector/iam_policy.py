@@ -334,8 +334,11 @@ def arn_formats_from(docs: list[dict[str, Any]], wanted: set[str]) -> dict[str, 
     }
 
 
-#: Every vendored format is an ARN with its partition left open (``arn:${Partition}:<service>:``).
-_ARN_FORMAT = re.compile(r"arn:\$\{Partition\}:[a-z0-9-]+:")
+#: A whole ARN template: the partition left open, a service, region and account parts (either may be empty), and a
+#: non-empty resource; every ``${`` closes, and nothing has whitespace.
+ARN_FORMAT = re.compile(
+    r"arn:\$\{Partition\}:[a-z0-9-]+:(?:[^:\s$]|\$\{\w+\})*:(?:[^:\s$]|\$\{\w+\})*:(?:[^\s$]|\$\{\w+\})+"
+)
 
 
 def write_arn_formats(docs: list[dict[str, Any]]) -> None:
@@ -347,7 +350,7 @@ def write_arn_formats(docs: list[dict[str, Any]]) -> None:
     if missing:
         raise SystemExit(f"the reference has no entry for {', '.join(missing)}; {ARN_FORMATS.name} left as it was")
     malformed = sorted(
-        r for r, formats in data["resources"].items() if not formats or not all(_ARN_FORMAT.match(f) for f in formats)
+        r for r, formats in data["resources"].items() if not formats or not all(ARN_FORMAT.fullmatch(f) for f in formats)
     )
     if malformed:
         raise SystemExit(f"the reference gives no usable ARN format for {', '.join(malformed)}; {ARN_FORMATS.name} left as it was")

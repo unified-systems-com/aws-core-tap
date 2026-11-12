@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import ast
 import json
-import re
 from pathlib import Path
 
 import pytest
@@ -213,7 +212,7 @@ def test_every_vendored_format_is_an_arn_with_its_partition_left_open() -> None:
         (resource, fmt)
         for resource, formats in FORMATS.items()
         for fmt in formats or [""]
-        if not re.match(r"arn:\$\{Partition\}:[a-z0-9-]+:", fmt)
+        if not iam_policy.ARN_FORMAT.fullmatch(fmt)
     ]
     assert not bad
 
@@ -272,8 +271,21 @@ def test_the_arn_refresh_refuses_and_writes_nothing_when_a_named_type_is_missing
     assert not list(tmp_path.iterdir())
 
 
-@pytest.mark.parametrize("resource", [{"Name": "vpc"}, {"Name": "vpc", "ARNFormats": []}, {"Name": "vpc", "ARNFormats": ["vpc/${VpcId}"]}])
-def test_the_arn_refresh_refuses_a_named_type_with_no_usable_format(monkeypatch, tmp_path, resource) -> None:
+@pytest.mark.parametrize(
+    "formats",
+    [
+        None,
+        [],
+        ["vpc/${VpcId}"],
+        ["arn:${Partition}:ec2:"],
+        ["arn:${Partition}:ec2:any trailing junk"],
+        ["arn:${Partition}:ec2:${Region}:${Account}:"],
+        ["arn:${Partition}:ec2:${Region}:${Account}:vpc/${VpcId"],
+        ["arn:${Partition}:ec2:${Region}:${Account}:vpc/${VpcId}", "arn:${Partition}:ec2:"],
+    ],
+)
+def test_the_arn_refresh_refuses_a_named_type_with_no_usable_format(monkeypatch, tmp_path, formats) -> None:
+    resource = {"Name": "vpc"} if formats is None else {"Name": "vpc", "ARNFormats": formats}
     sentinel = tmp_path / "arn_formats.json"
     sentinel.write_text("known good\n")
     monkeypatch.setattr(iam_policy, "arn_resources", lambda: {"ec2:vpc"})
