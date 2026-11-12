@@ -334,15 +334,26 @@ def arn_formats_from(docs: list[dict[str, Any]], wanted: set[str]) -> dict[str, 
     }
 
 
+#: Every vendored format is an ARN with its partition left open (``arn:${Partition}:<service>:``).
+_ARN_FORMAT = re.compile(r"arn:\$\{Partition\}:[a-z0-9-]+:")
+
+
 def write_arn_formats(docs: list[dict[str, Any]]) -> None:
     """Write the formats, or refuse and write nothing when the reference is missing a resource type a model names: a
-    short or failed fetch must not shrink the vendored file."""
+    short, failed or malformed fetch must not change the vendored file, and the file is replaced whole."""
     wanted = arn_resources()
     data = arn_formats_from(docs, wanted)
     missing = sorted(wanted - set(data["resources"]))
     if missing:
         raise SystemExit(f"the reference has no entry for {', '.join(missing)}; {ARN_FORMATS.name} left as it was")
-    ARN_FORMATS.write_text(json.dumps(data, indent=1) + "\n")
+    malformed = sorted(
+        r for r, formats in data["resources"].items() if not formats or not all(_ARN_FORMAT.match(f) for f in formats)
+    )
+    if malformed:
+        raise SystemExit(f"the reference gives no usable ARN format for {', '.join(malformed)}; {ARN_FORMATS.name} left as it was")
+    staged = ARN_FORMATS.with_suffix(".json.tmp")
+    staged.write_text(json.dumps(data, indent=1) + "\n")
+    staged.replace(ARN_FORMATS)
 
 
 def refresh_arn_formats() -> int:

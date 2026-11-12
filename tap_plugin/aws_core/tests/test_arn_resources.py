@@ -270,3 +270,15 @@ def test_the_arn_refresh_refuses_and_writes_nothing_when_a_named_type_is_missing
     with pytest.raises(SystemExit, match="ec2:vpc"):
         iam_policy.refresh_arn_formats()
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("resource", [{"Name": "vpc"}, {"Name": "vpc", "ARNFormats": []}, {"Name": "vpc", "ARNFormats": ["vpc/${VpcId}"]}])
+def test_the_arn_refresh_refuses_a_named_type_with_no_usable_format(monkeypatch, tmp_path, resource) -> None:
+    sentinel = tmp_path / "arn_formats.json"
+    sentinel.write_text("known good\n")
+    monkeypatch.setattr(iam_policy, "arn_resources", lambda: {"ec2:vpc"})
+    monkeypatch.setattr(iam_policy, "ARN_FORMATS", sentinel)
+    with pytest.raises(SystemExit, match="ec2:vpc"):
+        iam_policy.write_arn_formats([{"Name": "ec2", "Resources": [resource]}])
+    assert sentinel.read_text() == "known good\n"
+    assert [p.name for p in tmp_path.iterdir()] == ["arn_formats.json"]
