@@ -1157,6 +1157,18 @@ aws_core__aws_ecs_container = "tap_plugin.aws_core.falsifiers.EcsContainerFalsif
 # Route 53 (aws-core-tap#220): a zone -> HOLDS_RECORD_SET -> record set, with a surface per zone.
 aws_core__aws_route53_record_set = "tap_plugin.aws_core.falsifiers.Route53RecordSetFalsifier"
 
+# AWS Config prototype: one class, driven by config_falsifier_types.json, for types that have no
+# service-specific falsifier. Config can only show an object is gone, never that it exists. These
+# types carry no containment edge yet, so they are exercised by tests and the live trial until a
+# completeness surface reaches them (specs/spec-aws-core-v0.md, req-aws-core-reconcile-coverage).
+aws_core__aws_lambda = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+aws_core__aws_sqs_queue = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+aws_core__aws_sns_topic = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+aws_core__aws_dynamodb_table = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+aws_core__aws_kms_alias = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+aws_core__aws_secrets_manager_secret = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+aws_core__aws_eventbridge_rule = "tap_plugin.aws_core.config_falsifier.ConfigHistoryFalsifier"
+
 [grift]
 dimension = "grift/dimension.grift.json"
 regions = "grift/regions.grift.json"

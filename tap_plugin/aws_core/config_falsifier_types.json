@@ -1,0 +1,168 @@
+{
+  "description": "For each entity type the AWS Config falsifier can speak to: the Config resource type and how the Config resource id is derived from the grid row. Config ids are not uniform (a name, an ARN, a URL or an opaque IAM id), so each entry was established against live GovCloud Config data on 2026-11-01 (list_discovered_resources and get_resource_config_history for the seed resources), not assumed. A type absent here is one Config does not record in the partitions tested (CloudWatch log group, SSM parameter and KMS key were not found; Lambda function versions are not a Config type) or one this prototype has not mapped.",
+  "id_from": {
+    "field": "The Config id is the row's own field, used whole.",
+    "arn_tail": "The Config id is the part of the row's ARN after the first occurrence of 'marker'. The tail must not contain a '/' when 'single_segment' is true (a rule on a non-default event bus carries one more segment and is refused, not guessed).",
+    "name_lookup": "The Config id is opaque (an IAM id). The row's 'field' is tried first; when the row holds none, Config's list_discovered_resources is asked for the row's name, deleted included, and the answer is used only when exactly one deleted match exists and no live one does."
+  },
+  "types": {
+    "aws_core__aws_lambda": {
+      "description": "Config id is the function name; the ARN tail after ':function:' is that name.",
+      "config_type": "AWS::Lambda::Function",
+      "scope": "regional",
+      "arn_field": "function_arn",
+      "id": {
+        "from": "arn_tail",
+        "marker": ":function:",
+        "single_segment": true
+      }
+    },
+    "aws_core__aws_sqs_queue": {
+      "description": "Config id is the queue URL, which the row stores in queue_url.",
+      "config_type": "AWS::SQS::Queue",
+      "scope": "regional",
+      "arn_field": "queue_arn",
+      "id": {
+        "from": "field",
+        "field": "queue_url"
+      }
+    },
+    "aws_core__aws_sns_topic": {
+      "description": "Config id is the topic ARN. A deleted item carries no resource name.",
+      "config_type": "AWS::SNS::Topic",
+      "scope": "regional",
+      "arn_field": "topic_arn",
+      "id": {
+        "from": "field",
+        "field": "topic_arn"
+      }
+    },
+    "aws_core__aws_dynamodb_table": {
+      "description": "Config id is the table name; the ARN tail after 'table/' is that name.",
+      "config_type": "AWS::DynamoDB::Table",
+      "scope": "regional",
+      "arn_field": "table_arn",
+      "id": {
+        "from": "arn_tail",
+        "marker": "table/",
+        "single_segment": true
+      }
+    },
+    "aws_core__aws_kms_alias": {
+      "description": "Config id is 'alias/<name>', which the row stores in alias_name. Config records the alias, not the key it points at; no KMS key was found in Config for the seed account.",
+      "config_type": "AWS::KMS::Alias",
+      "scope": "regional",
+      "arn_field": "alias_arn",
+      "id": {
+        "from": "field",
+        "field": "alias_name"
+      }
+    },
+    "aws_core__aws_secrets_manager_secret": {
+      "description": "Config id is the secret ARN including its random suffix, which is what the row stores.",
+      "config_type": "AWS::SecretsManager::Secret",
+      "scope": "regional",
+      "arn_field": "secret_arn",
+      "id": {
+        "from": "field",
+        "field": "secret_arn"
+      }
+    },
+    "aws_core__aws_eventbridge_rule": {
+      "description": "Config id is the rule name on the default event bus; the ARN tail after 'rule/' is that name. A rule on a custom bus has a second path segment and is refused, because its Config id was not established.",
+      "config_type": "AWS::Events::Rule",
+      "scope": "regional",
+      "arn_field": "rule_arn",
+      "id": {
+        "from": "arn_tail",
+        "marker": "rule/",
+        "single_segment": true
+      }
+    },
+    "aws_core__aws_s3_bucket": {
+      "description": "Config id is the bucket name. A bucket name is unique across regions but Config files the item under the bucket's own region, which the row does not store (its region is 'global'), so every enabled region is asked: a deletion in any region retires it unless Config shows the bucket alive in another.",
+      "config_type": "AWS::S3::Bucket",
+      "scope": "global_name",
+      "arn_field": "bucket_arn",
+      "id": {
+        "from": "arn_tail",
+        "marker": ":::",
+        "single_segment": true
+      }
+    },
+    "aws_core__aws_iam_role": {
+      "description": "Config id is the opaque role id (AROA...); resourceName is the role name. IAM is recorded only where the recorder includes global resource types, which in the GovCloud test account is us-gov-west-1.",
+      "config_type": "AWS::IAM::Role",
+      "scope": "global_home",
+      "global": true,
+      "arn_field": "role_arn",
+      "id": {
+        "from": "name_lookup",
+        "field": "role_id"
+      }
+    },
+    "aws_core__aws_iam_user": {
+      "description": "Config id is the opaque user id (AIDA...); resourceName is the user name.",
+      "config_type": "AWS::IAM::User",
+      "scope": "global_home",
+      "global": true,
+      "arn_field": "user_arn",
+      "id": {
+        "from": "name_lookup",
+        "field": "user_id"
+      }
+    },
+    "aws_core__aws_iam_policy": {
+      "description": "Config id is the opaque policy id (ANPA...); resourceName is the policy name. Customer-managed policies only.",
+      "config_type": "AWS::IAM::Policy",
+      "scope": "global_home",
+      "global": true,
+      "arn_field": "policy_arn",
+      "id": {
+        "from": "name_lookup",
+        "field": "policy_id"
+      }
+    },
+    "aws_core__aws_iam_group": {
+      "description": "Config id is the opaque group id (AGPA...); resourceName is the group name.",
+      "config_type": "AWS::IAM::Group",
+      "scope": "global_home",
+      "global": true,
+      "arn_field": "group_arn",
+      "id": {
+        "from": "name_lookup",
+        "field": "group_id"
+      }
+    },
+    "aws_core__aws_vpc": {
+      "description": "Config id is the VPC id. Config's VPC item lists 'Contains Subnet' and 'Contains SecurityGroup' relationships.",
+      "config_type": "AWS::EC2::VPC",
+      "scope": "regional",
+      "arn_field": null,
+      "id": {
+        "from": "field",
+        "field": "vpc_id"
+      }
+    },
+    "aws_core__aws_subnet": {
+      "description": "Config id is the subnet id.",
+      "config_type": "AWS::EC2::Subnet",
+      "scope": "regional",
+      "arn_field": null,
+      "id": {
+        "from": "field",
+        "field": "subnet_id"
+      }
+    },
+    "aws_core__aws_security_group": {
+      "description": "Config id is the security group id (sg-...).",
+      "config_type": "AWS::EC2::SecurityGroup",
+      "scope": "regional",
+      "arn_field": null,
+      "id": {
+        "from": "field",
+        "field": "group_id"
+      }
+    }
+  }
+}
