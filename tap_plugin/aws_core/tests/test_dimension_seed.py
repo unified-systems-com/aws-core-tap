@@ -50,28 +50,44 @@ PLUGIN = Path(__file__).resolve().parent.parent
 
 
 def _collector_keys() -> set[str]:
-    """Every string key of a dict literal the collector builds as dimensions: assigned to a name
-    ending in ``dimensions``, or returned by a function named ``dimensions``."""
+    """Every string key the collector writes into a dimensions map, by AST. A *dimensions target is
+    a name or attribute ending in ``dimensions``. Seen: a dict literal assigned to one (plain or
+    annotated); a constant subscript assigned on one (``dims["k"] = v``); ``.update`` on one, with a
+    dict literal or keywords; and any dict literal returned by a function named ``dimensions``, sync
+    or async. A key built some other way (computed, or passed through a helper) is not seen; the
+    canary in the test below catches the stamp itself being rewritten."""
     import ast
 
-    keys: set[str] = set()
+    def is_dims(node: ast.AST) -> bool:
+        name = node.id if isinstance(node, ast.Name) else node.attr if isinstance(node, ast.Attribute) else ""
+        return name.endswith("dimensions")
 
     def literal_keys(node: ast.AST | None) -> set[str]:
         if isinstance(node, ast.Dict):
             return {k.value for k in node.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
         return set()
 
+    keys: set[str] = set()
     for path in (PLUGIN / "collectors").rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            if isinstance(node, ast.Assign) and any(
-                isinstance(t, ast.Name) and t.id.endswith("dimensions") for t in node.targets
-            ):
+            if isinstance(node, ast.Assign):
+                for target in node.targets:
+                    if is_dims(target):
+                        keys |= literal_keys(node.value)
+                    if isinstance(target, ast.Subscript) and is_dims(target.value):
+                        if isinstance(target.slice, ast.Constant) and isinstance(target.slice.value, str):
+                            keys.add(target.slice.value)
+            elif isinstance(node, ast.AnnAssign) and is_dims(node.target):
                 keys |= literal_keys(node.value)
-            if isinstance(node, ast.FunctionDef) and node.name == "dimensions":
-                for ret in ast.walk(node):
-                    if isinstance(ret, ast.Return):
-                        keys |= literal_keys(ret.value)
+            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "update":
+                if is_dims(node.func.value):
+                    for arg in node.args:
+                        keys |= literal_keys(arg)
+                    keys |= {kw.arg for kw in node.keywords if kw.arg}
+            elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == "dimensions":
+                for inner in ast.walk(node):
+                    keys |= literal_keys(inner)
     return keys
 
 
