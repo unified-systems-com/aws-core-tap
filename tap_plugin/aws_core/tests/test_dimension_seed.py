@@ -43,13 +43,69 @@ def test_tap_cloud_keeps_its_id_and_is_named_by_its_key() -> None:
     assert by_id[TAP_CLOUD_ID]["node"]["name"] == "tap.cloud"
 
 
-def test_the_collector_keys_match_what_the_collector_stamps() -> None:
-    """The seed names the collector's keys exactly, so a rename on either side fails here."""
-    collector = (Path(__file__).resolve().parent.parent / "collectors" / "boto3_collector" / "collector.py").read_text(
-        encoding="utf-8"
-    )
-    for key in ("cloud", "aws_account", "aws_region"):
-        assert f'"{key}":' in collector, f"collector no longer stamps {key!r}; update the seed"
+# Keys core declares itself (its own seeds): aws_core's GRIFT seeds carry them, but they are not
+# aws_core's vocabulary to declare.
+CORE_KEYS = {"tap.meta", "tap.graph"}
+PLUGIN = Path(__file__).resolve().parent.parent
+
+
+def _collector_keys() -> set[str]:
+    """Every string key of a dict literal the collector builds as dimensions: assigned to a name
+    ending in ``dimensions``, or returned by a function named ``dimensions``."""
+    import ast
+
+    keys: set[str] = set()
+
+    def literal_keys(node: ast.AST | None) -> set[str]:
+        if isinstance(node, ast.Dict):
+            return {k.value for k in node.keys if isinstance(k, ast.Constant) and isinstance(k.value, str)}
+        return set()
+
+    for path in (PLUGIN / "collectors").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id.endswith("dimensions") for t in node.targets
+            ):
+                keys |= literal_keys(node.value)
+            if isinstance(node, ast.FunctionDef) and node.name == "dimensions":
+                for ret in ast.walk(node):
+                    if isinstance(ret, ast.Return):
+                        keys |= literal_keys(ret.value)
+    return keys
+
+
+def _default_keys() -> set[str]:
+    """Keys of every model's DEFAULT_DIMENSIONS and every edge file's default_dimensions."""
+    import re
+
+    keys: set[str] = set()
+    for path in (PLUGIN / "models").glob("*.py"):
+        for block in re.findall(r"DEFAULT_DIMENSIONS[^=]*=\s*(\{[^}]*\})", path.read_text(encoding="utf-8")):
+            keys |= set(json.loads(block))
+    for path in (PLUGIN / "edges").glob("*.edge.json"):
+        keys |= set(json.loads(path.read_text(encoding="utf-8")).get("default_dimensions", {}))
+    return keys
+
+
+def _seed_keys() -> set[str]:
+    keys: set[str] = set()
+    for path in (PLUGIN / "grift").glob("*.grift.json"):
+        for batch in json.loads(path.read_text(encoding="utf-8"))["batches"]:
+            keys |= set(batch["batch_entity"].get("dimensions", {}))
+            for item in batch.get("nodes", []) + batch.get("edges", []):
+                keys |= set(item["entity"].get("dimensions", {}))
+    return keys
+
+
+@pytest.mark.spec("req-aws-core-account-dimension-7")
+def test_every_key_aws_core_writes_is_declared_and_nothing_else() -> None:
+    """Derived from the sources, both ways: a key written but not declared, or declared but no longer
+    written, fails here."""
+    collector = _collector_keys()
+    assert {"cloud", "aws_account", "aws_region"} <= collector, "the scan stopped seeing the collector's stamp"
+    written = (collector | _default_keys() | _seed_keys()) - CORE_KEYS
+    assert written == KEYS
 
 
 def test_no_description_carries_an_account_number() -> None:
