@@ -26,7 +26,7 @@ class DxConnection(BaseModel):
         "customer router at a Direct Connect location."
     )
     ENTITY_ICON: ClassVar[str] = "aws-direct-connect"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

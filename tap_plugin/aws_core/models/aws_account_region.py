@@ -36,7 +36,7 @@ class AwsAccountRegion(BaseModel):
         "One AWS account's footprint in one region: the parent its regional resources are contained under."
     )
     ENTITY_ICON: ClassVar[str] = "aws-region"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the pair (account id, region code). Neither alone
     # names it: a region code is shared by every account, an account id by every region. Both are
     # AWS's own stable identifiers and both are always known where a collector observes a footprint.

@@ -49,7 +49,7 @@ from tap_grid.services import create_edge, create_node, get_node
 ORG_ID = "o-abc1234567"
 ROOT_ID = "r-ab12"
 MGMT_ACCOUNT = "111111111111"
-DIMENSIONS = {"cloud": "aws", "aws_account": MGMT_ACCOUNT, "aws_region": "global"}
+DIMENSIONS = {"aws.account": MGMT_ACCOUNT, "aws.region": "global"}
 #: Injected explicitly into every falsifier below (the module docstring's own contract: "region
 #: is injected by tests"). Without it, `_region()` falls back to `resolve_aws_secret()` — a real
 #: credential read that happens to succeed in a dev stack carrying a secret and fails in CI's
@@ -498,7 +498,7 @@ def _ou_row(
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
+    row.entity.dimensions = {"aws.account": account_id, "aws.region": "global"}
     row.entity.save(update_fields=["dimensions"])
     if org_id is not None:
         create_edge(row.entity, get_node(org_id).entity, "NESTED_UNDER_PARENT__aws_core")
@@ -510,7 +510,7 @@ def _account_row(account_id_val: str, *, name: str = "", credential_account: str
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": credential_account, "aws_region": "global"}
+    row.entity.dimensions = {"aws.account": credential_account, "aws.region": "global"}
     row.entity.save(update_fields=["dimensions"])
     return entity_id
 
@@ -621,15 +621,17 @@ class TestOrganizationalUnitFalsifierFourCases:
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
 
-    def test_account_mismatch_is_scope_unknown_before_any_reach_call(self) -> None:
+    @pytest.mark.spec("req-aws-core-account-dimension-9")
+    def test_the_owner_dimension_does_not_gate_an_organizations_candidate(self) -> None:
+        """aws.account names the OWNER (Q57): an OU carries the management account, which a delegated
+        administrator's credential never equals. So the Organizations falsifiers do not refuse on the dimension;
+        their reach is organization membership, read once per batch."""
         org_id = _org_row()
         client = FakeOrgClient()
         ou_id = _ou_row("ou-ab12-elsewhere1", account_id="999988887777")
         falsifier = OrganizationalUnitFalsifier(session=FakeOrgSession(client), account_id=MGMT_ACCOUNT, region=REGION)
-        [verdict] = falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
-        assert verdict.verdict == UNDETERMINED
-        assert verdict.reason == "scope_unknown"
-        assert client.calls == []
+        falsifier.batch_falsify([_candidate(ou_id, ORGANIZATIONAL_UNIT, parent=org_id)], _context())
+        assert client.calls[:1] == ["describe_organization"], "reach is proved by the organization, not the dimension"
 
 
 @pytest.mark.django_db

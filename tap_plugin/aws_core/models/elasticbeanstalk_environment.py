@@ -14,7 +14,7 @@ class ElasticbeanstalkEnvironment(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ElasticBeanstalk Environment"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ElasticBeanstalk Environment."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (EnvironmentArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("elasticbeanstalk_environment_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "elasticbeanstalk:environment"

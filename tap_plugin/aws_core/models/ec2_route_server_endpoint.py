@@ -14,7 +14,7 @@ class Ec2RouteServerEndpoint(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Route Server Endpoint"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Route Server Endpoint."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (RouteServerEndpointId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_route_server_endpoint_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:route-server-endpoint"

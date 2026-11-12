@@ -14,7 +14,7 @@ class AthenaNamedQuery(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Athena Named Query"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Athena Named Query."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The named query's id (NamedQueryId), the CloudFormation primary identifier of the type; the AWS Service Authorization Reference lists no ARN for it. Unique within the account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("athena_named_query_id",)
 

@@ -14,7 +14,7 @@ class Inspectorv2Connector(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS InspectorV2 Connector"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS InspectorV2 Connector."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (connectorArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connector_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "inspector2:Connector"

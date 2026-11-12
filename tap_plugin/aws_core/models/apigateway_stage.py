@@ -14,7 +14,7 @@ class ApigatewayStage(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway Stage"
     ENTITY_DESCRIPTION: ClassVar[str] = "A stage of an Amazon API Gateway REST, HTTP or WebSocket API."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The stage's ARN (the API's ARN plus /stages/<name>): a stage name is unique only within an API.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stage_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:Stage"

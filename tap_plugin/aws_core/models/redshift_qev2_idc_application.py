@@ -14,7 +14,7 @@ class RedshiftQev2IdcApplication(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Redshift QEV2 Idc Application"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Redshift QEV2 Idc Application."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Qev2IdcApplicationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_qev2_idc_application_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "redshift:qev2idcapplication"

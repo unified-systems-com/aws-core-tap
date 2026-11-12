@@ -14,7 +14,7 @@ class IamInstanceProfile(BaseModel):
     ENTITY_NAME: ClassVar[str] = "IAM Instance Profile"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS IAM instance profile that passes a role to EC2 instances."
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The instance profile's ARN: a name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_profile_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:instance-profile"

@@ -14,7 +14,7 @@ class GlueIntegration(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Glue Integration"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Glue Integration."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (IntegrationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_integration_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "glue:integration"

@@ -14,7 +14,7 @@ class KinesisChannel(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Kinesis Channel"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Kinesis Channel."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ChannelARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("channel_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "kinesis:channel"

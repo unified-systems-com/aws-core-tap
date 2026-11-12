@@ -14,7 +14,7 @@ class EcrRepository(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ECR Repository"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon ECR container image repository."
     ENTITY_ICON: ClassVar[str] = "aws-ecr"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The repository's ARN: a repository name is unique only
     # within a registry.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("repository_arn",)

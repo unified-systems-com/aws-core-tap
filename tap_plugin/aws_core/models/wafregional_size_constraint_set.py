@@ -14,7 +14,7 @@ class WafregionalSizeConstraintSet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS WAF Classic Size Constraint Set"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WAF Classic Size Constraint Set."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (SizeConstraintSetId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wafregional_size_constraint_set_id",)
     ARN_RESOURCE: ClassVar[str | None] = "waf-regional:sizeconstraintset"

@@ -14,7 +14,7 @@ class MskVpcConnection(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS MSK Vpc Connection"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS MSK Vpc Connection."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (VpcConnectionArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("msk_vpc_connection_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "kafka:vpc-connection"

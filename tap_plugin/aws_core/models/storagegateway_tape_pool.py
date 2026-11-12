@@ -14,7 +14,7 @@ class StoragegatewayTapePool(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS StorageGateway Tape Pool"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS StorageGateway Tape Pool."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (PoolARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("tape_pool_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "storagegateway:tapepool"

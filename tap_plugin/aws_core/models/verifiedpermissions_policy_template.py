@@ -14,7 +14,7 @@ class VerifiedpermissionsPolicyTemplate(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS VerifiedPermissions Policy Template"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS VerifiedPermissions Policy Template."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The policy store id and the template id (PolicyStoreId and PolicyTemplateId, the CloudFormation primary identifier): AWS gives a template no ARN, and a policy store id is unique to its store.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("verifiedpermissions_policy_template_key",)
 

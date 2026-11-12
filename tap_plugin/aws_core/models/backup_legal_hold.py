@@ -14,7 +14,7 @@ class BackupLegalHold(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Backup Legal Hold"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Backup legal hold."
     ENTITY_ICON: ClassVar[str] = "aws-s3"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The legal hold's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("hold_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "backup:legalHold"

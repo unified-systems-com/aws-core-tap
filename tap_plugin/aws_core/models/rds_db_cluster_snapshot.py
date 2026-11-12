@@ -14,7 +14,7 @@ class RdsDbClusterSnapshot(BaseModel):
     ENTITY_NAME: ClassVar[str] = "RDS DB Cluster Snapshot"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS DB cluster snapshot."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The snapshot's ARN: a snapshot identifier is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_cluster_snapshot_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:cluster-snapshot"

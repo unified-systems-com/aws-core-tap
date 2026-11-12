@@ -14,7 +14,7 @@ class ApigatewayVpcLink(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway VPC Link"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon API Gateway VPC link (REST or HTTP)."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The link's ARN (built from the link id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_link_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:VpcLink"

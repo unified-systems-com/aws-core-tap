@@ -14,7 +14,7 @@ class IdentityCenterUser(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Identity Center User"
     ENTITY_DESCRIPTION: ClassVar[str] = "A user in an IAM Identity Center identity store."
     ENTITY_ICON: ClassVar[str] = "aws-identity-center"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The user's identity store id and user id together (identity_store_id:user_id): a user id is unique only within its identity store.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("user_key",)
     ARN_RESOURCE: ClassVar[str | None] = "identitystore:User"

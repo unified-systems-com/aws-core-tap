@@ -14,7 +14,7 @@ class ConnectUseCase(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Connect Use Case"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Connect Use Case."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (UseCaseArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connect_use_case_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "connect:use-case"

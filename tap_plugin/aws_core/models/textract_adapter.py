@@ -14,7 +14,7 @@ class TextractAdapter(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Textract Adapter"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Textract Adapter."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The adapter's ARN, built as arn:{partition}:textract:{region}:{account}:/adapters/{AdapterId} (the AWS Service Authorization Reference textract 'adapter' resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("textract_adapter_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "textract:adapter"

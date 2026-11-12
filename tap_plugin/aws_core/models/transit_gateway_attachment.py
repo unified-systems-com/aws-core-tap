@@ -42,7 +42,7 @@ class TransitGatewayAttachment(BaseModel):
         "Direct Connect gateway, Connect peer or a peer transit gateway."
     )
     ENTITY_ICON: ClassVar[str] = "aws-transit-gateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

@@ -30,7 +30,7 @@ class AcmPrivateCa(BaseModel):
         "An AWS Private Certificate Authority: a root or subordinate CA that issues private certificates."
     )
     ENTITY_ICON: ClassVar[str] = "aws-private-ca"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

@@ -18,7 +18,7 @@ class ApiGatewayHttpApi(BaseModel):
         "gate access (typically Cognito JWT)."
     )
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The API's ARN, the boto3 collector's identity for it
     # (derived as _api_arn); api_id alone is unique only within a region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("api_arn",)

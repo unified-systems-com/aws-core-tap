@@ -14,7 +14,7 @@ class TargetGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Target Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon load balancer target group."
     ENTITY_ICON: ClassVar[str] = "aws-target-group"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The target group's ARN: a target group name is unique
     # only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("target_group_arn",)

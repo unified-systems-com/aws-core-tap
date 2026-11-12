@@ -14,7 +14,7 @@ class RedshiftScheduledAction(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Redshift Scheduled Action"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Redshift Scheduled Action."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the scheduled action name: unique within the account and Region, and the item carries no ARN (the Service Authorization Reference for redshift defines no scheduled-action resource). The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_scheduled_action_id",)
 

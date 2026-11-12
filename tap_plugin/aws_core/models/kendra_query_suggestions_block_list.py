@@ -14,7 +14,7 @@ class KendraQuerySuggestionsBlockList(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Kendra Query Suggestions Block List"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Kendra Query Suggestions Block List."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("kendra_query_suggestions_block_list_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "kendra:query-suggestions-block-list"

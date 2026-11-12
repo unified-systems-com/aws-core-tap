@@ -103,7 +103,7 @@ class TestDeclarations:
     @pytest.mark.parametrize(("model", "_key", "_good", "_bad"), TYPES)
     def test_schemas_agree(self, model, _key, _good, _bad) -> None:
         assert set(model.FIELD_CRUD_SCHEMA) == set(model.FIELD_VALIDATION_SCHEMA)
-        assert model.DEFAULT_DIMENSIONS == {"tap.cloud": "aws"}
+        assert model.DEFAULT_DIMENSIONS == {"tap.computing.cloud": "aws"}
 
 
 @pytest.mark.django_db
@@ -115,7 +115,7 @@ class TestCreate:
         row = model.all_objects.get(entity_id=result.entity_id)
         assert getattr(row, key) == ""
         assert row.entity.name == "highbar"
-        assert row.entity.dimensions == {"tap.cloud": "aws"}
+        assert row.entity.dimensions == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(("model", "key", "good", "_bad"), TYPES)
     def test_well_formed_id_is_accepted_and_names_the_node(self, model, key, good, _bad) -> None:
@@ -225,7 +225,7 @@ class TestEdges:
         assert result.success, result.errors
         edge = Edge.objects.select_related("entity").get(entity_id=result.entity_id)
         assert edge.edge_type == edge_type
-        assert edge.entity.dimensions == {"tap.cloud": "aws"}
+        assert edge.entity.dimensions == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(
         ("edge_type", "source", "target"),

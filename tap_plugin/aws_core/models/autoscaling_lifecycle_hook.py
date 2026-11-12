@@ -14,7 +14,7 @@ class AutoscalingLifecycleHook(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS AutoScaling Lifecycle Hook"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS AutoScaling Lifecycle Hook."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The account, the region, the group name and the hook name (AutoScalingGroupName and LifecycleHookName, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and both names. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("autoscaling_lifecycle_hook_key",)
 

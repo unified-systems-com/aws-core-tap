@@ -14,7 +14,7 @@ class SesMailManagerAddonSubscription(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SES Mail Manager Addon Subscription"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SES Mail Manager Addon Subscription."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AddonSubscriptionArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_mail_manager_addon_subscription_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ses:addon-subscription"

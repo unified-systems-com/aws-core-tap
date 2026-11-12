@@ -14,7 +14,7 @@ class SnsTopic(BaseModel):
     ENTITY_NAME: ClassVar[str] = "SNS Topic"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon SNS topic."
     ENTITY_ICON: ClassVar[str] = "aws-sqs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The topic's ARN: a topic name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("topic_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sns:topic"

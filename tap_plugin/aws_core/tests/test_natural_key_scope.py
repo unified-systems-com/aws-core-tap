@@ -342,6 +342,8 @@ def test_the_migration_names_every_re_keyed_model_and_its_key_column() -> None:
 
 
 @pytest.mark.django_db
+# Migration 0053 runs before 0054 renames aws_account / aws_region to aws.account / aws.region, so these rows carry
+# the keys as they were when 0053 ran.
 def test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope() -> None:
     from django.apps import apps as live_apps
     from tap_plugin.aws_core.models import DaxParameterGroup, SesReceiptRuleSet
@@ -357,14 +359,14 @@ def test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope() -
         assert result.success, result
         return result.entity_id
 
-    scope = {"cloud": "aws", "aws_account": "123456789012", "aws_region": "us-gov-west-1"}
+    scope = {"aws_account": "123456789012", "aws_region": "us-gov-west-1"}
     dax = create("aws_core__aws_dax_parameter_group", {"name": "default.dax1.0", "dax_parameter_group_id": "default.dax1.0"}, scope)
     rules = create(
         "aws_core__aws_ses_receipt_rule_set",
         {"name": "inbound", "ses_receipt_rule_set_key": "123456789012/us-gov-west-1/inbound"},
         scope,
     )
-    orphan = create("aws_core__aws_dax_parameter_group", {"name": "x", "dax_parameter_group_id": "x"}, {"cloud": "aws"})
+    orphan = create("aws_core__aws_dax_parameter_group", {"name": "x", "dax_parameter_group_id": "x"}, {"tap.computing.cloud": "aws"})
 
     m = _migration()
     m.scope_keys(live_apps, None)
@@ -399,7 +401,7 @@ def test_going_back_never_recreates_the_collision_the_scoped_keys_removed() -> N
                     verb="create_node",
                     type_slug="aws_core__aws_dax_parameter_group",
                     payload={"name": "default.dax1.0", "dax_parameter_group_id": key},
-                    dimensions={"cloud": "aws", "aws_account": "123456789012", "aws_region": region},
+                    dimensions={"aws_account": "123456789012", "aws_region": region},
                 )
             ],
             caller_context=CallerContext(),
@@ -437,10 +439,10 @@ def test_a_row_is_never_moved_onto_a_key_a_row_it_cannot_convert_already_holds()
         assert result.success, result
         return result.entity_id
 
-    scope = {"cloud": "aws", "aws_account": "123456789012", "aws_region": "us-gov-west-1"}
+    scope = {"aws_account": "123456789012", "aws_region": "us-gov-west-1"}
     scoped = "aws-us-gov:123456789012:us-gov-west-1:default.dax1.0"
     old = create("default.dax1.0", scope)
-    occupant = create(scoped, {"cloud": "aws"})  # written under the scoped key, but with no dimensions to undo it by
+    occupant = create(scoped, {"tap.computing.cloud": "aws"})  # written under the scoped key, but with no dimensions to undo it by
     m = _migration()
 
     m.scope_keys(live_apps, None)

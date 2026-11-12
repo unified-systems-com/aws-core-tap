@@ -14,7 +14,7 @@ class StepfunctionsStateMachineAlias(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS StepFunctions State Machine Alias"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS StepFunctions State Machine Alias."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (stateMachineAliasArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stepfunctions_state_machine_alias_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "states:statemachinealias"

@@ -655,7 +655,7 @@ class TestSubnetFalsifierInGovCloud:
         assert result.success
         entity_id = uuid.UUID(str(result.entity_id))
         row = get_node(entity_id)
-        row.entity.dimensions = {"cloud": "aws", "aws_account": ACCOUNT, "aws_region": GOV_REGION}
+        row.entity.dimensions = {"aws.account": ACCOUNT, "aws.region": GOV_REGION}
         row.entity.save(update_fields=["dimensions"])
 
         regions: list[str] = []

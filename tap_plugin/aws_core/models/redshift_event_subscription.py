@@ -14,7 +14,7 @@ class RedshiftEventSubscription(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Redshift Event Subscription"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Redshift Event Subscription."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_event_subscription_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "redshift:eventsubscription"

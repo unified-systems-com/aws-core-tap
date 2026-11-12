@@ -865,7 +865,7 @@ class TestIdentityCenter:
         read = collect(aws)
         assert _one(read, IDENTITY_CENTER_INSTANCE)["home_region"] == "us-east-1"
         [node] = _nodes(read, IDENTITY_CENTER_INSTANCE)
-        assert node["entity"]["dimensions"]["aws_region"] == WEST, "stamped with the region it was read through"
+        assert node["entity"]["dimensions"]["aws.region"] == WEST, "stamped with the region it was read through"
         assert _edges(read, HOSTS_IDENTITY_CENTER_INSTANCE) == []
         warning = next(n for n in read.notices if n.code == "IDENTITY_CENTER_PRIMARY_REGION_OUT_OF_SCOPE")
         assert warning.level == "warn" and warning.data == {"primary_region": "us-east-1", "read_region": WEST}
@@ -1057,7 +1057,7 @@ class TestSecurityServices:
         east = _regional(read, HOSTS_SECURITYHUB_HUB, EAST)
         assert east["enumeration_complete"] is False and east["scope_authorized"] is None
         assert "SECURITYHUB_NOT_SUBSCRIBED_OR_DENIED" in _codes(read)
-        assert [n["entity"]["dimensions"]["aws_region"] for n in _nodes(read, SECURITYHUB_HUB)] == [WEST]
+        assert [n["entity"]["dimensions"]["aws.region"] for n in _nodes(read, SECURITYHUB_HUB)] == [WEST]
 
     @pytest.mark.spec("req-aws-core-contained-type-triple-6")
     def test_one_analyzer_listing_per_type_behind_one_surface(self) -> None:
@@ -1450,7 +1450,7 @@ def _row(entity_type: str, payload: dict[str, Any], *, region: str = WEST) -> uu
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": MGMT, "aws_region": region}
+    row.entity.dimensions = {"aws.account": MGMT, "aws.region": region}
     row.entity.save(update_fields=["dimensions"])
     return entity_id
 

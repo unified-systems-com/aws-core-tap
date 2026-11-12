@@ -14,7 +14,7 @@ class EksPodIdentityAssociation(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EKS Pod Identity Association"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EKS Pod Identity Association."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (associationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("eks_pod_identity_association_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "eks:podidentityassociation"

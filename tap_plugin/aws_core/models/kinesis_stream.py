@@ -14,7 +14,7 @@ class KinesisStream(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Kinesis Stream"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Kinesis Stream."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (StreamARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("kinesis_stream_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "kinesis:stream"

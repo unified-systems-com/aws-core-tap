@@ -14,7 +14,7 @@ class LexBotVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Lex Bot Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "A numbered Lex Bot Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The bot id and the numbered version joined with a colon, the CloudFormation primary identifier of AWS::Lex::BotVersion (BotId, BotVersion); the Service Authorization Reference's bot version ARN is name-based (Lex V1) and a V2 listing carries no such ARN. Unique within the account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("lex_bot_version_key",)
 

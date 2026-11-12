@@ -14,7 +14,7 @@ class GlueCatalog(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Glue Catalog"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Glue Catalog."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ResourceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_catalog_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "glue:catalog"

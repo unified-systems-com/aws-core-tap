@@ -14,7 +14,7 @@ class ConnectDataTable(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Connect Data Table"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Connect Data Table."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connect_data_table_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "connect:data-table"

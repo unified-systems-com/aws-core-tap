@@ -14,7 +14,7 @@ class SecretsManagerSecret(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Secrets Manager Secret"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Secrets Manager secret."
     ENTITY_ICON: ClassVar[str] = "aws-secrets-manager"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The secret's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("secret_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "secretsmanager:Secret"

@@ -14,7 +14,7 @@ class ServicecatalogProduct(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ServiceCatalog Product"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ServiceCatalog Product."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ProductARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("servicecatalog_product_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "servicecatalog:Product"

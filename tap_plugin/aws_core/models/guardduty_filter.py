@@ -14,7 +14,7 @@ class GuarddutyFilter(BaseModel):
     ENTITY_NAME: ClassVar[str] = "GuardDuty Filter"
     ENTITY_DESCRIPTION: ClassVar[str] = "A GuardDuty filter that archives matching findings."
     ENTITY_ICON: ClassVar[str] = "aws-guardduty"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'filter' and the filter name: a filter name is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("filter_key",)
     ARN_RESOURCE: ClassVar[str | None] = "guardduty:filter"

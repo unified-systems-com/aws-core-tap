@@ -14,7 +14,7 @@ class S3Bucket(BaseModel):
     ENTITY_NAME: ClassVar[str] = "S3 Bucket"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon S3 storage bucket."
     ENTITY_ICON: ClassVar[str] = "aws-s3"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The bucket's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bucket_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "s3:bucket"

@@ -14,7 +14,7 @@ class BedrockDataSource(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Data Source"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Bedrock Data Source."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the CloudFormation primary identifier of AWS::Bedrock::DataSource, KnowledgeBaseId and DataSourceId joined with '|': a data source id is only unique within its knowledge base, and the botocore service model and the Service Authorization Reference define no data source ARN
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_data_source_id",)
 

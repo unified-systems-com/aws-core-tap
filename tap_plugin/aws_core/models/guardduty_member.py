@@ -14,7 +14,7 @@ class GuarddutyMember(BaseModel):
     ENTITY_NAME: ClassVar[str] = "GuardDuty Member"
     ENTITY_DESCRIPTION: ClassVar[str] = "A member account of a GuardDuty administrator."
     ENTITY_ICON: ClassVar[str] = "aws-guardduty"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The administrator's detector id, 'member' and the member account id: a member is unique per administrator.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("member_key",)
 

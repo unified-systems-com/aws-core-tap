@@ -14,7 +14,7 @@ class S3AccessGrantsInstance(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS S3 Access Grants Instance"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS S3 Access Grants Instance."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AccessGrantsInstanceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("s3_access_grants_instance_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "s3:accessgrantsinstance"

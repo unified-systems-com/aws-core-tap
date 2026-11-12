@@ -14,7 +14,7 @@ class BatchQuotaShare(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Batch Quota Share"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Batch Quota Share."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (quotaShareArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("batch_quota_share_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "batch:quota-share"

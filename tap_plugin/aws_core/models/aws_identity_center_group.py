@@ -27,7 +27,7 @@ class AwsIdentityCenterGroup(BaseModel):
         "identity provider over SCIM."
     )
     ENTITY_ICON: ClassVar[str] = "aws-identity-center"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "ellipse", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
     }

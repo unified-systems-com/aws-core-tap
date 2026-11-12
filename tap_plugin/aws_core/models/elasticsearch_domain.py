@@ -14,7 +14,7 @@ class ElasticsearchDomain(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Elasticsearch Domain"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon OpenSearch / Elasticsearch Service domain."
     ENTITY_ICON: ClassVar[str] = "aws-elasticsearch"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The domain's ARN: a domain name is unique only within an
     # account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("domain_arn",)

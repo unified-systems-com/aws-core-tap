@@ -18,7 +18,7 @@ class KmsKey(BaseModel):
         "ENCRYPTED_WITH_KEY edges."
     )
     ENTITY_ICON: ClassVar[str] = "aws-kms"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The key's ARN, the boto3 collector's identity for it;
     # the key ID alone is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("key_arn",)

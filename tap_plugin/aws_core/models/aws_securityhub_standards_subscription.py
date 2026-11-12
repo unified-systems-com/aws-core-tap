@@ -26,7 +26,7 @@ class AwsSecurityHubStandardsSubscription(BaseModel):
         "A security standard enabled on an AWS Security Hub hub, whose controls produce control findings."
     )
     ENTITY_ICON: ClassVar[str] = "aws-security-hub"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
     }

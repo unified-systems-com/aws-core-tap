@@ -14,7 +14,7 @@ class LambdaCodeSigningConfig(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Lambda Code Signing Config"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Lambda code signing configuration."
     ENTITY_ICON: ClassVar[str] = "aws-lambda"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The configuration's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("code_signing_config_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "lambda:code signing config"

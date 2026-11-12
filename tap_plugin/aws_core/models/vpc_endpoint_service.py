@@ -25,7 +25,7 @@ class VpcEndpointService(BaseModel):
         "reachable privately from other VPCs and accounts through interface endpoints."
     )
     ENTITY_ICON: ClassVar[str] = "aws-privatelink"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

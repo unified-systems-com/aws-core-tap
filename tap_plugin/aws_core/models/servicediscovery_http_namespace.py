@@ -14,7 +14,7 @@ class ServicediscoveryHttpNamespace(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Service Discovery Http Namespace"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Service Discovery Http Namespace."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("servicediscovery_http_namespace_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "servicediscovery:namespace"

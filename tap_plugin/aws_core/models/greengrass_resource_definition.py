@@ -14,7 +14,7 @@ class GreengrassResourceDefinition(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Greengrass Resource Definition"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Greengrass Resource Definition."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("greengrass_resource_definition_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "greengrass:resourceDefinition"

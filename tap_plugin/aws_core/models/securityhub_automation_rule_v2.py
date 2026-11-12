@@ -14,7 +14,7 @@ class SecurityhubAutomationRuleV2(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SecurityHub Automation Rule V2"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SecurityHub Automation Rule V2."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RuleArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("securityhub_automation_rule_v2_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "securityhub:automation-rulev2"

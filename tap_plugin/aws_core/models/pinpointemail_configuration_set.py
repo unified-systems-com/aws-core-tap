@@ -14,7 +14,7 @@ class PinpointemailConfigurationSet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS PinpointEmail Configuration Set"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS PinpointEmail Configuration Set."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The configuration set's ARN, built as arn:{partition}:ses:{region}:{account}:configuration-set/{ConfigurationSetName} (the AWS Service Authorization Reference 'ses' configuration-set resource; the Pinpoint Email API signs as 'ses', botocore metadata signingName); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pinpointemail_configuration_set_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ses:configuration-set"

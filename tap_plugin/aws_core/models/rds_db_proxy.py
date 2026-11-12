@@ -14,7 +14,7 @@ class RdsDbProxy(BaseModel):
     ENTITY_NAME: ClassVar[str] = "RDS DB Proxy"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS Proxy."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The proxy's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_proxy_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:proxy"

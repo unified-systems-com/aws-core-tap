@@ -14,7 +14,7 @@ class CloudwatchMetricStream(BaseModel):
     ENTITY_NAME: ClassVar[str] = "CloudWatch Metric Stream"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon CloudWatch metric stream."
     ENTITY_ICON: ClassVar[str] = "aws-cloudwatch"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The stream's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stream_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:metric-stream"

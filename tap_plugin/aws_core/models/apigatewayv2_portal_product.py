@@ -14,7 +14,7 @@ class Apigatewayv2PortalProduct(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ApiGatewayV2 Portal Product"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ApiGatewayV2 Portal Product."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (PortalProductArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("portal_product_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:PortalProduct"

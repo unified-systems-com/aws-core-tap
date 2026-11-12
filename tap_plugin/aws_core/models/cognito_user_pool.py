@@ -17,7 +17,7 @@ class CognitoUserPool(BaseModel):
         "provider; the identity boundary that JWT authorizers validate against."
     )
     ENTITY_ICON: ClassVar[str] = "aws-cognito"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The user pool ID, the boto3 collector's identity for it
     # (region-prefixed, for example us-gov-west-1_Ab12).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pool_id",)

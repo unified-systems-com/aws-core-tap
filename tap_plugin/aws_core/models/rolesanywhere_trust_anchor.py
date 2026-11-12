@@ -14,7 +14,7 @@ class RolesanywhereTrustAnchor(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS RolesAnywhere Trust Anchor"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS RolesAnywhere Trust Anchor."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (trustAnchorArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rolesanywhere_trust_anchor_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rolesanywhere:trust-anchor"

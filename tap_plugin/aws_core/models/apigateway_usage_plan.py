@@ -14,7 +14,7 @@ class ApigatewayUsagePlan(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway Usage Plan"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon API Gateway usage plan."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The plan's ARN (built from the plan id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("usage_plan_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:UsagePlan"

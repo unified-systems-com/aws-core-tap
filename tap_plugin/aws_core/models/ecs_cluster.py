@@ -14,7 +14,7 @@ class EcsCluster(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ECS Cluster"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon Elastic Container Service cluster."
     ENTITY_ICON: ClassVar[str] = "aws-ecs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster name is unique only within
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)

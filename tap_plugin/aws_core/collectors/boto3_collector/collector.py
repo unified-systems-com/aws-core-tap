@@ -78,6 +78,7 @@ from .containment import (
     footprint_envelopes,
     footprint_ref,
     owner_of,
+    resource_owner,
     surface_of,
 )
 from .credentials import (
@@ -724,7 +725,7 @@ class Boto3Collector(CollectorBase):
                 account_id,
                 region,
                 facts[region],
-                {"aws_account": account_id, "aws_region": region},
+                {"aws.account": account_id, "aws.region": region},
             ):
                 bucket = node_envelopes if envelope["entity"]["entity_type"] != "edge" else edge_envelopes
                 (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
@@ -787,10 +788,10 @@ class Boto3Collector(CollectorBase):
                         listed_checked_regions.add((entry["entity_type"], region))
                         self._check_listed_host(probe, entry, [region], partition, fips)
                     continue
-                # No "cloud" key: it duplicated tap.cloud (model default) and was retired 2026-11-12.
+                # No "cloud" key: it duplicated tap.computing.cloud (the type default) and was retired 2026-11-12.
                 dimensions = {
-                    "aws_account": account_id,
-                    "aws_region": region_label,
+                    "aws.account": account_id,
+                    "aws.region": region_label,
                 }
                 self._check_unlisted_host(probe, entry, region, region_label, partition, fips)
                 region_facts = facts[region]
@@ -864,6 +865,9 @@ class Boto3Collector(CollectorBase):
                                 listing.processing.append(f"duplicate identity {node.natural_key}")
                             continue
                         seen_nodes.add(node.ref)
+                        # aws.account is the account that OWNS the resource (Q57), which differs from the run's
+                        # account for a resource shared in, or an AWS-managed one.
+                        owned = {**dimensions, "aws.account": resource_owner(entry, node, account_id)}
                         tags, tag_slot, tag_mapping = resolve_node_tags(
                             entry,
                             item,
@@ -881,7 +885,7 @@ class Boto3Collector(CollectorBase):
                         node_envelopes.append(
                             node_envelope(
                                 node,
-                                dimensions,
+                                owned,
                                 tags,
                                 persist_configuration=entry["persist_configuration"],
                                 redact_paths=entry_redact_paths(entry),
@@ -906,7 +910,7 @@ class Boto3Collector(CollectorBase):
                             entry,
                             modeled_types=modeled_types,
                             transforms=transforms,
-                            dimensions=dimensions,
+                            dimensions=owned,
                             unselected_types=unselected_types,
                         )
                         edges_not_selected += emission.skipped_unselected
@@ -918,7 +922,7 @@ class Boto3Collector(CollectorBase):
                                     entry,
                                     account_id=account_id,
                                     region=region,
-                                    dimensions=dimensions,
+                                    dimensions=owned,
                                 )
                             )
                             if listing and owner_of(entry, node.raw_item, account_id) != account_id:
@@ -942,7 +946,7 @@ class Boto3Collector(CollectorBase):
                         if contained and entry["scope"] != "regional":
                             edge_envelopes.append(
                                 emit_containment(
-                                    node, contained, account_id=account_id, dimensions=dimensions
+                                    node, contained, account_id=account_id, dimensions=owned
                                 )
                             )
                 except (
@@ -1046,7 +1050,7 @@ class Boto3Collector(CollectorBase):
         # failure class every per-entry manifest read below is already isolated against
         # (ENTRY_SKIPPED); the Organizations tree is one more optional surface, not a reason to
         # fail the whole run and lose every already-gathered resource.
-        org_dimensions = {"aws_account": account_id, "aws_region": "global"}
+        org_dimensions = {"aws.account": account_id, "aws.region": "global"}
         try:
             if selected_run:
                 # Neither the Organizations tree nor the landing-zone read is a manifest entry, so the type patterns

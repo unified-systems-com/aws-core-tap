@@ -14,7 +14,7 @@ class EventbridgeApiDestination(BaseModel):
     ENTITY_NAME: ClassVar[str] = "EventBridge API Destination"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon EventBridge API destination."
     ENTITY_ICON: ClassVar[str] = "aws-eventbridge"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The destination's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "events:api-destination"

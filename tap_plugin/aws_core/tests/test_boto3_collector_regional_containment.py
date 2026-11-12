@@ -318,7 +318,7 @@ class TestEnabledRegion:
             entry,
             account_id=_ACCOUNT,
             region=_REGION_ENABLED,
-            dimensions={"cloud": "aws", "aws_account": _ACCOUNT, "aws_region": _REGION_ENABLED},
+            dimensions={"aws.account": _ACCOUNT, "aws.region": _REGION_ENABLED},
         )
         # ONLY the reference edge — no HOSTS edge, since the owner isn't this account.
         assert len(envelopes) == 1
@@ -328,7 +328,7 @@ class TestEnabledRegion:
         assert edge["to_ref"] == node_ref("aws_core__aws_account", _OTHER_ACCOUNT)
 
     def test_own_vpc_has_no_account_edge_and_carries_the_account_dimension(self, _stub_aws):
-        """aws-core-tap#81: account membership is the ``aws_account`` dimension. A VPC the collecting account
+        """aws-core-tap#81: account membership is the ``aws.account`` dimension. A VPC the collecting account
         owns is hosted by its footprint and has no BELONGS_TO_ACCOUNT edge; the edge is for a different owner."""
         from tap_grid.services import get_node
 
@@ -339,7 +339,7 @@ class TestEnabledRegion:
         assert has_edge(
             "HOSTS_VPC__aws_core", _FOOTPRINT, _fp(_ACCOUNT, _REGION_ENABLED), "aws_core__aws_vpc", _VPC_ID
         )
-        assert get_node(node_id("aws_core__aws_vpc", _VPC_ID)).entity.dimensions["aws_account"] == _ACCOUNT
+        assert get_node(node_id("aws_core__aws_vpc", _VPC_ID)).entity.dimensions["aws.account"] == _ACCOUNT
 
     def test_footprint_has_no_edge_to_its_account(self, _stub_aws):
         _run()

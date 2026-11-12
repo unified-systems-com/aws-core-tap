@@ -13,7 +13,7 @@ What the collector adds to a run for every manifest entry that declares ``contai
    in a region the credential was positively able to read; anything less says why and, because the
    recorder derives ``reconcilable`` from these, licenses nothing.
 
-Account membership is the ``aws_account`` dimension every node carries, not an edge. ``BELONGS_TO_ACCOUNT``
+Account membership is the ``aws.account`` dimension every node carries, not an edge. ``BELONGS_TO_ACCOUNT``
 is written only when a resource's real owner differs from the account the run collects in (a resource
 shared in through AWS RAM), because there the dimension records who observed it, not who owns it
 (``req-aws-core-account-dimension``, aws-core-tap#81).
@@ -66,7 +66,7 @@ def footprint_envelopes(
     account_id: str, region: str, facts: RegionFacts, dimensions: dict[str, str]
 ) -> list[dict[str, Any]]:
     """The footprint node. It carries no edge to its account: the account is the collecting account, named by its
-    ``account_id`` field and the ``aws_account`` dimension (``req-aws-core-account-dimension``, aws-core-tap#81).
+    ``account_id`` field and the ``aws.account`` dimension (``req-aws-core-account-dimension``, aws-core-tap#81).
     """
     key = footprint_key(account_id, region)
     fields = {
@@ -94,6 +94,40 @@ def owner_of(entry: dict[str, Any], item: Any, account_id: str) -> str:
     path = (entry.get("containment") or {}).get("owner_path")
     owner = eval_path(item, path) if path else None
     return str(owner) if owner else account_id
+
+
+#: Projected fields that hold a resource's owning account (the manifest maps OwnerId / ResourceOwnerId to them).
+OWNER_FIELDS = ("owner_account_id", "resource_owner_account_id")
+
+
+def arn_account(value: Any) -> str | None:
+    """The account segment of an ARN (``arn:partition:service:region:ACCOUNT:resource``), or None when ``value`` is
+    not an ARN or its account segment is empty (S3 buckets, Route 53 and other account-less ARNs). AWS-managed
+    resources carry ``aws`` there (``arn:aws:iam::aws:policy/...``), and that is returned as it is."""
+    if not isinstance(value, str) or not value.startswith("arn:"):
+        return None
+    parts = value.split(":", 5)
+    return parts[4] or None if len(parts) == 6 else None
+
+
+def resource_owner(entry: dict[str, Any], node: Any, account_id: str) -> str:
+    """The account that OWNS a listed resource, for its ``aws.account`` dimension (George 2026-11-12, aws-build Q57).
+
+    In order: the account segment of the resource's own ARN (its natural key, when the type is keyed by ARN); else an
+    explicit owner field (the entry's ``containment.owner_path``, or a projected ``owner_account_id`` /
+    ``resource_owner_account_id``); else ``account_id``, the account whose credential listed it. The last is right
+    for everything an account lists except resources shared into it, and a shared-in resource carries one of the
+    first two.
+    """
+    owner = arn_account(getattr(node, "natural_key", None))
+    if owner:
+        return owner
+    path = (entry.get("containment") or {}).get("owner_path")
+    explicit = eval_path(node.raw_item, path) if path else None
+    if not explicit:
+        fields = getattr(node, "fields", None) or {}
+        explicit = next((fields[f] for f in OWNER_FIELDS if fields.get(f)), None)
+    return str(explicit) if explicit else account_id
 
 
 def containment_envelopes(

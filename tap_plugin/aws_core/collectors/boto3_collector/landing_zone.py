@@ -62,7 +62,7 @@ from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionEr
 
 from . import findings as findings_mod
 from .containment import Listing as RegionListing
-from .containment import footprint_key, footprint_ref, surface_of
+from .containment import arn_account, footprint_key, footprint_ref, surface_of
 from .edges import edge_envelope
 from .findings import (
     HOLDS_ACCESS_ANALYZER_FINDING,
@@ -559,8 +559,11 @@ class _Reader:
             return None
         return normalize_tags(raw if raw is not None else ({} if shape == "map" else []), shape)
 
-    def dimensions(self, region: str) -> dict[str, str]:
-        return {"aws_account": self.account_id, "aws_region": region}
+    def dimensions(self, region: str, owner: str | None = None) -> dict[str, str]:
+        """``aws.account`` is the owning account (George 2026-11-12, aws-build Q57): the account segment of the
+        node's own ARN when it is keyed by one, else the run's account, the management account Control Tower runs
+        in, which owns its landing zone, controls and baselines."""
+        return {"aws.account": owner or self.account_id, "aws.region": region}
 
     def add_node(self, entity_type: str, natural_key: str, name: str, fields: dict[str, Any], region: str) -> bool:
         """Append one node envelope unless it must be withheld; True when kept (or already kept)."""
@@ -593,7 +596,7 @@ class _Reader:
                     "ref": ref,
                     "entity_type": entity_type,
                     "name": name[:255] or natural_key[:255],
-                    "dimensions": self.dimensions(region),
+                    "dimensions": self.dimensions(region, owner=arn_account(natural_key)),
                 },
                 "node": fields,
             }
@@ -988,7 +991,7 @@ class _Reader:
         (``req-aws-landing-zone-identity-center-1``). Its primary region outside the run's scope is
         the case aws-core-tap#66 settles (``-7``): the instance is written, with no footprint
         containment and a warning, and its children are read through the region that returned it.
-        Its ``aws_region`` dimension is that read region, so a falsifier never has to leave the scope."""
+        Its ``aws.region`` dimension is that read region, so a falsifier never has to leave the scope."""
         in_scope = home in self.regions
         region = home if in_scope else returned_in
         reported = item.get("Regions")

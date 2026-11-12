@@ -14,7 +14,7 @@ class Ec2CapacityReservationFleet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Capacity Reservation Fleet"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Capacity Reservation Fleet."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (CapacityReservationFleetArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("capacity_reservation_fleet_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:capacity-reservation-fleet"

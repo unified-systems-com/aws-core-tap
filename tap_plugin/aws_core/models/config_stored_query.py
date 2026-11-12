@@ -14,7 +14,7 @@ class ConfigStoredQuery(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Config Stored Query"
     ENTITY_DESCRIPTION: ClassVar[str] = "A saved AWS Config advanced query."
     ENTITY_ICON: ClassVar[str] = "aws-config"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The stored query's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("query_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:StoredQuery"

@@ -14,7 +14,7 @@ class SagemakerStudioLifecycleConfig(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SageMaker Studio Lifecycle Config"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SageMaker Studio Lifecycle Config."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (StudioLifecycleConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_studio_lifecycle_config_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sagemaker:studio-lifecycle-config"

@@ -14,7 +14,7 @@ class BedrockKnowledgeBase(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Knowledge Base"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Bedrock Knowledge Base."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (knowledgeBaseArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_knowledge_base_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:knowledge-base"

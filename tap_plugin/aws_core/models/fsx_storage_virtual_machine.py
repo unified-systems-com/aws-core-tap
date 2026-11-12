@@ -14,7 +14,7 @@ class FsxStorageVirtualMachine(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS FSx Storage Virtual Machine"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS FSx Storage Virtual Machine."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ResourceARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("fsx_storage_virtual_machine_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "fsx:storage-virtual-machine"

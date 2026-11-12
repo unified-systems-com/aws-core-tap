@@ -14,7 +14,7 @@ class BedrockGuardrailVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Guardrail Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "A numbered Bedrock Guardrail Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The guardrail ARN and the numbered version joined with a colon (arn:...:guardrail/<id>:<n>). The Service Authorization Reference defines no ARN for a guardrail version, so this composite mirrors the CloudFormation primary identifier (GuardrailId, Version). Unique within the account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_guardrail_version_key",)
 

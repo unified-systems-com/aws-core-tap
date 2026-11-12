@@ -14,7 +14,7 @@ class FsxS3AccessPointAttachment(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS FSx S3 Access Point Attachment"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS FSx S3 Access Point Attachment."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The account, the region and the attachment name (Name, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the name. The S3AccessPoint.ResourceARN in the item is the S3 access point's ARN, a different resource's, so it is not the key. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("fsx_s3_access_point_attachment_key",)
 

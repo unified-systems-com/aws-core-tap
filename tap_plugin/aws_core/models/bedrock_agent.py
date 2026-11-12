@@ -14,7 +14,7 @@ class BedrockAgent(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Agent"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Bedrock Agent."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (agentArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_agent_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:agent"

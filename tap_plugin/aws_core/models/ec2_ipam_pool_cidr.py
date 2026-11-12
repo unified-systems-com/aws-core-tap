@@ -14,7 +14,7 @@ class Ec2IpamPoolCidr(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 IPAM Pool Cidr"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 IPAM Pool Cidr."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (IpamPoolCidrId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_ipam_pool_cidr_id",)
 

@@ -14,7 +14,7 @@ class Ec2VpcEndpointConnectionNotification(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 VPC Endpoint Connection Notification"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 VPC Endpoint Connection Notification."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (ConnectionNotificationId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_vpc_endpoint_connection_notification_id",)
 

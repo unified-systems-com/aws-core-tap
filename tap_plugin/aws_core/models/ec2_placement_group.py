@@ -14,7 +14,7 @@ class Ec2PlacementGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Placement Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Placement Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (GroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("placement_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:placement-group"

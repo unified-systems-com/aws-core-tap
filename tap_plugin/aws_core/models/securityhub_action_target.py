@@ -14,7 +14,7 @@ class SecurityhubActionTarget(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Security Hub Action Target"
     ENTITY_DESCRIPTION: ClassVar[str] = "A Security Hub custom action."
     ENTITY_ICON: ClassVar[str] = "aws-security-hub"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The custom action's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("action_target_arn",)
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,

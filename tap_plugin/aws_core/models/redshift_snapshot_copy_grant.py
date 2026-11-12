@@ -14,7 +14,7 @@ class RedshiftSnapshotCopyGrant(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Redshift Snapshot Copy Grant"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Redshift Snapshot Copy Grant."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_snapshot_copy_grant_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "redshift:snapshotcopygrant"

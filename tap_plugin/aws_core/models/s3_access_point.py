@@ -14,7 +14,7 @@ class S3AccessPoint(BaseModel):
     ENTITY_NAME: ClassVar[str] = "S3 Access Point"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon S3 access point."
     ENTITY_ICON: ClassVar[str] = "aws-s3"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The access point's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("access_point_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "s3:accesspoint"

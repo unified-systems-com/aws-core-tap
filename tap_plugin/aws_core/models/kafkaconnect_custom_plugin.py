@@ -14,7 +14,7 @@ class KafkaconnectCustomPlugin(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS KafkaConnect Custom Plugin"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS KafkaConnect Custom Plugin."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (customPluginArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("custom_plugin_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "kafkaconnect:custom plugin"

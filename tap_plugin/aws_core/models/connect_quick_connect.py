@@ -14,7 +14,7 @@ class ConnectQuickConnect(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Connect Quick Connect"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Connect Quick Connect."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connect_quick_connect_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "connect:quick-connect"

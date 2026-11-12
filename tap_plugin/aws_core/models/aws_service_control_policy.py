@@ -30,7 +30,7 @@ class AwsServiceControlPolicy(BaseModel):
         "accounts under the OU, account or root it is attached to."
     )
     ENTITY_ICON: ClassVar[str] = "aws-organizations"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

@@ -17,7 +17,7 @@ class IamSamlProvider(BaseModel):
     ENTITY_NAME: ClassVar[str] = "IAM SAML Provider"
     ENTITY_DESCRIPTION: ClassVar[str] = "A SAML identity provider registered in AWS IAM."
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The provider's ARN, the collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("provider_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:saml-provider"

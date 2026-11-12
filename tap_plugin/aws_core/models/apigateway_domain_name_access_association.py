@@ -14,7 +14,7 @@ class ApigatewayDomainNameAccessAssociation(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ApiGateway Domain Name Access Association"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ApiGateway Domain Name Access Association."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (domainNameAccessAssociationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("apigateway_domain_name_access_association_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:DomainNameAccessAssociation"

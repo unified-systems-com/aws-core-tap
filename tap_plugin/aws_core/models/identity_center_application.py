@@ -14,7 +14,7 @@ class IdentityCenterApplication(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Identity Center Application"
     ENTITY_DESCRIPTION: ClassVar[str] = "An application registered with IAM Identity Center."
     ENTITY_ICON: ClassVar[str] = "aws-identity-center"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The application's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("application_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sso:Application"

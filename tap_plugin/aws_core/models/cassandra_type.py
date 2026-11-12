@@ -14,7 +14,7 @@ class CassandraType(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Cassandra Type"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Cassandra Type."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): Account, region, keyspace name and type name joined with slashes: the CloudFormation primary identifier of the type is the keyspace and type name, and the AWS Service Authorization Reference lists no ARN for a user-defined type (only keyspace, table and stream). Unique across accounts and regions. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cassandra_type_key",)
 

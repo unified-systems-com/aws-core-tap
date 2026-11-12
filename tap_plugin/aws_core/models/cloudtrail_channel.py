@@ -14,7 +14,7 @@ class CloudtrailChannel(BaseModel):
     ENTITY_NAME: ClassVar[str] = "CloudTrail Channel"
     ENTITY_DESCRIPTION: ClassVar[str] = "A CloudTrail Lake channel that ingests events from outside AWS."
     ENTITY_ICON: ClassVar[str] = "aws-cloudtrail"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The channel's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("channel_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudtrail:channel"

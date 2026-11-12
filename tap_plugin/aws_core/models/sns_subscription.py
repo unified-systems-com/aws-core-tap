@@ -14,7 +14,7 @@ class SnsSubscription(BaseModel):
     ENTITY_NAME: ClassVar[str] = "SNS Subscription"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon SNS subscription."
     ENTITY_ICON: ClassVar[str] = "aws-sqs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subscription's ARN. A subscription still awaiting confirmation has none and is not collected.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("subscription_arn",)
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,

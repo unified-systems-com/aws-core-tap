@@ -14,7 +14,7 @@ class SecurityhubFindingAggregator(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Security Hub Finding Aggregator"
     ENTITY_DESCRIPTION: ClassVar[str] = "A Security Hub cross-region finding aggregator."
     ENTITY_ICON: ClassVar[str] = "aws-security-hub"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The aggregator's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("aggregator_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "securityhub:finding-aggregator"

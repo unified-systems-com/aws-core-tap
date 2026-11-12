@@ -14,7 +14,7 @@ class GlueSchemaVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Glue Schema Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Glue Schema Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The schema version's id (SchemaVersionId, a UUID Glue assigns), the CloudFormation primary identifier of the type; the AWS Service Authorization Reference lists an ARN for the schema but not for a version. Unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_schema_version_id",)
 

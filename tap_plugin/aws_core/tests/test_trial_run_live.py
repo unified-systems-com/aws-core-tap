@@ -350,7 +350,7 @@ def _collect_trial_envelope(ctx: TrialContext, entry: dict[str, Any], natural_ke
     """
     custom_fns = build_custom_fn_registry()
     client_for = client_factory(ctx.session, ctx.region)
-    dimensions = {"cloud": "aws", "aws_account": ctx.account_id, "aws_region": ctx.region}
+    dimensions = {"aws.account": ctx.account_id, "aws.region": ctx.region}
     deadline = time.monotonic() + _visibility_timeout_seconds()
     while True:
         for item in iter_source(entry, client_for=client_for, custom_fns=custom_fns, fn_context=ctx.session):

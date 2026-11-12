@@ -14,7 +14,7 @@ class RekognitionCollection(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Rekognition Collection"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Rekognition Collection."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (CollectionARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rekognition_collection_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rekognition:collection"

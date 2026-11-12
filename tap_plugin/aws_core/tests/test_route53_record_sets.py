@@ -210,7 +210,7 @@ def _record_row(zone: str, name: str, record_type: str = "A", set_identifier: st
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": ACCOUNT_ID, "aws_region": REGION}
+    row.entity.dimensions = {"aws.account": ACCOUNT_ID, "aws.region": REGION}
     row.entity.save(update_fields=["dimensions"])
     return entity_id
 

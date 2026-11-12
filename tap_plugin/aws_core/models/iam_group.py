@@ -17,7 +17,7 @@ class IamGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "IAM Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS IAM group of users."
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The group's ARN: a group name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:group"

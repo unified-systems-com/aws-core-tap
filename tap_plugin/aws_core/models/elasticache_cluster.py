@@ -14,7 +14,7 @@ class ElasticacheCluster(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ElastiCache Cluster"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon ElastiCache cluster (Redis or Memcached)."
     ENTITY_ICON: ClassVar[str] = "aws-elasticache"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The cluster's ARN: the cluster ID is chosen by its owner
     # and unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)

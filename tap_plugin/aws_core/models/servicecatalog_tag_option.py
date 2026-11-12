@@ -14,7 +14,7 @@ class ServicecatalogTagOption(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Service Catalog Tag Option"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Service Catalog Tag Option."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The tag option's Id: ListTagOptions returns no ARN, and a tag option id is service-generated.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("servicecatalog_tag_option_id",)
 

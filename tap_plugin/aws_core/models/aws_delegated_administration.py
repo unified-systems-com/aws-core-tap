@@ -31,7 +31,7 @@ class AwsDelegatedAdministration(BaseModel):
         "administrator of one AWS service (for example GuardDuty, Security Hub or Config)."
     )
     ENTITY_ICON: ClassVar[str] = "aws-organizations"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "round-rectangle",

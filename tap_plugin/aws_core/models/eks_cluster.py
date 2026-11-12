@@ -14,7 +14,7 @@ class EksCluster(BaseModel):
     ENTITY_NAME: ClassVar[str] = "EKS Cluster"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon Elastic Kubernetes Service cluster."
     ENTITY_ICON: ClassVar[str] = "aws-eks"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster name is unique only within
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)

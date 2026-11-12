@@ -14,7 +14,7 @@ class AutoscalingplansScalingPlan(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS AutoScalingPlans Scaling Plan"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS AutoScalingPlans Scaling Plan."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the CloudFormation primary identifier of AWS::AutoScalingPlans::ScalingPlan, ScalingPlanName and ScalingPlanVersion joined with '|': a plan is identified by name and version, and the item carries no ARN (the Service Authorization Reference for autoscaling-plans defines no resource types). The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("autoscalingplans_scaling_plan_id",)
 

@@ -14,7 +14,7 @@ class OpensearchserverlessSecurityPolicy(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS OpenSearchServerless Security Policy"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS OpenSearchServerless Security Policy."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The account, the region, the policy type and the policy name (Type and Name, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the type and the name. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("opensearchserverless_security_policy_key",)
 

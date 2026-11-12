@@ -34,7 +34,7 @@ class AwsIdentityCenterInstance(BaseModel):
         "users either held in its own identity store or taken from an external identity provider."
     )
     ENTITY_ICON: ClassVar[str] = "aws-identity-center"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

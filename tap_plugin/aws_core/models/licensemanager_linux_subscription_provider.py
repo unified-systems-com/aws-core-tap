@@ -14,7 +14,7 @@ class LicensemanagerLinuxSubscriptionProvider(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS License Manager Linux Subscription Provider"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS License Manager Linux Subscription Provider."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (SubscriptionProviderArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("licensemanager_linux_subscription_provider_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "license-manager-linux-subscriptions:subscription-provider"

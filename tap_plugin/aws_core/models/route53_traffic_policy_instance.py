@@ -14,7 +14,7 @@ class Route53TrafficPolicyInstance(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Route53 Traffic Policy Instance"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Route53 Traffic Policy Instance."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The traffic policy instance's Id: ListTrafficPolicyInstances returns no ARN, and a Route 53 instance id is unique across accounts.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53_traffic_policy_instance_id",)
     ARN_RESOURCE: ClassVar[str | None] = "route53:trafficpolicyinstance"

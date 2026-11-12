@@ -14,7 +14,7 @@ class BedrockAutomatedReasoningPolicyVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Automated Reasoning Policy Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "A numbered Bedrock Automated Reasoning Policy Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The policy version ARN, arn:<partition>:bedrock:<region>:<account>:automated-reasoning-policy/<id>:<version>, built from the listed policyId and version (Service Authorization Reference resource automated-reasoning-policy-version).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("automated_reasoning_policy_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:automated-reasoning-policy-version"

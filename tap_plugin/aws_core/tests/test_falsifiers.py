@@ -148,7 +148,7 @@ def _create_subnet(
     assert result.entity_id is not None
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": region}
+    row.entity.dimensions = {"aws.account": account_id, "aws.region": region}
     row.entity.save(update_fields=["dimensions"])
     return entity_id
 
@@ -270,7 +270,7 @@ class TestSubnetFalsifierFourCases:
         assert result.success
         entity_id = uuid.UUID(str(result.entity_id))
         row = get_node(entity_id)
-        row.entity.dimensions = {"cloud": "aws", "aws_account": ACCOUNT_ID, "aws_region": REGION}
+        row.entity.dimensions = {"aws.account": ACCOUNT_ID, "aws.region": REGION}
         row.entity.save(update_fields=["dimensions"])
         [verdict] = _falsifier(ec2).batch_falsify([_candidate(entity_id)], _context())
         assert verdict.verdict == UNDETERMINED
@@ -691,16 +691,16 @@ def _create(
     account_id: str | None = ACCOUNT_ID,
 ) -> uuid.UUID:
     """A real grid row stamped the way the collector stamps it. ``region=None`` omits the
-    ``aws_region`` dimension (a row the fallback has to place)."""
+    ``aws.region`` dimension (a row the fallback has to place)."""
     result = create_node(entity_type, payload)
     assert result.success, f"create_node failed: {result.errors}"
     assert result.entity_id is not None
     entity_id = uuid.UUID(str(result.entity_id))
-    dimensions: dict[str, str] = {"cloud": "aws"}
+    dimensions: dict[str, str] = {"tap.computing.cloud": "aws"}
     if account_id is not None:
-        dimensions["aws_account"] = account_id
+        dimensions["aws.account"] = account_id
     if region is not None:
-        dimensions["aws_region"] = region
+        dimensions["aws.region"] = region
     row = get_node(entity_id)
     row.entity.dimensions = dimensions
     row.entity.save(update_fields=["dimensions"])
@@ -1045,7 +1045,7 @@ def _dimensioned(type_slug: str, payload: dict[str, Any], *, account_id: str = A
     assert result.entity_id is not None
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": region}
+    row.entity.dimensions = {"aws.account": account_id, "aws.region": region}
     row.entity.save(update_fields=["dimensions"])
     return entity_id
 

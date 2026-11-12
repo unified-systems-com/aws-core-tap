@@ -14,7 +14,7 @@ class BackupVault(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Backup Vault"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Backup vault."
     ENTITY_ICON: ClassVar[str] = "aws-s3"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The vault's ARN: a vault name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vault_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "backup:backupVault"

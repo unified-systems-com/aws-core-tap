@@ -14,7 +14,7 @@ class OutpostsOutpost(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Outposts Outpost"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Outposts Outpost."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (OutpostArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("outpost_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "outposts:outpost"

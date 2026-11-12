@@ -14,7 +14,7 @@ class RdsGlobalCluster(BaseModel):
     ENTITY_NAME: ClassVar[str] = "RDS Global Cluster"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon Aurora or Neptune global cluster."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The global cluster's ARN: an identifier is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("global_cluster_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:global-cluster"
