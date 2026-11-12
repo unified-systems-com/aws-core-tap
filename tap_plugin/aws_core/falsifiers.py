@@ -18,8 +18,8 @@ account's repositories, which is why github_core needs a whole ``Reach`` abstrac
 collector credential resolves to exactly ONE AWS account via STS ``GetCallerIdentity``
 (``collectors/boto3_collector/collector.py``), and every node it writes is stamped with
 that account on ``dimensions["aws_account"]``
-(``collectors/boto3_collector/collector.py``, the ``dimensions = {"cloud": "aws",
-"aws_account": account_id, "aws_region": region_label}`` block). So the reach question
+(``collectors/boto3_collector/collector.py``, the ``dimensions = {"aws_account": account_id,
+"aws_region": region_label}`` block). So the reach question
 collapses to one equality check: does the falsifier's OWN resolved credential account match
 the candidate's recorded account? A mismatch means this credential cannot speak to this
 candidate's absence at all (``scope_unknown``), the same refusal ``Reach.holds_repository``
@@ -313,8 +313,8 @@ def _row_of(entity_id: Any) -> Any | None:
 
 
 def _dimensions_of(row: Any) -> dict[str, str]:
-    """The entity's own dimensions dict (``{"cloud": "aws", "aws_account": ..., "aws_region":
-    ...}`` as the collector stamps it), or ``{}`` when the row carries none."""
+    """The entity's own dimensions dict (``{"aws_account": ..., "aws_region": ...}`` as the
+    collector stamps it), or ``{}`` when the row carries none."""
     entity = getattr(row, "entity", None)
     dimensions = getattr(entity, "dimensions", None)
     return dict(dimensions) if isinstance(dimensions, dict) else {}

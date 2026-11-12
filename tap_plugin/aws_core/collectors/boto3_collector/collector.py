@@ -724,7 +724,7 @@ class Boto3Collector(CollectorBase):
                 account_id,
                 region,
                 facts[region],
-                {"cloud": "aws", "aws_account": account_id, "aws_region": region},
+                {"aws_account": account_id, "aws_region": region},
             ):
                 bucket = node_envelopes if envelope["entity"]["entity_type"] != "edge" else edge_envelopes
                 (seen_edges if bucket is edge_envelopes else seen_nodes).add(envelope_ref(envelope))
@@ -787,8 +787,8 @@ class Boto3Collector(CollectorBase):
                         listed_checked_regions.add((entry["entity_type"], region))
                         self._check_listed_host(probe, entry, [region], partition, fips)
                     continue
+                # No "cloud" key: it duplicated tap.cloud (model default) and was retired 2026-11-12.
                 dimensions = {
-                    "cloud": "aws",
                     "aws_account": account_id,
                     "aws_region": region_label,
                 }
@@ -1046,7 +1046,7 @@ class Boto3Collector(CollectorBase):
         # failure class every per-entry manifest read below is already isolated against
         # (ENTRY_SKIPPED); the Organizations tree is one more optional surface, not a reason to
         # fail the whole run and lose every already-gathered resource.
-        org_dimensions = {"cloud": "aws", "aws_account": account_id, "aws_region": "global"}
+        org_dimensions = {"aws_account": account_id, "aws_region": "global"}
         try:
             if selected_run:
                 # Neither the Organizations tree nor the landing-zone read is a manifest entry, so the type patterns

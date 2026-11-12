@@ -1344,7 +1344,7 @@ def collect_organization(
     """Read the Organizations tree with ``client``; never raises for an AWS failure.
 
     ``dimensions`` are stamped on every node and edge (the run's own
-    ``{"cloud", "aws_account", "aws_region"}``, region ``global``). ``sensitivity`` replaces
+    ``{"aws_account", "aws_region"}``, region ``global``). ``sensitivity`` replaces
     ``reader_sensitivity()`` (tests only).
     """
     return _Reader(client, dimensions, sensitivity).collect()

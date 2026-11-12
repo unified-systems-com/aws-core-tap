@@ -560,7 +560,7 @@ class _Reader:
         return normalize_tags(raw if raw is not None else ({} if shape == "map" else []), shape)
 
     def dimensions(self, region: str) -> dict[str, str]:
-        return {"cloud": "aws", "aws_account": self.account_id, "aws_region": region}
+        return {"aws_account": self.account_id, "aws_region": region}
 
     def add_node(self, entity_type: str, natural_key: str, name: str, fields: dict[str, Any], region: str) -> bool:
         """Append one node envelope unless it must be withheld; True when kept (or already kept)."""

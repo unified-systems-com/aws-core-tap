@@ -6,15 +6,15 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a1d109-3ae5-77e3-857e-41a8da8c041c",
+        "entity_id": "01a1d190-085f-7451-baf0-e090d1b05508",
         "entity_type": "batch",
-        "name": "AWS dimensions v0.2.0",
+        "name": "AWS dimensions v0.3.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.aws_core",
-        "name": "AWS dimensions v0.2.0",
-        "description": "Declares every dimension aws_core writes: tap.cloud (the model and edge default) and cloud, aws_account and aws_region (stamped by the collector on every node it writes). v0.2.0 renames the v0.1.0 node from 'tap.cloud: aws' to its key 'tap.cloud' (same entity id) and adds the three collector keys, so each key in use has a declared Dimension node before core's dimension-map reshape (tap#708, #711). A new batch id, because an already-imported batch is skipped on re-seed."
+        "name": "AWS dimensions v0.3.0",
+        "description": "Declares every dimension key aws_core writes or has written: tap.cloud (the model and edge default), aws_account and aws_region (stamped by the collector on every node it writes), and cloud, retired on 2026-11-12 because it duplicated tap.cloud; it stays declared so grids that still carry it resolve it until core's dimension-map reshape (tap#708, #711). v0.3.0 updates the cloud node's description. A new batch id, because an already-imported batch is skipped on re-seed."
       },
       "nodes": [
         {
@@ -42,7 +42,7 @@
           },
           "node": {
             "name": "cloud",
-            "description": "The cloud provider, as the aws_core collector stamps it on every node it writes in a run (value \"aws\"), alongside aws_account and aws_region. It carries the same fact as tap.cloud, which comes from the model defaults rather than the collector. Declared under its current name; whether to keep both is an open question."
+            "description": "Retired 2026-11-12; never stamped. It carried \"aws\", the same fact as tap.cloud (the model and edge default), and the collector no longer writes it. Kept declared so that a grid whose rows still carry the key resolves it until those rows are rewritten."
           }
         },
         {

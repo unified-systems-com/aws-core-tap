@@ -2,8 +2,10 @@
 
 Core's dimension-map reshape (tap#708, #711) refers to dimensions by their node's id, and George
 ruled on 2026-11-12 that nodes are never minted on the fly. So every key in use must be seeded:
-``tap.cloud`` (the model and edge default) and ``cloud``, ``aws_account`` and ``aws_region`` (stamped
-by the collector on every node it writes).
+``tap.cloud`` (the model and edge default) and ``aws_account`` and ``aws_region`` (stamped by the
+collector on every node it writes). ``cloud`` was retired on 2026-11-12 (George, aws-build Q55a): it
+duplicated ``tap.cloud``. It stays declared, so grids whose rows still carry it resolve it, but nothing
+writes it.
 """
 
 from __future__ import annotations
@@ -18,6 +20,8 @@ import pytest
 SEED = Path(__file__).resolve().parent.parent / "grift" / "dimension.grift.json"
 TAP_CLOUD_ID = "019dd143-3e8f-73e4-b0fa-e62ac923065d"
 KEYS = {"tap.cloud", "cloud", "aws_account", "aws_region"}
+# Declared but never written any more.
+RETIRED = {"cloud"}
 
 
 def _seed() -> dict[str, Any]:
@@ -119,9 +123,9 @@ def test_every_key_aws_core_writes_is_declared_and_nothing_else() -> None:
     """Derived from the sources, both ways: a key written but not declared, or declared but no longer
     written, fails here."""
     collector = _collector_keys()
-    assert {"cloud", "aws_account", "aws_region"} <= collector, "the scan stopped seeing the collector's stamp"
+    assert {"aws_account", "aws_region"} <= collector, "the scan stopped seeing the collector's stamp"
     written = (collector | _default_keys() | _seed_keys()) - CORE_KEYS
-    assert written == KEYS
+    assert written == KEYS - RETIRED
 
 
 def test_no_description_carries_an_account_number() -> None:
@@ -155,3 +159,58 @@ def test_re_seeding_over_v010_renames_the_node_and_adds_the_rest() -> None:
     assert Dimension.objects.get(entity_id=TAP_CLOUD_ID).name == "tap.cloud"
     assert set(Dimension.objects.filter(name__in=KEYS).values_list("name", flat=True)) == KEYS
     assert Dimension.objects.filter(name="tap.cloud: aws").count() == 0
+
+
+@pytest.mark.spec("req-aws-core-account-dimension-8")
+def test_cloud_is_retired_declared_but_never_written() -> None:
+    """Q55a: the collector no longer stamps ``cloud``; the node stays declared and says so."""
+    assert "cloud" not in _collector_keys() | _default_keys()
+    cloud = next(n for n in _nodes(_seed()) if n["node"]["name"] == "cloud")
+    assert cloud["node"]["description"].startswith("Retired 2026-11-12; never stamped.")
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-core-account-dimension-8")
+def test_re_seeding_over_v020_updates_the_retired_node() -> None:
+    """A grid that imported v0.2.0 takes v0.3.0: the new batch id is not skipped, and the cloud node's
+    description updates by id."""
+    from tap_grid.grift import grift_import
+    from tap_grid.models import Dimension
+
+    old = copy.deepcopy(_seed())
+    batch = old["batches"][0]
+    batch["batch_entity"]["entity_id"] = "01a1d109-3ae5-77e3-857e-41a8da8c041c"
+    batch["batch_entity"]["name"] = batch["batch_node"]["name"] = "AWS dimensions v0.2.0"
+    cloud = next(n for n in batch["nodes"] if n["node"]["name"] == "cloud")
+    cloud["node"]["description"] = "The cloud provider (v0.2.0 text)."
+    assert grift_import(old).success
+    assert grift_import(_seed()).success
+    assert Dimension.objects.get(name="cloud").description.startswith("Retired 2026-11-12")
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-core-account-dimension-8")
+def test_the_migration_drops_cloud_from_aws_core_rows_only_and_is_idempotent() -> None:
+    """0054 removes only the cloud key, only from aws_core's own rows, and a second run changes nothing."""
+    import importlib
+    from types import SimpleNamespace
+
+    from django.db import connection
+
+    from tap_grid.models import Entity
+    from tap_grid.write_guard import unguarded_write
+
+    migration = importlib.import_module("tap_plugin.aws_core.migrations.0054_retire_cloud_dimension")
+    with unguarded_write():
+        ours = Entity.objects.create(
+            entity_type="aws_core__aws_vpc",
+            name="v",
+            dimensions={"cloud": "aws", "tap.cloud": "aws", "aws_region": "us-east-1"},
+        )
+        theirs = Entity.objects.create(entity_type="anchore__image", name="i", dimensions={"cloud": "aws"})
+    for _ in range(2):
+        migration.drop_cloud(None, SimpleNamespace(connection=connection))
+    ours.refresh_from_db()
+    theirs.refresh_from_db()
+    assert ours.dimensions == {"tap.cloud": "aws", "aws_region": "us-east-1"}
+    assert theirs.dimensions == {"cloud": "aws"}, "another plugin's rows are not aws_core's to change"
