@@ -18,6 +18,9 @@ class AwsAccount(BaseModel):
     # Identity (req-grid-entity-natural-key): The 12-digit account ID, the boto3 collector's identity
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id",)
+    # The account has an ARN only as a member of an Organization (the format needs the organization id), so the key
+    # stays the account id (KEY_NOT_ARN in tests/test_arn_resources.py); the ARN is stored when Organizations returns it.
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:account"
 
     # Containment: the account-EXCLUSIVE resources, and only those (aws-core-tap#43, which deliberately
     # supersedes the empty declaration tap-plugin-aws-core#42 made here).
@@ -94,8 +97,8 @@ class AwsAccount(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "account_id": {"type": "string"},
-        "email": {"type": "string"},
-        "status": {"type": "string"},
+        "email": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
         # The account-level S3 Block Public Access settings (s3control:GetPublicAccessBlock, read once
@@ -111,8 +114,8 @@ class AwsAccount(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "account_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "email": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "email": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "s3_block_public_acls": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
@@ -128,8 +131,8 @@ class AwsAccount(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     account_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    email = models.EmailField(blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
+    email = models.EmailField(null=True, blank=True, default=None)
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
     s3_block_public_acls = models.BooleanField(null=True, blank=True, default=None)

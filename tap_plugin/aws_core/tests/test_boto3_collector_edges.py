@@ -56,6 +56,31 @@ LAMBDA_EDGE_ENTRY = {
 }
 
 
+class TestUnselectedTargets:
+    @pytest.mark.spec("req-aws-collector-selection-14")
+    def test_an_edge_to_an_unselected_type_is_counted_not_emitted_or_warned(self):
+        node = _node({"Role": "arn:role", "LoggingConfig": {"LogGroup": "/aws/lambda/fn"}})
+        result = emit_edges(
+            node,
+            LAMBDA_EDGE_ENTRY,
+            modeled_types=MODELED,
+            transforms=TransformRegistry(),
+            dimensions=DIMS,
+            unselected_types=frozenset({"aws_core__aws_iam_role"}),
+        )
+        assert [e["edge"]["edge_type"] for e in result.envelopes] == ["WRITES_LOGS__aws_core"]
+        assert result.skipped_unselected == 1
+        assert result.warnings == []
+
+    @pytest.mark.spec("req-aws-collector-selection-14")
+    def test_with_nothing_unselected_nothing_is_skipped(self):
+        node = _node({"Role": "arn:role", "LoggingConfig": {"LogGroup": "/aws/lambda/fn"}})
+        result = emit_edges(
+            node, LAMBDA_EDGE_ENTRY, modeled_types=MODELED, transforms=TransformRegistry(), dimensions=DIMS
+        )
+        assert len(result.envelopes) == 2 and result.skipped_unselected == 0
+
+
 class TestEmitEdges:
     def test_scalar_outbound_edges_identity_resolved(self):
         node = _node({"Role": "arn:role", "LoggingConfig": {"LogGroup": "/aws/lambda/fn"}})
@@ -238,3 +263,64 @@ class TestEmitEdges:
         result = emit_edges(_node({}), {}, modeled_types=MODELED, transforms=TransformRegistry(), dimensions=DIMS)
         assert result.envelopes == []
         assert result.warnings == []
+
+
+class TestObjectValues:
+    """A rule whose values are objects: the target's key and the edge's properties come from inside each one
+    (req-aws-collector-edges-9), and a discriminated edge's ref carries its discriminators (-10)."""
+
+    ENTRY = {
+        "edges": [
+            {
+                "value_path": "_forwards[]",
+                "key_path": "target_group_arn",
+                "properties_path": "properties",
+                "target_type": "aws_core__aws_target_group",
+                "key_kind": "arn",
+                "edge_type": "FORWARDS_TO_TARGET_GROUP__aws_core",
+                "direction": "outbound",
+            }
+        ]
+    }
+
+    def _node(self, forwards):
+        return ProjectedNode(
+            entity_type="aws_core__aws_alb",
+            natural_key="arn:alb",
+            name="alb",
+            fields={"name": "alb"},
+            configuration={},
+            raw_item={"_forwards": forwards},
+        )
+
+    def _emit(self, forwards):
+        return emit_edges(
+            self._node(forwards), self.ENTRY, modeled_types={"aws_core__aws_target_group"},
+            transforms=TransformRegistry(), dimensions=DIMS,
+        ).envelopes
+
+    @pytest.mark.spec("req-aws-collector-edges-9")
+    def test_the_key_and_properties_come_from_each_object(self):
+        [edge] = self._emit([{"target_group_arn": "arn:tg", "properties": {"route_id": "rule-1", "priority": "10"}}])
+        assert edge["edge"]["to_ref"] == node_ref("aws_core__aws_target_group", "arn:tg")
+        assert edge["edge"]["properties"] == {"route_id": "rule-1", "priority": "10"}
+
+    @pytest.mark.spec("req-aws-collector-edges-9")
+    def test_a_value_that_is_not_an_object_or_has_no_key_makes_no_edge(self):
+        assert self._emit(["arn:tg", {"properties": {"route_id": "r"}}, {"target_group_arn": ""}]) == []
+
+    @pytest.mark.spec("req-aws-collector-edges-10")
+    def test_two_rules_to_one_group_are_two_refs(self):
+        edges = self._emit([
+            {"target_group_arn": "arn:tg", "properties": {"route_id": "rule-1"}},
+            {"target_group_arn": "arn:tg", "properties": {"route_id": "rule-2"}},
+        ])
+        refs = [e["entity"]["ref"] for e in edges]
+        assert len(set(refs)) == 2
+        alb, tg = node_ref("aws_core__aws_alb", "arn:alb"), node_ref("aws_core__aws_target_group", "arn:tg")
+        assert refs[0] == edge_ref("FORWARDS_TO_TARGET_GROUP__aws_core", alb, tg, {"route_id": "rule-1"})
+
+    @pytest.mark.spec("req-aws-collector-edges-10")
+    def test_a_plain_key_edge_ref_is_unchanged(self):
+        fn, role = node_ref("aws_core__aws_lambda", "arn:fn"), node_ref("aws_core__aws_iam_role", "arn:role")
+        assert edge_ref("ASSUMES_ROLE__aws_core", fn, role, {}) == edge_ref("ASSUMES_ROLE__aws_core", fn, role)

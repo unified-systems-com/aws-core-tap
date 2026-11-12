@@ -17,6 +17,7 @@ class CloudwatchAlarm(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The alarm's ARN: an alarm name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("alarm_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:alarm"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -53,15 +54,15 @@ class CloudwatchAlarm(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     alarm_arn = models.CharField(max_length=512, blank=True, default="")
     # OK, ALARM or INSUFFICIENT_DATA. NULL = not observed.
-    state_value = models.CharField(max_length=512, blank=True, null=True, default=None)
+    state_value = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Whether the alarm's actions run. NULL = not observed.
     actions_enabled = models.BooleanField(null=True, blank=True, default=None)
     # The metric alarmed on (empty for a metric-math alarm). NULL = not observed.
-    metric_name = models.CharField(max_length=512, blank=True, null=True, default=None)
+    metric_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The metric's namespace. NULL = not observed.
-    namespace = models.CharField(max_length=512, blank=True, null=True, default=None)
+    namespace = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How the metric is compared with the threshold. NULL = not observed.
-    comparison_operator = models.CharField(max_length=512, blank=True, null=True, default=None)
+    comparison_operator = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The threshold the metric is compared with. NULL = not observed (a metric-math alarm may name it indirectly).
     threshold = models.FloatField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

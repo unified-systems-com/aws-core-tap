@@ -17,6 +17,7 @@ class SagemakerNotebookInstanceLifecycleConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (NotebookInstanceLifecycleConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("notebook_instance_lifecycle_config_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:notebook-instance-lifecycle-config"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

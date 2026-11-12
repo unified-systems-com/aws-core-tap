@@ -227,6 +227,70 @@ class TestCommitOf:
         assert carto_reader.commit_of(tmp_path / "detached") == self.SHA
         assert carto_reader.commit_of(tmp_path / "nothing") == "unknown"
 
+    def test_a_symlinked_commondir_packed_refs_or_a_head_behind_a_pointer_reports_unknown(self, tmp_path):
+        outside = tmp_path / "outside"
+        _w(outside, self.SHA + "\n")
+        g = tmp_path / "cd/.git"
+        _w(g / "HEAD", "ref: refs/heads/main\n")
+        (g / "commondir").symlink_to(outside)
+        assert carto_reader.commit_of(tmp_path / "cd") == "unknown"
+        p = tmp_path / "pk/.git"
+        _w(p / "HEAD", "ref: refs/heads/main\n")
+        (p / "packed-refs").symlink_to(tmp_path / "outside-packed")
+        _w(tmp_path / "outside-packed", f"{self.SHA} refs/heads/main\n")
+        assert carto_reader.commit_of(tmp_path / "pk") == "unknown"
+        inner = tmp_path / "ptr/real-git"
+        inner.mkdir(parents=True)
+        (inner / "HEAD").symlink_to(outside)
+        _w(tmp_path / "ptr/.git", f"gitdir: {inner}\n")
+        assert carto_reader.commit_of(tmp_path / "ptr") == "unknown"
+
+    def test_a_git_pointer_or_commondir_leaving_the_tree_reports_unknown(self, tmp_path):
+        outside = tmp_path / "outside-git"
+        _w(outside / "HEAD", self.SHA + "\n")
+        _w(tmp_path / "ptr/.git", f"gitdir: {outside}\n")
+        assert carto_reader.commit_of(tmp_path / "ptr") == "unknown"
+        _w(tmp_path / "rel/.git", "gitdir: ../../outside-git\n")
+        assert carto_reader.commit_of(tmp_path / "rel") == "unknown"
+        common = tmp_path / "cd/.git"
+        _w(common / "HEAD", "ref: refs/heads/main\n")
+        _w(common / "commondir", f"{outside}\n")
+        _w(outside / "refs/heads/main", self.SHA + "\n")
+        assert carto_reader.commit_of(tmp_path / "cd") == "unknown"
+
+    def test_a_symlinked_head_or_ref_reports_unknown(self, tmp_path):
+        target = tmp_path / "elsewhere"
+        _w(target, self.SHA + "\n")
+        g = tmp_path / "linkhead/.git"
+        g.mkdir(parents=True)
+        (g / "HEAD").symlink_to(target)
+        assert carto_reader.commit_of(tmp_path / "linkhead") == "unknown"
+        r = tmp_path / "linkref/.git"
+        _w(r / "HEAD", "ref: refs/heads/main\n")
+        (r / "refs/heads").mkdir(parents=True)
+        (r / "refs/heads/main").symlink_to(target)
+        assert carto_reader.commit_of(tmp_path / "linkref") == "unknown"
+
+    def test_a_symlinked_directory_on_the_way_to_a_ref_reports_unknown(self, tmp_path):
+        outside = tmp_path / "outside"
+        _w(outside / "main", self.SHA + "\n")
+        r = tmp_path / "linkdir/.git"
+        _w(r / "HEAD", "ref: refs/heads/main\n")
+        (r / "refs").mkdir(parents=True)
+        (r / "refs/heads").symlink_to(outside)  # the leaf is a regular file, the directory above it is a link
+        assert carto_reader.commit_of(tmp_path / "linkdir") == "unknown"
+        s = tmp_path / "linkrefs/.git"
+        _w(s / "HEAD", "ref: refs/heads/main\n")
+        _w(tmp_path / "outside2/heads/main", self.SHA + "\n")
+        (s / "refs").symlink_to(tmp_path / "outside2")
+        assert carto_reader.commit_of(tmp_path / "linkrefs") == "unknown"
+
+    def test_an_ordinary_checkout_still_reports_its_commit(self, tmp_path):
+        r = tmp_path / "plain/.git"
+        _w(r / "HEAD", "ref: refs/heads/main\n")
+        _w(r / "refs/heads/main", self.SHA + "\n")
+        assert carto_reader.commit_of(tmp_path / "plain") == self.SHA
+
     def test_a_head_pointing_outside_refs_or_at_a_non_commit_reports_unknown(self, tmp_path):
         secret = tmp_path / "secret.txt"
         secret.write_text("hunter2\n")
@@ -244,14 +308,16 @@ class TestCommitOf:
         (carto / "cartography/models/aws/rds.py").write_text((carto / "cartography/models/aws/rds.py").read_text() + "# edit\n")
         assert carto_reader.tree_digest(carto, ["cartography/models/**/*.py"]) != before
 
-    def test_a_worktree_reads_shared_refs_from_the_main_git_directory(self, tmp_path):
+    def test_a_worktree_pointing_outside_the_tree_reports_no_commit(self, tmp_path):
+        # A worktree's .git file points at the main repository, outside the analysed tree. A pointer out of an
+        # untrusted tree is not followed (the report would quote a file the tree chose), so the commit is unknown.
         main = tmp_path / "main/.git"
         _w(main / "refs/heads/feat", self.SHA + "\n")
         wt = main / "worktrees/w"
         _w(wt / "HEAD", "ref: refs/heads/feat\n")
         _w(wt / "commondir", "../..\n")
         _w(tmp_path / "w/.git", f"gitdir: {wt}\n")
-        assert carto_reader.commit_of(tmp_path / "w") == self.SHA
+        assert carto_reader.commit_of(tmp_path / "w") == "unknown"
 
 
 class TestHostileText:

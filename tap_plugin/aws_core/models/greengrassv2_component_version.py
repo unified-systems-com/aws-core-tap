@@ -17,6 +17,7 @@ class Greengrassv2ComponentVersion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("greengrassv2_component_version_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "greengrass:componentVersion"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

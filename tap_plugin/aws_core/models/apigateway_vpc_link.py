@@ -17,6 +17,7 @@ class ApigatewayVpcLink(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The link's ARN (built from the link id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_link_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:VpcLink"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -46,9 +47,9 @@ class ApigatewayVpcLink(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     vpc_link_arn = models.CharField(max_length=2048, blank=True, default="")
     # rest for a REST API, http for an HTTP or WebSocket API. NULL = not observed.
-    api_kind = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    api_kind = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # AVAILABLE, PENDING, DELETING, FAILED or INACTIVE. NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The Network Load Balancer ARNs the link targets (REST). NULL = not applicable, or not observed.
     target_arns = models.JSONField(null=True, blank=True, default=None)
     # The subnets the link runs in (HTTP). NULL = not applicable, or not observed.

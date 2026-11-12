@@ -17,6 +17,7 @@ class BatchJobQueue(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (jobQueueArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("job_queue_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "batch:job-queue"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

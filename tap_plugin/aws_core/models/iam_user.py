@@ -18,6 +18,7 @@ class IamUser(BaseModel):
     # Identity (req-grid-entity-natural-key): The user's ARN: a user name is unique only within an
     # account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("user_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:user"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,7 +30,7 @@ class IamUser(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "user_arn": {"type": "string"},
-        "path": {"type": "string"},
+        "path": {"type": ["string", "null"]},
         "mfa_enabled": {"type": ["boolean", "null"]},
         "user_id": {"type": ["string", "null"]},
         "permissions_boundary_arn": {"type": ["string", "null"]},
@@ -42,7 +43,7 @@ class IamUser(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "user_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "path": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "mfa_enabled": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "user_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "permissions_boundary_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
@@ -55,17 +56,17 @@ class IamUser(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     user_arn = models.CharField(max_length=512, blank=True, default="")
-    path = models.CharField(max_length=512, blank=True, default="/")
+    path = models.CharField(max_length=512, null=True, blank=True, default=None)
     # NULL = not observed (ListMFADevices denied or failed); False = observed, no MFA device registered.
-    mfa_enabled = models.BooleanField(blank=True, null=True, default=None)
+    mfa_enabled = models.BooleanField(null=True, blank=True, default=None)
     # AWS's immutable user id (AIDA...); see IamRole.role_id for why the ARN alone cannot tell a recreated user
     # from the same one. NULL = not observed.
-    user_id = models.CharField(max_length=64, blank=True, null=True, default=None, db_index=True)
+    user_id = models.CharField(max_length=64, db_index=True, null=True, blank=True, default=None)
     # NULL = GetUser did not answer; "" = answered, no permissions boundary. ListUsers omits the attribute.
-    permissions_boundary_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    permissions_boundary_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ISO 8601 UTC console-password last-use time; "" = observed, never used (or no console password);
     # NULL = not observed.
-    password_last_used = models.CharField(max_length=32, blank=True, null=True, default=None)
+    password_last_used = models.CharField(max_length=32, null=True, blank=True, default=None)
     # Managed policies attached directly to the user. NULL = not observed; [] = observed, none.
     attached_policy_arns = models.JSONField(blank=True, null=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

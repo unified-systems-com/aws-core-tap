@@ -1,0 +1,220 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 15
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (16 destroyed). Checked directly afterwards, with each service's own listing: no IoT, SES, Rekognition or Transcribe object, no IAM role, and nothing tagged tap-seed=wave3b-svc remains; the Location lists of the first run are empty too.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first (w3s11040131) compared 21 types: 14 passed and 7 failed. Four Location types failed on the read (the collector's role is denied geo:ListGeofenceCollections, ListPlaceIndexes, ListRouteCalculators and ListTrackers, all already in extended-read-actions.json); the Location map failed on tags-unread; the Rekognition project was refused for the seeder (CreateProject, AccessDeniedException); and the IoT provisioning template was refused because its body had no certificate resource. The six types that cannot pass are not seeded and the template body now holds a certificate; see wave3b-svc/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3s11040142",
+  "seeds": "tools/seed/wave3b-svc",
+  "wave": "3b-svc"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::BillingGroup",
+   "compared_fields": [
+    "iot_billing_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_billing_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::Policy",
+   "compared_fields": [
+    "iot_policy_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_policy",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::ProvisioningTemplate",
+   "compared_fields": [
+    "iot_provisioning_template_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_provisioning_template",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::RoleAlias",
+   "compared_fields": [
+    "iot_role_alias_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_role_alias",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::ThingGroup",
+   "compared_fields": [
+    "iot_thing_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_thing_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::ThingType",
+   "compared_fields": [
+    "iot_thing_type_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_thing_type",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::IoT::TopicRule",
+   "compared_fields": [
+    "iot_topic_rule_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iot_topic_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Rekognition::Collection",
+   "compared_fields": [
+    "name",
+    "rekognition_collection_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rekognition_collection",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SES::ConfigurationSet",
+   "compared_fields": [
+    "name",
+    "ses_configuration_set_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ses_configuration_set",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SES::ContactList",
+   "compared_fields": [
+    "name",
+    "ses_contact_list_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ses_contact_list",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SES::DedicatedIpPool",
+   "compared_fields": [
+    "name",
+    "ses_dedicated_ip_pool_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ses_dedicated_ip_pool",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SES::EmailIdentity",
+   "compared_fields": [
+    "name",
+    "ses_email_identity_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ses_email_identity",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Transcribe::Vocabulary",
+   "compared_fields": [
+    "name",
+    "transcribe_vocabulary_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_transcribe_vocabulary",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Transcribe::VocabularyFilter",
+   "compared_fields": [
+    "name",
+    "transcribe_vocabulary_filter_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_transcribe_vocabulary_filter",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-svc"
+}

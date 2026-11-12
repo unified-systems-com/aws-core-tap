@@ -1,0 +1,317 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 20
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (22 destroyed). Checked directly afterwards: no load balancer, target group, file system, VPC or VPC endpoint named for the run remains; the Transit Gateway, its two attachments, route table and multicast domain are deleted. The ECS cluster and task definition read INACTIVE (ECS keeps both as records and cannot delete them), and the tagging API still lists several of the run's ARNs, which is its index lagging a delete.",
+  "date": "2026-11-03",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Second run. The first run (w3k11031059) created all 29 resources and was destroyed; 21 types passed and four failed, each from the seed or the expectation, not the projection: a network load balancer is not collected (the balancer entity holds application balancers only), an ECS capacity provider tags its Auto Scaling group, the EFS mount-target count in the state predates the mount target, and the collector reports the Transit Gateway options as booleans. The module no longer seeds the network balancer, the endpoint service and its notification, or the capacity provider, and no longer compares the mount-target count. The types the module does not seed are listed in wave3b-compute/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3k11031111",
+  "seeds": "tools/seed/wave3b-compute",
+  "wave": "3b-compute"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "compared_fields": [
+    "dns_name",
+    "lb_arn",
+    "name",
+    "scheme"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_alb",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TransitGatewayConnect",
+   "compared_fields": [
+    "ec2_transit_gateway_connect_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_transit_gateway_connect",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TransitGatewayMulticastDomain",
+   "compared_fields": [
+    "transit_gateway_multicast_domain_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_transit_gateway_multicast_domain",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TransitGatewayRouteTable",
+   "compared_fields": [
+    "ec2_transit_gateway_route_table_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ec2_transit_gateway_route_table",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::Cluster",
+   "compared_fields": [
+    "cluster_arn",
+    "name",
+    "status"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecs_cluster",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::Service",
+   "compared_fields": [
+    "desired_count",
+    "launch_type",
+    "name",
+    "running_count",
+    "service_arn",
+    "status"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_ecs_service",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ECS::TaskDefinition",
+   "compared_fields": [
+    "ecs_task_definition_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_ecs_task_definition",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EFS::AccessPoint",
+   "compared_fields": [
+    "access_point_arn",
+    "file_system_id",
+    "life_cycle_state",
+    "posix_uid",
+    "root_directory_path"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_efs_access_point",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EFS::FileSystem",
+   "compared_fields": [
+    "encrypted",
+    "file_system_arn",
+    "file_system_id",
+    "life_cycle_state",
+    "performance_mode",
+    "throughput_mode"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_efs_file_system",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EFS::MountTarget",
+   "compared_fields": [
+    "file_system_id",
+    "ip_address",
+    "life_cycle_state",
+    "mount_target_id",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_efs_mount_target",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElasticLoadBalancingV2::ListenerRule",
+   "compared_fields": [
+    "elasticloadbalancingv2_listener_rule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_elasticloadbalancingv2_listener_rule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElasticLoadBalancing::LoadBalancer",
+   "compared_fields": [
+    "dns_name",
+    "name",
+    "scheme"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_elb",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElasticLoadBalancingV2::Listener",
+   "compared_fields": [
+    "action_types",
+    "listener_arn",
+    "load_balancer_arn",
+    "port",
+    "protocol"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_elb_listener",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::SecurityGroup",
+   "compared_fields": [
+    "description",
+    "group_id",
+    "name"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_security_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::Subnet",
+   "compared_fields": [
+    "availability_zone",
+    "cidr_block",
+    "public",
+    "subnet_id"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_subnet",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "compared_fields": [
+    "health_check_path",
+    "name",
+    "port",
+    "protocol",
+    "target_group_arn",
+    "target_type"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_target_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TransitGateway",
+   "compared_fields": [
+    "amazon_side_asn",
+    "auto_accept_shared_attachments",
+    "default_route_table_association",
+    "default_route_table_propagation",
+    "owner_account_id",
+    "transit_gateway_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_transit_gateway",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::TransitGatewayAttachment",
+   "compared_fields": [
+    "attachment_id",
+    "resource_owner_account_id",
+    "resource_type"
+   ],
+   "edges_expected": 2,
+   "entity_type": "aws_core__aws_transit_gateway_attachment",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "PEERS_WITH_TRANSIT_GATEWAY__aws_core->aws_core__aws_transit_gateway"
+   ],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPC",
+   "compared_fields": [
+    "cidr_block",
+    "vpc_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_vpc",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::EC2::VPCEndpoint",
+   "compared_fields": [
+    "endpoint_type",
+    "private_dns_enabled",
+    "service_name",
+    "vpc_endpoint_id"
+   ],
+   "edges_expected": 1,
+   "entity_type": "aws_core__aws_vpc_endpoint",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [
+    "RESIDES_IN_SUBNET__aws_core->aws_core__aws_subnet"
+   ],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-compute"
+}

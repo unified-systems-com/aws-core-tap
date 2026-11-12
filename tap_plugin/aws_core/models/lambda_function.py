@@ -18,6 +18,7 @@ class LambdaFunction(BaseModel):
     # Identity (req-grid-entity-natural-key): The function's ARN, the boto3 collector's identity for
     # it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("function_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "lambda:function"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,8 +30,8 @@ class LambdaFunction(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "function_arn": {"type": "string"},
-        "runtime": {"type": "string"},
-        "handler": {"type": "string"},
+        "runtime": {"type": ["string", "null"]},
+        "handler": {"type": ["string", "null"]},
         "memory_size": {"type": ["integer", "null"]},
         "timeout": {"type": ["integer", "null"]},
         "vpc_subnet_ids": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
@@ -42,8 +43,8 @@ class LambdaFunction(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "function_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "runtime": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "handler": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "runtime": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "handler": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "memory_size": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "timeout": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "vpc_subnet_ids": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}}},
@@ -55,10 +56,10 @@ class LambdaFunction(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     function_arn = models.CharField(max_length=512, blank=True, default="")
-    runtime = models.CharField(max_length=64, blank=True, default="")
-    handler = models.CharField(max_length=255, blank=True, default="")
-    memory_size = models.IntegerField(blank=True, null=True)
-    timeout = models.IntegerField(blank=True, null=True)
+    runtime = models.CharField(max_length=64, null=True, blank=True, default=None)
+    handler = models.CharField(max_length=255, null=True, blank=True, default=None)
+    memory_size = models.IntegerField(null=True, blank=True, default=None)
+    timeout = models.IntegerField(null=True, blank=True, default=None)
     # VPC attachment, from ListFunctions VpcConfig.SubnetIds / SecurityGroupIds.
     # Typed fields because this type's configuration is not stored (its
     # environment variables routinely hold credentials), and without them the

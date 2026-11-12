@@ -1,8 +1,10 @@
 {
   "slug": "INVOKES_LAMBDA__aws_core",
   "name": "Invokes Lambda",
-  "description": "A service invokes a Lambda function (e.g. an EventBridge rule targeting a Lambda, or an API Gateway HTTP API's Lambda-proxy integration). Source is open because several service types can invoke a Lambda; the target is the invoked Lambda.",
-  "targets": ["aws_core__aws_lambda"],
+  "description": "A service invokes a Lambda function (e.g. an EventBridge rule targeting a Lambda, or an API Gateway HTTP API's Lambda-proxy integration). Source is open because several service types can invoke a Lambda; the target is the invoked Lambda. A load balancer target group invokes its registered function and the edge carries the function's health from DescribeTargetHealth.",
+  "targets": [
+    "aws_core__aws_lambda"
+  ],
   "identity": {
     "discriminators": []
   },
@@ -12,6 +14,34 @@
       "method": {
         "type": "string",
         "description": "Invocation method or API action."
+      },
+      "health_state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The target's health as DescribeTargetHealth reports it (initial, healthy, unhealthy, unused, draining, unavailable, unhealthy.draining); null when health was not read. Changes in place run to run; not part of the key."
+      },
+      "health_reason": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "DescribeTargetHealth's reason code for a state other than healthy (Target.ResponseCodeMismatch, Target.NotInUse and so on); null when none was given."
+      },
+      "health_description": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "DescribeTargetHealth's description of that reason; null when none was given."
+      },
+      "availability_zone": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The zone the target is registered in, or 'all' for an IP target outside the VPC; null when not given."
       }
     }
   },

@@ -17,6 +17,7 @@ class M2Environment(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (environmentArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("environment_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "m2:Environment"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

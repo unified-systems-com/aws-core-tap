@@ -44,6 +44,7 @@ class AwsIdentityCenterInstance(BaseModel):
 
     # AWS's instance ARN (arn:<partition>:sso:::instance/ssoins-…); partition-qualified, so unique.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sso:Instance"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {
@@ -71,12 +72,12 @@ class AwsIdentityCenterInstance(BaseModel):
             "type": "string",
             "pattern": "^(arn:(aws|aws-us-gov|aws-cn|aws-iso|aws-iso-b):sso:::instance/(sso)?ins-[a-zA-Z0-9-.]{16})?$",
         },
-        "identity_store_id": {"type": "string"},
-        "owner_account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
-        "home_region": {"type": "string"},
+        "identity_store_id": {"type": ["string", "null"]},
+        "owner_account_id": {"type": ["string", "null"], "pattern": "^([0-9]{12})?$"},
+        "home_region": {"type": ["string", "null"]},
         # Every region the instance is replicated to (InstanceMetadata.Regions); null when not reported.
         "regions": {"type": ["array", "null"], "items": {"type": "string"}},
-        "status": {"type": "string"},
+        "status": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -88,13 +89,13 @@ class AwsIdentityCenterInstance(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     instance_arn = models.CharField(max_length=1224, blank=True, default="", db_index=True)
-    identity_store_id = models.CharField(max_length=64, blank=True, default="")
+    identity_store_id = models.CharField(max_length=64, null=True, blank=True, default=None)
     # AWS's OwnerAccountId: the account the instance lives in (the management account or a delegated
     # administrator for an organization instance).
-    owner_account_id = models.CharField(max_length=12, blank=True, default="")
-    home_region = models.CharField(max_length=32, blank=True, default="")
+    owner_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)
+    home_region = models.CharField(max_length=32, null=True, blank=True, default=None)
     regions = models.JSONField(null=True, blank=True, default=None)
-    status = models.CharField(max_length=32, blank=True, default="")
+    status = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: sso-admin:ListTagsForResource.
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -49,6 +49,25 @@
           "items": { "$ref": "#/$defs/hydrate_op" }
         },
         "tags": { "$ref": "#/$defs/tags_block" },
+        "enrich": {
+          "description": "One detail call per listed resource, run after the listing, for a type whose list call returns a summary and whose Describe/Get call returns more (req-aws-collector-enrich-1). The response is stored under configuration._hydrate.detail with the same ok|absent|denied|error status as any hydrate slot, and the declared secret paths of the response are removed before storage like any other.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["op", "params", "why"],
+          "properties": {
+            "op": { "type": "string", "minLength": 1 },
+            "params": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "object",
+                "minProperties": 1,
+                "properties": { "from": { "type": "string", "minLength": 1 }, "literal": {} }
+              }
+            },
+            "why": { "type": "string", "minLength": 1 }
+          }
+        },
         "edges": {
           "type": "array",
           "items": { "$ref": "#/$defs/edge_rule" }
@@ -69,6 +88,60 @@
           "minProperties": 1,
           "propertyNames": { "pattern": "^_[A-Za-z][A-Za-z0-9_]*$" },
           "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "not_offered": {
+          "description": "Partitions in which the collector does not call this entry, because its service or the endpoint that serves it is not offered there (req-aws-collector-partition-7). Keyed by partition (aws, aws-us-gov); an entry absent from a partition is called there. Each partition carries why it is listed, how that was established (ran: a live call or a DNS lookup found no endpoint; web: an AWS page; read: offline data such as botocore's endpoint rules; inferred), the evidence and the date it was established. A service is marked on every one of its entries only when none is served; a service served in part marks only the entries it does not serve. A block may be limited to some regions of the partition (`regions`) or to FIPS runs on or off (`fips`); the collector then skips the entry only in those regions or that setting (req-aws-collector-partition-15).",
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^(aws|aws-us-gov)$": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "why",
+                "method",
+                "evidence",
+                "date"
+              ],
+              "properties": {
+                "why": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Why the entry is not called in this partition."
+                },
+                "method": {
+                  "enum": [
+                    "ran",
+                    "web",
+                    "read",
+                    "inferred"
+                  ],
+                  "description": "How it was established."
+                },
+                "evidence": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The record, page or data that shows it."
+                },
+                "date": {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+                  "description": "The day it was established (YYYY-MM-DD)."
+                },
+          "regions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Limits the block to these regions of the partition (a service offered in one GovCloud region and not the other). Absent: every region."
+          },
+          "fips": {
+            "type": "boolean",
+            "description": "Limits the block to runs with FIPS endpoints on (true) or off (false), for a service whose host exists only at its FIPS or only at its standard endpoint. Absent: either."
+          }
+              }
+            }
+          }
         },
         "name_tag": {
           "description": "The tag whose value names the node (usually 'Name'), when the resource carries one. EC2-family resources have no name of their own; the human-set Name tag is the name every AWS console shows. Read from the entry's tags block (source 'field'), so it needs no extra call; when the resource has no such tag the projected 'name' field stands.",
@@ -371,8 +444,19 @@
         "key_kind": { "type": "string", "enum": ["arn", "id", "name"] },
         "edge_type": { "type": "string", "minLength": 1 },
         "direction": { "type": "string", "enum": ["outbound", "inbound"] },
-        "transform": { "type": "string", "minLength": 1 }
-      }
+        "transform": { "type": "string", "minLength": 1 },
+        "key_path": {
+          "description": "For a value_path whose values are objects: where in each object the target's key is. Read before any transform (req-aws-collector-edges-9).",
+          "type": "string",
+          "minLength": 1
+        },
+        "properties_path": {
+          "description": "With key_path: where in each object the edge's properties are, an object the edge type's property_schema validates (req-aws-collector-edges-9).",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "dependentRequired": { "properties_path": ["key_path"] }
     },
     "sensitivity": {
       "description": "Whether this entry's raw AWS response (the item the source yields, which becomes the node's configuration envelope) may carry sensitive values, and where. Required on every entry. Three states, and absence is none of them: an entry without this block fails schema validation, so 'nobody has looked' can never read as 'safe'. Tracking only: it does not decide persistence (persist_configuration does). An entry that persists its configuration while listing a credential location here is a known, reviewed risk (req-aws-collector-manifest-6). Masking is not the remedy; the raw response is future audit evidence.",
@@ -499,6 +583,10 @@
             "botocore_sensitive",
             "reviewer_judgement"
           ]
+        },
+        "redact": {
+          "description": "True: the value at this path is removed from the stored configuration (req-aws-collector-redaction). Set only for secret material: keys, passwords, credentials, and the members AWS itself marks sensitive. Absent or false: the value is stored; the location is a note that something sensitive-looking may be there.",
+          "type": "boolean"
         }
       }
     }

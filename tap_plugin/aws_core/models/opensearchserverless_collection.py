@@ -17,6 +17,7 @@ class OpensearchserverlessCollection(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("opensearchserverless_collection_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "aoss:Collection"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

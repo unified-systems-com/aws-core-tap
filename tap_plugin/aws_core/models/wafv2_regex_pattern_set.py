@@ -17,6 +17,7 @@ class Wafv2RegexPatternSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The pattern set's ARN: a name is unique only within an account, region and scope.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("regex_pattern_set_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "wafv2:regexpatternset"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -45,7 +46,7 @@ class Wafv2RegexPatternSet(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     regex_pattern_set_arn = models.CharField(max_length=512, blank=True, default="")
     # REGIONAL, or CLOUDFRONT for a global (CloudFront) object read through us-east-1. NULL = not observed.
-    scope = models.CharField(max_length=512, blank=True, null=True, default=None)
+    scope = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many patterns the set holds. NULL = not observed.
     pattern_count = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

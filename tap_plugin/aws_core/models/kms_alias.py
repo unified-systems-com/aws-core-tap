@@ -17,6 +17,7 @@ class KmsAlias(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The alias's ARN: an alias name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("alias_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kms:alias"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,7 +30,7 @@ class KmsAlias(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "alias_arn": {"type": "string"},
-        "alias_name": {"type": "string"},
+        "alias_name": {"type": ["string", "null"]},
         "target_key_id": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
@@ -38,7 +39,7 @@ class KmsAlias(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "alias_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "alias_name": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "alias_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "target_key_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
@@ -48,9 +49,9 @@ class KmsAlias(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     alias_arn = models.CharField(max_length=512, blank=True, default="")
     # The alias as AWS names it, including the alias/ prefix.
-    alias_name = models.CharField(max_length=512, blank=True, default="")
+    alias_name = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The id of the key the alias points at. NULL = not observed.
-    target_key_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    target_key_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

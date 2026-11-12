@@ -52,7 +52,7 @@ _CONTINUATION_KEYS: tuple[str, ...] = (
 _DENIED_CODES = frozenset({"AccessDenied", "AccessDeniedException", "UnauthorizedOperation", "AuthFailure", "Forbidden"})
 #: Error codes for a rate limit that outlasted the client's retries: the walk stopped, the source did
 #: not say the list ended.
-_THROTTLE_CODES = frozenset(
+THROTTLE_CODES = frozenset(
     {"Throttling", "ThrottlingException", "RequestLimitExceeded", "TooManyRequestsException", "SlowDown"}
 )
 
@@ -122,6 +122,25 @@ class ListingWalk:
         self.admitted = False
         self.reasons.setdefault("admitted", f"collection_partial: {why}")
 
+    def not_observed(self, kind: str, reason: str, *, authorized: bool | None) -> None:
+        """The listing yielded nothing for a named reason that is NOT a failed call (``outcomes.py``:
+        ``not_configured``, ``unsupported_in_partition``, ``throttled``).
+
+        Zero rows here is the service declining to answer, not the service saying the set is empty,
+        so ``complete`` is ``False`` and the reason is recorded on every attribute that is not true:
+        the listing licenses no retirement. ``authorized`` is ``True`` for ``not_configured`` (the
+        credential was allowed to ask and was answered), ``None`` where it is not determinable.
+        """
+        self.finished = datetime.now(UTC)
+        self.complete = False
+        self.count = None
+        self.admitted = False
+        self.authorized = authorized
+        self.reasons["enumeration_complete"] = reason
+        self.reasons["admitted"] = f"{kind}: nothing was listed, so nothing was processed"
+        if authorized is None:
+            self.reasons["scope_authorized"] = f"not_determinable: {reason}"
+
     def fail(self, exc: BaseException) -> None:
         """The walk raised: record what that does and does not tell us. Nothing was enumerated."""
         self.finished = datetime.now(UTC)
@@ -134,7 +153,7 @@ class ListingWalk:
             self.reasons["scope_authorized"] = f"access_denied: {code}: the credential may not list this"
             self.reasons["enumeration_complete"] = f"access_denied: {code}: nothing was listed"
             self.reasons["admitted"] = f"access_denied: {code}: nothing to process"
-        elif code in _THROTTLE_CODES:
+        elif code in THROTTLE_CODES:
             self.reasons["enumeration_complete"] = f"throttled: {code}: retries were exhausted before the end of the list"
             self.reasons["admitted"] = f"throttled: {code}: the walk did not finish"
         else:

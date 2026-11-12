@@ -17,6 +17,7 @@ class NetworkfirewallContainerAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("networkfirewall_container_association_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "network-firewall:ContainerAssociation"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

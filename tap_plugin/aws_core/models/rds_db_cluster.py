@@ -17,6 +17,7 @@ class RdsDbCluster(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster identifier is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:cluster"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -40,6 +41,9 @@ class RdsDbCluster(BaseModel):
         "backup_retention_days": {"type": ["integer", "null"]},
         "multi_az": {"type": ["boolean", "null"]},
         "global_cluster_identifier": {"type": ["string", "null"]},
+        "endpoint": {"type": ["string", "null"]},
+        "reader_endpoint": {"type": ["string", "null"]},
+        "port": {"type": ["integer", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -52,13 +56,13 @@ class RdsDbCluster(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_cluster_arn = models.CharField(max_length=2048, blank=True, default="")
     # aurora-mysql, aurora-postgresql, docdb, neptune, mysql, postgres, ... NULL = not observed.
-    engine = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The engine version. NULL = not observed.
-    engine_version = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine_version = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # provisioned, serverless, parallelquery, global or multimaster. NULL = not observed.
-    engine_mode = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    engine_mode = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # AWS's cluster status. NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Whether storage is encrypted. NULL = not observed.
     storage_encrypted = models.BooleanField(null=True, blank=True, default=None)
     # Whether IAM database authentication is on. NULL = not observed.
@@ -72,7 +76,13 @@ class RdsDbCluster(BaseModel):
     # Whether the cluster spans several availability zones. NULL = not observed.
     multi_az = models.BooleanField(null=True, blank=True, default=None)
     # The global cluster the cluster belongs to. NULL = none, or not observed.
-    global_cluster_identifier = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    global_cluster_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    # The cluster (writer) endpoint (Endpoint). NULL = not observed.
+    endpoint = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    # The reader endpoint (ReaderEndpoint), load-balanced across the replicas. NULL = not observed, or the cluster has none (a single-instance or serverless cluster).
+    reader_endpoint = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    # The port the cluster listens on (Port). NULL = not observed.
+    port = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

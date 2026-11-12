@@ -25,6 +25,7 @@ class Elb(BaseModel):
     # type has and which is unique. A Classic Load Balancer has no ARN, and a name is unique only
     # within an account and region, so neither can be the key for all three types.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dns_name",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:loadbalancer"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -36,8 +37,8 @@ class Elb(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "dns_name": {"type": "string"},
-        "scheme": {"type": "string"},
-        "lb_type": {"type": "string", "enum": ["", "classic", "network", "gateway"]},
+        "scheme": {"type": ["string", "null"]},
+        "lb_type": {"type": ["string", "null"], "enum": [None, "", "classic", "network", "gateway"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -45,8 +46,8 @@ class Elb(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "dns_name": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "scheme": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "lb_type": {"validation": "jsonschema", "schema": {"type": "string", "enum": ["", "classic", "network", "gateway"]}},
+        "scheme": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "lb_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"], "enum": [None, "", "classic", "network", "gateway"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -54,10 +55,10 @@ class Elb(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     dns_name = models.CharField(max_length=512, blank=True, default="")
-    scheme = models.CharField(max_length=32, blank=True, default="")
+    scheme = models.CharField(max_length=32, null=True, blank=True, default=None)
     # Which load balancer this is: `classic` (the ELB v1 API), `network` (an NLB) or `gateway` (a GWLB).
     # ALBs are their own type (aws_alb). Blank means not observed.
-    lb_type = models.CharField(max_length=16, blank=True, default="")
+    lb_type = models.CharField(max_length=16, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

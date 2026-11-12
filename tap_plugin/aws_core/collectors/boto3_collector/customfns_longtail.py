@@ -436,6 +436,15 @@ _ARN_READERS = (
 )
 
 
+def _s3control_tags(client: Any, account: str, item: dict[str, Any], arn: str, list_method: str) -> Any:
+    """The tag read of one S3 Control item. A Storage Lens *configuration* is not a resource ``ListTagsForResource``
+    accepts (it answers ``InvalidURI`` for its ARN, read live in GovCloud 2026-11-02); its tags come from
+    ``GetStorageLensConfigurationTagging`` by configuration id. Everything else here is read by ARN."""
+    if list_method == "list_storage_lens_configurations":
+        return client.get_storage_lens_configuration_tagging(AccountId=account, ConfigId=item["Id"])
+    return client.list_tags_for_resource(AccountId=account, ResourceArn=arn)
+
+
 def _s3control_listing(client_for: Any, list_method: str, list_key: str, arn_key: str) -> Iterator[dict[str, Any]]:
     """The items of an S3 Control list call, each with its tags in ``_tags``.
 
@@ -453,7 +462,7 @@ def _s3control_listing(client_for: Any, list_method: str, list_key: str, arn_key
             if not arn:
                 continue
             try:
-                tags = {t["Key"]: t.get("Value") or "" for t in without_response_metadata(client.list_tags_for_resource(AccountId=account, ResourceArn=arn)).get("Tags") or []}
+                tags = {t["Key"]: t.get("Value") or "" for t in without_response_metadata(_s3control_tags(client, account, item, arn, list_method)).get("Tags") or []}
                 unread = False
             except (BotoCoreError, ClientError):
                 tags, unread = {}, True

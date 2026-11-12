@@ -38,6 +38,7 @@ class AwsOrganizationalUnit(BaseModel):
     # AWS's OU id (ou-…). Unique within its organization; AWS mints it with the org's root id
     # embedded, so it does not collide across organizations.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ou_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:organizationalunit"
 
     # A nested OU is contained by its parent OU (tap-plugin-aws-core#50): AWS never re-parents an OU
     # and refuses to delete a non-empty one, so PARTITIONED_INTO_OU is safe as containment where the

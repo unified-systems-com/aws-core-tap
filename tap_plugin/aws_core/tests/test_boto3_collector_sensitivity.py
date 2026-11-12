@@ -256,29 +256,98 @@ def test_every_botocore_sensitive_member_is_declared(entry):
 
 
 # --- persist_configuration ↔ sensitivity ------------------------------------
+#
+# Every entry stores its whole response; what is removed is secret material only (req-aws-collector-redaction).
 
 
-def _credential_paths(entry: dict) -> list[str]:
-    locs = entry.get("sensitivity", {}).get("locations", [])
-    return [loc["path"] for loc in locs if loc["category"] == "credential"]
+def _credential_locations(entry: dict) -> list[dict]:
+    return [loc for loc in entry.get("sensitivity", {}).get("locations", []) if loc["category"] == "credential"]
 
 
-@pytest.mark.parametrize(
-    "entry",
-    [e for e in _entries() if _credential_paths(e)],
-    ids=lambda e: e["entity_type"],
-)
-def test_credential_entries_are_off_or_acknowledged(entry):
-    # Default: an entry with a declared credential location does not persist
-    # its configuration. Persisting one anyway
-    # is a known, reviewed risk (req-aws-collector-manifest-6), and then the
-    # reason must name every credential location. Either way the reason names
-    # them, so the decision is legible where it is made.
-    for path in _credential_paths(entry):
-        assert path.split("[]")[0].split(".")[0] in entry["persist_configuration_why"], path
+#: Credential locations AWS marks sensitive that are not secret material, each with why they are stored.
+_NOT_SECRET = {
+    ("aws_core__aws_cognito_user_pool_client", "ClientId"): "an app client id is a public identifier, not a secret",
+    (
+        "aws_core__aws_verifiedpermissions_identity_source",
+        "configuration.openIdConnectConfiguration.tokenSelection.accessTokenOnly.principalIdClaim",
+    ): "the name of a claim, not a token",
+    (
+        "aws_core__aws_verifiedpermissions_identity_source",
+        "configuration.openIdConnectConfiguration.tokenSelection.identityTokenOnly.principalIdClaim",
+    ): "the name of a claim, not a token",
+    ("aws_core__aws_appstream_directory_config", "ServiceAccountCredentials.AccountName"): "a directory account name, not its password",
+}
 
 
-def test_shipped_credential_entries_are_all_off():
-    # As shipped, no entry persists a declared credential location.
-    persisted = [e["entity_type"] for e in _entries() if _credential_paths(e) and e["persist_configuration"]]
-    assert persisted == []
+@pytest.mark.parametrize("entry", [e for e in _entries() if _credential_locations(e)], ids=lambda e: e["entity_type"])
+def test_every_member_aws_marks_sensitive_is_removed_before_storage(entry):
+    for loc in _credential_locations(entry):
+        if loc["evidence"] != "botocore_sensitive" or (entry["entity_type"], loc["path"]) in _NOT_SECRET:
+            continue
+        assert loc.get("redact") is True, f"{entry['entity_type']}: AWS marks {loc['path']} sensitive and it is stored"
+
+
+def test_only_secret_material_is_ever_redacted():
+    # Customer content, free text, policies and personal data are collected (George, 2026-11-05).
+    wrong = [
+        (e["entity_type"], loc["path"], loc["category"])
+        for e in _entries()
+        for loc in e.get("sensitivity", {}).get("locations", [])
+        if loc.get("redact") and loc["category"] != "credential"
+    ]
+    assert wrong == []
+
+
+def test_every_entry_stores_its_response():
+    assert [e["entity_type"] for e in _entries() if not e["persist_configuration"]] == []
+
+
+@pytest.mark.parametrize("entry", _entries(), ids=lambda e: e["entity_type"])
+def test_the_reason_names_what_is_removed(entry):
+    for loc in entry.get("sensitivity", {}).get("locations", []):
+        if loc.get("redact"):
+            assert loc["path"] in entry["persist_configuration_why"], loc["path"]
+
+
+def _plant(path: str, value: str):
+    """A response with ``value`` at ``path`` (a list segment becomes a one-element list)."""
+    root: dict = {}
+    node = root
+    segments = path.split(".")
+    for n, part in enumerate(segments):
+        last = n == len(segments) - 1
+        key, is_list = (part[:-2], True) if part.endswith("[]") else (part, False)
+        if is_list and last:
+            node[key] = [value]
+        elif is_list:
+            child: dict = {}
+            node[key] = [child]
+            node = child
+        elif last:
+            node[key] = value
+        else:
+            child = {}
+            node[key] = child
+            node = child
+    return root
+
+
+def _contains(obj, needle: str) -> bool:
+    if isinstance(obj, dict):
+        return any(_contains(v, needle) or needle in str(k) for k, v in obj.items())
+    if isinstance(obj, list):
+        return any(_contains(v, needle) for v in obj)
+    return obj == needle
+
+
+@pytest.mark.parametrize("entry", [e for e in _entries() if any(loc.get("redact") for loc in e["sensitivity"].get("locations", []))], ids=lambda e: e["entity_type"])
+def test_a_secret_planted_at_every_redacted_path_is_not_stored(entry):
+    from tap_plugin.aws_core.collectors.boto3_collector.batch import entry_redact_paths, persisted_configuration
+    from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectedNode
+
+    canary = "CANARY-secret-8f3a"
+    for path in entry_redact_paths(entry):
+        node = ProjectedNode(entry["entity_type"], "k", "n", {}, _plant(path, canary), {})
+        stored = persisted_configuration(node, persist_configuration=True, redact_paths=entry_redact_paths(entry))
+        assert not _contains(stored, canary), f"{entry['entity_type']}: {path} was stored"
+        assert path in stored["_redacted"]

@@ -38,6 +38,7 @@ class AwsGuardDutyDetector(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "detector_id")
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:detector"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "REPORTS_TO_ADMINISTRATOR__aws_core"}]},
@@ -54,10 +55,10 @@ class AwsGuardDutyDetector(BaseModel):
         "region": {"type": "string"},
         "detector_id": {"type": "string"},
         # ENABLED or DISABLED, verbatim.
-        "status": {"type": "string"},
-        "finding_publishing_frequency": {"type": "string"},
+        "status": {"type": ["string", "null"]},
+        "finding_publishing_frequency": {"type": ["string", "null"]},
         "administrator_account_id": {"type": ["string", "null"]},
-        "relationship_status": {"type": "string"},
+        "relationship_status": {"type": ["string", "null"]},
         # Active findings (aws-core-tap#76): {label: count}. Exact when
         # active_finding_counts_complete is true; otherwise a lower bound over the capped read.
         # Null when nothing was read.
@@ -81,10 +82,10 @@ class AwsGuardDutyDetector(BaseModel):
     account_id = models.CharField(max_length=12, blank=True, default="", db_index=True)
     region = models.CharField(max_length=32, blank=True, default="")
     detector_id = models.CharField(max_length=300, blank=True, default="", db_index=True)
-    status = models.CharField(max_length=16, blank=True, default="")
-    finding_publishing_frequency = models.CharField(max_length=32, blank=True, default="")
+    status = models.CharField(max_length=16, null=True, blank=True, default=None)
+    finding_publishing_frequency = models.CharField(max_length=32, null=True, blank=True, default=None)
     administrator_account_id = models.CharField(max_length=12, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", "" is "no administrator"
-    relationship_status = models.CharField(max_length=64, blank=True, default="")
+    relationship_status = models.CharField(max_length=64, null=True, blank=True, default=None)
     # Active findings (aws-core-tap#76; collectors/boto3_collector/findings.py). Null is "not read".
     active_finding_counts = models.JSONField(null=True, blank=True, default=None)
     active_finding_counts_complete = models.BooleanField(null=True, blank=True, default=None)

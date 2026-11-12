@@ -17,6 +17,7 @@ class EventschemasRegistry(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RegistryArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("registry_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "schemas:registry"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

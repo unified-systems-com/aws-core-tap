@@ -17,6 +17,7 @@ class EmrStudio(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The studio's ARN (StudioArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("emr_studio_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticmapreduce:studio"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class ApigatewayUsagePlan(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The plan's ARN (built from the plan id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("usage_plan_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:UsagePlan"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -47,7 +48,7 @@ class ApigatewayUsagePlan(BaseModel):
     # Requests allowed per quota period. NULL = no quota, or not observed.
     quota_limit = models.IntegerField(null=True, blank=True, default=None)
     # DAY, WEEK or MONTH. NULL = no quota, or not observed.
-    quota_period = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    quota_period = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # Steady-state requests per second. NULL = not set, or not observed.
     throttle_rate_limit = models.FloatField(null=True, blank=True, default=None)
     # Burst size. NULL = not set, or not observed.

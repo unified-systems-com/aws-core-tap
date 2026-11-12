@@ -1,0 +1,17 @@
+{
+  "slug": "REFERENCES_SECURITY_GROUP__aws_core",
+  "name": "References Security Group",
+  "description": "A security group rule names another security group as its source or destination (rule -> referenced group): the rule's ReferencedGroupInfo.GroupId. The traffic the rule allows is allowed to or from every member of that group.",
+  "sources": [
+    "aws_core__aws_ec2_security_group_rule"
+  ],
+  "targets": [
+    "aws_core__aws_security_group"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

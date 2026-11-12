@@ -1,0 +1,141 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 9
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (10 destroyed). Checked directly afterwards with each SageMaker list call (all succeeded): no pipeline, model package group, model card, hub, code repository, app image configuration or lifecycle configuration of the run, and no IAM role.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Third run. The first (w3l11040833) applied 10 of 14 resources and the second (w3l11040839) 11 of 13: CreateFeatureGroup and CreateHumanTaskUi answer UnknownOperationException (not supported in this region); CreateModel refuses a non-ECR image, and then refuses an empty ECR repository (the role must be able to pull an image that exists), so the model and the endpoint configuration that needs it are not seeded. See wave3b-ml/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3l11040845",
+  "seeds": "tools/seed/wave3b-ml"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::AppImageConfig",
+   "compared_fields": [
+    "name",
+    "sagemaker_app_image_config_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_app_image_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::CodeRepository",
+   "compared_fields": [
+    "code_repository_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_code_repository",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::Hub",
+   "compared_fields": [
+    "hub_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_hub",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::ModelCard",
+   "compared_fields": [
+    "name",
+    "sagemaker_model_card_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_model_card",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::ModelPackageGroup",
+   "compared_fields": [
+    "model_package_group_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_model_package_group",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::NotebookInstanceLifecycleConfig",
+   "compared_fields": [
+    "name",
+    "notebook_instance_lifecycle_config_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_notebook_instance_lifecycle_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::Pipeline",
+   "compared_fields": [
+    "name",
+    "sagemaker_pipeline_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_pipeline",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SageMaker::StudioLifecycleConfig",
+   "compared_fields": [
+    "name",
+    "sagemaker_studio_lifecycle_config_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sagemaker_studio_lifecycle_config",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-ml"
+}

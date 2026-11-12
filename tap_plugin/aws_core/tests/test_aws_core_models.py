@@ -33,9 +33,10 @@ class TestAwsCoreDomainDefaults:
         node = _create("aws_core__aws_s3_bucket", {"name": "my-bucket"})
         assert node.public_access_blocked is None
 
-    def test_ebs_volume_encrypted_defaults_false(self):
+    def test_ebs_volume_encrypted_defaults_null_not_observed(self):
+        # Unobserved is null (req-aws-core-fields-10): a volume not yet read must not read as unencrypted.
         node = _create("aws_core__aws_ebs_volume", {"volume_id": "vol-123"})
-        assert node.encrypted is False
+        assert node.encrypted is None
 
     def test_iam_user_mfa_defaults_null_not_observed(self):
         # NULL = not observed (ListMFADevices was not read at create time), never "no MFA"
@@ -43,9 +44,9 @@ class TestAwsCoreDomainDefaults:
         node = _create("aws_core__aws_iam_user", {"name": "admin"})
         assert node.mfa_enabled is None
 
-    def test_iam_policy_aws_managed_defaults_false(self):
+    def test_iam_policy_aws_managed_defaults_null_not_observed(self):
         node = _create("aws_core__aws_iam_policy", {"name": "MyPolicy"})
-        assert node.is_aws_managed is False
+        assert node.is_aws_managed is None
 
 
 @pytest.mark.django_db

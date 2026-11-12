@@ -30,17 +30,18 @@ class AwsConfigAggregator(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("aggregator_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:ConfigurationAggregator"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "aggregator_arn": {"type": "string"},
-        "aggregator_name": {"type": "string"},
+        "aggregator_name": {"type": ["string", "null"]},
         # True when OrganizationAggregationSource is set.
-        "organization_wide": {"type": "boolean"},
+        "organization_wide": {"type": ["boolean", "null"]},
         "source_account_ids": {"type": "array", "items": {"type": "string"}},
         "all_aws_regions": {"type": ["boolean", "null"]},
         "aws_regions": {"type": "array", "items": {"type": "string"}},
-        "role_arn": {"type": "string"},
+        "role_arn": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -52,12 +53,12 @@ class AwsConfigAggregator(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     aggregator_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    aggregator_name = models.CharField(max_length=256, blank=True, default="")
-    organization_wide = models.BooleanField(default=False)
+    aggregator_name = models.CharField(max_length=256, null=True, blank=True, default=None)
+    organization_wide = models.BooleanField(null=True, blank=True, default=None)
     source_account_ids = models.JSONField(default=list, blank=True)
     all_aws_regions = models.BooleanField(null=True, blank=True, default=None)
     aws_regions = models.JSONField(default=list, blank=True)
-    role_arn = models.CharField(max_length=2048, blank=True, default="")
+    role_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
     tags = models.JSONField(null=True, blank=True, default=None)
 

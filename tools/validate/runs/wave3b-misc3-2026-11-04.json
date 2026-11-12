@@ -1,0 +1,91 @@
+{
+ "comparison": "scalars compare by their string form (the API returns some integers as strings); lists compare as sets",
+ "counts": {
+  "pass": 5
+ },
+ "layer": "projection",
+ "run": {
+  "applied_and_destroyed": "applied and compared in one session, then destroyed from this run's own state with a reviewed plan (8 destroyed). Checked directly afterwards with each service's own listing (all calls succeeded): no RUM app monitor, Lex bot, Scheduler schedule, SQS queue or IAM role of the run remains.",
+  "date": "2026-11-04",
+  "identity": "read-only collector identity (SecurityAudit plus ReadOnlyAccess)",
+  "kind": "projection check against Terraform-seeded resources",
+  "note": "Third run. The first (w3u11041326) compared 7 types: 5 passed and 2 failed. InternetMonitor::Monitor could not be created (no Internet Monitor endpoint resolves in this region); CloudTrail::EventDataStore answers InvalidParameterException (CloudTrail Lake is no longer accepting new customers). Bedrock::Agent was dropped before any run: the API requires the agent's role to be named AmazonBedrockExecutionRoleForAgents_..., which the seed's seed-... role-name rule does not allow. See wave3b-misc3/cost.md.",
+  "partition": "aws-us-gov",
+  "region": "us-gov-west-1",
+  "run_id": "w3u11041331",
+  "seeds": "tools/seed/wave3b-misc3"
+ },
+ "types": [
+  {
+   "cfn_type": "AWS::IAM::Role",
+   "compared_fields": [
+    "max_session_duration",
+    "name",
+    "path",
+    "role_arn",
+    "role_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_iam_role",
+   "expected": 2,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Lex::Bot",
+   "compared_fields": [
+    "lex_bot_arn",
+    "name"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_lex_bot",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::RUM::AppMonitor",
+   "compared_fields": [
+    "name",
+    "rum_app_monitor_id"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_rum_app_monitor",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::Scheduler::Schedule",
+   "compared_fields": [
+    "name",
+    "scheduler_schedule_arn"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_scheduler_schedule",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  },
+  {
+   "cfn_type": "AWS::SQS::Queue",
+   "compared_fields": [
+    "message_retention_period",
+    "queue_arn",
+    "queue_url",
+    "visibility_timeout"
+   ],
+   "edges_expected": 0,
+   "entity_type": "aws_core__aws_sqs_queue",
+   "expected": 1,
+   "first_mismatch": null,
+   "uncovered_edges": [],
+   "verdict": "pass"
+  }
+ ],
+ "wave": "3b-misc3"
+}

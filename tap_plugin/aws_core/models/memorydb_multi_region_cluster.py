@@ -17,6 +17,7 @@ class MemorydbMultiRegionCluster(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("memorydb_multi_region_cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "memorydb:multiregioncluster"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

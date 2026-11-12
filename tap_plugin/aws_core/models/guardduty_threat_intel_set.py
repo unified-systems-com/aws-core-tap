@@ -17,6 +17,7 @@ class GuarddutyThreatIntelSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'threatintelset' and the list id: a list id is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("threat_intel_set_key",)
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:threatintelset"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
@@ -49,13 +50,13 @@ class GuarddutyThreatIntelSet(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     threat_intel_set_key = models.CharField(max_length=512, blank=True, default="")
     # The detector the list belongs to. NULL = not observed.
-    detector_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    detector_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's status (ACTIVE, INACTIVE, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The file format of the list (TXT, STIX, ...). NULL = not observed.
-    format = models.CharField(max_length=512, blank=True, null=True, default=None)
+    format = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The S3 URL of the list file. NULL = not observed.
-    location = models.CharField(max_length=512, blank=True, null=True, default=None)
+    location = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -52,11 +52,11 @@ class LambdaFunctionUrl(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     function_url = models.CharField(max_length=512, blank=True, default="")
     # The function the URL invokes. NULL = not observed.
-    function_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    function_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # NONE (open to the internet) or AWS_IAM. NULL = not observed.
-    auth_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    auth_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # BUFFERED or RESPONSE_STREAM. NULL = not observed.
-    invoke_mode = models.CharField(max_length=512, blank=True, null=True, default=None)
+    invoke_mode = models.CharField(max_length=512, null=True, blank=True, default=None)
     # Origins the URL's CORS configuration allows (['*'] allows any). NULL = not observed.
     cors_allow_origins = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

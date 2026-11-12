@@ -17,6 +17,7 @@ class BackupPlan(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The plan's ARN: a plan id is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("plan_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "backup:backupPlan"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -48,7 +49,7 @@ class BackupPlan(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     plan_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's plan id. NULL = not observed.
-    plan_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    plan_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many rules the plan has. NULL = not observed.
     rule_count = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

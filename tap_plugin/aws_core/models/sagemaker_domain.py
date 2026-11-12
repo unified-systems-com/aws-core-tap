@@ -17,6 +17,7 @@ class SagemakerDomain(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (DomainArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_domain_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:domain"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

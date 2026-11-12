@@ -17,6 +17,7 @@ class SesConfigurationSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_configuration_set_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ses:configuration-set"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

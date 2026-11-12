@@ -17,6 +17,7 @@ class CodestarconnectionsRepositoryLink(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RepositoryLinkArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("repository_link_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "codestar-connections:RepositoryLink"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

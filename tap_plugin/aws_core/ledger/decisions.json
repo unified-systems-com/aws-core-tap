@@ -784,10 +784,6 @@
       "state": "excluded",
       "reason": "A key-signing key of a Route 53 hosted zone, identified by HostedZoneId and Name (the one ARN property names the KMS key): botocore 1.43.121 route53 returns the keys of a zone inside GetDNSSEC and defines no list of them. It is part of the DNSSEC setting of its hosted zone, not a resource."
     },
-    "AWS::Route53::RecordSet": {
-      "state": "excluded",
-      "reason": "A DNS record inside a Route 53 hosted zone, identified by Name, HostedZoneId, Type and SetIdentifier with no ARN of its own: the CloudFormation schema exposes no ARN property for it, and botocore 1.43.121 route53 lists records per zone with ListResourceRecordSets. It is content of its hosted zone, not a resource. Records are also the highest-volume object in a Route 53 account."
-    },
     "AWS::SNS::TopicInlinePolicy": {
       "state": "excluded",
       "reason": "The access policy of an SNS topic, identified by the topic's ARN (TopicArn) with no ARN of its own: it is the Policy attribute of the topic, which botocore 1.43.121 sns reads with GetTopicAttributes. It is the policy document of its topic, content of the resource, not a resource."
@@ -3740,6 +3736,11 @@
     "aws_core__aws_route53_resolver_firewall_rule_group": {
       "cfn": [
         "AWS::Route53Resolver::FirewallRuleGroup"
+      ]
+    },
+    "aws_core__aws_route53_record_set": {
+      "cfn": [
+        "AWS::Route53::RecordSet"
       ]
     },
     "aws_core__aws_route53_zone": {

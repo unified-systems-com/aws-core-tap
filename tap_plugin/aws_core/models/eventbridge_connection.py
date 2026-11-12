@@ -17,6 +17,7 @@ class EventbridgeConnection(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The connection's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connection_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "events:connection"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -48,9 +49,9 @@ class EventbridgeConnection(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     connection_arn = models.CharField(max_length=512, blank=True, default="")
     # API_KEY, BASIC or OAUTH_CLIENT_CREDENTIALS. NULL = not observed.
-    authorization_type = models.CharField(max_length=512, blank=True, null=True, default=None)
+    authorization_type = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's connection state (AUTHORIZED, DEAUTHORIZED, ...). NULL = not observed.
-    connection_state = models.CharField(max_length=512, blank=True, null=True, default=None)
+    connection_state = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -32,7 +32,7 @@ root enumerate item, never a hydrate slot.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from botocore import xform_name
@@ -69,6 +69,7 @@ def hydrate_item(
     hydrate_ops: Sequence[Mapping[str, str]],
     *,
     call_kwargs: Mapping[str, Any],
+    reclassify: Callable[[ClientError], str | None] | None = None,
 ) -> dict[str, Any]:
     """Run the declared hydrate ops for one item; return the envelope.
 
@@ -96,7 +97,10 @@ def hydrate_item(
             }
         except ClientError as exc:
             code = str(exc.response.get("Error", {}).get("Code", "")) or "Unknown"
-            record[key] = {"status": _classify(code), "op": op, "error_code": code}
+            status = _classify(code)
+            if status == "error" and reclassify is not None:
+                status = reclassify(exc) or status
+            record[key] = {"status": status, "op": op, "error_code": code}
         except BotoCoreError as exc:
             record[key] = {
                 "status": "error",

@@ -869,7 +869,7 @@ class TestObservability:
         assert metric["_sns_topic_arns"] == [topic] and composite["_sns_topic_arns"] == [topic]
         assert asked == [["MetricAlarm"], ["CompositeAlarm"]]
 
-    def test_metric_filters_are_keyed_by_group_and_name_and_point_at_the_log_group_arn(self) -> None:
+    def test_metric_filters_are_keyed_by_scope_group_and_name_and_point_at_the_log_group_arn(self) -> None:
         from tap_plugin.aws_core.collectors.boto3_collector.customfns import logs_metric_filters_described
 
         class _Logs(_Client):
@@ -878,7 +878,7 @@ class TestObservability:
         logs = _Logs(describe_metric_filters={"metricFilters": [{"filterName": "root", "logGroupName": "/aws/cloudtrail", "metricTransformations": [{"metricName": "RootUsage", "metricNamespace": "CIS"}]}, {"filterName": "orphan"}]})
         sts = _Client(get_caller_identity={"Account": "123456789012"})
         [item] = list(logs_metric_filters_described(None, client_for=lambda service: {"logs": logs, "sts": sts}[service]))
-        assert item["_key"] == "/aws/cloudtrail:root"
+        assert item["_key"] == "aws-us-gov:123456789012:us-gov-west-1:/aws/cloudtrail:root"
         assert item["_log_group_arn"] == "arn:aws-us-gov:logs:us-gov-west-1:123456789012:log-group:/aws/cloudtrail"
         assert (item["_metric_name"], item["_metric_namespace"]) == ("RootUsage", "CIS")
 

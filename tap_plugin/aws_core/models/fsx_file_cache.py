@@ -17,6 +17,7 @@ class FsxFileCache(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ResourceARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("file_cache_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "fsx:file-cache"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

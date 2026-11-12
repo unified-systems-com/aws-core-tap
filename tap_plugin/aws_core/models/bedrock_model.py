@@ -18,6 +18,7 @@ class BedrockModel(BaseModel):
     # Identity (req-grid-entity-natural-key): The foundation model ID. It names the model, not a
     # deployment, so the same model reached from two regions is one node.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("model_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "bedrock:foundation-model"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,7 +30,7 @@ class BedrockModel(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "model_id": {"type": "string"},
-        "provider": {"type": "string"},
+        "provider": {"type": ["string", "null"]},
         "input_modalities": {"type": "array", "items": {"type": "string"}},
         "output_modalities": {"type": "array", "items": {"type": "string"}},
         "configuration": {"type": "object"},
@@ -38,7 +39,7 @@ class BedrockModel(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "model_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "provider": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "provider": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "input_modalities": {"validation": "jsonschema", "schema": {"type": "array", "items": {"type": "string"}}},
         "output_modalities": {"validation": "jsonschema", "schema": {"type": "array", "items": {"type": "string"}}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
@@ -47,7 +48,7 @@ class BedrockModel(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     model_id = models.CharField(max_length=255, blank=True, default="", db_index=True)
-    provider = models.CharField(max_length=128, blank=True, default="")
+    provider = models.CharField(max_length=128, null=True, blank=True, default=None)
     input_modalities = models.JSONField(default=list, blank=True)
     output_modalities = models.JSONField(default=list, blank=True)
     configuration = models.JSONField(default=dict, blank=True)

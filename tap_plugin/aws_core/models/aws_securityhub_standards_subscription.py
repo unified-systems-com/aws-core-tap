@@ -32,17 +32,20 @@ class AwsSecurityHubStandardsSubscription(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("subscription_arn",)
+    # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
+    # so it cannot be built when absent.
+    ARN_RESOURCE: ClassVar[str | None] = None
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "subscription_arn": {"type": "string"},
-        "standards_arn": {"type": "string"},
+        "standards_arn": {"type": ["string", "null"]},
         # The resource portion of standards_arn: what a control finding's AssociatedStandards names.
-        "standards_id": {"type": "string"},
+        "standards_id": {"type": ["string", "null"]},
         # PENDING, READY, FAILED, DELETING or INCOMPLETE, verbatim.
-        "status": {"type": "string"},
-        "status_reason": {"type": "string"},
-        "controls_updatable": {"type": "string"},
+        "status": {"type": ["string", "null"]},
+        "status_reason": {"type": ["string", "null"]},
+        "controls_updatable": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -54,11 +57,11 @@ class AwsSecurityHubStandardsSubscription(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     subscription_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    standards_arn = models.CharField(max_length=2048, blank=True, default="")
-    standards_id = models.CharField(max_length=512, blank=True, default="")
-    status = models.CharField(max_length=16, blank=True, default="")
-    status_reason = models.CharField(max_length=64, blank=True, default="")
-    controls_updatable = models.CharField(max_length=32, blank=True, default="")
+    standards_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    standards_id = models.CharField(max_length=512, null=True, blank=True, default=None)
+    status = models.CharField(max_length=16, null=True, blank=True, default=None)
+    status_reason = models.CharField(max_length=64, null=True, blank=True, default=None)
+    controls_updatable = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS cannot tag a standards subscription: always {} (tag_lanes.json, lane `none`).
     tags = models.JSONField(null=True, blank=True, default=None)
 

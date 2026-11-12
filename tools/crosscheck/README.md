@@ -93,3 +93,33 @@ Limits: the backtest and the run-record contradictions count entity types, the r
 entity type is present if any ledger type it serves is in the specification. Property comparison is top-level
 and by normalised name, so a renamed API field reads as missing; the security ranking is a name heuristic.
 Write-only properties are not counted against us, as they cannot be read back.
+
+## Terraform AWS provider as a second reference
+
+`tf_conformance.py` compares, for each of our types that maps to a Terraform resource, the AWS API key each typed field is
+filled from (the manifest's `fields`) with the API field the provider fills the same attribute from (`d.Set` in its read
+function), and our read operations with the provider's. Terraform is a reference, not ground truth.
+
+```
+CROSSCHECK_DUMP_CONFINED=yes tools/crosscheck/terraform_dump.sh [-v 6.71.0] schema.json     # the only step that runs Terraform: init + providers schema; sanitised environment, NOT a sandbox
+pip install --only-binary=:all: -r tools/crosscheck/requirements-terraform.txt      # tree-sitter, for the source layer only; wheels only, so no build backend runs
+python3 -I tools/crosscheck/tf_conformance.py --terraform-schema schema.json --terraform-source ~/src/terraform-provider-aws \
+    --terraform-version 6.71.0 [--out DIR]   # DIR must lie under the directory you run it from
+```
+
+The schema is a release and the source a checkout, so the source must be at the tag of the version the dump was made with: check out `v6.71.0` in the provider clone and pass `--terraform-version 6.71.0`. The run compares the checkout's HEAD with that tag's commit in the checkout's own `.git` and exits 4, with a banner in the report, if they differ, if the tag cannot be read, or if no version was given (a clone with packed tags works; `--allow-version-mismatch` accepts the result and the report still says it was not shown). It also exits 4 when the two inputs have different sets of resources. This catches a clone left on the wrong version; it does not prove the files are unmodified or that the tag is HashiCorp's, so a clone you do not trust needs the `source_sha256` in the report checked against one you do.
+
+| File | Role |
+| --- | --- |
+| `terraform_dump.sh` | Writes the provider schema JSON, key-sorted, for a pinned provider version; prints its sha256. Never plans or applies. It sanitises the environment and does not sandbox the provider (see the spec's Dump Step): run it only in a disposable VM or container with no host mounts and no credentials; it refuses to start unless `CROSSCHECK_DUMP_CONFINED=yes` states that. Runs Terraform with an empty environment (`env -i`), a throwaway `HOME` and the dependency lock file in `terraform_locks/` enforced (`-lockfile=readonly`); a version with no committed lock file is refused. |
+| `terraform_locks/` | One reviewed lock file per supported provider version, with checksums for darwin and linux on amd64 and arm64. To add a version, run `terraform providers lock` in a throwaway directory, review the hashes, commit the file. |
+| `untrusted.py` | Reading a tree we did not write: no symlinks, nothing outside the root; and text made safe for Markdown and terminals. Used by the source reader and the report. |
+| `terraform_reader.py` | Reads that file (never runs Terraform) into resources, flattened attributes with flags, taggability and identity. |
+| `terraform_source.py` | Parses the provider's Go source with tree-sitter (never builds or runs it): registry, schema attribute names, attribute to API field from `d.Set`, read operations. |
+| `tf_conformance.py` | The comparison and its `report.json` / `report.md`. |
+| `terraform_label_map.json` | Terraform resource to our types where names differ (several resources may map to one type; an empty list is a reviewed gap). |
+
+Limits: the source checkout should be the commit of the provider release the dump was made from (the report records both).
+Framework-style resources have no `d.Set`; their API field is inferred from the model struct's Go field name (marked
+`autoflex-convention`). Only top-level attributes are compared; a nested block counts as read when the provider reads its
+parent. `tf_conformance.py` is the only crosscheck module that needs anything beyond the standard library.

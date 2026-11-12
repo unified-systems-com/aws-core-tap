@@ -19,6 +19,7 @@ class IamVirtualMfaDevice(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The device's serial number, an ARN that embeds the user name for a virtual device.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("serial_number",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:mfa"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -49,9 +50,9 @@ class IamVirtualMfaDevice(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     serial_number = models.CharField(max_length=512, blank=True, default="")
     # ARN of the user the device is enabled for. NULL = not observed; "" = observed, not assigned.
-    user_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    user_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ISO 8601 UTC time the device was enabled; NULL = not observed.
-    enable_date = models.CharField(max_length=512, blank=True, null=True, default=None)
+    enable_date = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

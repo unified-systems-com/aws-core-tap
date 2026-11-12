@@ -20,6 +20,7 @@ class IamSamlProvider(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The provider's ARN, the collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("provider_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:saml-provider"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -50,9 +51,9 @@ class IamSamlProvider(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     provider_arn = models.CharField(max_length=512, blank=True, default="")
     # ISO 8601 UTC time the provider's metadata expires; NULL = not observed.
-    valid_until = models.CharField(max_length=512, blank=True, null=True, default=None)
+    valid_until = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ISO 8601 UTC time the provider was created; NULL = not observed.
-    created_at = models.CharField(max_length=512, blank=True, null=True, default=None)
+    created_at = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

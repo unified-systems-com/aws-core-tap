@@ -19,6 +19,7 @@ class Vpc(BaseModel):
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "round-rectangle",
@@ -42,9 +43,9 @@ class Vpc(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "vpc_id": {"type": "string"},
-        "cidr_block": {"type": "string"},
-        "state": {"type": "string"},
-        "is_default": {"type": "boolean"},
+        "cidr_block": {"type": ["string", "null"]},
+        "state": {"type": ["string", "null"]},
+        "is_default": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -52,9 +53,9 @@ class Vpc(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "vpc_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "cidr_block": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "state": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "is_default": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "cidr_block": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "state": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "is_default": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -64,9 +65,9 @@ class Vpc(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     vpc_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    cidr_block = models.CharField(max_length=64, blank=True, default="")
-    state = models.CharField(max_length=32, blank=True, default="")
-    is_default = models.BooleanField(default=False)
+    cidr_block = models.CharField(max_length=64, null=True, blank=True, default=None)
+    state = models.CharField(max_length=32, null=True, blank=True, default=None)
+    is_default = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
     tags = models.JSONField(null=True, blank=True, default=None)

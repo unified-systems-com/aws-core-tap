@@ -20,6 +20,7 @@ class EbsVolume(BaseModel):
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("volume_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:volume"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -31,10 +32,10 @@ class EbsVolume(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "volume_id": {"type": "string"},
-        "volume_type": {"type": "string"},
+        "volume_type": {"type": ["string", "null"]},
         "size_gb": {"type": ["integer", "null"]},
-        "state": {"type": "string"},
-        "encrypted": {"type": "boolean"},
+        "state": {"type": ["string", "null"]},
+        "encrypted": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -42,10 +43,10 @@ class EbsVolume(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "volume_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "volume_type": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "volume_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "size_gb": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
-        "state": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "encrypted": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "state": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "encrypted": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -55,10 +56,10 @@ class EbsVolume(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     volume_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    volume_type = models.CharField(max_length=32, blank=True, default="")
-    size_gb = models.IntegerField(blank=True, null=True)
-    state = models.CharField(max_length=32, blank=True, default="")
-    encrypted = models.BooleanField(default=False)
+    volume_type = models.CharField(max_length=32, null=True, blank=True, default=None)
+    size_gb = models.IntegerField(null=True, blank=True, default=None)
+    state = models.CharField(max_length=32, null=True, blank=True, default=None)
+    encrypted = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

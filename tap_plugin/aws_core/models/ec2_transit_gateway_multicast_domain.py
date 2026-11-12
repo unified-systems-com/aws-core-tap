@@ -17,6 +17,7 @@ class Ec2TransitGatewayMulticastDomain(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TransitGatewayMulticastDomainArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("transit_gateway_multicast_domain_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:transit-gateway-multicast-domain"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

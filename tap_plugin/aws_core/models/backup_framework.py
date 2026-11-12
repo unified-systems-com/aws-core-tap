@@ -17,6 +17,7 @@ class BackupFramework(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The framework's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("framework_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "backup:framework"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -48,7 +49,7 @@ class BackupFramework(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     framework_arn = models.CharField(max_length=512, blank=True, default="")
     # AWS's deployment status. NULL = not observed.
-    deployment_status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    deployment_status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # How many controls the framework has. NULL = not observed.
     number_of_controls = models.IntegerField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

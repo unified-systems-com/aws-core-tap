@@ -1,0 +1,265 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadEmrContainers",
+      "Effect": "Allow",
+      "Action": [
+        "emr-containers:ListJobTemplates",
+        "emr-containers:ListManagedEndpoints",
+        "emr-containers:ListSecurityConfigurations",
+        "emr-containers:ListVirtualClusters"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadEmrServerless",
+      "Effect": "Allow",
+      "Action": [
+        "emr-serverless:ListApplications",
+        "emr-serverless:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadEs",
+      "Effect": "Allow",
+      "Action": [
+        "es:DescribeDomain",
+        "es:DescribeElasticsearchDomain",
+        "es:GetApplication",
+        "es:ListApplications",
+        "es:ListDataSources",
+        "es:ListDomainNames",
+        "es:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadEvents",
+      "Effect": "Allow",
+      "Action": [
+        "events:ListApiDestinations",
+        "events:ListArchives",
+        "events:ListConnections",
+        "events:ListEndpoints",
+        "events:ListEventBuses",
+        "events:ListRules",
+        "events:ListTagsForResource",
+        "events:ListTargetsByRule"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadFirehose",
+      "Effect": "Allow",
+      "Action": [
+        "firehose:DescribeDeliveryStream",
+        "firehose:ListDeliveryStreams",
+        "firehose:ListTagsForDeliveryStream"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadFms",
+      "Effect": "Allow",
+      "Action": [
+        "fms:ListAppsLists",
+        "fms:ListPolicies",
+        "fms:ListProtocolsLists",
+        "fms:ListResourceSets",
+        "fms:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadFsx",
+      "Effect": "Allow",
+      "Action": [
+        "fsx:DescribeBackups",
+        "fsx:DescribeDataRepositoryAssociations",
+        "fsx:DescribeFileCaches",
+        "fsx:DescribeFileSystems",
+        "fsx:DescribeS3AccessPointAttachments",
+        "fsx:DescribeSnapshots",
+        "fsx:DescribeStorageVirtualMachines",
+        "fsx:DescribeVolumes",
+        "fsx:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadGeo",
+      "Effect": "Allow",
+      "Action": [
+        "geo:DescribeGeofenceCollection",
+        "geo:DescribeMap",
+        "geo:DescribeTracker",
+        "geo:ListGeofenceCollections",
+        "geo:ListKeys",
+        "geo:ListMaps",
+        "geo:ListPlaceIndexes",
+        "geo:ListRouteCalculators",
+        "geo:ListTagsForResource",
+        "geo:ListTrackers"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadGlue",
+      "Effect": "Allow",
+      "Action": [
+        "glue:DescribeConnectionType",
+        "glue:DescribeIntegrations",
+        "glue:GetBlueprint",
+        "glue:GetCatalogs",
+        "glue:GetConnections",
+        "glue:GetCrawlers",
+        "glue:GetDatabases",
+        "glue:GetDevEndpoints",
+        "glue:GetJobs",
+        "glue:GetMLTransforms",
+        "glue:GetSecurityConfigurations",
+        "glue:GetTables",
+        "glue:GetTags",
+        "glue:GetTriggers",
+        "glue:GetWorkflow",
+        "glue:ListBlueprints",
+        "glue:ListConnectionTypes",
+        "glue:ListCustomEntityTypes",
+        "glue:ListDataQualityRulesets",
+        "glue:ListIntegrationResourceProperties",
+        "glue:ListRegistries",
+        "glue:ListSchemaVersions",
+        "glue:ListSchemas",
+        "glue:ListSessions",
+        "glue:ListUsageProfiles",
+        "glue:ListWorkflows"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadGrafana",
+      "Effect": "Allow",
+      "Action": [
+        "grafana:ListWorkspaces"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadGreengrass",
+      "Effect": "Allow",
+      "Action": [
+        "greengrass:ListComponentVersions",
+        "greengrass:ListComponents",
+        "greengrass:ListConnectorDefinitionVersions",
+        "greengrass:ListConnectorDefinitions",
+        "greengrass:ListCoreDefinitionVersions",
+        "greengrass:ListCoreDefinitions",
+        "greengrass:ListDeviceDefinitionVersions",
+        "greengrass:ListDeviceDefinitions",
+        "greengrass:ListFunctionDefinitionVersions",
+        "greengrass:ListFunctionDefinitions",
+        "greengrass:ListGroupVersions",
+        "greengrass:ListGroups",
+        "greengrass:ListLoggerDefinitionVersions",
+        "greengrass:ListLoggerDefinitions",
+        "greengrass:ListResourceDefinitionVersions",
+        "greengrass:ListResourceDefinitions",
+        "greengrass:ListSubscriptionDefinitionVersions",
+        "greengrass:ListSubscriptionDefinitions",
+        "greengrass:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadGuardduty",
+      "Effect": "Allow",
+      "Action": [
+        "guardduty:DescribePublishingDestination",
+        "guardduty:GetFilter",
+        "guardduty:GetIPSet",
+        "guardduty:GetMalwareProtectionPlan",
+        "guardduty:GetThreatEntitySet",
+        "guardduty:GetThreatIntelSet",
+        "guardduty:GetTrustedEntitySet",
+        "guardduty:ListCustomDetectionRuleAssociations",
+        "guardduty:ListDetectors",
+        "guardduty:ListFilters",
+        "guardduty:ListIPSets",
+        "guardduty:ListMalwareProtectionPlans",
+        "guardduty:ListMembers",
+        "guardduty:ListPublishingDestinations",
+        "guardduty:ListTagsForResource",
+        "guardduty:ListThreatEntitySets",
+        "guardduty:ListThreatIntelSets",
+        "guardduty:ListTrustedEntitySets"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadIam",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:GetUser",
+        "iam:ListAttachedGroupPolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListAttachedUserPolicies",
+        "iam:ListInstanceProfileTags",
+        "iam:ListMFADeviceTags",
+        "iam:ListMFADevices",
+        "iam:ListOpenIDConnectProviderTags",
+        "iam:ListPolicyTags",
+        "iam:ListRoleTags",
+        "iam:ListServerCertificateTags",
+        "iam:ListUserTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadIdentitystore",
+      "Effect": "Allow",
+      "Action": [
+        "identitystore:ListGroups",
+        "identitystore:ListUsers"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadInspector",
+      "Effect": "Allow",
+      "Action": [
+        "inspector:DescribeAssessmentTargets",
+        "inspector:DescribeAssessmentTemplates",
+        "inspector:ListAssessmentTargets",
+        "inspector:ListAssessmentTemplates",
+        "inspector:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadInspector2",
+      "Effect": "Allow",
+      "Action": [
+        "inspector2:ListCisScanConfigurations",
+        "inspector2:ListCodeSecurityIntegrations",
+        "inspector2:ListCodeSecurityScanConfigurations",
+        "inspector2:ListConnectors",
+        "inspector2:ListFilters",
+        "inspector2:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadInternetmonitor",
+      "Effect": "Allow",
+      "Action": [
+        "internetmonitor:GetMonitor",
+        "internetmonitor:ListMonitors",
+        "internetmonitor:ListTagsForResource"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

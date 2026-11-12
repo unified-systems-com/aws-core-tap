@@ -17,6 +17,9 @@ class SecurityhubInsight(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The insight's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("insight_arn",)
+    # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
+    # so it cannot be built when absent.
+    ARN_RESOURCE: ClassVar[str | None] = None
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
@@ -43,7 +46,7 @@ class SecurityhubInsight(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     insight_arn = models.CharField(max_length=512, blank=True, default="")
     # The finding attribute the insight groups by. NULL = not observed.
-    group_by_attribute = models.CharField(max_length=512, blank=True, null=True, default=None)
+    group_by_attribute = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -17,6 +17,7 @@ class BackupLogicallyAirGappedBackupVault(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (BackupVaultArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("backup_logically_air_gapped_backup_vault_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "backup:backupVault"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class RdsDbSubnetGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subnet group's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_subnet_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "rds:subgrp"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -44,9 +45,9 @@ class RdsDbSubnetGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     db_subnet_group_arn = models.CharField(max_length=2048, blank=True, default="")
     # The VPC the subnets are in. NULL = not observed.
-    vpc_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    vpc_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # AWS's status (Complete, ...). NULL = not observed.
-    status = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    status = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The subnets in the group. NULL = not observed.
     subnet_ids = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

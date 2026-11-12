@@ -17,6 +17,7 @@ class SecuritylakeSubscriber(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (subscriberArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("subscriber_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "securitylake:subscriber"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

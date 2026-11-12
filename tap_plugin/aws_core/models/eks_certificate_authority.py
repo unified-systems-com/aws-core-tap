@@ -15,7 +15,7 @@ class EksCertificateAuthority(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EKS Certificate Authority."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The account, the region, the cluster name and the authority id (ClusterName and Id, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the cluster and the id.
+    # Identity (req-grid-entity-natural-key): The account, the region, the cluster name and the authority id (ClusterName and Id, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the cluster and the id. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("eks_certificate_authority_key",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

@@ -50,11 +50,11 @@ class CognitoUserPoolGroup(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     group_key = models.CharField(max_length=512, blank=True, default="")
     # The user pool the group belongs to. NULL = not observed.
-    user_pool_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    user_pool_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The group's precedence when a user is in several. NULL = not set, or not observed.
     precedence = models.IntegerField(null=True, blank=True, default=None)
     # The IAM role the group's members receive. NULL = none, or not observed.
-    role_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    role_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

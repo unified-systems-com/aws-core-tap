@@ -132,6 +132,36 @@ def log_group_arn(value: object, *, source_key: object = None) -> str | None:
     return build_arn(source.partition, "logs", source.region, source.account, f"log-group:{candidate}")
 
 
+def _sibling_arn(value: object, source_key: object, service: str, resource_prefix: str) -> str | None:
+    """A bare name in the referring node's own account and region -> that resource's ARN.
+
+    The referring value (a cluster's cache subnet group name, a snapshot's database identifier) names a
+    resource of the same service in the same account and region; partition, region and account are read from
+    ``source_key``, the referring node's own ARN. A source key that is not a regional ARN drops the edge.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    source = parse_arn(source_key)
+    if source is None or not source.region or not source.account.isdigit():
+        return None
+    return build_arn(source.partition, service, source.region, source.account, f"{resource_prefix}:{value.strip()}")
+
+
+def elasticache_subnet_group_arn(value: object, *, source_key: object = None) -> str | None:
+    """A cluster's ``CacheSubnetGroupName`` -> the subnet group's ARN (its natural key)."""
+    return _sibling_arn(value, source_key, "elasticache", "subnetgroup")
+
+
+def rds_instance_arn(value: object, *, source_key: object = None) -> str | None:
+    """A snapshot's ``DBInstanceIdentifier`` -> the DB instance's ARN (its natural key)."""
+    return _sibling_arn(value, source_key, "rds", "db")
+
+
+def rds_cluster_arn(value: object, *, source_key: object = None) -> str | None:
+    """A cluster snapshot's ``DBClusterIdentifier`` -> the DB cluster's ARN (its natural key)."""
+    return _sibling_arn(value, source_key, "rds", "cluster")
+
+
 def customer_managed_policy_arn_or_none(value: object) -> str | None:
     """An attached managed-policy ARN -> the target policy's natural key, only if it is customer-managed.
 
@@ -152,6 +182,9 @@ _TRANSFORMS: dict[str, Callable[..., Any]] = {
     "kms_key_arn_or_none": kms_key_arn_or_none,
     "s3_bucket_arn_from_name": s3_bucket_arn_from_name,
     "log_group_arn": log_group_arn,
+    "elasticache_subnet_group_arn": elasticache_subnet_group_arn,
+    "rds_instance_arn": rds_instance_arn,
+    "rds_cluster_arn": rds_cluster_arn,
 }
 
 
@@ -161,7 +194,7 @@ _PARTITION_AWARE = frozenset({"s3_bucket_name_from_origin_domain", "s3_bucket_ar
 
 # Transforms that read the REFERRING node's natural key (its ARN) for the region and account the
 # referring value does not carry (TransformRegistry.register(source_aware=True)).
-_SOURCE_AWARE = frozenset({"log_group_arn"})
+_SOURCE_AWARE = frozenset({"log_group_arn", "elasticache_subnet_group_arn", "rds_instance_arn", "rds_cluster_arn"})
 
 
 def build_transform_registry(partition: str = PARTITION_AWS) -> TransformRegistry:

@@ -17,6 +17,7 @@ class PollyLexicon(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Attributes.LexiconArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("polly_lexicon_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "polly:lexicon"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

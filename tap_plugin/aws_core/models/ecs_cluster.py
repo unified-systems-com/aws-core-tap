@@ -18,6 +18,14 @@ class EcsCluster(BaseModel):
     # Identity (req-grid-entity-natural-key): The cluster's ARN: a cluster name is unique only within
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ecs:cluster"
+    # A cluster contains the tasks it runs (aws-core-tap#211): a task the cluster's complete running listing
+    # no longer names is a retirement candidate, and retiring the cluster cascades to its tasks. RUNS_TASK from
+    # a service is a reference, not containment. Literals, for validate_plugin's AST reader.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_ecs_task"}], "edges": [{"type": "RUNS_TASK__aws_core"}]},
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = ("RUNS_TASK__aws_core",)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -29,7 +37,7 @@ class EcsCluster(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "cluster_arn": {"type": "string"},
-        "status": {"type": "string"},
+        "status": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -37,7 +45,7 @@ class EcsCluster(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "cluster_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "status": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -45,7 +53,7 @@ class EcsCluster(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     cluster_arn = models.CharField(max_length=512, blank=True, default="")
-    status = models.CharField(max_length=64, blank=True, default="")
+    status = models.CharField(max_length=64, null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

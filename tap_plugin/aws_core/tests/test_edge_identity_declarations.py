@@ -21,10 +21,9 @@ from tap_grid.edge_identity_shape import check_edge_identity
 
 EDGES = Path(__file__).resolve().parent.parent / "edges"
 
-#: Types left undeclared on purpose, each with the issue that settles it. ROUTES_TRAFFIC's unit of
-#: meaning (separate types, ``destination_cidr`` / ``port`` discriminators, or routes as nodes) is
-#: decided when its emitters are built.
-DEFERRED = {"ROUTES_TRAFFIC__aws_core": "aws-core-tap#64"}
+#: Types left undeclared on purpose, each with the issue that settles it. None today: ROUTES_TRAFFIC
+#: declares a plain key now that its load balancer and DNS zone emitters exist.
+DEFERRED: dict[str, str] = {}
 
 DEFINITIONS = sorted(EDGES.glob("*.edge.json"))
 

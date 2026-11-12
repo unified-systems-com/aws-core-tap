@@ -307,10 +307,13 @@ def _set_param(params: dict[str, Any], name: str, value: Any) -> None:
 
 
 def _bound_value(parent: Any, path: Any) -> Any:
-    """One ``bind`` value: a path string, or ``{path, list: true}`` for a list-typed request parameter."""
+    """One ``bind`` value: a path string, or ``{path, list: true}`` for a list-typed request parameter (a scalar is wrapped, a list kept)."""
     if isinstance(path, dict):
         value = eval_path(parent, path["path"])
-        return [value] if path.get("list") and value not in (None, "", []) else value
+        if path.get("list") and value not in (None, "", []):
+            # A scalar becomes a one-element list; a path that already projects a list (a service's task set ARNs) is the list.
+            return value if isinstance(value, list) else [value]
+        return value
     return eval_path(parent, path)
 
 

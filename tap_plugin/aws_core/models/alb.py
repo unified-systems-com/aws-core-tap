@@ -18,6 +18,7 @@ class Alb(BaseModel):
     # Identity (req-grid-entity-natural-key): The load balancer's ARN: unique across accounts and
     # regions, stable across renames.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("lb_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:loadbalancer/app/"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",
@@ -28,9 +29,9 @@ class Alb(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "lb_arn": {"type": "string"},
-        "dns_name": {"type": "string"},
-        "scheme": {"type": "string"},
-        "state": {"type": "string"},
+        "dns_name": {"type": ["string", "null"]},
+        "scheme": {"type": ["string", "null"]},
+        "state": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -38,9 +39,9 @@ class Alb(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "lb_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "dns_name": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "scheme": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "state": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "dns_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "scheme": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "state": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -48,9 +49,9 @@ class Alb(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     lb_arn = models.CharField(max_length=512, blank=True, default="")
-    dns_name = models.CharField(max_length=512, blank=True, default="")
-    scheme = models.CharField(max_length=32, blank=True, default="")
-    state = models.CharField(max_length=32, blank=True, default="")
+    dns_name = models.CharField(max_length=512, null=True, blank=True, default=None)
+    scheme = models.CharField(max_length=32, null=True, blank=True, default=None)
+    state = models.CharField(max_length=32, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

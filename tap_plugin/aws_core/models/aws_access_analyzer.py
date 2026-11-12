@@ -35,6 +35,7 @@ class AwsAccessAnalyzer(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("analyzer_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "access-analyzer:Analyzer"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {
@@ -47,11 +48,11 @@ class AwsAccessAnalyzer(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "analyzer_arn": {"type": "string"},
-        "analyzer_name": {"type": "string"},
+        "analyzer_name": {"type": ["string", "null"]},
         # The API's `type`, verbatim (ACCOUNT, ORGANIZATION, ..._UNUSED_ACCESS, ..._INTERNAL_ACCESS).
-        "analyzer_type": {"type": "string"},
-        "status": {"type": "string"},
-        "created_at": {"type": "string"},
+        "analyzer_type": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "created_at": {"type": ["string", "null"]},
         # Active findings (aws-core-tap#76): {label: count}. Exact when
         # active_finding_counts_complete is true; otherwise a lower bound over the capped read.
         # Null when nothing was read.
@@ -73,10 +74,10 @@ class AwsAccessAnalyzer(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     analyzer_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    analyzer_name = models.CharField(max_length=255, blank=True, default="")
-    analyzer_type = models.CharField(max_length=64, blank=True, default="")
-    status = models.CharField(max_length=32, blank=True, default="")
-    created_at = models.CharField(max_length=40, blank=True, default="")
+    analyzer_name = models.CharField(max_length=255, null=True, blank=True, default=None)
+    analyzer_type = models.CharField(max_length=64, null=True, blank=True, default=None)
+    status = models.CharField(max_length=32, null=True, blank=True, default=None)
+    created_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     # Active findings (aws-core-tap#76; collectors/boto3_collector/findings.py). Null is "not read".
     active_finding_counts = models.JSONField(null=True, blank=True, default=None)
     active_finding_counts_complete = models.BooleanField(null=True, blank=True, default=None)

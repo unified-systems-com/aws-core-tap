@@ -1,0 +1,7172 @@
+{
+ "description": "For each operation the collector makes, the IAM actions that authorise it, from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/). Rebuilt by iam_policy.py --refresh. 'dropped' lists actions the reference attaches to the operation that write, manage permissions or read the data plane; a read operation does not need them and the collector is not granted them.",
+ "operations": {
+  "accessanalyzer:list_analyzers": {
+   "actions": [
+    "access-analyzer:ListAnalyzers"
+   ],
+   "dropped": []
+  },
+  "accessanalyzer:list_archive_rules": {
+   "actions": [
+    "access-analyzer:ListArchiveRules"
+   ],
+   "dropped": []
+  },
+  "accessanalyzer:list_tags_for_resource": {
+   "actions": [
+    "access-analyzer:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "acm-pca:list_certificate_authorities": {
+   "actions": [
+    "acm-pca:ListCertificateAuthorities"
+   ],
+   "dropped": []
+  },
+  "acm-pca:list_tags": {
+   "actions": [
+    "acm-pca:ListTags"
+   ],
+   "dropped": []
+  },
+  "acm:describe_certificate": {
+   "actions": [
+    "acm:DescribeCertificate"
+   ],
+   "dropped": []
+  },
+  "acm:list_acme_domain_validations": {
+   "actions": [],
+   "dropped": []
+  },
+  "acm:list_acme_endpoints": {
+   "actions": [],
+   "dropped": []
+  },
+  "acm:list_acme_external_account_bindings": {
+   "actions": [],
+   "dropped": []
+  },
+  "acm:list_certificates": {
+   "actions": [
+    "acm:ListCertificates"
+   ],
+   "dropped": []
+  },
+  "acm:list_tags_for_resource": {
+   "actions": [
+    "acm:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "amp:list_anomaly_detectors": {
+   "actions": [
+    "aps:ListAnomalyDetectors"
+   ],
+   "dropped": []
+  },
+  "amp:list_rule_groups_namespaces": {
+   "actions": [
+    "aps:ListRuleGroupsNamespaces"
+   ],
+   "dropped": []
+  },
+  "amp:list_scrapers": {
+   "actions": [
+    "aps:ListScrapers"
+   ],
+   "dropped": []
+  },
+  "amp:list_workspaces": {
+   "actions": [
+    "aps:ListWorkspaces"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_api_keys": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_authorizers": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_client_certificates": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_domain_name_access_associations": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_domain_names": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_rest_apis": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_stages": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_usage_plans": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigateway:get_vpc_links": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_apis": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_authorizers": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_domain_names": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_integrations": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_routes": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_stages": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:get_vpc_links": {
+   "actions": [
+    "apigateway:GET"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:list_portal_products": {
+   "actions": [
+    "apigateway:ListPortalProducts"
+   ],
+   "dropped": []
+  },
+  "apigatewayv2:list_routing_rules": {
+   "actions": [
+    "apigateway:ListRoutingRules"
+   ],
+   "dropped": []
+  },
+  "appconfig:list_extensions": {
+   "actions": [
+    "appconfig:ListExtensions"
+   ],
+   "dropped": []
+  },
+  "appconfig:list_tags_for_resource": {
+   "actions": [
+    "appconfig:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "application-autoscaling:describe_scalable_targets": {
+   "actions": [
+    "application-autoscaling:DescribeScalableTargets"
+   ],
+   "dropped": []
+  },
+  "application-autoscaling:describe_scaling_policies": {
+   "actions": [
+    "application-autoscaling:DescribeScalingPolicies"
+   ],
+   "dropped": []
+  },
+  "application-autoscaling:list_tags_for_resource": {
+   "actions": [
+    "application-autoscaling:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_app_block_builders": {
+   "actions": [
+    "appstream:DescribeAppBlockBuilders"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_app_blocks": {
+   "actions": [
+    "appstream:DescribeAppBlocks"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_applications": {
+   "actions": [
+    "appstream:DescribeApplications"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_directory_configs": {
+   "actions": [
+    "appstream:DescribeDirectoryConfigs"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_entitlements": {
+   "actions": [
+    "appstream:DescribeEntitlements"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_fleets": {
+   "actions": [
+    "appstream:DescribeFleets"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_image_builders": {
+   "actions": [
+    "appstream:DescribeImageBuilders"
+   ],
+   "dropped": []
+  },
+  "appstream:describe_stacks": {
+   "actions": [
+    "appstream:DescribeStacks"
+   ],
+   "dropped": []
+  },
+  "appstream:list_tags_for_resource": {
+   "actions": [
+    "appstream:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "athena:get_named_query": {
+   "actions": [
+    "athena:GetNamedQuery"
+   ],
+   "dropped": []
+  },
+  "athena:list_capacity_reservations": {
+   "actions": [
+    "athena:ListCapacityReservations"
+   ],
+   "dropped": []
+  },
+  "athena:list_data_catalogs": {
+   "actions": [
+    "athena:ListDataCatalogs"
+   ],
+   "dropped": []
+  },
+  "athena:list_named_queries": {
+   "actions": [
+    "athena:ListNamedQueries"
+   ],
+   "dropped": []
+  },
+  "athena:list_tags_for_resource": {
+   "actions": [
+    "athena:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "athena:list_work_groups": {
+   "actions": [
+    "athena:ListWorkGroups"
+   ],
+   "dropped": []
+  },
+  "autoscaling-plans:describe_scaling_plans": {
+   "actions": [
+    "autoscaling-plans:DescribeScalingPlans"
+   ],
+   "dropped": []
+  },
+  "autoscaling:describe_auto_scaling_groups": {
+   "actions": [
+    "autoscaling:DescribeAutoScalingGroups"
+   ],
+   "dropped": []
+  },
+  "autoscaling:describe_launch_configurations": {
+   "actions": [
+    "autoscaling:DescribeLaunchConfigurations"
+   ],
+   "dropped": []
+  },
+  "autoscaling:describe_lifecycle_hooks": {
+   "actions": [
+    "autoscaling:DescribeLifecycleHooks"
+   ],
+   "dropped": []
+  },
+  "autoscaling:describe_policies": {
+   "actions": [
+    "autoscaling:DescribePolicies"
+   ],
+   "dropped": []
+  },
+  "autoscaling:describe_scheduled_actions": {
+   "actions": [
+    "autoscaling:DescribeScheduledActions"
+   ],
+   "dropped": []
+  },
+  "backup-gateway:get_hypervisor": {
+   "actions": [
+    "backup-gateway:GetHypervisor"
+   ],
+   "dropped": []
+  },
+  "backup-gateway:list_hypervisors": {
+   "actions": [
+    "backup-gateway:ListHypervisors"
+   ],
+   "dropped": []
+  },
+  "backup-gateway:list_tags_for_resource": {
+   "actions": [
+    "backup-gateway:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "backup:describe_backup_vault": {
+   "actions": [
+    "backup:DescribeBackupVault"
+   ],
+   "dropped": []
+  },
+  "backup:get_backup_plan": {
+   "actions": [
+    "backup:GetBackupPlan"
+   ],
+   "dropped": []
+  },
+  "backup:list_backup_plans": {
+   "actions": [
+    "backup:ListBackupPlans"
+   ],
+   "dropped": []
+  },
+  "backup:list_backup_selections": {
+   "actions": [
+    "backup:ListBackupSelections"
+   ],
+   "dropped": []
+  },
+  "backup:list_backup_vaults": {
+   "actions": [
+    "backup:ListBackupVaults"
+   ],
+   "dropped": []
+  },
+  "backup:list_frameworks": {
+   "actions": [
+    "backup:ListFrameworks"
+   ],
+   "dropped": []
+  },
+  "backup:list_legal_holds": {
+   "actions": [
+    "backup:ListLegalHolds"
+   ],
+   "dropped": []
+  },
+  "backup:list_report_plans": {
+   "actions": [
+    "backup:ListReportPlans"
+   ],
+   "dropped": []
+  },
+  "backup:list_restore_testing_plans": {
+   "actions": [
+    "backup:ListRestoreTestingPlans"
+   ],
+   "dropped": []
+  },
+  "backup:list_restore_testing_selections": {
+   "actions": [
+    "backup:ListRestoreTestingSelections"
+   ],
+   "dropped": []
+  },
+  "backup:list_tags": {
+   "actions": [
+    "backup:ListTags"
+   ],
+   "dropped": []
+  },
+  "backup:list_tiering_configurations": {
+   "actions": [
+    "backup:ListTieringConfigurations"
+   ],
+   "dropped": []
+  },
+  "batch:describe_compute_environments": {
+   "actions": [
+    "batch:DescribeComputeEnvironments"
+   ],
+   "dropped": []
+  },
+  "batch:describe_job_definitions": {
+   "actions": [
+    "batch:DescribeJobDefinitions"
+   ],
+   "dropped": []
+  },
+  "batch:describe_job_queues": {
+   "actions": [
+    "batch:DescribeJobQueues"
+   ],
+   "dropped": []
+  },
+  "batch:describe_service_environments": {
+   "actions": [
+    "batch:DescribeServiceEnvironments"
+   ],
+   "dropped": []
+  },
+  "batch:list_consumable_resources": {
+   "actions": [
+    "batch:ListConsumableResources"
+   ],
+   "dropped": []
+  },
+  "batch:list_quota_shares": {
+   "actions": [
+    "batch:ListQuotaShares"
+   ],
+   "dropped": []
+  },
+  "batch:list_scheduling_policies": {
+   "actions": [
+    "batch:ListSchedulingPolicies"
+   ],
+   "dropped": []
+  },
+  "batch:list_tags_for_resource": {
+   "actions": [
+    "batch:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:get_agent": {
+   "actions": [
+    "bedrock:GetAgent"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:get_knowledge_base": {
+   "actions": [
+    "bedrock:GetKnowledgeBase"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:get_retrieval_instruction": {
+   "actions": [
+    "bedrock:GetRetrievalInstruction"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_agent_aliases": {
+   "actions": [
+    "bedrock:ListAgentAliases"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_agents": {
+   "actions": [
+    "bedrock:ListAgents"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_data_sources": {
+   "actions": [
+    "bedrock:ListDataSources"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_flow_aliases": {
+   "actions": [
+    "bedrock:ListFlowAliases"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_flow_versions": {
+   "actions": [
+    "bedrock:ListFlowVersions"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_flows": {
+   "actions": [
+    "bedrock:ListFlows"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_knowledge_bases": {
+   "actions": [
+    "bedrock:ListKnowledgeBases"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_prompts": {
+   "actions": [
+    "bedrock:ListPrompts"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_retrieval_instructions": {
+   "actions": [
+    "bedrock:ListRetrievalInstructions"
+   ],
+   "dropped": []
+  },
+  "bedrock-agent:list_tags_for_resource": {
+   "actions": [
+    "bedrock:ListTagsForResource"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "bedrock-data-automation:get_blueprint": {
+   "actions": [
+    "bedrock:GetBlueprint"
+   ],
+   "dropped": []
+  },
+  "bedrock-data-automation:get_data_automation_library": {
+   "actions": [
+    "bedrock:GetDataAutomationLibrary"
+   ],
+   "dropped": []
+  },
+  "bedrock-data-automation:get_data_automation_project": {
+   "actions": [
+    "bedrock:GetDataAutomationProject"
+   ],
+   "dropped": []
+  },
+  "bedrock-data-automation:list_blueprints": {
+   "actions": [
+    "bedrock:ListBlueprints"
+   ],
+   "dropped": []
+  },
+  "bedrock-data-automation:list_data_automation_libraries": {
+   "actions": [
+    "bedrock:ListDataAutomationLibraries"
+   ],
+   "dropped": []
+  },
+  "bedrock-data-automation:list_data_automation_projects": {
+   "actions": [
+    "bedrock:ListDataAutomationProjects"
+   ],
+   "dropped": []
+  },
+  "bedrock-data-automation:list_tags_for_resource": {
+   "actions": [
+    "bedrock:ListTagsForResource"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "bedrock:list_automated_reasoning_policies": {
+   "actions": [
+    "bedrock:ListAutomatedReasoningPolicies"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "bedrock:list_guardrails": {
+   "actions": [
+    "bedrock:ListGuardrails"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "bedrock:list_inference_profiles": {
+   "actions": [
+    "bedrock:ListInferenceProfiles"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "bedrock:list_prompt_routers": {
+   "actions": [
+    "bedrock:ListPromptRouters"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "bedrock:list_tags_for_resource": {
+   "actions": [
+    "bedrock:ListTagsForResource"
+   ],
+   "dropped": [
+    {
+     "action": "bedrock:CallWithBearerToken",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "cloudformation:describe_change_set": {
+   "actions": [
+    "cloudformation:DescribeChangeSet"
+   ],
+   "dropped": []
+  },
+  "cloudformation:describe_generated_template": {
+   "actions": [
+    "cloudformation:DescribeGeneratedTemplate"
+   ],
+   "dropped": []
+  },
+  "cloudformation:describe_stack_set": {
+   "actions": [
+    "cloudformation:DescribeStackSet"
+   ],
+   "dropped": []
+  },
+  "cloudformation:describe_stacks": {
+   "actions": [
+    "cloudformation:DescribeStacks",
+    "cloudformation:ListStacks"
+   ],
+   "dropped": []
+  },
+  "cloudformation:list_change_sets": {
+   "actions": [
+    "cloudformation:ListChangeSets"
+   ],
+   "dropped": []
+  },
+  "cloudformation:list_generated_templates": {
+   "actions": [
+    "cloudformation:ListGeneratedTemplates"
+   ],
+   "dropped": []
+  },
+  "cloudformation:list_stack_sets": {
+   "actions": [
+    "cloudformation:ListStackSets"
+   ],
+   "dropped": []
+  },
+  "cloudformation:list_type_versions": {
+   "actions": [
+    "cloudformation:ListTypeVersions"
+   ],
+   "dropped": []
+  },
+  "cloudformation:list_types": {
+   "actions": [
+    "cloudformation:ListTypes"
+   ],
+   "dropped": []
+  },
+  "cloudfront:list_tags_for_resource": {
+   "actions": [
+    "cloudfront:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "cloudhsmv2:describe_clusters": {
+   "actions": [
+    "cloudhsm:DescribeClusters"
+   ],
+   "dropped": []
+  },
+  "cloudtrail:describe_trails": {
+   "actions": [
+    "cloudtrail:DescribeTrails"
+   ],
+   "dropped": []
+  },
+  "cloudtrail:get_trail_status": {
+   "actions": [
+    "cloudtrail:GetTrailStatus"
+   ],
+   "dropped": []
+  },
+  "cloudtrail:list_channels": {
+   "actions": [
+    "cloudtrail:ListChannels"
+   ],
+   "dropped": []
+  },
+  "cloudtrail:list_dashboards": {
+   "actions": [
+    "cloudtrail:ListDashboards"
+   ],
+   "dropped": []
+  },
+  "cloudtrail:list_event_data_stores": {
+   "actions": [
+    "cloudtrail:ListEventDataStores"
+   ],
+   "dropped": []
+  },
+  "cloudtrail:list_tags": {
+   "actions": [
+    "cloudtrail:ListTags"
+   ],
+   "dropped": []
+  },
+  "cloudwatch:describe_alarms": {
+   "actions": [
+    "cloudwatch:DescribeAlarms"
+   ],
+   "dropped": []
+  },
+  "cloudwatch:get_metric_data": {
+   "actions": [],
+   "dropped": [
+    {
+     "action": "cloudwatch:GetMetricData",
+     "why": "IsDataPlane"
+    }
+   ]
+  },
+  "cloudwatch:list_alarm_mute_rules": {
+   "actions": [
+    "cloudwatch:ListAlarmMuteRules"
+   ],
+   "dropped": []
+  },
+  "cloudwatch:list_dashboards": {
+   "actions": [
+    "cloudwatch:ListDashboards"
+   ],
+   "dropped": []
+  },
+  "cloudwatch:list_metric_streams": {
+   "actions": [
+    "cloudwatch:ListMetricStreams"
+   ],
+   "dropped": []
+  },
+  "cloudwatch:list_tags_for_resource": {
+   "actions": [
+    "cloudwatch:ListTagsForResource",
+    "oam:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "cloudwatchomni:list_omni_dashboards": {
+   "actions": [
+    "cloudwatch:ListOmniDashboards"
+   ],
+   "dropped": []
+  },
+  "cloudwatchomni:list_spaces": {
+   "actions": [
+    "cloudwatch:ListSpaces"
+   ],
+   "dropped": []
+  },
+  "codebuild:batch_get_fleets": {
+   "actions": [
+    "codebuild:BatchGetFleets"
+   ],
+   "dropped": []
+  },
+  "codebuild:batch_get_projects": {
+   "actions": [
+    "codebuild:BatchGetProjects"
+   ],
+   "dropped": []
+  },
+  "codebuild:batch_get_report_groups": {
+   "actions": [
+    "codebuild:BatchGetReportGroups"
+   ],
+   "dropped": []
+  },
+  "codebuild:list_fleets": {
+   "actions": [
+    "codebuild:ListFleets"
+   ],
+   "dropped": []
+  },
+  "codebuild:list_projects": {
+   "actions": [
+    "codebuild:ListProjects"
+   ],
+   "dropped": []
+  },
+  "codebuild:list_report_groups": {
+   "actions": [
+    "codebuild:ListReportGroups"
+   ],
+   "dropped": []
+  },
+  "codebuild:list_source_credentials": {
+   "actions": [
+    "codebuild:ListSourceCredentials"
+   ],
+   "dropped": []
+  },
+  "codecommit:batch_get_repositories": {
+   "actions": [
+    "codecommit:BatchGetRepositories"
+   ],
+   "dropped": []
+  },
+  "codecommit:list_repositories": {
+   "actions": [
+    "codecommit:ListRepositories"
+   ],
+   "dropped": []
+  },
+  "codecommit:list_tags_for_resource": {
+   "actions": [
+    "codecommit:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "codedeploy:get_application": {
+   "actions": [
+    "codedeploy:GetApplication"
+   ],
+   "dropped": []
+  },
+  "codedeploy:get_deployment_config": {
+   "actions": [
+    "codedeploy:GetDeploymentConfig"
+   ],
+   "dropped": []
+  },
+  "codedeploy:get_deployment_group": {
+   "actions": [
+    "codedeploy:GetDeploymentGroup"
+   ],
+   "dropped": []
+  },
+  "codedeploy:list_applications": {
+   "actions": [
+    "codedeploy:ListApplications"
+   ],
+   "dropped": []
+  },
+  "codedeploy:list_deployment_configs": {
+   "actions": [
+    "codedeploy:ListDeploymentConfigs"
+   ],
+   "dropped": []
+  },
+  "codedeploy:list_deployment_groups": {
+   "actions": [
+    "codedeploy:ListDeploymentGroups"
+   ],
+   "dropped": []
+  },
+  "codedeploy:list_tags_for_resource": {
+   "actions": [
+    "codedeploy:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "codepipeline:get_pipeline": {
+   "actions": [
+    "codepipeline:GetPipeline"
+   ],
+   "dropped": []
+  },
+  "codepipeline:list_action_types": {
+   "actions": [
+    "codepipeline:ListActionTypes"
+   ],
+   "dropped": []
+  },
+  "codepipeline:list_pipelines": {
+   "actions": [
+    "codepipeline:ListPipelines"
+   ],
+   "dropped": []
+  },
+  "codepipeline:list_tags_for_resource": {
+   "actions": [
+    "codepipeline:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "codepipeline:list_webhooks": {
+   "actions": [
+    "codepipeline:ListWebhooks"
+   ],
+   "dropped": []
+  },
+  "codestar-connections:list_connections": {
+   "actions": [
+    "codeconnections:ListConnections",
+    "codestar-connections:ListConnections"
+   ],
+   "dropped": []
+  },
+  "codestar-connections:list_repository_links": {
+   "actions": [
+    "codeconnections:ListRepositoryLinks",
+    "codestar-connections:ListRepositoryLinks"
+   ],
+   "dropped": []
+  },
+  "codestar-connections:list_tags_for_resource": {
+   "actions": [
+    "codeconnections:ListTagsForResource",
+    "codestar-connections:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "cognito-identity:describe_identity_pool": {
+   "actions": [
+    "cognito-identity:DescribeIdentityPool"
+   ],
+   "dropped": []
+  },
+  "cognito-identity:list_identity_pools": {
+   "actions": [
+    "cognito-identity:ListIdentityPools"
+   ],
+   "dropped": []
+  },
+  "cognito-identity:list_tags_for_resource": {
+   "actions": [
+    "cognito-identity:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:describe_identity_provider": {
+   "actions": [
+    "cognito-idp:DescribeIdentityProvider"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:describe_user_pool": {
+   "actions": [
+    "cognito-idp:DescribeUserPool"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:describe_user_pool_client": {
+   "actions": [
+    "cognito-idp:DescribeUserPoolClient"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:describe_user_pool_domain": {
+   "actions": [
+    "cognito-idp:DescribeUserPoolDomain"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_groups": {
+   "actions": [
+    "cognito-idp:ListGroups"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_identity_providers": {
+   "actions": [
+    "cognito-idp:ListIdentityProviders"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_resource_servers": {
+   "actions": [
+    "cognito-idp:ListResourceServers"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_tags_for_resource": {
+   "actions": [
+    "cognito-idp:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_user_pool_clients": {
+   "actions": [
+    "cognito-idp:ListUserPoolClients"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_user_pools": {
+   "actions": [
+    "cognito-idp:ListUserPools"
+   ],
+   "dropped": []
+  },
+  "cognito-idp:list_users": {
+   "actions": [
+    "cognito-idp:ListUsers"
+   ],
+   "dropped": []
+  },
+  "comprehend:describe_flywheel": {
+   "actions": [
+    "comprehend:DescribeFlywheel"
+   ],
+   "dropped": []
+  },
+  "comprehend:list_document_classifiers": {
+   "actions": [
+    "comprehend:ListDocumentClassifiers"
+   ],
+   "dropped": []
+  },
+  "comprehend:list_endpoints": {
+   "actions": [
+    "comprehend:ListEndpoints"
+   ],
+   "dropped": []
+  },
+  "comprehend:list_entity_recognizers": {
+   "actions": [
+    "comprehend:ListEntityRecognizers"
+   ],
+   "dropped": []
+  },
+  "comprehend:list_flywheels": {
+   "actions": [
+    "comprehend:ListFlywheels"
+   ],
+   "dropped": []
+  },
+  "comprehend:list_tags_for_resource": {
+   "actions": [
+    "comprehend:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "config:describe_aggregation_authorizations": {
+   "actions": [
+    "config:DescribeAggregationAuthorizations"
+   ],
+   "dropped": []
+  },
+  "config:describe_organization_config_rules": {
+   "actions": [
+    "config:DescribeOrganizationConfigRules"
+   ],
+   "dropped": []
+  },
+  "config:describe_organization_conformance_packs": {
+   "actions": [
+    "config:DescribeOrganizationConformancePacks"
+   ],
+   "dropped": []
+  },
+  "config:list_connectors": {
+   "actions": [
+    "config:ListConnectors"
+   ],
+   "dropped": []
+  },
+  "config:list_stored_queries": {
+   "actions": [
+    "config:ListStoredQueries"
+   ],
+   "dropped": []
+  },
+  "config:list_tags_for_resource": {
+   "actions": [
+    "config:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "connect:list_agent_statuses": {
+   "actions": [
+    "connect:ListAgentStatuses"
+   ],
+   "dropped": []
+  },
+  "connect:list_contact_flow_module_aliases": {
+   "actions": [
+    "connect:ListContactFlowModuleAliases"
+   ],
+   "dropped": []
+  },
+  "connect:list_contact_flow_module_versions": {
+   "actions": [
+    "connect:ListContactFlowModuleVersions"
+   ],
+   "dropped": []
+  },
+  "connect:list_contact_flow_modules": {
+   "actions": [
+    "connect:ListContactFlowModules"
+   ],
+   "dropped": []
+  },
+  "connect:list_contact_flow_versions": {
+   "actions": [
+    "connect:ListContactFlowVersions"
+   ],
+   "dropped": []
+  },
+  "connect:list_contact_flows": {
+   "actions": [
+    "connect:ListContactFlows"
+   ],
+   "dropped": []
+  },
+  "connect:list_data_tables": {
+   "actions": [
+    "connect:ListDataTables"
+   ],
+   "dropped": []
+  },
+  "connect:list_evaluation_forms": {
+   "actions": [
+    "connect:ListEvaluationForms"
+   ],
+   "dropped": []
+  },
+  "connect:list_hours_of_operations": {
+   "actions": [
+    "connect:ListHoursOfOperations"
+   ],
+   "dropped": []
+  },
+  "connect:list_instances": {
+   "actions": [
+    "connect:ListInstances"
+   ],
+   "dropped": []
+  },
+  "connect:list_integration_associations": {
+   "actions": [
+    "connect:ListIntegrationAssociations"
+   ],
+   "dropped": []
+  },
+  "connect:list_metrics": {
+   "actions": [
+    "connect:ListMetrics"
+   ],
+   "dropped": []
+  },
+  "connect:list_notifications": {
+   "actions": [
+    "connect:ListNotifications"
+   ],
+   "dropped": []
+  },
+  "connect:list_phone_numbers": {
+   "actions": [
+    "connect:ListPhoneNumbers"
+   ],
+   "dropped": []
+  },
+  "connect:list_prompts": {
+   "actions": [
+    "connect:ListPrompts"
+   ],
+   "dropped": []
+  },
+  "connect:list_queues": {
+   "actions": [
+    "connect:ListQueues"
+   ],
+   "dropped": []
+  },
+  "connect:list_quick_connects": {
+   "actions": [
+    "connect:ListQuickConnects"
+   ],
+   "dropped": []
+  },
+  "connect:list_routing_profiles": {
+   "actions": [
+    "connect:ListRoutingProfiles"
+   ],
+   "dropped": []
+  },
+  "connect:list_rules": {
+   "actions": [
+    "connect:ListRules"
+   ],
+   "dropped": []
+  },
+  "connect:list_security_profiles": {
+   "actions": [
+    "connect:ListSecurityProfiles"
+   ],
+   "dropped": []
+  },
+  "connect:list_tags_for_resource": {
+   "actions": [
+    "connect:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "connect:list_task_templates": {
+   "actions": [
+    "connect:ListTaskTemplates"
+   ],
+   "dropped": []
+  },
+  "connect:list_test_cases": {
+   "actions": [],
+   "dropped": []
+  },
+  "connect:list_traffic_distribution_groups": {
+   "actions": [
+    "connect:ListTrafficDistributionGroups"
+   ],
+   "dropped": []
+  },
+  "connect:list_use_cases": {
+   "actions": [
+    "connect:ListUseCases"
+   ],
+   "dropped": []
+  },
+  "connect:list_user_hierarchy_groups": {
+   "actions": [
+    "connect:ListUserHierarchyGroups"
+   ],
+   "dropped": []
+  },
+  "connect:list_users": {
+   "actions": [
+    "connect:ListUsers"
+   ],
+   "dropped": []
+  },
+  "connect:list_view_versions": {
+   "actions": [
+    "connect:ListViewVersions"
+   ],
+   "dropped": []
+  },
+  "connect:list_views": {
+   "actions": [
+    "connect:ListViews"
+   ],
+   "dropped": []
+  },
+  "connect:list_workspaces": {
+   "actions": [
+    "connect:ListWorkspaces"
+   ],
+   "dropped": []
+  },
+  "connect:search_email_addresses": {
+   "actions": [
+    "connect:DescribeEmailAddress",
+    "connect:SearchEmailAddresses"
+   ],
+   "dropped": []
+  },
+  "connect:search_vocabularies": {
+   "actions": [
+    "connect:SearchVocabularies"
+   ],
+   "dropped": []
+  },
+  "databrew:list_datasets": {
+   "actions": [
+    "databrew:ListDatasets"
+   ],
+   "dropped": []
+  },
+  "databrew:list_jobs": {
+   "actions": [
+    "databrew:ListJobs"
+   ],
+   "dropped": []
+  },
+  "databrew:list_projects": {
+   "actions": [
+    "databrew:ListProjects"
+   ],
+   "dropped": []
+  },
+  "databrew:list_recipes": {
+   "actions": [
+    "databrew:ListRecipes"
+   ],
+   "dropped": []
+  },
+  "databrew:list_rulesets": {
+   "actions": [
+    "databrew:ListRulesets"
+   ],
+   "dropped": []
+  },
+  "databrew:list_schedules": {
+   "actions": [
+    "databrew:ListSchedules"
+   ],
+   "dropped": []
+  },
+  "datasync:describe_agent": {
+   "actions": [
+    "datasync:DescribeAgent"
+   ],
+   "dropped": []
+  },
+  "datasync:describe_task": {
+   "actions": [
+    "datasync:DescribeTask"
+   ],
+   "dropped": []
+  },
+  "datasync:list_agents": {
+   "actions": [
+    "datasync:ListAgents"
+   ],
+   "dropped": []
+  },
+  "datasync:list_locations": {
+   "actions": [
+    "datasync:ListLocations"
+   ],
+   "dropped": []
+  },
+  "datasync:list_tags_for_resource": {
+   "actions": [
+    "datasync:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "datasync:list_tasks": {
+   "actions": [
+    "datasync:ListTasks"
+   ],
+   "dropped": []
+  },
+  "datazone:list_domains": {
+   "actions": [
+    "datazone:ListDomains"
+   ],
+   "dropped": []
+  },
+  "datazone:list_tags_for_resource": {
+   "actions": [
+    "datazone:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "dax:describe_clusters": {
+   "actions": [
+    "dax:DescribeClusters"
+   ],
+   "dropped": []
+  },
+  "dax:describe_parameter_groups": {
+   "actions": [
+    "dax:DescribeParameterGroups"
+   ],
+   "dropped": []
+  },
+  "dax:describe_subnet_groups": {
+   "actions": [
+    "dax:DescribeSubnetGroups"
+   ],
+   "dropped": []
+  },
+  "dax:list_tags": {
+   "actions": [
+    "dax:ListTags"
+   ],
+   "dropped": []
+  },
+  "detective:list_graphs": {
+   "actions": [
+    "detective:ListGraphs"
+   ],
+   "dropped": []
+  },
+  "detective:list_tags_for_resource": {
+   "actions": [
+    "detective:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "directconnect:describe_connections": {
+   "actions": [
+    "directconnect:DescribeConnections"
+   ],
+   "dropped": []
+  },
+  "directconnect:describe_direct_connect_gateways": {
+   "actions": [
+    "directconnect:DescribeDirectConnectGateways"
+   ],
+   "dropped": []
+  },
+  "directconnect:describe_tags": {
+   "actions": [
+    "directconnect:DescribeTags"
+   ],
+   "dropped": []
+  },
+  "directconnect:describe_virtual_interfaces": {
+   "actions": [
+    "directconnect:DescribeVirtualInterfaces"
+   ],
+   "dropped": []
+  },
+  "dlm:get_lifecycle_policies": {
+   "actions": [
+    "dlm:GetLifecyclePolicies"
+   ],
+   "dropped": []
+  },
+  "dms:describe_certificates": {
+   "actions": [
+    "dms:DescribeCertificates"
+   ],
+   "dropped": []
+  },
+  "dms:describe_data_migrations": {
+   "actions": [
+    "dms:DescribeDataMigrations"
+   ],
+   "dropped": []
+  },
+  "dms:describe_data_providers": {
+   "actions": [
+    "dms:ListDataProviders"
+   ],
+   "dropped": []
+  },
+  "dms:describe_endpoints": {
+   "actions": [
+    "dms:DescribeEndpoints"
+   ],
+   "dropped": []
+  },
+  "dms:describe_instance_profiles": {
+   "actions": [
+    "dms:ListInstanceProfiles"
+   ],
+   "dropped": []
+  },
+  "dms:describe_migration_projects": {
+   "actions": [
+    "dms:ListMigrationProjects"
+   ],
+   "dropped": []
+  },
+  "dms:describe_replication_configs": {
+   "actions": [
+    "dms:DescribeReplicationConfigs"
+   ],
+   "dropped": []
+  },
+  "dms:describe_replication_instances": {
+   "actions": [
+    "dms:DescribeReplicationInstances"
+   ],
+   "dropped": []
+  },
+  "dms:describe_replication_tasks": {
+   "actions": [
+    "dms:DescribeReplicationTasks"
+   ],
+   "dropped": []
+  },
+  "dms:list_tags_for_resource": {
+   "actions": [
+    "dms:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "docdb:describe_db_cluster_parameter_groups": {
+   "actions": [
+    "rds:DescribeDBClusterParameterGroups"
+   ],
+   "dropped": []
+  },
+  "docdb:describe_db_subnet_groups": {
+   "actions": [
+    "rds:DescribeDBSubnetGroups"
+   ],
+   "dropped": []
+  },
+  "docdb:describe_event_subscriptions": {
+   "actions": [
+    "rds:DescribeEventSubscriptions"
+   ],
+   "dropped": []
+  },
+  "docdb:describe_global_clusters": {
+   "actions": [
+    "rds:DescribeGlobalClusters"
+   ],
+   "dropped": []
+  },
+  "docdb:list_tags_for_resource": {
+   "actions": [
+    "rds:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "drs:describe_launch_configuration_templates": {
+   "actions": [
+    "drs:DescribeLaunchConfigurationTemplates"
+   ],
+   "dropped": []
+  },
+  "drs:describe_replication_configuration_templates": {
+   "actions": [
+    "drs:DescribeReplicationConfigurationTemplates"
+   ],
+   "dropped": []
+  },
+  "drs:describe_source_networks": {
+   "actions": [
+    "drs:DescribeSourceNetworks"
+   ],
+   "dropped": []
+  },
+  "drs:list_recovery_plans": {
+   "actions": [
+    "drs:ListRecoveryPlans"
+   ],
+   "dropped": []
+  },
+  "drs:list_tags_for_resource": {
+   "actions": [
+    "drs:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "ds:describe_directories": {
+   "actions": [
+    "ds:DescribeDirectories"
+   ],
+   "dropped": []
+  },
+  "ds:list_tags_for_resource": {
+   "actions": [
+    "ds:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "dynamodb:describe_table": {
+   "actions": [
+    "dynamodb:DescribeTable"
+   ],
+   "dropped": [
+    {
+     "action": "dynamodb:ReadDataForReplication",
+     "why": "IsDataPlane"
+    },
+    {
+     "action": "dynamodb:ReplicateSettings",
+     "why": "IsWrite"
+    }
+   ]
+  },
+  "dynamodb:list_tables": {
+   "actions": [
+    "dynamodb:ListTables"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_addresses": {
+   "actions": [
+    "ec2:DescribeAddresses"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_application_status_checks": {
+   "actions": [
+    "ec2:DescribeApplicationStatusChecks"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_aws_network_performance_metric_subscriptions": {
+   "actions": [
+    "ec2:DescribeAwsNetworkPerformanceMetricSubscriptions"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_capacity_manager_data_exports": {
+   "actions": [
+    "ec2:DescribeCapacityManagerDataExports"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_capacity_reservation_fleets": {
+   "actions": [
+    "ec2:DescribeCapacityReservationFleets"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_capacity_reservations": {
+   "actions": [
+    "ec2:DescribeCapacityReservations"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_carrier_gateways": {
+   "actions": [
+    "ec2:DescribeCarrierGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_client_vpn_endpoints": {
+   "actions": [
+    "ec2:DescribeClientVpnEndpoints"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_customer_gateways": {
+   "actions": [
+    "ec2:DescribeCustomerGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_dhcp_options": {
+   "actions": [
+    "ec2:DescribeDhcpOptions"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_egress_only_internet_gateways": {
+   "actions": [
+    "ec2:DescribeEgressOnlyInternetGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_fleets": {
+   "actions": [
+    "ec2:DescribeFleets"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_flow_logs": {
+   "actions": [
+    "ec2:DescribeFlowLogs"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_fpga_images": {
+   "actions": [
+    "ec2:DescribeFpgaImages"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_hosts": {
+   "actions": [
+    "ec2:DescribeHosts"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_instance_connect_endpoints": {
+   "actions": [
+    "ec2:DescribeInstanceConnectEndpoints"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_instance_event_windows": {
+   "actions": [
+    "ec2:DescribeInstanceEventWindows"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_instances": {
+   "actions": [
+    "ec2:DescribeInstances"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_internet_gateways": {
+   "actions": [
+    "ec2:DescribeInternetGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_external_resource_verification_tokens": {
+   "actions": [
+    "ec2:DescribeIpamExternalResourceVerificationTokens"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_internet_registry_associations": {
+   "actions": [
+    "ec2:DescribeIpamInternetRegistryAssociations"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_pools": {
+   "actions": [
+    "ec2:DescribeIpamPools"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_prefix_list_resolver_targets": {
+   "actions": [
+    "ec2:DescribeIpamPrefixListResolverTargets"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_prefix_list_resolvers": {
+   "actions": [
+    "ec2:DescribeIpamPrefixListResolvers"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_resource_discoveries": {
+   "actions": [
+    "ec2:DescribeIpamResourceDiscoveries"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_resource_discovery_associations": {
+   "actions": [
+    "ec2:DescribeIpamResourceDiscoveryAssociations"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipam_scopes": {
+   "actions": [
+    "ec2:DescribeIpamScopes"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_ipams": {
+   "actions": [
+    "ec2:DescribeIpams"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_key_pairs": {
+   "actions": [
+    "ec2:DescribeKeyPairs"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_launch_templates": {
+   "actions": [
+    "ec2:DescribeLaunchTemplates"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_local_gateway_route_table_virtual_interface_group_associations": {
+   "actions": [
+    "ec2:DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociations"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_local_gateway_route_table_vpc_associations": {
+   "actions": [
+    "ec2:DescribeLocalGatewayRouteTableVpcAssociations"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_local_gateway_route_tables": {
+   "actions": [
+    "ec2:DescribeLocalGatewayRouteTables"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_local_gateway_virtual_interface_groups": {
+   "actions": [
+    "ec2:DescribeLocalGatewayVirtualInterfaceGroups"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_local_gateway_virtual_interfaces": {
+   "actions": [
+    "ec2:DescribeLocalGatewayVirtualInterfaces"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_managed_prefix_lists": {
+   "actions": [
+    "ec2:DescribeManagedPrefixLists"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_nat_gateways": {
+   "actions": [
+    "ec2:DescribeNatGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_network_acls": {
+   "actions": [
+    "ec2:DescribeNetworkAcls"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_network_insights_access_scope_analyses": {
+   "actions": [
+    "ec2:DescribeNetworkInsightsAccessScopeAnalyses"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_network_insights_access_scopes": {
+   "actions": [
+    "ec2:DescribeNetworkInsightsAccessScopes"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_network_insights_analyses": {
+   "actions": [
+    "ec2:DescribeNetworkInsightsAnalyses"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_network_insights_paths": {
+   "actions": [
+    "ec2:DescribeNetworkInsightsPaths"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_network_interfaces": {
+   "actions": [
+    "ec2:DescribeNetworkInterfaces"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_placement_groups": {
+   "actions": [
+    "ec2:DescribePlacementGroups"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_public_ipv4_pools": {
+   "actions": [
+    "ec2:DescribePublicIpv4Pools"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_route_server_endpoints": {
+   "actions": [
+    "ec2:DescribeRouteServerEndpoints"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_route_server_peers": {
+   "actions": [
+    "ec2:DescribeRouteServerPeers"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_route_servers": {
+   "actions": [
+    "ec2:DescribeRouteServers"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_route_tables": {
+   "actions": [
+    "ec2:DescribeRouteTables"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_secondary_networks": {
+   "actions": [
+    "ec2:DescribeSecondaryNetworks"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_security_group_rules": {
+   "actions": [
+    "ec2:DescribeSecurityGroupRules"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_security_groups": {
+   "actions": [
+    "ec2:DescribeSecurityGroups"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_spot_fleet_requests": {
+   "actions": [
+    "ec2:DescribeSpotFleetRequests"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_subnets": {
+   "actions": [
+    "ec2:DescribeSubnets"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_tags": {
+   "actions": [
+    "ec2:DescribeTags"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_traffic_mirror_filter_rules": {
+   "actions": [
+    "ec2:DescribeTrafficMirrorFilterRules"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_traffic_mirror_filters": {
+   "actions": [
+    "ec2:DescribeTrafficMirrorFilters"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_traffic_mirror_sessions": {
+   "actions": [
+    "ec2:DescribeTrafficMirrorSessions"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_traffic_mirror_targets": {
+   "actions": [
+    "ec2:DescribeTrafficMirrorTargets"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_attachments": {
+   "actions": [
+    "ec2:DescribeTransitGatewayAttachments"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_connect_peers": {
+   "actions": [
+    "ec2:DescribeTransitGatewayConnectPeers"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_connects": {
+   "actions": [
+    "ec2:DescribeTransitGatewayConnects"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_metering_policies": {
+   "actions": [
+    "ec2:DescribeTransitGatewayMeteringPolicies"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_multicast_domains": {
+   "actions": [
+    "ec2:DescribeTransitGatewayMulticastDomains"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_peering_attachments": {
+   "actions": [
+    "ec2:DescribeTransitGatewayPeeringAttachments"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_policy_tables": {
+   "actions": [
+    "ec2:DescribeTransitGatewayPolicyTables"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_route_tables": {
+   "actions": [
+    "ec2:DescribeTransitGatewayRouteTables"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateway_vpc_attachments": {
+   "actions": [
+    "ec2:DescribeTransitGatewayVpcAttachments"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_transit_gateways": {
+   "actions": [
+    "ec2:DescribeTransitGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_verified_access_endpoints": {
+   "actions": [
+    "ec2:DescribeVerifiedAccessEndpoints"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_verified_access_groups": {
+   "actions": [
+    "ec2:DescribeVerifiedAccessGroups"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_verified_access_instances": {
+   "actions": [
+    "ec2:DescribeVerifiedAccessInstances"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_verified_access_trust_providers": {
+   "actions": [
+    "ec2:DescribeVerifiedAccessTrustProviders"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_volumes": {
+   "actions": [
+    "ec2:DescribeVolumes"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpc_block_public_access_exclusions": {
+   "actions": [
+    "ec2:DescribeVpcBlockPublicAccessExclusions"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpc_encryption_controls": {
+   "actions": [
+    "ec2:DescribeVpcEncryptionControls"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpc_endpoint_connection_notifications": {
+   "actions": [
+    "ec2:DescribeVpcEndpointConnectionNotifications"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpc_endpoint_service_configurations": {
+   "actions": [
+    "ec2:DescribeVpcEndpointServiceConfigurations"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpc_endpoints": {
+   "actions": [
+    "ec2:DescribeVpcEndpoints"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpc_peering_connections": {
+   "actions": [
+    "ec2:DescribeVpcPeeringConnections"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpcs": {
+   "actions": [
+    "ec2:DescribeVpcs"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpn_concentrators": {
+   "actions": [
+    "ec2:DescribeVpnConcentrators"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpn_connections": {
+   "actions": [
+    "ec2:DescribeVpnConnections"
+   ],
+   "dropped": []
+  },
+  "ec2:describe_vpn_gateways": {
+   "actions": [
+    "ec2:DescribeVpnGateways"
+   ],
+   "dropped": []
+  },
+  "ec2:get_ipam_pool_cidrs": {
+   "actions": [
+    "ec2:GetIpamPoolCidrs"
+   ],
+   "dropped": []
+  },
+  "ecr-public:describe_repositories": {
+   "actions": [
+    "ecr-public:DescribeRepositories"
+   ],
+   "dropped": []
+  },
+  "ecr-public:list_tags_for_resource": {
+   "actions": [
+    "ecr-public:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "ecr:describe_repositories": {
+   "actions": [
+    "ecr:DescribeRepositories"
+   ],
+   "dropped": []
+  },
+  "ecr:describe_repository_creation_templates": {
+   "actions": [
+    "ecr:DescribeRepositoryCreationTemplates"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_capacity_providers": {
+   "actions": [
+    "ecs:DescribeCapacityProviders"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_clusters": {
+   "actions": [
+    "ecs:DescribeClusters"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_daemon": {
+   "actions": [
+    "ecs:DescribeDaemon"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_services": {
+   "actions": [
+    "ecs:DescribeServices"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_task_definition": {
+   "actions": [
+    "ecs:DescribeTaskDefinition"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_task_sets": {
+   "actions": [
+    "ecs:DescribeTaskSets"
+   ],
+   "dropped": []
+  },
+  "ecs:describe_tasks": {
+   "actions": [
+    "ecs:DescribeTasks"
+   ],
+   "dropped": []
+  },
+  "ecs:list_clusters": {
+   "actions": [
+    "ecs:ListClusters"
+   ],
+   "dropped": []
+  },
+  "ecs:list_daemon_task_definitions": {
+   "actions": [
+    "ecs:ListDaemonTaskDefinitions"
+   ],
+   "dropped": []
+  },
+  "ecs:list_daemons": {
+   "actions": [
+    "ecs:ListDaemons"
+   ],
+   "dropped": []
+  },
+  "ecs:list_gateways": {
+   "actions": [
+    "ecs:ListGateways"
+   ],
+   "dropped": []
+  },
+  "ecs:list_services": {
+   "actions": [
+    "ecs:ListServices"
+   ],
+   "dropped": []
+  },
+  "ecs:list_tags_for_resource": {
+   "actions": [
+    "ecs:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "ecs:list_task_definitions": {
+   "actions": [
+    "ecs:ListTaskDefinitions"
+   ],
+   "dropped": []
+  },
+  "ecs:list_tasks": {
+   "actions": [
+    "ecs:ListTasks"
+   ],
+   "dropped": []
+  },
+  "efs:describe_access_points": {
+   "actions": [
+    "elasticfilesystem:DescribeAccessPoints"
+   ],
+   "dropped": []
+  },
+  "efs:describe_file_systems": {
+   "actions": [
+    "elasticfilesystem:DescribeFileSystems"
+   ],
+   "dropped": []
+  },
+  "efs:describe_mount_targets": {
+   "actions": [
+    "elasticfilesystem:DescribeMountTargets"
+   ],
+   "dropped": []
+  },
+  "efs:describe_tags": {
+   "actions": [
+    "elasticfilesystem:DescribeTags"
+   ],
+   "dropped": []
+  },
+  "efs:list_tags_for_resource": {
+   "actions": [
+    "elasticfilesystem:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "eks:describe_access_entry": {
+   "actions": [
+    "eks:DescribeAccessEntry"
+   ],
+   "dropped": []
+  },
+  "eks:describe_addon": {
+   "actions": [
+    "eks:DescribeAddon"
+   ],
+   "dropped": []
+  },
+  "eks:describe_cluster": {
+   "actions": [
+    "eks:DescribeCluster"
+   ],
+   "dropped": []
+  },
+  "eks:describe_fargate_profile": {
+   "actions": [
+    "eks:DescribeFargateProfile"
+   ],
+   "dropped": []
+  },
+  "eks:describe_identity_provider_config": {
+   "actions": [
+    "eks:DescribeIdentityProviderConfig"
+   ],
+   "dropped": []
+  },
+  "eks:describe_nodegroup": {
+   "actions": [
+    "eks:DescribeNodegroup"
+   ],
+   "dropped": []
+  },
+  "eks:list_access_entries": {
+   "actions": [
+    "eks:ListAccessEntries"
+   ],
+   "dropped": []
+  },
+  "eks:list_addons": {
+   "actions": [
+    "eks:ListAddons"
+   ],
+   "dropped": []
+  },
+  "eks:list_capabilities": {
+   "actions": [
+    "eks:ListCapabilities"
+   ],
+   "dropped": []
+  },
+  "eks:list_certificate_authorities": {
+   "actions": [
+    "eks:ListCertificateAuthorities"
+   ],
+   "dropped": []
+  },
+  "eks:list_clusters": {
+   "actions": [
+    "eks:ListClusters"
+   ],
+   "dropped": []
+  },
+  "eks:list_fargate_profiles": {
+   "actions": [
+    "eks:ListFargateProfiles"
+   ],
+   "dropped": []
+  },
+  "eks:list_identity_provider_configs": {
+   "actions": [
+    "eks:ListIdentityProviderConfigs"
+   ],
+   "dropped": []
+  },
+  "eks:list_nodegroups": {
+   "actions": [
+    "eks:ListNodegroups"
+   ],
+   "dropped": []
+  },
+  "eks:list_pod_identity_associations": {
+   "actions": [
+    "eks:ListPodIdentityAssociations"
+   ],
+   "dropped": []
+  },
+  "eks:list_tags_for_resource": {
+   "actions": [
+    "eks:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_cache_clusters": {
+   "actions": [
+    "elasticache:DescribeCacheClusters"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_cache_parameter_groups": {
+   "actions": [
+    "elasticache:DescribeCacheParameterGroups"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_cache_security_groups": {
+   "actions": [
+    "elasticache:DescribeCacheSecurityGroups"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_cache_subnet_groups": {
+   "actions": [
+    "elasticache:DescribeCacheSubnetGroups"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_global_replication_groups": {
+   "actions": [
+    "elasticache:DescribeGlobalReplicationGroups"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_replication_groups": {
+   "actions": [
+    "elasticache:DescribeReplicationGroups"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_serverless_cache_snapshots": {
+   "actions": [
+    "elasticache:DescribeServerlessCacheSnapshots"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_serverless_caches": {
+   "actions": [
+    "elasticache:DescribeServerlessCaches"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_snapshots": {
+   "actions": [
+    "elasticache:DescribeSnapshots"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_user_groups": {
+   "actions": [
+    "elasticache:DescribeUserGroups"
+   ],
+   "dropped": []
+  },
+  "elasticache:describe_users": {
+   "actions": [
+    "elasticache:DescribeUsers"
+   ],
+   "dropped": []
+  },
+  "elasticache:list_tags_for_resource": {
+   "actions": [
+    "elasticache:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "elasticbeanstalk:describe_application_versions": {
+   "actions": [],
+   "dropped": []
+  },
+  "elasticbeanstalk:describe_applications": {
+   "actions": [],
+   "dropped": []
+  },
+  "elasticbeanstalk:describe_environments": {
+   "actions": [
+    "elasticbeanstalk:DescribeEnvironments"
+   ],
+   "dropped": []
+  },
+  "elasticbeanstalk:list_tags_for_resource": {
+   "actions": [],
+   "dropped": []
+  },
+  "elb:describe_load_balancers": {
+   "actions": [
+    "elasticloadbalancing:DescribeLoadBalancers"
+   ],
+   "dropped": []
+  },
+  "elb:describe_tags": {
+   "actions": [
+    "elasticloadbalancing:DescribeTags"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_listener_certificates": {
+   "actions": [
+    "elasticloadbalancing:DescribeListenerCertificates"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_listeners": {
+   "actions": [
+    "elasticloadbalancing:DescribeListeners"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_load_balancers": {
+   "actions": [
+    "elasticloadbalancing:DescribeLoadBalancers"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_rules": {
+   "actions": [
+    "elasticloadbalancing:DescribeRules"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_tags": {
+   "actions": [
+    "elasticloadbalancing:DescribeTags"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_target_groups": {
+   "actions": [
+    "elasticloadbalancing:DescribeTargetGroups"
+   ],
+   "dropped": []
+  },
+  "elbv2:describe_trust_stores": {
+   "actions": [
+    "elasticloadbalancing:DescribeTrustStores"
+   ],
+   "dropped": []
+  },
+  "emr-containers:list_job_templates": {
+   "actions": [
+    "emr-containers:ListJobTemplates"
+   ],
+   "dropped": []
+  },
+  "emr-containers:list_managed_endpoints": {
+   "actions": [
+    "emr-containers:ListManagedEndpoints"
+   ],
+   "dropped": []
+  },
+  "emr-containers:list_security_configurations": {
+   "actions": [
+    "emr-containers:ListSecurityConfigurations"
+   ],
+   "dropped": []
+  },
+  "emr-containers:list_virtual_clusters": {
+   "actions": [
+    "emr-containers:ListVirtualClusters"
+   ],
+   "dropped": []
+  },
+  "emr-serverless:list_applications": {
+   "actions": [
+    "emr-serverless:ListApplications"
+   ],
+   "dropped": []
+  },
+  "emr-serverless:list_tags_for_resource": {
+   "actions": [
+    "emr-serverless:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "emr:describe_cluster": {
+   "actions": [
+    "elasticmapreduce:DescribeCluster"
+   ],
+   "dropped": []
+  },
+  "emr:describe_studio": {
+   "actions": [
+    "elasticmapreduce:DescribeStudio"
+   ],
+   "dropped": []
+  },
+  "emr:list_clusters": {
+   "actions": [
+    "elasticmapreduce:ListClusters"
+   ],
+   "dropped": []
+  },
+  "emr:list_security_configurations": {
+   "actions": [
+    "elasticmapreduce:ListSecurityConfigurations"
+   ],
+   "dropped": []
+  },
+  "emr:list_studios": {
+   "actions": [
+    "elasticmapreduce:ListStudios"
+   ],
+   "dropped": []
+  },
+  "es:describe_elasticsearch_domain": {
+   "actions": [
+    "es:DescribeDomain",
+    "es:DescribeElasticsearchDomain"
+   ],
+   "dropped": []
+  },
+  "es:list_domain_names": {
+   "actions": [
+    "es:ListDomainNames"
+   ],
+   "dropped": []
+  },
+  "es:list_tags": {
+   "actions": [
+    "es:ListTags"
+   ],
+   "dropped": []
+  },
+  "events:list_api_destinations": {
+   "actions": [
+    "events:ListApiDestinations"
+   ],
+   "dropped": []
+  },
+  "events:list_archives": {
+   "actions": [
+    "events:ListArchives"
+   ],
+   "dropped": []
+  },
+  "events:list_connections": {
+   "actions": [
+    "events:ListConnections"
+   ],
+   "dropped": []
+  },
+  "events:list_endpoints": {
+   "actions": [
+    "events:ListEndpoints"
+   ],
+   "dropped": []
+  },
+  "events:list_event_buses": {
+   "actions": [
+    "events:ListEventBuses"
+   ],
+   "dropped": []
+  },
+  "events:list_rules": {
+   "actions": [
+    "events:ListRules"
+   ],
+   "dropped": []
+  },
+  "events:list_tags_for_resource": {
+   "actions": [
+    "events:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "events:list_targets_by_rule": {
+   "actions": [
+    "events:ListTargetsByRule"
+   ],
+   "dropped": []
+  },
+  "firehose:describe_delivery_stream": {
+   "actions": [
+    "firehose:DescribeDeliveryStream"
+   ],
+   "dropped": []
+  },
+  "firehose:list_delivery_streams": {
+   "actions": [
+    "firehose:ListDeliveryStreams"
+   ],
+   "dropped": []
+  },
+  "firehose:list_tags_for_delivery_stream": {
+   "actions": [
+    "firehose:ListTagsForDeliveryStream"
+   ],
+   "dropped": []
+  },
+  "fms:list_apps_lists": {
+   "actions": [
+    "fms:ListAppsLists"
+   ],
+   "dropped": []
+  },
+  "fms:list_policies": {
+   "actions": [
+    "fms:ListPolicies"
+   ],
+   "dropped": []
+  },
+  "fms:list_protocols_lists": {
+   "actions": [
+    "fms:ListProtocolsLists"
+   ],
+   "dropped": []
+  },
+  "fms:list_resource_sets": {
+   "actions": [
+    "fms:ListResourceSets"
+   ],
+   "dropped": []
+  },
+  "fms:list_tags_for_resource": {
+   "actions": [
+    "fms:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_backups": {
+   "actions": [
+    "fsx:DescribeBackups"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_data_repository_associations": {
+   "actions": [
+    "fsx:DescribeDataRepositoryAssociations"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_file_caches": {
+   "actions": [
+    "fsx:DescribeFileCaches"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_file_systems": {
+   "actions": [
+    "fsx:DescribeFileSystems"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_s3_access_point_attachments": {
+   "actions": [
+    "fsx:DescribeS3AccessPointAttachments"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_snapshots": {
+   "actions": [
+    "fsx:DescribeSnapshots"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_storage_virtual_machines": {
+   "actions": [
+    "fsx:DescribeStorageVirtualMachines"
+   ],
+   "dropped": []
+  },
+  "fsx:describe_volumes": {
+   "actions": [
+    "fsx:DescribeVolumes"
+   ],
+   "dropped": []
+  },
+  "fsx:list_tags_for_resource": {
+   "actions": [
+    "fsx:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "glue:describe_connection_type": {
+   "actions": [],
+   "dropped": [
+    {
+     "action": "glue:DescribeConnectionType",
+     "why": "IsWrite, IsPermissionManagement"
+    }
+   ]
+  },
+  "glue:describe_integrations": {
+   "actions": [
+    "glue:DescribeIntegrations"
+   ],
+   "dropped": []
+  },
+  "glue:get_blueprint": {
+   "actions": [
+    "glue:GetBlueprint"
+   ],
+   "dropped": []
+  },
+  "glue:get_catalogs": {
+   "actions": [
+    "athena:GetCatalogs",
+    "glue:GetCatalogs"
+   ],
+   "dropped": []
+  },
+  "glue:get_connections": {
+   "actions": [
+    "glue:GetConnections"
+   ],
+   "dropped": []
+  },
+  "glue:get_crawlers": {
+   "actions": [
+    "glue:GetCrawlers"
+   ],
+   "dropped": []
+  },
+  "glue:get_databases": {
+   "actions": [
+    "glue:GetDatabases"
+   ],
+   "dropped": []
+  },
+  "glue:get_dev_endpoints": {
+   "actions": [
+    "glue:GetDevEndpoints"
+   ],
+   "dropped": []
+  },
+  "glue:get_jobs": {
+   "actions": [
+    "glue:GetJobs"
+   ],
+   "dropped": [
+    {
+     "action": "iam:PassRole",
+     "why": "IsWrite"
+    }
+   ]
+  },
+  "glue:get_ml_transforms": {
+   "actions": [
+    "glue:GetMLTransforms"
+   ],
+   "dropped": []
+  },
+  "glue:get_security_configurations": {
+   "actions": [
+    "glue:GetSecurityConfigurations"
+   ],
+   "dropped": []
+  },
+  "glue:get_tables": {
+   "actions": [
+    "athena:GetTables",
+    "glue:GetTables"
+   ],
+   "dropped": []
+  },
+  "glue:get_tags": {
+   "actions": [
+    "glue:GetTags"
+   ],
+   "dropped": []
+  },
+  "glue:get_triggers": {
+   "actions": [
+    "glue:GetTriggers"
+   ],
+   "dropped": []
+  },
+  "glue:get_workflow": {
+   "actions": [
+    "glue:GetWorkflow"
+   ],
+   "dropped": []
+  },
+  "glue:list_blueprints": {
+   "actions": [
+    "glue:ListBlueprints"
+   ],
+   "dropped": []
+  },
+  "glue:list_connection_types": {
+   "actions": [],
+   "dropped": [
+    {
+     "action": "glue:ListConnectionTypes",
+     "why": "IsWrite, IsPermissionManagement"
+    }
+   ]
+  },
+  "glue:list_custom_entity_types": {
+   "actions": [
+    "glue:ListCustomEntityTypes"
+   ],
+   "dropped": []
+  },
+  "glue:list_data_quality_rulesets": {
+   "actions": [
+    "glue:ListDataQualityRulesets"
+   ],
+   "dropped": []
+  },
+  "glue:list_integration_resource_properties": {
+   "actions": [
+    "glue:ListIntegrationResourceProperties"
+   ],
+   "dropped": []
+  },
+  "glue:list_registries": {
+   "actions": [
+    "glue:ListRegistries"
+   ],
+   "dropped": []
+  },
+  "glue:list_schema_versions": {
+   "actions": [
+    "glue:ListSchemaVersions"
+   ],
+   "dropped": []
+  },
+  "glue:list_schemas": {
+   "actions": [
+    "glue:ListSchemas"
+   ],
+   "dropped": []
+  },
+  "glue:list_sessions": {
+   "actions": [
+    "glue:ListSessions"
+   ],
+   "dropped": []
+  },
+  "glue:list_usage_profiles": {
+   "actions": [
+    "glue:ListUsageProfiles"
+   ],
+   "dropped": []
+  },
+  "glue:list_workflows": {
+   "actions": [
+    "glue:ListWorkflows"
+   ],
+   "dropped": []
+  },
+  "grafana:list_workspaces": {
+   "actions": [
+    "grafana:ListWorkspaces"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_connector_definition_versions": {
+   "actions": [
+    "greengrass:ListConnectorDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_connector_definitions": {
+   "actions": [
+    "greengrass:ListConnectorDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_core_definition_versions": {
+   "actions": [
+    "greengrass:ListCoreDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_core_definitions": {
+   "actions": [
+    "greengrass:ListCoreDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_device_definition_versions": {
+   "actions": [
+    "greengrass:ListDeviceDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_device_definitions": {
+   "actions": [
+    "greengrass:ListDeviceDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_function_definition_versions": {
+   "actions": [
+    "greengrass:ListFunctionDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_function_definitions": {
+   "actions": [
+    "greengrass:ListFunctionDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_group_versions": {
+   "actions": [
+    "greengrass:ListGroupVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_groups": {
+   "actions": [
+    "greengrass:ListGroups"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_logger_definition_versions": {
+   "actions": [
+    "greengrass:ListLoggerDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_logger_definitions": {
+   "actions": [
+    "greengrass:ListLoggerDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_resource_definition_versions": {
+   "actions": [
+    "greengrass:ListResourceDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_resource_definitions": {
+   "actions": [
+    "greengrass:ListResourceDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_subscription_definition_versions": {
+   "actions": [
+    "greengrass:ListSubscriptionDefinitionVersions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_subscription_definitions": {
+   "actions": [
+    "greengrass:ListSubscriptionDefinitions"
+   ],
+   "dropped": []
+  },
+  "greengrass:list_tags_for_resource": {
+   "actions": [
+    "greengrass:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "greengrassv2:list_component_versions": {
+   "actions": [
+    "greengrass:ListComponentVersions"
+   ],
+   "dropped": []
+  },
+  "greengrassv2:list_components": {
+   "actions": [
+    "greengrass:ListComponents"
+   ],
+   "dropped": []
+  },
+  "greengrassv2:list_tags_for_resource": {
+   "actions": [
+    "greengrass:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "guardduty:describe_publishing_destination": {
+   "actions": [
+    "guardduty:DescribePublishingDestination"
+   ],
+   "dropped": []
+  },
+  "guardduty:get_filter": {
+   "actions": [
+    "guardduty:GetFilter"
+   ],
+   "dropped": []
+  },
+  "guardduty:get_ip_set": {
+   "actions": [
+    "guardduty:GetIPSet"
+   ],
+   "dropped": []
+  },
+  "guardduty:get_malware_protection_plan": {
+   "actions": [
+    "guardduty:GetMalwareProtectionPlan"
+   ],
+   "dropped": []
+  },
+  "guardduty:get_threat_entity_set": {
+   "actions": [
+    "guardduty:GetThreatEntitySet"
+   ],
+   "dropped": []
+  },
+  "guardduty:get_threat_intel_set": {
+   "actions": [
+    "guardduty:GetThreatIntelSet"
+   ],
+   "dropped": []
+  },
+  "guardduty:get_trusted_entity_set": {
+   "actions": [
+    "guardduty:GetTrustedEntitySet"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_custom_detection_rule_associations": {
+   "actions": [
+    "guardduty:ListCustomDetectionRuleAssociations"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_detectors": {
+   "actions": [
+    "guardduty:ListDetectors"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_filters": {
+   "actions": [
+    "guardduty:ListFilters"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_ip_sets": {
+   "actions": [
+    "guardduty:ListIPSets"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_malware_protection_plans": {
+   "actions": [
+    "guardduty:ListMalwareProtectionPlans"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_members": {
+   "actions": [
+    "guardduty:ListMembers"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_publishing_destinations": {
+   "actions": [
+    "guardduty:ListPublishingDestinations"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_tags_for_resource": {
+   "actions": [
+    "guardduty:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_threat_entity_sets": {
+   "actions": [
+    "guardduty:ListThreatEntitySets"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_threat_intel_sets": {
+   "actions": [
+    "guardduty:ListThreatIntelSets"
+   ],
+   "dropped": []
+  },
+  "guardduty:list_trusted_entity_sets": {
+   "actions": [
+    "guardduty:ListTrustedEntitySets"
+   ],
+   "dropped": []
+  },
+  "iam:get_role": {
+   "actions": [
+    "iam:GetRole"
+   ],
+   "dropped": []
+  },
+  "iam:get_user": {
+   "actions": [
+    "iam:GetUser"
+   ],
+   "dropped": []
+  },
+  "iam:list_attached_group_policies": {
+   "actions": [
+    "iam:ListAttachedGroupPolicies"
+   ],
+   "dropped": []
+  },
+  "iam:list_attached_role_policies": {
+   "actions": [
+    "iam:ListAttachedRolePolicies"
+   ],
+   "dropped": []
+  },
+  "iam:list_attached_user_policies": {
+   "actions": [
+    "iam:ListAttachedUserPolicies"
+   ],
+   "dropped": []
+  },
+  "iam:list_instance_profile_tags": {
+   "actions": [
+    "iam:ListInstanceProfileTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_mfa_device_tags": {
+   "actions": [
+    "iam:ListMFADeviceTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_mfa_devices": {
+   "actions": [
+    "iam:ListMFADevices"
+   ],
+   "dropped": []
+  },
+  "iam:list_open_id_connect_provider_tags": {
+   "actions": [
+    "iam:ListOpenIDConnectProviderTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_policy_tags": {
+   "actions": [
+    "iam:ListPolicyTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_role_tags": {
+   "actions": [
+    "iam:ListRoleTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_server_certificate_tags": {
+   "actions": [
+    "iam:ListServerCertificateTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_user_tags": {
+   "actions": [
+    "iam:ListUserTags"
+   ],
+   "dropped": []
+  },
+  "identitystore:list_groups": {
+   "actions": [
+    "identitystore:ListGroups",
+    "sso-directory:ListGroups",
+    "sso-directory:SearchGroups"
+   ],
+   "dropped": []
+  },
+  "identitystore:list_users": {
+   "actions": [
+    "identitystore:ListUsers",
+    "sso-directory:ListUsers",
+    "sso-directory:SearchUsers"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_cis_scan_configurations": {
+   "actions": [
+    "inspector2:ListCisScanConfigurations"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_code_security_integrations": {
+   "actions": [
+    "inspector2:ListCodeSecurityIntegrations"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_code_security_scan_configurations": {
+   "actions": [
+    "inspector2:ListCodeSecurityScanConfigurations"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_connectors": {
+   "actions": [
+    "inspector2:ListConnectors"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_filters": {
+   "actions": [
+    "inspector2:ListFilters"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_tags_for_resource": {
+   "actions": [
+    "inspector2:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "inspector:describe_assessment_targets": {
+   "actions": [
+    "inspector:DescribeAssessmentTargets"
+   ],
+   "dropped": []
+  },
+  "inspector:describe_assessment_templates": {
+   "actions": [
+    "inspector:DescribeAssessmentTemplates"
+   ],
+   "dropped": []
+  },
+  "inspector:list_assessment_targets": {
+   "actions": [
+    "inspector:ListAssessmentTargets"
+   ],
+   "dropped": []
+  },
+  "inspector:list_assessment_templates": {
+   "actions": [
+    "inspector:ListAssessmentTemplates"
+   ],
+   "dropped": []
+  },
+  "inspector:list_tags_for_resource": {
+   "actions": [
+    "inspector:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "internetmonitor:get_monitor": {
+   "actions": [
+    "internetmonitor:GetMonitor"
+   ],
+   "dropped": []
+  },
+  "internetmonitor:list_monitors": {
+   "actions": [
+    "internetmonitor:ListMonitors"
+   ],
+   "dropped": []
+  },
+  "internetmonitor:list_tags_for_resource": {
+   "actions": [
+    "internetmonitor:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "iot:describe_authorizer": {
+   "actions": [
+    "iot:DescribeAuthorizer"
+   ],
+   "dropped": []
+  },
+  "iot:describe_billing_group": {
+   "actions": [
+    "iot:DescribeBillingGroup"
+   ],
+   "dropped": []
+  },
+  "iot:describe_certificate": {
+   "actions": [
+    "iot:DescribeCertificate"
+   ],
+   "dropped": []
+  },
+  "iot:describe_certificate_provider": {
+   "actions": [
+    "iot:DescribeCertificateProvider"
+   ],
+   "dropped": []
+  },
+  "iot:describe_custom_metric": {
+   "actions": [
+    "iot:DescribeCustomMetric"
+   ],
+   "dropped": []
+  },
+  "iot:describe_dimension": {
+   "actions": [
+    "iot:DescribeDimension"
+   ],
+   "dropped": []
+  },
+  "iot:describe_domain_configuration": {
+   "actions": [
+    "iot:DescribeDomainConfiguration"
+   ],
+   "dropped": []
+  },
+  "iot:describe_fleet_metric": {
+   "actions": [
+    "iot:DescribeFleetMetric"
+   ],
+   "dropped": []
+  },
+  "iot:describe_job_template": {
+   "actions": [
+    "iot:DescribeJobTemplate"
+   ],
+   "dropped": []
+  },
+  "iot:describe_mitigation_action": {
+   "actions": [
+    "iot:DescribeMitigationAction"
+   ],
+   "dropped": []
+  },
+  "iot:describe_provisioning_template": {
+   "actions": [
+    "iot:DescribeProvisioningTemplate"
+   ],
+   "dropped": []
+  },
+  "iot:describe_role_alias": {
+   "actions": [
+    "iot:DescribeRoleAlias"
+   ],
+   "dropped": []
+  },
+  "iot:describe_stream": {
+   "actions": [
+    "iot:DescribeStream"
+   ],
+   "dropped": []
+  },
+  "iot:describe_thing_group": {
+   "actions": [
+    "iot:DescribeThingGroup"
+   ],
+   "dropped": []
+  },
+  "iot:get_command": {
+   "actions": [
+    "iot:GetCommand"
+   ],
+   "dropped": []
+  },
+  "iot:get_ota_update": {
+   "actions": [
+    "iot:GetOTAUpdate"
+   ],
+   "dropped": []
+  },
+  "iot:get_policy": {
+   "actions": [
+    "iot:GetPolicy"
+   ],
+   "dropped": []
+  },
+  "iot:list_authorizers": {
+   "actions": [
+    "iot:ListAuthorizers"
+   ],
+   "dropped": []
+  },
+  "iot:list_billing_groups": {
+   "actions": [
+    "iot:ListBillingGroups"
+   ],
+   "dropped": []
+  },
+  "iot:list_ca_certificates": {
+   "actions": [
+    "iot:ListCACertificates"
+   ],
+   "dropped": []
+  },
+  "iot:list_certificate_providers": {
+   "actions": [
+    "iot:ListCertificateProviders"
+   ],
+   "dropped": []
+  },
+  "iot:list_certificates": {
+   "actions": [
+    "iot:ListCertificates"
+   ],
+   "dropped": []
+  },
+  "iot:list_commands": {
+   "actions": [
+    "iot:ListCommands"
+   ],
+   "dropped": []
+  },
+  "iot:list_custom_metrics": {
+   "actions": [
+    "iot:ListCustomMetrics"
+   ],
+   "dropped": []
+  },
+  "iot:list_dimensions": {
+   "actions": [
+    "iot:ListDimensions"
+   ],
+   "dropped": []
+  },
+  "iot:list_domain_configurations": {
+   "actions": [
+    "iot:ListDomainConfigurations"
+   ],
+   "dropped": []
+  },
+  "iot:list_fleet_metrics": {
+   "actions": [
+    "iot:ListFleetMetrics"
+   ],
+   "dropped": []
+  },
+  "iot:list_job_templates": {
+   "actions": [
+    "iot:ListJobTemplates"
+   ],
+   "dropped": []
+  },
+  "iot:list_mitigation_actions": {
+   "actions": [
+    "iot:ListMitigationActions"
+   ],
+   "dropped": []
+  },
+  "iot:list_ota_updates": {
+   "actions": [
+    "iot:ListOTAUpdates"
+   ],
+   "dropped": []
+  },
+  "iot:list_package_versions": {
+   "actions": [
+    "iot:ListPackageVersions"
+   ],
+   "dropped": []
+  },
+  "iot:list_packages": {
+   "actions": [
+    "iot:ListPackages"
+   ],
+   "dropped": []
+  },
+  "iot:list_policies": {
+   "actions": [
+    "iot:ListPolicies"
+   ],
+   "dropped": []
+  },
+  "iot:list_provisioning_templates": {
+   "actions": [
+    "iot:ListProvisioningTemplates"
+   ],
+   "dropped": []
+  },
+  "iot:list_role_aliases": {
+   "actions": [
+    "iot:ListRoleAliases"
+   ],
+   "dropped": []
+  },
+  "iot:list_scheduled_audits": {
+   "actions": [
+    "iot:ListScheduledAudits"
+   ],
+   "dropped": []
+  },
+  "iot:list_security_profiles": {
+   "actions": [
+    "iot:ListSecurityProfiles"
+   ],
+   "dropped": []
+  },
+  "iot:list_streams": {
+   "actions": [
+    "iot:ListStreams"
+   ],
+   "dropped": []
+  },
+  "iot:list_tags_for_resource": {
+   "actions": [
+    "iot:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "iot:list_thing_groups": {
+   "actions": [
+    "iot:ListThingGroups"
+   ],
+   "dropped": []
+  },
+  "iot:list_thing_types": {
+   "actions": [
+    "iot:ListThingTypes"
+   ],
+   "dropped": []
+  },
+  "iot:list_topic_rule_destinations": {
+   "actions": [
+    "iot:ListTopicRuleDestinations"
+   ],
+   "dropped": []
+  },
+  "iot:list_topic_rules": {
+   "actions": [
+    "iot:ListTopicRules"
+   ],
+   "dropped": []
+  },
+  "iotsecuretunneling:describe_tunnel": {
+   "actions": [
+    "iot:DescribeTunnel"
+   ],
+   "dropped": []
+  },
+  "iotsecuretunneling:list_tags_for_resource": {
+   "actions": [
+    "iot:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "iotsecuretunneling:list_tunnels": {
+   "actions": [
+    "iot:ListTunnels"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:describe_application": {
+   "actions": [
+    "iotsitewise:DescribeApplication"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_access_policies": {
+   "actions": [
+    "iotsitewise:ListAccessPolicies"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_applications": {
+   "actions": [
+    "iotsitewise:ListApplications"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_asset_models": {
+   "actions": [
+    "iotsitewise:ListAssetModels"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_assets": {
+   "actions": [
+    "iotsitewise:ListAssets"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_computation_models": {
+   "actions": [
+    "iotsitewise:ListComputationModels"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_dashboards": {
+   "actions": [
+    "iotsitewise:ListDashboards"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_datasets": {
+   "actions": [
+    "iotsitewise:ListDatasets"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_gateways": {
+   "actions": [
+    "iotsitewise:ListGateways"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_pipelines": {
+   "actions": [
+    "iotsitewise:ListPipelines"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_portals": {
+   "actions": [
+    "iotsitewise:ListPortals"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_projects": {
+   "actions": [
+    "iotsitewise:ListProjects"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_tags_for_resource": {
+   "actions": [
+    "iotsitewise:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_tasks": {
+   "actions": [
+    "iotsitewise:ListTasks"
+   ],
+   "dropped": []
+  },
+  "iotsitewise:list_workspaces": {
+   "actions": [
+    "iotsitewise:ListWorkspaces"
+   ],
+   "dropped": []
+  },
+  "iottwinmaker:list_component_types": {
+   "actions": [
+    "iottwinmaker:ListComponentTypes"
+   ],
+   "dropped": []
+  },
+  "iottwinmaker:list_entities": {
+   "actions": [
+    "iottwinmaker:ListEntities"
+   ],
+   "dropped": []
+  },
+  "iottwinmaker:list_scenes": {
+   "actions": [
+    "iottwinmaker:ListScenes"
+   ],
+   "dropped": []
+  },
+  "iottwinmaker:list_sync_jobs": {
+   "actions": [
+    "iottwinmaker:ListSyncJobs"
+   ],
+   "dropped": []
+  },
+  "iottwinmaker:list_tags_for_resource": {
+   "actions": [
+    "iottwinmaker:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "iottwinmaker:list_workspaces": {
+   "actions": [
+    "iottwinmaker:ListWorkspaces"
+   ],
+   "dropped": []
+  },
+  "kafka:describe_replicator": {
+   "actions": [
+    "kafka:DescribeReplicator",
+    "kafka:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kafka:describe_vpc_connection": {
+   "actions": [
+    "kafka:DescribeVpcConnection"
+   ],
+   "dropped": []
+  },
+  "kafka:list_channels": {
+   "actions": [
+    "kafka:ListChannels"
+   ],
+   "dropped": []
+  },
+  "kafka:list_clusters": {
+   "actions": [
+    "kafka:ListClusters"
+   ],
+   "dropped": []
+  },
+  "kafka:list_clusters_v2": {
+   "actions": [
+    "kafka:ListClustersV2"
+   ],
+   "dropped": []
+  },
+  "kafka:list_configurations": {
+   "actions": [
+    "kafka:ListConfigurations"
+   ],
+   "dropped": []
+  },
+  "kafka:list_replicators": {
+   "actions": [
+    "kafka:ListReplicators"
+   ],
+   "dropped": []
+  },
+  "kafka:list_tags_for_resource": {
+   "actions": [
+    "kafka:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kafka:list_topics": {
+   "actions": [
+    "kafka-cluster:DescribeTopic"
+   ],
+   "dropped": [
+    {
+     "action": "kafka-cluster:Connect",
+     "why": "IsWrite"
+    }
+   ]
+  },
+  "kafka:list_vpc_connections": {
+   "actions": [
+    "kafka:ListVpcConnections"
+   ],
+   "dropped": []
+  },
+  "kafkaconnect:list_connectors": {
+   "actions": [
+    "kafkaconnect:ListConnectors"
+   ],
+   "dropped": []
+  },
+  "kafkaconnect:list_custom_plugins": {
+   "actions": [
+    "kafkaconnect:ListCustomPlugins"
+   ],
+   "dropped": []
+  },
+  "kafkaconnect:list_tags_for_resource": {
+   "actions": [
+    "kafkaconnect:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kafkaconnect:list_worker_configurations": {
+   "actions": [
+    "kafkaconnect:ListWorkerConfigurations"
+   ],
+   "dropped": []
+  },
+  "kendra-ranking:describe_rescore_execution_plan": {
+   "actions": [
+    "kendra-ranking:DescribeRescoreExecutionPlan"
+   ],
+   "dropped": []
+  },
+  "kendra-ranking:list_rescore_execution_plans": {
+   "actions": [
+    "kendra-ranking:ListRescoreExecutionPlans"
+   ],
+   "dropped": []
+  },
+  "kendra-ranking:list_tags_for_resource": {
+   "actions": [
+    "kendra-ranking:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kendra:list_data_sources": {
+   "actions": [
+    "kendra:ListDataSources"
+   ],
+   "dropped": []
+  },
+  "kendra:list_faqs": {
+   "actions": [
+    "kendra:ListFaqs"
+   ],
+   "dropped": []
+  },
+  "kendra:list_featured_results_sets": {
+   "actions": [
+    "kendra:ListFeaturedResultsSets"
+   ],
+   "dropped": []
+  },
+  "kendra:list_indices": {
+   "actions": [
+    "kendra:ListIndices"
+   ],
+   "dropped": []
+  },
+  "kendra:list_query_suggestions_block_lists": {
+   "actions": [
+    "kendra:ListQuerySuggestionsBlockLists"
+   ],
+   "dropped": []
+  },
+  "kendra:list_tags_for_resource": {
+   "actions": [
+    "kendra:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kendra:list_thesauri": {
+   "actions": [
+    "kendra:ListThesauri"
+   ],
+   "dropped": []
+  },
+  "keyspaces:get_type": {
+   "actions": [
+    "cassandra:Select"
+   ],
+   "dropped": []
+  },
+  "keyspaces:list_keyspaces": {
+   "actions": [
+    "cassandra:Select"
+   ],
+   "dropped": []
+  },
+  "keyspaces:list_tables": {
+   "actions": [
+    "cassandra:Select"
+   ],
+   "dropped": []
+  },
+  "keyspaces:list_tags_for_resource": {
+   "actions": [],
+   "dropped": []
+  },
+  "keyspaces:list_types": {
+   "actions": [
+    "cassandra:Select"
+   ],
+   "dropped": []
+  },
+  "kinesis:describe_channel": {
+   "actions": [
+    "kinesis:DescribeChannel"
+   ],
+   "dropped": []
+  },
+  "kinesis:list_channels": {
+   "actions": [
+    "kinesis:ListChannels"
+   ],
+   "dropped": []
+  },
+  "kinesis:list_stream_consumers": {
+   "actions": [
+    "kinesis:ListStreamConsumers"
+   ],
+   "dropped": []
+  },
+  "kinesis:list_streams": {
+   "actions": [
+    "kinesis:ListStreams"
+   ],
+   "dropped": []
+  },
+  "kinesis:list_tags_for_resource": {
+   "actions": [
+    "kinesis:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kinesisanalytics:describe_application": {
+   "actions": [
+    "kinesisanalytics:DescribeApplication"
+   ],
+   "dropped": []
+  },
+  "kinesisanalytics:list_applications": {
+   "actions": [
+    "kinesisanalytics:ListApplications"
+   ],
+   "dropped": []
+  },
+  "kinesisanalytics:list_tags_for_resource": {
+   "actions": [
+    "kinesisanalytics:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kinesisanalyticsv2:describe_application": {
+   "actions": [
+    "kinesisanalytics:DescribeApplication"
+   ],
+   "dropped": []
+  },
+  "kinesisanalyticsv2:list_applications": {
+   "actions": [
+    "kinesisanalytics:ListApplications"
+   ],
+   "dropped": []
+  },
+  "kinesisanalyticsv2:list_tags_for_resource": {
+   "actions": [
+    "kinesisanalytics:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kinesisvideo:list_signaling_channels": {
+   "actions": [
+    "kinesisvideo:ListSignalingChannels"
+   ],
+   "dropped": []
+  },
+  "kinesisvideo:list_streams": {
+   "actions": [
+    "kinesisvideo:ListStreams"
+   ],
+   "dropped": []
+  },
+  "kinesisvideo:list_tags_for_resource": {
+   "actions": [
+    "kinesisvideo:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "kms:describe_key": {
+   "actions": [
+    "kms:DescribeKey"
+   ],
+   "dropped": []
+  },
+  "kms:list_aliases": {
+   "actions": [
+    "kms:ListAliases"
+   ],
+   "dropped": []
+  },
+  "kms:list_keys": {
+   "actions": [
+    "kms:ListKeys"
+   ],
+   "dropped": []
+  },
+  "kms:list_resource_tags": {
+   "actions": [
+    "kms:ListResourceTags"
+   ],
+   "dropped": []
+  },
+  "lakeformation:list_data_cells_filter": {
+   "actions": [
+    "lakeformation:ListDataCellsFilter"
+   ],
+   "dropped": []
+  },
+  "lakeformation:list_lf_tags": {
+   "actions": [],
+   "dropped": []
+  },
+  "lakeformation:list_resources": {
+   "actions": [],
+   "dropped": []
+  },
+  "lambda:list_aliases": {
+   "actions": [
+    "lambda:ListAliases"
+   ],
+   "dropped": []
+  },
+  "lambda:list_capacity_providers": {
+   "actions": [
+    "lambda:ListCapacityProviders"
+   ],
+   "dropped": []
+  },
+  "lambda:list_code_signing_configs": {
+   "actions": [
+    "lambda:ListCodeSigningConfigs"
+   ],
+   "dropped": []
+  },
+  "lambda:list_event_source_mappings": {
+   "actions": [
+    "lambda:ListEventSourceMappings"
+   ],
+   "dropped": []
+  },
+  "lambda:list_function_url_configs": {
+   "actions": [
+    "lambda:ListFunctionUrlConfigs"
+   ],
+   "dropped": []
+  },
+  "lambda:list_functions": {
+   "actions": [
+    "lambda:ListFunctions"
+   ],
+   "dropped": []
+  },
+  "lambda:list_layer_versions": {
+   "actions": [
+    "lambda:ListLayerVersions"
+   ],
+   "dropped": []
+  },
+  "lambda:list_layers": {
+   "actions": [
+    "lambda:ListLayers"
+   ],
+   "dropped": []
+  },
+  "lambda:list_tags": {
+   "actions": [
+    "lambda:ListTags"
+   ],
+   "dropped": []
+  },
+  "lexv2-models:list_bot_versions": {
+   "actions": [
+    "lex:ListBotVersions"
+   ],
+   "dropped": []
+  },
+  "lexv2-models:list_bots": {
+   "actions": [
+    "lex:ListBots"
+   ],
+   "dropped": []
+  },
+  "lexv2-models:list_tags_for_resource": {
+   "actions": [
+    "lex:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "license-manager-linux-subscriptions:list_registered_subscription_providers": {
+   "actions": [
+    "license-manager-linux-subscriptions:ListRegisteredSubscriptionProviders"
+   ],
+   "dropped": []
+  },
+  "license-manager-linux-subscriptions:list_tags_for_resource": {
+   "actions": [
+    "license-manager-linux-subscriptions:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "license-manager-user-subscriptions:list_license_server_endpoints": {
+   "actions": [
+    "license-manager-user-subscriptions:ListLicenseServerEndpoints"
+   ],
+   "dropped": []
+  },
+  "license-manager-user-subscriptions:list_tags_for_resource": {
+   "actions": [
+    "license-manager-user-subscriptions:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "license-manager:list_license_asset_groups": {
+   "actions": [
+    "license-manager:ListLicenseAssetGroups"
+   ],
+   "dropped": []
+  },
+  "license-manager:list_license_asset_rulesets": {
+   "actions": [
+    "license-manager:ListLicenseAssetRulesets"
+   ],
+   "dropped": []
+  },
+  "license-manager:list_license_configurations": {
+   "actions": [
+    "license-manager:ListLicenseConfigurations"
+   ],
+   "dropped": []
+  },
+  "license-manager:list_license_manager_report_generators": {
+   "actions": [
+    "license-manager:ListLicenseManagerReportGenerators"
+   ],
+   "dropped": []
+  },
+  "license-manager:list_licenses": {
+   "actions": [
+    "license-manager:ListLicenses"
+   ],
+   "dropped": []
+  },
+  "license-manager:list_tags_for_resource": {
+   "actions": [
+    "license-manager:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "location:describe_geofence_collection": {
+   "actions": [
+    "geo:DescribeGeofenceCollection"
+   ],
+   "dropped": []
+  },
+  "location:describe_map": {
+   "actions": [
+    "geo:DescribeMap"
+   ],
+   "dropped": []
+  },
+  "location:describe_tracker": {
+   "actions": [
+    "geo:DescribeTracker"
+   ],
+   "dropped": []
+  },
+  "location:list_geofence_collections": {
+   "actions": [
+    "geo:ListGeofenceCollections"
+   ],
+   "dropped": []
+  },
+  "location:list_keys": {
+   "actions": [
+    "geo:ListKeys"
+   ],
+   "dropped": []
+  },
+  "location:list_maps": {
+   "actions": [
+    "geo:ListMaps"
+   ],
+   "dropped": []
+  },
+  "location:list_place_indexes": {
+   "actions": [
+    "geo:ListPlaceIndexes"
+   ],
+   "dropped": []
+  },
+  "location:list_route_calculators": {
+   "actions": [
+    "geo:ListRouteCalculators"
+   ],
+   "dropped": []
+  },
+  "location:list_tags_for_resource": {
+   "actions": [
+    "geo:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "location:list_trackers": {
+   "actions": [
+    "geo:ListTrackers"
+   ],
+   "dropped": []
+  },
+  "logs:describe_deliveries": {
+   "actions": [
+    "logs:DescribeDeliveries"
+   ],
+   "dropped": []
+  },
+  "logs:describe_delivery_destinations": {
+   "actions": [
+    "logs:DescribeDeliveryDestinations"
+   ],
+   "dropped": []
+  },
+  "logs:describe_delivery_sources": {
+   "actions": [
+    "logs:DescribeDeliverySources"
+   ],
+   "dropped": []
+  },
+  "logs:describe_destinations": {
+   "actions": [
+    "logs:DescribeDestinations"
+   ],
+   "dropped": []
+  },
+  "logs:describe_log_groups": {
+   "actions": [
+    "logs:DescribeLogGroups"
+   ],
+   "dropped": []
+  },
+  "logs:describe_metric_filters": {
+   "actions": [
+    "logs:DescribeMetricFilters"
+   ],
+   "dropped": []
+  },
+  "logs:describe_query_definitions": {
+   "actions": [
+    "logs:DescribeQueryDefinitions"
+   ],
+   "dropped": []
+  },
+  "logs:describe_subscription_filters": {
+   "actions": [
+    "logs:DescribeSubscriptionFilters"
+   ],
+   "dropped": []
+  },
+  "logs:list_integrations": {
+   "actions": [
+    "logs:ListIntegrations"
+   ],
+   "dropped": []
+  },
+  "logs:list_log_anomaly_detectors": {
+   "actions": [
+    "logs:ListLogAnomalyDetectors"
+   ],
+   "dropped": []
+  },
+  "logs:list_scheduled_queries": {
+   "actions": [
+    "logs:ListScheduledQueries"
+   ],
+   "dropped": []
+  },
+  "logs:list_tags_for_resource": {
+   "actions": [
+    "logs:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "m2:get_application": {
+   "actions": [
+    "m2:GetApplication"
+   ],
+   "dropped": []
+  },
+  "m2:get_environment": {
+   "actions": [
+    "m2:GetEnvironment"
+   ],
+   "dropped": []
+  },
+  "m2:list_applications": {
+   "actions": [
+    "m2:ListApplications"
+   ],
+   "dropped": []
+  },
+  "m2:list_environments": {
+   "actions": [
+    "m2:ListEnvironments"
+   ],
+   "dropped": []
+  },
+  "m2:list_tags_for_resource": {
+   "actions": [
+    "m2:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "mailmanager:list_addon_instances": {
+   "actions": [
+    "ses:ListAddonInstances"
+   ],
+   "dropped": []
+  },
+  "mailmanager:list_addon_subscriptions": {
+   "actions": [
+    "ses:ListAddonSubscriptions"
+   ],
+   "dropped": []
+  },
+  "mailmanager:list_address_lists": {
+   "actions": [
+    "ses:ListAddressLists"
+   ],
+   "dropped": []
+  },
+  "mailmanager:list_tags_for_resource": {
+   "actions": [
+    "ses:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "managedblockchain:list_accessors": {
+   "actions": [
+    "managedblockchain:ListAccessors"
+   ],
+   "dropped": []
+  },
+  "managedblockchain:list_members": {
+   "actions": [
+    "managedblockchain:ListMembers"
+   ],
+   "dropped": []
+  },
+  "managedblockchain:list_networks": {
+   "actions": [
+    "managedblockchain:ListNetworks"
+   ],
+   "dropped": []
+  },
+  "managedblockchain:list_nodes": {
+   "actions": [
+    "managedblockchain:ListNodes"
+   ],
+   "dropped": []
+  },
+  "managedblockchain:list_tags_for_resource": {
+   "actions": [
+    "managedblockchain:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "mediaconvert:list_job_templates": {
+   "actions": [
+    "mediaconvert:ListJobTemplates"
+   ],
+   "dropped": []
+  },
+  "mediaconvert:list_presets": {
+   "actions": [
+    "mediaconvert:ListPresets"
+   ],
+   "dropped": []
+  },
+  "mediaconvert:list_queues": {
+   "actions": [
+    "mediaconvert:ListQueues"
+   ],
+   "dropped": []
+  },
+  "mediaconvert:list_tags_for_resource": {
+   "actions": [
+    "mediaconvert:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_acls": {
+   "actions": [
+    "memorydb:DescribeAcls"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_clusters": {
+   "actions": [
+    "memorydb:DescribeClusters"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_multi_region_clusters": {
+   "actions": [
+    "memorydb:DescribeMultiRegionClusters"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_parameter_groups": {
+   "actions": [
+    "memorydb:DescribeParameterGroups"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_snapshots": {
+   "actions": [
+    "memorydb:DescribeSnapshots"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_subnet_groups": {
+   "actions": [
+    "memorydb:DescribeSubnetGroups"
+   ],
+   "dropped": []
+  },
+  "memorydb:describe_users": {
+   "actions": [
+    "memorydb:DescribeUsers"
+   ],
+   "dropped": []
+  },
+  "memorydb:list_tags": {
+   "actions": [
+    "memorydb:ListTags"
+   ],
+   "dropped": []
+  },
+  "mgn:describe_launch_configuration_templates": {
+   "actions": [
+    "mgn:DescribeLaunchConfigurationTemplates"
+   ],
+   "dropped": []
+  },
+  "mgn:describe_replication_configuration_templates": {
+   "actions": [
+    "mgn:DescribeReplicationConfigurationTemplates"
+   ],
+   "dropped": []
+  },
+  "mgn:get_network_migration_definition": {
+   "actions": [
+    "mgn:GetNetworkMigrationDefinition"
+   ],
+   "dropped": []
+  },
+  "mgn:list_connectors": {
+   "actions": [
+    "mgn:ListConnectors"
+   ],
+   "dropped": []
+  },
+  "mgn:list_network_migration_definitions": {
+   "actions": [
+    "mgn:ListNetworkMigrationDefinitions"
+   ],
+   "dropped": []
+  },
+  "mgn:list_waves": {
+   "actions": [
+    "mgn:ListWaves"
+   ],
+   "dropped": []
+  },
+  "mq:describe_broker": {
+   "actions": [
+    "mq:DescribeBroker"
+   ],
+   "dropped": []
+  },
+  "mq:list_brokers": {
+   "actions": [
+    "mq:ListBrokers"
+   ],
+   "dropped": []
+  },
+  "mq:list_configurations": {
+   "actions": [
+    "mq:ListConfigurations"
+   ],
+   "dropped": []
+  },
+  "mq:list_tags": {
+   "actions": [
+    "mq:ListTags"
+   ],
+   "dropped": []
+  },
+  "neptune:describe_db_cluster_parameter_groups": {
+   "actions": [
+    "rds:DescribeDBClusterParameterGroups"
+   ],
+   "dropped": []
+  },
+  "neptune:describe_db_parameter_groups": {
+   "actions": [
+    "rds:DescribeDBParameterGroups"
+   ],
+   "dropped": []
+  },
+  "neptune:describe_db_subnet_groups": {
+   "actions": [
+    "rds:DescribeDBSubnetGroups"
+   ],
+   "dropped": []
+  },
+  "neptune:describe_event_subscriptions": {
+   "actions": [
+    "rds:DescribeEventSubscriptions"
+   ],
+   "dropped": []
+  },
+  "neptune:describe_global_clusters": {
+   "actions": [
+    "rds:DescribeGlobalClusters"
+   ],
+   "dropped": []
+  },
+  "neptune:list_tags_for_resource": {
+   "actions": [
+    "rds:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "network-firewall:describe_firewall": {
+   "actions": [
+    "network-firewall:DescribeFirewall"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_container_associations": {
+   "actions": [
+    "network-firewall:ListContainerAssociations"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_firewall_policies": {
+   "actions": [
+    "network-firewall:ListFirewallPolicies"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_firewalls": {
+   "actions": [
+    "network-firewall:ListFirewalls"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_rule_groups": {
+   "actions": [
+    "network-firewall:ListRuleGroups"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_tags_for_resource": {
+   "actions": [
+    "network-firewall:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_tls_inspection_configurations": {
+   "actions": [
+    "network-firewall:ListTLSInspectionConfigurations"
+   ],
+   "dropped": []
+  },
+  "network-firewall:list_vpc_endpoint_associations": {
+   "actions": [
+    "network-firewall:ListVpcEndpointAssociations"
+   ],
+   "dropped": []
+  },
+  "networkmanager:describe_global_networks": {
+   "actions": [
+    "networkmanager:DescribeGlobalNetworks"
+   ],
+   "dropped": []
+  },
+  "networkmanager:get_core_network": {
+   "actions": [
+    "networkmanager:GetCoreNetwork"
+   ],
+   "dropped": []
+  },
+  "networkmanager:get_devices": {
+   "actions": [
+    "networkmanager:GetDevices"
+   ],
+   "dropped": []
+  },
+  "networkmanager:get_links": {
+   "actions": [
+    "networkmanager:GetLinks"
+   ],
+   "dropped": []
+  },
+  "networkmanager:get_sites": {
+   "actions": [
+    "networkmanager:GetSites"
+   ],
+   "dropped": []
+  },
+  "networkmanager:list_attachments": {
+   "actions": [
+    "networkmanager:ListAttachments"
+   ],
+   "dropped": []
+  },
+  "networkmanager:list_connect_peers": {
+   "actions": [
+    "networkmanager:ListConnectPeers"
+   ],
+   "dropped": []
+  },
+  "networkmanager:list_core_networks": {
+   "actions": [
+    "networkmanager:ListCoreNetworks"
+   ],
+   "dropped": []
+  },
+  "networkmanager:list_peerings": {
+   "actions": [
+    "networkmanager:ListPeerings"
+   ],
+   "dropped": []
+  },
+  "notifications:list_event_rules": {
+   "actions": [
+    "notifications:ListEventRules"
+   ],
+   "dropped": []
+  },
+  "notifications:list_notification_configurations": {
+   "actions": [
+    "notifications:ListNotificationConfigurations"
+   ],
+   "dropped": []
+  },
+  "notifications:list_tags_for_resource": {
+   "actions": [
+    "notifications:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "oam:get_link": {
+   "actions": [
+    "oam:GetLink"
+   ],
+   "dropped": []
+  },
+  "oam:list_links": {
+   "actions": [
+    "oam:ListLinks"
+   ],
+   "dropped": []
+  },
+  "oam:list_sinks": {
+   "actions": [
+    "oam:ListSinks"
+   ],
+   "dropped": []
+  },
+  "oam:list_tags_for_resource": {
+   "actions": [
+    "oam:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "opensearch:describe_domain": {
+   "actions": [
+    "es:DescribeDomain",
+    "es:DescribeElasticsearchDomain"
+   ],
+   "dropped": []
+  },
+  "opensearch:get_application": {
+   "actions": [
+    "es:GetApplication"
+   ],
+   "dropped": []
+  },
+  "opensearch:list_applications": {
+   "actions": [
+    "es:ListApplications"
+   ],
+   "dropped": []
+  },
+  "opensearch:list_data_sources": {
+   "actions": [
+    "es:ListDataSources"
+   ],
+   "dropped": []
+  },
+  "opensearch:list_domain_names": {
+   "actions": [
+    "es:ListDomainNames"
+   ],
+   "dropped": []
+  },
+  "opensearch:list_tags": {
+   "actions": [
+    "es:ListTags"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_access_policies": {
+   "actions": [
+    "aoss:ListAccessPolicies"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_collection_groups": {
+   "actions": [
+    "aoss:ListCollectionGroups"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_collections": {
+   "actions": [
+    "aoss:ListCollections"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_lifecycle_policies": {
+   "actions": [
+    "aoss:ListLifecyclePolicies"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_security_configs": {
+   "actions": [
+    "aoss:ListSecurityConfigs"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_security_policies": {
+   "actions": [
+    "aoss:ListSecurityPolicies"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_tags_for_resource": {
+   "actions": [
+    "aoss:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "opensearchserverless:list_vpc_endpoints": {
+   "actions": [
+    "aoss:ListVpcEndpoints"
+   ],
+   "dropped": []
+  },
+  "organizations:describe_organization": {
+   "actions": [
+    "organizations:DescribeOrganization"
+   ],
+   "dropped": []
+  },
+  "organizations:describe_policy": {
+   "actions": [
+    "organizations:DescribePolicy"
+   ],
+   "dropped": []
+  },
+  "organizations:list_accounts": {
+   "actions": [
+    "organizations:ListAccounts"
+   ],
+   "dropped": []
+  },
+  "organizations:list_accounts_for_parent": {
+   "actions": [
+    "organizations:ListAccountsForParent"
+   ],
+   "dropped": []
+  },
+  "organizations:list_aws_service_access_for_organization": {
+   "actions": [
+    "organizations:ListAWSServiceAccessForOrganization"
+   ],
+   "dropped": []
+  },
+  "organizations:list_delegated_administrators": {
+   "actions": [
+    "organizations:ListDelegatedAdministrators"
+   ],
+   "dropped": []
+  },
+  "organizations:list_delegated_services_for_account": {
+   "actions": [
+    "organizations:ListDelegatedServicesForAccount"
+   ],
+   "dropped": []
+  },
+  "organizations:list_organizational_units_for_parent": {
+   "actions": [
+    "organizations:ListOrganizationalUnitsForParent"
+   ],
+   "dropped": []
+  },
+  "organizations:list_policies": {
+   "actions": [
+    "organizations:ListPolicies"
+   ],
+   "dropped": []
+  },
+  "organizations:list_roots": {
+   "actions": [
+    "organizations:ListRoots"
+   ],
+   "dropped": []
+  },
+  "organizations:list_tags_for_resource": {
+   "actions": [
+    "organizations:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "organizations:list_targets_for_policy": {
+   "actions": [
+    "organizations:ListTargetsForPolicy"
+   ],
+   "dropped": []
+  },
+  "osis:get_pipeline": {
+   "actions": [
+    "osis:GetPipeline"
+   ],
+   "dropped": []
+  },
+  "osis:list_pipelines": {
+   "actions": [
+    "osis:ListPipelines"
+   ],
+   "dropped": []
+  },
+  "outposts:list_outposts": {
+   "actions": [
+    "outposts:ListOutposts"
+   ],
+   "dropped": []
+  },
+  "outposts:list_sites": {
+   "actions": [
+    "outposts:ListSites"
+   ],
+   "dropped": []
+  },
+  "pinpoint-email:get_configuration_set": {
+   "actions": [
+    "ses:GetConfigurationSet"
+   ],
+   "dropped": []
+  },
+  "pinpoint-email:list_configuration_sets": {
+   "actions": [
+    "ses:ListConfigurationSets"
+   ],
+   "dropped": []
+  },
+  "pinpoint-email:list_email_identities": {
+   "actions": [
+    "ses:ListEmailIdentities"
+   ],
+   "dropped": []
+  },
+  "pinpoint-email:list_tags_for_resource": {
+   "actions": [
+    "ses:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "pinpoint:get_apps": {
+   "actions": [
+    "mobiletargeting:GetApps"
+   ],
+   "dropped": []
+  },
+  "pinpoint:get_campaigns": {
+   "actions": [
+    "mobiletargeting:GetCampaigns"
+   ],
+   "dropped": []
+  },
+  "pinpoint:get_segments": {
+   "actions": [
+    "mobiletargeting:GetSegments"
+   ],
+   "dropped": []
+  },
+  "pinpoint:list_templates": {
+   "actions": [
+    "mobiletargeting:ListTemplates"
+   ],
+   "dropped": []
+  },
+  "polly:list_lexicons": {
+   "actions": [
+    "polly:ListLexicons"
+   ],
+   "dropped": []
+  },
+  "qbusiness:get_application": {
+   "actions": [
+    "qbusiness:GetApplication"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_applications": {
+   "actions": [
+    "qbusiness:ListApplications"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_data_accessors": {
+   "actions": [
+    "qbusiness:ListDataAccessors"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_data_sources": {
+   "actions": [
+    "qbusiness:ListDataSources"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_indices": {
+   "actions": [
+    "qbusiness:ListIndices"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_plugins": {
+   "actions": [
+    "qbusiness:ListPlugins"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_retrievers": {
+   "actions": [
+    "qbusiness:ListRetrievers"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_tags_for_resource": {
+   "actions": [
+    "qbusiness:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "qbusiness:list_web_experiences": {
+   "actions": [
+    "qbusiness:ListWebExperiences"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_action_connectors": {
+   "actions": [
+    "quicksight:ListActionConnectors"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_agents": {
+   "actions": [
+    "quicksight:ListAgents"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_analyses": {
+   "actions": [
+    "quicksight:ListAnalyses"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_approval_policies": {
+   "actions": [
+    "quicksight:ListApprovalPolicies"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_brands": {
+   "actions": [
+    "quicksight:ListBrands"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_custom_permissions": {
+   "actions": [
+    "quicksight:ListCustomPermissions"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_dashboards": {
+   "actions": [
+    "quicksight:ListDashboards"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_data_sets": {
+   "actions": [
+    "quicksight:ListDataSets"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_data_sources": {
+   "actions": [
+    "quicksight:ListDataSources"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_dlp_settings": {
+   "actions": [
+    "quicksight:ListDlpSettings"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_flows": {
+   "actions": [
+    "quicksight:ListFlows"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_folders": {
+   "actions": [
+    "quicksight:ListFolders"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_groups": {
+   "actions": [
+    "quicksight:ListGroups"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_knowledge_bases": {
+   "actions": [
+    "quicksight:ListKnowledgeBases"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_limits_profiles": {
+   "actions": [
+    "quicksight:ListLimitsProfiles"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_namespaces": {
+   "actions": [
+    "quicksight:ListNamespaces"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_o_auth_client_applications": {
+   "actions": [
+    "quicksight:ListOAuthClientApplications"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_refresh_schedules": {
+   "actions": [
+    "quicksight:ListRefreshSchedules"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_spaces": {
+   "actions": [
+    "quicksight:ListSpaces"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_tags_for_resource": {
+   "actions": [
+    "quicksight:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_templates": {
+   "actions": [
+    "quicksight:ListTemplates"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_themes": {
+   "actions": [
+    "quicksight:ListThemes"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_topics": {
+   "actions": [
+    "quicksight:ListTopics"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_topics_v2": {
+   "actions": [
+    "quicksight:ListTopics"
+   ],
+   "dropped": []
+  },
+  "quicksight:list_vpc_connections": {
+   "actions": [
+    "quicksight:ListVPCConnections"
+   ],
+   "dropped": []
+  },
+  "ram:get_resource_shares": {
+   "actions": [
+    "ram:GetResourceShares"
+   ],
+   "dropped": []
+  },
+  "ram:list_permissions": {
+   "actions": [
+    "ram:ListPermissions"
+   ],
+   "dropped": []
+  },
+  "rbin:list_rules": {
+   "actions": [
+    "rbin:ListRules"
+   ],
+   "dropped": []
+  },
+  "rbin:list_tags_for_resource": {
+   "actions": [
+    "rbin:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "rds:describe_blue_green_deployments": {
+   "actions": [
+    "rds:DescribeBlueGreenDeployments"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_cluster_endpoints": {
+   "actions": [
+    "rds:DescribeDBClusterEndpoints"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_cluster_parameter_groups": {
+   "actions": [
+    "rds:DescribeDBClusterParameterGroups"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_cluster_snapshot_attributes": {
+   "actions": [
+    "rds:DescribeDBClusterSnapshotAttributes"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_cluster_snapshots": {
+   "actions": [
+    "rds:DescribeDBClusterSnapshots"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_clusters": {
+   "actions": [
+    "rds:DescribeDBClusters"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_instances": {
+   "actions": [
+    "rds:DescribeDBInstances"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_parameter_groups": {
+   "actions": [
+    "rds:DescribeDBParameterGroups"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_proxies": {
+   "actions": [
+    "rds:DescribeDBProxies"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_proxy_endpoints": {
+   "actions": [
+    "rds:DescribeDBProxyEndpoints"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_proxy_target_groups": {
+   "actions": [
+    "rds:DescribeDBProxyTargetGroups"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_security_groups": {
+   "actions": [
+    "rds:DescribeDBSecurityGroups"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_shard_groups": {
+   "actions": [
+    "rds:DescribeDBShardGroups"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_snapshot_attributes": {
+   "actions": [
+    "rds:DescribeDBSnapshotAttributes"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_snapshots": {
+   "actions": [
+    "rds:DescribeDBSnapshots"
+   ],
+   "dropped": []
+  },
+  "rds:describe_db_subnet_groups": {
+   "actions": [
+    "rds:DescribeDBSubnetGroups"
+   ],
+   "dropped": []
+  },
+  "rds:describe_event_subscriptions": {
+   "actions": [
+    "rds:DescribeEventSubscriptions"
+   ],
+   "dropped": []
+  },
+  "rds:describe_global_clusters": {
+   "actions": [
+    "rds:DescribeGlobalClusters"
+   ],
+   "dropped": []
+  },
+  "rds:describe_integrations": {
+   "actions": [
+    "rds:DescribeIntegrations"
+   ],
+   "dropped": []
+  },
+  "rds:describe_option_groups": {
+   "actions": [
+    "rds:DescribeOptionGroups"
+   ],
+   "dropped": []
+  },
+  "rds:list_tags_for_resource": {
+   "actions": [
+    "rds:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "redshift-serverless:list_namespaces": {
+   "actions": [
+    "redshift-serverless:ListNamespaces"
+   ],
+   "dropped": []
+  },
+  "redshift-serverless:list_snapshots": {
+   "actions": [
+    "redshift-serverless:ListSnapshots"
+   ],
+   "dropped": []
+  },
+  "redshift-serverless:list_tags_for_resource": {
+   "actions": [
+    "redshift-serverless:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "redshift-serverless:list_workgroups": {
+   "actions": [
+    "redshift-serverless:ListWorkgroups"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_cluster_security_groups": {
+   "actions": [
+    "redshift:DescribeClusterSecurityGroups"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_clusters": {
+   "actions": [
+    "redshift:DescribeClusters"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_endpoint_access": {
+   "actions": [
+    "redshift:DescribeEndpointAccess"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_integrations": {
+   "actions": [
+    "redshift:DescribeIntegrations"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_qev2_idc_applications": {
+   "actions": [
+    "redshift:DescribeQev2IdcApplications"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_redshift_idc_applications": {
+   "actions": [
+    "redshift:DescribeRedshiftIdcApplications"
+   ],
+   "dropped": []
+  },
+  "redshift:describe_scheduled_actions": {
+   "actions": [
+    "redshift:DescribeScheduledActions"
+   ],
+   "dropped": []
+  },
+  "rekognition:describe_projects": {
+   "actions": [
+    "rekognition:DescribeProjects"
+   ],
+   "dropped": []
+  },
+  "rekognition:list_tags_for_resource": {
+   "actions": [
+    "rekognition:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "resiliencehub:describe_app": {
+   "actions": [
+    "resiliencehub:DescribeApp"
+   ],
+   "dropped": []
+  },
+  "resiliencehub:list_apps": {
+   "actions": [
+    "resiliencehub:ListApps"
+   ],
+   "dropped": []
+  },
+  "resiliencehub:list_resiliency_policies": {
+   "actions": [
+    "resiliencehub:ListResiliencyPolicies"
+   ],
+   "dropped": []
+  },
+  "resiliencehub:list_tags_for_resource": {
+   "actions": [
+    "resiliencehub:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:get_policy": {
+   "actions": [
+    "resiliencehub:GetPolicy"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:get_service": {
+   "actions": [
+    "resiliencehub:GetService"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:list_policies": {
+   "actions": [
+    "resiliencehub:ListPolicies"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:list_service_functions": {
+   "actions": [
+    "resiliencehub:ListServiceFunctions"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:list_services": {
+   "actions": [
+    "resiliencehub:ListServices"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:list_systems": {
+   "actions": [
+    "resiliencehub:ListSystems"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:list_tags_for_resource": {
+   "actions": [
+    "resiliencehub:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "resiliencehubv2:list_user_journeys": {
+   "actions": [
+    "resiliencehub:ListUserJourneys"
+   ],
+   "dropped": []
+  },
+  "resource-explorer-2:get_view": {
+   "actions": [
+    "resource-explorer-2:GetView"
+   ],
+   "dropped": []
+  },
+  "resource-explorer-2:list_indexes": {
+   "actions": [
+    "resource-explorer-2:ListIndexes"
+   ],
+   "dropped": []
+  },
+  "resource-explorer-2:list_tags_for_resource": {
+   "actions": [
+    "resource-explorer-2:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "resource-explorer-2:list_views": {
+   "actions": [
+    "resource-explorer-2:ListViews"
+   ],
+   "dropped": []
+  },
+  "resource-groups:get_tags": {
+   "actions": [
+    "resource-groups:GetTags"
+   ],
+   "dropped": []
+  },
+  "resource-groups:list_groups": {
+   "actions": [
+    "resource-groups:ListGroups"
+   ],
+   "dropped": []
+  },
+  "resource-groups:list_tag_sync_tasks": {
+   "actions": [
+    "resource-groups:ListTagSyncTasks"
+   ],
+   "dropped": []
+  },
+  "resourcegroupstaggingapi:get_resources": {
+   "actions": [
+    "tag:GetResources"
+   ],
+   "dropped": []
+  },
+  "rolesanywhere:list_crls": {
+   "actions": [
+    "rolesanywhere:ListCrls"
+   ],
+   "dropped": []
+  },
+  "rolesanywhere:list_profiles": {
+   "actions": [
+    "rolesanywhere:ListProfiles"
+   ],
+   "dropped": []
+  },
+  "rolesanywhere:list_tags_for_resource": {
+   "actions": [
+    "rolesanywhere:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "rolesanywhere:list_trust_anchors": {
+   "actions": [
+    "rolesanywhere:ListTrustAnchors"
+   ],
+   "dropped": []
+  },
+  "route53:list_cidr_collections": {
+   "actions": [
+    "route53:ListCidrCollections"
+   ],
+   "dropped": []
+  },
+  "route53:list_health_checks": {
+   "actions": [
+    "route53:ListHealthChecks"
+   ],
+   "dropped": []
+  },
+  "route53:list_query_logging_configs": {
+   "actions": [
+    "route53:ListQueryLoggingConfigs"
+   ],
+   "dropped": []
+  },
+  "route53:list_reusable_delegation_sets": {
+   "actions": [
+    "route53:ListReusableDelegationSets"
+   ],
+   "dropped": []
+  },
+  "route53:list_tags_for_resource": {
+   "actions": [
+    "route53:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "route53:list_traffic_policies": {
+   "actions": [
+    "route53:ListTrafficPolicies"
+   ],
+   "dropped": []
+  },
+  "route53:list_traffic_policy_instances": {
+   "actions": [
+    "route53:ListTrafficPolicyInstances"
+   ],
+   "dropped": []
+  },
+  "route53profiles:get_profile": {
+   "actions": [
+    "route53profiles:GetProfile"
+   ],
+   "dropped": []
+  },
+  "route53profiles:list_profiles": {
+   "actions": [
+    "route53profiles:ListProfiles"
+   ],
+   "dropped": []
+  },
+  "route53profiles:list_tags_for_resource": {
+   "actions": [
+    "route53profiles:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "route53resolver:get_firewall_domain_list": {
+   "actions": [
+    "route53resolver:GetFirewallDomainList"
+   ],
+   "dropped": []
+  },
+  "route53resolver:get_firewall_rule_group": {
+   "actions": [
+    "route53resolver:GetFirewallRuleGroup"
+   ],
+   "dropped": [
+    {
+     "action": "route53resolver:AssociateFirewallRuleGroupWithService",
+     "why": "IsWrite"
+    }
+   ]
+  },
+  "route53resolver:list_firewall_configs": {
+   "actions": [
+    "route53resolver:ListFirewallConfigs"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_firewall_domain_lists": {
+   "actions": [
+    "route53resolver:ListFirewallDomainLists"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_firewall_rule_group_associations": {
+   "actions": [
+    "route53resolver:ListFirewallRuleGroupAssociations"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_firewall_rule_groups": {
+   "actions": [
+    "route53resolver:ListFirewallRuleGroups"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_outpost_resolvers": {
+   "actions": [
+    "route53resolver:ListOutpostResolvers"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_resolver_configs": {
+   "actions": [
+    "route53resolver:ListResolverConfigs"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_resolver_dnssec_configs": {
+   "actions": [
+    "route53resolver:ListResolverDnssecConfigs"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_resolver_endpoints": {
+   "actions": [
+    "route53resolver:ListResolverEndpoints"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_resolver_query_log_configs": {
+   "actions": [
+    "route53resolver:ListResolverQueryLogConfigs"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_resolver_rules": {
+   "actions": [
+    "route53resolver:ListResolverRules"
+   ],
+   "dropped": []
+  },
+  "route53resolver:list_tags_for_resource": {
+   "actions": [
+    "route53resolver:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "rum:get_app_monitor": {
+   "actions": [
+    "rum:GetAppMonitor"
+   ],
+   "dropped": []
+  },
+  "rum:list_app_monitors": {
+   "actions": [
+    "rum:ListAppMonitors"
+   ],
+   "dropped": []
+  },
+  "s3:get_bucket_encryption": {
+   "actions": [
+    "s3:GetEncryptionConfiguration"
+   ],
+   "dropped": []
+  },
+  "s3:get_bucket_location": {
+   "actions": [
+    "s3:GetBucketLocation"
+   ],
+   "dropped": []
+  },
+  "s3:get_bucket_policy": {
+   "actions": [
+    "s3:GetBucketPolicy"
+   ],
+   "dropped": []
+  },
+  "s3:get_bucket_policy_status": {
+   "actions": [
+    "s3:GetBucketPolicyStatus"
+   ],
+   "dropped": []
+  },
+  "s3:get_bucket_versioning": {
+   "actions": [
+    "s3:GetBucketVersioning"
+   ],
+   "dropped": []
+  },
+  "s3:get_public_access_block": {
+   "actions": [
+    "s3:GetBucketPublicAccessBlock"
+   ],
+   "dropped": []
+  },
+  "s3:list_buckets": {
+   "actions": [
+    "s3:ListAllMyBuckets"
+   ],
+   "dropped": []
+  },
+  "s3control:get_access_point_policy_status": {
+   "actions": [
+    "s3:GetAccessPointPolicyStatus"
+   ],
+   "dropped": []
+  },
+  "s3control:get_bucket_tagging": {
+   "actions": [
+    "s3:GetBucketTagging"
+   ],
+   "dropped": []
+  },
+  "s3control:get_storage_lens_configuration_tagging": {
+   "actions": [
+    "s3:GetStorageLensConfigurationTagging"
+   ],
+   "dropped": []
+  },
+  "s3control:list_access_points": {
+   "actions": [
+    "s3:ListAccessPoints"
+   ],
+   "dropped": []
+  },
+  "s3control:list_access_points_for_object_lambda": {
+   "actions": [
+    "s3:ListAccessPointsForObjectLambda"
+   ],
+   "dropped": []
+  },
+  "s3control:list_regional_buckets": {
+   "actions": [],
+   "dropped": []
+  },
+  "s3control:list_storage_lens_configurations": {
+   "actions": [
+    "s3:ListStorageLensConfigurations"
+   ],
+   "dropped": []
+  },
+  "s3control:list_tags_for_resource": {
+   "actions": [
+    "s3:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "s3outposts:list_endpoints": {
+   "actions": [
+    "s3-outposts:ListEndpoints"
+   ],
+   "dropped": []
+  },
+  "s3outposts:list_outposts_with_s3": {
+   "actions": [
+    "s3-outposts:ListOutpostsWithS3"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_ai_workload_config": {
+   "actions": [
+    "sagemaker:DescribeAIWorkloadConfig"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_algorithm": {
+   "actions": [
+    "sagemaker:DescribeAlgorithm"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_cluster": {
+   "actions": [
+    "sagemaker:DescribeCluster"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_cluster_scheduler_config": {
+   "actions": [
+    "sagemaker:DescribeClusterSchedulerConfig"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_compute_quota": {
+   "actions": [
+    "sagemaker:DescribeComputeQuota"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_device_fleet": {
+   "actions": [],
+   "dropped": []
+  },
+  "sagemaker:describe_domain": {
+   "actions": [
+    "sagemaker:DescribeDomain"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_endpoint": {
+   "actions": [
+    "sagemaker:DescribeEndpoint"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_endpoint_config": {
+   "actions": [
+    "sagemaker:DescribeEndpointConfig"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_experiment": {
+   "actions": [
+    "sagemaker:DescribeExperiment"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_feature_group": {
+   "actions": [
+    "sagemaker:DescribeFeatureGroup"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_inference_component": {
+   "actions": [
+    "sagemaker:DescribeInferenceComponent"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_inference_experiment": {
+   "actions": [
+    "sagemaker:DescribeInferenceExperiment"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_mlflow_app": {
+   "actions": [
+    "sagemaker:DescribeMlflowApp"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_mlflow_tracking_server": {
+   "actions": [
+    "sagemaker:DescribeMlflowTrackingServer"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_model": {
+   "actions": [
+    "sagemaker:DescribeModel"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_model_card": {
+   "actions": [
+    "sagemaker:DescribeModelCard"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_model_package": {
+   "actions": [
+    "sagemaker:DescribeModelPackage"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_notebook_instance": {
+   "actions": [
+    "sagemaker:DescribeNotebookInstance"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_partner_app": {
+   "actions": [
+    "sagemaker:DescribePartnerApp"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_pipeline": {
+   "actions": [
+    "sagemaker:DescribePipeline"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_processing_job": {
+   "actions": [
+    "sagemaker:DescribeProcessingJob"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_project": {
+   "actions": [
+    "sagemaker:DescribeProject"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_space": {
+   "actions": [
+    "sagemaker:DescribeSpace"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_trial_component": {
+   "actions": [
+    "sagemaker:DescribeTrialComponent"
+   ],
+   "dropped": []
+  },
+  "sagemaker:describe_user_profile": {
+   "actions": [
+    "sagemaker:DescribeUserProfile"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_ai_workload_configs": {
+   "actions": [
+    "sagemaker:ListAIWorkloadConfigs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_algorithms": {
+   "actions": [
+    "sagemaker:ListAlgorithms"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_app_image_configs": {
+   "actions": [
+    "sagemaker:ListAppImageConfigs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_cluster_scheduler_configs": {
+   "actions": [
+    "sagemaker:ListClusterSchedulerConfigs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_clusters": {
+   "actions": [
+    "sagemaker:ListClusters"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_code_repositories": {
+   "actions": [
+    "sagemaker:ListCodeRepositories"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_compute_quotas": {
+   "actions": [
+    "sagemaker:ListComputeQuotas"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_data_quality_job_definitions": {
+   "actions": [
+    "sagemaker:ListDataQualityJobDefinitions"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_device_fleets": {
+   "actions": [],
+   "dropped": []
+  },
+  "sagemaker:list_devices": {
+   "actions": [],
+   "dropped": []
+  },
+  "sagemaker:list_domains": {
+   "actions": [
+    "sagemaker:ListDomains"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_endpoint_configs": {
+   "actions": [
+    "sagemaker:ListEndpointConfigs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_endpoints": {
+   "actions": [
+    "sagemaker:ListEndpoints"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_experiments": {
+   "actions": [
+    "sagemaker:ListExperiments"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_feature_groups": {
+   "actions": [
+    "sagemaker:ListFeatureGroups"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_hubs": {
+   "actions": [
+    "sagemaker:ListHubs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_human_task_uis": {
+   "actions": [
+    "sagemaker:ListHumanTaskUis"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_image_versions": {
+   "actions": [
+    "sagemaker:ListImageVersions"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_images": {
+   "actions": [
+    "sagemaker:ListImages"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_inference_components": {
+   "actions": [
+    "sagemaker:ListInferenceComponents"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_inference_experiments": {
+   "actions": [
+    "sagemaker:ListInferenceExperiments"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_mlflow_apps": {
+   "actions": [
+    "sagemaker:ListMlflowApps"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_mlflow_tracking_servers": {
+   "actions": [
+    "sagemaker:ListMlflowTrackingServers"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_model_bias_job_definitions": {
+   "actions": [
+    "sagemaker:ListModelBiasJobDefinitions"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_model_cards": {
+   "actions": [
+    "sagemaker:ListModelCards"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_model_explainability_job_definitions": {
+   "actions": [
+    "sagemaker:ListModelExplainabilityJobDefinitions"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_model_package_groups": {
+   "actions": [
+    "sagemaker:ListModelPackageGroups"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_model_packages": {
+   "actions": [
+    "sagemaker:ListModelPackages"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_model_quality_job_definitions": {
+   "actions": [
+    "sagemaker:ListModelQualityJobDefinitions"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_models": {
+   "actions": [
+    "sagemaker:ListModels"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_monitoring_schedules": {
+   "actions": [
+    "sagemaker:ListMonitoringSchedules"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_notebook_instance_lifecycle_configs": {
+   "actions": [
+    "sagemaker:ListNotebookInstanceLifecycleConfigs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_notebook_instances": {
+   "actions": [
+    "sagemaker:ListNotebookInstances"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_partner_apps": {
+   "actions": [
+    "sagemaker:ListPartnerApps"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_pipelines": {
+   "actions": [
+    "sagemaker:ListPipelines"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_processing_jobs": {
+   "actions": [
+    "sagemaker:ListProcessingJobs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_projects": {
+   "actions": [
+    "sagemaker:ListProjects"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_spaces": {
+   "actions": [
+    "sagemaker:ListSpaces"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_studio_lifecycle_configs": {
+   "actions": [
+    "sagemaker:ListStudioLifecycleConfigs"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_tags": {
+   "actions": [
+    "sagemaker:ListTags"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_trial_components": {
+   "actions": [
+    "sagemaker:ListTrialComponents"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_user_profiles": {
+   "actions": [
+    "sagemaker:ListUserProfiles"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_workforces": {
+   "actions": [
+    "sagemaker:ListWorkforces"
+   ],
+   "dropped": []
+  },
+  "sagemaker:list_workteams": {
+   "actions": [
+    "sagemaker:ListWorkteams"
+   ],
+   "dropped": []
+  },
+  "scheduler:get_schedule": {
+   "actions": [
+    "scheduler:GetSchedule"
+   ],
+   "dropped": []
+  },
+  "scheduler:list_schedule_groups": {
+   "actions": [
+    "scheduler:ListScheduleGroups"
+   ],
+   "dropped": []
+  },
+  "scheduler:list_schedules": {
+   "actions": [
+    "scheduler:ListSchedules"
+   ],
+   "dropped": []
+  },
+  "scheduler:list_tags_for_resource": {
+   "actions": [
+    "scheduler:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "schemas:list_discoverers": {
+   "actions": [
+    "schemas:ListDiscoverers"
+   ],
+   "dropped": []
+  },
+  "schemas:list_registries": {
+   "actions": [
+    "schemas:ListRegistries"
+   ],
+   "dropped": []
+  },
+  "schemas:list_schemas": {
+   "actions": [
+    "schemas:ListSchemas"
+   ],
+   "dropped": []
+  },
+  "secretsmanager:list_secrets": {
+   "actions": [
+    "secretsmanager:ListSecrets"
+   ],
+   "dropped": []
+  },
+  "securityhub:batch_get_automation_rules": {
+   "actions": [
+    "securityhub:BatchGetAutomationRules"
+   ],
+   "dropped": []
+  },
+  "securityhub:describe_action_targets": {
+   "actions": [
+    "securityhub:DescribeActionTargets"
+   ],
+   "dropped": []
+  },
+  "securityhub:describe_security_hub_v2": {
+   "actions": [
+    "securityhub:DescribeSecurityHubV2"
+   ],
+   "dropped": []
+  },
+  "securityhub:get_finding_aggregator": {
+   "actions": [
+    "securityhub:GetFindingAggregator"
+   ],
+   "dropped": []
+  },
+  "securityhub:get_insights": {
+   "actions": [
+    "securityhub:GetInsights"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_aggregators_v2": {
+   "actions": [
+    "securityhub:ListAggregatorsV2"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_automation_rules": {
+   "actions": [
+    "securityhub:ListAutomationRules"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_automation_rules_v2": {
+   "actions": [
+    "securityhub:ListAutomationRulesV2"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_configuration_policies": {
+   "actions": [
+    "securityhub:ListConfigurationPolicies"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_connectors": {
+   "actions": [
+    "securityhub:ListConnectors"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_connectors_v2": {
+   "actions": [
+    "securityhub:ListConnectorsV2"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_finding_aggregators": {
+   "actions": [
+    "securityhub:ListFindingAggregators"
+   ],
+   "dropped": []
+  },
+  "securityhub:list_tags_for_resource": {
+   "actions": [
+    "securityhub:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "securitylake:list_data_lakes": {
+   "actions": [
+    "securitylake:ListDataLakes"
+   ],
+   "dropped": []
+  },
+  "securitylake:list_subscribers": {
+   "actions": [
+    "securitylake:ListSubscribers"
+   ],
+   "dropped": []
+  },
+  "securitylake:list_tags_for_resource": {
+   "actions": [
+    "securitylake:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "serverlessrepo:get_application": {
+   "actions": [
+    "serverlessrepo:GetApplication"
+   ],
+   "dropped": []
+  },
+  "serverlessrepo:list_applications": {
+   "actions": [
+    "serverlessrepo:ListApplications"
+   ],
+   "dropped": []
+  },
+  "servicecatalog-appregistry:list_applications": {
+   "actions": [
+    "servicecatalog:ListApplications"
+   ],
+   "dropped": []
+  },
+  "servicecatalog-appregistry:list_attribute_groups": {
+   "actions": [
+    "servicecatalog:ListAttributeGroups"
+   ],
+   "dropped": []
+  },
+  "servicecatalog-appregistry:list_tags_for_resource": {
+   "actions": [
+    "servicecatalog:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:describe_portfolio": {
+   "actions": [
+    "servicecatalog:DescribePortfolio"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:describe_product_as_admin": {
+   "actions": [
+    "servicecatalog:DescribeProductAsAdmin"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:list_portfolios": {
+   "actions": [
+    "servicecatalog:ListPortfolios"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:list_service_actions": {
+   "actions": [
+    "servicecatalog:ListServiceActions"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:list_tag_options": {
+   "actions": [
+    "servicecatalog:ListTagOptions"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:search_products_as_admin": {
+   "actions": [
+    "servicecatalog:SearchProductsAsAdmin"
+   ],
+   "dropped": []
+  },
+  "servicecatalog:search_provisioned_products": {
+   "actions": [
+    "servicecatalog:SearchProvisionedProducts"
+   ],
+   "dropped": []
+  },
+  "servicediscovery:list_namespaces": {
+   "actions": [
+    "servicediscovery:ListNamespaces"
+   ],
+   "dropped": []
+  },
+  "servicediscovery:list_services": {
+   "actions": [
+    "servicediscovery:ListServices"
+   ],
+   "dropped": []
+  },
+  "servicediscovery:list_tags_for_resource": {
+   "actions": [
+    "servicediscovery:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "ses:list_receipt_filters": {
+   "actions": [
+    "ses:ListReceiptFilters"
+   ],
+   "dropped": []
+  },
+  "ses:list_receipt_rule_sets": {
+   "actions": [
+    "ses:ListReceiptRuleSets"
+   ],
+   "dropped": []
+  },
+  "sesv2:list_tags_for_resource": {
+   "actions": [
+    "ses:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "sesv2:list_tenants": {
+   "actions": [
+    "ses:ListTenants"
+   ],
+   "dropped": []
+  },
+  "signer:get_signing_profile": {
+   "actions": [
+    "signer:GetSigningProfile"
+   ],
+   "dropped": []
+  },
+  "signer:list_signing_profiles": {
+   "actions": [
+    "signer:ListSigningProfiles"
+   ],
+   "dropped": []
+  },
+  "sns:get_topic_attributes": {
+   "actions": [
+    "sns:GetTopicAttributes"
+   ],
+   "dropped": []
+  },
+  "sns:list_subscriptions": {
+   "actions": [
+    "sns:ListSubscriptions"
+   ],
+   "dropped": []
+  },
+  "sns:list_tags_for_resource": {
+   "actions": [
+    "sns:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "sns:list_topics": {
+   "actions": [
+    "sns:ListTopics"
+   ],
+   "dropped": []
+  },
+  "sqs:get_queue_attributes": {
+   "actions": [
+    "sqs:GetQueueAttributes"
+   ],
+   "dropped": []
+  },
+  "sqs:list_queue_tags": {
+   "actions": [
+    "sqs:ListQueueTags"
+   ],
+   "dropped": []
+  },
+  "sqs:list_queues": {
+   "actions": [
+    "sqs:ListQueues"
+   ],
+   "dropped": []
+  },
+  "ssm:describe_document": {
+   "actions": [
+    "ssm:DescribeDocument"
+   ],
+   "dropped": []
+  },
+  "ssm:describe_maintenance_windows": {
+   "actions": [
+    "ssm:DescribeMaintenanceWindows"
+   ],
+   "dropped": []
+  },
+  "ssm:describe_parameters": {
+   "actions": [
+    "ssm:DescribeParameters"
+   ],
+   "dropped": []
+  },
+  "ssm:describe_patch_baselines": {
+   "actions": [
+    "ssm:DescribePatchBaselines"
+   ],
+   "dropped": []
+  },
+  "ssm:list_associations": {
+   "actions": [
+    "ssm:ListAssociations"
+   ],
+   "dropped": []
+  },
+  "ssm:list_cloud_connectors": {
+   "actions": [
+    "ssm:ListCloudConnectors"
+   ],
+   "dropped": []
+  },
+  "ssm:list_documents": {
+   "actions": [
+    "ssm:ListDocuments"
+   ],
+   "dropped": []
+  },
+  "ssm:list_resource_data_sync": {
+   "actions": [
+    "ssm:ListResourceDataSync"
+   ],
+   "dropped": []
+  },
+  "ssm:list_tags_for_resource": {
+   "actions": [
+    "ssm:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "sso-admin:list_application_assignments": {
+   "actions": [
+    "sso:ListApplicationAssignments",
+    "sso:ListProfileAssociations"
+   ],
+   "dropped": []
+  },
+  "sso-admin:list_applications": {
+   "actions": [
+    "sso:GetApplicationInstance",
+    "sso:ListApplicationInstances",
+    "sso:ListApplicationProviders",
+    "sso:ListApplications"
+   ],
+   "dropped": []
+  },
+  "sso-admin:list_instances": {
+   "actions": [
+    "sso:ListInstances"
+   ],
+   "dropped": []
+  },
+  "sso-admin:list_tags_for_resource": {
+   "actions": [
+    "sso:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "stepfunctions:describe_state_machine": {
+   "actions": [
+    "states:DescribeStateMachine"
+   ],
+   "dropped": []
+  },
+  "stepfunctions:list_activities": {
+   "actions": [
+    "states:ListActivities"
+   ],
+   "dropped": []
+  },
+  "stepfunctions:list_state_machine_aliases": {
+   "actions": [
+    "states:ListStateMachineAliases"
+   ],
+   "dropped": []
+  },
+  "stepfunctions:list_state_machine_versions": {
+   "actions": [
+    "states:ListStateMachineVersions"
+   ],
+   "dropped": []
+  },
+  "stepfunctions:list_state_machines": {
+   "actions": [
+    "states:ListStateMachines"
+   ],
+   "dropped": []
+  },
+  "stepfunctions:list_tags_for_resource": {
+   "actions": [
+    "states:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "storagegateway:list_file_shares": {
+   "actions": [
+    "storagegateway:ListFileShares"
+   ],
+   "dropped": []
+  },
+  "storagegateway:list_tags_for_resource": {
+   "actions": [
+    "storagegateway:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "storagegateway:list_tape_pools": {
+   "actions": [
+    "storagegateway:ListTapePools"
+   ],
+   "dropped": []
+  },
+  "storagegateway:list_tapes": {
+   "actions": [
+    "storagegateway:ListTapes"
+   ],
+   "dropped": []
+  },
+  "storagegateway:list_volumes": {
+   "actions": [
+    "storagegateway:ListVolumes"
+   ],
+   "dropped": []
+  },
+  "synthetics:describe_canaries": {
+   "actions": [
+    "synthetics:DescribeCanaries"
+   ],
+   "dropped": []
+  },
+  "synthetics:get_group": {
+   "actions": [
+    "synthetics:GetGroup"
+   ],
+   "dropped": []
+  },
+  "synthetics:list_groups": {
+   "actions": [
+    "synthetics:ListGroups"
+   ],
+   "dropped": []
+  },
+  "synthetics:list_tags_for_resource": {
+   "actions": [
+    "synthetics:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "textract:get_adapter": {
+   "actions": [
+    "textract:GetAdapter"
+   ],
+   "dropped": []
+  },
+  "textract:list_adapters": {
+   "actions": [
+    "textract:ListAdapters"
+   ],
+   "dropped": []
+  },
+  "textract:list_tags_for_resource": {
+   "actions": [
+    "textract:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "timestream-influxdb:list_db_backups": {
+   "actions": [
+    "timestream-influxdb:ListDbBackups"
+   ],
+   "dropped": []
+  },
+  "timestream-influxdb:list_db_clusters": {
+   "actions": [
+    "timestream-influxdb:ListDbClusters"
+   ],
+   "dropped": []
+  },
+  "timestream-influxdb:list_db_instances": {
+   "actions": [
+    "timestream-influxdb:ListDbInstances"
+   ],
+   "dropped": []
+  },
+  "timestream-influxdb:list_tags_for_resource": {
+   "actions": [
+    "timestream-influxdb:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "timestream-query:describe_scheduled_query": {
+   "actions": [
+    "timestream:DescribeScheduledQuery"
+   ],
+   "dropped": []
+  },
+  "timestream-query:list_scheduled_queries": {
+   "actions": [
+    "timestream:ListScheduledQueries"
+   ],
+   "dropped": []
+  },
+  "timestream-query:list_tags_for_resource": {
+   "actions": [
+    "timestream:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "timestream-write:list_databases": {
+   "actions": [
+    "timestream:ListDatabases"
+   ],
+   "dropped": []
+  },
+  "timestream-write:list_tables": {
+   "actions": [
+    "timestream:ListTables"
+   ],
+   "dropped": []
+  },
+  "timestream-write:list_tags_for_resource": {
+   "actions": [
+    "timestream:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "transcribe:get_vocabulary": {
+   "actions": [
+    "transcribe:GetVocabulary"
+   ],
+   "dropped": []
+  },
+  "transcribe:get_vocabulary_filter": {
+   "actions": [
+    "transcribe:GetVocabularyFilter"
+   ],
+   "dropped": []
+  },
+  "transcribe:list_call_analytics_categories": {
+   "actions": [
+    "transcribe:ListCallAnalyticsCategories"
+   ],
+   "dropped": []
+  },
+  "transcribe:list_medical_vocabularies": {
+   "actions": [
+    "transcribe:ListMedicalVocabularies"
+   ],
+   "dropped": []
+  },
+  "transcribe:list_tags_for_resource": {
+   "actions": [
+    "transcribe:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "transcribe:list_vocabularies": {
+   "actions": [
+    "transcribe:ListVocabularies"
+   ],
+   "dropped": []
+  },
+  "transcribe:list_vocabulary_filters": {
+   "actions": [
+    "transcribe:ListVocabularyFilters"
+   ],
+   "dropped": []
+  },
+  "transfer:describe_certificate": {
+   "actions": [
+    "transfer:DescribeCertificate"
+   ],
+   "dropped": []
+  },
+  "transfer:describe_connector": {
+   "actions": [
+    "transfer:DescribeConnector"
+   ],
+   "dropped": []
+  },
+  "transfer:describe_server": {
+   "actions": [
+    "transfer:DescribeServer"
+   ],
+   "dropped": []
+  },
+  "transfer:describe_web_app": {
+   "actions": [
+    "transfer:DescribeWebApp"
+   ],
+   "dropped": []
+  },
+  "transfer:describe_workflow": {
+   "actions": [
+    "transfer:DescribeWorkflow"
+   ],
+   "dropped": []
+  },
+  "transfer:list_agreements": {
+   "actions": [
+    "transfer:ListAgreements"
+   ],
+   "dropped": []
+  },
+  "transfer:list_certificates": {
+   "actions": [
+    "transfer:ListCertificates"
+   ],
+   "dropped": []
+  },
+  "transfer:list_connectors": {
+   "actions": [
+    "transfer:ListConnectors"
+   ],
+   "dropped": []
+  },
+  "transfer:list_host_keys": {
+   "actions": [
+    "transfer:ListHostKeys"
+   ],
+   "dropped": []
+  },
+  "transfer:list_profiles": {
+   "actions": [
+    "transfer:ListProfiles"
+   ],
+   "dropped": []
+  },
+  "transfer:list_servers": {
+   "actions": [
+    "transfer:ListServers"
+   ],
+   "dropped": []
+  },
+  "transfer:list_tags_for_resource": {
+   "actions": [
+    "transfer:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "transfer:list_users": {
+   "actions": [
+    "transfer:ListUsers"
+   ],
+   "dropped": []
+  },
+  "transfer:list_web_apps": {
+   "actions": [
+    "transfer:ListWebApps"
+   ],
+   "dropped": []
+  },
+  "transfer:list_workflows": {
+   "actions": [
+    "transfer:ListWorkflows"
+   ],
+   "dropped": []
+  },
+  "translate:list_parallel_data": {
+   "actions": [
+    "translate:ListParallelData"
+   ],
+   "dropped": []
+  },
+  "translate:list_tags_for_resource": {
+   "actions": [
+    "translate:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "translate:list_terminologies": {
+   "actions": [
+    "translate:ListTerminologies"
+   ],
+   "dropped": []
+  },
+  "verifiedpermissions:get_policy_store": {
+   "actions": [],
+   "dropped": []
+  },
+  "verifiedpermissions:list_identity_sources": {
+   "actions": [],
+   "dropped": []
+  },
+  "verifiedpermissions:list_policies": {
+   "actions": [],
+   "dropped": []
+  },
+  "verifiedpermissions:list_policy_store_aliases": {
+   "actions": [],
+   "dropped": []
+  },
+  "verifiedpermissions:list_policy_stores": {
+   "actions": [],
+   "dropped": []
+  },
+  "verifiedpermissions:list_policy_templates": {
+   "actions": [],
+   "dropped": []
+  },
+  "verifiedpermissions:list_tags_for_resource": {
+   "actions": [],
+   "dropped": []
+  },
+  "waf-regional:get_rate_based_rule": {
+   "actions": [
+    "waf-regional:GetRateBasedRule"
+   ],
+   "dropped": []
+  },
+  "waf-regional:get_web_acl": {
+   "actions": [
+    "waf-regional:GetWebACL"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_byte_match_sets": {
+   "actions": [
+    "waf-regional:ListByteMatchSets"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_geo_match_sets": {
+   "actions": [
+    "waf-regional:ListGeoMatchSets"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_ip_sets": {
+   "actions": [
+    "waf-regional:ListIPSets"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_rate_based_rules": {
+   "actions": [
+    "waf-regional:ListRateBasedRules"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_regex_pattern_sets": {
+   "actions": [
+    "waf-regional:ListRegexPatternSets"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_rules": {
+   "actions": [
+    "waf-regional:ListRules"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_size_constraint_sets": {
+   "actions": [
+    "waf-regional:ListSizeConstraintSets"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_sql_injection_match_sets": {
+   "actions": [
+    "waf-regional:ListSqlInjectionMatchSets"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_tags_for_resource": {
+   "actions": [
+    "waf-regional:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_web_acls": {
+   "actions": [
+    "waf-regional:ListWebACLs"
+   ],
+   "dropped": []
+  },
+  "waf-regional:list_xss_match_sets": {
+   "actions": [
+    "waf-regional:ListXssMatchSets"
+   ],
+   "dropped": []
+  },
+  "wafv2:get_ip_set": {
+   "actions": [
+    "wafv2:GetIPSet"
+   ],
+   "dropped": []
+  },
+  "wafv2:get_regex_pattern_set": {
+   "actions": [
+    "wafv2:GetRegexPatternSet"
+   ],
+   "dropped": []
+  },
+  "wafv2:get_rule_group": {
+   "actions": [
+    "wafv2:GetRuleGroup"
+   ],
+   "dropped": []
+  },
+  "wafv2:get_web_acl": {
+   "actions": [
+    "wafv2:GetWebACL"
+   ],
+   "dropped": []
+  },
+  "wafv2:list_ip_sets": {
+   "actions": [
+    "wafv2:ListIPSets"
+   ],
+   "dropped": []
+  },
+  "wafv2:list_regex_pattern_sets": {
+   "actions": [
+    "wafv2:ListRegexPatternSets"
+   ],
+   "dropped": []
+  },
+  "wafv2:list_rule_groups": {
+   "actions": [
+    "wafv2:ListRuleGroups"
+   ],
+   "dropped": []
+  },
+  "wafv2:list_tags_for_resource": {
+   "actions": [
+    "wafv2:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "wafv2:list_web_acls": {
+   "actions": [
+    "wafv2:ListWebACLs"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:get_profile": {
+   "actions": [
+    "wellarchitected:GetProfile"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:get_review_template": {
+   "actions": [
+    "wellarchitected:GetReviewTemplate"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:get_workload": {
+   "actions": [
+    "wellarchitected:GetWorkload"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_agent_contexts": {
+   "actions": [
+    "wellarchitected:ListAgentContexts"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_agent_goals": {
+   "actions": [
+    "wellarchitected:ListAgentGoals"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_agent_profiles": {
+   "actions": [
+    "wellarchitected:ListAgentProfiles"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_lenses": {
+   "actions": [
+    "wellarchitected:ListLenses"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_profiles": {
+   "actions": [
+    "wellarchitected:ListProfiles"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_review_templates": {
+   "actions": [
+    "wellarchitected:ListReviewTemplates"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_tags_for_resource": {
+   "actions": [
+    "wellarchitected:ListTagsForResource"
+   ],
+   "dropped": []
+  },
+  "wellarchitected:list_workloads": {
+   "actions": [
+    "wellarchitected:ListWorkloads"
+   ],
+   "dropped": []
+  },
+  "workspaces:describe_connection_aliases": {
+   "actions": [
+    "workspaces:DescribeConnectionAliases"
+   ],
+   "dropped": []
+  },
+  "workspaces:describe_ip_groups": {
+   "actions": [
+    "workspaces:DescribeIpGroups"
+   ],
+   "dropped": []
+  },
+  "workspaces:describe_tags": {
+   "actions": [
+    "workspaces:DescribeTags"
+   ],
+   "dropped": []
+  },
+  "workspaces:describe_workspace_directories": {
+   "actions": [
+    "workspaces:DescribeWorkspaceDirectories"
+   ],
+   "dropped": []
+  },
+  "workspaces:describe_workspaces": {
+   "actions": [
+    "workspaces:DescribeWorkspaces"
+   ],
+   "dropped": []
+  },
+  "xray:get_groups": {
+   "actions": [
+    "xray:GetGroups"
+   ],
+   "dropped": []
+  },
+  "xray:get_sampling_rules": {
+   "actions": [
+    "xray:GetSamplingRules"
+   ],
+   "dropped": []
+  },
+  "xray:list_tags_for_resource": {
+   "actions": [
+    "xray:ListTagsForResource"
+   ],
+   "dropped": []
+  }
+ }
+}

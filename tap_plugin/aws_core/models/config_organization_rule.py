@@ -17,6 +17,7 @@ class ConfigOrganizationRule(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The organization rule's ARN: a name is unique only within the organization.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:OrganizationConfigRule"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}
@@ -47,7 +48,7 @@ class ConfigOrganizationRule(BaseModel):
     # Account ids the rule is not deployed to. NULL = not observed; [] = observed, none excluded.
     excluded_accounts = models.JSONField(null=True, blank=True, default=None)
     # When the organization rule was last changed (ISO 8601 UTC). NULL = not observed.
-    last_update_time = models.CharField(max_length=512, blank=True, null=True, default=None)
+    last_update_time = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

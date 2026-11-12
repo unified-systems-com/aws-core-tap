@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "aws_core error outcomes",
+  "description": "Reviewed rows that name an AWS error as a result other than a failure of the call (req-aws-collector-outcome). Each row says which outcome a matching error is, and why that is true.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["description", "rows"],
+  "properties": {
+    "description": { "type": "string", "minLength": 1 },
+    "rows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["outcome", "service", "why"],
+        "properties": {
+          "outcome": {
+            "enum": ["not_configured", "unsupported_in_partition", "not_taggable", "not_readable"],
+            "description": "not_configured: the feature is not set up in this account. unsupported_in_partition: the partition does not offer the service or operation. not_taggable: a tag read the service refuses because the resource cannot hold tags (AWS-owned, or shared from another account); the resource has no tags, which is an answer and not a failed read. not_readable: a tag read refused because the resource is shared in from another account and its owner alone may read its tags; the tags stay unread (not none) and no gap is raised."
+          },
+          "service": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The manifest entry's `service`. A row always names its service; there is no wildcard."
+          },
+          "operations": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "API-cased operations (ClientError.operation_name) the row applies to."
+          },
+          "entity_types": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Manifest entity types the row applies to (for a custom_fn whose own operation is not the one named)."
+          },
+          "error_code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The AWS Error.Code the row matches."
+          },
+          "exception": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A botocore exception class name the row matches (a connection failure carries no error code)."
+          },
+          "message_contains": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Case-insensitive text the error message must contain, for a generic code that means this only with this message."
+          },
+          "partitions": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string", "minLength": 1 },
+            "description": "The partitions the row was observed in and applies to (for example `aws-us-gov`). An observation in one partition says nothing about another, so an unsupported row must name where it was seen."
+          },
+          "why": { "type": "string", "minLength": 20 }
+        },
+        "allOf": [
+          { "oneOf": [{ "required": ["error_code"] }, { "required": ["exception"] }] },
+          {
+            "if": { "properties": { "outcome": { "const": "not_configured" } }, "required": ["outcome"] },
+            "then": {
+              "required": ["error_code"],
+              "properties": { "service": { "not": { "const": "*" } } },
+              "anyOf": [{ "required": ["operations"] }, { "required": ["entity_types"] }]
+            }
+          },
+          {
+            "if": { "properties": { "outcome": { "const": "unsupported_in_partition" } }, "required": ["outcome"] },
+            "then": {
+              "required": ["partitions"],
+              "properties": { "service": { "not": { "const": "*" } } },
+              "anyOf": [{ "required": ["operations"] }, { "required": ["entity_types"] }, { "required": ["exception"] }]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

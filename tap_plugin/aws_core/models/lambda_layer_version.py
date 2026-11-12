@@ -17,6 +17,7 @@ class LambdaLayerVersion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The layer version's ARN: a layer name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("layer_version_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "lambda:layerVersion"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -52,13 +53,13 @@ class LambdaLayerVersion(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     layer_version_arn = models.CharField(max_length=512, blank=True, default="")
     # The layer the version belongs to. NULL = not observed.
-    layer_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    layer_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The version number. NULL = not observed.
     version = models.IntegerField(null=True, blank=True, default=None)
     # Runtimes the version supports. NULL = not observed.
     compatible_runtimes = models.JSONField(null=True, blank=True, default=None)
     # When the version was published (ISO 8601). NULL = not observed.
-    created_date = models.CharField(max_length=512, blank=True, null=True, default=None)
+    created_date = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

@@ -1,0 +1,558 @@
+{
+  "description": "Reviewed rows naming an AWS error as a result other than a failed call (req-aws-collector-outcome). not_taggable and not_readable rows apply to tag reads only (req-aws-collector-tags): not_taggable means the resource cannot hold tags, so the answer is no tags; not_readable means its tags are another account's to read, so they stay unread; they were authored from a live GovCloud probe on 2026-11-06. not_configured: the feature is not set up in this account, so the listing is empty-by-absence and is NOT an authoritative complete-empty observation (it licenses no retirement). unsupported_in_partition: the partition does not offer the service or operation. Rows were authored from the 2026-11-01 GovCloud (us-gov-west-1) wave-0 smoke run. A not_configured row must name its service, error code and operation or entity type: it is never a broad catch. The unsupported_in_partition rows are a stopgap until availability is derived from data; replace them, do not extend them casually.",
+  "rows": [
+    {
+      "outcome": "not_configured",
+      "service": "drs",
+      "operations": [
+        "DescribeLaunchConfigurationTemplates",
+        "DescribeReplicationConfigurationTemplates",
+        "DescribeSourceNetworks"
+      ],
+      "error_code": "UninitializedAccountException",
+      "why": "Elastic Disaster Recovery has not been initialised in this account and Region: the API answers 'Account not initialized' to every read until the first initialisation. Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "mgn",
+      "operations": [
+        "DescribeLaunchConfigurationTemplates",
+        "DescribeReplicationConfigurationTemplates",
+        "ListWaves"
+      ],
+      "error_code": "UninitializedAccountException",
+      "why": "Application Migration Service has not been initialised in this account and Region: the API answers 'Account not initialized' to every read until the first initialisation. Nothing exists to list. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "s3control",
+      "operations": [
+        "ListAccessGrants",
+        "ListAccessGrantsLocations"
+      ],
+      "error_code": "AccessGrantsInstanceNotExistsError",
+      "why": "S3 Access Grants has no instance in this account and Region; grants and locations hang off the instance, so none can exist. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListAnalyses",
+        "ListDashboards",
+        "ListFolders",
+        "ListTemplates",
+        "ListThemes"
+      ],
+      "error_code": "UnsupportedUserEditionException",
+      "why": "The account has no QuickSight subscription, which this error reports for the authoring listings ('not subscribed for QuickSight'). Nothing exists to list. Observed in the GovCloud wave-0 run.",
+      "message_contains": "not subscribed for QuickSight"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListAgents",
+        "ListKnowledgeBases",
+        "ListSpaces"
+      ],
+      "error_code": "PreconditionNotMetException",
+      "why": "The account has no QuickSight subscription ('does not have QuickSight subscription'). Nothing exists to list. Observed in the GovCloud wave-0 run.",
+      "message_contains": "does not have QuickSight subscription"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListCustomPermissions"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account has no QuickSight subscription, so its account settings and default namespace are not found. Nothing exists to list. Observed in the GovCloud wave-0 run.",
+      "message_contains": "Namespace default not found"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListNamespaces"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account has no QuickSight subscription, so its account settings and default namespace are not found. Nothing exists to list. Observed in the GovCloud wave-0 run.",
+      "message_contains": "Account settings not found"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListOAuthClientApplications"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account has no QuickSight subscription, so its account settings and default namespace are not found. Nothing exists to list. Observed in the GovCloud wave-0 run.",
+      "message_contains": "not subscribed to QuickSight"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "quicksight",
+      "operations": [
+        "ListVPCConnections"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account has no QuickSight subscription, so its account settings and default namespace are not found. Nothing exists to list. Observed in the GovCloud wave-0 run.",
+      "message_contains": "is not found"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "securityhub",
+      "operations": [
+        "DescribeSecurityHubV2"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "The account is not subscribed to Security Hub V2 ('You are not subscribed to HubV2'); the hub does not exist. Observed in the GovCloud wave-0 run.",
+      "message_contains": "not subscribed to HubV2"
+    },
+    {
+      "outcome": "not_configured",
+      "service": "securityhub",
+      "operations": [
+        "ListAggregatorsV2",
+        "ListAutomationRulesV2"
+      ],
+      "error_code": "ConflictException",
+      "message_contains": "not enabled",
+      "why": "Security Hub V2 is not enabled for the account ('Security Hub V2 is not enabled'); the V2 aggregators and rules cannot exist. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "securitylake",
+      "operations": [
+        "ListSubscribers"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "message_contains": "isn't enabled",
+      "why": "Security Lake is not enabled for the account in any Region, so it has no subscribers. Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "ecs",
+      "operations": [
+        "ListGateways"
+      ],
+      "error_code": "UnsupportedFeatureException",
+      "message_contains": "not enabled",
+      "why": "ECS service gateways are not enabled for this account ('Service gateway is not enabled for this account'). Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "not_configured",
+      "service": "fsx",
+      "operations": [
+        "DescribeFileCaches"
+      ],
+      "error_code": "BadRequest",
+      "message_contains": "not enabled",
+      "why": "The FSx File Cache feature is not enabled for this account ('The requested feature is not enabled for this AWS account'). Observed in the GovCloud wave-0 run."
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "cloudwatchomni",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "datazone",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ecr-public",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "internetmonitor",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "kendra-ranking",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "kinesisvideo",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "notifications",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "qbusiness",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "timestream-influxdb",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "wellarchitected",
+      "exception": "EndpointConnectionError",
+      "why": "The service endpoint does not resolve or accept a connection outside the commercial partition; the service is not offered there. The Inspector classic endpoint and some twenty others behaved this way in the GovCloud wave-0 run. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "events",
+      "error_code": "UnknownOperationException",
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListApiDestinations",
+        "ListConnections",
+        "ListEndpoints"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "logs",
+      "error_code": "UnknownOperationException",
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListIntegrations",
+        "ListLogAnomalyDetectors",
+        "ListScheduledQueries"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "sagemaker",
+      "error_code": "UnknownOperationException",
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListClusterSchedulerConfigs",
+        "ListClusters",
+        "ListComputeQuotas",
+        "ListExperiments",
+        "ListFeatureGroups",
+        "ListHumanTaskUis",
+        "ListInferenceExperiments",
+        "ListMlflowApps",
+        "ListPartnerApps",
+        "ListTrialComponents",
+        "ListWorkforces",
+        "ListWorkteams"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ssm",
+      "error_code": "UnknownOperationException",
+      "why": "The endpoint exists but does not know the operation in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListCloudConnectors"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ec2",
+      "error_code": "InvalidAction",
+      "why": "The endpoint rejects the action as not valid for this web service in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeIpamInternetRegistryAssociations",
+        "DescribeRouteServerEndpoints",
+        "DescribeRouteServerPeers",
+        "DescribeRouteServers"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "rds",
+      "error_code": "InvalidAction",
+      "why": "The endpoint rejects the action as not valid for this web service in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeIntegrations"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ses",
+      "error_code": "InvalidAction",
+      "why": "The endpoint rejects the action as not valid for this web service in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListReceiptFilters",
+        "ListReceiptRuleSets"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "ec2",
+      "error_code": "UnsupportedOperation",
+      "why": "The operation is answered as not available in this Region or partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeAwsNetworkPerformanceMetricSubscriptions",
+        "DescribeCapacityManagerDataExports",
+        "DescribeCarrierGateways",
+        "DescribeSecondaryNetworks"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "fsx",
+      "error_code": "UnsupportedOperation",
+      "why": "The operation is answered as not available in this Region or partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeS3AccessPointAttachments"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "workspaces",
+      "error_code": "OperationNotSupportedException",
+      "why": "The operation is answered as not supported in this Region or partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeConnectionAliases"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "iotsitewise",
+      "error_code": "404",
+      "message_contains": "unknown operation",
+      "why": "The gateway answers 404 'Unknown Operation' for an operation the partition's endpoint does not have. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListApplications"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "iot",
+      "error_code": "404",
+      "message_contains": "no method found matching route",
+      "why": "The gateway answers 404 for a route the partition's endpoint does not have. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListOTAUpdates",
+        "ListStreams"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "comprehend",
+      "error_code": "InvalidRequestException",
+      "message_contains": "not supported in this region",
+      "why": "The service answers that the operation is not supported in this Region. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListFlywheels"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "iotsitewise",
+      "error_code": "InvalidRequestException",
+      "message_contains": "not supported yet",
+      "why": "IoT SiteWise answers that the feature is not supported yet in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListComputationModels",
+        "ListDatasets",
+        "ListWorkspaces"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "transcribe",
+      "error_code": "BadRequestException",
+      "message_contains": "isn't supported in this region",
+      "why": "Amazon Transcribe answers that Call Analytics is not supported in this Region. Observed for this service in the 2026-11-05 full collection in GovCloud (aws-us-gov), and by a direct call in both us-gov-west-1 and us-gov-east-1; the row names only what was observed.",
+      "operations": [
+        "ListCallAnalyticsCategories"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "kafka",
+      "error_code": "BadRequestException",
+      "message_contains": "not supported in this region",
+      "why": "The service answers that the API is not supported in this Region. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListReplicators"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "wellarchitected",
+      "error_code": "ValidationException",
+      "message_contains": "not supported in govcloud",
+      "why": "The service answers that the operation is not supported in GovCloud. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListProfiles"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "codebuild",
+      "error_code": "InvalidInputException",
+      "message_contains": "unknown operation",
+      "why": "CodeBuild answers 'Unknown operation' for an operation the partition's endpoint does not have. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "ListFleets"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "unsupported_in_partition",
+      "service": "memorydb",
+      "error_code": "InvalidParameterValueException",
+      "message_contains": "currently unavailable",
+      "why": "MemoryDB answers that the API operation is currently unavailable in this partition. Observed for this service in the 2026-11-01 wave 0 run in GovCloud (aws-us-gov); the row names only what was observed.",
+      "operations": [
+        "DescribeMultiRegionClusters"
+      ],
+      "partitions": [
+        "aws-us-gov"
+      ]
+    },
+    {
+      "outcome": "not_readable",
+      "service": "route53resolver",
+      "error_code": "InvalidParameterException",
+      "message_contains": "not authorized to do this operation on shared resource",
+      "why": "The resource is shared into this account from another (a Route 53 Resolver firewall domain list, for example); only its owner may read or set its tags, so they may exist and cannot be seen from here. The tags stay unread. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_route53resolver_firewall_domain_list",
+        "aws_core__aws_route53resolver_resolver_rule",
+        "aws_core__aws_route53_resolver_firewall_rule_group"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "route53resolver",
+      "error_code": "InvalidRequestException",
+      "message_contains": "Cannot tag Auto Defined Rule",
+      "why": "Route 53 Resolver creates auto-defined rules itself and refuses tags on them (RSLVR-00903). Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_route53resolver_resolver_rule"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "sagemaker",
+      "error_code": "ValidationException",
+      "message_contains": ":aws:hub/SageMakerPublicHub",
+      "why": "The SageMaker public hub is owned by AWS (its ARN carries the account 'aws'); the tag API refuses its ARN. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_sagemaker_hub"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "appconfig",
+      "error_code": "BadRequestException",
+      "message_contains": "not containing an account ID",
+      "why": "AWS-defined AppConfig extensions have an ARN with no account id, and the tag API refuses it. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_appconfig_extension"
+      ]
+    },
+    {
+      "outcome": "not_taggable",
+      "service": "athena",
+      "error_code": "ResourceNotFoundException",
+      "message_contains": "datacatalog/AwsDataCatalog",
+      "why": "AwsDataCatalog is the account's built-in Glue-backed catalog; the tag API does not find it as a taggable resource. Observed in GovCloud.",
+      "entity_types": [
+        "aws_core__aws_athena_data_catalog"
+      ]
+    }
+  ]
+}

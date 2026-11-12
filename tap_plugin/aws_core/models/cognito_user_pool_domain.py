@@ -52,13 +52,13 @@ class CognitoUserPoolDomain(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     domain_key = models.CharField(max_length=512, blank=True, default="")
     # The user pool the domain belongs to. NULL = not observed.
-    user_pool_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    user_pool_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's status (ACTIVE, CREATING, ...). NULL = not observed.
-    status = models.CharField(max_length=512, blank=True, null=True, default=None)
+    status = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The ACM certificate of a custom domain. NULL = none (a prefix domain), or not observed.
-    certificate_arn = models.CharField(max_length=512, blank=True, null=True, default=None)
+    certificate_arn = models.CharField(max_length=512, null=True, blank=True, default=None)
     # The CloudFront distribution that serves the domain. NULL = not observed.
-    cloudfront_distribution = models.CharField(max_length=512, blank=True, null=True, default=None)
+    cloudfront_distribution = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

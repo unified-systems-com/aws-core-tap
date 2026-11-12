@@ -1,0 +1,19 @@
+{
+  "slug": "SNAPSHOTS_DATABASE__aws_core",
+  "name": "Snapshots Database",
+  "description": "An RDS snapshot is a snapshot of one database (snapshot -> database): a DB snapshot of its DB instance, a cluster snapshot of its DB cluster. The database may no longer exist; the edge is then not written.",
+  "sources": [
+    "aws_core__aws_rds_db_snapshot",
+    "aws_core__aws_rds_db_cluster_snapshot"
+  ],
+  "targets": [
+    "aws_core__aws_rds_instance",
+    "aws_core__aws_rds_db_cluster"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

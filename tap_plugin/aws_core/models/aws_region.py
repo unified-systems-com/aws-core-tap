@@ -28,21 +28,21 @@ class AwsRegion(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "region_code": {"type": "string", "minLength": 1},
-        "geographic_area": {"type": "string"},
+        "geographic_area": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "region_code": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
-        "geographic_area": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "geographic_area": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
     CREATE_REQUIRED: ClassVar[list[str]] = ["name", "region_code"]
 
     name = models.CharField(max_length=255, blank=True, default="")
     region_code = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    geographic_area = models.CharField(max_length=255, blank=True, default="")
+    geographic_area = models.CharField(max_length=255, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 
     class Meta(BaseModel.Meta):

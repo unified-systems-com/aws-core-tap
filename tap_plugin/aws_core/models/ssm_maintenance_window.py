@@ -17,6 +17,7 @@ class SsmMaintenanceWindow(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The window's WindowId: DescribeMaintenanceWindows returns no ARN, and a maintenance window id is service-generated.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_maintenance_window_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ssm:maintenancewindow"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

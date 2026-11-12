@@ -17,6 +17,7 @@ class Ec2IpamExternalResourceVerificationToken(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (IpamExternalResourceVerificationTokenArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ipam_external_resource_verification_token_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:ipam-external-resource-verification-token"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -21,6 +21,7 @@ class CloudtrailTrail(BaseModel):
     # Identity (req-grid-entity-natural-key): The trail's ARN, the boto3 collector's identity for it
     # (TrailARN).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("trail_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudtrail:trail"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -32,10 +33,10 @@ class CloudtrailTrail(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "trail_arn": {"type": "string"},
-        "s3_bucket_name": {"type": "string"},
-        "is_multi_region": {"type": "boolean"},
-        "log_file_validation_enabled": {"type": "boolean"},
-        "is_logging": {"type": "boolean"},
+        "s3_bucket_name": {"type": ["string", "null"]},
+        "is_multi_region": {"type": ["boolean", "null"]},
+        "log_file_validation_enabled": {"type": ["boolean", "null"]},
+        "is_logging": {"type": ["boolean", "null"]},
         "tags": {"type": ["object", "null"]},
         "configuration": {"type": "object"},
     }
@@ -43,13 +44,13 @@ class CloudtrailTrail(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "trail_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "s3_bucket_name": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "is_multi_region": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "s3_bucket_name": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "is_multi_region": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "log_file_validation_enabled": {
             "validation": "jsonschema",
-            "schema": {"type": "boolean"},
+            "schema": {"type": ["boolean", "null"]},
         },
-        "is_logging": {"validation": "jsonschema", "schema": {"type": "boolean"}},
+        "is_logging": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
     }
@@ -57,10 +58,10 @@ class CloudtrailTrail(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     trail_arn = models.CharField(max_length=512, blank=True, default="")
-    s3_bucket_name = models.CharField(max_length=255, blank=True, default="")
-    is_multi_region = models.BooleanField(default=False)
-    log_file_validation_enabled = models.BooleanField(default=False)
-    is_logging = models.BooleanField(default=False)
+    s3_bucket_name = models.CharField(max_length=255, null=True, blank=True, default=None)
+    is_multi_region = models.BooleanField(null=True, blank=True, default=None)
+    log_file_validation_enabled = models.BooleanField(null=True, blank=True, default=None)
+    is_logging = models.BooleanField(null=True, blank=True, default=None)
     tags = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
 

@@ -17,6 +17,7 @@ class ApplicationautoscalingScalableTarget(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The scalable target's ARN (ScalableTargetARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("applicationautoscaling_scalable_target_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "application-autoscaling:ScalableTarget"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

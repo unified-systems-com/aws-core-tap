@@ -17,6 +17,7 @@ class ApigatewayApiKey(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The key's ARN (built from the key id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("api_key_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:ApiKey"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -46,7 +47,7 @@ class ApigatewayApiKey(BaseModel):
     # Whether the key is enabled. NULL = not observed.
     enabled = models.BooleanField(null=True, blank=True, default=None)
     # The AWS Marketplace customer id, if any. NULL = none, or not observed.
-    customer_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    customer_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # The API stages the key is attached to. NULL = not observed.
     stage_keys = models.JSONField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)

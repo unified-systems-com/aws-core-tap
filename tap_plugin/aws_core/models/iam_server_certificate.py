@@ -19,6 +19,7 @@ class IamServerCertificate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The certificate's ARN: a name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificate_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:server-certificate"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -30,7 +31,7 @@ class IamServerCertificate(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "certificate_arn": {"type": "string"},
-        "path": {"type": "string"},
+        "path": {"type": ["string", "null"]},
         "certificate_id": {"type": ["string", "null"]},
         "expiration": {"type": ["string", "null"]},
         "upload_date": {"type": ["string", "null"]},
@@ -41,7 +42,7 @@ class IamServerCertificate(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string", "minLength": 1}},
         "certificate_arn": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "path": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "path": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "certificate_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "expiration": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "upload_date": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
@@ -52,13 +53,13 @@ class IamServerCertificate(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     certificate_arn = models.CharField(max_length=512, blank=True, default="")
-    path = models.CharField(max_length=512, blank=True, default="/")
+    path = models.CharField(max_length=512, null=True, blank=True, default=None)
     # AWS's immutable certificate id (ASCA...); NULL = not observed.
-    certificate_id = models.CharField(max_length=512, blank=True, null=True, default=None)
+    certificate_id = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ISO 8601 UTC time the certificate expires; NULL = not observed.
-    expiration = models.CharField(max_length=512, blank=True, null=True, default=None)
+    expiration = models.CharField(max_length=512, null=True, blank=True, default=None)
     # ISO 8601 UTC time the certificate was uploaded; NULL = not observed.
-    upload_date = models.CharField(max_length=512, blank=True, null=True, default=None)
+    upload_date = models.CharField(max_length=512, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

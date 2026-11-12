@@ -41,6 +41,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
     iam_roles_described,
     iam_users_described,
     read_sub_listing,
+    route53_record_sets_described,
     route53_zones_with_alias_targets,
     s3_buckets_hydrated,
 )
@@ -351,53 +352,79 @@ _ROUTES = ("ROUTES_TRAFFIC__aws_core", "outbound")
 _CF_ARN = f"arn:aws:cloudfront::{_ACCOUNT}:distribution/E1"
 
 
-def _zone_item(records: dict[str, Any]) -> dict[str, Any]:
-    client = _Client(
+_RESOLVES = ("RESOLVES_TO_TARGET__aws_core", "outbound")
+_RECORD = "aws_core__aws_route53_record_set"
+
+
+def _route53_client(records: Any) -> _Client:
+    return _Client(
         {
             "list_distributions": {
                 "DistributionList": {"Items": [{"DomainName": "d1.cloudfront.net", "ARN": _CF_ARN}]}
             },
             "list_hosted_zones": {"HostedZones": [{"Id": "/hostedzone/Z1", "Name": "example.com."}]},
             "list_resource_record_sets": records,
+            "describe_load_balancers": {"LoadBalancers": []},
         }
     )
+
+
+def _zone_item(records: Any) -> dict[str, Any]:
+    client = _route53_client(records)
     return next(iter(route53_zones_with_alias_targets(None, client_for=lambda _svc: client)))
 
 
-def _alias(domain: str) -> dict[str, Any]:
-    return {"Name": "example.com.", "Type": "A", "AliasTarget": {"DNSName": f"{domain}."}}
+def _record_items(records: Any) -> list[dict[str, Any]]:
+    client = _route53_client(records)
+    return list(route53_record_sets_described(None, client_for=lambda _svc: client))
+
+
+def _alias(domain: str, name: str = "example.com.") -> dict[str, Any]:
+    return {"Name": name, "Type": "A", "AliasTarget": {"DNSName": f"{domain}."}}
 
 
 class TestRoute53Reads:
+    """The zone's former direct routes read complete and empty; each record set reads what it resolves to
+    (aws-core-tap#220)."""
+
+    def test_the_zone_s_replaced_routes_read_complete(self):
+        assert _reads(_ZONE, _zone_item({"ResourceRecordSets": [_alias("d1.cloudfront.net")]}))[_ROUTES] == COMPLETE
+
     def test_complete_with_a_resolved_alias(self):
-        item = _zone_item({"ResourceRecordSets": [_alias("d1.cloudfront.net")]})
-        assert item["alias_cloudfront_arns"] == [_CF_ARN]
-        assert _reads(_ZONE, item)[_ROUTES] == COMPLETE
+        (item,) = _record_items({"ResourceRecordSets": [_alias("d1.cloudfront.net")]})
+        assert [t["key"] for t in item["_resolves_cloudfront"]] == [_CF_ARN]
+        assert _reads(_RECORD, item)[_RESOLVES] == COMPLETE
 
-    def test_complete_and_empty(self):
-        assert _reads(_ZONE, _zone_item({"ResourceRecordSets": []}))[_ROUTES] == COMPLETE
+    def test_records_that_are_not_routed_aliases_read_complete_and_empty(self):
+        # Only load balancer, CloudFront and in-zone aliases are in RESOLVES_TO_TARGET's scope: a TXT record, or an alias
+        # to another service, resolves to nothing this edge names, and says so completely.
+        txt = {"Name": "t.example.com.", "Type": "TXT", "ResourceRecords": [{"Value": "x"}]}
+        website = _alias("s3-website-us-east-1.amazonaws.com", "w.example.com.")
+        for item in _record_items({"ResourceRecordSets": [txt, website]}):
+            assert _reads(_RECORD, item)[_RESOLVES] == COMPLETE
 
-    def test_records_that_are_not_cloudfront_aliases_do_not_touch_the_read(self):
-        # Only CloudFront aliases are in ROUTES_TRAFFIC's scope: a TXT record, or an alias to another
-        # service, beside a resolved CloudFront alias leaves the read complete.
-        txt = {"Name": "example.com.", "Type": "TXT", "ResourceRecords": [{"Value": "x"}]}
-        elb = _alias("lb-1.us-east-1.elb.amazonaws.com")
-        item = _zone_item({"ResourceRecordSets": [txt, elb, _alias("d1.cloudfront.net")]})
-        assert item["alias_cloudfront_arns"] == [_CF_ARN]
-        assert _reads(_ZONE, item)[_ROUTES] == COMPLETE
+    def test_an_alias_to_a_load_balancer_not_in_the_listing_is_partial(self):
+        # One the listing does not hold (another account's) is a resolution seen and not wired: not an absence.
+        (item,) = _record_items({"ResourceRecordSets": [_alias("lb-1.us-east-1.elb.amazonaws.com")]})
+        assert _reads(_RECORD, item)[_RESOLVES] == PARTIAL
 
     def test_an_alias_to_a_distribution_not_listed_is_partial(self):
-        item = _zone_item({"ResourceRecordSets": [_alias("d1.cloudfront.net"), _alias("elsewhere.cloudfront.net")]})
-        assert _reads(_ZONE, item)[_ROUTES] == PARTIAL
+        (item,) = _record_items({"ResourceRecordSets": [_alias("elsewhere.cloudfront.net")]})
+        assert _reads(_RECORD, item)[_RESOLVES] == PARTIAL
 
-    def test_a_record_page_that_says_more_is_partial(self):
-        item = _zone_item({"ResourceRecordSets": [], "IsTruncated": True, "NextRecordName": "x"})
-        assert _reads(_ZONE, item)[_ROUTES] == PARTIAL
+    def test_a_record_page_that_says_more_yields_no_record_sets(self):
+        # The zone's listing stopped short: none of it is processed, and the zone's surface says why.
+        assert _record_items({"ResourceRecordSets": [_alias("d1.cloudfront.net")], "IsTruncated": True, "NextRecordName": "x"}) == []
+        assert _zone_item({"ResourceRecordSets": [], "IsTruncated": True, "NextRecordName": "x"})["Id"] == "/hostedzone/Z1"
 
-    def test_a_failed_record_listing_still_fails_the_entry(self):
-        # Unchanged: the entry is skipped, so no zone and no claim reach the batch.
-        with pytest.raises(ClientError):
-            _zone_item(_denied("ListResourceRecordSets"))
+    def test_a_failed_record_listing_yields_the_zone_and_no_record_sets(self):
+        # The zone is still observed; its record sets are not, and its surface is incomplete.
+        assert _record_items(_denied("ListResourceRecordSets")) == []
+        assert _zone_item(_denied("ListResourceRecordSets"))["Id"] == "/hostedzone/Z1"
+
+    def test_a_failed_record_listing_never_claims_the_zone_s_replaced_routes(self):
+        # Its old direct edges are kept: the record sets that replace them were not read (PR 221 review).
+        assert _reads(_ZONE, _zone_item(_denied("ListResourceRecordSets")))[_ROUTES] == FAILED
 
 
 # ---------------------------------------------------------------------------

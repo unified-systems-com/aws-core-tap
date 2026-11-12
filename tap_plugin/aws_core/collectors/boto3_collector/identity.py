@@ -11,7 +11,7 @@ edge is sent with a ``ref`` too and is found by its type's declared identity
 ``req-grid-import-grift-edge-endpoints``), resolved against the live grid and never minted.
 
 A ref is ``<entity_type>:<natural_key>`` for a node and ``edge:<edge_type>:<from ref>-><to ref>``
-for an edge. It is only a name inside one batch; what it resolved to comes back on the import
+for an edge, followed by ``#`` and its discriminator values when its type declares any. It is only a name inside one batch; what it resolved to comes back on the import
 result (``resolved_refs``), which is where a completeness subject learns its grid id.
 
 The one exception is an edge type that declares no identity (``ROUTES_TRAFFIC``, deferred to
@@ -22,7 +22,9 @@ add a new edge on every run. Those edges keep the explicit ``uuid5`` id they alw
 
 from __future__ import annotations
 
+import json
 import uuid
+from collections.abc import Mapping
 from typing import Any, Final
 
 #: Frozen: the explicit id of an edge whose type declares no identity is derived under it, and
@@ -54,9 +56,14 @@ def split_node_ref(ref: str) -> tuple[str, str]:
     return entity_type, natural_key
 
 
-def edge_ref(edge_type: str, from_ref: str, to_ref: str) -> str:
-    """The batch-local ref of an edge: its type and both endpoint refs."""
-    return f"{_EDGE_REF_PREFIX}{edge_type}:{from_ref}->{to_ref}"
+def edge_ref(edge_type: str, from_ref: str, to_ref: str, discriminators: Mapping[str, object] | None = None) -> str:
+    """The batch-local ref of an edge: its type, both endpoint refs and, for a type that declares discriminators,
+    their values (``req-grid-edge-identity-declaration``), so two edges of one pair that differ in them (a load
+    balancer forwarding to one target group from two rules) are two refs, not one."""
+    ref = f"{_EDGE_REF_PREFIX}{edge_type}:{from_ref}->{to_ref}"
+    if discriminators:
+        ref += "#" + json.dumps(dict(discriminators), sort_keys=True, default=str, separators=(",", ":"))
+    return ref
 
 
 def undeclared_edge_id(edge_type: str, from_key: str, to_key: str) -> uuid.UUID:

@@ -17,6 +17,7 @@ class VerifiedpermissionsPolicyStoreAlias(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (aliasArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("verifiedpermissions_policy_store_alias_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "verifiedpermissions:policy-store-alias"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

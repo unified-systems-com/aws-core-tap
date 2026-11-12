@@ -19,6 +19,7 @@ class Ec2Instance(BaseModel):
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:instance"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",
@@ -29,11 +30,11 @@ class Ec2Instance(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "instance_id": {"type": "string"},
-        "ec2_type": {"type": "string"},
-        "state": {"type": "string"},
+        "ec2_type": {"type": ["string", "null"]},
+        "state": {"type": ["string", "null"]},
         "private_ip": {"type": ["string", "null"]},
         "public_ip": {"type": ["string", "null"]},
-        "ami_id": {"type": "string"},
+        "ami_id": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -41,11 +42,11 @@ class Ec2Instance(BaseModel):
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"validation": "jsonschema", "schema": {"type": "string"}},
         "instance_id": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "ec2_type": {"validation": "jsonschema", "schema": {"type": "string"}},
-        "state": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "ec2_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "state": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "private_ip": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "public_ip": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
-        "ami_id": {"validation": "jsonschema", "schema": {"type": "string"}},
+        "ami_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -55,11 +56,11 @@ class Ec2Instance(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     instance_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
-    ec2_type = models.CharField(max_length=64, blank=True, default="")
-    state = models.CharField(max_length=32, blank=True, default="")
-    private_ip = models.GenericIPAddressField(blank=True, null=True)
-    public_ip = models.GenericIPAddressField(blank=True, null=True)
-    ami_id = models.CharField(max_length=64, blank=True, default="")
+    ec2_type = models.CharField(max_length=64, null=True, blank=True, default=None)
+    state = models.CharField(max_length=32, null=True, blank=True, default=None)
+    private_ip = models.GenericIPAddressField(null=True, blank=True, default=None)
+    public_ip = models.GenericIPAddressField(null=True, blank=True, default=None)
+    ami_id = models.CharField(max_length=64, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the Describe call's own Tags.
     tags = models.JSONField(null=True, blank=True, default=None)

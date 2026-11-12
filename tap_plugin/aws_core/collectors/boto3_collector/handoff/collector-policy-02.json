@@ -1,0 +1,318 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadCloudtrail",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:DescribeTrails",
+        "cloudtrail:GetTrailStatus",
+        "cloudtrail:ListChannels",
+        "cloudtrail:ListDashboards",
+        "cloudtrail:ListEventDataStores",
+        "cloudtrail:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCloudwatch",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:DescribeAlarms",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:ListAlarmMuteRules",
+        "cloudwatch:ListDashboards",
+        "cloudwatch:ListMetricStreams",
+        "cloudwatch:ListOmniDashboards",
+        "cloudwatch:ListSpaces",
+        "cloudwatch:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCodebuild",
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:BatchGetFleets",
+        "codebuild:BatchGetProjects",
+        "codebuild:BatchGetReportGroups",
+        "codebuild:ListFleets",
+        "codebuild:ListProjects",
+        "codebuild:ListReportGroups",
+        "codebuild:ListSourceCredentials"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCodecommit",
+      "Effect": "Allow",
+      "Action": [
+        "codecommit:BatchGetRepositories",
+        "codecommit:ListRepositories",
+        "codecommit:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCodeconnections",
+      "Effect": "Allow",
+      "Action": [
+        "codeconnections:ListConnections",
+        "codeconnections:ListRepositoryLinks",
+        "codeconnections:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCodedeploy",
+      "Effect": "Allow",
+      "Action": [
+        "codedeploy:GetApplication",
+        "codedeploy:GetDeploymentConfig",
+        "codedeploy:GetDeploymentGroup",
+        "codedeploy:ListApplications",
+        "codedeploy:ListDeploymentConfigs",
+        "codedeploy:ListDeploymentGroups",
+        "codedeploy:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCodepipeline",
+      "Effect": "Allow",
+      "Action": [
+        "codepipeline:GetPipeline",
+        "codepipeline:ListActionTypes",
+        "codepipeline:ListPipelines",
+        "codepipeline:ListTagsForResource",
+        "codepipeline:ListWebhooks"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCodestarConnections",
+      "Effect": "Allow",
+      "Action": [
+        "codestar-connections:ListConnections",
+        "codestar-connections:ListRepositoryLinks",
+        "codestar-connections:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCognitoIdentity",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-identity:DescribeIdentityPool",
+        "cognito-identity:ListIdentityPools",
+        "cognito-identity:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCognitoIdp",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:DescribeIdentityProvider",
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:DescribeUserPoolDomain",
+        "cognito-idp:ListGroups",
+        "cognito-idp:ListIdentityProviders",
+        "cognito-idp:ListResourceServers",
+        "cognito-idp:ListTagsForResource",
+        "cognito-idp:ListUserPoolClients",
+        "cognito-idp:ListUserPools",
+        "cognito-idp:ListUsers"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadComprehend",
+      "Effect": "Allow",
+      "Action": [
+        "comprehend:DescribeFlywheel",
+        "comprehend:ListDocumentClassifiers",
+        "comprehend:ListEndpoints",
+        "comprehend:ListEntityRecognizers",
+        "comprehend:ListFlywheels",
+        "comprehend:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadConfig",
+      "Effect": "Allow",
+      "Action": [
+        "config:DescribeAggregationAuthorizations",
+        "config:DescribeOrganizationConfigRules",
+        "config:DescribeOrganizationConformancePacks",
+        "config:ListConnectors",
+        "config:ListStoredQueries",
+        "config:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadConnect",
+      "Effect": "Allow",
+      "Action": [
+        "connect:DescribeEmailAddress",
+        "connect:ListAgentStatuses",
+        "connect:ListContactFlowModuleAliases",
+        "connect:ListContactFlowModuleVersions",
+        "connect:ListContactFlowModules",
+        "connect:ListContactFlowVersions",
+        "connect:ListContactFlows",
+        "connect:ListDataTables",
+        "connect:ListEvaluationForms",
+        "connect:ListHoursOfOperations",
+        "connect:ListInstances",
+        "connect:ListIntegrationAssociations",
+        "connect:ListMetrics",
+        "connect:ListNotifications",
+        "connect:ListPhoneNumbers",
+        "connect:ListPrompts",
+        "connect:ListQueues",
+        "connect:ListQuickConnects",
+        "connect:ListRoutingProfiles",
+        "connect:ListRules",
+        "connect:ListSecurityProfiles",
+        "connect:ListTagsForResource",
+        "connect:ListTaskTemplates",
+        "connect:ListTestCases",
+        "connect:ListTrafficDistributionGroups",
+        "connect:ListUseCases",
+        "connect:ListUserHierarchyGroups",
+        "connect:ListUsers",
+        "connect:ListViewVersions",
+        "connect:ListViews",
+        "connect:ListWorkspaces",
+        "connect:SearchEmailAddresses",
+        "connect:SearchVocabularies"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDatabrew",
+      "Effect": "Allow",
+      "Action": [
+        "databrew:ListDatasets",
+        "databrew:ListJobs",
+        "databrew:ListProjects",
+        "databrew:ListRecipes",
+        "databrew:ListRulesets",
+        "databrew:ListSchedules"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDatasync",
+      "Effect": "Allow",
+      "Action": [
+        "datasync:DescribeAgent",
+        "datasync:DescribeTask",
+        "datasync:ListAgents",
+        "datasync:ListLocations",
+        "datasync:ListTagsForResource",
+        "datasync:ListTasks"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDatazone",
+      "Effect": "Allow",
+      "Action": [
+        "datazone:ListDomains",
+        "datazone:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDax",
+      "Effect": "Allow",
+      "Action": [
+        "dax:DescribeClusters",
+        "dax:DescribeParameterGroups",
+        "dax:DescribeSubnetGroups",
+        "dax:ListTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDetective",
+      "Effect": "Allow",
+      "Action": [
+        "detective:ListGraphs",
+        "detective:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDirectconnect",
+      "Effect": "Allow",
+      "Action": [
+        "directconnect:DescribeConnections",
+        "directconnect:DescribeDirectConnectGateways",
+        "directconnect:DescribeTags",
+        "directconnect:DescribeVirtualInterfaces"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDlm",
+      "Effect": "Allow",
+      "Action": [
+        "dlm:GetLifecyclePolicies"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDms",
+      "Effect": "Allow",
+      "Action": [
+        "dms:DescribeCertificates",
+        "dms:DescribeDataMigrations",
+        "dms:DescribeEndpoints",
+        "dms:DescribeReplicationConfigs",
+        "dms:DescribeReplicationInstances",
+        "dms:DescribeReplicationTasks",
+        "dms:ListDataProviders",
+        "dms:ListInstanceProfiles",
+        "dms:ListMigrationProjects",
+        "dms:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDrs",
+      "Effect": "Allow",
+      "Action": [
+        "drs:DescribeLaunchConfigurationTemplates",
+        "drs:DescribeReplicationConfigurationTemplates",
+        "drs:DescribeSourceNetworks",
+        "drs:ListRecoveryPlans",
+        "drs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDs",
+      "Effect": "Allow",
+      "Action": [
+        "ds:DescribeDirectories",
+        "ds:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadDynamodb",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:DescribeTable",
+        "dynamodb:ListTables"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

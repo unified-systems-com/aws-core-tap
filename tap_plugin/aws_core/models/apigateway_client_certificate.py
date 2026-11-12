@@ -17,6 +17,7 @@ class ApigatewayClientCertificate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The certificate's ARN (built from its id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("client_certificate_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:ClientCertificate"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -43,9 +44,9 @@ class ApigatewayClientCertificate(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     client_certificate_arn = models.CharField(max_length=2048, blank=True, default="")
     # AWS's certificate id. NULL = not observed.
-    client_certificate_id = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    client_certificate_id = models.CharField(max_length=2048, null=True, blank=True, default=None)
     # When the certificate expires (ISO 8601 UTC). NULL = not observed.
-    expiration = models.CharField(max_length=2048, blank=True, null=True, default=None)
+    expiration = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

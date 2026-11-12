@@ -17,6 +17,7 @@ class SagemakerAiWorkloadConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AIWorkloadConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("aiworkload_config_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:ai-workload-config"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

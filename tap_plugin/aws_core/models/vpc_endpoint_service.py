@@ -35,14 +35,15 @@ class VpcEndpointService(BaseModel):
 
     # AWS's service id (vpce-svc-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("service_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-endpoint-service"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "service_id": {"type": "string", "pattern": "^(vpce-svc-[0-9a-f]{8,17})?$"},
-        "service_name": {"type": "string"},
+        "service_name": {"type": ["string", "null"]},
         "acceptance_required": {"type": ["boolean", "null"]},
-        "private_dns_name": {"type": "string"},
-        "region": {"type": "string"},
+        "private_dns_name": {"type": ["string", "null"]},
+        "region": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -56,11 +57,11 @@ class VpcEndpointService(BaseModel):
     name = models.CharField(max_length=255, blank=True, default="")
     service_id = models.CharField(max_length=32, blank=True, default="", db_index=True)
     # The name consumers connect to (com.amazonaws.vpce.<region>.vpce-svc-…).
-    service_name = models.CharField(max_length=255, blank=True, default="")
+    service_name = models.CharField(max_length=255, null=True, blank=True, default=None)
     # AcceptanceRequired: whether the provider must accept each endpoint connection. Null when not observed.
     acceptance_required = models.BooleanField(null=True, blank=True, default=None)
-    private_dns_name = models.CharField(max_length=255, blank=True, default="")
-    region = models.CharField(max_length=32, blank=True, default="")
+    private_dns_name = models.CharField(max_length=255, null=True, blank=True, default=None)
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: the configuration's Tags.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.

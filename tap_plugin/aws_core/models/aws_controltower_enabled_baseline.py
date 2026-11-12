@@ -31,6 +31,7 @@ class AwsControlTowerEnabledBaseline(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("enabled_baseline_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "controltower:EnabledBaseline"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {
@@ -42,14 +43,14 @@ class AwsControlTowerEnabledBaseline(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "enabled_baseline_arn": {"type": "string"},
-        "baseline_identifier": {"type": "string"},
-        "baseline_version": {"type": "string"},
+        "baseline_identifier": {"type": ["string", "null"]},
+        "baseline_version": {"type": ["string", "null"]},
         # The OU or account ARN the baseline is enabled on, verbatim.
-        "target_identifier": {"type": "string"},
+        "target_identifier": {"type": ["string", "null"]},
         # The parent enabled baseline's ARN for a child baseline; "" for a top-level one.
-        "parent_identifier": {"type": "string"},
-        "status": {"type": "string"},
-        "drift_status": {"type": "string"},
+        "parent_identifier": {"type": ["string", "null"]},
+        "status": {"type": ["string", "null"]},
+        "drift_status": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -61,12 +62,12 @@ class AwsControlTowerEnabledBaseline(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     enabled_baseline_arn = models.CharField(max_length=2048, blank=True, default="", db_index=True)
-    baseline_identifier = models.CharField(max_length=2048, blank=True, default="")
-    baseline_version = models.CharField(max_length=32, blank=True, default="")
-    target_identifier = models.CharField(max_length=2048, blank=True, default="")
-    parent_identifier = models.CharField(max_length=2048, blank=True, default="")
-    status = models.CharField(max_length=32, blank=True, default="")
-    drift_status = models.CharField(max_length=32, blank=True, default="")
+    baseline_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    baseline_version = models.CharField(max_length=32, null=True, blank=True, default=None)
+    target_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    parent_identifier = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    status = models.CharField(max_length=32, null=True, blank=True, default=None)
+    drift_status = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str}. Source: controltower:ListTagsForResource (`tags` map).
     tags = models.JSONField(null=True, blank=True, default=None)
 

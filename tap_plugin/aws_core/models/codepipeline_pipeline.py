@@ -40,6 +40,7 @@ class CodepipelinePipeline(BaseModel):
     # The pipeline's ARN (GetPipeline metadata.pipelineArn). A pipeline name is unique only within one
     # account and region, so the ARN, which carries both, is the identity.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pipeline_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "codepipeline:pipeline"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
@@ -49,9 +50,9 @@ class CodepipelinePipeline(BaseModel):
         },
         # Source: GetPipeline pipeline.stages[].name, in pipeline order.
         "stage_names": {"type": "array", "items": {"type": "string", "minLength": 1}},
-        "pipeline_type": {"type": "string", "enum": ["", *PIPELINE_TYPES]},
-        "execution_mode": {"type": "string", "enum": ["", *EXECUTION_MODES]},
-        "region": {"type": "string"},
+        "pipeline_type": {"type": ["string", "null"], "enum": [None, "", *PIPELINE_TYPES]},
+        "execution_mode": {"type": ["string", "null"], "enum": [None, "", *EXECUTION_MODES]},
+        "region": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
         "configuration": {"type": "object"},
     }
@@ -68,9 +69,9 @@ class CodepipelinePipeline(BaseModel):
     # practice it means the design is not yet drawn.
     stage_names = models.JSONField(default=list, blank=True)
     # Blank means not observed (the aws_elb.lb_type convention).
-    pipeline_type = models.CharField(max_length=2, blank=True, default="")
-    execution_mode = models.CharField(max_length=16, blank=True, default="")
-    region = models.CharField(max_length=32, blank=True, default="")
+    pipeline_type = models.CharField(max_length=2, null=True, blank=True, default=None)
+    execution_mode = models.CharField(max_length=16, null=True, blank=True, default=None)
+    region = models.CharField(max_length=32, null=True, blank=True, default=None)
     # AWS tags, canonical flat {str: str} (req-aws-core-fields-4). Source: ListTagsForResource.
     tags = models.JSONField(null=True, blank=True, default=None)
     # The collector's configuration envelope; {} when the manifest entry does not persist it.
