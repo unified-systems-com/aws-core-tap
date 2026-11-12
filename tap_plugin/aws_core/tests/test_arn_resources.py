@@ -235,3 +235,25 @@ def test_the_refresh_takes_each_wanted_resource_from_the_reference() -> None:
         "ec2:vpc": ["arn:${Partition}:ec2:${Region}:${Account}:vpc/${VpcId}"],
         "sns:topic": ["arn:${Partition}:sns:${Region}:${Account}:${TopicName}"],
     }
+
+
+def test_the_arn_refresh_reads_only_named_services_and_writes_only_the_formats(monkeypatch, tmp_path) -> None:
+    """Adding a model runs ``--refresh-arns``, which must not touch the IAM action data."""
+    fetched: list[str] = []
+    listing = [
+        {"service": "ec2", "url": "u/ec2"},
+        {"service": "unnamed", "url": "u/unnamed"},
+    ]
+    doc = {"Name": "ec2", "Resources": [{"Name": "vpc", "ARNFormats": ["arn:${Partition}:ec2:${Region}:${Account}:vpc/${VpcId}"]}]}
+
+    def fake_fetch(url: str):
+        fetched.append(url)
+        return listing if url.endswith("service-list.json") else doc
+
+    monkeypatch.setattr(iam_policy, "_fetch", fake_fetch)
+    monkeypatch.setattr(iam_policy, "arn_resources", lambda: {"ec2:vpc"})
+    monkeypatch.setattr(iam_policy, "ARN_FORMATS", tmp_path / "arn_formats.json")
+    monkeypatch.setattr(iam_policy, "CATALOG", tmp_path / "iam_operation_actions.json")
+    assert iam_policy.refresh_arn_formats() == 1
+    assert "u/unnamed" not in fetched
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["arn_formats.json"]

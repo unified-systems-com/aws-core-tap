@@ -1,5 +1,5 @@
 {
- "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh; do not edit.",
+ "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh or --refresh-arns; do not edit.",
  "resources": {
   "access-analyzer:Analyzer": [
    "arn:${Partition}:access-analyzer:${Region}:${Account}:analyzer/${AnalyzerName}"

@@ -8,6 +8,7 @@ one role, plus an explicit deny for the actions that return secret material or r
 
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --write      # regenerate the documents
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh    # rebuild the action data
+    uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh-arns   # rebuild the ARN formats only
 
 The operation-to-action mapping is AWS's own: the Service Authorization Reference
 (https://servicereference.us-east-1.amazonaws.com/) names, for each SDK method, the actions that authorise it.
@@ -17,7 +18,8 @@ a read operation's list and recorded under ``dropped``.
 
 The same refresh writes ``arn_formats.json``: the reference's ARN formats for every resource type a model names in its
 ``ARN_RESOURCE`` (``"<service>:<resource>"``, ``req-aws-collector-identity-11``), so building an ARN is offline and
-reads the same data every time.
+reads the same data every time. ``--refresh-arns`` rebuilds ``arn_formats.json`` alone, reading only the services the
+models name, so adding a model never rewrites the IAM action data as a side effect.
 """
 
 from __future__ import annotations
@@ -327,7 +329,7 @@ def arn_formats_from(docs: list[dict[str, Any]], wanted: set[str]) -> dict[str, 
         if f"{doc['Name']}:{resource['Name']}" in wanted
     }
     return {
-        "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh; do not edit.",
+        "description": "For each resource type an aws_core model names in ARN_RESOURCE, its ARN formats from AWS's Service Authorization Reference (https://servicereference.us-east-1.amazonaws.com/v1/<service>/<service>.json, Resources[].ARNFormats). Rebuilt by iam_policy.py --refresh or --refresh-arns; do not edit.",
         "resources": dict(sorted(formats.items())),
     }
 
@@ -336,7 +338,20 @@ def write_arn_formats(docs: list[dict[str, Any]]) -> None:
     ARN_FORMATS.write_text(json.dumps(arn_formats_from(docs, arn_resources()), indent=1) + "\n")
 
 
+def refresh_arn_formats() -> int:
+    """Rebuild ``arn_formats.json`` alone, from the reference files of the services the models name (network)."""
+    wanted = arn_resources()
+    prefixes = {r.split(":", 1)[0] for r in wanted}
+    services = [s for s in _fetch(REFERENCE + "service-list.json") if s["service"] in prefixes]
+    with concurrent.futures.ThreadPoolExecutor(4) as pool:
+        docs = list(pool.map(lambda s: _fetch(s["url"]), services))
+    write_arn_formats(docs)
+    return len(arn_formats_from(docs, wanted)["resources"])
+
+
 def main(argv: list[str]) -> int:
+    if "--refresh-arns" in argv:
+        print(f"wrote {refresh_arn_formats()} resource types to {ARN_FORMATS.name}")
     if "--refresh" in argv:
         data = refresh()
         print(f"wrote {len(data['operations'])} operations to {CATALOG.name}")

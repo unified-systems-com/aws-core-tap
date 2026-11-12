@@ -151,8 +151,8 @@ Authorization Reference (`https://servicereference.us-east-1.amazonaws.com/v1/<s
 
 - it has a resource type there: `ARN_RESOURCE: ClassVar[str | None] = "<service>:<resource>"`, using the reference's
   own service prefix and resource name (`"ec2:vpc"`, `"elasticloadbalancing:targetgroup"`), then run
-  `uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh` so `arn_formats.json`
-  vendors its formats;
+  `uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh-arns` so `arn_formats.json`
+  vendors its formats (it writes only that file; `--refresh` also rebuilds the IAM action data, which is its own change);
 - AWS returns an ARN for it but the reference lists no resource type (or has no file for the service):
   `ARN_RESOURCE = None`, and add the type to `RETURNED_ONLY` in `tests/test_arn_resources.py` with which gap it is;
 - it has a resource type, but some of its rows have no ARN (an account outside an Organization): name the resource
