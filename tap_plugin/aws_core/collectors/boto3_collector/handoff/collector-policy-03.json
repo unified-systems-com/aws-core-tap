@@ -202,6 +202,7 @@
       "Sid": "ReadElasticloadbalancing",
       "Effect": "Allow",
       "Action": [
+        "elasticloadbalancing:DescribeInstanceHealth",
         "elasticloadbalancing:DescribeListenerCertificates",
         "elasticloadbalancing:DescribeListeners",
         "elasticloadbalancing:DescribeLoadBalancers",

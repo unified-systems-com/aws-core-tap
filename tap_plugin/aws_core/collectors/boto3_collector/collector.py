@@ -100,6 +100,8 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import walks_of
+from .elb_topology import walks_of as listener_walks_of
+from .elb_topology import withhold_unreplaced_lb_routes
 from .route53_records import walk_of as route53_walk_of
 from .route53_records import withhold_unreplaced_zone_routes
 from .endpoint_probe import EndpointProbe, request_host
@@ -1150,6 +1152,8 @@ class Boto3Collector(CollectorBase):
         # The zones' replaced direct routes are claimed only for a zone whose record sets all resolved and reached the
         # batch, which is known only now that every reader has run (aws-core-tap PR 223 review).
         withhold_unreplaced_zone_routes(judged, route53_walk_of(session))
+        # Likewise a load balancer's replaced routes: claimed only once its listeners and rules all reached the batch.
+        withhold_unreplaced_lb_routes(judged, listener_walks_of(session))
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:

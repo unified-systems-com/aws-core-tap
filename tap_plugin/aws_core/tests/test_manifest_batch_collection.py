@@ -527,8 +527,12 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'file_system_id': 'fs-0a1', 'subnet_id': 'subnet-0a1', 'ip_address': '10.0.1.5'},
     ),
     "aws_core__aws_elb_listener": (
-        {'ListenerArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/web/abc/def', 'LoadBalancerArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/web/abc', 'Port': 443, 'Protocol': 'HTTPS', 'SslPolicy': 'ELBSecurityPolicy-TLS13-1-2-2021-06', 'MutualAuthentication': {'Mode': 'off'}, '_certificate_arns': ['arn:aws:acm:us-east-1:123456789012:certificate/abc'], '_action_types': ['forward'], '_alb_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/web/abc', '_tags': {'owner': 'net-team'}},
-        {'port': 443, 'protocol': 'HTTPS', 'ssl_policy': 'ELBSecurityPolicy-TLS13-1-2-2021-06', 'action_types': ['forward'], 'mutual_authentication_mode': 'off'},
+        {'ListenerArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/web/abc/def', 'LoadBalancerArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/web/abc', 'Port': 443, 'Protocol': 'HTTPS', 'SslPolicy': 'ELBSecurityPolicy-TLS13-1-2-2021-06', 'MutualAuthentication': {'Mode': 'off'}, '_certificate_arns': ['arn:aws:acm:us-east-1:123456789012:certificate/abc'], '_action_types': ['forward'], '_alb_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/web/abc', '_lb_type': 'application', '_rule_arns': ['arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/web/abc/def/1'], '_forwards': [], '_tags': {'owner': 'net-team'}},
+        {'port': 443, 'protocol': 'HTTPS', 'ssl_policy': 'ELBSecurityPolicy-TLS13-1-2-2021-06', 'action_types': ['forward'], 'mutual_authentication_mode': 'off', 'lb_type': 'application'},
+    ),
+    "aws_core__aws_elb_classic_listener": (
+        {'Protocol': 'HTTPS', 'LoadBalancerPort': 443, 'InstanceProtocol': 'HTTP', 'InstancePort': 8080, 'SSLCertificateId': 'arn:aws:acm:us-east-1:123456789012:certificate/abc', 'PolicyNames': ['ELBSecurityPolicy-TLS-1-2-2017-01'], 'LoadBalancerName': 'legacy', '_key': 'aws:123456789012:us-east-1:legacy:HTTPS:443', '_elb_dns_name': 'legacy-1.us-east-1.elb.amazonaws.com', '_acm_certificate_arns': ['arn:aws:acm:us-east-1:123456789012:certificate/abc']},
+        {'listener_key': 'aws:123456789012:us-east-1:legacy:HTTPS:443', 'load_balancer_name': 'legacy', 'protocol': 'HTTPS', 'port': 443, 'instance_protocol': 'HTTP', 'instance_port': 8080, 'policy_names': ['ELBSecurityPolicy-TLS-1-2-2017-01']},
     ),
     "aws_core__aws_backup_vault": (
         {'BackupVaultName': 'prod', 'BackupVaultArn': 'arn:aws:backup:us-east-1:123456789012:backup-vault:prod', 'EncryptionKeyArn': 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab', 'Locked': True, 'MinRetentionDays': 30, 'MaxRetentionDays': 3650, 'NumberOfRecoveryPoints': 12, '_tags': {'owner': 'net-team'}},
@@ -2371,8 +2375,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'eks_identity_provider_config_arn': 'arn:aws:eks:us-east-1:123456789012:identityproviderconfig/c/oidc/gen-1/abc', 'name': 'gen-1'},
     ),
     "aws_core__aws_elasticloadbalancingv2_listener_rule": (
-        {'RuleArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3', 'IsDefault': False},
-        {'elasticloadbalancingv2_listener_rule_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3'},
+        {'RuleArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3', 'Priority': '10', 'IsDefault': False, 'Conditions': [{'Field': 'path-pattern', 'PathPatternConfig': {'Values': ['/b/*']}}], 'Actions': [{'Type': 'forward', 'TargetGroupArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/b/1'}], '_listener_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/lb/1/2', '_load_balancer_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:loadbalancer/app/lb/1', '_action_types': ['forward'], '_forwards': [{'target_group_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/b/1', 'properties': {'route_id': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3', 'weight': None}}], '_tags': {'owner': 'net-team'}},
+        {'elasticloadbalancingv2_listener_rule_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener-rule/app/lb/1/2/3', 'listener_arn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/lb/1/2', 'priority': '10', 'is_default': False, 'conditions': [{'Field': 'path-pattern', 'PathPatternConfig': {'Values': ['/b/*']}}], 'action_types': ['forward']},
     ),
     "aws_core__aws_elasticloadbalancingv2_trust_store": (
         {'TrustStoreArn': 'arn:aws:elasticloadbalancing:us-east-1:123456789012:truststore/gen-1/abc', 'Name': 'gen-1'},

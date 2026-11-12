@@ -1,9 +1,10 @@
 {
   "slug": "ROUTES_TO_TARGET__aws_core",
   "name": "Routes To Target",
-  "description": "A target group routes traffic to a registered target (target group -> instance, or -> Application Load Balancer when the target's id is that load balancer's ARN, as when a Network Load Balancer fronts an Application one). One edge per registered port, carrying the target's health from DescribeTargetHealth. A Lambda target is INVOKES_LAMBDA; an IP target waits on the IP address node's key (aws-core-tap#220).",
+  "description": "A target group routes traffic to a registered target (target group -> instance, or -> Application Load Balancer when the target's id is that load balancer's ARN, as when a Network Load Balancer fronts an Application one), one edge per registered port, carrying the target's health from DescribeTargetHealth. A Classic load balancer, which has no target groups, routes the same way to the instances registered on it (Classic load balancer -> instance), one edge per instance port its listeners forward to, carrying the health DescribeInstanceHealth reports. A Lambda target is INVOKES_LAMBDA; an IP target waits on the IP address node's key (aws-core-tap#220).",
   "sources": [
-    "aws_core__aws_target_group"
+    "aws_core__aws_target_group",
+    "aws_core__aws_elb"
   ],
   "targets": [
     "aws_core__aws_ec2_instance",
@@ -14,21 +15,21 @@
     "properties": {
       "port": {
         "type": "integer",
-        "description": "The port the target is registered on (DescribeTargetHealth Target.Port)."
+        "description": "The port the target is registered on (DescribeTargetHealth Target.Port), or, for a Classic load balancer, the instance port a listener forwards to (InstancePort)."
       },
       "health_state": {
         "type": [
           "string",
           "null"
         ],
-        "description": "The target's health as DescribeTargetHealth reports it (initial, healthy, unhealthy, unused, draining, unavailable, unhealthy.draining); null when health was not read. Changes in place run to run; not part of the key."
+        "description": "The target's health as AWS reports it: DescribeTargetHealth's state (initial, healthy, unhealthy, unused, draining, unavailable, unhealthy.draining), or DescribeInstanceHealth's for a Classic load balancer (InService, OutOfService, Unknown); null when health was not read. Changes in place run to run; not part of the key."
       },
       "health_reason": {
         "type": [
           "string",
           "null"
         ],
-        "description": "DescribeTargetHealth's reason code for a state other than healthy (Target.ResponseCodeMismatch, Target.NotInUse and so on); null when none was given."
+        "description": "The reason code for a state other than healthy (DescribeTargetHealth's Target.ResponseCodeMismatch, Target.NotInUse and so on; DescribeInstanceHealth's ELB or Instance); null when none was given."
       },
       "health_description": {
         "type": [
@@ -42,7 +43,7 @@
           "string",
           "null"
         ],
-        "description": "The zone the target is registered in, or 'all' for an IP target outside the VPC; null when not given."
+        "description": "The zone the target is registered in, or 'all' for an IP target outside the VPC; null when not given, as always for a Classic load balancer, whose health read names no zone."
       }
     }
   },

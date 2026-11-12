@@ -2470,6 +2470,12 @@
    "actions": [],
    "dropped": []
   },
+  "elb:describe_instance_health": {
+   "actions": [
+    "elasticloadbalancing:DescribeInstanceHealth"
+   ],
+   "dropped": []
+  },
   "elb:describe_load_balancers": {
    "actions": [
     "elasticloadbalancing:DescribeLoadBalancers"
