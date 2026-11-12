@@ -30,6 +30,7 @@ class AwsConfigAggregator(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("aggregator_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:ConfigurationAggregator"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

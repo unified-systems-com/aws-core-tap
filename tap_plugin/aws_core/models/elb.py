@@ -25,6 +25,7 @@ class Elb(BaseModel):
     # type has and which is unique. A Classic Load Balancer has no ARN, and a name is unique only
     # within an account and region, so neither can be the key for all three types.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dns_name",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:loadbalancer"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

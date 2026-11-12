@@ -17,6 +17,7 @@ class PinpointemailIdentity(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The identity's ARN, built as arn:{partition}:ses:{region}:{account}:identity/{IdentityName} (the AWS Service Authorization Reference 'ses' identity resource; the Pinpoint Email API signs as 'ses', botocore metadata signingName); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pinpointemail_identity_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ses:identity"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -40,6 +40,7 @@ class AcmPrivateCa(BaseModel):
 
     # AWS's CA ARN; there is no shorter id.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ca_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "acm-pca:certificate-authority"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

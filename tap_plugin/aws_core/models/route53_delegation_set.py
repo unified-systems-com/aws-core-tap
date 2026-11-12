@@ -17,6 +17,7 @@ class Route53DelegationSet(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The delegation set's Id: ListReusableDelegationSets returns no ARN, and a Route 53 delegation set id is unique across accounts.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53_delegation_set_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53:delegationset"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

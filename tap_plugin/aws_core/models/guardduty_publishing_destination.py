@@ -17,6 +17,7 @@ class GuarddutyPublishingDestination(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'destination' and the destination id: a destination id is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_key",)
+    ARN_RESOURCE: ClassVar[str | None] = "guardduty:publishingDestination"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

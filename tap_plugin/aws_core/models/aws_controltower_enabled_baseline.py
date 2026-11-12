@@ -31,6 +31,7 @@ class AwsControlTowerEnabledBaseline(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("enabled_baseline_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "controltower:EnabledBaseline"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {

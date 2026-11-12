@@ -17,6 +17,7 @@ class Ec2TransitGatewayPolicyTable(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (TransitGatewayPolicyTableId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_transit_gateway_policy_table_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:transit-gateway-policy-table"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class IamInstanceProfile(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The instance profile's ARN: a name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_profile_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:instance-profile"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

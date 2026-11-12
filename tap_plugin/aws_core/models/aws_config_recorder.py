@@ -33,6 +33,7 @@ class AwsConfigRecorder(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("recorder_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:ConfigurationRecorder"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

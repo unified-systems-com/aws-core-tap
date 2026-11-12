@@ -17,6 +17,7 @@ class SesMailManagerRelay(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RelayArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_mail_manager_relay_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ses:mailmanager-smtp-relay"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class EksIdentityProviderConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (identityProviderConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("eks_identity_provider_config_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "eks:identityproviderconfig"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

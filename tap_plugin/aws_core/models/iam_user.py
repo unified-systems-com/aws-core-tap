@@ -18,6 +18,7 @@ class IamUser(BaseModel):
     # Identity (req-grid-entity-natural-key): The user's ARN: a user name is unique only within an
     # account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("user_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iam:user"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

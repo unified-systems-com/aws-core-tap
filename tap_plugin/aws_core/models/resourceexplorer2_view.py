@@ -17,6 +17,7 @@ class Resourceexplorer2View(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The view's ARN (ViewArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("resourceexplorer2_view_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "resource-explorer-2:view"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

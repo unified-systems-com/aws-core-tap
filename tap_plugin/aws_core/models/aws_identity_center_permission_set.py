@@ -32,6 +32,7 @@ class AwsIdentityCenterPermissionSet(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("permission_set_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sso:PermissionSet"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

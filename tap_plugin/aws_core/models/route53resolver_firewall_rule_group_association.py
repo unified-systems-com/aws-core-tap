@@ -17,6 +17,7 @@ class Route53resolverFirewallRuleGroupAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53resolver_firewall_rule_group_association_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53resolver:firewall-rule-group-association"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

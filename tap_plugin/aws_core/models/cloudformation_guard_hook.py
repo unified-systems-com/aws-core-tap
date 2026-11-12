@@ -17,6 +17,7 @@ class CloudformationGuardHook(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TypeArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cloudformation_guard_hook_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudformation:typeHook"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

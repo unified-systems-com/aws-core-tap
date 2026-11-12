@@ -39,6 +39,7 @@ class VpcEndpoint(BaseModel):
 
     # AWS's endpoint id (vpce-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_endpoint_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-endpoint"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

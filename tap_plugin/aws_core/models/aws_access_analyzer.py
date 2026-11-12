@@ -35,6 +35,7 @@ class AwsAccessAnalyzer(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("analyzer_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "access-analyzer:Analyzer"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {

@@ -18,6 +18,7 @@ class BedrockModel(BaseModel):
     # Identity (req-grid-entity-natural-key): The foundation model ID. It names the model, not a
     # deployment, so the same model reached from two regions is one node.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("model_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "bedrock:foundation-model"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -36,6 +36,7 @@ class DxConnection(BaseModel):
 
     # AWS's connection id (dxcon-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connection_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "directconnect:dxcon"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

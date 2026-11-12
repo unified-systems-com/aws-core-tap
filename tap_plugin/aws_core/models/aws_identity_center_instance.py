@@ -44,6 +44,7 @@ class AwsIdentityCenterInstance(BaseModel):
 
     # AWS's instance ARN (arn:<partition>:sso:::instance/ssoins-…); partition-qualified, so unique.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sso:Instance"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {

@@ -26,6 +26,7 @@ class CloudfrontDistribution(BaseModel):
     # Identity (req-grid-entity-natural-key): The distribution's ARN, the boto3 collector's identity
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("distribution_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "cloudfront:distribution"
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

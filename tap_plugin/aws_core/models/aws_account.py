@@ -18,6 +18,9 @@ class AwsAccount(BaseModel):
     # Identity (req-grid-entity-natural-key): The 12-digit account ID, the boto3 collector's identity
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id",)
+    # The account has an ARN only as a member of an Organization (the format needs the organization id), so the key
+    # stays the account id (KEY_NOT_ARN in tests/test_arn_resources.py); the ARN is stored when Organizations returns it.
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:account"
 
     # Containment: the account-EXCLUSIVE resources, and only those (aws-core-tap#43, which deliberately
     # supersedes the empty declaration tap-plugin-aws-core#42 made here).

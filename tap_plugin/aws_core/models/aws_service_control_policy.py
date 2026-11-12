@@ -45,6 +45,7 @@ class AwsServiceControlPolicy(BaseModel):
     # (arn:aws:organizations::aws:policy/service_control_policy/p-FullAWSAccess), because it is one
     # AWS-owned object: one node, with each organization's use of it its own ATTACHED_TO_TARGET edge.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "organizations:policy"
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_policy_statement"}], "edges": [{"type": "DECLARES_STATEMENT__aws_core"}]},

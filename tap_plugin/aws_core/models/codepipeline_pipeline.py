@@ -40,6 +40,7 @@ class CodepipelinePipeline(BaseModel):
     # The pipeline's ARN (GetPipeline metadata.pipelineArn). A pipeline name is unique only within one
     # account and region, so the ARN, which carries both, is the identity.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pipeline_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "codepipeline:pipeline"
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

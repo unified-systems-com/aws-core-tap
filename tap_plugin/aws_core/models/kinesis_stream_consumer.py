@@ -17,6 +17,7 @@ class KinesisStreamConsumer(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ConsumerARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("kinesis_stream_consumer_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "kinesis:consumer"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

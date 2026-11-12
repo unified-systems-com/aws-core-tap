@@ -17,6 +17,7 @@ class FmsApplicationsList(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ListArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("fms_applications_list_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "fms:applications-list"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

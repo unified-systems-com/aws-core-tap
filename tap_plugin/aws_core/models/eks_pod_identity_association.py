@@ -17,6 +17,7 @@ class EksPodIdentityAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (associationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("eks_pod_identity_association_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "eks:podidentityassociation"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

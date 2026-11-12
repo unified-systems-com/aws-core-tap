@@ -32,6 +32,9 @@ class AwsSecurityHubStandardsSubscription(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("subscription_arn",)
+    # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
+    # so it cannot be built when absent.
+    ARN_RESOURCE: ClassVar[str | None] = None
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

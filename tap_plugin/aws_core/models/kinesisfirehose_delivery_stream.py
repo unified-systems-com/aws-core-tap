@@ -17,6 +17,7 @@ class KinesisfirehoseDeliveryStream(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The delivery stream's ARN (DeliveryStreamARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("kinesisfirehose_delivery_stream_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "firehose:deliverystream"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -17,6 +17,7 @@ class BackupVault(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The vault's ARN: a vault name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vault_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "backup:backupVault"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

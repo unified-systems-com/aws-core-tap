@@ -17,6 +17,7 @@ class IotsitewiseAccessPolicy(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (access-policy/<id>): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iotsitewise_access_policy_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "iotsitewise:access-policy"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

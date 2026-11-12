@@ -17,6 +17,7 @@ class IdentityCenterApplication(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The application's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("application_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sso:Application"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "ellipse", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

@@ -17,6 +17,7 @@ class ApigatewayClientCertificate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The certificate's ARN (built from its id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("client_certificate_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "apigateway:ClientCertificate"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

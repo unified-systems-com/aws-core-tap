@@ -17,6 +17,7 @@ class Route53resolverFirewallConfig(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (Id), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53resolver_firewall_config_id",)
+    ARN_RESOURCE: ClassVar[str | None] = "route53resolver:firewall-config"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

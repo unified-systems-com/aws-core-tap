@@ -17,6 +17,7 @@ class AccessAnalyzerArchiveRule(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The analyzer's ARN plus /archive-rule/ and the rule name: AWS gives a rule no ARN in its API, and the name is unique only within an analyzer.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "access-analyzer:ArchiveRule"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

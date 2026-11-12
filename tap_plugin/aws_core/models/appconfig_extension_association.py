@@ -17,6 +17,7 @@ class AppconfigExtensionAssociation(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("appconfig_extension_association_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "appconfig:extensionassociation"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

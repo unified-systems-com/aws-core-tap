@@ -18,6 +18,7 @@ class SagemakerEndpoint(BaseModel):
     # Identity (req-grid-entity-natural-key): The endpoint's ARN: an endpoint name is unique only
     # within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("endpoint_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:endpoint"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

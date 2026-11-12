@@ -17,6 +17,7 @@ class BedrockDataAutomationProject(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (projectArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_data_automation_project_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "bedrock:data-automation-project"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

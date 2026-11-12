@@ -18,6 +18,7 @@ class TargetGroup(BaseModel):
     # Identity (req-grid-entity-natural-key): The target group's ARN: a target group name is unique
     # only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("target_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:targetgroup"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

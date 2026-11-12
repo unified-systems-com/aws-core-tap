@@ -17,6 +17,7 @@ class SagemakerTrialComponent(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TrialComponentArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("trial_component_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "sagemaker:experiment-trial-component"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

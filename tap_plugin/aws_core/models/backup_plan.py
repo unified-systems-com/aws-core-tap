@@ -17,6 +17,7 @@ class BackupPlan(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The plan's ARN: a plan id is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("plan_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "backup:backupPlan"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

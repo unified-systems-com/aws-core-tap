@@ -17,6 +17,7 @@ class EfsFileSystem(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The file system's ARN: a file system id is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("file_system_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "elasticfilesystem:file-system"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

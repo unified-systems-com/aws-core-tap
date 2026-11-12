@@ -17,6 +17,7 @@ class SesMailManagerIngressPoint(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (IngressPointArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_mail_manager_ingress_point_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ses:mailmanager-ingress-point"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

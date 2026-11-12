@@ -17,6 +17,7 @@ class ConfigAggregationAuthorization(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The authorization's ARN: it is unique per authorized account and region within this account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("authorization_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "config:AggregationAuthorization"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

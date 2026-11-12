@@ -17,6 +17,7 @@ class CodepipelineCustomActionType(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (actiontype:<owner>/<category>/<provider>/<version>, from the action type's id): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("codepipeline_custom_action_type_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "codepipeline:actiontype"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

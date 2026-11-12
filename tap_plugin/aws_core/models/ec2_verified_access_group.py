@@ -17,6 +17,7 @@ class Ec2VerifiedAccessGroup(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (VerifiedAccessGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("verified_access_group_arn",)
+    ARN_RESOURCE: ClassVar[str | None] = "ec2:verified-access-group"
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
