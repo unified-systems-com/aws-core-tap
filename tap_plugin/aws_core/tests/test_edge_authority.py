@@ -52,7 +52,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.transforms import build_tran
 
 from tap_cares.collectors.config import CollectorConfig
 
-from .test_boto3_collector_slice import _CANNED, _CannedClient, _stub_aws  # noqa: F401 (fixture)
+from .test_boto3_collector_slice import _CANNED, _LB_ARN, _CannedClient, _stub_aws  # noqa: F401 (fixture)
 
 _ACCOUNT = "111122223333"
 _LAMBDA_ARN = f"arn:aws:lambda:us-east-1:{_ACCOUNT}:function:worker"
@@ -863,6 +863,56 @@ class TestThroughTheCollector:
         assert len(scopes) == len(set(scopes))
         # Every claim carries a read from the closed set; none is defaulted.
         assert {c["read"] for c in claims} <= {COMPLETE, PARTIAL, FAILED}
+
+    def _lb_claims(self, monkeypatch) -> dict[tuple[str, str], str]:
+        """The claims a judge-only run sends for the slice's Application Load Balancer's replaced route scopes."""
+        monkeypatch.setattr(collector_mod, "importer_accepts_edge_cases", lambda: True)
+        documents: list[dict[str, Any]] = []
+
+        def _judge_only(self, document, **_kw):
+            documents.append(document)
+            return SimpleNamespace(imported_batches=[], counts=SimpleNamespace(batches_imported=0))
+
+        monkeypatch.setattr(Boto3Collector, "submit_grift", _judge_only)
+        _run()
+        batch = documents[0]["batches"][0]
+        alb = next(n for n in batch["nodes"] if n["entity"]["entity_type"] == "aws_core__aws_alb" and node_key(n) == {"lb_arn": _LB_ARN})
+        return {
+            (c["edge_type"], c["direction"]): c["read"]
+            for c in batch["edge_cases"]["authority"]
+            if c["anchor"] == node_anchor(alb) and c["edge_type"] in ("FORWARDS_TO_TARGET_GROUP__aws_core", "ROUTES_TRAFFIC__aws_core")
+        }
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_a_load_balancer_whose_listeners_and_rules_were_read_claims_its_replaced_routes(self, monkeypatch):
+        # The slice's ALB has one listener, whose DescribeRules answers empty: its replacement is all on the batch.
+        assert self._lb_claims(monkeypatch) == {
+            ("FORWARDS_TO_TARGET_GROUP__aws_core", "outbound"): COMPLETE,
+            ("ROUTES_TRAFFIC__aws_core", "outbound"): COMPLETE,
+        }
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_a_denied_listener_read_sends_the_replaced_routes_failed_through_the_collector(self, monkeypatch):
+        """The load balancer's own item reads its emptied slots complete; only the collector's post-pass
+        (``withhold_unreplaced_lb_routes``) knows its listeners were not read, so this pins that pass in the run
+        (PR 226 review)."""
+
+        def _denied_listeners(self, **_kw):
+            raise _denied("DescribeListeners")
+
+        monkeypatch.setattr(_CannedClient, "describe_listeners", _denied_listeners, raising=False)
+        assert self._lb_claims(monkeypatch) == {
+            ("FORWARDS_TO_TARGET_GROUP__aws_core", "outbound"): FAILED,
+            ("ROUTES_TRAFFIC__aws_core", "outbound"): FAILED,
+        }
+
+    @pytest.mark.spec("req-aws-collector-lb-topology-3")
+    def test_a_denied_rule_read_sends_the_replaced_routes_failed_through_the_collector(self, monkeypatch):
+        def _denied_rules(self, **_kw):
+            raise _denied("DescribeRules")
+
+        monkeypatch.setattr(_CannedClient, "describe_rules", _denied_rules, raising=False)
+        assert set(self._lb_claims(monkeypatch).values()) == {FAILED}
 
     @pytest.mark.skipif(not authority.importer_accepts_edge_cases(), reason="this tap's importer predates edge_cases")
     def test_the_importer_accepts_the_claims(self, monkeypatch):

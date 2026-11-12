@@ -1,0 +1,17 @@
+{
+  "slug": "EVALUATES_LISTENER_RULE__aws_core",
+  "name": "Evaluates Listener Rule",
+  "description": "An Application Load Balancer listener evaluates its rules in priority order, its default rule last (listener -> rule): the middle hop of load balancer -> listener -> rule -> target group (aws-core-tap#220). DescribeRules on the listener names them. A reference; the rule's priority and conditions are on the rule node.",
+  "sources": [
+    "aws_core__aws_elb_listener"
+  ],
+  "targets": [
+    "aws_core__aws_elasticloadbalancingv2_listener_rule"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.cloud": "aws"
+  }
+}

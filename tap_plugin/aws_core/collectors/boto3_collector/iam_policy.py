@@ -54,6 +54,7 @@ MAX_PARTS = 10
 CODE_MODULES = (
     "customfns.py", "customfns_longtail.py", "landing_zone.py", "organizations.py", "identity.py", "regions.py",
     "rgta.py", "ecs.py", "iam_trust.py", "policy_documents.py", "credentials.py", "authority.py", "hydrate.py",
+    "elb_topology.py",
 )  # fmt: skip
 _CLIENT_CALLS = {"client_for", "client", "get_client", "_client", "make_client"}
 _OP_WORD = re.compile(r"^([a-z]+(_[a-z0-9]+)+|[A-Z][A-Za-z0-9]+)$")

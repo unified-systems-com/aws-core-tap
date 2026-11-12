@@ -37,6 +37,7 @@ class ElbListener(BaseModel):
         "certificate_arns": {"type": ["array", "null"]},
         "action_types": {"type": ["array", "null"]},
         "mutual_authentication_mode": {"type": ["string", "null"]},
+        "lb_type": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -51,6 +52,7 @@ class ElbListener(BaseModel):
         "certificate_arns": {"validation": "jsonschema", "schema": {"type": ["array", "null"]}},
         "action_types": {"validation": "jsonschema", "schema": {"type": ["array", "null"]}},
         "mutual_authentication_mode": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "lb_type": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -72,6 +74,8 @@ class ElbListener(BaseModel):
     action_types = models.JSONField(null=True, blank=True, default=None)
     # off, passthrough or verify. NULL = none, or not observed.
     mutual_authentication_mode = models.CharField(max_length=512, null=True, blank=True, default=None)
+    # The kind of load balancer the listener is on: application, network or gateway. NULL = not observed.
+    lb_type = models.CharField(max_length=64, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

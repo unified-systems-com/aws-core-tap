@@ -738,6 +738,7 @@ class TestListeners:
             describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}, {"LoadBalancerArn": nlb, "Type": "network"}]},
             describe_listeners=lambda LoadBalancerArn: {"Listeners": [listeners[LoadBalancerArn]]},
             describe_listener_certificates={"Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a", "IsDefault": True}, {"CertificateArn": "arn:aws:acm:r:1:certificate/sni", "IsDefault": False}]},
+            describe_rules={"Rules": []},
             describe_tags={"TagDescriptions": [{"ResourceArn": "arn:l1", "Tags": [{"Key": "k", "Value": "v"}]}, {"ResourceArn": "arn:l2", "Tags": []}]},
         )
         alb_listener, nlb_listener = _run(elbv2_listeners_described, "elbv2", client)
@@ -754,6 +755,7 @@ class TestListeners:
             describe_load_balancers={"LoadBalancers": [{"LoadBalancerArn": self.LB, "Type": "application"}]},
             describe_listeners={"Listeners": [{"ListenerArn": "arn:l1", "LoadBalancerArn": self.LB, "Protocol": "HTTPS", "Certificates": [{"CertificateArn": "arn:aws:acm:r:1:certificate/a"}]}]},
             describe_listener_certificates=_denied("DescribeListenerCertificates"),
+            describe_rules={"Rules": []},
             describe_tags={"TagDescriptions": []},
         )
         [listener] = _run(elbv2_listeners_described, "elbv2", client)
