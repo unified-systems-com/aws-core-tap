@@ -30,24 +30,31 @@ KEY = "aws.account"
 CHUNK = 5000
 
 # A whole ARN, not just an "arn:" prefix: a non-empty partition and service, any region (global services leave it
-# empty), an account that is a 12-digit id or "aws", and a non-empty resource. A malformed key is left alone, so its
-# row stays fail-closed (scope_unknown) rather than gaining an owner from a field that only looks like one.
-ARN_WITH_ACCOUNT = r"^arn:[a-z0-9-]+:[a-z0-9-]+:[^:]*:([0-9]{12}|aws):.+$"
+# empty), a 12-digit account and a non-empty resource. The account "aws" is accepted only where AWS really owns the
+# resource, an AWS-managed IAM policy (arn:<partition>:iam::aws:...): no other service's ARN carries it, so anywhere
+# else it is malformed. A malformed key is left alone, so its row stays fail-closed (scope_unknown) rather than gaining
+# an owner from a field that only looks like one.
+ARN_WITH_ACCOUNT = r"^arn:[a-z0-9-]+:([a-z0-9-]+:[^:]*:[0-9]{12}|iam::aws):.+$"
 
-# Constant statement; every value is a bound parameter. split_part(natural_key, ':', 5) is the ARN's account field.
+# Constant statements; every value is a bound parameter. split_part(natural_key, ':', 5) is the ARN's account field.
+CANDIDATES = """
+SELECT id FROM tap_entity
+ WHERE starts_with(entity_type, %(prefix)s)
+   AND NOT (dimensions ? %(key)s)
+   AND strpos(natural_key, '|') = 0
+   AND natural_key ~ %(arn)s
+   AND id > %(after)s
+ ORDER BY id
+ LIMIT %(chunk)s
+"""
+
+# Every predicate is repeated on the row being updated: PostgreSQL re-evaluates an UPDATE's WHERE against the latest
+# row version after waiting on a concurrent writer's lock, so a value a collector wrote after the id snapshot is
+# never overwritten.
 FILL = """
 UPDATE tap_entity AS e
    SET dimensions = e.dimensions || jsonb_build_object(%(key)s, split_part(e.natural_key, ':', 5))
- WHERE e.id IN (
-        SELECT id FROM tap_entity
-         WHERE starts_with(entity_type, %(prefix)s)
-           AND NOT (dimensions ? %(key)s)
-           AND strpos(natural_key, '|') = 0
-           AND natural_key ~ %(arn)s
-         LIMIT %(chunk)s
-       )
-   -- Rechecked on the row itself: PostgreSQL re-evaluates these after waiting on a concurrent writer's lock, so a
-   -- value a collector wrote between the id snapshot and this update is never overwritten.
+ WHERE e.id = ANY(%(ids)s)
    AND starts_with(e.entity_type, %(prefix)s)
    AND NOT (e.dimensions ? %(key)s)
    AND strpos(e.natural_key, '|') = 0
@@ -56,12 +63,18 @@ UPDATE tap_entity AS e
 
 
 def fill_account_from_arn(apps, schema_editor):
+    """Keyset-paged by id, so the pass ends only when no candidate is left, never early because a chunk's rows were
+    all written concurrently in the meantime."""
     params = {"key": KEY, "prefix": NODE_PREFIX, "chunk": CHUNK, "arn": ARN_WITH_ACCOUNT}
+    after = "00000000-0000-0000-0000-000000000000"
     with schema_editor.connection.cursor() as cursor:
         while True:
-            cursor.execute(FILL, params)
-            if cursor.rowcount == 0:
+            cursor.execute(CANDIDATES, {**params, "after": after})
+            ids = [row[0] for row in cursor.fetchall()]
+            if not ids:
                 break
+            cursor.execute(FILL, {**params, "ids": ids})
+            after = ids[-1]
 
 
 class Migration(migrations.Migration):

@@ -64,8 +64,10 @@ def test_rows_it_cannot_derive_are_left_alone() -> None:
     empty_parts = _row("aws_core__bad_one", f"arn::::{OWNER}:x", {})
     no_resource = _row("aws_core__bad_two", f"arn:aws:ecs:us-east-1:{OWNER}", {})
     empty_resource = _row("aws_core__bad_three", f"arn:aws:ecs:us-east-1:{OWNER}:", {})
+    # "aws" is an owner only on an AWS-managed IAM ARN; on any other service it is malformed.
+    fake_managed = _row("aws_core__ecs_cluster", "arn:aws:ecs:us-east-1:aws:cluster/x", {})
     _fill()
-    for row in (bucket, not_arn, composite, unkeyed, theirs, empty_parts, no_resource, empty_resource):
+    for row in (bucket, not_arn, composite, unkeyed, theirs, empty_parts, no_resource, empty_resource, fake_managed):
         row.refresh_from_db()
         assert "aws.account" not in row.dimensions, row.entity_type
 
