@@ -41,13 +41,15 @@ def test_the_owner_is_filled_from_the_arn_and_a_rerun_is_a_no_op() -> None:
     )
     managed = _row("aws_core__iam_policy", "arn:aws:iam::aws:policy/ReadOnlyAccess", {})
     gov = _row("aws_core__ecs_service", f"arn:aws-us-gov:ecs:us-gov-west-1:{OWNER}:service/c/s", {})
+    regionless = _row("aws_core__iam_role", f"arn:aws:iam::{OWNER}:role/r", {})  # a global service, empty region
     for _ in range(2):
         _fill()
-    for row in (cluster, managed, gov):
+    for row in (cluster, managed, gov, regionless):
         row.refresh_from_db()
     assert cluster.dimensions == {"tap.computing.cloud": "aws", "aws.account": OWNER}
     assert managed.dimensions == {"aws.account": "aws"}, "an AWS-managed resource's owner is aws"
     assert gov.dimensions == {"aws.account": OWNER}
+    assert regionless.dimensions == {"aws.account": OWNER}
 
 
 @pytest.mark.django_db
@@ -58,8 +60,12 @@ def test_rows_it_cannot_derive_are_left_alone() -> None:
     composite = _row("aws_core__thing", f"arn:aws:ecs:us-east-1:{OWNER}:cluster/c|child", {})
     unkeyed = _row("aws_core__other", None, {})
     theirs = _row("anchore__image", f"arn:aws:ecr:us-east-1:{OWNER}:repository/r", {})
+    # Malformed ARN-like keys stay fail-closed: no partition or service, or no resource.
+    empty_parts = _row("aws_core__bad_one", f"arn::::{OWNER}:x", {})
+    no_resource = _row("aws_core__bad_two", f"arn:aws:ecs:us-east-1:{OWNER}", {})
+    empty_resource = _row("aws_core__bad_three", f"arn:aws:ecs:us-east-1:{OWNER}:", {})
     _fill()
-    for row in (bucket, not_arn, composite, unkeyed, theirs):
+    for row in (bucket, not_arn, composite, unkeyed, theirs, empty_parts, no_resource, empty_resource):
         row.refresh_from_db()
         assert "aws.account" not in row.dimensions, row.entity_type
 

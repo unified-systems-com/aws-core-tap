@@ -16,7 +16,7 @@ single-field natural key verbatim, which for an ARN-keyed type IS the ARN. tap_g
 existing row, so this depends on it, and aws_core's ``requires_tap`` floor is 0.3.4.
 
 What it leaves alone: a row that already carries ``aws.account``, which is never overwritten; a row whose natural key
-is not an ARN, or is a multi-field key (joined with ``|``); and an ARN with no account field (S3 buckets, Route 53 and
+is not a well-formed ARN, or is a multi-field key (joined with ``|``); and an ARN with no account field (S3 buckets, Route 53 and
 the like), whose owner only the collector can supply. Edge rows carry no ARN natural key, so they are not touched.
 It works on today's name-keyed dimensions map, as ``0055`` does, in chunks. A second run changes nothing, because
 every row it fills then carries the key. Reversing is a no-op.
@@ -28,8 +28,12 @@ NODE_PREFIX = "aws_core__"
 KEY = "aws.account"
 CHUNK = 5000
 
-# Constant statement; every value is a bound parameter. split_part(natural_key, ':', 5) is the ARN's account field;
-# the pattern admits only a 12-digit account id or "aws".
+# A whole ARN, not just an "arn:" prefix: a non-empty partition and service, any region (global services leave it
+# empty), an account that is a 12-digit id or "aws", and a non-empty resource. A malformed key is left alone, so its
+# row stays fail-closed (scope_unknown) rather than gaining an owner from a field that only looks like one.
+ARN_WITH_ACCOUNT = r"^arn:[a-z0-9-]+:[a-z0-9-]+:[^:]*:([0-9]{12}|aws):.+$"
+
+# Constant statement; every value is a bound parameter. split_part(natural_key, ':', 5) is the ARN's account field.
 FILL = """
 UPDATE tap_entity AS e
    SET dimensions = e.dimensions || jsonb_build_object(%(key)s, split_part(e.natural_key, ':', 5))
@@ -37,16 +41,15 @@ UPDATE tap_entity AS e
         SELECT id FROM tap_entity
          WHERE starts_with(entity_type, %(prefix)s)
            AND NOT (dimensions ? %(key)s)
-           AND natural_key LIKE 'arn:%%'
            AND strpos(natural_key, '|') = 0
-           AND split_part(natural_key, ':', 5) ~ '^([0-9]{12}|aws)$'
+           AND natural_key ~ %(arn)s
          LIMIT %(chunk)s
        )
 """
 
 
 def fill_account_from_arn(apps, schema_editor):
-    params = {"key": KEY, "prefix": NODE_PREFIX, "chunk": CHUNK}
+    params = {"key": KEY, "prefix": NODE_PREFIX, "chunk": CHUNK, "arn": ARN_WITH_ACCOUNT}
     with schema_editor.connection.cursor() as cursor:
         while True:
             cursor.execute(FILL, params)
