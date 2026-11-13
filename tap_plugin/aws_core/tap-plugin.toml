@@ -8,7 +8,9 @@ plugin_version = "v0.8.0" # x-release-please-version
 # 0.3.0: the first core release with tap_grid.services.entity_liveness (req-grid-service-read-direct-4),
 # which the collector asks before re-sending a fixed edge id, edge-endpoint keys and declared edge
 # identity (natural-key refs), and the GRIFT edge_cases section (authority claims).
-requires_tap = ">=0.3.1"
+# 0.3.4: the first core release whose tap_entity.natural_key is populated (tap PR #1179, tap_grid
+# 0010), which migration 0056_aws_account_from_arn reads to fill aws.account from each row's ARN.
+requires_tap = ">=0.3.4"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
