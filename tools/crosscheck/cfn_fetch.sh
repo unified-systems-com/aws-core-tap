@@ -13,7 +13,21 @@ if [[ "$#" -ne 1 ]]; then
   exit 2
 fi
 dest="$1"
+
+# Refuse to write through a symbolic link. The destination is operator-chosen and may be a shared, predictable
+# place; a link planted there at the destination, a .part file or a target would redirect a truncation or a
+# download onto another file. Checked before every write; a fresh directory (mktemp -d) is the safer habit.
+no_link() {
+  if [[ -L "$1" ]]; then
+    echo "refusing $1: a symbolic link" >&2
+    exit 1
+  fi
+}
+
+no_link "$dest"
 mkdir -p "$dest"
+no_link "$dest/manifest.tsv.part"
+no_link "$dest/manifest.tsv"
 
 # region|URL; the commercial address is the one the "Resource specification" documentation page lists for us-east-1.
 sources=(
@@ -31,6 +45,8 @@ for entry in "${sources[@]}"; do
   region="${entry%%|*}"
   url="${entry#*|}"
   out="$dest/spec-$region.json"
+  no_link "$out"
+  no_link "$out.part"
   status="$(curl --fail --silent --show-error --location --proto '=https' --max-time 300 --compressed \
     --write-out '%{http_code}' --output "$out.part" "$url")"
   # The gzip address may hand back gzip bytes without a Content-Encoding header; unpack them if so.

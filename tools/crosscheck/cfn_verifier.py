@@ -5,6 +5,10 @@ Reads files only: per-region resource specifications (fetched beforehand by cfn_
 schema bundle, the coverage ledger, the model sources, a weighting and, optionally, the wave-0 run record. It makes
 no network call and no AWS call, and writes nothing but its report. The same inputs give the same report.
 
+The downloaded inputs (specifications, bundle, manifest, run record) are data and are never imported. The plugin
+checkout is code: the bundle is read through the ledger's own reader, loaded from <plugin>/tap_plugin/aws_core/
+ledger/sources.py, so point --plugin only at a checkout you trust. The default is this one.
+
     cfn_verifier.py --spec spec-us-gov-west-1.json [--spec ...] [--bundle CloudformationSchema.zip]
                     [--plugin <aws-core-tap root>] [--weights weights/cartography-set-v1.json]
                     [--manifest manifest.tsv] [--run-record wave0.json] [--out DIR]

@@ -339,3 +339,24 @@ class TestFetchScript:
         text = script.read_text()
         assert text.startswith("#!/usr/bin/env bash") and "set -euo pipefail" in text and "--fail" in text
         assert "python" not in text.lower()
+
+    @pytest.mark.skipif(shutil.which("bash") is None, reason="needs bash")
+    def test_refuses_planted_symlinks_before_any_download(self, tmp_path):
+        """A pre-created destination can point the script's writes at another file; it must refuse before curl runs.
+        Both shapes: the destination itself a link, and a .part file inside a real destination a link."""
+        import subprocess
+
+        script = Path(__file__).resolve().parents[1] / "cfn_fetch.sh"
+        victim = tmp_path / "victim"
+        victim.write_text("keep me")
+        link_dir = tmp_path / "dest-link"
+        link_dir.symlink_to(tmp_path / "real", target_is_directory=True)
+        (tmp_path / "real").mkdir()
+        real = tmp_path / "dest"
+        real.mkdir()
+        (real / "manifest.tsv.part").symlink_to(victim)
+        for dest in (link_dir, real):
+            r = subprocess.run(["bash", str(script), str(dest)], capture_output=True, text=True, timeout=30)
+            assert r.returncode == 1 and "symbolic link" in r.stderr, (r.returncode, r.stderr)
+        assert victim.read_text() == "keep me"  # never truncated
+        assert not (tmp_path / "real" / "manifest.tsv.part").exists()

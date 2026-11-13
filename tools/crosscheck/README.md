@@ -77,7 +77,11 @@ ledger already reads (`cfn_reader.read_bundle` calls the ledger's own `load_cfn_
 under the working directory or the temporary directory, as for the ledger). The run record (`--run-record`) must
 lie inside the plugin checkout (`--plugin`, this repository by default) or the working directory; a record kept
 elsewhere is copied in first. Both limits exist because the paths come from the command line and the tool reads
-and hashes whatever they name.
+and hashes whatever they name. The downloaded inputs are data and are never imported; the plugin checkout is
+code, since the bundle is read through the ledger's own reader loaded from its `sources.py`, so `--plugin` must
+name a checkout you trust (the default is this repository). `cfn_fetch.sh` refuses a destination, a `.part` file
+or a target that is already a symbolic link, so a planted link in a shared `/tmp` cannot redirect its writes; a
+fresh directory (`mktemp -d`) is the safer habit.
 
     cfn_fetch.sh /tmp/cfn-specs
     python3 -I cfn_verifier.py --spec /tmp/cfn-specs/spec-us-gov-west-1.json --spec /tmp/cfn-specs/spec-us-east-1.json \
