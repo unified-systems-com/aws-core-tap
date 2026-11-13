@@ -184,7 +184,7 @@ def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
     from tap_grid.models import Entity
     from tap_grid.write_guard import unguarded_write
 
-    migration = importlib.import_module("tap_plugin.aws_core.migrations.0054_rename_aws_dimensions")
+    migration = importlib.import_module("tap_plugin.aws_core.migrations.0055_rename_aws_dimensions")
     with unguarded_write():
         ours = Entity.objects.create(
             entity_type="aws_core__aws_vpc",

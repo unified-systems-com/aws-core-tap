@@ -66,7 +66,7 @@ def rename_dimensions(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("aws_core", "0053_region_unique_natural_keys"),
+        ("aws_core", "0054_lb_listener_rule_nodes"),
     ]
 
     operations = [

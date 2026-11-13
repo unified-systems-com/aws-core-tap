@@ -14,7 +14,7 @@ class ElbClassicListener(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ELB Classic Listener"
     ENTITY_DESCRIPTION: ClassVar[str] = "A Classic load balancer listener."
     ENTITY_ICON: ClassVar[str] = "aws-elb"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): a Classic listener has no ARN or id, so the key is
     # <partition>:<account>:<region>:<load balancer name>:<protocol>:<load balancer port>. The load balancer's name is
     # unique within its account and region, and the listener by its protocol and port (aws-core-tap#224's convention).
