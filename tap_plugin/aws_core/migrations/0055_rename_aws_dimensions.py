@@ -1,9 +1,12 @@
-"""Rename aws_core's dimension keys on its existing rows (George, 2026-11-12, aws-build Q55a, Q56).
+"""Rename aws_core's dimension keys on its existing rows (George, 2026-11-12, aws-build Q55a, Q56, Q60a).
 
 - ``tap.cloud`` becomes ``tap.computing.cloud``. computing_core owns the cloud dimension and keeps the same Dimension
   node id, so this is a rename of the key, not a new dimension.
 - ``cloud`` is dropped. It carried ``"aws"``, the same fact, and is retired.
-- ``aws_account`` becomes ``aws.account`` and ``aws_region`` becomes ``aws.region``, the same nodes renamed.
+- ``aws_region`` becomes ``aws.region``, the same node renamed.
+- ``aws_account`` is dropped, not renamed (Q60a). Its values name the account that observed a resource, and
+  ``aws.account`` now means the account that owns it (Q57). Until the next collection stamps the owner, a row has no
+  ``aws.account``, and the falsifiers answer ``scope_unknown`` for it, which is fail-closed.
 
 Why this touches the spine table: dimensions live on ``tap_entity.dimensions``, not on aws_core's typed tables. Each
 statement is limited to aws_core's own rows (node rows whose ``entity_type`` starts ``aws_core__``, and edge rows,
@@ -12,8 +15,7 @@ old key. It moves only that key's value and leaves every other dimension as it w
 key keeps that value. Run twice, it changes nothing the second time. It runs on today's name-keyed map, before
 core's dimension-map reshape (tap#711).
 
-The values themselves are not rewritten: ``aws.account`` now means the owning account (Q57), and the next collection
-re-stamps it. Reversing is a no-op.
+No value is re-derived here. The next collection stamps ``aws.account`` with the owner. Reversing is a no-op.
 """
 
 from django.db import migrations
@@ -23,8 +25,12 @@ from django.db import migrations
 NODE_PREFIX = "aws_core__"
 EDGE_SUFFIX = "__aws_core"
 
-RENAMES = (("tap.cloud", "tap.computing.cloud"), ("aws_account", "aws.account"), ("aws_region", "aws.region"))
-DROPPED = ("cloud",)
+RENAMES = (("tap.cloud", "tap.computing.cloud"), ("aws_region", "aws.region"))
+# aws_account is dropped, not renamed (George 2026-11-12, aws-build Q60a): its values name the OBSERVING account,
+# and aws.account means the owner. Carried over, a RAM-shared row would name the receiving account as its owner and
+# pass that credential's falsifier scope check until re-collected. Dropped, the row has no aws.account, so every
+# falsifier answers scope_unknown until the next collection stamps the owner.
+DROPPED = ("cloud", "aws_account")
 
 # Constant statements; every value is a bound parameter.
 RENAME = """

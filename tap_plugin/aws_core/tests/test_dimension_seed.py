@@ -174,7 +174,7 @@ def test_cloud_is_retired_declared_but_never_written() -> None:
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-account-dimension-8")
 def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
-    """The migration renames tap.cloud, aws_account and aws_region and drops cloud, only on aws_core's own node and
+    """The migration renames tap.cloud and aws_region and drops cloud and aws_account, only on aws_core's own node and
     edge rows; a row that already carries the new key keeps it; a second run changes nothing."""
     import importlib
     from types import SimpleNamespace
@@ -208,7 +208,54 @@ def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
         migration.rename_dimensions(None, SimpleNamespace(connection=connection))
     for row in (ours, theirs, our_edge, their_edge):
         row.refresh_from_db()
-    assert ours.dimensions == {"tap.computing.cloud": "aws", "aws.account": "acct-a", "aws.region": "us-east-1"}
+    # aws_account is dropped, not carried into aws.account (Q60a): it named the observer, not the owner.
+    assert ours.dimensions == {"tap.computing.cloud": "aws", "aws.region": "us-east-1"}
     assert our_edge.dimensions == {"aws.region": "kept"}, "an edge's existing new key is kept; the old one goes"
     assert theirs.dimensions == {"cloud": "aws"}, "another plugin's rows are not aws_core's to change"
     assert their_edge.dimensions == {"cloud": "aws"}
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-core-account-dimension-9")
+def test_a_migrated_row_has_no_owner_until_re_collected_so_its_falsifier_fails_closed() -> None:
+    """Q60a: an old aws_account value named the OBSERVER. A RAM-shared subnet seen by the receiving account carried
+    that account; renamed into aws.account it would pass the receiver's scope check and reopen the false-deletion
+    path. Dropped, the row has no aws.account, and the scope check refuses it until the owner is stamped."""
+    import importlib
+    from types import SimpleNamespace
+
+    from django.db import connection
+    from tap_plugin.aws_core.falsifiers import SubnetFalsifier, _dimensions_of
+
+    from tap_grid.falsifiers import Candidate
+    from tap_grid.models import Entity
+    from tap_grid.write_guard import unguarded_write
+
+    receiver = "111122223333"
+    migration = importlib.import_module("tap_plugin.aws_core.migrations.0055_rename_aws_dimensions")
+    with unguarded_write():
+        shared = Entity.objects.create(
+            entity_type="aws_core__aws_subnet",
+            name="shared",
+            dimensions={"tap.cloud": "aws", "aws_account": receiver, "aws_region": "us-east-1"},
+        )
+    migration.rename_dimensions(None, SimpleNamespace(connection=connection))
+    shared.refresh_from_db()
+    assert "aws.account" not in shared.dimensions and "aws_account" not in shared.dimensions
+
+    row = SimpleNamespace(entity=shared)
+    candidate = Candidate(
+        entity_id=shared.id,
+        entity_type="aws_core__aws_subnet",
+        reason="dropped_from_observation",
+        surface=0,
+        relation="fixture",
+        subject=None,
+        edge_type=None,
+        parent=None,
+        interval_first=None,
+    )
+    verdict = SubnetFalsifier(session=None, account_id=receiver)._scope_check(
+        candidate, receiver, _dimensions_of(row).get("aws.account") or None
+    )
+    assert verdict is not None and verdict.reason == "scope_unknown"

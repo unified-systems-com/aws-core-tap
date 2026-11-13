@@ -39,6 +39,15 @@ management account (``organizations._Reader._owned_by``), the same value whichev
 Organizations falsifiers do not gate on the dimension at all: their reach is organization membership, proved by
 ``_read_reach`` and compared per candidate (``_OrganizationsFalsifier.judge_all``).
 
+**AWS-managed resources are outside deletion checking (George 2026-11-12, aws-build Q60b).** A resource AWS
+itself owns (an AWS-managed IAM policy ``arn:aws:iam::aws:policy/...``, an AWS-managed prefix list) carries
+``aws.account = "aws"``, from the account segment of its ARN. That never equals a customer credential's account,
+so ``_scope_check`` answers ``scope_unknown``, and ``_AwsFalsifier.batch_falsify`` declines such a candidate before
+any credential is resolved or any AWS call is made. ``IamPolicyFalsifier`` already declined AWS-managed policies
+by their ``is_aws_managed`` field, by design. Any new falsifier for a type that can be AWS-owned must decide this
+explicitly; ``tests/test_aws_managed_guard.py`` sweeps every registered falsifier and fails if one would probe an
+AWS-owned resource.
+
 **AwsOrganization has no falsifier — nothing contains it — but AwsAccount and
 AwsOrganizationalUnit now do (tap-plugin-aws-core#50).** The distinction this section originally
 drew (the collector's *own* account/region scope is unrecoverable-abort territory, per
@@ -281,6 +290,14 @@ def _undetermined(candidate: Candidate, reason: str, note: str) -> Verdict:
     )
 
 
+#: The ``aws.account`` value of a resource AWS itself owns (an AWS-managed IAM policy, an AWS-managed prefix list):
+#: the account segment of its ARN is ``aws``. It never equals a customer credential's 12-digit account.
+AWS_MANAGED_OWNER = "aws"
+_AWS_MANAGED_NOTE = (
+    "AWS-managed resource (aws.account is 'aws'): provisioned and retired by AWS, outside deletion checking"
+)
+
+
 def _row_of(entity_id: Any) -> Any | None:
     """The typed grid row behind an entity id, or None when it cannot be read (unknown id,
     unknown type, an edge) — answered, never raised, the same discipline
@@ -413,13 +430,30 @@ class _AwsFalsifier(Falsifier):
 
     def batch_falsify(self, candidates: Sequence[Candidate], context: FalsifyContext) -> list[Verdict]:
         self._begin_run(context.batch_id)
-        try:
-            session, account_id = self._resolve()
-        except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
-            note = f"credential unavailable: {type(exc).__name__}"
-            logger.warning("[7c3e] %s: %s", type(self).__name__, note)
-            return [_undetermined(c, "errored", note) for c in candidates]
-        return self.judge_all(session, account_id, list(candidates))
+        # AWS-managed resources are outside deletion checking (George 2026-11-12, aws-build Q60b; module docstring,
+        # "AWS-managed resources"). Declined here, before any credential is resolved or any call made, so every
+        # falsifier, including one added later, refuses them the same way.
+        verdicts: dict[int, Verdict] = {}
+        probe: list[tuple[int, Candidate]] = []
+        for index, candidate in enumerate(candidates):
+            row = _row_of(candidate.entity_id)
+            if row is not None and _dimensions_of(row).get("aws.account") == AWS_MANAGED_OWNER:
+                verdicts[index] = _undetermined(candidate, "scope_unknown", _AWS_MANAGED_NOTE)
+            else:
+                probe.append((index, candidate))
+        if probe:
+            try:
+                session, account_id = self._resolve()
+            except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
+                note = f"credential unavailable: {type(exc).__name__}"
+                logger.warning("[7c3e] %s: %s", type(self).__name__, note)
+                for index, candidate in probe:
+                    verdicts[index] = _undetermined(candidate, "errored", note)
+            else:
+                judged = self.judge_all(session, account_id, [candidate for _index, candidate in probe])
+                for (index, _candidate), verdict in zip(probe, judged, strict=True):
+                    verdicts[index] = verdict
+        return [verdicts[index] for index in range(len(candidates))]
 
     def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
         return [self.judge(session, account_id, c) for c in candidates]
@@ -470,6 +504,11 @@ class _AwsFalsifier(Falsifier):
 
         The recorded account is the OWNING account (Q57), so a resource shared into this credential's
         account is refused here and a revoked share cannot read as a deletion (module docstring, "Fixed").
+
+        AWS-managed resources: their owner is ``aws``, which never equals a customer credential's account, so
+        this check answers ``scope_unknown`` for them. That is intended (Q60b): AWS provisions and retires them,
+        so their absence is not this account's deletion. ``batch_falsify`` declines them even earlier, before
+        any call, and ``IamPolicyFalsifier`` declines AWS-managed policies by ``is_aws_managed`` by design.
         """
         if not expected_account:
             return _undetermined(
