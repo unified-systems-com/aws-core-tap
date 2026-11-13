@@ -19,7 +19,8 @@ What it leaves alone: a row that already carries ``aws.account``, which is never
 is not a well-formed ARN, or is a multi-field key (joined with ``|``); and an ARN with no account field (S3 buckets, Route 53 and
 the like), whose owner only the collector can supply. Edge rows carry no ARN natural key, so they are not touched.
 It works on today's name-keyed dimensions map, as ``0055`` does, in chunks. A second run changes nothing, because
-every row it fills then carries the key. Reversing is a no-op.
+every row it fills then carries the key. Each chunk commits on its own (``atomic = False``), and the predicates
+are rechecked on the row being updated, so a value written concurrently is never overwritten. Reversing is a no-op.
 """
 
 from django.db import migrations
@@ -45,6 +46,12 @@ UPDATE tap_entity AS e
            AND natural_key ~ %(arn)s
          LIMIT %(chunk)s
        )
+   -- Rechecked on the row itself: PostgreSQL re-evaluates these after waiting on a concurrent writer's lock, so a
+   -- value a collector wrote between the id snapshot and this update is never overwritten.
+   AND starts_with(e.entity_type, %(prefix)s)
+   AND NOT (e.dimensions ? %(key)s)
+   AND strpos(e.natural_key, '|') = 0
+   AND e.natural_key ~ %(arn)s
 """
 
 
@@ -58,6 +65,11 @@ def fill_account_from_arn(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # Not one transaction around every chunk: each chunk's UPDATE commits on its own, so a large grid is not held in
+    # one long transaction on tap_entity (tap_grid 0010 does the same). An interrupted run is safe to repeat, since a
+    # filled row no longer matches.
+    atomic = False
+
     dependencies = [
         ("aws_core", "0055_rename_aws_dimensions"),
         # The spine natural key must be populated first (tap PR #1179's backfill).
