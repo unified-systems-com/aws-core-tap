@@ -13,10 +13,12 @@ What the collector adds to a run for every manifest entry that declares ``contai
    in a region the credential was positively able to read; anything less says why and, because the
    recorder derives ``reconcilable`` from these, licenses nothing.
 
-Account membership is the ``aws.account`` dimension every node carries, not an edge. ``BELONGS_TO_ACCOUNT``
-is written only when a resource's real owner differs from the account the run collects in (a resource
-shared in through AWS RAM), because there the dimension records who observed it, not who owns it
-(``req-aws-core-account-dimension``, aws-core-tap#81).
+Account membership is the ``aws.account`` dimension every node carries, not an edge: the account that OWNS the
+resource (``resource_owner``, George 2026-11-12, aws-build Q57). ``BELONGS_TO_ACCOUNT`` is still written when the
+API's own owner field (``owner_of``) names an account other than the one the run collects in (a resource shared in
+through AWS RAM), so the owning account is also a node the resource is linked to, and the footprint of the account
+that merely sees it does not host it (``req-aws-core-account-dimension``, aws-core-tap#81). The edge reads only the
+owner field, never an ARN's ``aws`` segment, so an AWS-managed resource never gains an edge to a non-account.
 
 The ownership rule is the part that keeps the RAM case honest. ``ec2:DescribeVpcs`` (and subnets, route
 tables, ...) also lists resources *shared into* the account by another. Such a resource is observed and

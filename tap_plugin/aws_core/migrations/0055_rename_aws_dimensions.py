@@ -26,7 +26,12 @@ EDGE_SUFFIX = "__aws_core"
 RENAMES = (("tap.cloud", "tap.computing.cloud"), ("aws_account", "aws.account"), ("aws_region", "aws.region"))
 DROPPED = ("cloud",)
 
-_SCOPE = """
+# Constant statements; every value is a bound parameter.
+RENAME = """
+UPDATE tap_entity AS e
+   SET dimensions = (e.dimensions - %(old)s)
+       || CASE WHEN e.dimensions ? %(new)s THEN '{}'::jsonb ELSE jsonb_build_object(%(new)s, e.dimensions -> %(old)s) END
+ WHERE e.dimensions ? %(old)s
    AND (
         starts_with(e.entity_type, %(prefix)s)
      OR (e.entity_type = 'edge'
@@ -35,24 +40,17 @@ _SCOPE = """
    )
 """
 
-RENAME = (
-    """
-UPDATE tap_entity AS e
-   SET dimensions = (e.dimensions - %(old)s)
-       || CASE WHEN e.dimensions ? %(new)s THEN '{}'::jsonb ELSE jsonb_build_object(%(new)s, e.dimensions -> %(old)s) END
- WHERE e.dimensions ? %(old)s
-"""
-    + _SCOPE
-)
-
-DROP = (
-    """
+DROP = """
 UPDATE tap_entity AS e
    SET dimensions = e.dimensions - %(old)s
  WHERE e.dimensions ? %(old)s
+   AND (
+        starts_with(e.entity_type, %(prefix)s)
+     OR (e.entity_type = 'edge'
+         AND EXISTS (SELECT 1 FROM tap_edge AS g
+                      WHERE g.entity_id = e.id AND right(g.edge_type, %(suffix_len)s) = %(suffix)s))
+   )
 """
-    + _SCOPE
-)
 
 
 def rename_dimensions(apps, schema_editor):
