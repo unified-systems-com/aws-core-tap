@@ -21,6 +21,7 @@ import argparse
 import collections
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -68,6 +69,21 @@ def _sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def _confined(path: Path, roots: tuple[Path, ...], what: str) -> Path:
+    """``path`` resolved, required to lie inside one of ``roots``. The path comes from the command line, and without
+    this a ``..`` or an absolute path would have the verifier read, hash and report on any file its user can read.
+    A symlink is refused before resolving, so a link inside a root cannot point out of it. Same shape as the
+    ledger's own confinement (tap_plugin/aws_core/ledger/sources.py)."""
+    if path.is_symlink():
+        raise ValueError(f"{what} is a symbolic link; refused: {clean(path.name)}")
+    real = os.path.realpath(path)
+    for root in roots:
+        base = os.path.realpath(root)
+        if real == base or real.startswith(base + os.sep):
+            return Path(real)
+    raise ValueError(f"{what} must lie inside the plugin checkout or the working directory: {clean(path.name)}")
+
+
 def region_of(path: Path) -> str:
     m = re.match(r"^spec-(.+)\.json$", path.name)
     return clean(m.group(1) if m else path.stem)
@@ -84,8 +100,11 @@ def outcome_class(outcomes: list[str]) -> str | None:
     return "other"
 
 
-def read_record(path: Path) -> dict[str, Any]:
-    doc = json.loads(cfn_reader._read_file(path, 64 << 20))
+def read_record(path: Path, plugin: Path) -> dict[str, Any]:
+    """The run record named on the command line, which must lie inside the plugin checkout or the working directory
+    (a record kept elsewhere is copied in). Returns its digest, partition, regions, size and outcomes per entity type."""
+    p = _confined(Path(path), (Path(plugin), Path.cwd()), "the run record")
+    doc = json.loads(cfn_reader._read_file(p, 64 << 20))
     if not isinstance(doc, dict) or not isinstance(doc.get("results"), list) or not isinstance(doc.get("run"), dict):
         raise cfn_reader.CfnReadError("the run record has no results list and run object")
     by_entity: dict[str, list[str]] = collections.defaultdict(list)
@@ -93,7 +112,7 @@ def read_record(path: Path) -> dict[str, Any]:
         by_entity[clean(r["entity_type"])].append(clean(r["outcome"]))
     run = doc["run"]
     return {
-        "sha256": _sha(Path(path)),
+        "sha256": _sha(p),
         "partition": clean(run.get("partition", "")),
         "regions": sorted(clean(x) for x in run.get("regions", [])),
         "entries": len(doc["results"]),
@@ -354,7 +373,7 @@ def run(plugin: Path, spec_paths: list[Path], weights_path: Path, bundle_path: P
     if primary not in specs:
         raise cfn_reader.CfnReadError(f"primary region {clean(primary)} has no specification loaded")
     bundle = cfn_reader.read_bundle(plugin, bundle_path) if bundle_path else None
-    record = read_record(record_path) if record_path else None
+    record = read_record(record_path, plugin) if record_path else None
     manifest = cfn_reader.read_manifest(manifest_path) if manifest_path else None
     tap = tap_reader.read(plugin)
     w = weighting.load(weights_path)
@@ -480,7 +499,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--plugin", type=Path, default=HERE.parents[1], help="aws-core-tap checkout (default: this one)")
     ap.add_argument("--weights", type=Path, default=HERE / "weights" / "cartography-set-v1.json")
     ap.add_argument("--manifest", type=Path, default=None, help="manifest.tsv written by cfn_fetch.sh")
-    ap.add_argument("--run-record", type=Path, default=None, help="a wave-0 run record (tools/validate/runs/*.json)")
+    ap.add_argument("--run-record", type=Path, default=None, help="a wave-0 run record (tools/validate/runs/*.json); must lie inside the plugin checkout or the working directory")
     ap.add_argument("--primary-region", default=None, help="region whose specification the property comparison prefers")
     ap.add_argument("--out", type=Path, default=None, help="directory for report.json and report.md")
     ap.add_argument("--baseline", type=Path, default=None, help="an earlier report.json to diff against")

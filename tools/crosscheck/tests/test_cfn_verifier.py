@@ -92,7 +92,9 @@ def world(tmp_path):
     east = _j(tmp_path / "spec-us-gov-east-1.json", spec_doc({"AWS::EC2::Subnet": SUBNET}, version="271.0.0"))
     com = _j(tmp_path / "spec-us-east-1.json", spec_doc({"AWS::RDS::DBInstance": RDS, "AWS::EC2::Subnet": SUBNET, "AWS::Extra::Thing": EXTRA}))
     bundle = make_bundle(tmp_path / "bundle")
-    rec = _j(tmp_path / "rec.json", record({"aws_core__aws_rds_instance": "ok", "aws_core__aws_subnet": "unsupported", "aws_core__aws_extra": "empty", "aws_core__aws_hand": "unsupported"}))
+    # Inside the plugin, where real records live (tools/validate/runs): the verifier refuses a record outside the
+    # plugin checkout or the working directory, and tmp_path is neither.
+    rec = _j(plugin / "tools" / "validate" / "runs" / "rec.json", record({"aws_core__aws_rds_instance": "ok", "aws_core__aws_subnet": "unsupported", "aws_core__aws_extra": "empty", "aws_core__aws_hand": "unsupported"}))
     return {"plugin": plugin, "specs": [west, east, com], "bundle": bundle, "rec": rec, "tmp": tmp_path}
 
 
@@ -188,6 +190,49 @@ class TestAvailability:
         assert r["availability"]["backtest"]["applicable"] is False
         flags = {c["flag"] for c in r["availability"]["contradictions"]}
         assert "tier-both-but-specification-lacks-in-gov" in flags  # AWS::Hand::Written
+
+
+class TestRecordPath:
+    """--run-record is confined to the plugin checkout or the working directory: the path comes from the command line,
+    and the verifier reads and hashes whatever it names (SonarCloud S8707 on _sha)."""
+
+    ONE = {"aws_core__aws_rds_instance": "ok"}
+
+    @staticmethod
+    def _cwd(tmp_path, monkeypatch) -> Path:
+        cwd = tmp_path / "cwd"
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+        return cwd
+
+    def test_absolute_path_outside_both_refused(self, world, tmp_path, monkeypatch):
+        self._cwd(tmp_path, monkeypatch)
+        outside = _j(tmp_path / "elsewhere" / "rec.json", record(self.ONE))
+        with pytest.raises(ValueError, match="plugin checkout or the working directory"):
+            go(world, record_path=outside)
+
+    def test_dotdot_escape_refused(self, world, tmp_path, monkeypatch):
+        self._cwd(tmp_path, monkeypatch)
+        _j(tmp_path / "escape.json", record(self.ONE))
+        sneaky = world["plugin"] / "tools" / "validate" / "runs" / ".." / ".." / ".." / ".." / "escape.json"
+        assert sneaky.is_file()  # the file exists; only where the path leads is wrong
+        with pytest.raises(ValueError, match="plugin checkout or the working directory"):
+            go(world, record_path=sneaky)
+
+    def test_symlink_inside_plugin_refused(self, world, tmp_path, monkeypatch):
+        self._cwd(tmp_path, monkeypatch)
+        real = _j(tmp_path / "outside.json", record(self.ONE))
+        link = world["plugin"] / "tools" / "validate" / "runs" / "link.json"
+        link.symlink_to(real)
+        with pytest.raises(ValueError, match="symbolic link"):
+            go(world, record_path=link)
+
+    def test_working_directory_accepted(self, world, tmp_path, monkeypatch):
+        cwd = self._cwd(tmp_path, monkeypatch)
+        _j(cwd / "rec.json", record(self.ONE))
+        for p in (cwd / "rec.json", Path("rec.json")):  # absolute and relative to the working directory
+            r = go(world, record_path=p)
+            assert r["availability"]["backtest"]["applicable"] and r["inputs"]["run_record"]["entries"] == 1
 
 
 class TestProperties:

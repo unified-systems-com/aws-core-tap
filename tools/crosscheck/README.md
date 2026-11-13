@@ -74,7 +74,10 @@ network or AWS call. The files come from `cfn_fetch.sh <dir>` (public downloads 
 us-gov-east-1 and commercial us-east-1 resource specifications, `curl --fail`, a `manifest.tsv` of URL, HTTP
 status, sha256, size and `ResourceSpecificationVersion`) and from the CloudFormation schema bundle the coverage
 ledger already reads (`cfn_reader.read_bundle` calls the ledger's own `load_cfn_bundle`, so the bundle must lie
-under the working directory or the temporary directory, as for the ledger).
+under the working directory or the temporary directory, as for the ledger). The run record (`--run-record`) must
+lie inside the plugin checkout (`--plugin`, this repository by default) or the working directory; a record kept
+elsewhere is copied in first. Both limits exist because the paths come from the command line and the tool reads
+and hashes whatever they name.
 
     cfn_fetch.sh /tmp/cfn-specs
     python3 -I cfn_verifier.py --spec /tmp/cfn-specs/spec-us-gov-west-1.json --spec /tmp/cfn-specs/spec-us-east-1.json \
