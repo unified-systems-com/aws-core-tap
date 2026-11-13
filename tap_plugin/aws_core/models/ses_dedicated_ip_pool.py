@@ -14,7 +14,7 @@ class SesDedicatedIpPool(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SES Dedicated Ip Pool"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SES Dedicated Ip Pool."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_dedicated_ip_pool_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ses:dedicated-ip-pool"

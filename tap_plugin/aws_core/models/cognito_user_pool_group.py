@@ -14,7 +14,7 @@ class CognitoUserPoolGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Cognito User Pool Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "A group in an Amazon Cognito user pool."
     ENTITY_ICON: ClassVar[str] = "aws-cognito"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The user pool id and the group name together (pool:group): a group name is unique only within a pool.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("group_key",)
 

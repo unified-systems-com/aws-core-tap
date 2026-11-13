@@ -14,7 +14,7 @@ class AutoscalingLaunchConfiguration(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Auto Scaling Launch Configuration"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Auto Scaling Launch Configuration."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LaunchConfigurationARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("autoscaling_launch_configuration_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "autoscaling:launchConfiguration"

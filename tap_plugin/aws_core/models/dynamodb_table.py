@@ -14,7 +14,7 @@ class DynamoDbTable(BaseModel):
     ENTITY_NAME: ClassVar[str] = "DynamoDB Table"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon DynamoDB NoSQL table."
     ENTITY_ICON: ClassVar[str] = "aws-dynamodb"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The table's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("table_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "dynamodb:table"

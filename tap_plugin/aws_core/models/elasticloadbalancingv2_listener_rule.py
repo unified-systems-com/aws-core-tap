@@ -14,7 +14,7 @@ class Elasticloadbalancingv2ListenerRule(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ElasticLoadBalancingV2 Listener Rule"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ElasticLoadBalancingV2 Listener Rule."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RuleArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("elasticloadbalancingv2_listener_rule_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:listener-rule/app"

@@ -14,7 +14,7 @@ class DaxParameterGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS DAX Parameter Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS DAX Parameter Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the parameter group name: unique within the account and Region, and the Service Authorization Reference for dax defines only a cache (cluster) ARN, no parameter group ARN. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dax_parameter_group_id",)
 

@@ -14,7 +14,7 @@ class Wafv2RegexPatternSet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "WAFv2 Regex Pattern Set"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WAF (WAFv2) regex pattern set."
     ENTITY_ICON: ClassVar[str] = "aws-security-hub"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The pattern set's ARN: a name is unique only within an account, region and scope.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("regex_pattern_set_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "wafv2:regexpatternset"

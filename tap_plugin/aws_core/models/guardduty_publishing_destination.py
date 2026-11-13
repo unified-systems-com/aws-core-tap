@@ -14,7 +14,7 @@ class GuarddutyPublishingDestination(BaseModel):
     ENTITY_NAME: ClassVar[str] = "GuardDuty Publishing Destination"
     ENTITY_DESCRIPTION: ClassVar[str] = "A GuardDuty findings export destination."
     ENTITY_ICON: ClassVar[str] = "aws-guardduty"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'destination' and the destination id: a destination id is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("destination_key",)
     ARN_RESOURCE: ClassVar[str | None] = "guardduty:publishingDestination"

@@ -14,7 +14,7 @@ class ConfigOrganizationRule(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Config Organization Rule"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Config rule deployed to the accounts of an organization."
     ENTITY_ICON: ClassVar[str] = "aws-config"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The organization rule's ARN: a name is unique only within the organization.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:OrganizationConfigRule"

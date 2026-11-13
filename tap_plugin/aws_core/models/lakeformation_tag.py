@@ -14,7 +14,7 @@ class LakeformationTag(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS LakeFormation Tag"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS LakeFormation Tag."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The LF-tag's key, the CloudFormation primary identifier of the type; the item carries no ARN. Unique within the account and region. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("lakeformation_tag_key",)
 

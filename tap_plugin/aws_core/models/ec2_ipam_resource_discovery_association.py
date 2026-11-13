@@ -14,7 +14,7 @@ class Ec2IpamResourceDiscoveryAssociation(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 IPAM Resource Discovery Association"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 IPAM Resource Discovery Association."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (IpamResourceDiscoveryAssociationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_ipam_resource_discovery_association_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:ipam-resource-discovery-association"

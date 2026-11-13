@@ -14,7 +14,7 @@ class InternetGateway(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Internet Gateway"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon VPC internet gateway."
     ENTITY_ICON: ClassVar[str] = "aws-internet-gateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The internet gateway ID (igw-…). AWS assigns it, but
     # does not document it as unique across accounts and regions, so a clash there would surface as
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN

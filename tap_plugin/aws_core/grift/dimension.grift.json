@@ -6,31 +6,17 @@
   "batches": [
     {
       "batch_entity": {
-        "entity_id": "01a1d109-3ae5-77e3-857e-41a8da8c041c",
+        "entity_id": "01a1d1dc-3890-73d2-beb6-eb17ef63011a",
         "entity_type": "batch",
-        "name": "AWS dimensions v0.2.0",
+        "name": "AWS dimensions v0.4.0",
         "dimensions": {}
       },
       "batch_node": {
         "source": "plugins.aws_core",
-        "name": "AWS dimensions v0.2.0",
-        "description": "Declares every dimension aws_core writes: tap.cloud (the model and edge default) and cloud, aws_account and aws_region (stamped by the collector on every node it writes). v0.2.0 renames the v0.1.0 node from 'tap.cloud: aws' to its key 'tap.cloud' (same entity id) and adds the three collector keys, so each key in use has a declared Dimension node before core's dimension-map reshape (tap#708, #711). A new batch id, because an already-imported batch is skipped on re-seed."
+        "name": "AWS dimensions v0.4.0",
+        "description": "Declares the dimension keys aws_core writes or has written. aws.account (the account that owns a resource) and aws.region (the region it was read through, or global) are stamped by the collector on every node and edge it writes; cloud is retired. v0.4.0 (George 2026-11-12, aws-build Q56): aws_account and aws_region are renamed aws.account and aws.region, keeping their ids; tap.cloud moves to computing_core as tap.computing.cloud, which keeps that id, so this seed no longer declares it; cloud stays declared, retired and merged into tap.computing.cloud, so a grid whose rows still carry it resolves it. A new batch id, because an already-imported batch is skipped on re-seed."
       },
       "nodes": [
-        {
-          "entity": {
-            "entity_id": "019dd143-3e8f-73e4-b0fa-e62ac923065d",
-            "entity_type": "dimension",
-            "name": "tap.cloud",
-            "dimensions": {
-              "tap.meta": "dimension"
-            }
-          },
-          "node": {
-            "name": "tap.cloud",
-            "description": "Which cloud provider an entity belongs to. Every aws_core model and edge type declares it as a default dimension with the value \"aws\", so every AWS node and edge carries {\"tap.cloud\": \"aws\"} from the moment it is created."
-          }
-        },
         {
           "entity": {
             "entity_id": "01a1d109-3ae5-77e3-857e-41a95eabf4b1",
@@ -42,35 +28,35 @@
           },
           "node": {
             "name": "cloud",
-            "description": "The cloud provider, as the aws_core collector stamps it on every node it writes in a run (value \"aws\"), alongside aws_account and aws_region. It carries the same fact as tap.cloud, which comes from the model defaults rather than the collector. Declared under its current name; whether to keep both is an open question."
+            "description": "Retired 2026-11-12; never stamped. It carried aws, the same fact as tap.computing.cloud (the type default, owned by computing_core), into which it is merged. Kept declared so a grid whose rows still carry the key resolves it until those rows are rewritten."
           }
         },
         {
           "entity": {
             "entity_id": "01a1d109-3ae5-77e3-857e-41aac951274e",
             "entity_type": "dimension",
-            "name": "aws_account",
+            "name": "aws.account",
             "dimensions": {
               "tap.meta": "dimension"
             }
           },
           "node": {
-            "name": "aws_account",
-            "description": "The AWS account a resource is in: the twelve-digit account id of the collector's credential (STS GetCallerIdentity), stamped on every node and edge the collector writes. It replaces a BELONGS_TO_ACCOUNT edge from every resource, which would make the account node a hub (req-aws-core-account-dimension). For a resource shared in from another account through AWS RAM it records the observing account, and the BELONGS_TO_ACCOUNT edge names the owner. The falsifiers compare it with their own credential's account to decide whether they can speak to a resource's absence."
+            "name": "aws.account",
+            "description": "The AWS account that OWNS a resource (George 2026-11-12, aws-build Q57), stamped by the aws_core collector on every node and edge it writes. Filled from the account segment of the resource's own ARN (aws for AWS-managed resources), else an explicit owner field (OwnerId, ResourceOwnerId), else the account whose credential read it, which owns everything it lists except resources shared in. Organizations nodes: an account carries its own id; an OU, root or organization carries the management account. Open. Renamed from aws_account in v0.4.0, same id."
           }
         },
         {
           "entity": {
             "entity_id": "01a1d109-3ae5-77e3-857e-41abf1031159",
             "entity_type": "dimension",
-            "name": "aws_region",
+            "name": "aws.region",
             "dimensions": {
               "tap.meta": "dimension"
             }
           },
           "node": {
-            "name": "aws_region",
-            "description": "The AWS region a resource was read in (for example us-east-1 or us-gov-west-1), stamped by the collector on every node it writes. A global-scope resource, and the Organizations tree, carry the value \"global\". The falsifiers read it as the region to probe."
+            "name": "aws.region",
+            "description": "The AWS region a resource was read through, stamped by the aws_core collector on every node and edge it writes; global for global-scope resources and the Organizations tree. Open. Renamed from aws_region in v0.4.0, same id."
           }
         }
       ],

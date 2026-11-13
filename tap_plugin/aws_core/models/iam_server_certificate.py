@@ -16,7 +16,7 @@ class IamServerCertificate(BaseModel):
     ENTITY_NAME: ClassVar[str] = "IAM Server Certificate"
     ENTITY_DESCRIPTION: ClassVar[str] = "A server certificate stored in AWS IAM."
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The certificate's ARN: a name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificate_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:server-certificate"

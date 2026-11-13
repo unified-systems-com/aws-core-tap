@@ -14,7 +14,7 @@ class Ec2InstanceEventWindow(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Instance Event Window"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Instance Event Window."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (InstanceEventWindowId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_instance_event_window_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:instance-event-window"

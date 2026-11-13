@@ -14,7 +14,7 @@ class Ec2LocalGatewayRouteTable(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Local Gateway Route Table"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Local Gateway Route Table."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LocalGatewayRouteTableArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("local_gateway_route_table_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:local-gateway-route-table"

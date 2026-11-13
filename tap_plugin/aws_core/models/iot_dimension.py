@@ -14,7 +14,7 @@ class IotDimension(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS IoT Dimension"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS IoT Dimension."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The dimension's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_dimension_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iot:dimension"

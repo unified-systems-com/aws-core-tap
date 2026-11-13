@@ -14,7 +14,7 @@ class ApigatewayAuthorizer(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway Authorizer"
     ENTITY_DESCRIPTION: ClassVar[str] = "An authorizer of an Amazon API Gateway REST, HTTP or WebSocket API."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The authorizer's ARN (the API's ARN plus /authorizers/<id>).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("authorizer_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:Authorizer"

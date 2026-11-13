@@ -23,7 +23,7 @@ class EventbridgeRule(BaseModel):
     ENTITY_NAME: ClassVar[str] = "EventBridge Rule"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon EventBridge rule."
     ENTITY_ICON: ClassVar[str] = "aws-eventbridge"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The rule's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "events:rule-on-default-event-bus"

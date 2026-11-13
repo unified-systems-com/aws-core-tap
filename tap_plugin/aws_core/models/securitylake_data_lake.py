@@ -14,7 +14,7 @@ class SecuritylakeDataLake(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SecurityLake Data Lake"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SecurityLake Data Lake."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (dataLakeArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("securitylake_data_lake_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "securitylake:data-lake"

@@ -14,7 +14,7 @@ class ConfigConnector(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Config Connector"
     ENTITY_DESCRIPTION: ClassVar[str] = "A connector that lets AWS Config read resources in another cloud."
     ENTITY_ICON: ClassVar[str] = "aws-config"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The connector's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connector_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:Connector"

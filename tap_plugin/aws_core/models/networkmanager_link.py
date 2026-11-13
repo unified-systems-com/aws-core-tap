@@ -14,7 +14,7 @@ class NetworkmanagerLink(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS NetworkManager Link"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS NetworkManager Link."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (LinkArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("networkmanager_link_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "networkmanager:link"

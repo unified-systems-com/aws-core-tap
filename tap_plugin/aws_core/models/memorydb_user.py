@@ -14,7 +14,7 @@ class MemorydbUser(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS MemoryDB User"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS MemoryDB User."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("memorydb_user_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "memorydb:user"

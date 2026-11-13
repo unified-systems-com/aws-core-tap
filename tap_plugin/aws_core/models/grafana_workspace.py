@@ -14,7 +14,7 @@ class GrafanaWorkspace(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Grafana Workspace"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Grafana Workspace."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The service-assigned id (id): the service generates it when the object is created and it does not change.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("grafana_workspace_id",)
     ARN_RESOURCE: ClassVar[str | None] = "grafana:workspace"

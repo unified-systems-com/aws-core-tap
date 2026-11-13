@@ -14,7 +14,7 @@ class WafregionalWebAcl(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS WAFRegional Web ACL"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WAFRegional Web ACL."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (webacl/<WebACLId>): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wafregional_web_acl_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "waf-regional:webacl"

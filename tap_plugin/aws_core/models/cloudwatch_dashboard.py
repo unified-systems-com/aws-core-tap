@@ -14,7 +14,7 @@ class CloudwatchDashboard(BaseModel):
     ENTITY_NAME: ClassVar[str] = "CloudWatch Dashboard"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon CloudWatch dashboard."
     ENTITY_ICON: ClassVar[str] = "aws-cloudwatch"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The dashboard's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dashboard_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:dashboard"

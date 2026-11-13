@@ -14,7 +14,7 @@ class EcsGateway(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ECS Gateway"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ECS Gateway."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (gatewayArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ecs_gateway_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ecs:gateway"

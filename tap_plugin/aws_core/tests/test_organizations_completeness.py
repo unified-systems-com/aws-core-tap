@@ -75,7 +75,7 @@ ROOT_ID = "r-0vv8"
 MGMT = "111111111111"
 SECURITY = "222222222222"
 AUDIT = "333333333333"
-DIMENSIONS = {"cloud": "aws", "aws_account": MGMT, "aws_region": "global"}
+DIMENSIONS = {"aws.account": MGMT, "aws.region": "global"}
 REGION = "us-gov-west-1"
 
 OU_1 = "ou-0vv8-level1aa"
@@ -846,7 +846,7 @@ def _row(entity_type: str, payload: dict[str, Any]) -> uuid.UUID:
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"cloud": "aws", "aws_account": MGMT, "aws_region": "global"}
+    row.entity.dimensions = {"aws.account": MGMT, "aws.region": "global"}
     row.entity.save(update_fields=["dimensions"])
     return entity_id
 

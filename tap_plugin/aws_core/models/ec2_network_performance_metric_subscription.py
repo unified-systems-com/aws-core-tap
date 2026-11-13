@@ -14,7 +14,7 @@ class Ec2NetworkPerformanceMetricSubscription(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Network Performance Metric Subscription"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Network Performance Metric Subscription."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): Source, destination, metric and statistic joined with slashes: the CloudFormation primary identifier of the type is that quadruple, and the item carries no id or ARN. Unique within the account and region. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_network_performance_metric_subscription_key",)
 

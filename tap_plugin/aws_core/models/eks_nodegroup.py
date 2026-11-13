@@ -14,7 +14,7 @@ class EksNodegroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EKS Nodegroup"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EKS Nodegroup."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (nodegroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("eks_nodegroup_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "eks:nodegroup"

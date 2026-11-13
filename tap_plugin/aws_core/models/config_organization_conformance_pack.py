@@ -14,7 +14,7 @@ class ConfigOrganizationConformancePack(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Config Organization Conformance Pack"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Config conformance pack deployed to the accounts of an organization."
     ENTITY_ICON: ClassVar[str] = "aws-config"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The organization conformance pack's ARN: a name is unique only within the organization.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pack_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:OrganizationConformancePack"

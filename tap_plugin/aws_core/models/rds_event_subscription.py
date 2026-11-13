@@ -14,7 +14,7 @@ class RdsEventSubscription(BaseModel):
     ENTITY_NAME: ClassVar[str] = "RDS Event Subscription"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS event subscription."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subscription's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("event_subscription_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:es"

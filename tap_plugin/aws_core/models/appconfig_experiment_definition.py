@@ -14,7 +14,7 @@ class AppconfigExperimentDefinition(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS AppConfig Experiment Definition"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS AppConfig Experiment Definition."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("appconfig_experiment_definition_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "appconfig:experimentdefinition"

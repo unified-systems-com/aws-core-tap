@@ -14,7 +14,7 @@ class EcsService(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ECS Service"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon ECS service managing task instances."
     ENTITY_ICON: ClassVar[str] = "aws-ecs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The service's ARN: a service name is unique only within
     # its cluster.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("service_arn",)

@@ -14,7 +14,7 @@ class RedshiftClusterSecurityGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Redshift Cluster Security Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Redshift Cluster Security Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the cluster security group name: unique within the account and Region, and the item carries no ARN. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_cluster_security_group_id",)
 

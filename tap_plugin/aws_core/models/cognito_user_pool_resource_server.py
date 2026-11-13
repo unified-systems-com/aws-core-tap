@@ -14,7 +14,7 @@ class CognitoUserPoolResourceServer(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Cognito User Pool Resource Server"
     ENTITY_DESCRIPTION: ClassVar[str] = "An OAuth resource server of an Amazon Cognito user pool."
     ENTITY_ICON: ClassVar[str] = "aws-cognito"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The user pool id and the server identifier together (pool:identifier): an identifier is unique only within a pool.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("server_key",)
 

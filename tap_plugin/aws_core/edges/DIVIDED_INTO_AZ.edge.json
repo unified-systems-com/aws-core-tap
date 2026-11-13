@@ -8,6 +8,6 @@
     "discriminators": []
   },
   "default_dimensions": {
-    "tap.cloud": "aws"
+    "tap.computing.cloud": "aws"
   }
 }

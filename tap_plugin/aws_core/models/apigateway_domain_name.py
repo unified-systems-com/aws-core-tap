@@ -14,7 +14,7 @@ class ApigatewayDomainName(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway Domain Name"
     ENTITY_DESCRIPTION: ClassVar[str] = "A custom domain name of Amazon API Gateway REST, HTTP or WebSocket APIs."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The domain name's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("domain_name_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:DomainName"

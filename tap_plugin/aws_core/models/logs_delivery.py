@@ -14,7 +14,7 @@ class LogsDelivery(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Logs Delivery"
     ENTITY_DESCRIPTION: ClassVar[str] = "A CloudWatch Logs delivery."
     ENTITY_ICON: ClassVar[str] = "aws-cloudwatch"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("delivery_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "logs:delivery"

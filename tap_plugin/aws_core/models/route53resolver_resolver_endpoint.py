@@ -14,7 +14,7 @@ class Route53resolverResolverEndpoint(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Route53Resolver Resolver Endpoint"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Route53Resolver Resolver Endpoint."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53resolver_resolver_endpoint_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "route53resolver:resolver-endpoint"

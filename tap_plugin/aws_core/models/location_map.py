@@ -14,7 +14,7 @@ class LocationMap(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Location Map"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Location Map."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:map/{MapName} (the AWS Service Authorization Reference 'geo' map resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_map_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:map"

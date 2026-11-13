@@ -14,7 +14,7 @@ class Ec2LocalGatewayRouteTableVpcAssociation(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Local Gateway Route Table VPC Association"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Local Gateway Route Table VPC Association."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (LocalGatewayRouteTableVpcAssociationId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_local_gateway_route_table_vpc_association_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:local-gateway-route-table-vpc-association"

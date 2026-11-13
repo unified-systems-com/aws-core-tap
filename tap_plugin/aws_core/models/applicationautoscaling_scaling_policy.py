@@ -14,7 +14,7 @@ class ApplicationautoscalingScalingPolicy(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ApplicationAutoScaling Scaling Policy"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ApplicationAutoScaling Scaling Policy."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The scaling policy's ARN (PolicyARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("applicationautoscaling_scaling_policy_arn",)
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,

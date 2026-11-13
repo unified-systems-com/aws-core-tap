@@ -14,7 +14,7 @@ class SecurityhubHubV2(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SecurityHub Hub V2"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SecurityHub Hub V2."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (HubV2Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("securityhub_hub_v2_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "securityhub:hubv2"

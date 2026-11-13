@@ -14,7 +14,7 @@ class Resiliencehubv2ServiceFunction(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ResilienceHubV2 Service Function"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ResilienceHubV2 Service Function."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the CloudFormation primary identifier of AWS::ResilienceHubV2::ServiceFunction, ServiceArn and ServiceFunctionId joined with '|': a function id is scoped to its service and the item carries no ARN of its own
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("resiliencehubv2_service_function_id",)
 

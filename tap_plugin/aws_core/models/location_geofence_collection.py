@@ -14,7 +14,7 @@ class LocationGeofenceCollection(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Location Geofence Collection"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Location Geofence Collection."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:geofence-collection/{CollectionName} (the AWS Service Authorization Reference 'geo' geofence-collection resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_geofence_collection_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:geofence-collection"

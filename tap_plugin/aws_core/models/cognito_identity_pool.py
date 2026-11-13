@@ -14,7 +14,7 @@ class CognitoIdentityPool(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Cognito Identity Pool"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon Cognito identity pool."
     ENTITY_ICON: ClassVar[str] = "aws-cognito"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The pool's id (region:uuid), unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("identity_pool_id",)
     ARN_RESOURCE: ClassVar[str | None] = "cognito-identity:identitypool"

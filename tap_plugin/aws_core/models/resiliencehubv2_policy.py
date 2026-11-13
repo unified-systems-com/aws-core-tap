@@ -14,7 +14,7 @@ class Resiliencehubv2Policy(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ResilienceHubV2 Policy"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ResilienceHubV2 Policy."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (policyArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "resiliencehub:policy"

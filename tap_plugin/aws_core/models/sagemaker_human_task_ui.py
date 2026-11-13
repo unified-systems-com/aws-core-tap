@@ -14,7 +14,7 @@ class SagemakerHumanTaskUi(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SageMaker Human Task Ui"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SageMaker Human Task Ui."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (HumanTaskUiArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("human_task_ui_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sagemaker:human-task-ui"

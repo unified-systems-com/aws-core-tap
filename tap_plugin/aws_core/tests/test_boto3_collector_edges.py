@@ -22,7 +22,7 @@ MODELED = {
     "aws_core__aws_cloudwatch_log_group",
     "aws_core__aws_s3_bucket",
 }
-DIMS = {"cloud": "aws", "region": "us-east-1"}
+DIMS = {"region": "us-east-1"}
 
 
 def _node(raw_item):

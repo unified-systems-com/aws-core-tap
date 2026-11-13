@@ -16,46 +16,37 @@ no deletes" — its own docstring). A GitHub App installation can see a *subset*
 account's repositories, which is why github_core needs a whole ``Reach`` abstraction
 (``tap_plugin.github_core.reach``) to judge whether a 404 is trustworthy. aws_core's
 collector credential resolves to exactly ONE AWS account via STS ``GetCallerIdentity``
-(``collectors/boto3_collector/collector.py``), and every node it writes is stamped with
-that account on ``dimensions["aws_account"]``
-(``collectors/boto3_collector/collector.py``, the ``dimensions = {"cloud": "aws",
-"aws_account": account_id, "aws_region": region_label}`` block). So the reach question
-collapses to one equality check: does the falsifier's OWN resolved credential account match
-the candidate's recorded account? A mismatch means this credential cannot speak to this
+(``collectors/boto3_collector/collector.py``), and every node it writes is stamped with the
+account that OWNS it on ``dimensions["aws.account"]`` (``containment.resource_owner``; for
+everything an account lists except shared-in and AWS-managed resources, that is the run's own
+account). So the reach question collapses to one equality check: does the falsifier's OWN
+resolved credential account match the candidate's owning account? A mismatch means this credential cannot speak to this
 candidate's absence at all (``scope_unknown``), the same refusal ``Reach.holds_repository``
 would produce for an out-of-reach repository, without needing the full apparatus.
 
-**Known limitation, not fixed here: a revoked AWS RAM share can misread as deletion.** The
-"single-account" framing above is only exactly true for a resource this account owns outright.
-AWS RAM lets a subnet (among other types) be *shared into* an account that does not own it; a
-shared subnet still appears in this credential's own ``DescribeSubnets`` listing, so the
-collector still writes it with ``dimensions["aws_account"]`` set to the *observing* account (the
-caller identity), not the true ``OwnerId`` — which ``_scope_check`` never sees, since it compares
-against the dimension, not the probe response. If the share is later revoked rather than the
-subnet deleted, this credential starts getting ``InvalidSubnetID.NotFound`` for a subnet that
-still exists in its owner's account, and nothing here tells that apart from a real deletion —
-the same "404 means gone OR means access narrowed" ambiguity ``tap_plugin.github_core.reach``
-exists to resolve, unresolved here. Closing it for real needs an AWS-side reach concept (cross-
-referencing RAM's own share state, or comparing the probe's ``OwnerId`` against the resolved
-credential account rather than against the collector's stamped dimension) — a bigger, separate
-piece of work, named so the gap is not mistaken for an oversight.
+**Fixed: a revoked AWS RAM share no longer misreads as deletion (George 2026-11-12, aws-build Q57).** AWS RAM
+lets a subnet (among other types) be *shared into* an account that does not own it, and a shared subnet appears in
+the receiving credential's own ``DescribeSubnets`` listing. ``dimensions["aws.account"]`` now records the account
+that OWNS a resource (``containment.resource_owner``: its own ARN's account, else its ``OwnerId``-style field, else
+the listing account), so a shared-in subnet carries its owner's account. ``_scope_check`` compares the falsifying
+credential's account with that owner, so the receiving account's credential is refused as ``scope_unknown`` rather
+than reading a revoked share's ``InvalidSubnetID.NotFound`` as a deletion. Only the owner's credential can retire it.
 
-**Known limitation, not fixed here: the ``aws_account`` dimension can flap across credentials for
-one entity (flagged on tap-plugin-aws-core#50's review).** Every node this run writes — including
-an ``AwsAccount`` the Organizations walk discovers under a *management or delegated-administrator*
-credential — is stamped ``dimensions["aws_account"] = <this run's own resolved account>``
-(``collector.py``'s ``org_dimensions``), the observing credential, not necessarily the account the
-row represents. If that same account (one row, found by its natural key) is *also* collected directly, on a separate
-run, by a credential scoped to that member account itself (the ordinary manifest-driven sweep run
-against it), GRIFT's upsert (``replace_node``) overwrites the row's dimensions with THAT run's
-credential instead. ``_scope_check`` then compares whichever credential is falsifying against
-whichever run's dimension happened to write last, and a genuinely-in-scope
-``AccountFalsifier``/``OrganizationalUnitFalsifier`` candidate can read as ``UNDETERMINED
-(scope_unknown)`` until the next org-level run rewrites the dimension back. Closing it for real
-needs either a per-type stamping rule (an ``AwsAccount``/``AwsOrganizationalUnit`` node's own
-dimension should arguably be its OWN account, not the observing credential's, since the row IS
-that account) or a reach concept that does not rely on the dimension at all — a design question
-for whoever owns the dimension convention across collectors, not a fix made unilaterally here.
+**Fixed: the Organizations rows no longer flap across credentials (flagged on tap-plugin-aws-core#50's review).**
+An ``AwsAccount`` used to carry the walking credential's account, overwritten by whichever run wrote it last.
+Under owner semantics an account node carries its own id, and every other Organizations node and edge carries the
+management account (``organizations._Reader._owned_by``), the same value whichever credential walks the tree. The
+Organizations falsifiers do not gate on the dimension at all: their reach is organization membership, proved by
+``_read_reach`` and compared per candidate (``_OrganizationsFalsifier.judge_all``).
+
+**AWS-managed resources are outside deletion checking (George 2026-11-12, aws-build Q60b).** A resource AWS
+itself owns (an AWS-managed IAM policy ``arn:aws:iam::aws:policy/...``, an AWS-managed prefix list) carries
+``aws.account = "aws"``, from the account segment of its ARN. That never equals a customer credential's account,
+so ``_scope_check`` answers ``scope_unknown``, and ``_AwsFalsifier.batch_falsify`` declines such a candidate before
+any credential is resolved or any AWS call is made. ``IamPolicyFalsifier`` already declined AWS-managed policies
+by their ``is_aws_managed`` field, by design. Any new falsifier for a type that can be AWS-owned must decide this
+explicitly; ``tests/test_aws_managed_guard.py`` sweeps every registered falsifier and fails if one would probe an
+AWS-owned resource.
 
 **AwsOrganization has no falsifier — nothing contains it — but AwsAccount and
 AwsOrganizationalUnit now do (tap-plugin-aws-core#50).** The distinction this section originally
@@ -108,7 +99,7 @@ confirmed. See each class's own docstring for the specifics.
 
 **Where the region comes from (``_AwsFalsifier._regions_of``).** Every describe call is
 region-scoped and no model stores a region, but the collector stamps
-``dimensions["aws_region"]`` on every node it writes, so the dimension is the region, trusted
+``dimensions["aws.region"]`` on every node it writes, so the dimension is the region, trusted
 (``regions_trustworthy=True``): a not-found *there* is a real absence. Failing that, a subclass
 may supply ``_region_hint`` (``SubnetFalsifier`` parses its ``availability_zone`` — the leading
 ``xx-name-N`` region shape, NOT ``az[:-1]``, which mishandles a Local/Wavelength Zone such as
@@ -204,7 +195,7 @@ def _default_session() -> tuple[ProbeSession, str]:
     before any resource read).
 
     Both are needed together: the session probes, the account id is what every candidate's
-    ``aws_account`` dimension is checked against (this plugin's single-account "reach").
+    ``aws.account`` dimension is checked against (this plugin's single-account "reach").
 
     Runs the same ``resolve_partition`` gate ``Boto3Collector.run()`` does (mixed-partition
     regions, a declared-partition mismatch, an unsupported partition, or — on the assumed-role
@@ -299,6 +290,14 @@ def _undetermined(candidate: Candidate, reason: str, note: str) -> Verdict:
     )
 
 
+#: The ``aws.account`` value of a resource AWS itself owns (an AWS-managed IAM policy, an AWS-managed prefix list):
+#: the account segment of its ARN is ``aws``. It never equals a customer credential's 12-digit account.
+AWS_MANAGED_OWNER = "aws"
+_AWS_MANAGED_NOTE = (
+    "AWS-managed resource (aws.account is 'aws'): provisioned and retired by AWS, outside deletion checking"
+)
+
+
 def _row_of(entity_id: Any) -> Any | None:
     """The typed grid row behind an entity id, or None when it cannot be read (unknown id,
     unknown type, an edge) — answered, never raised, the same discipline
@@ -313,8 +312,8 @@ def _row_of(entity_id: Any) -> Any | None:
 
 
 def _dimensions_of(row: Any) -> dict[str, str]:
-    """The entity's own dimensions dict (``{"cloud": "aws", "aws_account": ..., "aws_region":
-    ...}`` as the collector stamps it), or ``{}`` when the row carries none."""
+    """The entity's own dimensions dict (``{"aws.account": ..., "aws.region": ...}`` as the
+    collector stamps it), or ``{}`` when the row carries none."""
     entity = getattr(row, "entity", None)
     dimensions = getattr(entity, "dimensions", None)
     return dict(dimensions) if isinstance(dimensions, dict) else {}
@@ -431,13 +430,30 @@ class _AwsFalsifier(Falsifier):
 
     def batch_falsify(self, candidates: Sequence[Candidate], context: FalsifyContext) -> list[Verdict]:
         self._begin_run(context.batch_id)
-        try:
-            session, account_id = self._resolve()
-        except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
-            note = f"credential unavailable: {type(exc).__name__}"
-            logger.warning("[7c3e] %s: %s", type(self).__name__, note)
-            return [_undetermined(c, "errored", note) for c in candidates]
-        return self.judge_all(session, account_id, list(candidates))
+        # AWS-managed resources are outside deletion checking (George 2026-11-12, aws-build Q60b; module docstring,
+        # "AWS-managed resources"). Declined here, before any credential is resolved or any call made, so every
+        # falsifier, including one added later, refuses them the same way.
+        verdicts: dict[int, Verdict] = {}
+        probe: list[tuple[int, Candidate]] = []
+        for index, candidate in enumerate(candidates):
+            row = _row_of(candidate.entity_id)
+            if row is not None and _dimensions_of(row).get("aws.account") == AWS_MANAGED_OWNER:
+                verdicts[index] = _undetermined(candidate, "scope_unknown", _AWS_MANAGED_NOTE)
+            else:
+                probe.append((index, candidate))
+        if probe:
+            try:
+                session, account_id = self._resolve()
+            except Exception as exc:  # noqa: BLE001 — a missing credential is an answer, not a crash
+                note = f"credential unavailable: {type(exc).__name__}"
+                logger.warning("[7c3e] %s: %s", type(self).__name__, note)
+                for index, candidate in probe:
+                    verdicts[index] = _undetermined(candidate, "errored", note)
+            else:
+                judged = self.judge_all(session, account_id, [candidate for _index, candidate in probe])
+                for (index, _candidate), verdict in zip(probe, judged, strict=True):
+                    verdicts[index] = verdict
+        return [verdicts[index] for index in range(len(candidates))]
 
     def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
         return [self.judge(session, account_id, c) for c in candidates]
@@ -446,7 +462,7 @@ class _AwsFalsifier(Falsifier):
         raise NotImplementedError
 
     def _region_hint(self, row: Any) -> str | None:
-        """A region the ROW itself implies when its ``aws_region`` dimension is absent (a type
+        """A region the ROW itself implies when its ``aws.region`` dimension is absent (a type
         whose own fields name one), or None. Trusted like the dimension: it is the resource's
         own attribute, not a guess."""
         return None
@@ -465,13 +481,13 @@ class _AwsFalsifier(Falsifier):
     def _regions_of(self, row: Any, dimensions: dict[str, str], session: ProbeSession) -> tuple[list[str], bool]:
         """``(regions to probe, regions_trustworthy)`` for one candidate.
 
-        The row's own recorded region (the ``aws_region`` dimension the collector stamps, then
+        The row's own recorded region (the ``aws.region`` dimension the collector stamps, then
         ``_region_hint``) is ONE region and trustworthy: a not-found there is a real absence.
         With neither, the account's enabled regions are swept and the list is NOT trustworthy —
         the sweep cannot show where the row was collected, so a clean sweep must never authorize
         ``DROPPED_FROM_OBSERVATION`` (callers downgrade that verdict; see ``_Ec2Falsifier.judge``).
         """
-        region = dimensions.get("aws_region") or ""
+        region = dimensions.get("aws.region") or ""
         if region and region != "global":
             return [region], True
         hint = self._region_hint(row)
@@ -486,13 +502,17 @@ class _AwsFalsifier(Falsifier):
         candidate with no recorded account (an old write predating the dimension, or a design
         row AWS never minted) cannot be scope-checked and is refused the same way.
 
-        Does NOT protect against a revoked AWS RAM share reading as a deletion — see the module
-        docstring's "Known limitation" paragraph. This compares the falsifier's resolved account
-        against the OBSERVING account the collector stamped, never the probe's own ``OwnerId``.
+        The recorded account is the OWNING account (Q57), so a resource shared into this credential's
+        account is refused here and a revoked share cannot read as a deletion (module docstring, "Fixed").
+
+        AWS-managed resources: their owner is ``aws``, which never equals a customer credential's account, so
+        this check answers ``scope_unknown`` for them. That is intended (Q60b): AWS provisions and retires them,
+        so their absence is not this account's deletion. ``batch_falsify`` declines them even earlier, before
+        any call, and ``IamPolicyFalsifier`` declines AWS-managed policies by ``is_aws_managed`` by design.
         """
         if not expected_account:
             return _undetermined(
-                candidate, "scope_unknown", "the grid holds no aws_account dimension for this resource"
+                candidate, "scope_unknown", "the grid holds no aws.account dimension for this resource"
             )
         # Fail CLOSED on an empty account_id too, not just a mismatched one: `_resolve` only
         # short-circuits re-resolution on `is None` (`credentials.py::caller_account_id` returns
@@ -633,7 +653,7 @@ class _Ec2Falsifier(_AwsFalsifier):
         if not source_id:
             return _undetermined(candidate, "scope_unknown", f"the grid holds no {self.id_field} for this resource")
         dimensions = _dimensions_of(row)
-        expected_account = dimensions.get("aws_account") or None
+        expected_account = dimensions.get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -678,7 +698,7 @@ class SubnetFalsifier(_Ec2Falsifier):
     call is unambiguous: AWS's ``InvalidSubnetID.NotFound`` names the exact id that stopped
     existing (there is no cross-account visibility question once the account check has already
     passed). This is the type ``Vpc.CONTAINMENT_EDGES`` already marks reconcilable — see the
-    module docstring. With no ``aws_region`` dimension it falls back to its own
+    module docstring. With no ``aws.region`` dimension it falls back to its own
     ``availability_zone``.
     """
 
@@ -815,20 +835,18 @@ class _OrganizationsFalsifier(_AwsFalsifier):
         return self.judge_all(session, account_id, [candidate])[0]
 
     def judge_all(self, session: ProbeSession, account_id: str, candidates: list[Candidate]) -> list[Verdict]:
-        # The account-dimension scope check needs no organization read at all (it is this
-        # plugin's single-account "reach", same as every other falsifier here) — apply it FIRST,
-        # per candidate, so a batch of nothing but out-of-scope candidates never touches
-        # Organizations, and only candidates that pass it pay for the one shared reach read.
+        # No aws.account scope check here. That dimension names the OWNING account (Q57): an account node
+        # carries its own id, every other Organizations node the management account, so neither equals a
+        # delegated-administrator credential, and an account node never equals the management credential that
+        # can speak for it. An Organizations candidate's reach is organization membership instead: every
+        # _judge_one compares the candidate's recorded organization with ``reach.organization_id``, proved once
+        # per batch by ``_read_reach``.
         verdicts: dict[int, Verdict] = {}
         to_probe: list[tuple[int, Any, Candidate]] = []
         for index, candidate in enumerate(candidates):
             row = _row_of(candidate.entity_id)
             if row is None:
                 verdicts[index] = _undetermined(candidate, "errored", "the grid row could not be read")
-                continue
-            scoped = self._scope_check(candidate, account_id, _dimensions_of(row).get("aws_account") or None)
-            if scoped is not None:
-                verdicts[index] = scoped
                 continue
             to_probe.append((index, row, candidate))
         if to_probe:
@@ -1440,7 +1458,7 @@ class IamRoleFalsifier(_IamFalsifier):
         arn = str(getattr(row, "role_arn", "") or "")
         if not name or not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this IAM role")
-        expected_account = _dimensions_of(row).get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -1486,7 +1504,7 @@ class IamUserFalsifier(_IamFalsifier):
         arn = str(getattr(row, "user_arn", "") or "")
         if not name or not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this IAM user")
-        expected_account = _dimensions_of(row).get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -1539,7 +1557,7 @@ class IamPolicyFalsifier(_IamFalsifier):
         name = str(getattr(row, "name", "") or "")
         if not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no ARN for this IAM policy")
-        expected_account = _dimensions_of(row).get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -1677,7 +1695,7 @@ class S3BucketFalsifier(_AwsFalsifier):
         arn = str(getattr(row, "bucket_arn", "") or "")
         if not name or not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no name or ARN for this bucket")
-        expected_account = _dimensions_of(row).get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -1769,7 +1787,7 @@ class IamOidcProviderFalsifier(_AwsFalsifier):
         arn = str(getattr(row, "provider_arn", "") or "")
         if not arn:
             return _undetermined(candidate, "scope_unknown", "the grid holds no provider_arn for this provider")
-        expected_account = _dimensions_of(row).get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -1821,7 +1839,7 @@ class _IamAccountListedFalsifier(_IamFalsifier):
         arn = str(getattr(row, self.arn_field, "") or "")
         if not arn or (self.by_name and not name):
             return _undetermined(candidate, "scope_unknown", f"the grid holds no name or ARN for this {self.noun}")
-        expected_account = _dimensions_of(row).get("aws_account") or None
+        expected_account = _dimensions_of(row).get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
@@ -2017,7 +2035,7 @@ class _LandingZoneFalsifier(_AwsFalsifier):
     """Shared shape: read the row, check the account, find the region, probe once.
 
     Every landing-zone type is regional (Control Tower and Identity Center in their home region),
-    and the collector stamps the region it read the resource through on ``dimensions["aws_region"]``,
+    and the collector stamps the region it read the resource through on ``dimensions["aws.region"]``,
     so it is trusted. A row with no region is refused (``scope_unknown``), never swept: these
     listings are cheap to read whole, but a sweep could only show where a resource is, never where
     it was collected.
@@ -2060,11 +2078,11 @@ class _LandingZoneFalsifier(_AwsFalsifier):
         if row is None:
             return _undetermined(candidate, "errored", "the grid row could not be read")
         dimensions = _dimensions_of(row)
-        expected_account = dimensions.get("aws_account") or None
+        expected_account = dimensions.get("aws.account") or None
         scoped = self._scope_check(candidate, account_id, expected_account)
         if scoped is not None:
             return scoped
-        recorded = [r for r in (self._region_hint(row), dimensions.get("aws_region")) if r and r != "global"]
+        recorded = [r for r in (self._region_hint(row), dimensions.get("aws.region")) if r and r != "global"]
         if not recorded:
             return _undetermined(candidate, "scope_unknown", "the grid holds no region for this resource")
         allowed = set(self._allowed_regions())
@@ -2722,7 +2740,7 @@ class _EcsFalsifier(_AwsFalsifier):
                     candidate, "scope_unknown", f"the grid holds no {self.id_field} for this resource"
                 )
                 continue
-            scoped = self._scope_check(candidate, account_id, _dimensions_of(row).get("aws_account") or None)
+            scoped = self._scope_check(candidate, account_id, _dimensions_of(row).get("aws.account") or None)
             if scoped is not None:
                 verdicts[candidate.entity_id] = scoped
                 continue
@@ -2890,10 +2908,10 @@ class Route53RecordSetFalsifier(_AwsFalsifier):
         if not zone_id or not name or not record_type:
             return _undetermined(candidate, "scope_unknown", "the grid holds no zone, name and type for this record set")
         dimensions = _dimensions_of(row)
-        scoped = self._scope_check(candidate, account_id, dimensions.get("aws_account") or None)
+        scoped = self._scope_check(candidate, account_id, dimensions.get("aws.account") or None)
         if scoped is not None:
             return scoped
-        region = dimensions.get("aws_region") or ""
+        region = dimensions.get("aws.region") or ""
         if not region or region == "global":
             region = next(iter(self._sweep_regions(session)), "")
         if not region:

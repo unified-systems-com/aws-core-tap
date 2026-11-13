@@ -14,7 +14,7 @@ class BackupRestoreTestingPlan(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Backup Restore Testing Plan"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Backup Restore Testing Plan."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RestoreTestingPlanArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("restore_testing_plan_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "backup:restoreTestingPlan"

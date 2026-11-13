@@ -14,7 +14,7 @@ class Resourceexplorer2View(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ResourceExplorer2 View"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ResourceExplorer2 View."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The view's ARN (ViewArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("resourceexplorer2_view_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "resource-explorer-2:view"

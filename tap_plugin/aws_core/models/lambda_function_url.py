@@ -14,7 +14,7 @@ class LambdaFunctionUrl(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Lambda Function URL"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Lambda function URL."
     ENTITY_ICON: ClassVar[str] = "aws-lambda"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The URL itself: it is unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("function_url",)
 

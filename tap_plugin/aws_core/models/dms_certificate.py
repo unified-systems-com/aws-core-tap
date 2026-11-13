@@ -14,7 +14,7 @@ class DmsCertificate(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS DMS Certificate"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS DMS Certificate."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (CertificateArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dms_certificate_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "dms:Certificate"

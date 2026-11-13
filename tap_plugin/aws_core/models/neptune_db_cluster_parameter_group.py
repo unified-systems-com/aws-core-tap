@@ -14,7 +14,7 @@ class NeptuneDbClusterParameterGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Neptune DB Cluster Parameter Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Neptune DB Cluster Parameter Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (DBClusterParameterGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("neptune_db_cluster_parameter_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:cluster-pg"

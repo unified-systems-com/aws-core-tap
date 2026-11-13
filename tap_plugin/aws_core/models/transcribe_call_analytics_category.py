@@ -14,7 +14,7 @@ class TranscribeCallAnalyticsCategory(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Transcribe Call Analytics Category"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Transcribe Call Analytics Category."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("transcribe_call_analytics_category_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "transcribe:callanalyticscategory"

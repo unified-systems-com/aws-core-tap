@@ -29,7 +29,7 @@ class CodepipelinePipeline(BaseModel):
         "a change from its source to a deployment."
     )
     ENTITY_ICON: ClassVar[str] = "aws-codepipeline"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

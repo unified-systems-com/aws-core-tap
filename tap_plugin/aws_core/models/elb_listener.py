@@ -14,7 +14,7 @@ class ElbListener(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ELB Listener"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Elastic Load Balancing (v2) listener."
     ENTITY_ICON: ClassVar[str] = "aws-elb"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The listener's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("listener_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:listener/app"

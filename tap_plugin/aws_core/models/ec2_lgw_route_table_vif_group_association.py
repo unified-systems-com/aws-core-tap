@@ -14,7 +14,7 @@ class Ec2LgwRouteTableVifGroupAssociation(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Local Gateway Route Table Virtual Interface Group Association"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Local Gateway Route Table Virtual Interface Group Association."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (LocalGatewayRouteTableVirtualInterfaceGroupAssociationId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_lgw_route_table_vif_group_association_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:local-gateway-route-table-virtual-interface-group-association"

@@ -14,7 +14,7 @@ class CloudformationTypeActivation(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS CloudFormation Type Activation"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS CloudFormation Type Activation."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TypeArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cloudformation_type_activation_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudformation:type"

@@ -14,7 +14,7 @@ class LambdaLayerVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Lambda Layer Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "A version of an AWS Lambda layer."
     ENTITY_ICON: ClassVar[str] = "aws-lambda"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The layer version's ARN: a layer name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("layer_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "lambda:layerVersion"

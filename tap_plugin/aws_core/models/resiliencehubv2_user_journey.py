@@ -14,7 +14,7 @@ class Resiliencehubv2UserJourney(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ResilienceHubV2 User Journey"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ResilienceHubV2 User Journey."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the system's ARN and the userJourneyId joined with '|' (the CloudFormation primary identifier of AWS::ResilienceHubV2::UserJourney is SystemIdentifier and UserJourneyId): a journey id is scoped to its system and the item carries no ARN of its own
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("resiliencehubv2_user_journey_id",)
 

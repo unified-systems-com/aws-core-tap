@@ -14,7 +14,7 @@ class GlueIntegrationResourceProperty(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Glue Integration Resource Property"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Glue Integration Resource Property."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ResourcePropertyArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_integration_resource_property_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "glue:integrationResourceProperty"

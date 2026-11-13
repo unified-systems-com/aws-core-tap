@@ -14,7 +14,7 @@ class ApigatewayClientCertificate(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway Client Certificate"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon API Gateway client certificate."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The certificate's ARN (built from its id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("client_certificate_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:ClientCertificate"

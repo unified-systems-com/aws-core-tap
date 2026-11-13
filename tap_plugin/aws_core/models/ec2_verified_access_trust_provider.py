@@ -14,7 +14,7 @@ class Ec2VerifiedAccessTrustProvider(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Verified Access Trust Provider"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Verified Access Trust Provider."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (VerifiedAccessTrustProviderId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_verified_access_trust_provider_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:verified-access-trust-provider"

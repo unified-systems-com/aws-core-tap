@@ -474,6 +474,10 @@ class _Reader:
     def __init__(self, client: Any, dimensions: dict[str, str], sensitivity: dict[str, dict[str, Any]] | None = None) -> None:
         self.client = client
         self.dimensions = dimensions
+        #: The organization's management account, once DescribeOrganization has answered. ``aws.account`` means the
+        #: OWNING account (George 2026-11-12, aws-build Q57): an account node owns itself; the organization, its
+        #: roots, OUs, policies and every edge of the tree belong to the management account.
+        self.management_account = ""
         self.sensitivity = reader_sensitivity() if sensitivity is None else sensitivity
         self.tree = OrganizationTree()
         #: Once ListTagsForResource is denied it is denied for every resource; stop asking.
@@ -646,11 +650,20 @@ class _Reader:
                 "warn", "ORG_NODE_SKIPPED", f"{entity_type} {natural_key}: skipped, {problem}", entity_type=entity_type
             )
             return False
-        self.tree.nodes.append(_envelope(entity_type, natural_key, name, fields, self.dimensions))
+        self.tree.nodes.append(_envelope(entity_type, natural_key, name, fields, self._owned_by(entity_type, fields)))
         return True
 
+    def _owned_by(self, entity_type: str, fields: dict[str, Any] | None = None) -> dict[str, str]:
+        """The run's dimensions with ``aws.account`` set to the owning account: an account's own id for an account
+        node, the management account for everything else in the tree, the run's own account when neither is known."""
+        owner = ""
+        if entity_type == ACCOUNT and fields:
+            owner = str(fields.get("account_id") or "")
+        owner = owner or self.management_account
+        return {**self.dimensions, "aws.account": owner} if owner else dict(self.dimensions)
+
     def add_edge(self, edge_type: str, from_type: str, from_key: str, to_type: str, to_key: str) -> None:
-        self.tree.edges.append(_edge(edge_type, from_type, from_key, to_type, to_key, self.dimensions))
+        self.tree.edges.append(_edge(edge_type, from_type, from_key, to_type, to_key, self._owned_by(ORGANIZATION)))
 
     def judge(self, entity_type: str, natural_key: str, edge_type: str, read: str) -> None:
         """Record how ``edge_type`` outbound was read at one node; a scope judged twice keeps the worst."""
@@ -678,6 +691,7 @@ class _Reader:
             return self.tree
         org_id = str(organization["Id"])
         self.tree.organization_id = org_id
+        self.management_account = str(organization.get("MasterAccountId") or "")
 
         roots = self.read("list_roots", "Roots")
         root_ids = sorted(str(r["Id"]) for r in roots.items if r.get("Id"))
@@ -1344,7 +1358,8 @@ def collect_organization(
     """Read the Organizations tree with ``client``; never raises for an AWS failure.
 
     ``dimensions`` are stamped on every node and edge (the run's own
-    ``{"cloud", "aws_account", "aws_region"}``, region ``global``). ``sensitivity`` replaces
+    ``{"aws.account", "aws.region"}``, region ``global``), with ``aws.account`` set to the owner: an account node's
+    own id, the management account for every other node and edge. ``sensitivity`` replaces
     ``reader_sensitivity()`` (tests only).
     """
     return _Reader(client, dimensions, sensitivity).collect()

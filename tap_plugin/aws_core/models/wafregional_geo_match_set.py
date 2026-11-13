@@ -14,7 +14,7 @@ class WafregionalGeoMatchSet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS WAF Classic Geo Match Set"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WAF Classic Geo Match Set."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (GeoMatchSetId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wafregional_geo_match_set_id",)
     ARN_RESOURCE: ClassVar[str | None] = "waf-regional:geomatchset"

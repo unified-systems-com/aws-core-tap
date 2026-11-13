@@ -29,7 +29,7 @@ class AwsGuardDutyFinding(BaseModel):
         "with its type, severity and the resource it concerns."
     )
     ENTITY_ICON: ClassVar[str] = "aws-guardduty"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
     }

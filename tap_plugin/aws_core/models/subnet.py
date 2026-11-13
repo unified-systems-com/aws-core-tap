@@ -13,7 +13,7 @@ class Subnet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Subnet"
     ENTITY_DESCRIPTION: ClassVar[str] = "A subnet within an Amazon VPC."
     ENTITY_ICON: ClassVar[str] = "aws-subnet"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The subnet ID (subnet-…). AWS assigns it, but does not
     # document it as unique across accounts and regions, so a clash there would surface as
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN

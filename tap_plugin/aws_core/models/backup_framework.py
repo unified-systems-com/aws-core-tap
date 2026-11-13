@@ -14,7 +14,7 @@ class BackupFramework(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Backup Framework"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Backup audit framework."
     ENTITY_ICON: ClassVar[str] = "aws-s3"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The framework's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("framework_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "backup:framework"

@@ -14,7 +14,7 @@ class RdsDbProxyTargetGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS RDS DB Proxy Target Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS RDS DB Proxy Target Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (TargetGroupArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rds_db_proxy_target_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:target-group"

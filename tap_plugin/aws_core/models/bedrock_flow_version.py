@@ -14,7 +14,7 @@ class BedrockFlowVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Flow Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Bedrock Flow Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the CloudFormation primary identifier of AWS::Bedrock::FlowVersion, FlowArn and Version joined with '|': the summary's arn is the flow's ARN (botocore FlowVersionSummary: 'the flow that the version belongs to'), shared by every version, and the Service Authorization Reference defines no flow-version ARN
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_flow_version_id",)
 

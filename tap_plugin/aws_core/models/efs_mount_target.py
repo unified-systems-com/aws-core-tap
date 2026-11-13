@@ -14,7 +14,7 @@ class EfsMountTarget(BaseModel):
     ENTITY_NAME: ClassVar[str] = "EFS Mount Target"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon EFS mount target."
     ENTITY_ICON: ClassVar[str] = "aws-ebs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): AWS's mount target id (fsmt-...): unique within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("mount_target_id",)
 

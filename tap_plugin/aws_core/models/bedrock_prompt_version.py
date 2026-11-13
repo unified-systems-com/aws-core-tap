@@ -14,7 +14,7 @@ class BedrockPromptVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Prompt Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "A numbered Bedrock Prompt Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The prompt version ARN, arn:<partition>:bedrock:<region>:<account>:prompt/<id>:<version>, built from the listed id and version (Service Authorization Reference resource prompt-version).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_prompt_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:prompt-version"

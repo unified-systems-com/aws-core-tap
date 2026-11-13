@@ -14,7 +14,7 @@ class RdsDbParameterGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "RDS DB Parameter Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon RDS DB parameter group."
     ENTITY_ICON: ClassVar[str] = "aws-rds"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The parameter group's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_parameter_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:pg"

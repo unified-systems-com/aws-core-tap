@@ -14,7 +14,7 @@ class WorkspacesWorkspaceIpGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS WorkSpaces Workspace Ip Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WorkSpaces Workspace Ip Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The service-assigned id (groupId): the service generates it when the object is created and it does not change.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("workspaces_workspace_ip_group_id",)
     ARN_RESOURCE: ClassVar[str | None] = "workspaces:workspaceipgroup"

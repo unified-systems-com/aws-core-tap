@@ -14,7 +14,7 @@ class Ec2CarrierGateway(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Carrier Gateway"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Carrier Gateway."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (CarrierGatewayId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_carrier_gateway_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:carrier-gateway"

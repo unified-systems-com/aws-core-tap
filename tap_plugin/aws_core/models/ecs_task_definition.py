@@ -14,7 +14,7 @@ class EcsTaskDefinition(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ECS Task Definition"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ECS Task Definition."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The task definition revision's ARN (taskDefinitionArn): unique across accounts and regions, and one per revision.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ecs_task_definition_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ecs:task-definition"

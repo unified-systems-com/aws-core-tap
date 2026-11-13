@@ -14,7 +14,7 @@ class CognitoUserPoolDomain(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Cognito User Pool Domain"
     ENTITY_DESCRIPTION: ClassVar[str] = "A domain of an Amazon Cognito user pool."
     ENTITY_ICON: ClassVar[str] = "aws-cognito"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The user pool id and the domain together (pool:domain): a domain is unique across Cognito, and the pool disambiguates a reused prefix.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("domain_key",)
 

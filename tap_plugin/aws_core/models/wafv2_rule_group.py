@@ -14,7 +14,7 @@ class Wafv2RuleGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "WAFv2 Rule Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WAF (WAFv2) rule group."
     ENTITY_ICON: ClassVar[str] = "aws-security-hub"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The rule group's ARN: a name is unique only within an account, region and scope.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "wafv2:rulegroup"

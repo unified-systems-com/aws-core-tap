@@ -14,7 +14,7 @@ class OpensearchDataSource(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS OpenSearch Data Source"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS OpenSearch Data Source."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The data source's ARN, built as arn:{partition}:es:{region}:{account}:domain/{DomainName}/datasource/{Name} (the Arn pattern in the CloudFormation schema for AWS::OpenSearch::DataSource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("opensearch_data_source_arn",)
 

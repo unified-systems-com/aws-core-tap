@@ -14,7 +14,7 @@ class QuicksightDashboard(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS QuickSight Dashboard"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS QuickSight Dashboard."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("quicksight_dashboard_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "quicksight:dashboard"

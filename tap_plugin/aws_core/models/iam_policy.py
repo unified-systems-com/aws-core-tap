@@ -14,7 +14,7 @@ class IamPolicy(BaseModel):
     ENTITY_NAME: ClassVar[str] = "IAM Policy"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS IAM permission policy."
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The policy's ARN: AWS-managed policies share a name
     # across accounts but not an ARN with customer policies.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn",)

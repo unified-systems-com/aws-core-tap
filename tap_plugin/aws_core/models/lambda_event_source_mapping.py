@@ -14,7 +14,7 @@ class LambdaEventSourceMapping(BaseModel):
     ENTITY_NAME: ClassVar[str] = "Lambda Event Source Mapping"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Lambda event source mapping."
     ENTITY_ICON: ClassVar[str] = "aws-lambda"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The mapping's ARN (AWS's, or built from the function ARN and the mapping UUID).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("mapping_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "lambda:eventSourceMapping"

@@ -14,7 +14,7 @@ class GlueSecurityConfiguration(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Glue Security Configuration"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Glue Security Configuration."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The configuration's name, the identifier GetSecurityConfiguration takes; the AWS Service Authorization Reference lists no ARN for a Glue security configuration. Unique within the account and region. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_security_configuration_name",)
 

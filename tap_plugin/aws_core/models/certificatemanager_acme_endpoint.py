@@ -14,7 +14,7 @@ class CertificatemanagerAcmeEndpoint(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS CertificateManager Acme Endpoint"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS CertificateManager Acme Endpoint."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AcmeEndpointArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("acme_endpoint_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "acm:acme-endpoint"

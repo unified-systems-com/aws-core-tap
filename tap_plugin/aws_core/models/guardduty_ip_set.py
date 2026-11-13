@@ -14,7 +14,7 @@ class GuarddutyIpSet(BaseModel):
     ENTITY_NAME: ClassVar[str] = "GuardDuty Trusted IP List"
     ENTITY_DESCRIPTION: ClassVar[str] = "A GuardDuty trusted IP list."
     ENTITY_ICON: ClassVar[str] = "aws-guardduty"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The detector id, 'ipset' and the list id: a list id is unique only within a detector.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ip_set_key",)
     ARN_RESOURCE: ClassVar[str | None] = "guardduty:ipset"

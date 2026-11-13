@@ -17,7 +17,7 @@ class EcsContainer(BaseModel):
         "resolved when it pulled, which names the build that is actually running."
     )
     ENTITY_ICON: ClassVar[str] = "aws-ecs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the container's ARN, unique across tasks and clusters.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("container_arn",)
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,

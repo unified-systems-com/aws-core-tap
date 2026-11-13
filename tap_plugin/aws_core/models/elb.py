@@ -20,7 +20,7 @@ class Elb(BaseModel):
         "Load Balancer, told apart by lb_type."
     )
     ENTITY_ICON: ClassVar[str] = "aws-elb"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the DNS name AWS assigns, which every load balancer
     # type has and which is unique. A Classic Load Balancer has no ARN, and a name is unique only
     # within an account and region, so neither can be the key for all three types.

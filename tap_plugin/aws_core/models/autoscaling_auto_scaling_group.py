@@ -14,7 +14,7 @@ class AutoscalingAutoScalingGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS AutoScaling Auto Scaling Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS AutoScaling Auto Scaling Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AutoScalingGroupARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("auto_scaling_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "autoscaling:autoScalingGroup"

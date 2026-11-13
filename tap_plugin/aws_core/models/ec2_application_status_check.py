@@ -14,7 +14,7 @@ class Ec2ApplicationStatusCheck(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Application Status Check"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Application Status Check."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's own id (ApplicationStatusCheckId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_application_status_check_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:application-status-check"

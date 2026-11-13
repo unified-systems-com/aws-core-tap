@@ -14,7 +14,7 @@ class NetworkmanagerGlobalNetwork(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS NetworkManager Global Network"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS NetworkManager Global Network."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (GlobalNetworkArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("networkmanager_global_network_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "networkmanager:global-network"

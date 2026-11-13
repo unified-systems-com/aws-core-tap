@@ -14,7 +14,7 @@ class BedrockBlueprint(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Bedrock Data Automation Blueprint"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Bedrock Data Automation Blueprint."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (blueprintArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_blueprint_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:blueprint"

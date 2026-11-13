@@ -14,7 +14,7 @@ class SagemakerEndpoint(BaseModel):
     ENTITY_NAME: ClassVar[str] = "SageMaker Endpoint"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon SageMaker inference endpoint."
     ENTITY_ICON: ClassVar[str] = "aws-sagemaker"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The endpoint's ARN: an endpoint name is unique only
     # within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("endpoint_arn",)

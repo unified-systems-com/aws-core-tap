@@ -14,7 +14,7 @@ class KinesisanalyticsApplication(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS KinesisAnalytics Application"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS KinesisAnalytics Application."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ApplicationARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("kinesisanalytics_application_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "kinesisanalytics:application"

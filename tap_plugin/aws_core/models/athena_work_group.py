@@ -14,7 +14,7 @@ class AthenaWorkGroup(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Athena Work Group"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Athena Work Group."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("athena_work_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "athena:workgroup"

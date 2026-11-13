@@ -14,7 +14,7 @@ class WorkspacesConnectionAlias(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS WorkSpaces Connection Alias"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WorkSpaces Connection Alias."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The service-assigned id (AliasId): the service generates it when the object is created and it does not change.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("workspaces_connection_alias_id",)
     ARN_RESOURCE: ClassVar[str | None] = "workspaces:connectionalias"

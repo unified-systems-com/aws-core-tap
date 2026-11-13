@@ -14,7 +14,7 @@ class EfsFileSystem(BaseModel):
     ENTITY_NAME: ClassVar[str] = "EFS File System"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon EFS file system."
     ENTITY_ICON: ClassVar[str] = "aws-ebs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The file system's ARN: a file system id is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("file_system_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "elasticfilesystem:file-system"

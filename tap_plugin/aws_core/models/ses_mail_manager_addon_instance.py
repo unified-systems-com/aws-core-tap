@@ -14,7 +14,7 @@ class SesMailManagerAddonInstance(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SES Mail Manager Addon Instance"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SES Mail Manager Addon Instance."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AddonInstanceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ses_mail_manager_addon_instance_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ses:addon-instance"

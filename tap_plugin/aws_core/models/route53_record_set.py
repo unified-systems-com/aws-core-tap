@@ -16,7 +16,7 @@ class Route53RecordSet(BaseModel):
         "One record set in a Route 53 hosted zone: the hostname, its type and what it answers with."
     )
     ENTITY_ICON: ClassVar[str] = "aws-route53"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): a record set is unique within its zone by name, type and set
     # identifier (Route 53's ChangeResourceRecordSets addresses it by exactly those). The key is the four in one
     # string, "<zone id>/<name>/<type>/<set identifier>", the set identifier empty for a simple record, because the

@@ -14,7 +14,7 @@ class IotSoftwarePackageVersion(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS IoT Software Package Version"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS IoT Software Package Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The package version's ARN, built as arn:{partition}:iot:{region}:{account}:package/{packageName}/version/{versionName} (the AWS Service Authorization Reference iot 'packageversion' resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_software_package_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iot:packageversion"

@@ -14,7 +14,7 @@ class CloudwatchAlarm(BaseModel):
     ENTITY_NAME: ClassVar[str] = "CloudWatch Alarm"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon CloudWatch metric alarm."
     ENTITY_ICON: ClassVar[str] = "aws-cloudwatch"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The alarm's ARN: an alarm name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("alarm_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:alarm"

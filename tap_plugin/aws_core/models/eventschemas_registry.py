@@ -14,7 +14,7 @@ class EventschemasRegistry(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EventSchemas Registry"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EventSchemas Registry."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (RegistryArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("registry_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "schemas:registry"

@@ -14,7 +14,7 @@ class ResiliencehubApp(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS ResilienceHub App"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS ResilienceHub App."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (appArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("app_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "resiliencehub:application"

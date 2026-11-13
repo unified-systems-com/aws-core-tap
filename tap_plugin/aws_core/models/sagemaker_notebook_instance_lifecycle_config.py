@@ -14,7 +14,7 @@ class SagemakerNotebookInstanceLifecycleConfig(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SageMaker Notebook Instance Lifecycle Config"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SageMaker Notebook Instance Lifecycle Config."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (NotebookInstanceLifecycleConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("notebook_instance_lifecycle_config_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sagemaker:notebook-instance-lifecycle-config"

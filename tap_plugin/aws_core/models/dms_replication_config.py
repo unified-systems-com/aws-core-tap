@@ -14,7 +14,7 @@ class DmsReplicationConfig(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS DMS Replication Config"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS DMS Replication Config."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (ReplicationConfigArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dms_replication_config_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "dms:ReplicationConfig"

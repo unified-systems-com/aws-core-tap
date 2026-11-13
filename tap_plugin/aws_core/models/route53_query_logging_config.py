@@ -14,7 +14,7 @@ class Route53QueryLoggingConfig(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Route53 Query Logging Config"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Route53 Query Logging Config."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The query logging configuration's Id: ListQueryLoggingConfigs returns no ARN, and a Route 53 configuration id is unique across accounts.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53_query_logging_config_id",)
     ARN_RESOURCE: ClassVar[str | None] = "route53:queryloggingconfig"

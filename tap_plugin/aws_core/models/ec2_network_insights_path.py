@@ -14,7 +14,7 @@ class Ec2NetworkInsightsPath(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Network Insights Path"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Network Insights Path."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (NetworkInsightsPathArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("network_insights_path_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:network-insights-path"

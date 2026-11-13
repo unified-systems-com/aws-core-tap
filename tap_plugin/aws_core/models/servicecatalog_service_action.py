@@ -14,7 +14,7 @@ class ServicecatalogServiceAction(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Service Catalog Service Action"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Service Catalog Service Action."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The service action's Id: ListServiceActions returns no ARN, and a service action id is service-generated.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("servicecatalog_service_action_id",)
 

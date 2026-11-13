@@ -14,7 +14,7 @@ class ApigatewayApiKey(BaseModel):
     ENTITY_NAME: ClassVar[str] = "API Gateway API Key"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon API Gateway API key."
     ENTITY_ICON: ClassVar[str] = "aws-apigateway"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The key's ARN (built from the key id).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("api_key_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:ApiKey"

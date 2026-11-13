@@ -14,7 +14,7 @@ class Inspectorv2CodeSecurityScanConfiguration(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Inspector Code Security Scan Configuration"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Inspector Code Security Scan Configuration."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The object's ARN (scanConfigurationArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("inspectorv2_code_security_scan_configuration_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "inspector2:Code Security Scan Configuration"

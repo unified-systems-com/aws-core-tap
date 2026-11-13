@@ -13,7 +13,7 @@ class Ec2Instance(BaseModel):
     ENTITY_NAME: ClassVar[str] = "EC2 Instance"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon EC2 virtual server instance."
     ENTITY_ICON: ClassVar[str] = "aws-ec2"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The instance ID (i-…). AWS assigns it, but does not
     # document it as unique across accounts and regions, so a clash there would surface as
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN

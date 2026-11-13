@@ -134,7 +134,7 @@ class TestCreate:
         assert result.success, result.errors
         row = model.all_objects.get(entity_id=result.entity_id)
         assert getattr(row, key) == ""
-        assert row.entity.dimensions == {"tap.cloud": "aws"}
+        assert row.entity.dimensions == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(("model", "key", "good", "_bad"), TYPES)
     def test_well_formed_arn_is_accepted(self, model, key, good, _bad) -> None:
@@ -245,7 +245,7 @@ class TestEdges:
         result = _edge(_entity(source, "s"), _entity(target, "t"), edge_type)
         assert result.success, result.errors
         edge = Edge.objects.select_related("entity").get(entity_id=result.entity_id)
-        assert edge.entity.dimensions == {"tap.cloud": "aws"}
+        assert edge.entity.dimensions == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(
         ("edge_type", "source", "target"),

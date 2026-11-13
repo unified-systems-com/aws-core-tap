@@ -13,7 +13,7 @@ class Vpc(BaseModel):
     ENTITY_NAME: ClassVar[str] = "VPC"
     ENTITY_DESCRIPTION: ClassVar[str] = "An Amazon Virtual Private Cloud."
     ENTITY_ICON: ClassVar[str] = "aws-vpc"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The VPC ID (vpc-…). AWS assigns it, but does not
     # document it as unique across accounts and regions, so a clash there would surface as
     # AmbiguousIdentity from the generated search, never as a silent merge. The key moves to the ARN

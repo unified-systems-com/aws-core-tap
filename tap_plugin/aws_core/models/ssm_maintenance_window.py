@@ -14,7 +14,7 @@ class SsmMaintenanceWindow(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS SSM Maintenance Window"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SSM Maintenance Window."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The window's WindowId: DescribeMaintenanceWindows returns no ARN, and a maintenance window id is service-generated.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_maintenance_window_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ssm:maintenancewindow"

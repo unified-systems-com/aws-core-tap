@@ -14,7 +14,7 @@ class EcsTask(BaseModel):
     ENTITY_NAME: ClassVar[str] = "ECS Task"
     ENTITY_DESCRIPTION: ClassVar[str] = "A running ECS task (container group)."
     ENTITY_ICON: ClassVar[str] = "aws-ecs"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The task's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("task_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ecs:task"

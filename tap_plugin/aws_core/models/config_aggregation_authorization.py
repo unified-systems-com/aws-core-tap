@@ -14,7 +14,7 @@ class ConfigAggregationAuthorization(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Config Aggregation Authorization"
     ENTITY_DESCRIPTION: ClassVar[str] = "An authorization for another account to aggregate this account's AWS Config data."
     ENTITY_ICON: ClassVar[str] = "aws-config"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.cloud": "aws"}
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The authorization's ARN: it is unique per authorized account and region within this account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("authorization_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:AggregationAuthorization"
