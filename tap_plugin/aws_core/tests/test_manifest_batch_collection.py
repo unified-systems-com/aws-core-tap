@@ -1163,7 +1163,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_wellarchitected_agent_profile": (
-        {'arn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'name': 'gen-1', 'tags': [{'key': 'owner', 'value': 'net-team'}]},
+        {'arn': 'arn:aws:wellarchitected:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_amazonmq_broker": (

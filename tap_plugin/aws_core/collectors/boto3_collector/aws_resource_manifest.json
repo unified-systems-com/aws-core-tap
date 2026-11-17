@@ -12678,12 +12678,12 @@
       "source": {
         "aws_op": "ListAgentProfiles"
       },
-      "why": "Enumerate WellArchitected Agent Profile objects with ListAgentProfiles — an inventory of the account's agent profiles and how each is tagged.",
+      "why": "Enumerate WellArchitected Agent Profile objects with ListAgentProfiles — an inventory of the account's agent profiles. Since botocore 1.44.4 the list answer no longer carries tags; collecting them via GetAgentProfile is aws-core-tap#237.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks displayName, description, businessOverview sensitive in the wellarchitected ListAgentProfiles item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks displayName, description, businessOverview sensitive in the wellarchitected ListAgentProfiles item shape; those are declared. The tags[] location was dropped (2026-11-17): botocore 1.44.4 removed tags from that shape; it returns with GetAgentProfile (aws-core-tap#237). Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "displayName",
@@ -12704,7 +12704,7 @@
             "evidence": "botocore_sensitive"
           },
           {
-            "path": "tags[]",
+            "path": "_hydrate.tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
@@ -12718,10 +12718,16 @@
         "agent_profile_arn": "arn"
       },
       "tags": {
-        "source": "field",
-        "from": "tags[]",
-        "shape": "list_kv_lower",
-        "why": "The list answer carries the tags inline; no extra call."
+        "source": "service",
+        "op": "ListTagsForResource",
+        "params": {
+          "WorkloadArn": {
+            "from": "arn"
+          }
+        },
+        "path": "Tags",
+        "shape": "map",
+        "why": "Resource tags — ListTagsForResource by the object's ARN, as for the sibling lens, profile and review template; botocore 1.44.4 removed tags from the list answer. aws-core-tap#237 weighs GetAgentProfile instead."
       }
     },
     {
