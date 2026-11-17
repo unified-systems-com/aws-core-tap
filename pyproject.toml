@@ -10,8 +10,13 @@ requires-python = ">=3.14"
 dynamic = ["version"]
 
 # Tier-0: the boto3 collection engine is plugin-specific (not core-provided).
+# The AWS SDK is pinned exactly, on purpose: a floating botocore changes service
+# shapes under us (1.44.4 dropped AgentProfileSummary.tags and turned CI red).
+# Bump both pins together only in a PR that runs this suite;
+# tap_plugin/aws_core/tests/test_boto3_collector_sensitivity.py is the drift check.
 dependencies = [
-    "boto3>=1.43.9",
+    "boto3==1.44.4",
+    "botocore==1.44.4",
 ]
 
 [project.entry-points."tap.plugins"]
