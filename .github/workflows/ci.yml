@@ -27,7 +27,7 @@ jobs:
       security-events: write
     # tap#365 / PR# 373 - tap: plugin-ci fails closed and tests the declared floor. Move
     # this pin to the SHA of tap main once PR# 373 merges (Renovate does not track it).
-    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@fec5b1436384d5036dab6c1259309fe3dce804f5
+    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@dfade0de97ff98b240c622effdd4ae7b5aae3965
     with:
       plugin_slug: aws_core
       # The test database is built by applying every migration, and each generated type adds a live and
@@ -37,7 +37,7 @@ jobs:
       # 45 minutes also stopped being enough (#151, #152 head runs: ~22 minutes until web is healthy, then the
       # plugin's tests ran past the cap and the job was cancelled at 46 minutes with the suite unfinished).
       #
-      # 75 since the tap#1219 harness (xdist, test-DB template), measured on #240: the job took 49 minutes
+      # 75 since the tap#1219 harness (xdist, test-DB template), first measured on #240: the job took 49 minutes
       # (image build 2m with a warm cache, ~22m until web is healthy, 23m43s of tests on 4 workers). Its
       # predecessor with the same install set (#239, serial) took 64. A cold image build has taken about
       # 10 minutes, which still leaves ~15 minutes of headroom. The time until web is healthy is the part
