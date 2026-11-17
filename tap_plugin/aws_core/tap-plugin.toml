@@ -13,6 +13,10 @@ slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
 
+depends_on = [
+    { slug = "computing_core", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and only computing_core's [grift] dimension bundle declares it. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin." },
+]
+
 [models]
 aws_core__aws_region = "tap_plugin.aws_core.models.aws_region.AwsRegion"
 aws_core__aws_az = "tap_plugin.aws_core.models.availability_zone.AvailabilityZone"
@@ -1168,4 +1172,4 @@ pages = "grift/pages.grift.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "2b73933c32a4d7fb7f2aa7e717cea1faef36b4dd69b86a17d1a6416aa141d0d5"
+sha256 = "f7b2134a8632f78d204ffedf071c43fa81920f607ac73bcfd5dbfbb582c056cf"
