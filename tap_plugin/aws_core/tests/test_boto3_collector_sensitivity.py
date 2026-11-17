@@ -17,6 +17,12 @@ import jsonschema
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import MANIFEST_PATH, SCHEMA_PATH
 
+# The plugin-CI fast set (req-tap-plugin-extdev-repo-ci-14): DB-free and seconds long, and it is
+# where botocore drift lands (a removed shape member failed here at minute 58 of run
+# 44008279359), so plugin CI runs this file first, during the boot. A harness older than the
+# marker reports it as unknown, which is a warning, not an error.
+pytestmark = pytest.mark.ci_fast
+
 _STATES = {"unreviewed", "reviewed_none_known", "reviewed_may_contain"}
 
 
