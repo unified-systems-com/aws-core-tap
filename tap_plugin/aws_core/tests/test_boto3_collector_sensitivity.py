@@ -178,6 +178,39 @@ def test_declared_path_exists_in_botocore_shape(entry, location):
         assert flagged, f"{location['path']} is not marked sensitive in botocore"
 
 
+def _tag_slot_locations():
+    # A service tag lane stores its call's whole response at ``_hydrate.tags.data``; a location declared under it
+    # names a member of that op's output shape (for example GetAgentProfile's, which repeats the profile).
+    for entry in _entries():
+        block = entry.get("tags") or {}
+        for loc in entry.get("sensitivity", {}).get("locations", []):
+            if block.get("source") == "service" and loc["path"].startswith("_hydrate.tags.data."):
+                yield pytest.param(entry, loc, id=f"{entry['entity_type']}:{loc['path']}")
+
+
+@pytest.mark.parametrize(("entry", "location"), list(_tag_slot_locations()))
+def test_declared_tag_slot_path_exists_in_the_tag_call_shape(entry, location):
+    model = botocore.session.get_session().get_service_model(entry["service"])
+    shape = model.operation_model(entry["tags"]["op"]).output_shape
+    for segment in location["path"].removeprefix("_hydrate.tags.data.").split("."):
+        shape = _step(shape, segment)
+    if location["evidence"] == "botocore_sensitive":
+        flagged = shape.metadata.get("sensitive") or (
+            shape.type_name == "map" and shape.value.metadata.get("sensitive")
+        )
+        assert flagged, f"{location['path']} is not marked sensitive in botocore"
+
+
+def test_every_sensitive_member_of_the_agent_profile_tag_call_is_declared():
+    # GetAgentProfile returns the whole profile, not only its tags; what botocore marks sensitive in it is named.
+    entry = next(e for e in _entries() if e["entity_type"] == "aws_core__aws_wellarchitected_agent_profile")
+    model = botocore.session.get_session().get_service_model("wellarchitected")
+    shape = model.operation_model(entry["tags"]["op"]).output_shape
+    declared = {loc["path"] for loc in entry["sensitivity"]["locations"]}
+    expected = {f"_hydrate.tags.data.{p}" for p in _sensitive_member_paths(shape)}
+    assert expected and expected <= declared
+
+
 def _tag_carrier(entry: dict) -> str | None:
     """Where an entry's tag values sit inside the configuration envelope.
 

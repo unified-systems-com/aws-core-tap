@@ -41,6 +41,7 @@
       "Sid": "ReadWellarchitected",
       "Effect": "Allow",
       "Action": [
+        "wellarchitected:GetAgentProfile",
         "wellarchitected:GetProfile",
         "wellarchitected:GetReviewTemplate",
         "wellarchitected:GetWorkload",
