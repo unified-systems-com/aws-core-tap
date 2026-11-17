@@ -36,4 +36,10 @@ jobs:
       #
       # 45 minutes also stopped being enough (#151, #152 head runs: ~22 minutes until web is healthy, then the
       # plugin's tests ran past the cap and the job was cancelled at 46 minutes with the suite unfinished).
-      boot_and_test_timeout_minutes: 90
+      #
+      # 75 since the tap#1219 harness (xdist, test-DB template), measured on #240: the job took 49 minutes
+      # (image build 2m with a warm cache, ~22m until web is healthy, 23m43s of tests on 4 workers). Its
+      # predecessor with the same install set (#239, serial) took 64. A cold image build has taken about
+      # 10 minutes, which still leaves ~15 minutes of headroom. The time until web is healthy is the part
+      # that grows with every migration batch, so raise this before it does.
+      boot_and_test_timeout_minutes: 75
