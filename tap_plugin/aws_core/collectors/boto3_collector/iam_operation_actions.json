@@ -7060,6 +7060,12 @@
    ],
    "dropped": []
   },
+  "wellarchitected:get_agent_profile": {
+   "actions": [
+    "wellarchitected:GetAgentProfile"
+   ],
+   "dropped": []
+  },
   "wellarchitected:get_profile": {
    "actions": [
     "wellarchitected:GetProfile"

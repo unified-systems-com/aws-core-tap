@@ -12678,12 +12678,12 @@
       "source": {
         "aws_op": "ListAgentProfiles"
       },
-      "why": "Enumerate WellArchitected Agent Profile objects with ListAgentProfiles — an inventory of the account's agent profiles. Since botocore 1.44.4 the list answer no longer carries tags; collecting them via GetAgentProfile is aws-core-tap#237.",
+      "why": "Enumerate WellArchitected Agent Profile objects with ListAgentProfiles — an inventory of the account's agent profiles and how each is tagged. The list answer carries no tags (botocore 1.44.4 moved them to GetAgentProfile), so each profile is read once more with GetAgentProfile.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks displayName, description, businessOverview sensitive in the wellarchitected ListAgentProfiles item shape; those are declared. The tags[] location was dropped (2026-11-17): botocore 1.44.4 removed tags from that shape; it returns with GetAgentProfile (aws-core-tap#237). Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks displayName, description, businessOverview sensitive in the wellarchitected ListAgentProfiles item shape; those are declared. Tags (2026-11-17): botocore 1.44.4 removed tags from that shape and returns them on GetAgentProfile, which the tag lane calls per profile. Its whole response is stored in the tag slot (_hydrate.tags.data); in botocore 1.44.4 GetAgentProfileResponse is the list item's members plus tags, and botocore marks the same three members sensitive there, so they are declared at that path too. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "displayName",
@@ -12706,8 +12706,26 @@
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "reason": "The tag slot holds the whole GetAgentProfile response, whose tags[] are operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.tags.data.displayName",
+            "category": "customer_content",
+            "reason": "botocore marks this member of GetAgentProfileResponse sensitive: operator-set content, repeated in the tag slot.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags.data.description",
+            "category": "free_text",
+            "reason": "botocore marks this member of GetAgentProfileResponse sensitive: operator-authored text, repeated in the tag slot.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.tags.data.businessOverview",
+            "category": "free_text",
+            "reason": "botocore marks this member of GetAgentProfileResponse sensitive: operator-authored text, repeated in the tag slot.",
+            "evidence": "botocore_sensitive"
           }
         ]
       },
@@ -12719,15 +12737,15 @@
       },
       "tags": {
         "source": "service",
-        "op": "ListTagsForResource",
+        "op": "GetAgentProfile",
         "params": {
-          "WorkloadArn": {
+          "profileArn": {
             "from": "arn"
           }
         },
-        "path": "Tags",
-        "shape": "map",
-        "why": "Resource tags — ListTagsForResource by the object's ARN, as for the sibling lens, profile and review template; botocore 1.44.4 removed tags from the list answer. aws-core-tap#237 weighs GetAgentProfile instead."
+        "path": "tags",
+        "shape": "list_kv_lower",
+        "why": "Resource tags — GetAgentProfile by the profile's ARN: botocore 1.44.4 moved the tags from the list answer to this call, which is documented for agent profiles and answers a list of {key, value}. A refused or failed call leaves the tags unread, never empty."
       }
     },
     {

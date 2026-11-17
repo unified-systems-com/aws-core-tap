@@ -157,3 +157,64 @@ class TestCustomFunctionsMarkAFailedTagRead:
     def test_cloudtrail(self):
         trails = list(cloudtrail_trails_described(None, client_for=lambda _s: _Trail()))
         assert [t["_tags_unread"] for t in trails] == [True]
+
+
+class _AgentProfiles:
+    """A wellarchitected client whose GetAgentProfile answers ``response`` or raises ``exc``."""
+
+    def __init__(self, response: dict[str, Any] | None = None, exc: Exception | None = None) -> None:
+        self.response, self.exc, self.calls = response, exc, []
+
+    def get_agent_profile(self, **kw: Any) -> dict[str, Any]:
+        self.calls.append(kw)
+        if self.exc:
+            raise self.exc
+        return dict(self.response or {}, ResponseMetadata={"RequestId": "r"})
+
+
+class TestAgentProfileTagsComeFromGetAgentProfile:
+    """botocore 1.44.4 moved agent-profile tags from the ListAgentProfiles item to GetAgentProfile
+    (aws-core-tap#237). The shipped entry reads them there, with the side call's fail-safe semantics."""
+
+    ARN = "arn:aws:wellarchitected:us-east-1:acct:agent-profile/p1"
+
+    def _entry(self) -> dict[str, Any]:
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+        return next(e for e in manifest_entries() if e["entity_type"] == "aws_core__aws_wellarchitected_agent_profile")
+
+    def _resolve(self, client: _AgentProfiles):
+        return resolve_node_tags(self._entry(), {"arn": self.ARN, "name": "p1"}, rgta_map={}, client_for=lambda _s: client)
+
+    def test_the_tags_are_read_from_the_get_agent_profile_response(self):
+        client = _AgentProfiles({"arn": self.ARN, "name": "p1", "displayName": "P", "tags": [{"key": "owner", "value": "net-team"}]})
+        tags, slot, mapping = self._resolve(client)
+        assert client.calls == [{"profileArn": self.ARN}]
+        assert tags == {"owner": "net-team"}
+        # The whole response is kept in the slot (collect everything); only ResponseMetadata is stripped.
+        assert slot["status"] == "ok" and slot["op"] == "GetAgentProfile"
+        assert slot["data"]["displayName"] == "P" and "ResponseMetadata" not in slot["data"]
+        assert mapping["op"] == "GetAgentProfile"
+
+    def test_a_profile_answered_without_tags_is_untagged(self):
+        tags, slot, _ = self._resolve(_AgentProfiles({"arn": self.ARN, "name": "p1"}))
+        assert tags == {} and slot["status"] == "ok"
+
+    @pytest.mark.parametrize("code", ["AccessDeniedException", "ResourceNotFoundException", "ThrottlingException"])
+    def test_a_refused_or_failed_get_agent_profile_leaves_the_tags_unread(self, code: str):
+        tags, slot, _ = self._resolve(_AgentProfiles(exc=_denied("GetAgentProfile", code)))
+        assert tags is UNREAD
+        assert slot["status"] in ("denied", "error") and slot["error_code"] == code
+        assert "tags" not in node_envelope(_node(), {}, tags, persist_configuration=False)["node"]
+
+    def test_the_lane_matches_botocore(self):
+        """The op, its required input, and the tag member's shape, read off the installed botocore model."""
+        import botocore.session
+
+        block = self._entry()["tags"]
+        model = botocore.session.get_session().get_service_model("wellarchitected")
+        op = model.operation_model(block["op"])
+        assert set(op.input_shape.required_members) <= set(block["params"]) <= set(op.input_shape.members)
+        tag_shape = op.output_shape.members[block["path"]]
+        assert block["shape"] == "list_kv_lower"
+        assert tag_shape.type_name == "list" and {"key", "value"} <= set(tag_shape.member.members)
