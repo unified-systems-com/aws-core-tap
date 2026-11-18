@@ -537,6 +537,39 @@ class TestSecurityHub:
         hub = _id(SECURITYHUB_HUB, HUB_ARN)
         assert {f for f, _ in _edges(read, HOLDS_SECURITYHUB_FINDING)} == {hub}
 
+    @pytest.mark.spec("req-aws-landing-zone-findings-2")
+    def test_a_finding_concerns_whatever_aws_core_node_its_arns_name(self) -> None:
+        """aws-core-tap#242: an ARN-keyed resource of any type gets the edge; an id nothing is keyed by stays a string."""
+        cluster = f"arn:{PARTITION}:rds:{WEST}:{MGMT}:cluster:orders-aurora"
+        key = f"arn:{PARTITION}:kms:{WEST}:{MGMT}:key/1234abcd-12ab-34cd-56ef-1234567890ab"
+        user = f"arn:{PARTITION}:iam::{MGMT}:user/ci-deployer"
+        unknown = f"arn:{PARTITION}:madeupservice:{WEST}:{MGMT}:widget/w-1"
+        resources = [
+            {"Type": "AwsRdsDbCluster", "Id": cluster},
+            {"Type": "AwsKmsKey", "Id": key},
+            {"Type": "AwsEc2Instance", "Id": f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:instance/{INSTANCE_ID}"},
+            {"Type": "AwsS3Bucket", "Id": BUCKET_ARN},
+            {"Type": "AwsIamUser", "Id": user},
+            {"Type": "AwsIamRole", "Id": ROLE_ARN},
+            {"Type": "Other", "Id": unknown},
+            {"Type": "Other", "Id": "not-an-arn"},
+        ]
+        finding = _sh_finding("Multi.1", "HIGH", Resources=resources)
+        aws = with_findings()
+        aws.on("securityhub", "get_findings", _sh_handler({"HIGH": [[finding]]}), region=WEST)
+        read = collect(aws)
+        node = _one(read, SECURITYHUB_FINDING)
+        assert node["resource_ids"] == sorted(r["Id"] for r in resources), "every id is still kept as a string"
+        source = _id(SECURITYHUB_FINDING, securityhub_finding_key(SH_PRODUCT, finding["Id"]))
+        assert {to for f, to in _edges(read, CONCERNS_RESOURCE) if f == source} == {
+            _id("aws_core__aws_rds_db_cluster", cluster),
+            _id("aws_core__aws_kms_key", key),
+            _id("aws_core__aws_ec2_instance", INSTANCE_ID),
+            _id("aws_core__aws_s3_bucket", BUCKET_ARN),
+            _id("aws_core__aws_iam_user", user),
+            _id("aws_core__aws_iam_role", ROLE_ARN),
+        }
+
     @pytest.mark.spec("req-aws-landing-zone-findings-6")
     def test_enabled_standards_are_nodes_contained_by_the_hub(self) -> None:
         read = collect(with_findings())
