@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.2](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.1...v0.8.2) (2026-11-18)
+
+
+### Features
+
+* **findings:** a Security Hub finding concerns any ARN-keyed resource ([#245](https://github.com/unified-systems-com/aws-core-tap/issues/245)) ([2c04347](https://github.com/unified-systems-com/aws-core-tap/commit/2c04347ee5bef0b12d322e0afcef2be25bbd8d0a))
+
+
+### Bug Fixes
+
+* **collector:** read agent profile tags by side call; pin the AWS SDK ([#238](https://github.com/unified-systems-com/aws-core-tap/issues/238)) ([ffcde87](https://github.com/unified-systems-com/aws-core-tap/commit/ffcde8750a368558cbb28f3324c727153aaf53dc))
+* **collector:** read agent profile tags with GetAgentProfile ([#241](https://github.com/unified-systems-com/aws-core-tap/issues/241)) ([841027f](https://github.com/unified-systems-com/aws-core-tap/commit/841027fe3aea53782c92fe28dfd4a90c6f923943))
+* **deps:** depend on computing_core, which declares the dimension aws_core stamps ([#239](https://github.com/unified-systems-com/aws-core-tap/issues/239)) ([8263b9e](https://github.com/unified-systems-com/aws-core-tap/commit/8263b9e3aa5ee3f604b825141a24b509051e34f2))
+* **migrations:** ship the migrations the squash replaces, so a v0.8.0 database can upgrade ([#236](https://github.com/unified-systems-com/aws-core-tap/issues/236)) ([6378be2](https://github.com/unified-systems-com/aws-core-tap/commit/6378be2920635dd3ea855a683863e09f749fb863))
+
 ## [0.8.1](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.0...v0.8.1) (2026-11-16)
 
 
