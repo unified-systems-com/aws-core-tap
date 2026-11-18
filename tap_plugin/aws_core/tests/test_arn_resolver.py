@@ -185,6 +185,15 @@ class TestOverTheRealModels:
         assert arn_resolver.ARN_FORMATS == iam_policy.ARN_FORMATS
 
     @pytest.mark.spec("req-aws-landing-zone-findings-2")
+    def test_the_resolver_names_only_aws_core_types(self) -> None:
+        """The Security Hub CONCERNS_RESOURCE target is open in the schema (aws-build Q90a); what keeps it
+        to aws_core nodes is the resolver, built over this plugin's models only."""
+        targets = set(default_resolver()._target.values())
+        assert len(targets) > 600
+        foreign = sorted(t for t in targets if not t.startswith("aws_core__"))
+        assert not foreign, foreign
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-2")
     def test_every_arn_keyed_type_resolves_its_own_arn_unless_aws_gives_two_types_one_shape(self) -> None:
         """For each type keyed by its ARN whose resource type no other model shares, an ARN built from each of its
         formats resolves to that type. The one exception is a format AWS gives two resource types in the same shape
