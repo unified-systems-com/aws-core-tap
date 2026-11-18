@@ -269,7 +269,7 @@ models; nothing was observed against a live account.
 | Type | Source (read: botocore) | Key | Tags | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
 | `aws_guardduty_finding` **(new)** | `guardduty:ListFindings(FindingCriteria: service.archived=false, accountId=<run account>; SortCriteria: severity DESC; MaxResults 50)`, capped; `GetFindings` (≤50 ids a call) | finding ARN | **none** (a finding is not taggable; inferred) | detector, `HOLDS_GUARDDUTY_FINDING` | `GetFindings` names no such id, or names it archived | `CONCERNS_RESOURCE` (→ EC2 instance by `InstanceId`, S3 bucket by `S3BucketDetails[].Arn`, IAM user for an `IAMUser` access key) |
-| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down, sharing one cap | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none, or names it `ARCHIVED`; `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ `AwsEc2Instance`, `AwsS3Bucket`, `AwsIamUser`, `AwsIamRole` by `Resources[].Id`) |
+| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down, sharing one cap | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none, or names it `ARCHIVED`; `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ whichever aws_core node is keyed by the ARN in `Resources[].Id`, whatever its type, and an `AwsEc2Instance` by the instance id from its ARN; aws-core-tap#242) |
 | `aws_securityhub_standards_subscription` **(new)** | `securityhub:GetEnabledStandards` (unfiltered, to its end; the listing the hub's `enabled_standards` already comes from) | `StandardsSubscriptionArn` | **none** (inferred) | hub, `HOLDS_STANDARDS_SUBSCRIPTION` | absent from `GetEnabledStandards` | — |
 | `aws_access_analyzer_finding` **(new)** | `accessanalyzer:ListFindings` for an external-access analyzer (`ACCOUNT`, `ORGANIZATION`), `ListFindingsV2` for the others (botocore: v1 "is supported only for external access analyzers"), `filter: status=ACTIVE, resourceOwnerAccount=<run account>`, capped | (analyzer ARN, finding id) | **none** (inferred) | analyzer, `HOLDS_ACCESS_ANALYZER_FINDING` | `GetFindingV2` → `ResourceNotFoundException`, or a status other than `ACTIVE` | `CONCERNS_RESOURCE` (→ S3 bucket, IAM role, IAM user by resource ARN) |
 | `aws_config_rule` **(new)** | `config:DescribeConfigRules` (no names, no filters: botocore documents that as every rule), `DescribeComplianceByConfigRule` (every rule and compliance type), each to its end | rule ARN | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_CONFIG_RULE` | absent from a complete `DescribeConfigRules` (`NoSuchConfigRuleException` is documented as "not valid", not "does not exist", so it is not used) | — |
@@ -305,6 +305,22 @@ models; nothing was observed against a live account.
   skips the edge and records a `skip` event. GuardDuty names an IAM
   user, not its ARN, so the key is built with the default path (inferred); a user under another path
   is left dangling.
+- **Any ARN-keyed resource.** A Security Hub finding names its resources by ARN, and the target is
+  whichever aws_core node is keyed by that ARN, whatever its type (aws-core-tap#242;
+  `collectors/boto3_collector/arn_resolver.py`). No table of types is kept: the resolver reads each
+  model's `ARN_RESOURCE` and `NATURAL_KEY` from the entity registry and the vendored
+  `arn_formats.json` (`req-aws-collector-identity-11`). A type is keyed by its ARN when its key is one
+  field holding the ARN (named `arn`, or `<x>_arn` until `req-aws-collector-identity-10` renames it).
+  An ARN resolves when exactly one vendored format matches it most specifically (most literal
+  characters), that format's resource type belongs to one model, and that model is keyed by its ARN.
+  Otherwise the id stays a string in `resource_ids` and no edge is sent: an ARN no format matches,
+  two formats of the same shape (a Lambda alias and a version), a resource type several models share
+  (`cloudwatch:alarm`, `rds:cluster-pg`, `es:domain` and others), or a type keyed by something else.
+  An EC2 instance is keyed by its instance id, so an `AwsEc2Instance` entry keeps its special case:
+  the id is the ARN's last segment. A mismatch cannot attach a finding to the wrong row, because the
+  key sent is the ARN itself; at worst it names a node not on the grid and core skips the edge. The
+  edge type's targets are open (`edges/CONCERNS_RESOURCE.edge.json`) for the same reason. The
+  resolver takes an ARN alone, so an OCSF `resources[].uid` can use it unchanged.
 - **GovCloud.** Every call is to a service already in the availability table. Two are not verified
   in GovCloud: `GetFindingsStatistics` with `GroupBy` (the counts fall back) and
   `ListFindingsV2` (the analyzer's findings surface is recorded failed). A failing call is
@@ -320,7 +336,7 @@ models; nothing was observed against a live account.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page below the cap. | |
-| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. | |
+| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN has `CONCERNS_RESOURCE` to that node; an id no single ARN-keyed type claims stays a string with no edge. | aws-core-tap#242. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
 | req-aws-landing-zone-findings-3 | Bounded And Never Complete | Proposed | A findings read stops at `FINDINGS_CAP`; its surface records the filter with no control, is never complete, and names a truncation in `reasons.truncated`. | |
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |
