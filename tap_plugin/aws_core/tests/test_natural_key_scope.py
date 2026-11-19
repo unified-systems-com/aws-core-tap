@@ -19,6 +19,7 @@ import uuid
 
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+from tap_plugin.aws_core.tests.grid_dimensions import store_pre_flip
 
 SCOPED = "{partition}:{account}:{region}:"
 SCOPED_GLOBAL = "{partition}:{account}:global:"
@@ -370,9 +371,13 @@ def test_the_migration_names_every_re_keyed_model_and_its_key_column() -> None:
     assert {name: column for name, (column, _) in m.REKEYED.items()} == declared
 
 
+# Migration 0053 runs on the name-keyed map, before 0055 renames aws_account / aws_region to aws.account / aws.region
+# and before core's flip (tap_grid 0012) re-keys every map by Dimension node id. A 0.4.0 core refuses that shape and
+# those retired names through the write path, so each test creates its rows and then stores the dimensions as they
+# were when 0053 ran, with raw SQL (``store_pre_flip``).
+
+
 @pytest.mark.django_db
-# Migration 0053 runs before 0054 renames aws_account / aws_region to aws.account / aws.region, so these rows carry
-# the keys as they were when 0053 ran.
 def test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope() -> None:
     from django.apps import apps as live_apps
     from tap_plugin.aws_core.models import DaxParameterGroup, SesReceiptRuleSet
@@ -382,10 +387,10 @@ def test_the_migration_re_keys_a_row_in_place_and_leaves_one_it_cannot_scope() -
 
     def create(type_slug: str, payload: dict, dimensions: dict) -> uuid.UUID:
         [result] = write_batch(
-            [WriteOperation(verb="create_node", type_slug=type_slug, payload=payload, dimensions=dimensions)],
-            caller_context=CallerContext(),
+            [WriteOperation(verb="create_node", type_slug=type_slug, payload=payload)], caller_context=CallerContext()
         ).results
         assert result.success, result
+        store_pre_flip(result.entity_id, dimensions)
         return result.entity_id
 
     scope = {"aws_account": "123456789012", "aws_region": "us-gov-west-1"}
@@ -430,12 +435,12 @@ def test_going_back_never_recreates_the_collision_the_scoped_keys_removed() -> N
                     verb="create_node",
                     type_slug="aws_core__aws_dax_parameter_group",
                     payload={"name": "default.dax1.0", "dax_parameter_group_id": key},
-                    dimensions={"aws_account": "123456789012", "aws_region": region},
                 )
             ],
             caller_context=CallerContext(),
         ).results
         assert result.success, result
+        store_pre_flip(result.entity_id, {"aws_account": "123456789012", "aws_region": region})
         ids.append((result.entity_id, key))
 
     _migration().unscope_keys(live_apps, None)
@@ -460,12 +465,12 @@ def test_a_row_is_never_moved_onto_a_key_a_row_it_cannot_convert_already_holds()
                     verb="create_node",
                     type_slug="aws_core__aws_dax_parameter_group",
                     payload={"name": "default.dax1.0", "dax_parameter_group_id": key},
-                    dimensions=dimensions,
                 )
             ],
             caller_context=CallerContext(),
         ).results
         assert result.success, result
+        store_pre_flip(result.entity_id, dimensions)
         return result.entity_id
 
     scope = {"aws_account": "123456789012", "aws_region": "us-gov-west-1"}

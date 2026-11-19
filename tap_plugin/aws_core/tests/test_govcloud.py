@@ -60,6 +60,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.transforms import (
     s3_bucket_arn_from_name,
     s3_bucket_name_from_origin_domain,
 )
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 from tap_plugin.aws_core.tests.grid_keys import edge_between, node_id
 
 from tap_cares.collectors.config import CollectorConfig
@@ -655,8 +656,7 @@ class TestSubnetFalsifierInGovCloud:
         assert result.success
         entity_id = uuid.UUID(str(result.entity_id))
         row = get_node(entity_id)
-        row.entity.dimensions = {"aws.account": ACCOUNT, "aws.region": GOV_REGION}
-        row.entity.save(update_fields=["dimensions"])
+        stamp_dimensions(row, {"aws.account": ACCOUNT, "aws.region": GOV_REGION})
 
         regions: list[str] = []
 

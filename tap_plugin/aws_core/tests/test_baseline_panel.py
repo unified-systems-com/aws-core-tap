@@ -1,13 +1,14 @@
 """aws-baseline folds Gryphon rows into the security baseline matrix (req-aws-core-panel-baseline).
 
-Pure functions: no grid. The rule under test is that unknown is never off: a null setting, a missing
-node, a missing account link and a failed read each stay distinct from an observed off.
+Pure functions: no grid, but for the one read-edge test at the end. The rule under test is that unknown is never
+off: a null setting, a missing node, a missing account link and a failed read each stay distinct from an observed off.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+import pytest
 from tap_plugin.aws_core.panels.baseline import (
     COLUMNS,
     SERVICES,
@@ -139,3 +140,25 @@ def test_every_region_of_an_account_reads_the_same_account_node() -> None:
 def test_an_account_node_for_another_account_is_not_joined() -> None:
     m = fold_baseline([_fp("f1", "us-gov-east-1")], [_acct("999999999999", False)], {s.key: [] for s in SERVICES}, [], [])
     assert _state(m, 0, "s3_pab") == "unknown"
+
+
+@pytest.mark.django_db
+def test_projected_dimensions_reach_the_fold_by_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Gryphon returns a projected ``x.dimensions`` as stored, keyed by Dimension node id (tap 0.4.0, tap#711). The
+    panel names it at the read edge, so the fold's design filter reads ``dims`` by name."""
+    from types import SimpleNamespace
+
+    from tap_plugin.aws_core.panels import baseline
+
+    from tap_grid.dimension_map import supplied
+
+    stored = supplied({"tap.computing.cloud": "aws"})
+    assert "tap.computing.cloud" not in stored, "the read returns node ids, which is what this test is about"
+    monkeypatch.setattr(
+        "tap_grid.gryphon.executor.execute_gryphon_raw",
+        lambda *_a, **_k: {"rows": [{**_fp("f1", "us-gov-east-1"), "dims": dict(stored)}]},
+    )
+    seen: list[list[dict[str, Any]]] = []
+    monkeypatch.setattr(baseline, "fold_baseline", lambda footprints, *_a, **_k: seen.append(footprints) or {})
+    baseline.AwsBaselinePanelType.get_view_context(SimpleNamespace(config={}, entity_id="p"), None)
+    assert seen[0][0]["dims"] == {"tap.computing.cloud": "aws"}

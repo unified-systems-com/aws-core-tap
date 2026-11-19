@@ -19,6 +19,7 @@ from tap_plugin.aws_core.models import (
     TransitGateway,
     TransitGatewayAttachment,
 )
+from tap_plugin.aws_core.tests.grid_dimensions import dimensions_of
 
 from tap_grid.caller_context import CallerContext
 from tap_grid.constraints import WILDCARD, get_edge_type_constraints
@@ -115,7 +116,7 @@ class TestCreate:
         row = model.all_objects.get(entity_id=result.entity_id)
         assert getattr(row, key) == ""
         assert row.entity.name == "highbar"
-        assert row.entity.dimensions == {"tap.computing.cloud": "aws"}
+        assert dimensions_of(row.entity) == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(("model", "key", "good", "_bad"), TYPES)
     def test_well_formed_id_is_accepted_and_names_the_node(self, model, key, good, _bad) -> None:
@@ -225,7 +226,7 @@ class TestEdges:
         assert result.success, result.errors
         edge = Edge.objects.select_related("entity").get(entity_id=result.entity_id)
         assert edge.edge_type == edge_type
-        assert edge.entity.dimensions == {"tap.computing.cloud": "aws"}
+        assert dimensions_of(edge.entity) == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(
         ("edge_type", "source", "target"),

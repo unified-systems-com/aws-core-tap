@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.models import CodebuildProject, CodepipelinePipeline
+from tap_plugin.aws_core.tests.grid_dimensions import dimensions_of
 
 from tap_grid.caller_context import CallerContext
 from tap_grid.constraints import WILDCARD, get_edge_type_constraints
@@ -134,7 +135,7 @@ class TestCreate:
         assert result.success, result.errors
         row = model.all_objects.get(entity_id=result.entity_id)
         assert getattr(row, key) == ""
-        assert row.entity.dimensions == {"tap.computing.cloud": "aws"}
+        assert dimensions_of(row.entity) == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(("model", "key", "good", "_bad"), TYPES)
     def test_well_formed_arn_is_accepted(self, model, key, good, _bad) -> None:
@@ -245,7 +246,7 @@ class TestEdges:
         result = _edge(_entity(source, "s"), _entity(target, "t"), edge_type)
         assert result.success, result.errors
         edge = Edge.objects.select_related("entity").get(entity_id=result.entity_id)
-        assert edge.entity.dimensions == {"tap.computing.cloud": "aws"}
+        assert dimensions_of(edge.entity) == {"tap.computing.cloud": "aws"}
 
     @pytest.mark.parametrize(
         ("edge_type", "source", "target"),
