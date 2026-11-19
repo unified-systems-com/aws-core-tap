@@ -212,10 +212,11 @@
           "additionalProperties": { "type": "string", "pattern": "^(@account|@region|@partition|[A-Za-z][A-Za-z0-9]*)$" }
         },
         "arn_key": {
-          "description": "How the ARN resolver (arn_resolver.py) reads each NATURAL_KEY field from the type's ARN: a template over the placeholders of the model's ARN_RESOURCE formats in arn_formats.json ('${VpcId}', 'o-${OrganizationId}'), or '@arn' for a field that holds the whole ARN. An account or region column reads the ARN's own segment ('${Region}', '${Account}'), never the run's. Absent when the ARN does not carry every key field.",
+          "description": "How the ARN resolver (arn_resolver.py) reads each NATURAL_KEY field from the type's ARN: a template over the placeholders of the model's ARN_RESOURCE formats in arn_formats.json ('${VpcId}', 'o-${OrganizationId}'), or '@arn' for a field that holds the whole ARN. Every template reads at least one placeholder: a constant would resolve every ARN of the type to one node (PR 254 review). An account or region column reads the ARN's own segment ('${Region}', '${Account}'), never the run's. Absent when the ARN does not carry every key field.",
           "type": "object",
           "minProperties": 1,
-          "additionalProperties": { "type": "string", "minLength": 1 }
+          "additionalProperties": { "type": "string", "minLength": 1,
+          "pattern": "^(@arn|.*\\$\\{[A-Za-z0-9_]+\\}.*)$" }
         },
         "other_ids": {
           "description": "Non-ARN forms AWS names the resource by, in the same placeholders arn_key reads (Security Hub's account pseudo-id 'AWS::::Account:${AccountId}').",

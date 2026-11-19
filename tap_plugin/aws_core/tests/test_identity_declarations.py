@@ -395,6 +395,11 @@ def test_a_type_collected_by_no_manifest_entry_declares_on_its_model() -> None:
         # Other id forms are read through the ARN key's templates.
         ({"cfn_type": "AWS::Organizations::Account", "key": {"account_id": "AccountId"}, "other_ids": ["AWS::::Account:${AccountId}"]}, False),
         ({"cfn_type": "AWS::EC2::VPC", "key": {"vpc_id": "VpcId"}, "unknown": 1}, False),
+        # Every arn_key template reads a placeholder, or is the whole ARN: a constant would resolve every ARN of the
+        # type to one node (PR 254 review).
+        ({"cfn_type": "AWS::EC2::VPC", "key": {"vpc_id": "VpcId"}, "arn_key": {"vpc_id": "vpc-fixed"}}, False),
+        ({"cfn_type": "AWS::IAM::VirtualMFADevice", "key": {"serial_number": "SerialNumber"}, "arn_key": {"serial_number": "@arn"}}, True),
+        ({"cfn_type": "AWS::Organizations::Organization", "key": {"organization_id": "Id"}, "arn_key": {"organization_id": "o-${OrganizationId}"}}, True),
     ],
 )
 def test_the_schema_holds_the_declarations_shape(declaration: dict[str, Any], valid: bool) -> None:
