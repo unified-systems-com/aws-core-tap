@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.3](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.2...v0.8.3) (2026-11-19)
+
+
+### Features
+
+* **history:** published-version types keep no grid history; adopt tap 0.4.0's dimension storage ([#244](https://github.com/unified-systems-com/aws-core-tap/issues/244)) ([2e50ecb](https://github.com/unified-systems-com/aws-core-tap/commit/2e50ecb68c3896061c0e6a22c5daf9c60defa2ba))
+* **identity:** declare non-ARN identity, check it against CloudFormation, resolve ARNs onto native keys ([#254](https://github.com/unified-systems-com/aws-core-tap/issues/254)) ([da80942](https://github.com/unified-systems-com/aws-core-tap/commit/da80942f9372ba2b9171742fd9f9943c0bf084ca))
+
+
+### Bug Fixes
+
+* **identity:** read returned ARNs, drop Pinpoint Email duplicates, key the OpenSearch data source natively ([#251](https://github.com/unified-systems-com/aws-core-tap/issues/251)) ([#255](https://github.com/unified-systems-com/aws-core-tap/issues/255)) ([9cf60cf](https://github.com/unified-systems-com/aws-core-tap/commit/9cf60cf7e8fab4c2e20c1ee1a28ebfd39bf2993f))
+
 ## [0.8.2](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.1...v0.8.2) (2026-11-18)
 
 
