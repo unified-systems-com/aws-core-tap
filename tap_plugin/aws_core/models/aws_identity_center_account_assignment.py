@@ -42,6 +42,20 @@ class AwsIdentityCenterAccountAssignment(BaseModel):
         "principal_type",
         "principal_id",
     )
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": "AWS::SSO::Assignment",
+        "key": {
+            "instance_arn": "InstanceArn",
+            "account_id": "TargetId",
+            "permission_set_arn": "PermissionSetArn",
+            "principal_type": "PrincipalType",
+            "principal_id": "PrincipalId",
+        },
+        "reason": "TargetType is left out: AWS_ACCOUNT is the only target type AWS supports, so TargetId (account_id) alone says what the target is",
+    }
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {

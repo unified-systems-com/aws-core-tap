@@ -73,6 +73,13 @@ class AwsPolicyStatement(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn", "statement_key")
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": None,
+        "reason": "not an AWS resource: a statement inside a policy document, named by the policy's ARN and its place in the document",
+    }
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

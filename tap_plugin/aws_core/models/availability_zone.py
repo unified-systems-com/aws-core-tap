@@ -18,6 +18,13 @@ class AvailabilityZone(BaseModel):
     # Identity (req-grid-entity-natural-key): The zone ID (for example usgw1-az1): the same physical
     # zone in every account, unlike the zone name, which AWS maps per account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("zone_id",)
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": None,
+        "reason": "not a CloudFormation resource: an Availability Zone, named by the zone id AWS gives it (the same in every account, unlike the zone name)",
+    }
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

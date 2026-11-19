@@ -39,6 +39,22 @@ class AwsGuardDutyDetector(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "detector_id")
     ARN_RESOURCE: ClassVar[str | None] = "guardduty:detector"
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": "AWS::GuardDuty::Detector",
+        "key": {
+            "account_id": "@account",
+            "region": "@region",
+            "detector_id": "Id",
+        },
+        "arn_key": {
+            "account_id": "${Account}",
+            "region": "${Region}",
+            "detector_id": "${DetectorId}",
+        },
+    }
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "REPORTS_TO_ADMINISTRATOR__aws_core"}]},

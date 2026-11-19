@@ -49,6 +49,18 @@ class AwsOrganization(BaseModel):
     # AWS's organization id (o-…). Blank ids never converge: identity_lock_key treats "" as a hole.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("organization_id",)
     ARN_RESOURCE: ClassVar[str | None] = "organizations:organization"
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": "AWS::Organizations::Organization",
+        "key": {
+            "organization_id": "Id",
+        },
+        "arn_key": {
+            "organization_id": "o-${OrganizationId}",
+        },
+    }
 
     # Containment (tap-plugin-aws-core#50, req-aws-core-organizations-reconcile). The two existing
     # tree edges point child -> parent (NESTED_UNDER_PARENT) and stay references: an account moves

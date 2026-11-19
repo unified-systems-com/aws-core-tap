@@ -93,21 +93,49 @@ def missing_parts(key: dict[str, Any]) -> list[str]:
     return [name for name, value in key.items() if value is None or value == ""]
 
 
+def composite_natural_key(parts: Mapping[str, str]) -> str:
+    """One string for a key of several fields: the JSON object of its parts, keys sorted.
+
+    The form an edge endpoint names a composite-key node by when the batch may not carry it (an ARN the
+    resolver read a GuardDuty detector's ``(account_id, region, detector_id)`` from,
+    ``req-aws-collector-identity-13``). Unlike a reader's own joined string, it splits back exactly.
+    """
+    return json.dumps(dict(parts), sort_keys=True, separators=(",", ":"))
+
+
+def _composite_parts(natural_key: str, fields: tuple[str, ...]) -> dict[str, Any] | None:
+    """The parts of a :func:`composite_natural_key` string naming exactly ``fields``, or ``None``."""
+    if not natural_key.startswith("{"):
+        return None
+    try:
+        parts = json.loads(natural_key)
+    except ValueError:
+        return None
+    if not isinstance(parts, dict) or set(parts) != set(fields) or not all(isinstance(v, str) for v in parts.values()):
+        return None
+    return {name: parts[name] for name in fields}
+
+
 def endpoint_key(entity_type: str, natural_key: str) -> dict[str, Any]:
     """An endpoint naming a node the batch does not carry: ``{entity_type, key}``.
 
-    Only a type keyed on ONE field can be named from its natural-key string: a composite key
-    (``(account_id, region_code)``, say) is joined into the string with separators its parts may
-    contain, so it cannot be split back honestly. Such a node is always one the collector writes
-    in the same batch as the edge and is named by ref; reaching here for one is a defect.
+    A type keyed on ONE field is named from its natural-key string. A composite key is named only from a
+    :func:`composite_natural_key` string, which carries every part by name: a reader's own joined key
+    (``(account_id, region_code)`` as ``"<account>:<region>"``, say) uses separators its parts may contain, so
+    it cannot be split back honestly. Such a node is one the collector writes in the same batch as the edge
+    and is named by ref; reaching here with one is a defect.
     """
     fields = declared_key(entity_type)
-    if len(fields) != 1:
-        raise IdentityError(
-            f"{entity_type} is keyed on {list(fields)}; an edge to {natural_key!r} can only name it by ref, "
-            "and this batch does not carry it"
-        )
-    key = {fields[0]: natural_key}
+    if len(fields) == 1:
+        key: dict[str, Any] = {fields[0]: natural_key}
+    else:
+        parts = _composite_parts(natural_key, fields)
+        if parts is None:
+            raise IdentityError(
+                f"{entity_type} is keyed on {list(fields)}; an edge to {natural_key!r} can only name it by ref, "
+                "and this batch does not carry it"
+            )
+        key = parts
     if missing_parts(key):
         raise IdentityError(f"{entity_type}: an endpoint with an empty natural key cannot be named")
     return {"entity_type": entity_type, "key": key}

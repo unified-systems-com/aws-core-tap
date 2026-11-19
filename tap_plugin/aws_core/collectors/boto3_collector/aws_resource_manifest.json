@@ -29,6 +29,12 @@
       },
       "items_path": "[]",
       "natural_key": "Account",
+      "identity": {
+        "cfn_type": "AWS::Organizations::Account",
+        "key": { "account_id": "AccountId" },
+        "arn_key": { "account_id": "${AccountId}" },
+        "other_ids": ["AWS::::Account:${AccountId}"]
+      },
       "fields": {
         "name": "_account_name",
         "account_id": "Account",
@@ -575,6 +581,11 @@
       },
       "items_path": "[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53::HostedZone",
+        "key": { "hosted_zone_id": "Id" },
+        "arn_key": { "hosted_zone_id": "/hostedzone/${Id}" }
+      },
       "fields": {
         "name": "Name",
         "hosted_zone_id": "Id",
@@ -1135,6 +1146,11 @@
       },
       "items_path": "[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Cognito::UserPool",
+        "key": { "pool_id": "UserPoolId" },
+        "arn_key": { "pool_id": "${UserPoolId}" }
+      },
       "fields": {
         "name": "Name",
         "pool_id": "Id",
@@ -1381,6 +1397,11 @@
       },
       "items_path": "Vpcs[]",
       "natural_key": "VpcId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPC",
+        "key": { "vpc_id": "VpcId" },
+        "arn_key": { "vpc_id": "${VpcId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "vpc_id": "VpcId",
@@ -1422,6 +1443,11 @@
       },
       "items_path": "Subnets[]",
       "natural_key": "SubnetId",
+      "identity": {
+        "cfn_type": "AWS::EC2::Subnet",
+        "key": { "subnet_id": "SubnetId" },
+        "arn_key": { "subnet_id": "${SubnetId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "subnet_id": "SubnetId",
@@ -1478,6 +1504,11 @@
       },
       "items_path": "Reservations[].Instances[]",
       "natural_key": "InstanceId",
+      "identity": {
+        "cfn_type": "AWS::EC2::Instance",
+        "key": { "instance_id": "InstanceId" },
+        "arn_key": { "instance_id": "${InstanceId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "instance_id": "InstanceId",
@@ -1548,6 +1579,11 @@
       },
       "items_path": "SecurityGroups[]",
       "natural_key": "GroupId",
+      "identity": {
+        "cfn_type": "AWS::EC2::SecurityGroup",
+        "key": { "group_id": "Id" },
+        "arn_key": { "group_id": "${SecurityGroupId}" }
+      },
       "fields": {
         "name": "GroupName",
         "group_id": "GroupId",
@@ -2081,6 +2117,11 @@
       },
       "items_path": "[]",
       "natural_key": "SerialNumber",
+      "identity": {
+        "cfn_type": "AWS::IAM::VirtualMFADevice",
+        "key": { "serial_number": "SerialNumber" },
+        "arn_key": { "serial_number": "@arn" }
+      },
       "fields": {
         "name": "_name",
         "serial_number": "SerialNumber",
@@ -2133,6 +2174,12 @@
       },
       "items_path": "Addresses[]",
       "natural_key": "AllocationId",
+      "identity": {
+        "cfn_type": "AWS::EC2::EIP",
+        "key": { "allocation_id": "AllocationId" },
+        "arn_key": { "allocation_id": "${AllocationId}" },
+        "reason": "AllocationId alone: AWS generates it (eipalloc-…) and it names one address; CloudFormation adds PublicIp for EC2-Classic addresses, which have no allocation id and no longer exist"
+      },
       "name_tag": "Name",
       "fields": {
         "allocation_id": "AllocationId",
@@ -2170,6 +2217,11 @@
       },
       "items_path": "InternetGateways[]",
       "natural_key": "InternetGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::InternetGateway",
+        "key": { "igw_id": "InternetGatewayId" },
+        "arn_key": { "igw_id": "${InternetGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "igw_id": "InternetGatewayId",
@@ -2215,6 +2267,11 @@
       },
       "items_path": "NatGateways[]",
       "natural_key": "NatGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::NatGateway",
+        "key": { "nat_gateway_id": "NatGatewayId" },
+        "arn_key": { "nat_gateway_id": "${NatGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "nat_gateway_id": "NatGatewayId",
@@ -2261,6 +2318,11 @@
       },
       "items_path": "NetworkAcls[]",
       "natural_key": "NetworkAclId",
+      "identity": {
+        "cfn_type": "AWS::EC2::NetworkAcl",
+        "key": { "network_acl_id": "Id" },
+        "arn_key": { "network_acl_id": "${NaclId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "network_acl_id": "NetworkAclId",
@@ -2306,6 +2368,11 @@
       },
       "items_path": "RouteTables[]",
       "natural_key": "RouteTableId",
+      "identity": {
+        "cfn_type": "AWS::EC2::RouteTable",
+        "key": { "route_table_id": "RouteTableId" },
+        "arn_key": { "route_table_id": "${RouteTableId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "route_table_id": "RouteTableId"
@@ -2350,6 +2417,11 @@
       },
       "items_path": "Volumes[]",
       "natural_key": "VolumeId",
+      "identity": {
+        "cfn_type": "AWS::EC2::Volume",
+        "key": { "volume_id": "VolumeId" },
+        "arn_key": { "volume_id": "${VolumeId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "volume_id": "VolumeId",
@@ -2412,6 +2484,11 @@
       },
       "items_path": "VpcEndpoints[]",
       "natural_key": "VpcEndpointId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPCEndpoint",
+        "key": { "vpc_endpoint_id": "Id" },
+        "arn_key": { "vpc_endpoint_id": "${VpcEndpointId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "vpc_endpoint_id": "VpcEndpointId",
@@ -3095,6 +3172,12 @@
       },
       "items_path": "connections[]",
       "natural_key": "connectionId",
+      "identity": {
+        "cfn_type": "AWS::DirectConnect::Connection",
+        "key": { "connection_id": "ConnectionId" },
+        "arn_key": { "connection_id": "${ConnectionId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeConnections returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "connectionName",
         "connection_id": "connectionId",
@@ -3152,6 +3235,12 @@
       },
       "items_path": "virtualInterfaces[]",
       "natural_key": "virtualInterfaceId",
+      "identity": {
+        "cfn_type": "AWS::DirectConnect::PrivateVirtualInterface",
+        "key": { "virtual_interface_id": "VirtualInterfaceId" },
+        "arn_key": { "virtual_interface_id": "${VirtualInterfaceId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeVirtualInterfaces returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "virtualInterfaceName",
         "virtual_interface_id": "virtualInterfaceId",
@@ -3207,6 +3296,12 @@
       },
       "items_path": "[]",
       "natural_key": "directConnectGatewayId",
+      "identity": {
+        "cfn_type": "AWS::DirectConnect::DirectConnectGateway",
+        "key": { "direct_connect_gateway_id": "DirectConnectGatewayId" },
+        "arn_key": { "direct_connect_gateway_id": "${DirectConnectGatewayId}" },
+        "reason": "CloudFormation identifies it by its ARN, but the listing returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "directConnectGatewayName",
         "direct_connect_gateway_id": "directConnectGatewayId",
@@ -3249,6 +3344,11 @@
       },
       "items_path": "ServiceConfigurations[]",
       "natural_key": "ServiceId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPCEndpointService",
+        "key": { "service_id": "ServiceId" },
+        "arn_key": { "service_id": "${VpcEndpointServiceId}" }
+      },
       "fields": {
         "service_id": "ServiceId",
         "service_name": "ServiceName",
@@ -3294,6 +3394,11 @@
       },
       "items_path": "FirewallRuleGroups[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53Resolver::FirewallRuleGroup",
+        "key": { "rule_group_id": "Id" },
+        "arn_key": { "rule_group_id": "${ResourceId}" }
+      },
       "fields": {
         "name": "Name",
         "rule_group_id": "Id",
@@ -3336,6 +3441,11 @@
       },
       "items_path": "[]",
       "natural_key": "TransitGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGateway",
+        "key": { "transit_gateway_id": "Id" },
+        "arn_key": { "transit_gateway_id": "${TransitGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "transit_gateway_id": "TransitGatewayId",
@@ -3377,6 +3487,11 @@
       },
       "items_path": "[]",
       "natural_key": "TransitGatewayAttachmentId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayAttachment",
+        "key": { "attachment_id": "Id" },
+        "arn_key": { "attachment_id": "${TransitGatewayAttachmentId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "attachment_id": "TransitGatewayAttachmentId",
@@ -5323,6 +5438,10 @@
       },
       "items_path": "[]",
       "natural_key": "MountTargetId",
+      "identity": {
+        "cfn_type": "AWS::EFS::MountTarget",
+        "key": { "mount_target_id": "Id" }
+      },
       "fields": {
         "mount_target_id": "MountTargetId",
         "file_system_id": "FileSystemId",
@@ -5708,6 +5827,11 @@
       },
       "items_path": "[]",
       "natural_key": "IdentityPoolId",
+      "identity": {
+        "cfn_type": "AWS::Cognito::IdentityPool",
+        "key": { "identity_pool_id": "Id" },
+        "arn_key": { "identity_pool_id": "${IdentityPoolId}" }
+      },
       "fields": {
         "name": "IdentityPoolName",
         "identity_pool_id": "IdentityPoolId",
@@ -24352,6 +24476,12 @@
       },
       "items_path": "ApplicationStatusChecks[]",
       "natural_key": "ApplicationStatusCheckId",
+      "identity": {
+        "cfn_type": "AWS::EC2::ApplicationStatusCheck",
+        "key": { "ec2_application_status_check_id": "ApplicationStatusCheckId" },
+        "arn_key": { "ec2_application_status_check_id": "${ApplicationStatusCheckId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeApplicationStatusChecks returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_application_status_check_id": "ApplicationStatusCheckId"
@@ -24387,6 +24517,11 @@
       },
       "items_path": "CapacityManagerDataExports[]",
       "natural_key": "CapacityManagerDataExportId",
+      "identity": {
+        "cfn_type": "AWS::EC2::CapacityManagerDataExport",
+        "key": { "ec2_capacity_manager_data_export_id": "CapacityManagerDataExportId" },
+        "arn_key": { "ec2_capacity_manager_data_export_id": "${CapacityManagerDataExportId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_capacity_manager_data_export_id": "CapacityManagerDataExportId"
@@ -24422,6 +24557,11 @@
       },
       "items_path": "CarrierGateways[]",
       "natural_key": "CarrierGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::CarrierGateway",
+        "key": { "ec2_carrier_gateway_id": "CarrierGatewayId" },
+        "arn_key": { "ec2_carrier_gateway_id": "${CarrierGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_carrier_gateway_id": "CarrierGatewayId"
@@ -24457,6 +24597,11 @@
       },
       "items_path": "ClientVpnEndpoints[]",
       "natural_key": "ClientVpnEndpointId",
+      "identity": {
+        "cfn_type": "AWS::EC2::ClientVpnEndpoint",
+        "key": { "ec2_client_vpn_endpoint_id": "Id" },
+        "arn_key": { "ec2_client_vpn_endpoint_id": "${ClientVpnEndpointId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_client_vpn_endpoint_id": "ClientVpnEndpointId"
@@ -24492,6 +24637,11 @@
       },
       "items_path": "CustomerGateways[]",
       "natural_key": "CustomerGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::CustomerGateway",
+        "key": { "ec2_customer_gateway_id": "CustomerGatewayId" },
+        "arn_key": { "ec2_customer_gateway_id": "${CustomerGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_customer_gateway_id": "CustomerGatewayId"
@@ -24527,6 +24677,11 @@
       },
       "items_path": "DhcpOptions[]",
       "natural_key": "DhcpOptionsId",
+      "identity": {
+        "cfn_type": "AWS::EC2::DHCPOptions",
+        "key": { "ec2_dhcp_options_id": "DhcpOptionsId" },
+        "arn_key": { "ec2_dhcp_options_id": "${DhcpOptionsId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_dhcp_options_id": "DhcpOptionsId"
@@ -24562,6 +24717,11 @@
       },
       "items_path": "Fleets[]",
       "natural_key": "FleetId",
+      "identity": {
+        "cfn_type": "AWS::EC2::EC2Fleet",
+        "key": { "ec2_fleet_id": "FleetId" },
+        "arn_key": { "ec2_fleet_id": "${FleetId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_fleet_id": "FleetId"
@@ -24597,6 +24757,11 @@
       },
       "items_path": "EgressOnlyInternetGateways[]",
       "natural_key": "EgressOnlyInternetGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::EgressOnlyInternetGateway",
+        "key": { "ec2_egress_only_internet_gateway_id": "Id" },
+        "arn_key": { "ec2_egress_only_internet_gateway_id": "${EgressOnlyInternetGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_egress_only_internet_gateway_id": "EgressOnlyInternetGatewayId"
@@ -24632,6 +24797,11 @@
       },
       "items_path": "FlowLogs[]",
       "natural_key": "FlowLogId",
+      "identity": {
+        "cfn_type": "AWS::EC2::FlowLog",
+        "key": { "ec2_flow_log_id": "Id" },
+        "arn_key": { "ec2_flow_log_id": "${VpcFlowLogId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_flow_log_id": "FlowLogId"
@@ -24672,6 +24842,12 @@
       },
       "items_path": "FpgaImages[]",
       "natural_key": "FpgaImageId",
+      "identity": {
+        "cfn_type": "AWS::EC2::FpgaImage",
+        "key": { "ec2_fpga_image_id": "FpgaImageId" },
+        "arn_key": { "ec2_fpga_image_id": "${FpgaImageId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeFpgaImages returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "Name",
         "ec2_fpga_image_id": "FpgaImageId"
@@ -24707,6 +24883,11 @@
       },
       "items_path": "Hosts[]",
       "natural_key": "HostId",
+      "identity": {
+        "cfn_type": "AWS::EC2::Host",
+        "key": { "ec2_host_id": "HostId" },
+        "arn_key": { "ec2_host_id": "${DedicatedHostId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_host_id": "HostId"
@@ -24811,6 +24992,11 @@
       },
       "items_path": "IpamPoolCidrs[]",
       "natural_key": "IpamPoolCidrId",
+      "identity": {
+        "cfn_type": "AWS::EC2::IPAMPoolCidr",
+        "key": { "ec2_ipam_pool_cidr_id": "IpamPoolCidrId" },
+        "reason": "IpamPoolCidrId alone: AWS generates it (ipam-pool-cidr-…) and it names one CIDR; CloudFormation adds IpamPoolId because the API addresses a CIDR under its pool"
+      },
       "fields": {
         "ec2_ipam_pool_cidr_id": "IpamPoolCidrId"
       },
@@ -25018,6 +25204,12 @@
       },
       "items_path": "PublicIpv4Pools[]",
       "natural_key": "PoolId",
+      "identity": {
+        "cfn_type": "AWS::EC2::IPv4Pool",
+        "key": { "ec2_ipv4_pool_id": "PoolId" },
+        "arn_key": { "ec2_ipv4_pool_id": "${Ipv4PoolEc2Id}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribePublicIpv4Pools returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_ipv4_pool_id": "PoolId"
@@ -25053,6 +25245,12 @@
       },
       "items_path": "InstanceEventWindows[]",
       "natural_key": "InstanceEventWindowId",
+      "identity": {
+        "cfn_type": "AWS::EC2::InstanceEventWindow",
+        "key": { "ec2_instance_event_window_id": "InstanceEventWindowId" },
+        "arn_key": { "ec2_instance_event_window_id": "${InstanceEventWindowId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeInstanceEventWindows returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "Name",
         "ec2_instance_event_window_id": "InstanceEventWindowId"
@@ -25123,6 +25321,11 @@
       },
       "items_path": "LaunchTemplates[]",
       "natural_key": "LaunchTemplateId",
+      "identity": {
+        "cfn_type": "AWS::EC2::LaunchTemplate",
+        "key": { "ec2_launch_template_id": "LaunchTemplateId" },
+        "arn_key": { "ec2_launch_template_id": "${LaunchTemplateId}" }
+      },
       "fields": {
         "name": "LaunchTemplateName",
         "ec2_launch_template_id": "LaunchTemplateId"
@@ -25158,6 +25361,11 @@
       },
       "items_path": "LocalGatewayRouteTableVpcAssociations[]",
       "natural_key": "LocalGatewayRouteTableVpcAssociationId",
+      "identity": {
+        "cfn_type": "AWS::EC2::LocalGatewayRouteTableVPCAssociation",
+        "key": { "ec2_local_gateway_route_table_vpc_association_id": "LocalGatewayRouteTableVpcAssociationId" },
+        "arn_key": { "ec2_local_gateway_route_table_vpc_association_id": "${LocalGatewayRouteTableVpcAssociationId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_local_gateway_route_table_vpc_association_id": "LocalGatewayRouteTableVpcAssociationId"
@@ -25193,6 +25401,11 @@
       },
       "items_path": "LocalGatewayRouteTableVirtualInterfaceGroupAssociations[]",
       "natural_key": "LocalGatewayRouteTableVirtualInterfaceGroupAssociationId",
+      "identity": {
+        "cfn_type": "AWS::EC2::LocalGatewayRouteTableVirtualInterfaceGroupAssociation",
+        "key": { "ec2_lgw_route_table_vif_group_association_id": "LocalGatewayRouteTableVirtualInterfaceGroupAssociationId" },
+        "arn_key": { "ec2_lgw_route_table_vif_group_association_id": "${LocalGatewayRouteTableVirtualInterfaceGroupAssociationId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_lgw_route_table_vif_group_association_id": "LocalGatewayRouteTableVirtualInterfaceGroupAssociationId"
@@ -25298,6 +25511,11 @@
       },
       "items_path": "NetworkInterfaces[]",
       "natural_key": "NetworkInterfaceId",
+      "identity": {
+        "cfn_type": "AWS::EC2::NetworkInterface",
+        "key": { "ec2_network_interface_id": "Id" },
+        "arn_key": { "ec2_network_interface_id": "${NetworkInterfaceId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_network_interface_id": "NetworkInterfaceId"
@@ -25384,6 +25602,11 @@
       },
       "items_path": "RouteServers[]",
       "natural_key": "RouteServerId",
+      "identity": {
+        "cfn_type": "AWS::EC2::RouteServer",
+        "key": { "ec2_route_server_id": "Id" },
+        "arn_key": { "ec2_route_server_id": "${RouteServerId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_route_server_id": "RouteServerId"
@@ -25419,6 +25642,11 @@
       },
       "items_path": "RouteServerEndpoints[]",
       "natural_key": "RouteServerEndpointId",
+      "identity": {
+        "cfn_type": "AWS::EC2::RouteServerEndpoint",
+        "key": { "ec2_route_server_endpoint_id": "Id" },
+        "arn_key": { "ec2_route_server_endpoint_id": "${RouteServerEndpointId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_route_server_endpoint_id": "RouteServerEndpointId"
@@ -25454,6 +25682,11 @@
       },
       "items_path": "RouteServerPeers[]",
       "natural_key": "RouteServerPeerId",
+      "identity": {
+        "cfn_type": "AWS::EC2::RouteServerPeer",
+        "key": { "ec2_route_server_peer_id": "Id" },
+        "arn_key": { "ec2_route_server_peer_id": "${RouteServerPeerId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_route_server_peer_id": "RouteServerPeerId"
@@ -25547,6 +25780,11 @@
       },
       "items_path": "SpotFleetRequestConfigs[]",
       "natural_key": "SpotFleetRequestId",
+      "identity": {
+        "cfn_type": "AWS::EC2::SpotFleet",
+        "key": { "ec2_spot_fleet_id": "Id" },
+        "arn_key": { "ec2_spot_fleet_id": "${SpotFleetRequestId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_spot_fleet_id": "SpotFleetRequestId"
@@ -25582,6 +25820,11 @@
       },
       "items_path": "TrafficMirrorFilters[]",
       "natural_key": "TrafficMirrorFilterId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TrafficMirrorFilter",
+        "key": { "ec2_traffic_mirror_filter_id": "Id" },
+        "arn_key": { "ec2_traffic_mirror_filter_id": "${TrafficMirrorFilterId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_traffic_mirror_filter_id": "TrafficMirrorFilterId"
@@ -25617,6 +25860,11 @@
       },
       "items_path": "TrafficMirrorFilterRules[]",
       "natural_key": "TrafficMirrorFilterRuleId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TrafficMirrorFilterRule",
+        "key": { "ec2_traffic_mirror_filter_rule_id": "TrafficMirrorFilterRuleId" },
+        "arn_key": { "ec2_traffic_mirror_filter_rule_id": "${TrafficMirrorFilterRuleId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_traffic_mirror_filter_rule_id": "TrafficMirrorFilterRuleId"
@@ -25652,6 +25900,11 @@
       },
       "items_path": "TrafficMirrorSessions[]",
       "natural_key": "TrafficMirrorSessionId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TrafficMirrorSession",
+        "key": { "ec2_traffic_mirror_session_id": "Id" },
+        "arn_key": { "ec2_traffic_mirror_session_id": "${TrafficMirrorSessionId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_traffic_mirror_session_id": "TrafficMirrorSessionId"
@@ -25687,6 +25940,11 @@
       },
       "items_path": "TrafficMirrorTargets[]",
       "natural_key": "TrafficMirrorTargetId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TrafficMirrorTarget",
+        "key": { "ec2_traffic_mirror_target_id": "Id" },
+        "arn_key": { "ec2_traffic_mirror_target_id": "${TrafficMirrorTargetId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_traffic_mirror_target_id": "TrafficMirrorTargetId"
@@ -25722,6 +25980,11 @@
       },
       "items_path": "TransitGatewayConnects[]",
       "natural_key": "TransitGatewayAttachmentId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayConnect",
+        "key": { "ec2_transit_gateway_connect_id": "TransitGatewayAttachmentId" },
+        "arn_key": { "ec2_transit_gateway_connect_id": "${TransitGatewayAttachmentId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_connect_id": "TransitGatewayAttachmentId"
@@ -25757,6 +26020,11 @@
       },
       "items_path": "TransitGatewayConnectPeers[]",
       "natural_key": "TransitGatewayConnectPeerId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayConnectPeer",
+        "key": { "ec2_transit_gateway_connect_peer_id": "TransitGatewayConnectPeerId" },
+        "arn_key": { "ec2_transit_gateway_connect_peer_id": "${TransitGatewayConnectPeerId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_connect_peer_id": "TransitGatewayConnectPeerId"
@@ -25792,6 +26060,11 @@
       },
       "items_path": "TransitGatewayMeteringPolicies[]",
       "natural_key": "TransitGatewayMeteringPolicyId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayMeteringPolicy",
+        "key": { "ec2_transit_gateway_metering_policy_id": "TransitGatewayMeteringPolicyId" },
+        "arn_key": { "ec2_transit_gateway_metering_policy_id": "${TransitGatewayMeteringPolicyId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_metering_policy_id": "TransitGatewayMeteringPolicyId"
@@ -25827,6 +26100,11 @@
       },
       "items_path": "TransitGatewayPeeringAttachments[]",
       "natural_key": "TransitGatewayAttachmentId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayPeeringAttachment",
+        "key": { "ec2_transit_gateway_peering_attachment_id": "TransitGatewayAttachmentId" },
+        "arn_key": { "ec2_transit_gateway_peering_attachment_id": "${TransitGatewayAttachmentId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_peering_attachment_id": "TransitGatewayAttachmentId"
@@ -25862,6 +26140,11 @@
       },
       "items_path": "TransitGatewayPolicyTables[]",
       "natural_key": "TransitGatewayPolicyTableId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayPolicyTable",
+        "key": { "ec2_transit_gateway_policy_table_id": "TransitGatewayPolicyTableId" },
+        "arn_key": { "ec2_transit_gateway_policy_table_id": "${TransitGatewayPolicyTableId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_policy_table_id": "TransitGatewayPolicyTableId"
@@ -25897,6 +26180,11 @@
       },
       "items_path": "TransitGatewayRouteTables[]",
       "natural_key": "TransitGatewayRouteTableId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayRouteTable",
+        "key": { "ec2_transit_gateway_route_table_id": "TransitGatewayRouteTableId" },
+        "arn_key": { "ec2_transit_gateway_route_table_id": "${TransitGatewayRouteTableId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_route_table_id": "TransitGatewayRouteTableId"
@@ -25932,6 +26220,11 @@
       },
       "items_path": "TransitGatewayVpcAttachments[]",
       "natural_key": "TransitGatewayAttachmentId",
+      "identity": {
+        "cfn_type": "AWS::EC2::TransitGatewayVpcAttachment",
+        "key": { "ec2_transit_gateway_vpc_attachment_id": "Id" },
+        "arn_key": { "ec2_transit_gateway_vpc_attachment_id": "${TransitGatewayAttachmentId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_transit_gateway_vpc_attachment_id": "TransitGatewayAttachmentId"
@@ -25970,6 +26263,11 @@
       },
       "items_path": "VpcBlockPublicAccessExclusions[]",
       "natural_key": "ExclusionId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPCBlockPublicAccessExclusion",
+        "key": { "ec2_vpc_block_public_access_exclusion_id": "ExclusionId" },
+        "arn_key": { "ec2_vpc_block_public_access_exclusion_id": "${VpcBlockPublicAccessExclusionId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_vpc_block_public_access_exclusion_id": "ExclusionId"
@@ -26005,6 +26303,11 @@
       },
       "items_path": "VpcEncryptionControls[]",
       "natural_key": "VpcEncryptionControlId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPCEncryptionControl",
+        "key": { "ec2_vpc_encryption_control_id": "VpcEncryptionControlId" },
+        "arn_key": { "ec2_vpc_encryption_control_id": "${VpcEncryptionControlId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_vpc_encryption_control_id": "VpcEncryptionControlId"
@@ -26032,6 +26335,10 @@
       },
       "items_path": "ConnectionNotificationSet[]",
       "natural_key": "ConnectionNotificationId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPCEndpointConnectionNotification",
+        "key": { "ec2_vpc_endpoint_connection_notification_id": "VPCEndpointConnectionNotificationId" }
+      },
       "fields": {
         "ec2_vpc_endpoint_connection_notification_id": "ConnectionNotificationId"
       },
@@ -26064,6 +26371,11 @@
       },
       "items_path": "VpcPeeringConnections[]",
       "natural_key": "VpcPeeringConnectionId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPCPeeringConnection",
+        "key": { "ec2_vpc_peering_connection_id": "Id" },
+        "arn_key": { "ec2_vpc_peering_connection_id": "${VpcPeeringConnectionId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_vpc_peering_connection_id": "VpcPeeringConnectionId"
@@ -26099,6 +26411,11 @@
       },
       "items_path": "VpnConcentrators[]",
       "natural_key": "VpnConcentratorId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPNConcentrator",
+        "key": { "ec2_vpn_concentrator_id": "VpnConcentratorId" },
+        "arn_key": { "ec2_vpn_concentrator_id": "${VpnConcentratorId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_vpn_concentrator_id": "VpnConcentratorId"
@@ -26148,6 +26465,11 @@
       },
       "items_path": "VpnConnections[]",
       "natural_key": "VpnConnectionId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPNConnection",
+        "key": { "ec2_vpn_connection_id": "VpnConnectionId" },
+        "arn_key": { "ec2_vpn_connection_id": "${VpnConnectionId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_vpn_connection_id": "VpnConnectionId"
@@ -26183,6 +26505,11 @@
       },
       "items_path": "VpnGateways[]",
       "natural_key": "VpnGatewayId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VPNGateway",
+        "key": { "ec2_vpn_gateway_id": "VPNGatewayId" },
+        "arn_key": { "ec2_vpn_gateway_id": "${VpnGatewayId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_vpn_gateway_id": "VpnGatewayId"
@@ -26218,6 +26545,11 @@
       },
       "items_path": "VerifiedAccessEndpoints[]",
       "natural_key": "VerifiedAccessEndpointId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VerifiedAccessEndpoint",
+        "key": { "ec2_verified_access_endpoint_id": "VerifiedAccessEndpointId" },
+        "arn_key": { "ec2_verified_access_endpoint_id": "${VerifiedAccessEndpointId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_verified_access_endpoint_id": "VerifiedAccessEndpointId"
@@ -26253,6 +26585,11 @@
       },
       "items_path": "VerifiedAccessInstances[]",
       "natural_key": "VerifiedAccessInstanceId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VerifiedAccessInstance",
+        "key": { "ec2_verified_access_instance_id": "VerifiedAccessInstanceId" },
+        "arn_key": { "ec2_verified_access_instance_id": "${VerifiedAccessInstanceId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_verified_access_instance_id": "VerifiedAccessInstanceId"
@@ -26295,6 +26632,11 @@
       },
       "items_path": "VerifiedAccessTrustProviders[]",
       "natural_key": "VerifiedAccessTrustProviderId",
+      "identity": {
+        "cfn_type": "AWS::EC2::VerifiedAccessTrustProvider",
+        "key": { "ec2_verified_access_trust_provider_id": "VerifiedAccessTrustProviderId" },
+        "arn_key": { "ec2_verified_access_trust_provider_id": "${VerifiedAccessTrustProviderId}" }
+      },
       "name_tag": "Name",
       "fields": {
         "ec2_verified_access_trust_provider_id": "VerifiedAccessTrustProviderId"
@@ -26967,6 +27309,12 @@
       },
       "items_path": "FirewallConfigs[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53Resolver::FirewallConfig",
+        "key": { "route53resolver_firewall_config_id": "Id" },
+        "arn_key": { "route53resolver_firewall_config_id": "${ResourceId}" },
+        "reason": "CloudFormation identifies it by its ARN, but ListFirewallConfigs returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "route53resolver_firewall_config_id": "Id"
       },
@@ -26991,6 +27339,11 @@
       },
       "items_path": "ResolverConfigs[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53Resolver::ResolverConfig",
+        "key": { "route53resolver_resolver_config_id": "ResourceId" },
+        "arn_key": { "route53resolver_resolver_config_id": "${ResourceId}" }
+      },
       "fields": {
         "route53resolver_resolver_config_id": "Id"
       },
@@ -27015,6 +27368,11 @@
       },
       "items_path": "ResolverDnssecConfigs[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53Resolver::ResolverDNSSECConfig",
+        "key": { "route53resolver_resolver_dnssec_config_id": "Id" },
+        "arn_key": { "route53resolver_resolver_dnssec_config_id": "${ResourceId}" }
+      },
       "fields": {
         "route53resolver_resolver_dnssec_config_id": "Id"
       },
@@ -27132,6 +27490,11 @@
       },
       "items_path": "ByteMatchSets[]",
       "natural_key": "ByteMatchSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::ByteMatchSet",
+        "key": { "wafregional_byte_match_set_id": "Id" },
+        "arn_key": { "wafregional_byte_match_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_byte_match_set_id": "ByteMatchSetId"
@@ -27157,6 +27520,11 @@
       },
       "items_path": "GeoMatchSets[]",
       "natural_key": "GeoMatchSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::GeoMatchSet",
+        "key": { "wafregional_geo_match_set_id": "Id" },
+        "arn_key": { "wafregional_geo_match_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_geo_match_set_id": "GeoMatchSetId"
@@ -27182,6 +27550,11 @@
       },
       "items_path": "IPSets[]",
       "natural_key": "IPSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::IPSet",
+        "key": { "wafregional_ip_set_id": "Id" },
+        "arn_key": { "wafregional_ip_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_ip_set_id": "IPSetId"
@@ -27207,6 +27580,11 @@
       },
       "items_path": "RegexPatternSets[]",
       "natural_key": "RegexPatternSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::RegexPatternSet",
+        "key": { "wafregional_regex_pattern_set_id": "Id" },
+        "arn_key": { "wafregional_regex_pattern_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_regex_pattern_set_id": "RegexPatternSetId"
@@ -27232,6 +27610,11 @@
       },
       "items_path": "SizeConstraintSets[]",
       "natural_key": "SizeConstraintSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::SizeConstraintSet",
+        "key": { "wafregional_size_constraint_set_id": "Id" },
+        "arn_key": { "wafregional_size_constraint_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_size_constraint_set_id": "SizeConstraintSetId"
@@ -27257,6 +27640,11 @@
       },
       "items_path": "SqlInjectionMatchSets[]",
       "natural_key": "SqlInjectionMatchSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::SqlInjectionMatchSet",
+        "key": { "wafregional_sql_injection_match_set_id": "Id" },
+        "arn_key": { "wafregional_sql_injection_match_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_sql_injection_match_set_id": "SqlInjectionMatchSetId"
@@ -27282,6 +27670,11 @@
       },
       "items_path": "XssMatchSets[]",
       "natural_key": "XssMatchSetId",
+      "identity": {
+        "cfn_type": "AWS::WAFRegional::XssMatchSet",
+        "key": { "wafregional_xss_match_set_id": "Id" },
+        "arn_key": { "wafregional_xss_match_set_id": "${Id}" }
+      },
       "fields": {
         "name": "Name",
         "wafregional_xss_match_set_id": "XssMatchSetId"
@@ -27354,6 +27747,11 @@
       },
       "items_path": "items[]",
       "natural_key": "id",
+      "identity": {
+        "cfn_type": "AWS::WellArchitected::AgentContext",
+        "key": { "wellarchitected_agent_context_id": "Id" },
+        "reason": "CloudFormation identifies it by its ARN, but ListAgentContexts returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "wellarchitected_agent_context_id": "id"
       },
@@ -27407,6 +27805,11 @@
       },
       "items_path": "items[]",
       "natural_key": "id",
+      "identity": {
+        "cfn_type": "AWS::WellArchitected::AgentGoal",
+        "key": { "wellarchitected_agent_goal_id": "Id" },
+        "reason": "CloudFormation identifies it by its ARN, but ListAgentGoals returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "wellarchitected_agent_goal_id": "id"
       },
@@ -28531,6 +28934,12 @@
       },
       "items_path": "DelegationSets[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53::DelegationSet",
+        "key": { "route53_delegation_set_id": "Id" },
+        "arn_key": { "route53_delegation_set_id": "/delegationset/${Id}" },
+        "reason": "CloudFormation identifies it by its ARN, but ListReusableDelegationSets returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "route53_delegation_set_id": "Id"
       },
@@ -28563,6 +28972,11 @@
       },
       "items_path": "HealthChecks[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53::HealthCheck",
+        "key": { "route53_health_check_id": "HealthCheckId" },
+        "arn_key": { "route53_health_check_id": "${Id}" }
+      },
       "fields": {
         "route53_health_check_id": "Id"
       },
@@ -28598,6 +29012,12 @@
       },
       "items_path": "QueryLoggingConfigs[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53::QueryLoggingConfig",
+        "key": { "route53_query_logging_config_id": "Id" },
+        "arn_key": { "route53_query_logging_config_id": "${Id}" },
+        "reason": "CloudFormation identifies it by its ARN, but ListQueryLoggingConfigs returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "route53_query_logging_config_id": "Id"
       },
@@ -28622,6 +29042,12 @@
       },
       "items_path": "TrafficPolicyInstances[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::Route53::TrafficPolicyInstance",
+        "key": { "route53_traffic_policy_instance_id": "Id" },
+        "arn_key": { "route53_traffic_policy_instance_id": "${Id}" },
+        "reason": "CloudFormation identifies it by its ARN, but ListTrafficPolicyInstances returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "Name",
         "route53_traffic_policy_instance_id": "Id"
@@ -28655,6 +29081,11 @@
       },
       "items_path": "Associations[]",
       "natural_key": "AssociationId",
+      "identity": {
+        "cfn_type": "AWS::SSM::Association",
+        "key": { "ssm_association_id": "AssociationId" },
+        "arn_key": { "ssm_association_id": "${AssociationId}" }
+      },
       "fields": {
         "name": "AssociationName",
         "ssm_association_id": "AssociationId"
@@ -28699,6 +29130,12 @@
       },
       "items_path": "CloudConnectors[]",
       "natural_key": "CloudConnectorId",
+      "identity": {
+        "cfn_type": "AWS::SSM::CloudConnector",
+        "key": { "ssm_cloud_connector_id": "CloudConnectorId" },
+        "arn_key": { "ssm_cloud_connector_id": "${CloudConnectorId}" },
+        "reason": "CloudFormation identifies it by its ARN, but ListCloudConnectors returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "DisplayName",
         "ssm_cloud_connector_id": "CloudConnectorId"
@@ -28749,6 +29186,11 @@
       },
       "items_path": "WindowIdentities[]",
       "natural_key": "WindowId",
+      "identity": {
+        "cfn_type": "AWS::SSM::MaintenanceWindow",
+        "key": { "ssm_maintenance_window_id": "WindowId" },
+        "arn_key": { "ssm_maintenance_window_id": "${ResourceId}" }
+      },
       "fields": {
         "name": "Name",
         "ssm_maintenance_window_id": "WindowId"
@@ -28803,6 +29245,11 @@
       },
       "items_path": "BaselineIdentities[]",
       "natural_key": "BaselineId",
+      "identity": {
+        "cfn_type": "AWS::SSM::PatchBaseline",
+        "key": { "ssm_patch_baseline_id": "Id" },
+        "arn_key": { "ssm_patch_baseline_id": "${PatchBaselineIdResourceId}" }
+      },
       "fields": {
         "name": "BaselineName",
         "ssm_patch_baseline_id": "BaselineId"
@@ -28880,6 +29327,10 @@
       },
       "items_path": "ServiceActionSummaries[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::ServiceCatalog::ServiceAction",
+        "key": { "servicecatalog_service_action_id": "Id" }
+      },
       "fields": {
         "name": "Name",
         "servicecatalog_service_action_id": "Id"
@@ -28905,6 +29356,10 @@
       },
       "items_path": "TagOptionDetails[]",
       "natural_key": "Id",
+      "identity": {
+        "cfn_type": "AWS::ServiceCatalog::TagOption",
+        "key": { "servicecatalog_tag_option_id": "Id" }
+      },
       "fields": {
         "servicecatalog_tag_option_id": "Id"
       },
@@ -29898,6 +30353,11 @@
       },
       "items_path": "Summaries[]",
       "natural_key": "StackSetId",
+      "identity": {
+        "cfn_type": "AWS::CloudFormation::StackSet",
+        "key": { "cloudformation_stack_set_id": "StackSetId" },
+        "arn_key": { "cloudformation_stack_set_id": "${StackSetName}:${Id}" }
+      },
       "fields": {
         "name": "StackSetName",
         "cloudformation_stack_set_id": "StackSetId"
@@ -30003,6 +30463,12 @@
       },
       "items_path": "Clusters[]",
       "natural_key": "ClusterId",
+      "identity": {
+        "cfn_type": "AWS::CloudHSM::Cluster",
+        "key": { "cloudhsm_cluster_id": "ClusterId" },
+        "arn_key": { "cloudhsm_cluster_id": "${CloudHsmClusterInstanceName}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeClusters returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "cloudhsm_cluster_id": "ClusterId"
       },
@@ -30037,6 +30503,11 @@
       },
       "items_path": "Policies[]",
       "natural_key": "PolicyId",
+      "identity": {
+        "cfn_type": "AWS::DLM::LifecyclePolicy",
+        "key": { "dlm_lifecycle_policy_id": "PolicyId" },
+        "arn_key": { "dlm_lifecycle_policy_id": "${ResourceName}" }
+      },
       "fields": {
         "dlm_lifecycle_policy_id": "PolicyId"
       },
@@ -30091,6 +30562,11 @@
       },
       "items_path": "DirectoryDescriptions[]",
       "natural_key": "DirectoryId",
+      "identity": {
+        "cfn_type": "AWS::DirectoryService::MicrosoftAD",
+        "key": { "directoryservice_directory_id": "DirectoryId" },
+        "arn_key": { "directoryservice_directory_id": "${DirectoryId}" }
+      },
       "fields": {
         "name": "Name",
         "directoryservice_directory_id": "DirectoryId"
@@ -30306,6 +30782,12 @@
       },
       "items_path": "BlueGreenDeployments[]",
       "natural_key": "BlueGreenDeploymentIdentifier",
+      "identity": {
+        "cfn_type": "AWS::RDS::Deployment",
+        "key": { "rds_blue_green_deployment_id": "BlueGreenDeploymentIdentifier" },
+        "arn_key": { "rds_blue_green_deployment_id": "${BlueGreenDeploymentIdentifier}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeBlueGreenDeployments returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "BlueGreenDeploymentName",
         "rds_blue_green_deployment_id": "BlueGreenDeploymentIdentifier"
@@ -30674,6 +31156,10 @@
       },
       "items_path": "vpcEndpointSummaries[]",
       "natural_key": "id",
+      "identity": {
+        "cfn_type": "AWS::OpenSearchServerless::VpcEndpoint",
+        "key": { "opensearchserverless_vpc_endpoint_id": "Id" }
+      },
       "fields": {
         "name": "name",
         "opensearchserverless_vpc_endpoint_id": "id"
@@ -30972,6 +31458,11 @@
       },
       "items_path": "Attachments[]",
       "natural_key": "AttachmentId",
+      "identity": {
+        "cfn_type": "AWS::NetworkManager::ConnectAttachment",
+        "key": { "networkmanager_attachment_id": "AttachmentId" },
+        "arn_key": { "networkmanager_attachment_id": "${ResourceId}" }
+      },
       "fields": {
         "networkmanager_attachment_id": "AttachmentId"
       },
@@ -31006,6 +31497,11 @@
       },
       "items_path": "ConnectPeers[]",
       "natural_key": "ConnectPeerId",
+      "identity": {
+        "cfn_type": "AWS::NetworkManager::ConnectPeer",
+        "key": { "networkmanager_connect_peer_id": "ConnectPeerId" },
+        "arn_key": { "networkmanager_connect_peer_id": "${ResourceId}" }
+      },
       "fields": {
         "networkmanager_connect_peer_id": "ConnectPeerId"
       },
@@ -31043,6 +31539,11 @@
       },
       "items_path": "Peerings[]",
       "natural_key": "PeeringId",
+      "identity": {
+        "cfn_type": "AWS::NetworkManager::TransitGatewayPeering",
+        "key": { "networkmanager_transit_gateway_peering_id": "PeeringId" },
+        "arn_key": { "networkmanager_transit_gateway_peering_id": "${ResourceId}" }
+      },
       "fields": {
         "networkmanager_transit_gateway_peering_id": "PeeringId"
       },
@@ -32281,6 +32782,10 @@
       },
       "items_path": "BackupSelectionsList[]",
       "natural_key": "SelectionId",
+      "identity": {
+        "cfn_type": "AWS::Backup::BackupSelection",
+        "key": { "backup_backup_selection_id": "Id" }
+      },
       "fields": {
         "name": "SelectionName",
         "backup_backup_selection_id": "SelectionId"
@@ -32382,6 +32887,11 @@
       },
       "items_path": "workspaces[]",
       "natural_key": "id",
+      "identity": {
+        "cfn_type": "AWS::Grafana::Workspace",
+        "key": { "grafana_workspace_id": "Id" },
+        "arn_key": { "grafana_workspace_id": "${ResourceId}" }
+      },
       "fields": {
         "grafana_workspace_id": "id"
       },
@@ -32408,6 +32918,10 @@
       },
       "items_path": "queryDefinitions[]",
       "natural_key": "queryDefinitionId",
+      "identity": {
+        "cfn_type": "AWS::Logs::QueryDefinition",
+        "key": { "logs_query_definition_id": "QueryDefinitionId" }
+      },
       "fields": {
         "name": "name",
         "logs_query_definition_id": "queryDefinitionId"
@@ -32651,6 +33165,11 @@
       },
       "items_path": "ConnectionAliases[]",
       "natural_key": "AliasId",
+      "identity": {
+        "cfn_type": "AWS::WorkSpaces::ConnectionAlias",
+        "key": { "workspaces_connection_alias_id": "AliasId" },
+        "arn_key": { "workspaces_connection_alias_id": "${ConnectionAliasId}" }
+      },
       "fields": {
         "workspaces_connection_alias_id": "AliasId"
       },
@@ -32703,6 +33222,12 @@
       },
       "items_path": "Directories[]",
       "natural_key": "DirectoryId",
+      "identity": {
+        "cfn_type": "AWS::WorkSpaces::Directory",
+        "key": { "workspaces_directory_id": "DirectoryId" },
+        "arn_key": { "workspaces_directory_id": "${DirectoryId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeWorkspaceDirectories returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "DirectoryName",
         "workspaces_directory_id": "DirectoryId"
@@ -32744,6 +33269,11 @@
       },
       "items_path": "Workspaces[]",
       "natural_key": "WorkspaceId",
+      "identity": {
+        "cfn_type": "AWS::WorkSpaces::Workspace",
+        "key": { "workspaces_workspace_id": "WorkspaceId" },
+        "arn_key": { "workspaces_workspace_id": "${WorkspaceId}" }
+      },
       "fields": {
         "name": "WorkspaceName",
         "workspaces_workspace_id": "WorkspaceId"
@@ -32785,6 +33315,12 @@
       },
       "items_path": "Result[]",
       "natural_key": "groupId",
+      "identity": {
+        "cfn_type": "AWS::WorkSpaces::WorkspaceIpGroup",
+        "key": { "workspaces_workspace_ip_group_id": "GroupId" },
+        "arn_key": { "workspaces_workspace_ip_group_id": "${GroupId}" },
+        "reason": "CloudFormation identifies it by its ARN, but DescribeIpGroups returns no ARN, and a key is never a built ARN (Q94), so the key is the id AWS returns, which the ARN carries"
+      },
       "fields": {
         "name": "groupName",
         "workspaces_workspace_ip_group_id": "groupId"
@@ -37995,6 +38531,11 @@
       },
       "items_path": "DataSources[]",
       "natural_key": "_key",
+      "identity": {
+        "cfn_type": "AWS::OpenSearch::DataSource",
+        "key": { "account_id": "@account", "region": "@region", "domain_name": "DomainName", "data_source_name": "Name" },
+        "reason": "CloudFormation's primary identifier is the data source Arn, which no API returns and the Service Authorization Reference does not define, so building it would invent a key (aws-core-tap#251); keyed instead by CloudFormation's additional identifier [DomainName, Name], scoped by account and region"
+      },
       "fields": {
         "name": "Name",
         "account_id": "_account_id",
@@ -40452,6 +40993,10 @@
       },
       "items_path": "NamedQuery",
       "natural_key": "NamedQueryId",
+      "identity": {
+        "cfn_type": "AWS::Athena::NamedQuery",
+        "key": { "athena_named_query_id": "NamedQueryId" }
+      },
       "fields": {
         "name": "Name",
         "athena_named_query_id": "NamedQueryId"
@@ -41299,6 +41844,10 @@
       },
       "items_path": "Schemas[]",
       "natural_key": "SchemaVersionId",
+      "identity": {
+        "cfn_type": "AWS::Glue::SchemaVersion",
+        "key": { "glue_schema_version_id": "VersionId" }
+      },
       "fields": {
         "glue_schema_version_id": "SchemaVersionId"
       },
