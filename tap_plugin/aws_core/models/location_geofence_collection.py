@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class LocationGeofenceCollection(BaseModel):
-    """An AWS Location Geofence Collection, read by ListGeofenceCollections. Only its identity, name and tags are collected; the rest of the response is not stored."""
+    """An AWS Location Geofence Collection, listed by ListGeofenceCollections and read by DescribeGeofenceCollection. Only its identity, name and tags are collected; the rest of the response is not stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_location_geofence_collection"
     ENTITY_NAME: ClassVar[str] = "AWS Location Geofence Collection"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Location Geofence Collection."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:geofence-collection/{CollectionName} (the AWS Service Authorization Reference 'geo' geofence-collection resource); the listing carries no ARN.
+    # Identity (req-grid-entity-natural-key): The ARN DescribeGeofenceCollection returns (CollectionArn), read for each resource ListGeofenceCollections names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_geofence_collection_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:geofence-collection"
 

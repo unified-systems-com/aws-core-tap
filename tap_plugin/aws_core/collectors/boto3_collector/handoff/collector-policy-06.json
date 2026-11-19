@@ -257,6 +257,7 @@
       "Effect": "Allow",
       "Action": [
         "redshift:DescribeClusterSecurityGroups",
+        "redshift:DescribeClusterSnapshots",
         "redshift:DescribeClusters",
         "redshift:DescribeEndpointAccess",
         "redshift:DescribeIntegrations",

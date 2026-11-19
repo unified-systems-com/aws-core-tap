@@ -71,12 +71,9 @@
       "Sid": "ReadSes",
       "Effect": "Allow",
       "Action": [
-        "ses:GetConfigurationSet",
         "ses:ListAddonInstances",
         "ses:ListAddonSubscriptions",
         "ses:ListAddressLists",
-        "ses:ListConfigurationSets",
-        "ses:ListEmailIdentities",
         "ses:ListReceiptFilters",
         "ses:ListReceiptRuleSets",
         "ses:ListTagsForResource",
@@ -290,6 +287,26 @@
         "verifiedpermissions:ListPolicyStores",
         "verifiedpermissions:ListPolicyTemplates",
         "verifiedpermissions:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadWafRegional",
+      "Effect": "Allow",
+      "Action": [
+        "waf-regional:GetRateBasedRule",
+        "waf-regional:GetWebACL",
+        "waf-regional:ListByteMatchSets",
+        "waf-regional:ListGeoMatchSets",
+        "waf-regional:ListIPSets",
+        "waf-regional:ListRateBasedRules",
+        "waf-regional:ListRegexPatternSets",
+        "waf-regional:ListRules",
+        "waf-regional:ListSizeConstraintSets",
+        "waf-regional:ListSqlInjectionMatchSets",
+        "waf-regional:ListTagsForResource",
+        "waf-regional:ListWebACLs",
+        "waf-regional:ListXssMatchSets"
       ],
       "Resource": "*"
     }

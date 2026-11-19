@@ -75,7 +75,7 @@ NO_ARN: dict[str, str] = {
     "opensearchserverless_lifecycle_policy": "the service reference defines no ARN for a serverless policy",
     "opensearchserverless_security_config": "the service reference defines no ARN for a serverless security configuration",
     "opensearchserverless_security_policy": "the service reference defines no ARN for a serverless policy",
-    "opensearch_data_source": "the reference's es:datasource is a direct-query data source (opensearch:…:datasource/…); it lists no resource type for a domain's data source, whose key the manifest builds under the domain",
+    "opensearch_data_source": "the reference's es:datasource is a direct-query data source (opensearch:…:datasource/…); it lists no resource type for a domain's data source, which is keyed natively (account, region, domain, name; aws-core-tap#251)",
     "opensearchserverless_vpc_endpoint": "the service reference defines no ARN for a serverless VPC endpoint",
     "policy_statement": "a statement inside a policy document, which has no ARN of its own",
     "redshift_cluster_security_group": "the service reference's securitygroup ARN names an EC2 group's ingress into it, not the group",

@@ -2259,7 +2259,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'kendra_thesaurus_arn': 'arn:aws:kendra:us-east-1:123456789012:index/idx-1/thesaurus/x-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_kendraranking_execution_plan": (
-        {'Id': 'ep-1', 'Name': 'gen-1', '_arn': 'arn:aws:kendra-ranking:us-east-1:123456789012:rescore-execution-plan/ep-1'},
+        {'Id': 'ep-1', 'Name': 'gen-1', 'Arn': 'arn:aws:kendra-ranking:us-east-1:123456789012:rescore-execution-plan/ep-1'},
         {'kendraranking_execution_plan_arn': 'arn:aws:kendra-ranking:us-east-1:123456789012:rescore-execution-plan/ep-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_lakeformation_data_cells_filter": (
@@ -2287,15 +2287,15 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'ssm_resource_data_sync_arn': 'arn:aws:ssm:us-east-1:123456789012:resource-data-sync/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_sagemaker_space": (
-        {'DomainId': 'd-1', 'SpaceName': 'gen-1', '_arn': 'arn:aws:sagemaker:us-east-1:123456789012:space/d-1/gen-1'},
+        {'DomainId': 'd-1', 'SpaceName': 'gen-1', 'SpaceArn': 'arn:aws:sagemaker:us-east-1:123456789012:space/d-1/gen-1'},
         {'sagemaker_space_arn': 'arn:aws:sagemaker:us-east-1:123456789012:space/d-1/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_sagemaker_user_profile": (
-        {'DomainId': 'd-1', 'UserProfileName': 'gen-1', '_arn': 'arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-1/gen-1'},
+        {'DomainId': 'd-1', 'UserProfileName': 'gen-1', 'UserProfileArn': 'arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-1/gen-1'},
         {'sagemaker_user_profile_arn': 'arn:aws:sagemaker:us-east-1:123456789012:user-profile/d-1/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_sagemaker_inference_experiment": (
-        {'Name': 'gen-1', '_arn': 'arn:aws:sagemaker:us-east-1:123456789012:inference-experiment/gen-1'},
+        {'Name': 'gen-1', 'Arn': 'arn:aws:sagemaker:us-east-1:123456789012:inference-experiment/gen-1'},
         {'sagemaker_inference_experiment_arn': 'arn:aws:sagemaker:us-east-1:123456789012:inference-experiment/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_transcribe_vocabulary": (
@@ -3377,8 +3377,9 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_redshift_snapshot": (
-        {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'SnapshotIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {'name': 'gen-1'},
+        # The key is the SnapshotArn AWS returns (it names the owning account), never one built under the caller's.
+        {'SnapshotArn': 'arn:aws:redshift:us-east-1:123456789012:snapshot:c1/gen-1', 'OwnerAccount': '123456789012', 'SnapshotIdentifier': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
+        {'redshift_snapshot_arn': 'arn:aws:redshift:us-east-1:123456789012:snapshot:c1/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_redshift_snapshot_copy_grant": (
         {'_arn': 'arn:aws:redshift:us-east-1:123456789012:res/gen-1', 'SnapshotCopyGrantName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
@@ -3529,12 +3530,12 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'r1'},
     ),
     "aws_core__aws_location_geofence_collection": (
-        {'CollectionName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:geofence-collection/r1'},
-        {'name': 'r1'},
+        {'CollectionName': 'r1', 'CollectionArn': 'arn:aws:geo:us-east-1:123456789012:geofence-collection/r1', 'Tags': {'owner': 'net-team'}},
+        {'location_geofence_collection_arn': 'arn:aws:geo:us-east-1:123456789012:geofence-collection/r1', 'name': 'r1'},
     ),
     "aws_core__aws_location_map": (
-        {'MapName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:map/r1'},
-        {'name': 'r1'},
+        {'MapName': 'r1', 'MapArn': 'arn:aws:geo:us-east-1:123456789012:map/r1', 'Tags': {'owner': 'net-team'}},
+        {'location_map_arn': 'arn:aws:geo:us-east-1:123456789012:map/r1', 'name': 'r1'},
     ),
     "aws_core__aws_location_place_index": (
         {'IndexName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:place-index/r1'},
@@ -3545,16 +3546,16 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'r1'},
     ),
     "aws_core__aws_location_tracker": (
-        {'TrackerName': 'r1', '_arn': 'arn:aws:geo:us-east-1:123456789012:tracker/r1'},
-        {'name': 'r1'},
+        {'TrackerName': 'r1', 'TrackerArn': 'arn:aws:geo:us-east-1:123456789012:tracker/r1', 'Tags': {'owner': 'net-team'}},
+        {'location_tracker_arn': 'arn:aws:geo:us-east-1:123456789012:tracker/r1', 'name': 'r1'},
     ),
     "aws_core__aws_logs_integration": (
         {'integrationName': 'os-1', 'integrationType': 'OPENSEARCH', '_key': 'aws:123456789012:us-east-1:os-1'},
         {'name': 'os-1'},
     ),
     "aws_core__aws_opensearch_data_source": (
-        {'Name': 'ds1', 'Status': 'ACTIVE', '_parent': {'DomainName': 'd1', 'EngineType': 'OpenSearch'}, '_arn': 'arn:aws:es:us-east-1:123456789012:domain/d1/datasource/ds1'},
-        {'name': 'ds1'},
+        {'Name': 'ds1', 'Status': 'ACTIVE', '_parent': {'DomainName': 'd1', 'EngineType': 'OpenSearch'}, '_key': 'aws:123456789012:us-east-1:d1/ds1', '_account_id': '123456789012'},
+        {'name': 'ds1', 'account_id': '123456789012', 'domain_name': 'd1', 'data_source_name': 'ds1'},
     ),
     "aws_core__aws_opensearchserverless_access_policy": (
         {'type': 'data', 'name': 'p1', 'policyVersion': 'v1', '_key': 'aws:123456789012:us-east-1:data/p1'},
@@ -3571,14 +3572,6 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "aws_core__aws_opensearchserverless_security_config": (
         {'id': 'saml/123456789012/idp1', 'type': 'saml', 'configVersion': 'v1', '_key': 'aws:123456789012:us-east-1:saml/123456789012/idp1'},
         {'name': 'saml/123456789012/idp1'},
-    ),
-    "aws_core__aws_pinpointemail_configuration_set": (
-        {'ConfigurationSetName': 'cs1', '_arn': 'arn:aws:ses:us-east-1:123456789012:configuration-set/cs1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {'name': 'cs1'},
-    ),
-    "aws_core__aws_pinpointemail_identity": (
-        {'IdentityName': 'example.com', 'IdentityType': 'DOMAIN', '_arn': 'arn:aws:ses:us-east-1:123456789012:identity/example.com'},
-        {'name': 'example.com'},
     ),
     "aws_core__aws_resourceexplorer2_view": (
         {'ViewArn': 'arn:aws:resource-explorer-2:us-east-1:123456789012:view/v1/uuid-1', 'ViewName': 'v1'},
@@ -3657,8 +3650,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_guardduty_malware_protection_plan": (
-        {'_arn': 'arn:aws:guardduty:us-east-1:123456789012:res/gen-1'},
-        {},
+        {'Arn': 'arn:aws:guardduty:us-east-1:123456789012:malware-protection-plan/gen-1', 'Tags': {'owner': 'net-team'}},
+        {'guardduty_malware_protection_plan_arn': 'arn:aws:guardduty:us-east-1:123456789012:malware-protection-plan/gen-1'},
     ),
     "aws_core__aws_iotsitewise_portal": (
         {'_arn': 'arn:aws:iotsitewise:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
@@ -3685,8 +3678,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_qbusiness_application": (
-        {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
-        {'name': 'gen-1'},
+        {'applicationArn': 'arn:aws:qbusiness:us-east-1:123456789012:application/gen-1', 'displayName': 'gen-1'},
+        {'qbusiness_application_arn': 'arn:aws:qbusiness:us-east-1:123456789012:application/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_qbusiness_index": (
         {'_arn': 'arn:aws:qbusiness:us-east-1:123456789012:res/gen-1', 'displayName': 'gen-1'},
@@ -3749,8 +3742,8 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'gen-1'},
     ),
     "aws_core__aws_wafregional_web_acl": (
-        {'_arn': 'arn:aws:waf-regional:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
-        {'name': 'gen-1'},
+        {'WebACLArn': 'arn:aws:waf-regional:us-east-1:123456789012:webacl/gen-1', 'Name': 'gen-1'},
+        {'wafregional_web_acl_arn': 'arn:aws:waf-regional:us-east-1:123456789012:webacl/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_autoscalingplans_scaling_plan": (
         {'_id': 'aws:123456789012:us-east-1:gen-1|1', 'ScalingPlanName': 'gen-1'},

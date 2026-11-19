@@ -366,6 +366,10 @@ def test_the_migration_names_every_re_keyed_model_and_its_key_column() -> None:
     declared = {}
     for entity_type in scoped:
         model = get_model_class(entity_type)
+        if len(model.NATURAL_KEY) > 1:
+            # Keyed on its own columns (account, region, ...), with the scoped composite only its batch ref: such a
+            # type came after 0053 (the OpenSearch data source, aws-core-tap#251) and has no single key column to re-key.
+            continue
         declared[model._meta.model_name] = model.NATURAL_KEY[0]
     assert {name: column for name, (column, _) in m.REKEYED.items()} == declared
 

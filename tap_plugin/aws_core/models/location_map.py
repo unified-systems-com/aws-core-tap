@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class LocationMap(BaseModel):
-    """An AWS Location Map, read by ListMaps. Only its identity, name and tags are collected; the rest of the response is not stored."""
+    """An AWS Location Map, listed by ListMaps and read by DescribeMap. Only its identity, name and tags are collected; the rest of the response is not stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_location_map"
     ENTITY_NAME: ClassVar[str] = "AWS Location Map"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Location Map."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:map/{MapName} (the AWS Service Authorization Reference 'geo' map resource); the listing carries no ARN.
+    # Identity (req-grid-entity-natural-key): The ARN DescribeMap returns (MapArn), read for each resource ListMaps names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_map_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:map"
 
