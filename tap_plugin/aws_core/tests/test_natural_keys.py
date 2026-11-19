@@ -34,6 +34,13 @@ def test_collected_types_key_on_what_the_collector_keys_on() -> None:
     by_type = {m.ENTITY_TYPE: m for m in _aws_models()}
     for entry in _entries():
         model = by_type[entry["entity_type"]]
+        if len(model.NATURAL_KEY) > 1:
+            # A multi-column key (CloudFormation's identifier for a type AWS gives no ARN, aws-core-tap#251): every
+            # column is projected by the entry, and its natural_key is a scoped composite of them, the batch ref only.
+            assert set(model.NATURAL_KEY) <= set(entry["fields"]), (entry["entity_type"], model.NATURAL_KEY)
+            assert entry["natural_key"] not in entry["fields"].values(), entry["entity_type"]
+            assert entry["derive"][entry["natural_key"]].startswith("{partition}:{account}:{region}:"), entry["entity_type"]
+            continue
         projected = [field for field, path in entry["fields"].items() if path == entry["natural_key"]]
         assert projected, entry["entity_type"]
         assert tuple(model.NATURAL_KEY) == (projected[0],), (entry["entity_type"], model.NATURAL_KEY, projected)

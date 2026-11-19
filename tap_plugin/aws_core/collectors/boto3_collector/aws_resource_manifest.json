@@ -33966,9 +33966,9 @@
       "service": "redshift",
       "scope": "regional",
       "source": {
-        "custom_fn": "redshift_cluster_snapshots_described"
+        "aws_op": "DescribeClusterSnapshots"
       },
-      "why": "Enumerate Redshift Snapshot objects with DescribeClusterSnapshots — an inventory of the account's snapshots and how each is tagged.",
+      "why": "Enumerate Redshift Snapshot objects with DescribeClusterSnapshots — an inventory of the account's snapshots and how each is tagged. Each item carries its own SnapshotArn, which is the key: it names the account that owns the snapshot (OwnerAccount), which for a snapshot shared into the account is not the caller's, so it is never built (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -33996,10 +33996,10 @@
         ]
       },
       "items_path": "Snapshots[]",
-      "natural_key": "_arn",
+      "natural_key": "SnapshotArn",
       "fields": {
         "name": "SnapshotIdentifier",
-        "redshift_snapshot_arn": "_arn"
+        "redshift_snapshot_arn": "SnapshotArn"
       },
       "tags": {
         "source": "field",
@@ -35869,21 +35869,21 @@
         }
       },
       "source": {
-        "aws_op": "ListRescoreExecutionPlans"
-      },
-      "why": "Enumerate KendraRanking Execution Plan objects with ListRescoreExecutionPlans — an inventory of the account's rescore execution plans and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for Kendra Intelligent Ranking resource rescore-execution-plan: arn:${Partition}:kendra-ranking:${Region}:${Account}:rescore-execution-plan/${RescoreExecutionPlanId}.",
-      "enrich": {
-        "op": "DescribeRescoreExecutionPlan",
-        "params": {
-          "Id": {"from": "Id"}
+        "aws_op": "DescribeRescoreExecutionPlan",
+        "per": {
+          "aws_op": "ListRescoreExecutionPlans",
+          "items_path": "SummaryItems[].Id"
         },
-        "why": "The list call returns a summary; DescribeRescoreExecutionPlan returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "Id": ""
+        }
       },
+      "why": "Enumerate KendraRanking Execution Plan objects with ListRescoreExecutionPlans, then DescribeRescoreExecutionPlan for each — an inventory of the account's rescore execution plans and how each is tagged. DescribeRescoreExecutionPlan returns the whole resource and its ARN (Arn), which is the key: the summary ListRescoreExecutionPlans returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore kendra-ranking ListRescoreExecutionPlans item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore kendra-ranking DescribeRescoreExecutionPlan output shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "_hydrate.tags",
@@ -35893,26 +35893,23 @@
           }
         ]
       },
-      "items_path": "SummaryItems[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "Arn",
       "fields": {
         "name": "Name",
-        "kendraranking_execution_plan_arn": "_arn"
+        "kendraranking_execution_plan_arn": "Arn"
       },
       "tags": {
         "source": "service",
         "op": "ListTagsForResource",
         "params": {
           "ResourceARN": {
-            "from": "_arn"
+            "from": "Arn"
           }
         },
         "path": "Tags",
         "shape": "list_kv",
-        "why": "Resource tags — ListTagsForResource by the object's ARN, which this entry builds (derive); the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:kendra-ranking:{region}:{account}:rescore-execution-plan/{Id}"
+        "why": "Resource tags - ListTagsForResource by the ARN DescribeRescoreExecutionPlan returns; the answer carries no tags."
       }
     },
     {
@@ -36163,22 +36160,22 @@
       "service": "sagemaker",
       "scope": "regional",
       "source": {
-        "aws_op": "ListSpaces"
-      },
-      "why": "Enumerate SageMaker Space objects with ListSpaces — an inventory of the account's spaces and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for SageMaker AI resource space: arn:${Partition}:sagemaker:${Region}:${Account}:space/${DomainId}/${SpaceName}.",
-      "enrich": {
-        "op": "DescribeSpace",
-        "params": {
-          "DomainId": {"from": "DomainId"},
-          "SpaceName": {"from": "SpaceName"}
+        "aws_op": "DescribeSpace",
+        "per": {
+          "aws_op": "ListSpaces",
+          "items_path": "Spaces[]"
         },
-        "why": "The list call returns a summary; DescribeSpace returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "DomainId": "DomainId",
+          "SpaceName": "SpaceName"
+        }
       },
+      "why": "Enumerate SageMaker Space objects with ListSpaces, then DescribeSpace for each — an inventory of the account's spaces and how each is tagged. DescribeSpace returns the whole resource and its ARN (SpaceArn), which is the key: the summary ListSpaces returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore sagemaker ListSpaces item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore sagemaker DescribeSpace output shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "_hydrate.tags",
@@ -36188,26 +36185,23 @@
           }
         ]
       },
-      "items_path": "Spaces[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "SpaceArn",
       "fields": {
         "name": "SpaceName",
-        "sagemaker_space_arn": "_arn"
+        "sagemaker_space_arn": "SpaceArn"
       },
       "tags": {
         "source": "service",
         "op": "ListTags",
         "params": {
           "ResourceArn": {
-            "from": "_arn"
+            "from": "SpaceArn"
           }
         },
         "path": "Tags",
         "shape": "list_kv",
-        "why": "Resource tags — ListTags by the object's ARN, which this entry builds (derive); the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:sagemaker:{region}:{account}:space/{DomainId}/{SpaceName}"
+        "why": "Resource tags - ListTags by the ARN DescribeSpace returns; the answer carries no tags."
       }
     },
     {
@@ -36215,22 +36209,22 @@
       "service": "sagemaker",
       "scope": "regional",
       "source": {
-        "aws_op": "ListUserProfiles"
-      },
-      "why": "Enumerate SageMaker User Profile objects with ListUserProfiles — an inventory of the account's user profiles and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for SageMaker AI resource user-profile: arn:${Partition}:sagemaker:${Region}:${Account}:user-profile/${DomainId}/${UserProfileName}.",
-      "enrich": {
-        "op": "DescribeUserProfile",
-        "params": {
-          "DomainId": {"from": "DomainId"},
-          "UserProfileName": {"from": "UserProfileName"}
+        "aws_op": "DescribeUserProfile",
+        "per": {
+          "aws_op": "ListUserProfiles",
+          "items_path": "UserProfiles[]"
         },
-        "why": "The list call returns a summary; DescribeUserProfile returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "DomainId": "DomainId",
+          "UserProfileName": "UserProfileName"
+        }
       },
+      "why": "Enumerate SageMaker User Profile objects with ListUserProfiles, then DescribeUserProfile for each — an inventory of the account's user profiles and how each is tagged. DescribeUserProfile returns the whole resource and its ARN (UserProfileArn), which is the key: the summary ListUserProfiles returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore sagemaker ListUserProfiles item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore sagemaker DescribeUserProfile output shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "_hydrate.tags",
@@ -36240,26 +36234,23 @@
           }
         ]
       },
-      "items_path": "UserProfiles[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "UserProfileArn",
       "fields": {
         "name": "UserProfileName",
-        "sagemaker_user_profile_arn": "_arn"
+        "sagemaker_user_profile_arn": "UserProfileArn"
       },
       "tags": {
         "source": "service",
         "op": "ListTags",
         "params": {
           "ResourceArn": {
-            "from": "_arn"
+            "from": "UserProfileArn"
           }
         },
         "path": "Tags",
         "shape": "list_kv",
-        "why": "Resource tags — ListTags by the object's ARN, which this entry builds (derive); the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:sagemaker:{region}:{account}:user-profile/{DomainId}/{UserProfileName}"
+        "why": "Resource tags - ListTags by the ARN DescribeUserProfile returns; the answer carries no tags."
       }
     },
     {
@@ -36267,21 +36258,21 @@
       "service": "sagemaker",
       "scope": "regional",
       "source": {
-        "aws_op": "ListInferenceExperiments"
-      },
-      "why": "Enumerate SageMaker Inference Experiment objects with ListInferenceExperiments — an inventory of the account's inference experiments and how each is tagged. ARN built from the item as the AWS Service Authorization Reference gives it for SageMaker AI resource inference-experiment: arn:${Partition}:sagemaker:${Region}:${Account}:inference-experiment/${InferenceExperimentName}.",
-      "enrich": {
-        "op": "DescribeInferenceExperiment",
-        "params": {
-          "Name": {"from": "Name"}
+        "aws_op": "DescribeInferenceExperiment",
+        "per": {
+          "aws_op": "ListInferenceExperiments",
+          "items_path": "InferenceExperiments[].Name"
         },
-        "why": "The list call returns a summary; DescribeInferenceExperiment returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "Name": ""
+        }
       },
+      "why": "Enumerate SageMaker Inference Experiment objects with ListInferenceExperiments, then DescribeInferenceExperiment for each — an inventory of the account's inference experiments and how each is tagged. DescribeInferenceExperiment returns the whole resource and its ARN (Arn), which is the key: the summary ListInferenceExperiments returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore sagemaker ListInferenceExperiments item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore sagemaker DescribeInferenceExperiment output shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "_hydrate.tags",
@@ -36291,26 +36282,23 @@
           }
         ]
       },
-      "items_path": "InferenceExperiments[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "Arn",
       "fields": {
         "name": "Name",
-        "sagemaker_inference_experiment_arn": "_arn"
+        "sagemaker_inference_experiment_arn": "Arn"
       },
       "tags": {
         "source": "service",
         "op": "ListTags",
         "params": {
           "ResourceArn": {
-            "from": "_arn"
+            "from": "Arn"
           }
         },
         "path": "Tags",
         "shape": "list_kv",
-        "why": "Resource tags — ListTags by the object's ARN, which this entry builds (derive); the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:sagemaker:{region}:{account}:inference-experiment/{Name}"
+        "why": "Resource tags - ListTags by the ARN DescribeInferenceExperiment returns; the answer carries no tags."
       }
     },
     {
@@ -37580,57 +37568,44 @@
       "not_offered": {
         "aws-us-gov": {
           "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
-          "regions": ["us-gov-east-1"],
+          "regions": [
+            "us-gov-east-1"
+          ],
           "method": "ran",
           "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
       "source": {
-        "aws_op": "ListGeofenceCollections"
-      },
-      "derive": {
-        "_arn": "arn:{partition}:geo:{region}:{account}:geofence-collection/{CollectionName}"
-      },
-      "why": "Enumerate Amazon Location Service geofence collections with ListGeofenceCollections. Only the listing is read; an API key's value is never fetched.",
-      "enrich": {
-        "op": "DescribeGeofenceCollection",
-        "params": {
-          "CollectionName": {"from": "CollectionName"}
+        "aws_op": "DescribeGeofenceCollection",
+        "per": {
+          "aws_op": "ListGeofenceCollections",
+          "items_path": "Entries[].CollectionName"
         },
-        "why": "The list call returns a summary; DescribeGeofenceCollection returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "CollectionName": ""
+        }
       },
+      "why": "Enumerate Amazon Location Service geofence collections with ListGeofenceCollections, then DescribeGeofenceCollection for each. DescribeGeofenceCollection returns the whole resource and its ARN (CollectionArn), which is the key: the summary ListGeofenceCollections returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.CreateTime, _hydrate.detail.data.UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: CreateTime, UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore location ListGeofenceCollections output shape and the CloudFormation schema for AWS::Location::GeofenceCollection (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListGeofenceCollections item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore location DescribeGeofenceCollection output shape and the CloudFormation schema for AWS::Location::GeofenceCollection (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeGeofenceCollection output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
         "locations": [
           {
-            "path": "_hydrate.detail.data.CreateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
-          },
-          {
-            "path": "_hydrate.detail.data.UpdateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
-          },
-          {
             "path": "CreateTime",
-            "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
-            "evidence": "botocore_sensitive"
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
           },
           {
             "path": "UpdateTime",
-            "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
-            "evidence": "botocore_sensitive"
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
           },
           {
             "path": "Description",
@@ -37639,30 +37614,24 @@
             "evidence": "reviewer_judgement"
           },
           {
-            "path": "_hydrate.tags",
+            "path": "Tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Entries[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "CollectionArn",
       "fields": {
         "name": "CollectionName",
-        "location_geofence_collection_arn": "_arn"
+        "location_geofence_collection_arn": "CollectionArn"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceArn": {
-            "from": "_arn"
-          }
-        },
-        "path": "Tags",
+        "source": "field",
+        "from": "Tags",
         "shape": "map",
-        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+        "why": "The DescribeGeofenceCollection answer carries the tags inline; no extra call."
       }
     },
     {
@@ -37672,48 +37641,33 @@
       "not_offered": {
         "aws-us-gov": {
           "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
-          "regions": ["us-gov-east-1"],
+          "regions": [
+            "us-gov-east-1"
+          ],
           "method": "ran",
           "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
       "source": {
-        "aws_op": "ListMaps"
-      },
-      "derive": {
-        "_arn": "arn:{partition}:geo:{region}:{account}:map/{MapName}"
-      },
-      "why": "Enumerate Amazon Location Service maps with ListMaps. Only the listing is read; an API key's value is never fetched.",
-      "enrich": {
-        "op": "DescribeMap",
-        "params": {
-          "MapName": {"from": "MapName"}
+        "aws_op": "DescribeMap",
+        "per": {
+          "aws_op": "ListMaps",
+          "items_path": "Entries[].MapName"
         },
-        "why": "The list call returns a summary; DescribeMap returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "MapName": ""
+        }
       },
+      "why": "Enumerate Amazon Location Service maps with ListMaps, then DescribeMap for each. DescribeMap returns the whole resource and its ARN (MapArn), which is the key: the summary ListMaps returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Configuration.PoliticalView, _hydrate.detail.data.CreateTime, _hydrate.detail.data.UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: Configuration.PoliticalView, CreateTime, UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore location ListMaps output shape and the CloudFormation schema for AWS::Location::Map (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListMaps item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore location DescribeMap output shape and the CloudFormation schema for AWS::Location::Map (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeMap output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
         "locations": [
           {
-            "path": "_hydrate.detail.data.Configuration.PoliticalView",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
-          },
-          {
-            "path": "_hydrate.detail.data.CreateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
-          },
-          {
-            "path": "_hydrate.detail.data.UpdateTime",
+            "path": "Configuration.PoliticalView",
             "category": "credential",
             "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
             "evidence": "botocore_sensitive",
@@ -37721,15 +37675,17 @@
           },
           {
             "path": "CreateTime",
-            "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
-            "evidence": "botocore_sensitive"
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
           },
           {
             "path": "UpdateTime",
-            "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
-            "evidence": "botocore_sensitive"
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
           },
           {
             "path": "Description",
@@ -37738,30 +37694,24 @@
             "evidence": "reviewer_judgement"
           },
           {
-            "path": "_hydrate.tags",
+            "path": "Tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Entries[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "MapArn",
       "fields": {
         "name": "MapName",
-        "location_map_arn": "_arn"
+        "location_map_arn": "MapArn"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceArn": {
-            "from": "_arn"
-          }
-        },
-        "path": "Tags",
+        "source": "field",
+        "from": "Tags",
         "shape": "map",
-        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+        "why": "The DescribeMap answer carries the tags inline; no extra call."
       }
     },
     {
@@ -37913,57 +37863,44 @@
       "not_offered": {
         "aws-us-gov": {
           "why": "location has an endpoint in us-gov-west-1 and none in us-gov-east-1: the host does not resolve there (no DNS record for the host the call would use, and a signed read call to it could not connect).",
-          "regions": ["us-gov-east-1"],
+          "regions": [
+            "us-gov-east-1"
+          ],
           "method": "ran",
           "evidence": "tools/validate/runs/availability-matrix-2026-11-05.json (DNS) and tools/validate/runs/availability-calls-2026-11-05.json (a signed read call)",
           "date": "2026-11-05"
         }
       },
       "source": {
-        "aws_op": "ListTrackers"
-      },
-      "derive": {
-        "_arn": "arn:{partition}:geo:{region}:{account}:tracker/{TrackerName}"
-      },
-      "why": "Enumerate Amazon Location Service trackers with ListTrackers. Only the listing is read; an API key's value is never fetched.",
-      "enrich": {
-        "op": "DescribeTracker",
-        "params": {
-          "TrackerName": {"from": "TrackerName"}
+        "aws_op": "DescribeTracker",
+        "per": {
+          "aws_op": "ListTrackers",
+          "items_path": "Entries[].TrackerName"
         },
-        "why": "The list call returns a summary; DescribeTracker returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "TrackerName": ""
+        }
       },
+      "why": "Enumerate Amazon Location Service trackers with ListTrackers, then DescribeTracker for each. DescribeTracker returns the whole resource and its ARN (TrackerArn), which is the key: the summary ListTrackers returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.CreateTime, _hydrate.detail.data.UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: CreateTime, UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore location ListTrackers output shape and the CloudFormation schema for AWS::Location::Tracker (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location ListTrackers item shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore location DescribeTracker output shape and the CloudFormation schema for AWS::Location::Tracker (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeTracker output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
         "locations": [
           {
-            "path": "_hydrate.detail.data.CreateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
-          },
-          {
-            "path": "_hydrate.detail.data.UpdateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
-          },
-          {
             "path": "CreateTime",
-            "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
-            "evidence": "botocore_sensitive"
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
           },
           {
             "path": "UpdateTime",
-            "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
-            "evidence": "botocore_sensitive"
+            "category": "credential",
+            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
+            "evidence": "botocore_sensitive",
+            "redact": true
           },
           {
             "path": "Description",
@@ -37972,30 +37909,24 @@
             "evidence": "reviewer_judgement"
           },
           {
-            "path": "_hydrate.tags",
+            "path": "Tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Entries[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "TrackerArn",
       "fields": {
         "name": "TrackerName",
-        "location_tracker_arn": "_arn"
+        "location_tracker_arn": "TrackerArn"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceArn": {
-            "from": "_arn"
-          }
-        },
-        "path": "Tags",
+        "source": "field",
+        "from": "Tags",
         "shape": "map",
-        "why": "Resource tags - location ListTagsForResource by the built ARN; the listing carries none."
+        "why": "The DescribeTracker answer carries the tags inline; no extra call."
       }
     },
     {
@@ -38044,9 +37975,10 @@
         }
       },
       "derive": {
-        "_arn": "arn:{partition}:es:{region}:{account}:domain/{_parent.DomainName}/datasource/{Name}"
+        "_key": "{partition}:{account}:{region}:{_parent.DomainName}/{Name}",
+        "_account_id": "{account}"
       },
-      "why": "Enumerate the direct-query data sources of each OpenSearch domain (ListDataSources per domain from ListDomainNames, OpenSearch engine only) - the S3 Glue Data Catalog connections a domain queries and the role each uses.",
+      "why": "Enumerate the direct-query data sources of each OpenSearch domain (ListDataSources per domain from ListDomainNames, OpenSearch engine only) - the S3 Glue Data Catalog connections a domain queries and the role each uses. AWS returns no ARN for a domain's data source and its Service Authorization Reference defines none, so it is keyed natively (account, region, domain name, data source name: CloudFormation's additional identifier DomainName + Name, scoped by account and region) and no ARN is built (aws-core-tap#251). _key is the batch ref only.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
@@ -38062,10 +37994,13 @@
         ]
       },
       "items_path": "DataSources[]",
-      "natural_key": "_arn",
+      "natural_key": "_key",
       "fields": {
         "name": "Name",
-        "opensearch_data_source_arn": "_arn"
+        "account_id": "_account_id",
+        "region": "$region",
+        "domain_name": "_parent.DomainName",
+        "data_source_name": "Name"
       },
       "tags": {
         "source": "none",
@@ -38285,101 +38220,6 @@
       "tags": {
         "source": "none",
         "why": "The CloudFormation schema for AWS::OpenSearchServerless::SecurityConfig says tagging.taggable is false, and the AWS Service Authorization Reference (aoss) lists only the Collection, CollectionGroup, Dashboards, IngestionJob and IngestionStream resources, so a security configuration has no ARN to tag."
-      }
-    },
-    {
-      "entity_type": "aws_core__aws_pinpointemail_configuration_set",
-      "service": "pinpoint-email",
-      "scope": "regional",
-      "source": {
-        "aws_op": "GetConfigurationSet",
-        "per": {
-          "aws_op": "ListConfigurationSets",
-          "items_path": "ConfigurationSets[]"
-        },
-        "bind": {
-          "ConfigurationSetName": ""
-        }
-      },
-      "derive": {
-        "_arn": "arn:{partition}:ses:{region}:{account}:configuration-set/{ConfigurationSetName}"
-      },
-      "why": "Enumerate Pinpoint Email configuration sets (ListConfigurationSets, then GetConfigurationSet for the settings and tags the listing lacks) - the rule groups applied to the email a Pinpoint project sends.",
-      "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
-      "sensitivity": {
-        "status": "reviewed_may_contain",
-        "basis": "Read botocore pinpoint-email GetConfigurationSet output shape and the CloudFormation schema for AWS::PinpointEmail::ConfigurationSet (2026-10-31); the botocore pinpoint-email GetConfigurationSet item shape has no member marked sensitive. Nothing beyond identity, name and tags is stored.",
-        "locations": [
-          {
-            "path": "Tags[]",
-            "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
-            "evidence": "reviewer_judgement"
-          }
-        ]
-      },
-      "items_path": ".",
-      "natural_key": "_arn",
-      "fields": {
-        "name": "ConfigurationSetName",
-        "pinpointemail_configuration_set_arn": "_arn"
-      },
-      "tags": {
-        "source": "field",
-        "from": "Tags[]",
-        "shape": "list_kv",
-        "why": "The GetConfigurationSet answer carries the tags inline; no extra call."
-      }
-    },
-    {
-      "entity_type": "aws_core__aws_pinpointemail_identity",
-      "service": "pinpoint-email",
-      "scope": "regional",
-      "source": {
-        "aws_op": "ListEmailIdentities"
-      },
-      "derive": {
-        "_arn": "arn:{partition}:ses:{region}:{account}:identity/{IdentityName}"
-      },
-      "why": "Enumerate Pinpoint Email identities with ListEmailIdentities - the verified domains and addresses mail may be sent from, and whether sending is enabled.",
-      "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
-      "sensitivity": {
-        "status": "reviewed_may_contain",
-        "basis": "Read botocore pinpoint-email ListEmailIdentities output shape and the CloudFormation schema for AWS::PinpointEmail::Identity (2026-10-31); the botocore pinpoint-email ListEmailIdentities item shape has no member marked sensitive. Declared on reviewer judgement: IdentityName. Nothing beyond identity, name and tags is stored.",
-        "locations": [
-          {
-            "path": "IdentityName",
-            "category": "customer_content",
-            "reason": "The verified domain or email address: an email address is personal data. It is the identity and the name, so it is stored by design.",
-            "evidence": "reviewer_judgement"
-          },
-          {
-            "path": "_hydrate.tags",
-            "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
-            "evidence": "reviewer_judgement"
-          }
-        ]
-      },
-      "items_path": "EmailIdentities[]",
-      "natural_key": "_arn",
-      "fields": {
-        "name": "IdentityName",
-        "pinpointemail_identity_arn": "_arn"
-      },
-      "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceArn": {
-            "from": "_arn"
-          }
-        },
-        "path": "Tags",
-        "shape": "list_kv",
-        "why": "Resource tags - pinpoint-email ListTagsForResource by the built ARN; the listing carries none."
       }
     },
     {
@@ -39408,49 +39248,40 @@
       "service": "guardduty",
       "scope": "regional",
       "source": {
-        "aws_op": "ListMalwareProtectionPlans"
-      },
-      "why": "Enumerate GuardDuty Malware Protection Plan objects with ListMalwareProtectionPlans — an inventory of the account's malware protection plans and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/guardduty/guardduty.json) resource 'malwareprotectionplan': arn:${Partition}:guardduty:${Region}:${Account}:malware-protection-plan/${MalwareProtectionPlanId}.",
-      "enrich": {
-        "op": "GetMalwareProtectionPlan",
-        "params": {
-          "MalwareProtectionPlanId": {"from": "MalwareProtectionPlanId"}
+        "aws_op": "GetMalwareProtectionPlan",
+        "per": {
+          "aws_op": "ListMalwareProtectionPlans",
+          "items_path": "MalwareProtectionPlans[].MalwareProtectionPlanId"
         },
-        "why": "The list call returns a summary; GetMalwareProtectionPlan returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "MalwareProtectionPlanId": ""
+        }
       },
+      "why": "Enumerate GuardDuty Malware Protection Plan objects with ListMalwareProtectionPlans, then GetMalwareProtectionPlan for each — an inventory of the account's malware protection plans and how each is tagged. GetMalwareProtectionPlan returns the whole resource and its ARN (Arn), which is the key: the summary ListMalwareProtectionPlans returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore guardduty ListMalwareProtectionPlans item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore guardduty GetMalwareProtectionPlan output shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
-            "path": "_hydrate.tags",
+            "path": "Tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "MalwareProtectionPlans[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "Arn",
       "fields": {
-        "guardduty_malware_protection_plan_arn": "_arn"
+        "guardduty_malware_protection_plan_arn": "Arn"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceArn": {
-            "from": "_arn"
-          }
-        },
-        "path": "Tags",
+        "source": "field",
+        "from": "Tags",
         "shape": "map",
-        "why": "Resource tags — ListTagsForResource by the object's identifier; the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:guardduty:{region}:{account}:malware-protection-plan/{MalwareProtectionPlanId}"
+        "why": "The GetMalwareProtectionPlan answer carries the tags inline; no extra call."
       }
     },
     {
@@ -39794,24 +39625,24 @@
         }
       },
       "source": {
-        "aws_op": "ListApplications"
-      },
-      "why": "Enumerate QBusiness Application objects with ListApplications — an inventory of the account's applications and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/qbusiness/qbusiness.json) resource 'application': arn:${Partition}:qbusiness:${Region}:${Account}:application/${ApplicationId}.",
-      "enrich": {
-        "op": "GetApplication",
-        "params": {
-          "applicationId": {"from": "applicationId"}
+        "aws_op": "GetApplication",
+        "per": {
+          "aws_op": "ListApplications",
+          "items_path": "applications[].applicationId"
         },
-        "why": "The list call returns a summary; GetApplication returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "applicationId": ""
+        }
       },
+      "why": "Enumerate QBusiness Application objects with ListApplications, then GetApplication for each — an inventory of the account's applications and how each is tagged. GetApplication returns the whole resource and its ARN (applicationArn), which is the key: the summary ListApplications returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.encryptionConfiguration.kmsKeyId; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: encryptionConfiguration.kmsKeyId; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore qbusiness ListApplications item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore qbusiness GetApplication output shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
-            "path": "_hydrate.detail.data.encryptionConfiguration.kmsKeyId",
+            "path": "encryptionConfiguration.kmsKeyId",
             "category": "credential",
             "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
             "evidence": "botocore_sensitive",
@@ -39825,26 +39656,23 @@
           }
         ]
       },
-      "items_path": "applications[]",
-      "natural_key": "_arn",
+      "items_path": ".",
+      "natural_key": "applicationArn",
       "fields": {
         "name": "displayName",
-        "qbusiness_application_arn": "_arn"
+        "qbusiness_application_arn": "applicationArn"
       },
       "tags": {
         "source": "service",
         "op": "ListTagsForResource",
         "params": {
           "resourceARN": {
-            "from": "_arn"
+            "from": "applicationArn"
           }
         },
         "path": "tags",
         "shape": "list_kv_lower",
-        "why": "Resource tags — ListTagsForResource by the object's identifier; the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:qbusiness:{region}:{account}:application/{applicationId}"
+        "why": "Resource tags - ListTagsForResource by the ARN GetApplication returns; the answer carries no tags."
       }
     },
     {
@@ -40523,21 +40351,21 @@
       "service": "waf-regional",
       "scope": "regional",
       "source": {
-        "aws_op": "ListWebACLs"
-      },
-      "why": "Enumerate WAFRegional Web ACL objects with ListWebACLs — an inventory of the account's web acls and how each is tagged. The listing carries no ARN, so the manifest builds it (derive) from the AWS Service Authorization Reference (servicereference.us-east-1.amazonaws.com/v1/waf-regional/waf-regional.json) resource 'webacl': arn:${Partition}:waf-regional:${Region}:${Account}:webacl/${Id}.",
-      "enrich": {
-        "op": "GetWebACL",
-        "params": {
-          "WebACLId": {"from": "WebACLId"}
+        "aws_op": "GetWebACL",
+        "per": {
+          "aws_op": "ListWebACLs",
+          "items_path": "WebACLs[].WebACLId"
         },
-        "why": "The list call returns a summary; GetWebACL returns the whole resource (collect everything, req-aws-collector-enrich-1)."
+        "bind": {
+          "WebACLId": ""
+        }
       },
+      "why": "Enumerate WAFRegional Web ACL objects with ListWebACLs, then GetWebACL for each — an inventory of the account's web acls and how each is tagged. GetWebACL returns the whole resource and its ARN (WebACLArn), which is the key: the summary ListWebACLs returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore waf-regional ListWebACLs item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore waf-regional GetWebACL output shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
         "locations": [
           {
             "path": "_hydrate.tags",
@@ -40547,26 +40375,23 @@
           }
         ]
       },
-      "items_path": "WebACLs[]",
-      "natural_key": "_arn",
+      "items_path": "WebACL",
+      "natural_key": "WebACLArn",
       "fields": {
         "name": "Name",
-        "wafregional_web_acl_arn": "_arn"
+        "wafregional_web_acl_arn": "WebACLArn"
       },
       "tags": {
         "source": "service",
         "op": "ListTagsForResource",
         "params": {
           "ResourceARN": {
-            "from": "_arn"
+            "from": "WebACLArn"
           }
         },
         "path": "TagInfoForResource.TagList",
         "shape": "list_kv",
-        "why": "Resource tags — ListTagsForResource by the object's identifier; the listing carries none."
-      },
-      "derive": {
-        "_arn": "arn:{partition}:waf-regional:{region}:{account}:webacl/{WebACLId}"
+        "why": "Resource tags - ListTagsForResource by the ARN GetWebACL returns; the answer carries no tags."
       }
     },
     {

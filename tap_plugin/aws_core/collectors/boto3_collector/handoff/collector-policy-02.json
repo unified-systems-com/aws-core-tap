@@ -2,6 +2,22 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadCloudfront",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCloudhsm",
+      "Effect": "Allow",
+      "Action": [
+        "cloudhsm:DescribeClusters"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadCloudtrail",
       "Effect": "Allow",
       "Action": [
@@ -19,6 +35,7 @@
       "Effect": "Allow",
       "Action": [
         "cloudwatch:DescribeAlarms",
+        "cloudwatch:DescribeInsightRules",
         "cloudwatch:GetMetricData",
         "cloudwatch:ListAlarmMuteRules",
         "cloudwatch:ListDashboards",
@@ -254,6 +271,7 @@
       "Action": [
         "directconnect:DescribeConnections",
         "directconnect:DescribeDirectConnectGateways",
+        "directconnect:DescribeLags",
         "directconnect:DescribeTags",
         "directconnect:DescribeVirtualInterfaces"
       ],
@@ -281,36 +299,6 @@
         "dms:ListInstanceProfiles",
         "dms:ListMigrationProjects",
         "dms:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadDrs",
-      "Effect": "Allow",
-      "Action": [
-        "drs:DescribeLaunchConfigurationTemplates",
-        "drs:DescribeReplicationConfigurationTemplates",
-        "drs:DescribeSourceNetworks",
-        "drs:ListRecoveryPlans",
-        "drs:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadDs",
-      "Effect": "Allow",
-      "Action": [
-        "ds:DescribeDirectories",
-        "ds:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadDynamodb",
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:DescribeTable",
-        "dynamodb:ListTables"
       ],
       "Resource": "*"
     }

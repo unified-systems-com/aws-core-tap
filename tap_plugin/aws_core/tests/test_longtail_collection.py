@@ -262,10 +262,18 @@ class TestArnListings:
         [lag] = list(LONGTAIL_FNS["directconnect_lags_described"](None, client_for=_factory(directconnect=client, sts=sts)))
         assert lag["_arn"] == "arn:aws:directconnect:us-east-1:999999999999:dxlag/dxlag-1"
 
-    def test_a_profile_association_gets_the_documented_arn(self) -> None:
-        client = _Client(list_profile_associations={"ProfileAssociations": [{"Id": "rpassoc-1", "Name": "a"}]})
-        [assoc] = _run(LONGTAIL_FNS["route53profiles_profile_associations_described"], route53profiles=client)
+    def test_a_profile_association_gets_the_documented_arn_under_its_owner(self) -> None:
+        # aws-core-tap#251: ${ResourceId} is the association's own Id (never its ResourceId member, the VPC), and the
+        # account is the association's OwnerId, read from the item and not from sts (which is refused here).
+        client = _Client(list_profile_associations={"ProfileAssociations": [{"Id": "rpassoc-1", "Name": "a", "OwnerId": "123456789012", "ResourceId": "vpc-0a1"}]})
+        sts = _Client(get_caller_identity=_denied("GetCallerIdentity"))
+        [assoc] = list(LONGTAIL_FNS["route53profiles_profile_associations_described"](None, client_for=_factory(route53profiles=client, sts=sts)))
         assert assoc["_arn"] == "arn:aws:route53profiles:us-east-1:123456789012:profile-association/rpassoc-1"
+
+    def test_a_profile_association_with_no_owner_is_a_gap_not_the_callers(self) -> None:
+        client = _Client(list_profile_associations={"ProfileAssociations": [{"Id": "rpassoc-1", "Name": "a"}]})
+        with pytest.raises(SourceError, match="could not be described"):
+            list(LONGTAIL_FNS["route53profiles_profile_associations_described"](None, client_for=_factory(route53profiles=client)))
 
     def test_s3_control_tags_are_read_with_the_account_and_ride_in_the_item(self) -> None:
         client = _Client(

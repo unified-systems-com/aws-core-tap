@@ -2,6 +2,34 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadElasticloadbalancing",
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:DescribeInstanceHealth",
+        "elasticloadbalancing:DescribeListenerCertificates",
+        "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:DescribeTags",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeTargetHealth",
+        "elasticloadbalancing:DescribeTrustStores"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadElasticmapreduce",
+      "Effect": "Allow",
+      "Action": [
+        "elasticmapreduce:DescribeCluster",
+        "elasticmapreduce:DescribeStudio",
+        "elasticmapreduce:ListClusters",
+        "elasticmapreduce:ListSecurityConfigurations",
+        "elasticmapreduce:ListStudios"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadEmrContainers",
       "Effect": "Allow",
       "Action": [

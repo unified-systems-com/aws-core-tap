@@ -15,8 +15,11 @@ class OpensearchDataSource(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS OpenSearch Data Source."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The data source's ARN, built as arn:{partition}:es:{region}:{account}:domain/{DomainName}/datasource/{Name} (the Arn pattern in the CloudFormation schema for AWS::OpenSearch::DataSource); the listing carries no ARN.
-    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("opensearch_data_source_arn",)
+    # Identity (req-grid-entity-natural-key): (account, region, domain name, data source name). ListDataSources returns
+    # no ARN and the Service Authorization Reference defines no resource type for a domain's data source, so none is
+    # built (aws-core-tap#251); the key is CloudFormation's additional identifier (DomainName, Name) scoped by the
+    # account and region the data source was collected in.
+    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "domain_name", "data_source_name")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
@@ -28,7 +31,10 @@ class OpensearchDataSource(BaseModel):
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
-        "opensearch_data_source_arn": {"type": "string"},
+        "account_id": {"type": "string", "pattern": "^([0-9]{12})?$"},
+        "region": {"type": "string"},
+        "domain_name": {"type": "string"},
+        "data_source_name": {"type": "string"},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -39,7 +45,10 @@ class OpensearchDataSource(BaseModel):
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
-    opensearch_data_source_arn = models.CharField(max_length=2048, blank=True, default="")
+    account_id = models.CharField(max_length=12, blank=True, default="")
+    region = models.CharField(max_length=32, blank=True, default="")
+    domain_name = models.CharField(max_length=255, blank=True, default="")
+    data_source_name = models.CharField(max_length=255, blank=True, default="")
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 
@@ -47,7 +56,7 @@ class OpensearchDataSource(BaseModel):
         db_table = "aws_core__aws_opensearch_data_source"
 
     def get_name(self) -> str:
-        return self.name or self.opensearch_data_source_arn
+        return self.name or self.data_source_name
 
     def __str__(self) -> str:
         return self.get_name()

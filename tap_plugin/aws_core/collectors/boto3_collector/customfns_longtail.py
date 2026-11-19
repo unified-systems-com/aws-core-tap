@@ -394,9 +394,6 @@ _ARN_READERS = (
     _reader("redshift_usage_limits_described", "Redshift usage limits (regional).",
             service="redshift", list_method="describe_usage_limits", list_key="UsageLimits",
             resource="usagelimit:{UsageLimitId}", label="Redshift usage limits"),
-    _reader("redshift_cluster_snapshots_described", "Redshift cluster snapshots (regional), automated and manual.",
-            service="redshift", list_method="describe_cluster_snapshots", list_key="Snapshots",
-            resource="snapshot:{ClusterIdentifier}/{SnapshotIdentifier}", label="Redshift snapshots"),
     _reader("ses_configuration_sets_described", "SES configuration sets (regional); the list returns bare names.",
             service="sesv2", arn_service="ses", list_method="list_configuration_sets", list_key="ConfigurationSets", key="ConfigurationSetName",
             resource="configuration-set/{ConfigurationSetName}", label="SES configuration sets"),
@@ -427,8 +424,12 @@ _ARN_READERS = (
     _reader("directconnect_lags_described", "Direct Connect link aggregation groups (regional); the owner account comes from the item.",
             service="directconnect", list_method="describe_lags", list_key="lags", account_key="ownerAccount",
             resource="dxlag/{lagId}", label="Direct Connect LAGs"),
-    _reader("route53profiles_profile_associations_described", "Route 53 Profile associations (regional).",
-            service="route53profiles", list_method="list_profile_associations", list_key="ProfileAssociations",
+    # The reference's format is profile-association/${ResourceId}, the same placeholder its profile format uses for
+    # the profile's own id, so it is the association's Id (rpassoc-...), not the item's ResourceId member (the VPC).
+    # The association can belong to another account than the caller (a profile shared through RAM and associated
+    # there); OwnerId is that account (aws-core-tap#251).
+    _reader("route53profiles_profile_associations_described", "Route 53 Profile associations (regional); the owner account comes from the item.",
+            service="route53profiles", list_method="list_profile_associations", list_key="ProfileAssociations", account_key="OwnerId",
             resource="profile-association/{Id}", label="Route 53 Profile associations"),
     _reader("cloudwatch_insight_rules_described", "CloudWatch Contributor Insights rules (regional).",
             service="cloudwatch", list_method="describe_insight_rules", list_key="InsightRules",

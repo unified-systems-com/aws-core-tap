@@ -591,8 +591,6 @@ from tap_plugin.aws_core.models.pinpoint_in_app_template import PinpointInAppTem
 from tap_plugin.aws_core.models.pinpoint_push_template import PinpointPushTemplate
 from tap_plugin.aws_core.models.pinpoint_segment import PinpointSegment
 from tap_plugin.aws_core.models.pinpoint_sms_template import PinpointSmsTemplate
-from tap_plugin.aws_core.models.pinpointemail_configuration_set import PinpointemailConfigurationSet
-from tap_plugin.aws_core.models.pinpointemail_identity import PinpointemailIdentity
 from tap_plugin.aws_core.models.polly_lexicon import PollyLexicon
 from tap_plugin.aws_core.models.qbusiness_data_accessor import QbusinessDataAccessor
 from tap_plugin.aws_core.models.quicksight_action_connector import QuicksightActionConnector
@@ -1586,8 +1584,6 @@ __all__ = [
     "PinpointPushTemplate",
     "PinpointSegment",
     "PinpointSmsTemplate",
-    "PinpointemailConfigurationSet",
-    "PinpointemailIdentity",
     "PollyLexicon",
     "QbusinessDataAccessor",
     "QuicksightActionConnector",

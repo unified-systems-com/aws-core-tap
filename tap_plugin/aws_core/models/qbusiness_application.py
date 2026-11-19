@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class QbusinessApplication(BaseModel):
-    """An AWS QBusiness Application, read by ListApplications. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS QBusiness Application, listed by ListApplications and read by GetApplication. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_qbusiness_application"
     ENTITY_NAME: ClassVar[str] = "AWS QBusiness Application"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS QBusiness Application."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (application/<applicationId>): unique across accounts and regions.
+    # Identity (req-grid-entity-natural-key): The ARN GetApplication returns (applicationArn), read for each resource ListApplications names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("qbusiness_application_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "qbusiness:application"
 
