@@ -52,6 +52,14 @@
       "Resource": "*"
     },
     {
+      "Sid": "ReadMonitoring",
+      "Effect": "Allow",
+      "Action": [
+        "monitoring:DescribeInsightRules"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadMq",
       "Effect": "Allow",
       "Action": [
@@ -256,14 +264,20 @@
       "Sid": "ReadRedshift",
       "Effect": "Allow",
       "Action": [
+        "redshift:DescribeClusterParameterGroups",
         "redshift:DescribeClusterSecurityGroups",
         "redshift:DescribeClusterSnapshots",
+        "redshift:DescribeClusterSubnetGroups",
         "redshift:DescribeClusters",
         "redshift:DescribeEndpointAccess",
+        "redshift:DescribeEventSubscriptions",
         "redshift:DescribeIntegrations",
         "redshift:DescribeQev2IdcApplications",
         "redshift:DescribeRedshiftIdcApplications",
-        "redshift:DescribeScheduledActions"
+        "redshift:DescribeScheduledActions",
+        "redshift:DescribeSnapshotCopyGrants",
+        "redshift:DescribeSnapshotSchedules",
+        "redshift:DescribeUsageLimits"
       ],
       "Resource": "*"
     },
@@ -275,15 +289,6 @@
         "redshift-serverless:ListSnapshots",
         "redshift-serverless:ListTagsForResource",
         "redshift-serverless:ListWorkgroups"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadRekognition",
-      "Effect": "Allow",
-      "Action": [
-        "rekognition:DescribeProjects",
-        "rekognition:ListTagsForResource"
       ],
       "Resource": "*"
     }

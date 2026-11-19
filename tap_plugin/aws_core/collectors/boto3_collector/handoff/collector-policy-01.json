@@ -110,6 +110,11 @@
       "Sid": "ReadAppconfig",
       "Effect": "Allow",
       "Action": [
+        "appconfig:ListApplications",
+        "appconfig:ListConfigurationProfiles",
+        "appconfig:ListDeploymentStrategies",
+        "appconfig:ListEnvironments",
+        "appconfig:ListExperimentDefinitions",
         "appconfig:ListExtensions",
         "appconfig:ListTagsForResource"
       ],
@@ -283,22 +288,6 @@
         "cloudformation:ListStacks",
         "cloudformation:ListTypeVersions",
         "cloudformation:ListTypes"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadCloudfront",
-      "Effect": "Allow",
-      "Action": [
-        "cloudfront:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadCloudhsm",
-      "Effect": "Allow",
-      "Action": [
-        "cloudhsm:DescribeClusters"
       ],
       "Resource": "*"
     }

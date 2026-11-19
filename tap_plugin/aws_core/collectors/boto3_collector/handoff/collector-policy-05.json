@@ -220,6 +220,7 @@
       "Sid": "ReadLex",
       "Effect": "Allow",
       "Action": [
+        "lex:ListBotAliases",
         "lex:ListBotVersions",
         "lex:ListBots",
         "lex:ListTagsForResource"

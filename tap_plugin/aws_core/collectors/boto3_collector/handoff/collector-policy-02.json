@@ -2,6 +2,22 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadCloudfront",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadCloudhsm",
+      "Effect": "Allow",
+      "Action": [
+        "cloudhsm:DescribeClusters"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadCloudtrail",
       "Effect": "Allow",
       "Action": [
@@ -254,6 +270,7 @@
       "Action": [
         "directconnect:DescribeConnections",
         "directconnect:DescribeDirectConnectGateways",
+        "directconnect:DescribeLags",
         "directconnect:DescribeTags",
         "directconnect:DescribeVirtualInterfaces"
       ],
@@ -293,24 +310,6 @@
         "drs:DescribeSourceNetworks",
         "drs:ListRecoveryPlans",
         "drs:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadDs",
-      "Effect": "Allow",
-      "Action": [
-        "ds:DescribeDirectories",
-        "ds:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadDynamodb",
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:DescribeTable",
-        "dynamodb:ListTables"
       ],
       "Resource": "*"
     }

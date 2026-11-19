@@ -2,6 +2,26 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadWafRegional",
+      "Effect": "Allow",
+      "Action": [
+        "waf-regional:GetRateBasedRule",
+        "waf-regional:GetWebACL",
+        "waf-regional:ListByteMatchSets",
+        "waf-regional:ListGeoMatchSets",
+        "waf-regional:ListIPSets",
+        "waf-regional:ListRateBasedRules",
+        "waf-regional:ListRegexPatternSets",
+        "waf-regional:ListRules",
+        "waf-regional:ListSizeConstraintSets",
+        "waf-regional:ListSqlInjectionMatchSets",
+        "waf-regional:ListTagsForResource",
+        "waf-regional:ListWebACLs",
+        "waf-regional:ListXssMatchSets"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadWafv2",
       "Effect": "Allow",
       "Action": [
