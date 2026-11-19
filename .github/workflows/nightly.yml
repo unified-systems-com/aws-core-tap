@@ -31,4 +31,8 @@ jobs:
       issues: write
     with:
       plugin_slug: aws_core
+      # The same budget ci.yml gives boot-and-test. aws_core's boot runs long (its ~1,850 grid-related models make
+      # every later migration re-render them); at the shared 25-minute default the nightly was cancelled mid-suite
+      # three nights running (runs 43948844273, 44155064514, 44373670259). Lower both together once boot is faster.
+      boot_and_test_timeout_minutes: 75
       assignee: notgeorge   # no CODEOWNERS in this repo — the org's maintainer login
