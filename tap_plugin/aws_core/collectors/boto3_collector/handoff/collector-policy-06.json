@@ -52,14 +52,6 @@
       "Resource": "*"
     },
     {
-      "Sid": "ReadMonitoring",
-      "Effect": "Allow",
-      "Action": [
-        "monitoring:DescribeInsightRules"
-      ],
-      "Resource": "*"
-    },
-    {
       "Sid": "ReadMq",
       "Effect": "Allow",
       "Action": [
@@ -289,6 +281,15 @@
         "redshift-serverless:ListSnapshots",
         "redshift-serverless:ListTagsForResource",
         "redshift-serverless:ListWorkgroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRekognition",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:DescribeProjects",
+        "rekognition:ListTagsForResource"
       ],
       "Resource": "*"
     }

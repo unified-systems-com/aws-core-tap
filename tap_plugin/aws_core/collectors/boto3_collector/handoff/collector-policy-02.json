@@ -35,6 +35,7 @@
       "Effect": "Allow",
       "Action": [
         "cloudwatch:DescribeAlarms",
+        "cloudwatch:DescribeInsightRules",
         "cloudwatch:GetMetricData",
         "cloudwatch:ListAlarmMuteRules",
         "cloudwatch:ListDashboards",
@@ -298,18 +299,6 @@
         "dms:ListInstanceProfiles",
         "dms:ListMigrationProjects",
         "dms:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadDrs",
-      "Effect": "Allow",
-      "Action": [
-        "drs:DescribeLaunchConfigurationTemplates",
-        "drs:DescribeReplicationConfigurationTemplates",
-        "drs:DescribeSourceNetworks",
-        "drs:ListRecoveryPlans",
-        "drs:ListTagsForResource"
       ],
       "Resource": "*"
     }

@@ -2,6 +2,18 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadDrs",
+      "Effect": "Allow",
+      "Action": [
+        "drs:DescribeLaunchConfigurationTemplates",
+        "drs:DescribeReplicationConfigurationTemplates",
+        "drs:DescribeSourceNetworks",
+        "drs:ListRecoveryPlans",
+        "drs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadDs",
       "Effect": "Allow",
       "Action": [
@@ -213,22 +225,6 @@
         "elasticfilesystem:DescribeMountTargets",
         "elasticfilesystem:DescribeTags",
         "elasticfilesystem:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadElasticloadbalancing",
-      "Effect": "Allow",
-      "Action": [
-        "elasticloadbalancing:DescribeInstanceHealth",
-        "elasticloadbalancing:DescribeListenerCertificates",
-        "elasticloadbalancing:DescribeListeners",
-        "elasticloadbalancing:DescribeLoadBalancers",
-        "elasticloadbalancing:DescribeRules",
-        "elasticloadbalancing:DescribeTags",
-        "elasticloadbalancing:DescribeTargetGroups",
-        "elasticloadbalancing:DescribeTargetHealth",
-        "elasticloadbalancing:DescribeTrustStores"
       ],
       "Resource": "*"
     }

@@ -62,3 +62,10 @@ def test_readers_declared_as_data_are_in_the_inventory() -> None:
         ("appconfig", "ListApplications"),
     ]:
         assert pair in inventory, pair
+
+
+def test_cloudwatch_is_granted_under_its_iam_namespace() -> None:
+    """botocore signs CloudWatch as ``monitoring``; IAM knows no such namespace, so an action under it grants nothing."""
+    allowed = {a for t in _handoff_files().values() for s in json.loads(t)["Statement"] if s["Effect"] == "Allow" for a in s["Action"]}
+    assert not [a for a in allowed if a.startswith("monitoring:")]
+    assert "cloudwatch:DescribeInsightRules" in allowed

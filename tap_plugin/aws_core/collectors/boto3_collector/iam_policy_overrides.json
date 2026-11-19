@@ -1,6 +1,11 @@
 {
  "description": "Where AWS's reference data does not settle an operation's IAM action, the operations that need no permission, and the actions the collector role must never be granted. Read by iam_policy.py; every entry says why.",
- "prefixes": {},
+ "prefixes": {
+  "cloudwatch": {
+   "prefix": "cloudwatch",
+   "why": "botocore signs CloudWatch requests as 'monitoring' (its signingName), but IAM authorises them under the 'cloudwatch' service namespace; an operation missing from the reference data would otherwise be granted as monitoring:<Op>, which no IAM policy accepts (PR 255 review: DescribeInsightRules)."
+  }
+ },
  "actions": {
   "keyspaces:ListTagsForResource": {
    "actions": [
