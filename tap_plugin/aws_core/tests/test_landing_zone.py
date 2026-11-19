@@ -82,6 +82,7 @@ from tap_plugin.aws_core.falsifiers import (
     SecurityHubHubFalsifier,
 )
 from tap_plugin.aws_core.regional import LANDING_ZONE_CHILDREN
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 from tap_plugin.aws_core.tests.grid_keys import node_id
 
 from tap_grid.falsifier_testing import CASE_DROPPED, CASE_FORBIDDEN, CASE_PRESENT, CASE_REIDENTIFIED, run_four_cases
@@ -1450,8 +1451,7 @@ def _row(entity_type: str, payload: dict[str, Any], *, region: str = WEST) -> uu
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": MGMT, "aws.region": region}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": MGMT, "aws.region": region})
     return entity_id
 
 

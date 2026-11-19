@@ -46,6 +46,7 @@ from tap_plugin.aws_core.falsifiers import (
 )
 from tap_plugin.aws_core.models.aws_account import AwsAccount
 from tap_plugin.aws_core.models.aws_organization import AwsOrganization
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 
 from tap.plugin_testing import find_plugin_source_root
 from tap_grid.falsifier_testing import (
@@ -148,8 +149,7 @@ def _create_subnet(
     assert result.entity_id is not None
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": account_id, "aws.region": region}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": account_id, "aws.region": region})
     return entity_id
 
 
@@ -270,8 +270,7 @@ class TestSubnetFalsifierFourCases:
         assert result.success
         entity_id = uuid.UUID(str(result.entity_id))
         row = get_node(entity_id)
-        row.entity.dimensions = {"aws.account": ACCOUNT_ID, "aws.region": REGION}
-        row.entity.save(update_fields=["dimensions"])
+        stamp_dimensions(row, {"aws.account": ACCOUNT_ID, "aws.region": REGION})
         [verdict] = _falsifier(ec2).batch_falsify([_candidate(entity_id)], _context())
         assert verdict.verdict == UNDETERMINED
         assert verdict.reason == "scope_unknown"
@@ -702,8 +701,7 @@ def _create(
     if region is not None:
         dimensions["aws.region"] = region
     row = get_node(entity_id)
-    row.entity.dimensions = dimensions
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, dimensions)
     return entity_id
 
 
@@ -1045,8 +1043,7 @@ def _dimensioned(type_slug: str, payload: dict[str, Any], *, account_id: str = A
     assert result.entity_id is not None
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": account_id, "aws.region": region}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": account_id, "aws.region": region})
     return entity_id
 
 
@@ -1126,8 +1123,7 @@ class TestIamRoleFalsifier:
     def test_no_dimension_refuses_before_any_probe(self) -> None:
         rid = _dimensioned(IAM_ROLE, {"name": "dropped", "role_arn": f"arn:aws:iam::{ACCOUNT_ID}:role/dropped"})
         row = get_node(rid)
-        row.entity.dimensions = {}
-        row.entity.save(update_fields=["dimensions"])
+        stamp_dimensions(row, {})
         candidate = _iam_candidate(rid, IAM_ROLE)
         client = MagicMock()
         falsifier = IamRoleFalsifier(session=_mock_session("iam", client), account_id=ACCOUNT_ID)

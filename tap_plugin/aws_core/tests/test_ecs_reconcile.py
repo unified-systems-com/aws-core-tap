@@ -29,6 +29,7 @@ from tap_plugin.aws_core.falsifiers import (
     _ecs_cluster_of_task,
     _ecs_task_of_container,
 )
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 from tap_plugin.aws_core.tests.test_boto3_collector_ecs import _CLUSTER, _FakeEcs, _task
 
 from tap.plugin_testing import find_plugin_source_root
@@ -253,8 +254,7 @@ def _row(entity_type: str, fields: dict[str, Any], *, account_id: str = ACCOUNT_
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": account_id, "aws.region": REGION}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": account_id, "aws.region": REGION})
     return entity_id
 
 

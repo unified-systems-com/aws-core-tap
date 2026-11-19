@@ -51,6 +51,7 @@ from tap_plugin.aws_core.falsifiers import (
     PolicyStatementFalsifier,
     TagPolicyRuleFalsifier,
 )
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 
 from tap_grid.falsifier_testing import (
     CASE_DROPPED,
@@ -846,8 +847,7 @@ def _row(entity_type: str, payload: dict[str, Any]) -> uuid.UUID:
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": MGMT, "aws.region": "global"}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": MGMT, "aws.region": "global"})
     return entity_id
 
 

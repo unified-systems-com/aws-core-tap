@@ -266,11 +266,16 @@ class AwsBaselinePanelType:
 
     @classmethod
     def get_view_context(cls, panel: Panel, request: HttpRequest) -> dict[str, Any]:
+        from tap_grid.dimension_names import view
         from tap_grid.gryphon.executor import execute_gryphon_raw
 
         def rows(query: str, what: str) -> list[dict[str, Any]] | None:
             try:
-                return list(execute_gryphon_raw(query, {}, layer="full").get("rows") or [])
+                found = list(execute_gryphon_raw(query, {}, layer="full").get("rows") or [])
+                # A projected ``x.dimensions`` arrives as stored, keyed by Dimension node id (tap 0.4.0, tap#711;
+                # tap#1243 asks core to name it); the fold reads it by name, so it is named here, inside the same
+                # guard, so a naming failure is a failed column too.
+                return [{**r, "dims": view(r["dims"])} if isinstance(r.get("dims"), dict) else r for r in found]
             except Exception:  # noqa: BLE001 — a failed read marks its column failed, never off
                 logger.exception("[b7e2] aws baseline: %s read failed for panel %s", what, panel.entity_id)
                 return None

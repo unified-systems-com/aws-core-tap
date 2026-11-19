@@ -35,6 +35,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.identity import node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import (
     manifest_entries as _entries,
 )
+from tap_plugin.aws_core.tests.grid_dimensions import dimensions_of
 from tap_plugin.aws_core.tests.grid_keys import edge_between, has_edge, node_id
 
 _FOOTPRINT = "aws_core__aws_account_region"
@@ -339,7 +340,7 @@ class TestEnabledRegion:
         assert has_edge(
             "HOSTS_VPC__aws_core", _FOOTPRINT, _fp(_ACCOUNT, _REGION_ENABLED), "aws_core__aws_vpc", _VPC_ID
         )
-        assert get_node(node_id("aws_core__aws_vpc", _VPC_ID)).entity.dimensions["aws.account"] == _ACCOUNT
+        assert dimensions_of(get_node(node_id("aws_core__aws_vpc", _VPC_ID)).entity)["aws.account"] == _ACCOUNT
 
     def test_footprint_has_no_edge_to_its_account(self, _stub_aws):
         _run()

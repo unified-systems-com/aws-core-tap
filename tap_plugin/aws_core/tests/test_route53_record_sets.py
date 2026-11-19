@@ -26,6 +26,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.route53_records import (
     withhold_unreplaced_zone_routes,
 )
 from tap_plugin.aws_core.falsifiers import Route53RecordSetFalsifier
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 
 from tap_grid.falsifier_testing import CASE_DROPPED, CASE_FORBIDDEN, CASE_PRESENT, CASE_REIDENTIFIED, run_four_cases
 from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, PRESENT_AT_PROBE, UNDETERMINED, Candidate, FalsifyContext
@@ -210,8 +211,7 @@ def _record_row(zone: str, name: str, record_type: str = "A", set_identifier: st
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": ACCOUNT_ID, "aws.region": REGION}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": ACCOUNT_ID, "aws.region": REGION})
     return entity_id
 
 
