@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("aws_core", "0055_rename_aws_dimensions"),
+        ("aws_core", "0056_published_versions_keep_no_history"),
         ("tap_grid", "0007_batchevent_authority_proposed"),
     ]
 

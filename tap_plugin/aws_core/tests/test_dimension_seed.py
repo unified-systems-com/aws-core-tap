@@ -145,8 +145,14 @@ def test_no_description_carries_an_account_number() -> None:
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-account-dimension-8")
 def test_re_seeding_over_v030_renames_the_keys_by_id() -> None:
-    """A grid that imported v0.3.0 (aws_account, aws_region) takes v0.4.0: the new batch id is not skipped, and
-    each node is renamed in place, keeping its id."""
+    """A grid that imported v0.3.0 (aws_account, aws_region) takes v0.4.0: a batch id it has not seen is not skipped,
+    and each node is renamed in place, keeping its id.
+
+    On a 0.4.0 core the test grid already holds this seed's batch (dimensions are declared before anything is
+    written, tap#1196), so re-importing it is skipped as already seen. The v0.4.0 seed is replayed under a fresh
+    batch id, later than v0.3.0's, which is what that batch is to a grid that only ever imported v0.3.0."""
+    import uuid
+
     from tap_grid.grift import grift_import
     from tap_grid.models import Dimension
 
@@ -158,7 +164,10 @@ def test_re_seeding_over_v030_renames_the_keys_by_id() -> None:
         node["entity"]["name"] = node["node"]["name"] = node["node"]["name"].replace("aws.", "aws_")
     assert grift_import(old).success
     assert Dimension.objects.get(entity_id=ACCOUNT_ID).name == "aws_account"
-    assert grift_import(_seed()).success
+    new = copy.deepcopy(_seed())
+    new["batches"][0]["batch_entity"]["entity_id"] = str(uuid.uuid7())
+    assert new["batches"][0]["batch_entity"]["entity_id"] > batch["batch_entity"]["entity_id"]
+    assert grift_import(new).success
     assert Dimension.objects.get(entity_id=ACCOUNT_ID).name == "aws.account"
     assert Dimension.objects.get(entity_id=REGION_ID).name == "aws.region"
 
@@ -171,6 +180,13 @@ def test_cloud_is_retired_declared_but_never_written() -> None:
     assert cloud["node"]["description"].startswith("Retired 2026-11-12; never stamped.")
 
 
+# Migration 0055 runs on the name-keyed map, before core's flip (tap_grid 0012) re-keys it by Dimension node id. No
+# migration edge orders the two. On an upgrade that applies both, the plan takes aws_core's leaf before tap_grid's
+# (Django walks the leaf nodes in sorted order, and 0055 needs nothing past tap_grid 0007), and 0012's docstring
+# names the order (aws_core's rename first). These tests therefore seed rows in that pre-flip shape with raw SQL,
+# as an upgraded grid holds them; a 0.4.0 core refuses to write it through the ORM.
+
+
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-account-dimension-8")
 def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
@@ -180,23 +196,22 @@ def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
     from types import SimpleNamespace
 
     from django.db import connection
+    from tap_plugin.aws_core.tests.grid_dimensions import store_pre_flip
 
     from tap_grid.models import Entity
     from tap_grid.write_guard import unguarded_write
 
     migration = importlib.import_module("tap_plugin.aws_core.migrations.0055_rename_aws_dimensions")
     with unguarded_write():
-        ours = Entity.objects.create(
-            entity_type="aws_core__aws_vpc",
-            name="v",
-            dimensions={"cloud": "aws", "tap.cloud": "aws", "aws_account": "acct-a", "aws_region": "us-east-1"},
-        )
-        theirs = Entity.objects.create(entity_type="anchore__image", name="i", dimensions={"cloud": "aws"})
+        ours = Entity.objects.create(entity_type="aws_core__aws_vpc", name="v")
+        theirs = Entity.objects.create(entity_type="anchore__image", name="i")
         # An edge's spine row is entity_type "edge"; whose edge it is lives on tap_edge.edge_type.
-        our_edge = Entity.objects.create(
-            entity_type="edge", name="e1", dimensions={"cloud": "aws", "aws_region": "x", "aws.region": "kept"}
-        )
-        their_edge = Entity.objects.create(entity_type="edge", name="e2", dimensions={"cloud": "aws"})
+        our_edge = Entity.objects.create(entity_type="edge", name="e1")
+        their_edge = Entity.objects.create(entity_type="edge", name="e2")
+    store_pre_flip(ours.pk, {"cloud": "aws", "tap.cloud": "aws", "aws_account": "acct-a", "aws_region": "us-east-1"})
+    store_pre_flip(theirs.pk, {"cloud": "aws"})
+    store_pre_flip(our_edge.pk, {"cloud": "aws", "aws_region": "x", "aws.region": "kept"})
+    store_pre_flip(their_edge.pk, {"cloud": "aws"})
     with connection.cursor() as cursor:
         for edge, edge_type in ((our_edge, "HOSTS_VPC__aws_core"), (their_edge, "SCANS__anchore")):
             cursor.execute(
@@ -216,16 +231,46 @@ def test_the_migration_renames_aws_core_rows_only_and_is_idempotent() -> None:
 
 
 @pytest.mark.django_db
+@pytest.mark.spec("req-aws-core-account-dimension-8")
+def test_the_migration_leaves_a_flipped_row_alone() -> None:
+    """A row already in core's stored shape (keys are Dimension node ids) carries none of the old names, so 0055
+    matches nothing on it: run after the flip, as on a fresh 0.4.0 grid, it changes nothing."""
+    import importlib
+    from types import SimpleNamespace
+
+    from django.db import connection
+    from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
+
+    from tap_grid.models import Entity
+    from tap_grid.write_guard import unguarded_write
+
+    migration = importlib.import_module("tap_plugin.aws_core.migrations.0055_rename_aws_dimensions")
+    with unguarded_write():
+        row = Entity.objects.create(entity_type="aws_core__aws_vpc", name="v")
+        stamp_dimensions(row, {"tap.computing.cloud": "aws", "aws.account": "123456789012", "aws.region": "us-east-1"})
+    row.refresh_from_db()
+    before = dict(row.dimensions)
+    assert set(before) == {TAP_CLOUD_ID, ACCOUNT_ID, REGION_ID}
+    migration.rename_dimensions(None, SimpleNamespace(connection=connection))
+    row.refresh_from_db()
+    assert row.dimensions == before
+
+
+@pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-account-dimension-9")
 def test_a_migrated_row_has_no_owner_until_re_collected_so_its_falsifier_fails_closed() -> None:
     """Q60a: an old aws_account value named the OBSERVER. A RAM-shared subnet seen by the receiving account carried
     that account; renamed into aws.account it would pass the receiver's scope check and reopen the false-deletion
-    path. Dropped, the row has no aws.account, and the scope check refuses it until the owner is stamped."""
+    path. Dropped, the row has no aws.account, and the scope check refuses it until the owner is stamped.
+
+    The row is seeded pre-flip, 0055 runs, and the row is then given the stored shape the flip makes of what 0055
+    left (``stamp_dimensions`` writes the same names under their node ids): the falsifier reads that, by name."""
     import importlib
     from types import SimpleNamespace
 
     from django.db import connection
     from tap_plugin.aws_core.falsifiers import SubnetFalsifier, _dimensions_of
+    from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions, store_pre_flip
 
     from tap_grid.falsifiers import Candidate
     from tap_grid.models import Entity
@@ -234,16 +279,18 @@ def test_a_migrated_row_has_no_owner_until_re_collected_so_its_falsifier_fails_c
     receiver = "111122223333"
     migration = importlib.import_module("tap_plugin.aws_core.migrations.0055_rename_aws_dimensions")
     with unguarded_write():
-        shared = Entity.objects.create(
-            entity_type="aws_core__aws_subnet",
-            name="shared",
-            dimensions={"tap.cloud": "aws", "aws_account": receiver, "aws_region": "us-east-1"},
-        )
+        shared = Entity.objects.create(entity_type="aws_core__aws_subnet", name="shared")
+    store_pre_flip(shared.pk, {"tap.cloud": "aws", "aws_account": receiver, "aws_region": "us-east-1"})
     migration.rename_dimensions(None, SimpleNamespace(connection=connection))
     shared.refresh_from_db()
-    assert "aws.account" not in shared.dimensions and "aws_account" not in shared.dimensions
+    assert shared.dimensions == {"tap.computing.cloud": "aws", "aws.region": "us-east-1"}, "no account survives 0055"
+    with unguarded_write():
+        stamp_dimensions(shared, dict(shared.dimensions))
+    shared.refresh_from_db()
+    assert ACCOUNT_ID not in shared.dimensions
 
     row = SimpleNamespace(entity=shared)
+    assert _dimensions_of(row) == {"tap.computing.cloud": "aws", "aws.region": "us-east-1"}
     candidate = Candidate(
         entity_id=shared.id,
         entity_type="aws_core__aws_subnet",

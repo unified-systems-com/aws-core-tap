@@ -15,6 +15,8 @@ class GreengrassGroupVersion(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Greengrass Group Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # No grid history (aws-build Q86): AWS never changes a published version.
+    TRACK_HISTORY: ClassVar[bool] = False
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("greengrass_group_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "greengrass:groupVersion"

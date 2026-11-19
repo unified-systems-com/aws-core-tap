@@ -15,6 +15,8 @@ class ConnectContactFlowVersion(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Connect Contact Flow Version."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # No grid history (aws-build Q86): AWS never changes a published version.
+    TRACK_HISTORY: ClassVar[bool] = False
     # Identity (req-grid-entity-natural-key): The object's ARN (Arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("connect_contact_flow_version_arn",)
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,

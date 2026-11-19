@@ -8,7 +8,10 @@ plugin_version = "0.8.2" # x-release-please-version
 # 0.3.0: the first core release with tap_grid.services.entity_liveness (req-grid-service-read-direct-4),
 # which the collector asks before re-sending a fixed edge id, edge-endpoint keys and declared edge
 # identity (natural-key refs), and the GRIFT edge_cases section (authority claims).
-requires_tap = ">=0.3.1"
+# 0.4.0: the first core release with the per-model history opt-out (TRACK_HISTORY,
+# req-grid-history-optout), which the published-version types declare (aws-build Q86); on an older
+# core the flag is ignored and the 0056 migration would drop history tables the models still use.
+requires_tap = ">=0.4.0"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
