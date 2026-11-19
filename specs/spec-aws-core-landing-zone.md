@@ -305,20 +305,27 @@ models; nothing was observed against a live account.
   skips the edge and records a `skip` event. GuardDuty names an IAM
   user, not its ARN, so the key is built with the default path (inferred); a user under another path
   is left dangling.
-- **Any ARN-keyed resource.** A Security Hub finding names its resources by ARN, and the target is
-  whichever aws_core node is keyed by that ARN, whatever its type (aws-core-tap#242;
-  `collectors/boto3_collector/arn_resolver.py`). No table of types is kept: the resolver reads each
-  model's `ARN_RESOURCE` and `NATURAL_KEY` from the entity registry and the vendored
-  `arn_formats.json` (`req-aws-collector-identity-11`). A type is keyed by its ARN when its key is one
-  field holding the ARN (named `arn`, or `<x>_arn` until `req-aws-collector-identity-10` renames it).
-  An ARN resolves when exactly one vendored format matches it most specifically (most literal
-  characters), that format's resource type belongs to one model, and that model is keyed by its ARN.
-  Otherwise the id stays a string in `resource_ids` and no edge is sent: an ARN no format matches,
-  two formats of the same shape (a Lambda alias and a version), a resource type several models share
-  (`cloudwatch:alarm`, `rds:cluster-pg`, `es:domain` and others), or a type keyed by something else.
-  An EC2 instance is keyed by its instance id, so an `AwsEc2Instance` entry keeps its special case:
-  the id is the ARN's last segment. A mismatch cannot attach a finding to the wrong row, because the
-  key sent is the ARN itself; at worst it names a node not on the grid and core skips the edge. The
+- **Any resource its ARN names.** A Security Hub finding names its resources by ARN, and an account
+  by the pseudo-id `AWS::::Account:<id>`; the target is whichever aws_core node that id names,
+  whatever its type and however it is keyed (aws-core-tap#242, #252, #249;
+  `collectors/boto3_collector/arn_resolver.py`, `req-aws-collector-identity-13`). No table of types
+  is kept: the resolver reads each model's `ARN_RESOURCE` and `NATURAL_KEY` from the entity registry,
+  each natively keyed type's identity declaration (`req-aws-collector-identity-12`) and the vendored
+  `arn_formats.json` (`req-aws-collector-identity-11`). An ARN resolves when exactly one vendored
+  format matches it most specifically (most literal characters) and that format's resource type
+  belongs to one model. A type keyed by its ARN (one field named `arn`, or `<x>_arn` until
+  `req-aws-collector-identity-10` renames it) is named by the ARN. A natively keyed type is named by
+  the key its declaration's `arn_key` reads from the ARN: an EC2 instance, a VPC, a subnet, a security
+  group, a network ACL or a volume by its id, a GuardDuty detector by `(account_id, region,
+  detector_id)` with the account and region read from the ARN itself. The account pseudo-id reaches
+  the account node through the account's declared `other_ids`. The ASFF `Type` plays no part, so the
+  EC2 instance special case is gone. Otherwise the id stays a string in `resource_ids` and no edge is
+  sent: an id nothing matches, two formats of the same shape (a Lambda alias and a version), a
+  resource type several models share (`cloudwatch:alarm`, `rds:cluster-pg`, the transit gateway
+  attachment types and others), a key the ARN does not carry, or a type still keyed by a string the
+  collector makes. A mismatch cannot attach a finding to the wrong row, because the key sent is the
+  ARN itself or what the target's own declaration reads from it; at worst it names a node not on the
+  grid and core skips the edge. The
   edge type's targets are open (`edges/CONCERNS_RESOURCE.edge.json`) for the same reason. The
   resolver takes an ARN alone, so an OCSF `resources[].uid` can use it unchanged.
 - **GovCloud.** Every call is to a service already in the availability table. Two are not verified
@@ -336,7 +343,7 @@ models; nothing was observed against a live account.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page below the cap. | |
-| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN has `CONCERNS_RESOURCE` to that node; an id no single ARN-keyed type claims stays a string with no edge. | aws-core-tap#242. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
+| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN, or of a natively keyed type whose declaration reads its key from the ARN (`req-aws-collector-identity-13`), or naming an account by `AWS::::Account:<id>`, has `CONCERNS_RESOURCE` to that node by its natural key; an id no single keyed type claims stays a string with no edge. | aws-core-tap#242, #252; closes aws-core-tap#249. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
 | req-aws-landing-zone-findings-3 | Bounded And Never Complete | Proposed | A findings read stops at `FINDINGS_CAP`; its surface records the filter with no control, is never complete, and names a truncation in `reasons.truncated`. | |
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |

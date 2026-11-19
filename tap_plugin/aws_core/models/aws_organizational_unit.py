@@ -39,6 +39,18 @@ class AwsOrganizationalUnit(BaseModel):
     # embedded, so it does not collide across organizations.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ou_id",)
     ARN_RESOURCE: ClassVar[str | None] = "organizations:organizationalunit"
+    # Identity (req-aws-collector-identity-12): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": "AWS::Organizations::OrganizationalUnit",
+        "key": {
+            "ou_id": "Id",
+        },
+        "arn_key": {
+            "ou_id": "ou-${OrganizationalUnitId}",
+        },
+    }
 
     # A nested OU is contained by its parent OU (tap-plugin-aws-core#50): AWS never re-parents an OU
     # and refuses to delete a non-empty one, so PARTITIONED_INTO_OU is safe as containment where the

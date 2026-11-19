@@ -148,7 +148,8 @@
           "type": "string",
           "minLength": 1
         },
-        "containment": { "$ref": "#/$defs/containment" }
+        "containment": { "$ref": "#/$defs/containment" },
+        "identity": { "$ref": "#/$defs/identity" }
       },
       "allOf": [
         {
@@ -193,6 +194,45 @@
           }
         }
       ]
+    },
+    "identity": {
+      "description": "How a type that is not keyed by an ARN the API returns is identified (req-aws-collector-identity-12, aws-core-tap#252). Its key is the identifier CloudFormation declares for the type (primaryIdentifier in the resource schema bundle, cfn.primary_identifier in ledger/aws_coverage_ledger.json), multi-column where AWS makes it so and scoped by account and region; the collector never invents a key. A type collected by no manifest entry declares the same object as its model's AWS_IDENTITY. tests/test_identity_declarations.py checks every declaration against the ledger.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cfn_type"],
+      "properties": {
+        "cfn_type": {
+          "description": "The CloudFormation resource type whose primaryIdentifier the key follows, one of the ledger rows that map this entity type; null when CloudFormation has no type for the resource (then reason says what names it).",
+          "oneOf": [{ "type": "string", "pattern": "^AWS::[A-Za-z0-9]+::[A-Za-z0-9]+$" }, { "type": "null" }]
+        },
+        "key": {
+          "description": "Each NATURAL_KEY field of the model, mapped to the primaryIdentifier property it holds, or to @account / @region / @partition for a column that scopes the identifier.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "pattern": "^(@account|@region|@partition|[A-Za-z][A-Za-z0-9]*)$" }
+        },
+        "arn_key": {
+          "description": "How the ARN resolver (arn_resolver.py) reads each NATURAL_KEY field from the type's ARN: a template over the placeholders of the model's ARN_RESOURCE formats in arn_formats.json ('${VpcId}', 'o-${OrganizationId}'), or '@arn' for a field that holds the whole ARN. An account or region column reads the ARN's own segment ('${Region}', '${Account}'), never the run's. Absent when the ARN does not carry every key field.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        },
+        "other_ids": {
+          "description": "Non-ARN forms AWS names the resource by, in the same placeholders arn_key reads (Security Hub's account pseudo-id 'AWS::::Account:${AccountId}').",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "reason": {
+          "description": "Why the key differs from CloudFormation's primaryIdentifier, or, with a null cfn_type, what names the resource. Present only then.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "dependentRequired": { "other_ids": ["arn_key"] },
+      "if": { "properties": { "cfn_type": { "type": "null" } } },
+      "then": { "required": ["reason"], "not": { "required": ["key"] } },
+      "else": { "required": ["key"] }
     },
     "containment": {
       "description": "Declares that this entry's listing is a COMPLETE inventory the collector can fan retirement candidates out from (req-grid-reconcile-evidence / req-grid-reconcile-candidates): the collector emits a parent -> item edge (edge_type) for each item and, after submitting the batch, records the listing as a completeness surface. Two disjoint shapes, distinguished by whether 'parent' is present — never both on one entry (enforced by each shape's own additionalProperties:false plus the entry-level allOf pinning 'scope' to the matching value): containment_account (tap-plugin-aws-core#43) for a type that exists in exactly one account and is never shared, walked once per account; containment_regional (tap-plugin-aws-core#49) for a type read once per (account, region) under an AwsAccountRegion footprint, which may be RAM-shared into the account (owner_path).",

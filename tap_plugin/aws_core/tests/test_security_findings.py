@@ -56,6 +56,7 @@ from tap_plugin.aws_core.falsifiers import (
 from tap_grid.falsifier_testing import CASE_DROPPED, CASE_FORBIDDEN, CASE_PRESENT, CASE_REIDENTIFIED, run_four_cases
 from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, PRESENT_AT_PROBE, UNDETERMINED, unsupported
 from tap_grid.services import get_node
+from tap_plugin.aws_core.collectors.boto3_collector.identity import composite_natural_key
 
 from .test_landing_zone import (
     ANALYZER_ARN,
@@ -569,6 +570,35 @@ class TestSecurityHub:
             _id("aws_core__aws_iam_user", user),
             _id("aws_core__aws_iam_role", ROLE_ARN),
         }
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-13")
+    def test_a_finding_concerns_an_account_and_natively_keyed_resources(self) -> None:
+        """aws-core-tap#249: an account-level control (``AWS::::Account:<id>``), an id-keyed EC2 resource and a
+        GuardDuty detector, keyed by three fields, each get the edge by the key their declarations read; the
+        detector's endpoint names it by every part, so the batch resolves it whether or not it carries it."""
+        from tap_plugin.aws_core.collectors.boto3_collector.batch import address_batch
+
+        group = "sg-0abc1234def567890"
+        resources = [
+            {"Type": "AwsAccount", "Id": f"AWS::::Account:{MGMT}"},
+            {"Type": "AwsEc2SecurityGroup", "Id": f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:security-group/{group}"},
+            {"Type": "AwsGuardDutyDetector", "Id": f"arn:{PARTITION}:guardduty:{WEST}:{MGMT}:detector/{DETECTOR_ID}"},
+        ]
+        finding = _sh_finding("Account.1", "HIGH", Resources=resources)
+        aws = with_findings()
+        aws.on("securityhub", "get_findings", _sh_handler({"HIGH": [[finding]]}), region=WEST)
+        read = collect(aws)
+        source = _id(SECURITYHUB_FINDING, securityhub_finding_key(SH_PRODUCT, finding["Id"]))
+        detector = composite_natural_key({"account_id": MGMT, "region": WEST, "detector_id": DETECTOR_ID})
+        assert {to for f, to in _edges(read, CONCERNS_RESOURCE) if f == source} == {
+            _id("aws_core__aws_account", MGMT),
+            _id("aws_core__aws_security_group", group),
+            _id(GUARDDUTY_DETECTOR, detector),
+        }
+        concerns = [e for e in read.edges if e["edge"]["edge_type"] == CONCERNS_RESOURCE and e["edge"]["from_ref"] == source]
+        addressed = address_batch(read.nodes, concerns)
+        [edge] = [e["edge"] for e in addressed.edges if e["edge"].get("to_key", {}).get("entity_type") == GUARDDUTY_DETECTOR]
+        assert edge["to_key"]["key"] == {"account_id": MGMT, "region": WEST, "detector_id": DETECTOR_ID}
 
     @pytest.mark.spec("req-aws-landing-zone-findings-6")
     def test_enabled_standards_are_nodes_contained_by_the_hub(self) -> None:

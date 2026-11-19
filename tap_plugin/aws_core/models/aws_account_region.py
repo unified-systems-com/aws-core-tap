@@ -41,6 +41,13 @@ class AwsAccountRegion(BaseModel):
     # names it: a region code is shared by every account, an account id by every region. Both are
     # AWS's own stable identifiers and both are always known where a collector observes a footprint.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region_code")
+    # Identity (req-aws-collector-identity-12): no manifest entry collects this type, so its declaration lives
+    # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
+    # tests/test_identity_declarations.py.
+    AWS_IDENTITY: ClassVar[dict[str, object]] = {
+        "cfn_type": None,
+        "reason": "not an AWS resource: an account's footprint in one Region, which the collector records; named by the account id and the region code",
+    }
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "round-rectangle",

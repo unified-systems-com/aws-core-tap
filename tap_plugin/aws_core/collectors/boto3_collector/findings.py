@@ -577,7 +577,7 @@ class FindingsReads:
             self._concerns(
                 SECURITYHUB_FINDING,
                 key,
-                _asff_target(str(resource.get("Type") or ""), str(resource.get("Id") or "")),
+                _asff_target(str(resource.get("Id") or "")),
                 region,
             )
         return True
@@ -778,20 +778,13 @@ class FindingsReads:
         )
 
 
-def _asff_target(resource_type: str, resource_id: str) -> tuple[str, str] | None:
-    """``(entity type, natural key)`` of the grid resource an ASFF ``Resources[]`` entry names, or
-    None (aws-core-tap#242). Security Hub names a resource by ARN (read: ASFF ``Resource.Id``), and
-    whichever aws_core type is keyed by that ARN is the target (``arn_resolver``). An EC2 instance is
-    keyed on the grid by its instance id, not its ARN, so it is read from the ARN's last segment. An id
-    that is not an ARN, or an ARN no single ARN-keyed type claims, names nothing and stays a string in
-    ``resource_ids``."""
-    if not resource_id.startswith("arn:"):
-        return None
-    if resource_type == "AwsEc2Instance":
-        parsed = parse_arn(resource_id)
-        if parsed and parsed.resource.startswith("instance/"):
-            return EC2_INSTANCE, parsed.resource.split("/", 1)[1]
-        return None
+def _asff_target(resource_id: str) -> tuple[str, str] | None:
+    """``(entity type, natural key)`` of the grid resource an ASFF ``Resources[]`` entry names, or None
+    (aws-core-tap#242, #252). Security Hub names a resource by ARN (read: ASFF ``Resource.Id``), and an account by
+    the pseudo-id ``AWS::::Account:<id>``; ``arn_resolver`` reads the target from the id alone, through each type's
+    ARN key or its identity declaration (an EC2 instance's ``instance_id`` from ``instance/${InstanceId}``, the
+    account's ``account_id`` from its declared ``other_ids``). The ASFF ``Type`` plays no part. An id no single
+    keyed type claims names nothing and stays a string in ``resource_ids``."""
     return resolve_arn(resource_id)
 
 
