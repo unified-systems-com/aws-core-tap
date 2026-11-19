@@ -164,9 +164,12 @@ def _summary(collector):
 
 @pytest.mark.django_db
 class TestInARun:
+    # The marked (not offered) example is datazone: one entry, one call, so the probe can build its request. It was
+    # qbusiness until aws-core-tap#251 made every qbusiness entry fan out from ListApplications, which the probe does
+    # not build (``_probe_target`` skips a ``per`` source).
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_the_run_says_how_much_the_probe_checked_so_silence_means_nothing_found(self, monkeypatch):
-        _wire(monkeypatch, include_types=["ec2:vpc", "qbusiness:*"])
+        _wire(monkeypatch, include_types=["ec2:vpc", "datazone:*"])
         data = _summary(base._run())
         assert data["usable"] is True and data["hosts_checked"] >= 1
         assert data["gaps"] == 0 and data["stale"] >= 1
@@ -183,7 +186,7 @@ class TestInARun:
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_disabled_probe_builds_no_request(self, monkeypatch):
         calls = []
-        _wire(monkeypatch, missing={"sts.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc", "qbusiness:*"])
+        _wire(monkeypatch, missing={"sts.us-gov-west-1.amazonaws.com"}, include_types=["ec2:vpc", "datazone:*"])
         monkeypatch.setattr(
             collector_mod,
             "request_host",
@@ -218,29 +221,29 @@ class TestInARun:
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_marked_entry_whose_host_resolves_is_reported_stale(self, monkeypatch):
-        _wire(monkeypatch, include_types=["qbusiness:*"])
+        _wire(monkeypatch, include_types=["datazone:*"])
         collector = base._run()
         stale = _codes(collector, "PARTITION_LIST_STALE")
-        assert stale and {w["message_data"]["service"] for w in stale} == {"qbusiness"}
+        assert stale and {w["message_data"]["service"] for w in stale} == {"datazone"}
         assert len({w["message_data"]["entity_type"] for w in stale}) == len(stale), "one per marked entry"
-        assert not [s for s, _op in base._RecordingClient.calls if s == "qbusiness"], "still not called"
+        assert not [s for s, _op in base._RecordingClient.calls if s == "datazone"], "still not called"
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_marked_entry_is_checked_in_every_selected_region(self, monkeypatch):
         # The claim was observed in one region; a host that resolves only in another selected region is a stale claim too.
         _wire(
             monkeypatch,
-            missing={"qbusiness.us-gov-west-1.amazonaws.com"},
-            include_types=["qbusiness:*"],
+            missing={"datazone.us-gov-west-1.amazonaws.com"},
+            include_types=["datazone:*"],
             regions_allowed=["us-gov-west-1", "us-gov-east-1"],
         )
         stale = _codes(base._run(), "PARTITION_LIST_STALE")
-        assert stale and {w["message_data"]["host"] for w in stale} == {"qbusiness.us-gov-east-1.amazonaws.com"}
+        assert stale and {w["message_data"]["host"] for w in stale} == {"datazone.us-gov-east-1.amazonaws.com"}
         assert {w["message_data"]["region"] for w in stale} == {"us-gov-east-1"}
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_marked_service_whose_host_has_no_record_raises_nothing(self, monkeypatch):
-        _wire(monkeypatch, missing={"qbusiness.us-gov-west-1.amazonaws.com"}, include_types=["qbusiness:*"])
+        _wire(monkeypatch, missing={"datazone.us-gov-west-1.amazonaws.com"}, include_types=["datazone:*"])
         collector = base._run()
         assert not _codes(collector, "PARTITION_LIST_STALE") and not _codes(collector, "PARTITION_GAP_LEARNED")
 
@@ -249,7 +252,7 @@ class TestInARun:
         _wire(
             monkeypatch,
             missing={"sts.us-gov-west-1.amazonaws.com", "ec2.us-gov-west-1.amazonaws.com"},
-            include_types=["ec2:vpc", "qbusiness:*"],
+            include_types=["ec2:vpc", "datazone:*"],
         )
         collector = base._run()
         assert not _codes(collector, "PARTITION_LIST_STALE") and not _codes(collector, "PARTITION_GAP_LEARNED")
