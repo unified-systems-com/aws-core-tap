@@ -23,6 +23,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.arn_resolver import (
     default_resolver,
     other_id_keys,
     resolve_arn,
+    resource_claimants,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.identity import composite_natural_key, endpoint_key
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import identity_declarations
@@ -359,6 +360,21 @@ class TestDeclaredKeys:
         resolver = self._resolver()
         assert resolver.resolve(f"arn:{P}:x::{A}:scoped/s-9") is None
         assert resolver.resolve(f"arn:{P}:x:{R}::scoped/s-9") is None
+
+    def test_a_model_naming_the_resource_type_makes_it_ambiguous_however_it_is_keyed(self) -> None:
+        # A second model on x:declared keyed by a house string has no arn_key, but it is still a claimant: the ARN
+        # cannot say which of the two it is (PR 254 review).
+        house = type("M", (), {"ENTITY_TYPE": "house", "ARN_RESOURCE": "x:declared", "NATURAL_KEY": ("house_key",)})
+        models = [*self.MODELS, house]
+        resolver = ArnResolver(
+            SYNTHETIC_FORMATS,
+            arn_keyed_types(models),
+            declared_keys(models, self.DECLARATIONS),
+            other_id_keys(models, self.DECLARATIONS),
+            resource_claimants(models),
+        )
+        assert resolver.resolve(f"arn:{P}:x:{R}:{A}:declared/d-123") is None
+        assert self._resolver().resolve(f"arn:{P}:x:{R}:{A}:declared/d-123") == ("declared", "d-123")
 
     def test_a_key_the_arn_does_not_carry_names_nothing(self) -> None:
         assert self._resolver().resolve(f"arn:{P}:x:{R}:{A}:partial/p-1") is None

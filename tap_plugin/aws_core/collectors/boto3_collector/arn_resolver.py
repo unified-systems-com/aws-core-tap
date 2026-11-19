@@ -252,6 +252,7 @@ class ArnResolver:
         keyed: dict[str, list[str]],
         declared: dict[str, list[DeclaredKey]] | None = None,
         other_ids: list[tuple[re.Pattern[str], tuple[str | None, ...], DeclaredKey]] | None = None,
+        claimants: dict[str, set[str]] | None = None,
     ) -> None:
         self._by_service: dict[str, list[_Format]] = {}
         for resource, resource_formats in formats.items():
@@ -263,7 +264,11 @@ class ArnResolver:
             claims.setdefault(resource, set()).update(types)
         for resource, keys in declared.items():
             claims.setdefault(resource, set()).update(k.entity_type for k in keys)
-        # A resource type two models claim, by ARN or by declaration, cannot say which one an ARN is.
+        # Every model naming the resource type is a claimant, keyed or not: a second model whose key the resolver
+        # cannot read (a house string, an undeclared composite) still makes the ARN ambiguous (PR 254 review).
+        for resource, types in (claimants or {}).items():
+            claims.setdefault(resource, set()).update(types)
+        # A resource type two models claim, by ARN, by declaration or merely by naming it, cannot say which one an ARN is.
         sole = {resource for resource, types in claims.items() if len(types) == 1}
         self._target = {r: keyed[r][0] for r in sole if r in keyed}
         self._declared = {r: declared[r][0] for r in sole if r in declared and r not in keyed}
@@ -345,6 +350,16 @@ def _registered_models() -> list[type]:
     return [m for m in models if getattr(getattr(m, "_meta", None), "app_label", None) == APP_LABEL]
 
 
+def resource_claimants(models: list[type]) -> dict[str, set[str]]:
+    """``{ARN resource type: {entity types}}`` over every model that names one in ``ARN_RESOURCE``, however keyed."""
+    named: dict[str, set[str]] = {}
+    for model in models:
+        resource, entity_type = getattr(model, "ARN_RESOURCE", None), getattr(model, "ENTITY_TYPE", None)
+        if isinstance(resource, str) and isinstance(entity_type, str):
+            named.setdefault(resource, set()).add(entity_type)
+    return named
+
+
 @lru_cache(maxsize=1)
 def default_resolver() -> ArnResolver:
     """The resolver over this plugin's registered models, their identity declarations and the vendored formats,
@@ -359,6 +374,7 @@ def default_resolver() -> ArnResolver:
         arn_keyed_types(models),
         declared_keys(models, declarations),
         other_id_keys(models, declarations),
+        resource_claimants(models),
     )
 
 
@@ -382,5 +398,6 @@ __all__ = [
     "other_id_keys",
     "render",
     "resolve_arn",
+    "resource_claimants",
     "template_names",
 ]
