@@ -274,9 +274,10 @@ class ArnResolver:
         self._declared = {r: declared[r][0] for r in sole if r in declared and r not in keyed}
         self._other_ids = list(other_ids or [])
 
-    def _match(self, arn: str) -> tuple[_Format, re.Match[str]] | None:
-        """The one format whose resource type matches ``arn`` most specifically, with its match; ``None`` when no
-        single resource type does."""
+    def _match(self, arn: str) -> list[tuple[_Format, re.Match[str]]] | None:
+        """The most specific formats matching ``arn``, all of one resource type, each with its match; ``None`` when
+        no single resource type does. Several formats of one type can tie; :meth:`resolve` takes a declared key only
+        when every one of them reads the same key (PR 254 review)."""
         parsed = parse_arn(arn)
         if parsed is None:
             return None
@@ -287,12 +288,12 @@ class ArnResolver:
         top = [(f, m) for f, m in hits if f.literal == best]
         if len({f.resource for f, _ in top}) != 1:
             return None
-        return top[0]
+        return top
 
     def resource_of(self, arn: str) -> str | None:
         """The one ARN resource type whose format matches ``arn`` most specifically, or ``None``."""
         matched = self._match(arn)
-        return matched[0].resource if matched else None
+        return matched[0][0].resource if matched else None
 
     def resolve(self, resource_id: str) -> tuple[str, str] | None:
         """``(entity type, natural key)`` of the node ``resource_id`` names: the ARN for a type keyed by it, the
@@ -302,13 +303,17 @@ class ArnResolver:
         matched = self._match(resource_id)
         if matched is None:
             return None
-        fmt, match = matched
-        if fmt.resource in self._target:
-            return self._target[fmt.resource], resource_id
-        declared = self._declared.get(fmt.resource)
+        resource = matched[0][0].resource
+        if resource in self._target:
+            return self._target[resource], resource_id
+        declared = self._declared.get(resource)
         if declared is None:
             return None
-        key = declared.key(fmt.values(match), resource_id)
+        # Tied formats of one type must agree: a key read from whichever format happens to come first is a guess.
+        keys = {declared.key(fmt.values(match), resource_id) for fmt, match in matched}
+        if len(keys) != 1:
+            return None
+        key = keys.pop()
         return (declared.entity_type, key) if key else None
 
     def _resolve_other(self, resource_id: str) -> tuple[str, str] | None:

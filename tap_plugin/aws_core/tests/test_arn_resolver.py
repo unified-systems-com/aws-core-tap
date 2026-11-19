@@ -376,6 +376,28 @@ class TestDeclaredKeys:
         assert resolver.resolve(f"arn:{P}:x:{R}:{A}:declared/d-123") is None
         assert self._resolver().resolve(f"arn:{P}:x:{R}:{A}:declared/d-123") == ("declared", "d-123")
 
+    def test_tied_formats_of_one_type_must_read_the_same_key(self) -> None:
+        # Two equally specific formats for one resource type: the key is taken only when both read the same value,
+        # never from whichever format the file lists first (PR 254 review).
+        tied = type("M", (), {"ENTITY_TYPE": "tied", "ARN_RESOURCE": "x:tied", "NATURAL_KEY": ("tied_id",)})
+        declarations = {"tied": {"cfn_type": "AWS::X::Tied", "key": {"tied_id": "Id"}, "arn_key": {"tied_id": "${Id}"}}}
+
+        def resolver(formats: list[str]) -> ArnResolver:
+            return ArnResolver(
+                {"x:tied": formats},
+                arn_keyed_types([tied]),
+                declared_keys([tied], declarations),
+                other_id_keys([tied], declarations),
+                resource_claimants([tied]),
+            )
+
+        arn = f"arn:{P}:x:{R}:{A}:tied/t-1"
+        disagreeing = [f"arn:${{Partition}}:x:${{Region}}:${{Account}}:tied/${{{n}}}" for n in ("Id", "Name")]
+        assert resolver(disagreeing).resolve(arn) is None
+        assert resolver(list(reversed(disagreeing))).resolve(arn) is None
+        agreeing = ["arn:${Partition}:x:${Region}:${Account}:tied/${Id}"] * 2
+        assert resolver(agreeing).resolve(arn) == ("tied", "t-1")
+
     def test_a_key_the_arn_does_not_carry_names_nothing(self) -> None:
         assert self._resolver().resolve(f"arn:{P}:x:{R}:{A}:partial/p-1") is None
 
