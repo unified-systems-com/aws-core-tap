@@ -15,7 +15,8 @@ class AwsSecurityHubFinding(BaseModel):
     (``ProductArn``, ``Id``), which is how ASFF identifies a finding. Contained by its hub
     (``HOLDS_SECURITYHUB_FINDING``). A control finding carries its compliance status and security
     control id, and ``EVALUATED_UNDER_STANDARD`` points at each enabled standard it is evaluated
-    under. ``CONCERNS_RESOURCE`` points at an EC2 instance, S3 bucket, IAM user or IAM role it names.
+    under. ``CONCERNS_RESOURCE`` points at each resource it names that an aws_core type is keyed by:
+    any ARN-keyed type by its ARN, and an EC2 instance by the instance id in its ARN.
 
     Only typed fields are kept: no ASFF document, description, remediation, network or process
     detail, product fields or resource details are stored.
@@ -42,15 +43,8 @@ class AwsSecurityHubFinding(BaseModel):
             "nodes": [{"type": "aws_core__aws_securityhub_standards_subscription"}],
             "edges": [{"type": "EVALUATED_UNDER_STANDARD__aws_core"}],
         },
-        {
-            "nodes": [
-                {"type": "aws_core__aws_ec2_instance"},
-                {"type": "aws_core__aws_s3_bucket"},
-                {"type": "aws_core__aws_iam_user"},
-                {"type": "aws_core__aws_iam_role"},
-            ],
-            "edges": [{"type": "CONCERNS_RESOURCE__aws_core"}],
-        },
+        # Open: any aws_core node keyed by the ARN the finding names (aws-core-tap#242).
+        {"edges": [{"type": "CONCERNS_RESOURCE__aws_core"}]},
     ]
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {

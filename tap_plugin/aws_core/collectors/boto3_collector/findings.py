@@ -34,6 +34,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from .arn_resolver import resolve_arn
 from .partition import parse_arn
 
 if TYPE_CHECKING:
@@ -779,8 +780,11 @@ class FindingsReads:
 
 def _asff_target(resource_type: str, resource_id: str) -> tuple[str, str] | None:
     """``(entity type, natural key)`` of the grid resource an ASFF ``Resources[]`` entry names, or
-    None. Security Hub identifies these four by ARN (read: ASFF ``Resource.Id``); an EC2 instance is
-    keyed on the grid by its instance id, the ARN's last segment."""
+    None (aws-core-tap#242). Security Hub names a resource by ARN (read: ASFF ``Resource.Id``), and
+    whichever aws_core type is keyed by that ARN is the target (``arn_resolver``). An EC2 instance is
+    keyed on the grid by its instance id, not its ARN, so it is read from the ARN's last segment. An id
+    that is not an ARN, or an ARN no single ARN-keyed type claims, names nothing and stays a string in
+    ``resource_ids``."""
     if not resource_id.startswith("arn:"):
         return None
     if resource_type == "AwsEc2Instance":
@@ -788,8 +792,7 @@ def _asff_target(resource_type: str, resource_id: str) -> tuple[str, str] | None
         if parsed and parsed.resource.startswith("instance/"):
             return EC2_INSTANCE, parsed.resource.split("/", 1)[1]
         return None
-    target = {"AwsIamUser": IAM_USER, "AwsIamRole": IAM_ROLE, "AwsS3Bucket": S3_BUCKET}.get(resource_type)
-    return (target, resource_id) if target else None
+    return resolve_arn(resource_id)
 
 
 __all__ = [
