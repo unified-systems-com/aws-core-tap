@@ -21,7 +21,9 @@ def _model(service: str):
 
 
 def test_the_sweep_enriched_the_summary_only_types() -> None:
-    assert len(ENRICHED) >= 100
+    # 104 at the sweep; aws-core-tap#251 moved the ten whose detail call is the only one returning the ARN to read that
+    # call as their source (``per``), so their key is the ARN AWS returns rather than one built from the summary.
+    assert len(ENRICHED) >= 94
 
 
 @pytest.mark.parametrize("entry", ENRICHED, ids=lambda e: e["entity_type"])

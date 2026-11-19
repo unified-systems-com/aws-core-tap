@@ -11,7 +11,7 @@ table of types. The answer is read from three declarations the plugin already ke
   ``NATURAL_KEY``, read from the entity registry. A type is **keyed by its ARN** when its key is one field and that
   field holds the ARN: named ``arn``, or ``<something>_arn`` until every such field is renamed
   (``req-aws-collector-identity-10``);
-- each natively keyed type's **identity declaration** (``req-aws-collector-identity-12``): the manifest entry's
+- each natively keyed type's **identity declaration** (``req-aws-collector-identity-13``): the manifest entry's
   ``identity`` block, or the model's ``AWS_IDENTITY`` for a type no manifest entry collects
   (``manifest.identity_declarations``). Its ``arn_key`` says how each key field is read from the ARN: a template
   over the reference format's placeholders (``{"vpc_id": "${VpcId}"}``, ``{"organization_id":
@@ -36,7 +36,7 @@ that resource. An empty segment leaves the ARN unresolved rather than guessed.
 Anything else is ``None``: an ARN no format matches, two formats that match equally (a Lambda alias and a version
 have the same shape), a resource type several models share (a CloudWatch alarm, a composite alarm and a log alarm;
 the four transit gateway attachment types), a type whose key the ARN does not carry (an Identity Center group's
-identity store id), or a type keyed by a string the collector makes (``req-aws-collector-identity-12`` lists those
+identity store id), or a type keyed by a string the collector makes (``req-aws-collector-identity-13`` lists those
 as pending aws-core-tap#253). Every vendored format takes part in the match, keyed or not, so a more specific format
 of a type this resolver cannot key wins and yields ``None`` rather than letting a looser one claim the ARN.
 

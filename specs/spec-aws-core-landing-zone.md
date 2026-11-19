@@ -308,9 +308,9 @@ models; nothing was observed against a live account.
 - **Any resource its ARN names.** A Security Hub finding names its resources by ARN, and an account
   by the pseudo-id `AWS::::Account:<id>`; the target is whichever aws_core node that id names,
   whatever its type and however it is keyed (aws-core-tap#242, #252, #249;
-  `collectors/boto3_collector/arn_resolver.py`, `req-aws-collector-identity-13`). No table of types
+  `collectors/boto3_collector/arn_resolver.py`, `req-aws-collector-identity-14`). No table of types
   is kept: the resolver reads each model's `ARN_RESOURCE` and `NATURAL_KEY` from the entity registry,
-  each natively keyed type's identity declaration (`req-aws-collector-identity-12`) and the vendored
+  each natively keyed type's identity declaration (`req-aws-collector-identity-13`) and the vendored
   `arn_formats.json` (`req-aws-collector-identity-11`). An ARN resolves when exactly one vendored
   format matches it most specifically (most literal characters) and that format's resource type
   belongs to one model. A type keyed by its ARN (one field named `arn`, or `<x>_arn` until
@@ -343,7 +343,7 @@ models; nothing was observed against a live account.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page below the cap. | |
-| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN, or of a natively keyed type whose declaration reads its key from the ARN (`req-aws-collector-identity-13`), or naming an account by `AWS::::Account:<id>`, has `CONCERNS_RESOURCE` to that node by its natural key; an id no single keyed type claims stays a string with no edge. | aws-core-tap#242, #252; closes aws-core-tap#249. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
+| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN, or of a natively keyed type whose declaration reads its key from the ARN (`req-aws-collector-identity-14`), or naming an account by `AWS::::Account:<id>`, has `CONCERNS_RESOURCE` to that node by its natural key; an id no single keyed type claims stays a string with no edge. | aws-core-tap#242, #252; closes aws-core-tap#249. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
 | req-aws-landing-zone-findings-3 | Bounded And Never Complete | Proposed | A findings read stops at `FINDINGS_CAP`; its surface records the filter with no control, is never complete, and names a truncation in `reasons.truncated`. | |
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |

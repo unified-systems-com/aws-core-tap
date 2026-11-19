@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class LocationTracker(BaseModel):
-    """An AWS Location Tracker, read by ListTrackers. Only its identity, name and tags are collected; the rest of the response is not stored."""
+    """An AWS Location Tracker, listed by ListTrackers and read by DescribeTracker. Only its identity, name and tags are collected; the rest of the response is not stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_location_tracker"
     ENTITY_NAME: ClassVar[str] = "AWS Location Tracker"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Location Tracker."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:tracker/{TrackerName} (the AWS Service Authorization Reference 'geo' tracker resource); the listing carries no ARN.
+    # Identity (req-grid-entity-natural-key): The ARN DescribeTracker returns (TrackerArn), read for each resource ListTrackers names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_tracker_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:tracker"
 

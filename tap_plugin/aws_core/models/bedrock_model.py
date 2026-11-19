@@ -19,7 +19,7 @@ class BedrockModel(BaseModel):
     # deployment, so the same model reached from two regions is one node.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("model_id",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:foundation-model"
-    # Identity (req-aws-collector-identity-12): no manifest entry collects this type, so its declaration lives
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.
     AWS_IDENTITY: ClassVar[dict[str, object]] = {

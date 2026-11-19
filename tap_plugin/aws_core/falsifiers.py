@@ -160,6 +160,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.policy_documents import (
     parse_tag_rules,
 )
 
+from tap_grid.dimension_names import view
 from tap_grid.falsifiers import (
     DROPPED_FROM_OBSERVATION,
     UNDETERMINED,
@@ -312,11 +313,16 @@ def _row_of(entity_id: Any) -> Any | None:
 
 
 def _dimensions_of(row: Any) -> dict[str, str]:
-    """The entity's own dimensions dict (``{"aws.account": ..., "aws.region": ...}`` as the
-    collector stamps it), or ``{}`` when the row carries none."""
+    """The entity's own dimensions by name (``{"aws.account": ..., "aws.region": ...}`` as the
+    collector stamps them), or ``{}`` when the row carries none.
+
+    Core stores the map keyed by Dimension node id, each value ``{"v", "src"}`` (tap 0.4.0,
+    unified-systems-com/tap#711); ``dimension_names.view`` is core's one reader that turns it back
+    into names. Read raw, every lookup by name would miss, and every falsifier would see no account
+    and answer ``scope_unknown``."""
     entity = getattr(row, "entity", None)
     dimensions = getattr(entity, "dimensions", None)
-    return dict(dimensions) if isinstance(dimensions, dict) else {}
+    return view(dimensions) if isinstance(dimensions, dict) else {}
 
 
 #: The most NESTED_UNDER_PARENT hops _organization_id_of will follow before giving up — real

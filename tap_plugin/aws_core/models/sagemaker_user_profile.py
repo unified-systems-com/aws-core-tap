@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class SagemakerUserProfile(BaseModel):
-    """An AWS SageMaker User Profile, listed by ListUserProfiles. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS SageMaker User Profile, listed by ListUserProfiles and read by DescribeUserProfile. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_sagemaker_user_profile"
     ENTITY_NAME: ClassVar[str] = "AWS SageMaker User Profile"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SageMaker User Profile."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
+    # Identity (req-grid-entity-natural-key): The ARN DescribeUserProfile returns (UserProfileArn), read for each resource ListUserProfiles names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_user_profile_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sagemaker:user-profile"
 

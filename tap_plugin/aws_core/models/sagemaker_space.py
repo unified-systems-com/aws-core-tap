@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class SagemakerSpace(BaseModel):
-    """An AWS SageMaker Space, listed by ListSpaces. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS SageMaker Space, listed by ListSpaces and read by DescribeSpace. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_sagemaker_space"
     ENTITY_NAME: ClassVar[str] = "AWS SageMaker Space"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SageMaker Space."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
+    # Identity (req-grid-entity-natural-key): The ARN DescribeSpace returns (SpaceArn), read for each resource ListSpaces names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_space_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sagemaker:space"
 

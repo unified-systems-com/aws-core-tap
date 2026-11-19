@@ -18,7 +18,7 @@ class AwsRegion(BaseModel):
     # Identity (req-grid-entity-natural-key): The region code (us-gov-east-1): unique across
     # partitions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("region_code",)
-    # Identity (req-aws-collector-identity-12): no manifest entry collects this type, so its declaration lives
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.
     AWS_IDENTITY: ClassVar[dict[str, object]] = {

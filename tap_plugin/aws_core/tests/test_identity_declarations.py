@@ -94,7 +94,6 @@ PENDING_BUILT_ARN: dict[str, str] = {
     "glue_trigger": REKEY_253,
     "glue_usage_profile": REKEY_253,
     "glue_workflow": REKEY_253,
-    "guardduty_malware_protection_plan": FIXES_251,
     "guardduty_threat_entity_set": REKEY_253,
     "guardduty_trusted_entity_set": REKEY_253,
     "iot_software_package": REKEY_253,
@@ -110,20 +109,12 @@ PENDING_BUILT_ARN: dict[str, str] = {
     "kendra_index": REKEY_253,
     "kendra_query_suggestions_block_list": REKEY_253,
     "kendra_thesaurus": REKEY_253,
-    "kendraranking_execution_plan": FIXES_251,
     "lambda_event_source_mapping": REKEY_253,
     "lex_bot": REKEY_253,
     "lex_bot_alias": REKEY_253,
     "location_api_key": REKEY_253,
-    "location_geofence_collection": FIXES_251,
-    "location_map": FIXES_251,
     "location_place_index": REKEY_253,
     "location_route_calculator": REKEY_253,
-    "location_tracker": FIXES_251,
-    "opensearch_data_source": FIXES_251,
-    "pinpointemail_configuration_set": FIXES_251,
-    "pinpointemail_identity": FIXES_251,
-    "qbusiness_application": FIXES_251,
     "qbusiness_data_source": REKEY_253,
     "qbusiness_index": REKEY_253,
     "qbusiness_plugin": REKEY_253,
@@ -133,15 +124,11 @@ PENDING_BUILT_ARN: dict[str, str] = {
     "redshift_cluster_parameter_group": REKEY_253,
     "redshift_cluster_subnet_group": REKEY_253,
     "redshift_event_subscription": REKEY_253,
-    "redshift_snapshot": FIXES_251,
     "redshift_snapshot_copy_grant": REKEY_253,
     "redshift_snapshot_schedule": REKEY_253,
     "redshift_usage_limit": REKEY_253,
     "route53_traffic_policy": REKEY_253,
     "route53profiles_profile_association": REKEY_253,
-    "sagemaker_inference_experiment": FIXES_251,
-    "sagemaker_space": FIXES_251,
-    "sagemaker_user_profile": FIXES_251,
     "ses_configuration_set": REKEY_253,
     "ses_contact_list": REKEY_253,
     "ses_custom_verification_email_template": REKEY_253,
@@ -159,7 +146,6 @@ PENDING_BUILT_ARN: dict[str, str] = {
     "transcribe_vocabulary_filter": REKEY_253,
     "wafregional_rate_based_rule": REKEY_253,
     "wafregional_rule": REKEY_253,
-    "wafregional_web_acl": FIXES_251,
     "wafv2_ip_set": REKEY_253,
     "wafv2_regex_pattern_set": REKEY_253,
     "wafv2_rule_group": REKEY_253,
@@ -232,7 +218,7 @@ PENDING_DIFFERS: dict[str, tuple[str, str]] = {
 }
 
 #: The pending lists' total may only go down. Lower it with every re-key; never raise it.
-PENDING_CEILING = 170
+PENDING_CEILING = 156
 
 #: Scope columns a declaration may add to CloudFormation's identifier (the rule scopes it by account and region).
 SCOPE_MARKERS = {"@account", "@region", "@partition"}
@@ -283,7 +269,7 @@ def _pending() -> dict[str, str]:
     return {_entity(k): v for k, v in out.items()}
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 def test_every_key_is_an_arn_the_api_returns_a_declared_identity_or_pending() -> None:
     models, entries, declared, pending = _models(), _entries(), identity_declarations(), _pending()
     assert len(models) > 900
@@ -302,7 +288,7 @@ def test_every_key_is_an_arn_the_api_returns_a_declared_identity_or_pending() ->
     assert not wrong, "\n".join(wrong)
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 def test_a_declaration_maps_exactly_the_models_key_fields() -> None:
     models, wrong = _models(), []
     for entity_type, declaration in identity_declarations().items():
@@ -313,7 +299,7 @@ def test_a_declaration_maps_exactly_the_models_key_fields() -> None:
     assert not wrong, "\n".join(wrong)
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 def test_a_declaration_follows_its_cloudformation_identifier_or_says_why() -> None:
     """The declared CloudFormation type is one the ledger maps to this entity type, and the key's columns, less its
     account and region scope, are that type's ``primaryIdentifier``. A key that differs carries a reason, and only
@@ -338,7 +324,7 @@ def test_a_declaration_follows_its_cloudformation_identifier_or_says_why() -> No
     assert not wrong, "\n".join(wrong)
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 def test_an_arn_key_reads_only_placeholders_its_formats_have() -> None:
     """Each ``arn_key`` template reads placeholders of the model's ``ARN_RESOURCE`` formats (or of its declared
     ``other_ids``), all of them from one format, so the resolver can fill every key field from one match."""
@@ -359,7 +345,7 @@ def test_an_arn_key_reads_only_placeholders_its_formats_have() -> None:
     assert not wrong, "\n".join(wrong)
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 def test_the_pending_lists_hold_only_types_that_still_need_them() -> None:
     models, entries, declared = _models(), _entries(), identity_declarations()
     pending = _pending()
@@ -382,7 +368,7 @@ def test_the_pending_lists_hold_only_types_that_still_need_them() -> None:
     assert not stale, "remove the line (and lower PENDING_CEILING):\n" + "\n".join(stale)
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 def test_a_type_collected_by_no_manifest_entry_declares_on_its_model() -> None:
     """The manifest carries the declarations of the types it collects; ``AWS_IDENTITY`` is only for the others."""
     entries, wrong = _entries(), []
@@ -392,7 +378,7 @@ def test_a_type_collected_by_no_manifest_entry_declares_on_its_model() -> None:
     assert not wrong, "\n".join(wrong)
 
 
-@pytest.mark.spec("req-aws-collector-identity-12")
+@pytest.mark.spec("req-aws-collector-identity-13")
 @pytest.mark.parametrize(
     ("declaration", "valid"),
     [

@@ -17,6 +17,7 @@ from typing import Any
 import pytest
 from tap_plugin.aws_core import falsifiers as aws_falsifiers
 
+from tap_grid.dimension_map import supplied
 from tap_grid.falsifiers import UNDETERMINED, Candidate, FalsifyContext
 
 pytestmark = pytest.mark.spec("req-aws-core-account-dimension-10")
@@ -69,11 +70,13 @@ def test_the_sweep_sees_every_registered_falsifier() -> None:
     assert len(_registered()) >= 30, "the [falsifiers] table was not read"
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(("entity_type", "cls"), _registered(), ids=[t for t, _c in _registered()])
 def test_every_falsifier_declines_an_aws_owned_candidate_without_an_aws_call(
     entity_type: str, cls: type, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    row = SimpleNamespace(entity=SimpleNamespace(dimensions={"aws.account": "aws", "aws.region": "us-east-1"}))
+    # Stored as core stores it, keyed by Dimension node id (tap#711); the falsifier reads it back by name.
+    row = SimpleNamespace(entity=SimpleNamespace(dimensions=supplied({"aws.account": "aws", "aws.region": "us-east-1"})))
     monkeypatch.setattr(aws_falsifiers, "_row_of", lambda entity_id: row)
     falsifier = cls(session=_NoAws(), account_id="111122223333")
     [verdict] = falsifier.batch_falsify([_candidate(entity_type)], FalsifyContext(batch_id=str(uuid.uuid4()), statement=None))

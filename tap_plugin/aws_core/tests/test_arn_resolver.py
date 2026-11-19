@@ -170,7 +170,7 @@ class TestSecurityHubTarget:
     def test_any_arn_keyed_type_resolves_by_its_arn(self, resource_type: str, resource_id: str, expected: tuple) -> None:
         assert _asff_target(resource_id) == expected
 
-    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-12")
+    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-13")
     @pytest.mark.parametrize(
         ("resource_type", "resource_id", "expected"),
         [
@@ -309,7 +309,7 @@ class TestTheRule:
 
 class TestDeclaredKeys:
     """The resolver reads a natively keyed type's key from the ARN through its identity declaration
-    (aws-core-tap#252, ``req-aws-collector-identity-12``)."""
+    (aws-core-tap#252, ``req-aws-collector-identity-13``)."""
 
     MODELS: ClassVar[list[type]] = [
         TestTheRule._model("declared", "x:declared", ("declared_id",)),
@@ -471,7 +471,7 @@ class TestOverTheRealModels:
                 resolved += 1
         assert resolved > 600
 
-    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-12")
+    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-13")
     def test_every_declared_type_resolves_its_own_arn_to_its_key(self) -> None:
         """For each natively keyed type whose declaration says how to read its key from the ARN, and whose resource
         type no other model claims, an ARN built from each of its formats resolves to the key the declaration's
@@ -492,7 +492,7 @@ class TestOverTheRealModels:
                 resolved += 1
         assert resolved > 80
 
-    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-12")
+    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-13")
     def test_every_type_is_counted_resolvable_or_not_and_why(self) -> None:
         """aws-core-tap#249: a census of every aws_core type: resolved by its ARN, by its declared key, or not at all,
         and for the last why. The id-keyed EC2 types the GovCloud trial left unlinked, the GuardDuty detector and the

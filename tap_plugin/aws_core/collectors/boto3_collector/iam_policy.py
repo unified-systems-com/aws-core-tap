@@ -143,6 +143,35 @@ def _code_pairs() -> set[tuple[str, str]]:
             for service in services or module_services:
                 known = operations_of(service)
                 pairs |= {(service, known[n]) for n in names if n in known}
+        pairs |= _declared_reader_pairs(tree)
+    return pairs
+
+
+def _declared_reader_pairs(tree: ast.AST) -> set[tuple[str, str]]:
+    """Operations of readers declared as data rather than written as functions: a call such as ``_reader(name, doc,
+    service="appconfig", list_method="list_applications", parent=_APPCONFIG_APPS)``, whose generic body builds the
+    client from a variable and so is invisible to the per-function scan (aws-core-tap#256). ``parent`` is a tuple, or a
+    module-level name bound to one, whose first item is the parent's list method."""
+    tuples: dict[str, ast.Tuple] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Tuple):
+            tuples |= {t.id: node.value for t in node.targets if isinstance(t, ast.Name)}
+    pairs: set[tuple[str, str]] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        keywords = {k.arg: k.value for k in node.keywords if k.arg}
+        service, method = keywords.get("service"), keywords.get("list_method")
+        if not (isinstance(service, ast.Constant) and service.value in _services and isinstance(method, ast.Constant)):
+            continue
+        methods = [method.value]
+        parent = keywords.get("parent")
+        if isinstance(parent, ast.Name):
+            parent = tuples.get(parent.id)
+        if isinstance(parent, ast.Tuple) and parent.elts and isinstance(parent.elts[0], ast.Constant):
+            methods.append(parent.elts[0].value)
+        known = operations_of(service.value)
+        pairs |= {(service.value, known[m]) for m in methods if isinstance(m, str) and m in known}
     return pairs
 
 

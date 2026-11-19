@@ -70,6 +70,7 @@
       "Effect": "Allow",
       "Action": [
         "route53profiles:GetProfile",
+        "route53profiles:ListProfileAssociations",
         "route53profiles:ListProfiles",
         "route53profiles:ListTagsForResource"
       ],

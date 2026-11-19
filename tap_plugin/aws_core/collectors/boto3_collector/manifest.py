@@ -57,7 +57,7 @@ def manifest_entries() -> list[dict[str, Any]]:
     return entries
 
 
-#: The attribute a model no manifest entry collects declares its identity in (``req-aws-collector-identity-12``):
+#: The attribute a model no manifest entry collects declares its identity in (``req-aws-collector-identity-13``):
 #: the readers that are not manifest-driven (Organizations, landing zone, findings) write those types, and the
 #: model is where their identity already lives (``NATURAL_KEY``, ``ARN_RESOURCE``).
 MODEL_IDENTITY_ATTR = "AWS_IDENTITY"
@@ -73,7 +73,7 @@ def identity_schema() -> dict[str, Any]:
 
 def identity_declarations() -> dict[str, dict[str, Any]]:
     """``{entity type: identity declaration}`` for every aws_core type that declares one
-    (``req-aws-collector-identity-12``): a manifest entry's ``identity`` block, or a model's ``AWS_IDENTITY`` for a
+    (``req-aws-collector-identity-13``): a manifest entry's ``identity`` block, or a model's ``AWS_IDENTITY`` for a
     type no manifest entry collects. A model declaration is validated against the same schema as the manifest's;
     a type declared in both places, or a model declaration that fails the schema, raises ``ManifestError``."""
     from tap_grid.registry import get_model_class, list_entity_types

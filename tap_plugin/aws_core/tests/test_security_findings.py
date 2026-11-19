@@ -571,7 +571,7 @@ class TestSecurityHub:
             _id("aws_core__aws_iam_role", ROLE_ARN),
         }
 
-    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-13")
+    @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-collector-identity-14")
     def test_a_finding_concerns_an_account_and_natively_keyed_resources(self) -> None:
         """aws-core-tap#249: an account-level control (``AWS::::Account:<id>``), an id-keyed EC2 resource and a
         GuardDuty detector, keyed by three fields, each get the edge by the key their declarations read; the

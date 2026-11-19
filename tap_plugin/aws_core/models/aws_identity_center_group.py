@@ -34,7 +34,7 @@ class AwsIdentityCenterGroup(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("identity_store_id", "group_id")
     ARN_RESOURCE: ClassVar[str | None] = "identitystore:Group"
-    # Identity (req-aws-collector-identity-12): no manifest entry collects this type, so its declaration lives
+    # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.
     AWS_IDENTITY: ClassVar[dict[str, object]] = {

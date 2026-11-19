@@ -98,7 +98,7 @@ def composite_natural_key(parts: Mapping[str, str]) -> str:
 
     The form an edge endpoint names a composite-key node by when the batch may not carry it (an ARN the
     resolver read a GuardDuty detector's ``(account_id, region, detector_id)`` from,
-    ``req-aws-collector-identity-12``). Unlike a reader's own joined string, it splits back exactly.
+    ``req-aws-collector-identity-13``). Unlike a reader's own joined string, it splits back exactly.
     """
     return json.dumps(dict(parts), sort_keys=True, separators=(",", ":"))
 

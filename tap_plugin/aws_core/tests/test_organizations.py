@@ -29,6 +29,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.organizations import (
     partition_of_arn,
 )
 from tap_plugin.aws_core.falsifiers import AccountFalsifier, OrganizationalUnitFalsifier
+from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
 
 from tap_grid.falsifier_testing import (
     CASE_DROPPED,
@@ -498,8 +499,7 @@ def _ou_row(
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": account_id, "aws.region": "global"}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": account_id, "aws.region": "global"})
     if org_id is not None:
         create_edge(row.entity, get_node(org_id).entity, "NESTED_UNDER_PARENT__aws_core")
     return entity_id
@@ -510,8 +510,7 @@ def _account_row(account_id_val: str, *, name: str = "", credential_account: str
     assert result.success, result.errors
     entity_id = uuid.UUID(str(result.entity_id))
     row = get_node(entity_id)
-    row.entity.dimensions = {"aws.account": credential_account, "aws.region": "global"}
-    row.entity.save(update_fields=["dimensions"])
+    stamp_dimensions(row, {"aws.account": credential_account, "aws.region": "global"})
     return entity_id
 
 

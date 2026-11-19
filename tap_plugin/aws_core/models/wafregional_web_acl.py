@@ -8,14 +8,14 @@ from tap_grid.models import BaseModel
 
 
 class WafregionalWebAcl(BaseModel):
-    """An AWS WAFRegional Web ACL, read by ListWebACLs. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS WAFRegional Web ACL, listed by ListWebACLs and read by GetWebACL. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_wafregional_web_acl"
     ENTITY_NAME: ClassVar[str] = "AWS WAFRegional Web ACL"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS WAFRegional Web ACL."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The object's ARN (_arn), built by the manifest's derive from the scope and the item (webacl/<WebACLId>): unique across accounts and regions.
+    # Identity (req-grid-entity-natural-key): The ARN GetWebACL returns (WebACL.WebACLArn), read for each resource ListWebACLs names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wafregional_web_acl_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "waf-regional:webacl"
 

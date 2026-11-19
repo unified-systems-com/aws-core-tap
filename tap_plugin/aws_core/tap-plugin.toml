@@ -8,7 +8,10 @@ plugin_version = "0.8.2" # x-release-please-version
 # 0.3.0: the first core release with tap_grid.services.entity_liveness (req-grid-service-read-direct-4),
 # which the collector asks before re-sending a fixed edge id, edge-endpoint keys and declared edge
 # identity (natural-key refs), and the GRIFT edge_cases section (authority claims).
-requires_tap = ">=0.3.1"
+# 0.4.0: the first core release with the per-model history opt-out (TRACK_HISTORY,
+# req-grid-history-optout), which the published-version types declare (aws-build Q86); on an older
+# core the flag is ignored and the 0056 migration would drop history tables the models still use.
+requires_tap = ">=0.4.0"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
@@ -134,8 +137,6 @@ aws_core__aws_textract_adapter = "tap_plugin.aws_core.models.textract_adapter.Te
 aws_core__aws_ses_receipt_rule_set = "tap_plugin.aws_core.models.ses_receipt_rule_set.SesReceiptRuleSet"
 aws_core__aws_ses_receipt_filter = "tap_plugin.aws_core.models.ses_receipt_filter.SesReceiptFilter"
 aws_core__aws_resourceexplorer2_view = "tap_plugin.aws_core.models.resourceexplorer2_view.Resourceexplorer2View"
-aws_core__aws_pinpointemail_identity = "tap_plugin.aws_core.models.pinpointemail_identity.PinpointemailIdentity"
-aws_core__aws_pinpointemail_configuration_set = "tap_plugin.aws_core.models.pinpointemail_configuration_set.PinpointemailConfigurationSet"
 aws_core__aws_opensearchserverless_security_config = "tap_plugin.aws_core.models.opensearchserverless_security_config.OpensearchserverlessSecurityConfig"
 aws_core__aws_opensearchserverless_security_policy = "tap_plugin.aws_core.models.opensearchserverless_security_policy.OpensearchserverlessSecurityPolicy"
 aws_core__aws_opensearchserverless_lifecycle_policy = "tap_plugin.aws_core.models.opensearchserverless_lifecycle_policy.OpensearchserverlessLifecyclePolicy"

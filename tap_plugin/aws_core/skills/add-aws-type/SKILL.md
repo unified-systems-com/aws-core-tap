@@ -161,7 +161,11 @@ Authorization Reference (`https://servicereference.us-east-1.amazonaws.com/v1/<s
   (`req-aws-collector-identity-8`).
 
 The ARN is the natural key wherever one exists (`req-aws-collector-identity-10`), so prefer it over any id the
-listing returns.
+listing returns. Read it; never build an ARN AWS returns (`req-aws-collector-identity-12`): when only the Describe/Get
+call carries it, make that call the source (`per` the list call) and key on its member, rather than enriching and
+deriving one under the caller's account; take the account from the item when the item names its owner. A type AWS gives
+no ARN is keyed on its own columns (CloudFormation's identifier, scoped by account and region), never on an ARN shape
+you made up.
 
 **THE TRAP (v0.4.0, named):** the collector emits `tags` on EVERY node
 unless the tag read did not answer — `batch.node_envelope` writes `"tags": tags or {}`

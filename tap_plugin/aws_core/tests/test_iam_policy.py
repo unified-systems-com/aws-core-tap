@@ -45,3 +45,27 @@ def test_every_manifest_operation_is_granted() -> None:
     assert not missing
     for service, operation in iam.inventory():
         assert set(iam.iam_actions(service, operation, ov, cat)) <= allowed, (service, operation)
+
+
+def test_readers_declared_as_data_are_in_the_inventory() -> None:
+    """A reader declared as ``_reader(..., service=..., list_method=..., parent=...)`` builds its client from a
+    variable, so the per-function scan cannot see it. Its list call, and its parent's, must still be granted
+    (aws-core-tap#256: the SES readers lost their grants when the Pinpoint Email entries that shared them went)."""
+    inventory = iam.inventory()
+    for pair in [
+        ("sesv2", "ListConfigurationSets"),
+        ("sesv2", "ListEmailIdentities"),
+        ("redshift", "DescribeClusterParameterGroups"),
+        ("appconfig", "ListDeploymentStrategies"),
+        # a child reader asks its parent's list call once per parent
+        ("appconfig", "ListEnvironments"),
+        ("appconfig", "ListApplications"),
+    ]:
+        assert pair in inventory, pair
+
+
+def test_cloudwatch_is_granted_under_its_iam_namespace() -> None:
+    """botocore signs CloudWatch as ``monitoring``; IAM knows no such namespace, so an action under it grants nothing."""
+    allowed = {a for t in _handoff_files().values() for s in json.loads(t)["Statement"] if s["Effect"] == "Allow" for a in s["Action"]}
+    assert not [a for a in allowed if a.startswith("monitoring:")]
+    assert "cloudwatch:DescribeInsightRules" in allowed

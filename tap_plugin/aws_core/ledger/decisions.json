@@ -5114,7 +5114,8 @@
     },
     "aws_core__aws_ses_configuration_set": {
       "cfn": [
-        "AWS::SES::ConfigurationSet"
+        "AWS::SES::ConfigurationSet",
+        "AWS::PinpointEmail::ConfigurationSet"
       ]
     },
     "aws_core__aws_ses_contact_list": {
@@ -5134,7 +5135,8 @@
     },
     "aws_core__aws_ses_email_identity": {
       "cfn": [
-        "AWS::SES::EmailIdentity"
+        "AWS::SES::EmailIdentity",
+        "AWS::PinpointEmail::Identity"
       ]
     },
     "aws_core__aws_ses_mail_manager_addon_instance": {
@@ -5585,16 +5587,6 @@
     "aws_core__aws_opensearchserverless_security_config": {
       "cfn": [
         "AWS::OpenSearchServerless::SecurityConfig"
-      ]
-    },
-    "aws_core__aws_pinpointemail_configuration_set": {
-      "cfn": [
-        "AWS::PinpointEmail::ConfigurationSet"
-      ]
-    },
-    "aws_core__aws_pinpointemail_identity": {
-      "cfn": [
-        "AWS::PinpointEmail::Identity"
       ]
     },
     "aws_core__aws_resourceexplorer2_view": {

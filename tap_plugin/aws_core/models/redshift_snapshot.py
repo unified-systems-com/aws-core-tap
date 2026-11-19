@@ -15,7 +15,7 @@ class RedshiftSnapshot(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Redshift Snapshot."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
+    # Identity (req-grid-entity-natural-key): The SnapshotArn each DescribeClusterSnapshots item carries, which names the account that owns the snapshot (OwnerAccount, not always the caller's); it is never built (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("redshift_snapshot_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "redshift:snapshot"
 

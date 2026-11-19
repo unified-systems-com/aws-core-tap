@@ -196,7 +196,7 @@
       ]
     },
     "identity": {
-      "description": "How a type that is not keyed by an ARN the API returns is identified (req-aws-collector-identity-12, aws-core-tap#252). Its key is the identifier CloudFormation declares for the type (primaryIdentifier in the resource schema bundle, cfn.primary_identifier in ledger/aws_coverage_ledger.json), multi-column where AWS makes it so and scoped by account and region; the collector never invents a key. A type collected by no manifest entry declares the same object as its model's AWS_IDENTITY. tests/test_identity_declarations.py checks every declaration against the ledger.",
+      "description": "How a type that is not keyed by an ARN the API returns is identified (req-aws-collector-identity-13, aws-core-tap#252). Its key is the identifier CloudFormation declares for the type (primaryIdentifier in the resource schema bundle, cfn.primary_identifier in ledger/aws_coverage_ledger.json), multi-column where AWS makes it so and scoped by account and region; the collector never invents a key. A type collected by no manifest entry declares the same object as its model's AWS_IDENTITY. tests/test_identity_declarations.py checks every declaration against the ledger.",
       "type": "object",
       "additionalProperties": false,
       "required": ["cfn_type"],

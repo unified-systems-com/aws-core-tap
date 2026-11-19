@@ -15,7 +15,7 @@ class Route53profilesProfileAssociation(BaseModel):
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Route53Profiles Profile Association."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
-    # Identity (req-grid-entity-natural-key): The object's ARN (_arn): unique across accounts and regions.
+    # Identity (req-grid-entity-natural-key): The association's ARN, built as arn:<partition>:route53profiles:<region>:<OwnerId>:profile-association/<Id> (the reference's ${ResourceId} is the association's own id, as it is the profile's in profile/${ResourceId}; the ProfileAssociation object has no Arn member). The account is the association's owner (OwnerId), not the caller (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53profiles_profile_association_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "route53profiles:profile-association"
 
