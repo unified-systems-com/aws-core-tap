@@ -162,3 +162,22 @@ def test_projected_dimensions_reach_the_fold_by_name(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(baseline, "fold_baseline", lambda footprints, *_a, **_k: seen.append(footprints) or {})
     baseline.AwsBaselinePanelType.get_view_context(SimpleNamespace(config={}, entity_id="p"), None)
     assert seen[0][0]["dims"] == {"tap.computing.cloud": "aws"}
+
+
+def test_a_failure_naming_the_dimensions_is_a_failed_read_not_a_failed_panel(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Naming the projected map runs inside the read's guard (PR 244 review): if it raises, the read is a failed
+    column, which for the footprints read is the panel's error state, never an exception out of the panel."""
+    from types import SimpleNamespace
+
+    from tap_plugin.aws_core.panels import baseline
+
+    def broken(_stored: Any) -> dict[str, Any]:
+        raise LookupError("no live Dimension node")
+
+    monkeypatch.setattr("tap_grid.dimension_names.view", broken)
+    monkeypatch.setattr(
+        "tap_grid.gryphon.executor.execute_gryphon_raw",
+        lambda *_a, **_k: {"rows": [{**_fp("f1", "us-gov-east-1"), "dims": {"x": {"v": "y", "src": "default"}}}]},
+    )
+    context = baseline.AwsBaselinePanelType.get_view_context(SimpleNamespace(config={}, entity_id="p"), None)
+    assert context == {"error": True, "matrix": None}

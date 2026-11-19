@@ -272,12 +272,13 @@ class AwsBaselinePanelType:
         def rows(query: str, what: str) -> list[dict[str, Any]] | None:
             try:
                 found = list(execute_gryphon_raw(query, {}, layer="full").get("rows") or [])
+                # A projected ``x.dimensions`` arrives as stored, keyed by Dimension node id (tap 0.4.0, tap#711;
+                # tap#1243 asks core to name it); the fold reads it by name, so it is named here, inside the same
+                # guard, so a naming failure is a failed column too.
+                return [{**r, "dims": view(r["dims"])} if isinstance(r.get("dims"), dict) else r for r in found]
             except Exception:  # noqa: BLE001 — a failed read marks its column failed, never off
                 logger.exception("[b7e2] aws baseline: %s read failed for panel %s", what, panel.entity_id)
                 return None
-            # A projected ``x.dimensions`` arrives as stored, keyed by Dimension node id (tap 0.4.0, tap#711);
-            # the fold reads it by name, so it is named here, at the read edge.
-            return [{**r, "dims": view(r["dims"])} if isinstance(r.get("dims"), dict) else r for r in found]
 
         footprints = rows(FOOTPRINTS_QUERY, "footprints")
         if footprints is None:
