@@ -49,17 +49,16 @@
       "source": { "aws_op": "ListFunctions" },
       "why": "Enumerate Lambda functions — serverless compute and a common runtime/compliance surface.",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: Environment.Variables; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore lambda ListFunctions output shape (FunctionConfiguration), 2026-09-23.",
+        "basis": "Read botocore lambda ListFunctions output shape (FunctionConfiguration), 2026-09-23. Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed.",
         "locations": [
           {
             "path": "Environment.Variables",
-            "category": "credential",
-            "reason": "Environment variables routinely hold API keys, database passwords and tokens.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set environment variables: stored, as an ECS task definition's environment is (ruling Q114d, aws-core-tap#264). A value whose key names a secret (DB_PASSWORD, API_KEY) is still removed by the key scrub (req-aws-collector-redaction-3) and listed under _redacted.",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "Environment.Error.Message",
@@ -8631,17 +8630,16 @@
         "why": "The list call returns a summary; DescribeModelPackage returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.ModelCard.ModelCardContent; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModelPackages item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore sagemaker ListModelPackages item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.ModelCard.ModelCardContent",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The model card's content: operator-authored documentation of the model (intended use, evaluation, risk ratings). botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -11382,17 +11380,16 @@
         "why": "The list call returns a summary; DescribeApp returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.app.tags; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore resiliencehub ListApps item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore resiliencehub ListApps item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.app.tags",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -11437,17 +11434,16 @@
         "why": "The list call returns a summary; GetPolicy returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.policy.tags; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore resiliencehubv2 ListPolicies item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore resiliencehubv2 ListPolicies item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.policy.tags",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -11492,17 +11488,16 @@
         "why": "The list call returns a summary; GetService returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.service.tags; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore resiliencehubv2 ListServices item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore resiliencehubv2 ListServices item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.service.tags",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -11955,17 +11950,16 @@
         "why": "The list call returns a summary; DescribeScheduledQuery returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.ScheduledQuery.QueryString; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore timestream-query ListScheduledQueries item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore timestream-query ListScheduledQueries item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.ScheduledQuery.QueryString",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The scheduled query's SQL text: operator-authored, and can embed literal values. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -12625,24 +12619,22 @@
         "why": "The list call returns a summary; GetNetworkMigrationDefinition returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.tags, _hydrate.detail.data.scopeTags; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks tags, scopeTags sensitive in the mgn ListNetworkMigrationDefinitions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): botocore marks tags, scopeTags sensitive in the mgn ListNetworkMigrationDefinitions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.tags",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.scopeTags",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "tags",
@@ -18528,17 +18520,16 @@
         "why": "The list call returns a summary; DescribeModelCard returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Content; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore sagemaker ListModelCards item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore sagemaker ListModelCards item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.Content",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The model card's JSON content: operator-authored documentation of the model. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -18966,31 +18957,28 @@
         "why": "The list call returns a summary; DescribeStateMachine returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.definition, _hydrate.detail.data.description, _hydrate.detail.data.variableReferences; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore stepfunctions ListStateMachines item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore stepfunctions ListStateMachines item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.definition",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The Amazon States Language definition: what the state machine runs; it can embed literal parameters. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.description",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "free_text",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.variableReferences",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The names of the variables each state references: names, not values. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -19165,24 +19153,22 @@
         "why": "The list call returns a summary; DescribeCertificate returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Certificate.Certificate, _hydrate.detail.data.Certificate.CertificateChain; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore transfer ListCertificates item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore transfer ListCertificates item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.Certificate.Certificate",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A public X.509 certificate: public material (DescribeCertificate never returns the private key). botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.Certificate.CertificateChain",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "The certificate's public chain: public material. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -19226,17 +19212,16 @@
         "why": "The list call returns a summary; DescribeConnector returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.Connector.As2Config.MessageSubject; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore transfer ListConnectors item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore transfer ListConnectors item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.Connector.As2Config.MessageSubject",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "free_text",
+            "reason": "The AS2 message subject line an operator sets. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",
@@ -19367,17 +19352,16 @@
         "why": "The list call returns a summary; GetPolicyStore returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.description; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks description sensitive in the verifiedpermissions ListPolicyStores item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): botocore marks description sensitive in the verifiedpermissions ListPolicyStores item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.description",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "free_text",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "description",
@@ -27175,17 +27159,16 @@
       },
       "why": "Enumerate Lambda Function Version objects with ListFunctions — an inventory of the account's lambda function version objects and how each is tagged.",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: Environment.Variables; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): botocore marks Environment.Variables, Environment.Error.Message, ImageConfigResponse.Error.Message, RuntimeVersionConfig.Error.Message sensitive in the lambda ListFunctions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-31): botocore marks Environment.Variables, Environment.Error.Message, ImageConfigResponse.Error.Message, RuntimeVersionConfig.Error.Message sensitive in the lambda ListFunctions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed.",
         "locations": [
           {
             "path": "Environment.Variables",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive: it holds operator-set variables or a launch script, which commonly embed credentials.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "Operator-set environment variables: stored, as an ECS task definition's environment is (ruling Q114d, aws-core-tap#264). A value whose key names a secret (DB_PASSWORD, API_KEY) is still removed by the key scrub (req-aws-collector-redaction-3) and listed under _redacted.",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "Environment.Error.Message",
@@ -29699,24 +29682,22 @@
         "why": "The list call returns a summary; GetBlueprint returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.blueprint.schema, _hydrate.detail.data.blueprint.blueprintName; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks blueprintName sensitive in the bedrock-data-automation ListBlueprints item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): botocore marks blueprintName sensitive in the bedrock-data-automation ListBlueprints item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.blueprint.schema",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The blueprint's extraction schema: operator-authored JSON. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.blueprint.blueprintName",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "blueprintName",
@@ -29775,24 +29756,22 @@
         "why": "The list call returns a summary; GetDataAutomationLibrary returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.library.libraryName, _hydrate.detail.data.library.libraryDescription; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks libraryName sensitive in the bedrock-data-automation ListDataAutomationLibraries item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): botocore marks libraryName sensitive in the bedrock-data-automation ListDataAutomationLibraries item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.library.libraryName",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.library.libraryDescription",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "free_text",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "libraryName",
@@ -29854,24 +29833,22 @@
         "why": "The list call returns a summary; GetDataAutomationProject returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.project.projectName, _hydrate.detail.data.project.projectDescription; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks projectName sensitive in the bedrock-data-automation ListDataAutomationProjects item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): botocore marks projectName sensitive in the bedrock-data-automation ListDataAutomationProjects item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.project.projectName",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.project.projectDescription",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "free_text",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "projectName",
@@ -30091,31 +30068,28 @@
         "why": "The list call returns a summary; GetRetrievalInstruction returns the whole resource (collect everything, req-aws-collector-enrich-1)."
       },
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: _hydrate.detail.data.name, _hydrate.detail.data.instruction, _hydrate.detail.data.description; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): botocore marks name, description sensitive in the bedrock-agent ListRetrievalInstructions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): botocore marks name, description sensitive in the bedrock-agent ListRetrievalInstructions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "_hydrate.detail.data.name",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.instruction",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "customer_content",
+            "reason": "The retrieval instruction: operator-authored prompt text. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.description",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "free_text",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "name",
@@ -38124,24 +38098,22 @@
       },
       "why": "Enumerate Amazon Location Service geofence collections with ListGeofenceCollections, then DescribeGeofenceCollection for each. DescribeGeofenceCollection returns the whole resource and its ARN (CollectionArn), which is the key: the summary ListGeofenceCollections returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: CreateTime, UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore location DescribeGeofenceCollection output shape and the CloudFormation schema for AWS::Location::GeofenceCollection (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeGeofenceCollection output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore location DescribeGeofenceCollection output shape and the CloudFormation schema for AWS::Location::GeofenceCollection (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeGeofenceCollection output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored. Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "CreateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "UpdateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "Description",
@@ -38197,31 +38169,28 @@
       },
       "why": "Enumerate Amazon Location Service maps with ListMaps, then DescribeMap for each. DescribeMap returns the whole resource and its ARN (MapArn), which is the key: the summary ListMaps returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: Configuration.PoliticalView, CreateTime, UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore location DescribeMap output shape and the CloudFormation schema for AWS::Location::Map (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeMap output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore location DescribeMap output shape and the CloudFormation schema for AWS::Location::Map (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeMap output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored. Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "Configuration.PoliticalView",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "The map's political-view setting (an ISO 3166 country code). botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "CreateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "UpdateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "Description",
@@ -38419,24 +38388,22 @@
       },
       "why": "Enumerate Amazon Location Service trackers with ListTrackers, then DescribeTracker for each. DescribeTracker returns the whole resource and its ARN (TrackerArn), which is the key: the summary ListTrackers returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: CreateTime, UpdateTime; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore location DescribeTracker output shape and the CloudFormation schema for AWS::Location::Tracker (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeTracker output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore location DescribeTracker output shape and the CloudFormation schema for AWS::Location::Tracker (2026-10-31); botocore marks CreateTime, UpdateTime sensitive in the location DescribeTracker output shape; those are declared. Declared on reviewer judgement: Description. Nothing beyond identity, name and tags is stored. Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "CreateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "UpdateTime",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "Description",
@@ -40177,17 +40144,16 @@
       },
       "why": "Enumerate QBusiness Application objects with ListApplications, then GetApplication for each — an inventory of the account's applications and how each is tagged. GetApplication returns the whole resource and its ARN (applicationArn), which is the key: the summary ListApplications returns carries no ARN, and the key is never built when AWS returns it (aws-core-tap#251).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: encryptionConfiguration.kmsKeyId; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore qbusiness GetApplication output shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan (2026-10-29): the botocore qbusiness GetApplication output shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Reviewer pass 2026-11-20 (aws-core-tap#264, ruling Q114a): the members botocore marks sensitive were read; those that are not secret material are stored, not redacted.",
         "locations": [
           {
             "path": "encryptionConfiguration.kmsKeyId",
-            "category": "credential",
-            "reason": "botocore marks this member sensitive in the detail response: removed before storage.",
-            "evidence": "botocore_sensitive",
-            "redact": true
+            "category": "other",
+            "reason": "The id of the KMS key that encrypts the application: a reference, not key material. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.tags",

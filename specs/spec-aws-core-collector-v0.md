@@ -253,7 +253,15 @@ a secret an operator typed into a tag, a description or a policy is the operator
 `ClientSecret`, `PreSharedKey`, `UserData`), and any string whose key names a secret (`password`, `secret`, `private
 key`, `API key`, `token`) unless the key is a reference, flag, date or URL (`SecretArn`, `PasswordLastUsed`, `TokenUrl`).
 What was removed is listed under `_redacted`, so a reader can tell a withheld value from an absent one. Categories other
-than `credential` (customer content, free text, access policies, personal data) are never redacted. The contents of a
+than `credential` (customer content, free text, access policies, personal data) are never redacted. botocore's
+`sensitive` trait is evidence, not a verdict: a member AWS marks sensitive is declared, and is redacted only when a
+reviewer judges it secret material. The reviewer pass of 2026-11-20 (aws-core-tap#264, rulings Q114a and Q114d)
+re-read the 32 locations a mechanical scan had redacted on the trait alone and stores them under their real category
+(Step Functions definitions, public Transfer Family certificates, Resilience Hub and MGN tags, Location timestamps, a
+Q Business KMS key id, Bedrock and SageMaker names and content, a Timestream query, a Verified Permissions
+description), and stores Lambda `Environment.Variables`, as an ECS task definition's environment is stored; a value
+under a secret-named key in it is still removed by the key scrub. Passwords, pre-shared keys, client secrets, tokens,
+MFA seeds and user data stay redacted. The contents of a
 resource (S3 objects, Parameter Store values, table items) are not collected at all, because no operation that reads
 them is made. The canonical `tags` model field is persisted independently ([Resource Tags](#resource-tags)).
 
@@ -441,13 +449,12 @@ its configuration replaced with `{}` the next time it is collected. No migration
 and no model change. History rows are left as they are (the data so
 far is synthetic or drawn from open repositories).
 
-Off, as shipped, each with a reason naming the credential location:
-`aws_core__aws_lambda` (`Environment.Variables`), `aws_core__aws_cloudfront_distribution`
-(`Origins.Items[].CustomHeaders.Items[].HeaderValue`),
-`aws_core__aws_apigateway_http_api` (`_integrations[].RequestParameters`),
-`aws_core__aws_cognito_user_pool` (`SmsConfiguration.ExternalId`). For those
-four types the grid holds only typed fields, tags and edges; nothing downstream
-reads the stored blob. Every other entry persists its full configuration.
+As first shipped, four entries were off, each with a reason naming the credential location
+(`aws_core__aws_lambda`, `aws_core__aws_cloudfront_distribution`,
+`aws_core__aws_apigateway_http_api`, `aws_core__aws_cognito_user_pool`). Since
+`req-aws-collector-redaction-1` every entry is on: those locations are removed from the stored copy
+instead, and Lambda `Environment.Variables` is no longer one of them (aws-core-tap#264, ruling Q114d;
+a value under a secret-named key is still scrubbed).
 
 **Security facts kept as typed fields.** Turning
 storage off for those types dropped three security facts that had lived only in
@@ -486,7 +493,7 @@ custom origin header exists, never what it says.
 | req-aws-collector-field-projection-6 | Reserved Keys & Stable Blob | Approved for Development | `_source`/`_hydrate`/`_hydrate_mapping` are engine-reserved (not authored jsonpath targets); `ResponseMetadata` stripped; deterministic serialization ⇒ unchanged resource = byte-identical `configuration`. | Protects idempotent upsert + History/FLIP. Reserved keys are in-memory only for an entry whose `persist_configuration` is false. |
 | req-aws-collector-field-projection-7 | Per-Entry Configuration Persistence | Approved for Development | Each manifest entry's required `persist_configuration` boolean and non-empty `persist_configuration_why` decide whether the emitted node payload carries the in-memory envelope or `{}`; typed fields, tags and edges are unchanged either way; every entry is `true` (`req-aws-collector-redaction-1`): a credential location no longer turns persistence off, it is removed from the stored copy (`req-aws-collector-redaction-2`); no model field is removed and no migration is written. | `tests/test_boto3_collector_batch.py`, `tests/test_boto3_collector_slice.py::test_secret_material_is_removed_and_the_rest_is_stored`, `::test_flag_is_what_stores_the_response`, `tests/test_boto3_collector_sensitivity.py`. |
 | req-aws-collector-redaction-1 | Everything Is Stored | Proposed | Every manifest entry has `persist_configuration: true`: a node's `configuration` carries the whole response, `_source`, `_hydrate` and `_hydrate_mapping`, less what `-2` and `-3` remove. | A test fails if any entry is off. The size and import time are measured on a full run. |
-| req-aws-collector-redaction-2 | Declared Secret Paths Are Removed | Proposed | A `sensitivity.locations` entry with `redact: true` names a path (the manifest's path dialect, `[]` to flatten) that is removed from the stored configuration. Only `credential` locations may be redacted. Every location AWS marks sensitive is redacted except four named non-secrets (an app client id, two claim names, a directory account name). | `tests/test_boto3_collector_sensitivity.py`: a canary planted at every redacted path of every entry is absent from what is stored. |
+| req-aws-collector-redaction-2 | Declared Secret Paths Are Removed | Proposed | A `sensitivity.locations` entry with `redact: true` names a path (the manifest's path dialect, `[]` to flatten) that is removed from the stored configuration. Only `credential` locations may be redacted. Every `credential` location AWS marks sensitive is redacted except four named non-secrets (an app client id, two claim names, a directory account name); a member AWS marks sensitive that a reviewer judged not secret is declared under its real category and stored (aws-core-tap#264). | `tests/test_boto3_collector_sensitivity.py`: a canary planted at every redacted path of every entry is absent from what is stored. |
 | req-aws-collector-redaction-3 | Secret-Named Keys Are Scrubbed | Proposed | Any string value whose key names a secret is removed from every stored configuration, wherever it sits, unless the key is a reference, a flag, a date, a URL or a number. | `tests/test_boto3_collector_redaction.py`. A net for what no location declares; the list of removed paths is `_redacted`. |
 | req-aws-collector-redaction-4 | Only Secrets | Proposed | Operator-authored content (tags, names, descriptions, comments, policies, personal data) is stored. | Test: representative content passes through unchanged. |
 | req-aws-collector-enrich-1 | Detail Enrichment | Proposed | An entry whose list call returns a summary and whose Describe/Get call returns more carries an `enrich` block `{op, params, why}`: one read call per listed resource, parameters taken from the listed item, the response stored under `configuration._hydrate.detail` with the status of any hydrate slot (`ok`, `absent`, `denied`, `error`; a refused call is a `HYDRATE_GAP`). Secret members of the detail response are declared as `_hydrate.detail.data.<path>` redact locations and removed before storage (`req-aws-collector-redaction-2`). The detail op must be a Get/Describe read that names no secret, and every required input must be supplied. 104 types were enriched; 32 are listed in the PR as not mappable. Ten of those moved to reading the detail call as their source (`per` the list call), because it is the only call that returns their ARN (`req-aws-collector-identity-12`), leaving 94. | `tests/test_boto3_collector_enrich.py`. |
