@@ -99,7 +99,8 @@ from .credentials import (
 )
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
-from .ecs import walks_of
+from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
+from .ecs import image_writes, walks_of
 from .elb_topology import walks_of as listener_walks_of
 from .elb_topology import withhold_unreplaced_lb_routes
 from .route53_records import walk_of as route53_walk_of
@@ -163,6 +164,7 @@ _SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
 _SITE_ORG_READ_FAILED = "a4f0"
 _SITE_LZ_NOTICE = "7e19"
 _SITE_LZ_READ_FAILED = "b3c6"
+_SITE_ECS_IMAGE_NOTICE = "e5c9"
 _SITE_EDGE_AUTHORITY = "f237"
 _SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
 _SITE_ADDRESSING = "7f5b"
@@ -415,7 +417,7 @@ class Boto3Collector(CollectorBase):
         counts = {"complete": 0, "partial": 0, "failed": 0}
         for claim in claims:
             counts[claim["read"]] = counts.get(claim["read"], 0) + 1
-        names = {_anchor_name(node_anchor(n)): n["entity"]["name"] for n in node_envelopes}
+        names = {_anchor_name(node_anchor(n)): n["entity"].get("name", "") for n in node_envelopes}
         incomplete = [
             {
                 "entity_type": claim["anchor"]["entity_type"],
@@ -1143,6 +1145,32 @@ class Boto3Collector(CollectorBase):
         own_account = by_ref.get(account_ref(account_id))
         if own_account is not None and landing_zone.account_fields:
             own_account["node"].update(landing_zone.account_fields)
+
+        # --- The images ECS containers run (req-aws-collector-ecs-20 .. -23) ---
+        # computing_core's image host and tag, and the RUNS_IMAGE / TAGS_IMAGE edges to them, for the containers
+        # this batch carries (collectors/boto3_collector/ecs.py, image_writes). Staged here, after every reader, so
+        # only a container that reached the batch gets an image. A defect in this shaping is isolated like the two
+        # reads above: the run keeps its containers and loses only their images.
+        container_dimensions = {
+            envelope_ref(n): n["entity"]["dimensions"]
+            for n in node_envelopes
+            if n["entity"]["entity_type"] == ECS_CONTAINER_TYPE
+        }
+        if container_dimensions:
+            try:
+                images = image_writes(walks_of(session), container_dimensions)
+            except Exception as exc:  # noqa: BLE001 — isolates a defect in this shaping, never the run
+                self.record_warn(
+                    _SITE_ECS_IMAGE_NOTICE,
+                    "ECS_IMAGE_WRITES_FAILED",
+                    f"ECS container images were not staged: {type(exc).__name__}: {exc}",
+                )
+            else:
+                for code, message in images.notices:
+                    self.record_warn(_SITE_ECS_IMAGE_NOTICE, code, message)
+                present = {envelope_ref(n) for n in node_envelopes}
+                node_envelopes.extend(n for n in images.nodes if envelope_ref(n) not in present)
+                edge_envelopes.extend(images.edges)
 
         # --- one GRIFT batch per run, everything named by identity (req-aws-collector-identity) ---
         # A node whose declared key has a hole would be created afresh on every run, so the run

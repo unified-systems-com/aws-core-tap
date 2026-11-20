@@ -612,12 +612,3 @@ def test_ecs_tags_normalize_from_the_lowercase_wire_shape():
     }
     assert normalize_tags(None, "list_kv_lower") == {}
 
-
-def test_no_cross_plugin_import():
-    """req-aws-collector-ecs-14: no github_core or computing_core import and no digest matching here."""
-    from pathlib import Path
-
-    import tap_plugin.aws_core.collectors.boto3_collector.ecs as ecs_module
-
-    source = Path(ecs_module.__file__).read_text()
-    assert "github_core" not in source and "computing_core" not in source

@@ -1092,10 +1092,46 @@ not candidates until a later change adds footprint-to-cluster containment and a 
 **Read-only permissions added to the collector role:** `ecs:ListClusters`, `ecs:DescribeClusters`,
 `ecs:ListServices`, `ecs:DescribeServices`, `ecs:ListTasks`, `ecs:DescribeTasks`.
 
-**Not specified here (open).** Where the digest-to-build join lives. aws_core and github_core must not import
-each other. The candidates are equality of a digest field read by a Search, or a neutral image node in
-computing_core that both plugins link to. That is a computing_core decision and is not made by this
-requirement.
+**The image a container runs (`-20`..`-23`).** computing_core has decided where an image lives: "an image is a
+host with realm `oci-digest`", keyed by the image manifest digest, and "a running container points at its image
+with `RUNS_IMAGE`, as an `aws_core` container does" (`spec-computing-core-v0.md`, `req-computing-core-host`). ECS
+reports that digest, so aws_core writes the link itself rather than leaving it to a scanner plugin: without it the
+container-to-image hop, which `fedramp_20x_vdr`'s reach walks from a vulnerable package to the container that runs
+it, exists only on a grid that also runs Anchore. aws_core already depends on computing_core (`tap-plugin.toml`
+`depends_on`, downward only), so this adds no dependency. It is code in `ecs.py` (`image_writes`), called by the
+collector once every reader has run, not a manifest edge rule: the target is another plugin's type, which the rule
+fence drops ([Declarative Edge Rules](#declarative-edge-rules)), and core never mints an edge's missing endpoint, so
+the host is staged in the same batch.
+
+- For each container the batch carries whose `imageDigest` is `sha256:` and 64 lower-case hex characters (the only
+  shape computing_core accepts for the realm, `req-computing-core-host-4`), the run stages the
+  `computing_core__host` `(oci-digest, <digest>)` with `kind` `container`, and
+  `<aws_ecs_container> RUNS_IMAGE__computing_core <host>` with the container's dimensions. Any other digest, or
+  none, gives no host and no edge; the container is unchanged. `RUNS_IMAGE` gets no authority claim, so a
+  container is never claimed to run no image.
+- A host the grid does not hold also carries `name`, the container's `image` (the first, sorted, when containers
+  name one digest differently; none when longer than the column). A host the grid already holds is sent with its
+  key and `kind` only and no envelope name, so the importer's keep-absent replace leaves every field another
+  producer wrote (Anchore's name, operating system and image facts). When the lookup fails, the key-and-kind write
+  is sent, which is safe either way, and the run log says so (`ECS_IMAGE_HOST_LOOKUP_FAILED`). Neither image type
+  carries an account or region dimension: one digest in two registries is one host.
+- Where the container's `image` writes a registry, a repository and a tag, and the digest is well-formed, the run
+  also stages `computing_core__image_tag` `(registry, repository, tag)` and
+  `<image_tag> TAGS_IMAGE__computing_core <host>`: ECS resolved that tag to that digest when it pulled.
+  `detected_at` is the latest `startedAt` of the tasks that ran the pair, and absent when none has started. The
+  parts are taken as written (`req-computing-core-image-tag`): the registry is the first path component only when
+  it holds a `.` or a `:` or is `localhost`; a reference with `@` was pulled by digest and makes no tag; a
+  reference with no `:tag` writes none. So `nginx:1.25` (Docker Hub implied, not written) and `app` (`latest`
+  implied) make no tag. A part longer than its column, or a tag that is not an OCI tag, makes none.
+- Both image types are custom-reader writes and are declared in `reader_sensitivity.json` (reader `ecs`); a type
+  whose row is missing, unreviewed or names a credential is not written, and neither is any edge to it.
+- `image_digest` stays on `aws_ecs_container` (`-23`): it is ECS's verbatim observation, kept when ECS reports a
+  digest computing_core refuses and null when none is reported, while the host holds only a well-formed digest.
+  The two sites carry `TAP-KNOWN-DUPE(ecs-image-digest)`.
+
+Not done here: whether Inspector's ECR `imageHash` and ECS's `imageDigest` are the same kind of digest for a
+multi-architecture image (an index or one platform's manifest). If they differ, computing_core mints two hosts and
+nothing joins them; the `-13` live trial should check it with an Inspector-scanned multi-architecture image.
 
 #### Acceptance Criteria
 
@@ -1114,12 +1150,16 @@ requirement.
 | req-aws-collector-ecs-11 | Absence Is Not Deletion | Implemented | A task absent from both listings of a later run is not deleted or modified, and the collector adds no "currently running" flag of its own: a task's state is ECS's `lastStatus`, recorded when ECS lists it. | `req-aws-collector-scope-3`; retirement is aws-core-tap#211's falsifier and reconcile. |
 | req-aws-collector-ecs-12 | Read-Only Permissions | Implemented | The collector's permission list adds exactly the six `ecs:List*`/`ecs:Describe*` actions named above and no write action. | The repo's only action list is the trial policy's read section (`handoff/trial-provisioner-policy.json`); the cross-account handoff grants AWS-managed `SecurityAudit`, which already covers these reads. |
 | req-aws-collector-ecs-13 | Live Trial Before Release | Proposed | The change passes the `add-aws-type` trial run against a real cluster and Fargate task (or carries a named `deferred_reason`) and a collected container's digest is shown equal to the digest `DescribeTasks` returns for it. | Needs a human to approve what is provisioned. |
-| req-aws-collector-ecs-14 | Digest Join Not Made Here | Implemented | This requirement adds no import of github_core or computing_core types and no digest-matching logic. | The join home is an open computing_core question. |
+| req-aws-collector-ecs-14 | Digest Join Not Made Here | Superseded | Was: this requirement adds no import of github_core or computing_core types and no digest-matching logic. Superseded by `-20`: computing_core has since decided the image's home (a host of realm `oci-digest`) and that a container points at it with `RUNS_IMAGE`, and VDR's reach needs the container-to-image hop, so aws_core writes it from ECS's own `imageDigest`. aws_core already depends on computing_core. Still true: no github_core type is named and no other plugin's module is imported. | Ruled by the maintainer 2026-11-20 (aws-core-tap#95, decision D2). |
 | req-aws-collector-ecs-15 | Held Stopped Task Records Its Stop | Implemented | Each cluster is listed with `desiredStatus="STOPPED"`. A listed task the grid already holds is described and records `last_status`, `desired_status`, `stopped_at`, `stopped_reason` and `stop_code`; one the grid does not hold is neither described nor created. A grid read that fails, or finds two live rows for one ARN, records no stopped task and leaves a `stopped_tasks` gap on the cluster naming why. | Ruled 2026-11-09, aws-core-tap#211. A task listed under both filters is read as running. |
 | req-aws-collector-ecs-16 | Stopped Task Asserts No Edges | Implemented | A stopped task carries no `RUNS_TASK` source and its held containers no `RUNS_CONTAINER` source, and those edge reads are `partial`, so the run neither asserts nor claims absent the edges a running read would write. | Keeps the earlier `RUNS_TASK` edge, the containment a reconcile candidate is derived from once ECS stops listing the task (aws-core-tap#211). Not what makes it a candidate: a written task is observed (`req-grid-reconcile-candidates-1`). |
 | req-aws-collector-ecs-17 | Cluster And Task Contain | Implemented | `aws_ecs_cluster` declares `RUNS_TASK` and `aws_ecs_task` declares `RUNS_CONTAINER` in `CONTAINMENT_EDGES` (and `OUTBOUND_EDGES`); `aws_ecs_service` declares no containment. | aws-core-tap#211. A deleted cluster is not yet a candidate (no footprint containment). |
 | req-aws-collector-ecs-18 | A Surface Per Parent | Implemented | The walk records a surface for every cluster's running-task listing and every described task's containers; a denied, failed or short listing is recorded incomplete with its reason, never omitted, and a cluster running nothing is complete-empty. A stopped task whose container could not be looked up on the grid records its container surface incomplete (`grid_lookup_failed`), so an omitted container never reads as absent. The stopped-task listing records no surface. | `req-aws-core-contained-type-triple-1`..`-3`. |
 | req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `MISSING` is gone, `STOPPED` is gone only once the row already records `STOPPED` (otherwise undetermined), an error is undetermined, and an ARN that names no cluster, or whose own account is not the credential's (whatever the row's `aws_account` dimension says), is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
+| req-aws-collector-ecs-20 | Container Runs Its Image | Implemented | Each container the batch carries whose `imageDigest` is a well-formed `sha256:` digest has `RUNS_IMAGE__computing_core` to the `computing_core__host` `(oci-digest, <digest>)`, kind `container`, staged in the same batch; a container with no digest, or one computing_core refuses, has neither, and no `RUNS_IMAGE` authority claim is made. `ecs.py` imports no other plugin's module and names no github_core type. | aws-core-tap#95 (c). Supersedes `-14`. `tests/test_ecs_images.py` |
+| req-aws-collector-ecs-21 | Image Host Written Without Overwriting | Implemented | A host the grid does not hold carries `name`, the container's image reference; one it holds is sent with its key and `kind` only and no envelope name, so a name, operating system or image fact another producer wrote is kept. A failed lookup sends the key-and-kind write and records `ECS_IMAGE_HOST_LOOKUP_FAILED`. Both image types are declared in `reader_sensitivity.json` and are not written without a safe declaration. | Ruled 2026-11-20 (aws-core-tap#95). |
+| req-aws-collector-ecs-22 | Image Tag ECS Resolved | Implemented | Where the container's `image` writes a registry, repository and tag (as written: no implied Docker Hub registry or `latest` tag, no digest reference) and the digest is well-formed, the run stages `computing_core__image_tag` and `TAGS_IMAGE__computing_core` to the image host, with `detected_at` the latest `startedAt` of the tasks that ran the pair, absent when none has started. | aws-core-tap#95 (f). |
+| req-aws-collector-ecs-23 | Digest Kept On The Container | Implemented | `aws_ecs_container.image_digest` stays, verbatim and null when unreported, beside the image host's `stable_id`; the two sites carry `TAP-KNOWN-DUPE(ecs-image-digest)`. | Decision D9. |
 
 ### Load Balancer Topology
 ----

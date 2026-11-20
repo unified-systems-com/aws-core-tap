@@ -36,6 +36,10 @@ class EcsContainer(BaseModel):
         "container_arn": {"type": "string"},
         # image is the reference in the task definition (may be a movable tag); image_digest is what ran.
         # Both are stored as ECS reports them; null is "not reported" (req-aws-collector-ecs-4, -5).
+        # TAP-KNOWN-DUPE(ecs-image-digest): image_digest is also the stable_id of the computing_core image host
+        # this container's RUNS_IMAGE edge points at (ecs.py, image_writes). Both stay: this field is ECS's
+        # verbatim observation, kept when ECS reports a digest computing_core refuses (no host is made then) and
+        # null when none is reported; the host holds only a well-formed digest (req-aws-collector-ecs-23).
         "image": {"type": ["string", "null"]},
         "image_digest": {"type": ["string", "null"]},
         "runtime_id": {"type": ["string", "null"]},
