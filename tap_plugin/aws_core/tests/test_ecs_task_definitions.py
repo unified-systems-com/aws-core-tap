@@ -215,17 +215,24 @@ class TestReferencedRevisionsDescribed:
             assert len(list(describe_task_definitions(client, [_ACTIVE, _ACTIVE]))) == 1
             stub.assert_no_pending_responses()
 
-    def test_a_referenced_revision_that_cannot_be_described_is_left_out(self):
+    @pytest.mark.parametrize("code", ["ClientException", "ThrottlingException", "AccessDeniedException"])
+    def test_a_referenced_revision_that_cannot_be_described_is_left_out_and_named(self, code):
         client = _ecs_client()
+        undescribed: dict[str, dict[str, Any]] = {}
         with Stubber(client) as stub:
-            stub.add_response("list_task_definitions", {"taskDefinitionArns": []}, {"status": "ACTIVE"})
+            stub.add_response("list_task_definitions", {"taskDefinitionArns": [_ACTIVE]}, {"status": "ACTIVE"})
+            stub.add_response("describe_task_definition", {"taskDefinition": _definition(_ACTIVE)}, {"taskDefinition": _ACTIVE})
             stub.add_client_error(
                 "describe_task_definition",
-                service_error_code="ClientException",
-                service_message="Unable to describe task definition.",
+                service_error_code=code,
+                service_message="x",
                 expected_params={"taskDefinition": _INACTIVE},
             )
-            assert list(describe_task_definitions(client, [_INACTIVE])) == []
+            items = list(describe_task_definitions(client, [_ACTIVE, _INACTIVE], undescribed))
+        assert [i["taskDefinitionArn"] for i in items] == [_ACTIVE]  # the others are kept
+        assert list(undescribed) == [_INACTIVE]
+        assert undescribed[_INACTIVE]["op"] == "DescribeTaskDefinition"
+        assert undescribed[_INACTIVE]["error_code"] == code
 
     def test_a_listed_revision_that_fails_to_describe_skips_the_entry(self):
         """As before the references: a short type never reads as complete."""
@@ -511,6 +518,76 @@ class TestImportedThroughCore:
         _run()
         stored = json.dumps(get_node(node_id(_TASK_DEF_TYPE, _ACTIVE)).configuration)
         assert _PLAIN_ENV_CANARY in stored and _SECRETISH_ENV_CANARY not in stored
+
+    def test_an_undescribed_referenced_revision_is_an_error_and_its_scope_reads_partial(self, monkeypatch):
+        """A throttled DescribeTaskDefinition for the revision the task runs: the run says so in results["error"],
+        the task's USES_TASK_DEFINITION scope is claimed partial with the reason on the node, and the batch still
+        holds the ACTIVE revision and its edges."""
+        from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
+        from tap_grid.services import get_node
+
+        # DescribeTaskDefinition is served by a real ECS client under Stubber (model-checked request and response,
+        # a real botocore ClientError for the throttle), in the order the entry makes the calls; every other call
+        # of the run is the slice's canned client.
+        ecs = _ecs_client()
+        stub = Stubber(ecs)
+        stub.add_response(
+            "describe_task_definition", {"taskDefinition": _definition(_ACTIVE, secrets=_SECRETS)}, {"taskDefinition": _ACTIVE}
+        )
+        stub.add_client_error(
+            "describe_task_definition",
+            service_error_code="ThrottlingException",
+            service_message="Rate exceeded",
+            http_status_code=400,
+            expected_params={"taskDefinition": _INACTIVE},
+        )
+        stub.activate()
+
+        def describe_task_definition(self, **kwargs):
+            return ecs.describe_task_definition(**kwargs)
+
+        monkeypatch.setattr(slice_tests._CannedClient, "describe_task_definition", describe_task_definition, raising=False)
+        submitted: list[dict[str, Any]] = []
+        real_submit = Boto3Collector.submit_grift
+
+        def _capture(self, document, **kwargs):
+            submitted.append(json.loads(json.dumps(document, default=str)))
+            return real_submit(self, document, **kwargs)
+
+        monkeypatch.setattr(Boto3Collector, "submit_grift", _capture)
+        collector = Boto3Collector(CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7()))
+        collector.run()
+        stub.assert_no_pending_responses()
+        stub.deactivate()
+
+        (error,) = collector.results["error"]
+        assert error["message_code"] == "ECS_TASK_DEFINITION_NOT_DESCRIBED"
+        assert error["message_data"] == {
+            "region": _REGION,
+            "revision": "web:7",
+            "status": error["message_data"]["status"],
+            "error_code": "ThrottlingException",
+            "named_by": 1,
+        }
+        assert error["message_data"]["status"] in ("error", "throttled", "denied")
+        assert _ACCOUNT not in error["message"] and _ACCOUNT not in json.dumps(error["message_data"])
+
+        (batch,) = submitted[0]["batches"]
+        task_key = {"task_arn": slice_tests._ECS_TASK}
+        claims = [
+            c for c in batch.get("edge_cases", {}).get("authority", [])
+            if c["edge_type"] == USES and c["anchor"]["key"] == task_key
+        ]
+        from tap_plugin.aws_core.collectors.boto3_collector.authority import importer_accepts_edge_cases
+
+        assert [c["read"] for c in claims] == (["partial"] if importer_accepts_edge_cases() else [])
+        task = get_node(node_id(_TASK_TYPE, slice_tests._ECS_TASK))
+        assert task.configuration["_hydrate"]["task_definition"]["error_code"] == "ThrottlingException"
+
+        assert find_node_id(_TASK_DEF_TYPE, _INACTIVE) is None
+        active_id = node_id(_TASK_DEF_TYPE, _ACTIVE)
+        assert len(live_edges(USES, node_id(_SERVICE_TYPE, slice_tests._ECS_SERVICE), active_id)) == 1
+        assert len(live_edges(REFERENCES_SM, active_id, node_id(_SM_TYPE, _SM_ARN))) == 1
 
     def test_a_secret_the_run_did_not_list_is_skipped_not_minted(self, monkeypatch):
         monkeypatch.setitem(slice_tests._CANNED, "list_secrets", {"SecretList": [{"ARN": _SM_ARN, "Name": "prod/db"}]})

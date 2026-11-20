@@ -100,7 +100,7 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
-from .ecs import image_writes, walks_of
+from .ecs import image_writes, revision_label, walks_of, withhold_undescribed_task_definitions
 from .elb_topology import walks_of as listener_walks_of
 from .elb_topology import withhold_unreplaced_lb_routes
 from .route53_records import walk_of as route53_walk_of
@@ -165,6 +165,7 @@ _SITE_ORG_READ_FAILED = "a4f0"
 _SITE_LZ_NOTICE = "7e19"
 _SITE_LZ_READ_FAILED = "b3c6"
 _SITE_ECS_IMAGE_NOTICE = "e5c9"
+_SITE_ECS_TASK_DEFINITION_GAP = "7d4e"
 _SITE_EDGE_AUTHORITY = "f237"
 _SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
 _SITE_ADDRESSING = "7f5b"
@@ -1188,6 +1189,25 @@ class Boto3Collector(CollectorBase):
         withhold_unreplaced_zone_routes(judged, route53_walk_of(session))
         # Likewise a load balancer's replaced routes: claimed only once its listeners and rules all reached the batch.
         withhold_unreplaced_lb_routes(judged, listener_walks_of(session))
+        # A revision a task or service names that the task definition entry could not describe (-25): its
+        # USES_TASK_DEFINITION scope reads partial, and the omission is an error entry, never a quietly smaller set.
+        for revision, slot, naming in withhold_undescribed_task_definitions(judged, walks_of(session)):
+            region = revision.split(":")[3] if revision.count(":") >= 5 else ""
+            self.record_error(
+                _SITE_ECS_TASK_DEFINITION_GAP,
+                "ECS_TASK_DEFINITION_NOT_DESCRIBED",
+                f"ECS task definition {revision_label(revision)} in {region or 'its region'} is named by {naming} "
+                f"task(s) or service(s) but could not be described ({slot.get('error_code')}): it and its "
+                "REFERENCES_SECRET / REFERENCES_PARAMETER edges are missing from this run, and USES_TASK_DEFINITION "
+                "reads partial at each.",
+                message_data={
+                    "region": region,
+                    "revision": revision_label(revision),
+                    "status": slot.get("status"),
+                    "error_code": slot.get("error_code"),
+                    "named_by": naming,
+                },
+            )
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:

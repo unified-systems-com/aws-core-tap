@@ -3429,10 +3429,12 @@ def ecs_task_definitions_described(session: Any, *, client_for: Any) -> Iterator
     ACTIVE revisions are still read: they never depended on it.
     """
     try:
-        referenced = referenced_task_definitions(shared_walk(session, client_for))
+        walk = shared_walk(session, client_for)
     except (BotoCoreError, ClientError, SourceError):
-        referenced = []
-    yield from describe_task_definitions(client_for("ecs"), referenced)
+        walk = None
+    referenced = referenced_task_definitions(walk) if walk is not None else []
+    undescribed = walk.undescribed_task_definitions if walk is not None else None
+    yield from describe_task_definitions(client_for("ecs"), referenced, undescribed)
 
 
 # Manifest custom_fn name -> callable.

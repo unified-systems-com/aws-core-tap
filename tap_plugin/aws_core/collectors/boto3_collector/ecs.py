@@ -122,6 +122,9 @@ class EcsWalk:
     containers: list[dict[str, Any]] = field(default_factory=list)
     #: A cluster's running-task listing and each described task's containers, one per parent.
     listings: list[EcsListing] = field(default_factory=list)
+    #: Revision ARN -> the ``_hydrate`` slot of a task definition a task or service names that could not be
+    #: described (``-25``): filled by the task definition entry, read once every reader has run.
+    undescribed_task_definitions: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 class _IncompleteListing(Exception):
@@ -726,15 +729,20 @@ def referenced_task_definitions(walk: EcsWalk) -> list[str]:
     return sorted(arn for arn in named if isinstance(arn, str) and arn)
 
 
-def describe_task_definitions(client: Any, referenced: Iterable[str] = ()) -> Iterator[dict[str, Any]]:
+def describe_task_definitions(
+    client: Any, referenced: Iterable[str] = (), undescribed: dict[str, dict[str, Any]] | None = None
+) -> Iterator[dict[str, Any]]:
     """The ACTIVE task definition revisions, then every ``referenced`` one the ACTIVE list lacks (``-25``).
 
     ``ListTaskDefinitions(status="ACTIVE")`` is read to its end and each revision described, as the entry did
     before it read references: a failed or short listing, or a failed describe of a listed revision, raises, so
     the entry reads as skipped rather than as a shorter list. A referenced revision is one a task or service of the
     region names; when it is deregistered (INACTIVE) it is not listed, so it is described here, with no new IAM
-    action, and its own ``status`` says it is inactive. One that cannot be described (deleted, or the call failed)
-    is left out; the edges naming it are skipped as dangling by the import and recorded there.
+    action, and its own ``status`` says it is inactive. One that cannot be described (deleted, denied, throttled)
+    is left out, and its ARN and the failure's slot go into ``undescribed``: the collector then records the
+    omission as an error and reads the ``USES_TASK_DEFINITION`` scope of every task and service naming it
+    ``partial`` (:func:`withhold_undescribed_task_definitions`), so the revision and the secret and parameter
+    edges it would have carried are never read as absent.
 
     Each item is ``DescribeTaskDefinition``'s ``taskDefinition``, with ``containerDefinitions`` read ``complete``:
     the response is the revision's whole document, and a revision never changes.
@@ -752,7 +760,9 @@ def describe_task_definitions(client: Any, referenced: Iterable[str] = ()) -> It
         listed.add(arn)
         try:
             response = client.describe_task_definition(taskDefinition=arn)
-        except (BotoCoreError, ClientError):
+        except (BotoCoreError, ClientError) as exc:
+            if undescribed is not None:
+                undescribed[arn] = _slot("DescribeTaskDefinition", exc=exc)
             continue
         yield _task_definition_item(response)
 
@@ -760,3 +770,47 @@ def describe_task_definitions(client: Any, referenced: Iterable[str] = ()) -> It
 def _task_definition_item(response: Any) -> dict[str, Any]:
     definition = without_response_metadata(response).get("taskDefinition") or {}
     return with_edge_reads(definition, {"containerDefinitions": COMPLETE})
+
+
+USES_TASK_DEFINITION = "USES_TASK_DEFINITION__aws_core"
+_SERVICE_TYPE = "aws_core__aws_ecs_service"
+_USES_SCOPE = (USES_TASK_DEFINITION, "outbound")
+
+
+def revision_label(arn: str) -> str:
+    """A revision as the run log names it: ``<family>:<revision>``, the ARN's resource part. The partition, region
+    and account are the run's own, carried in the entry's ``message_data`` region and the run's account."""
+    return arn.rsplit("task-definition/", 1)[-1]
+
+
+def withhold_undescribed_task_definitions(
+    judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]], walks: Iterable[EcsWalk]
+) -> list[tuple[str, dict[str, Any], int]]:
+    """Read ``USES_TASK_DEFINITION`` ``partial`` at every task and service naming a revision that was not described.
+
+    Run once every reader has finished and before claims are made (the task definition entry is read after the
+    tasks and services it serves). Each such task or service node also gets the failure in its configuration's
+    ``_hydrate.task_definition`` slot, so the reason is stored beside the gap. Returns ``(revision ARN, slot, how
+    many nodes name it)`` per undescribed revision, for the run log.
+    """
+    named: dict[str, str] = {}
+    missing: dict[str, dict[str, Any]] = {}
+    for walk in walks:
+        missing.update(walk.undescribed_task_definitions)
+        named.update({t["taskArn"]: t.get("taskDefinitionArn") for t in walk.tasks if t.get("taskArn")})
+        named.update({s["serviceArn"]: s.get("taskDefinition") for s in walk.services if s.get("serviceArn")})
+    if not missing:
+        return []
+    counts = dict.fromkeys(missing, 0)
+    for envelope, reads in judged:
+        if envelope["entity"]["entity_type"] not in (TASK_TYPE, _SERVICE_TYPE):
+            continue
+        revision = named.get(str(envelope["node"].get("task_arn") or envelope["node"].get("service_arn") or ""))
+        if revision not in missing:
+            continue
+        counts[revision] += 1
+        reads[_USES_SCOPE] = PARTIAL
+        configuration = envelope["node"].get("configuration")
+        if isinstance(configuration, dict):
+            configuration.setdefault("_hydrate", {})["task_definition"] = dict(missing[revision])
+    return [(arn, missing[arn], counts[arn]) for arn in sorted(missing)]
