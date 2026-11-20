@@ -584,6 +584,37 @@ class TestImportedThroughCore:
         assert host["node"] == {**_HOST_KEY, "kind": "container"}
         assert "name" not in host["entity"]
 
+    def test_a_failed_image_write_keeps_the_containers_and_is_not_a_clean_run(self, monkeypatch):
+        """A defect in image_writes loses only the images, and says so where a run's failures are read: an entry in
+        results["error"] and the summary. (Core's job has no partial status, and a warning changes nothing.)"""
+        from tap_plugin.aws_core.collectors.boto3_collector import collector as collector_mod
+        from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
+
+        def broken(*_args, **_kwargs):
+            raise RuntimeError("defect in image shaping")
+
+        monkeypatch.setattr(collector_mod, "image_writes", broken)
+        submitted: list[dict[str, Any]] = []
+        real_submit = Boto3Collector.submit_grift
+
+        def _capture(self, document, **kwargs):
+            submitted.append(json.loads(json.dumps(document, default=str)))
+            return real_submit(self, document, **kwargs)
+
+        monkeypatch.setattr(Boto3Collector, "submit_grift", _capture)
+        collector = Boto3Collector(CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7()))
+        collector.run()
+
+        (batch,) = submitted[0]["batches"]
+        assert [n for n in batch["nodes"] if n["entity"]["entity_type"] == CONTAINER_TYPE]
+        assert [n for n in batch["nodes"] if n["entity"]["entity_type"] in (HOST_TYPE, IMAGE_TAG_TYPE)] == []
+        assert [e for e in batch["edges"] if e["edge"]["edge_type"] in (RUNS_IMAGE, TAGS_IMAGE)] == []
+        assert find_node_id(CONTAINER_TYPE, _SLICE_CONTAINER) is not None  # imported
+        (error,) = collector.results["error"]
+        assert error["message_code"] == "ECS_IMAGE_WRITES_FAILED"
+        assert error["message_data"] == {"containers": 1, "exception": "RuntimeError"}
+        assert "ECS container images NOT staged (RuntimeError)" in collector.summary
+
     def test_a_container_without_a_digest_lands_without_an_image(self, monkeypatch):
         tasks = json.loads(json.dumps(slice_tests._CANNED["describe_tasks"]))
         del tasks["tasks"][0]["containers"][0]["imageDigest"]

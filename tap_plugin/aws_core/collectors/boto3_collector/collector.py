@@ -1149,8 +1149,11 @@ class Boto3Collector(CollectorBase):
         # --- The images ECS containers run (req-aws-collector-ecs-20 .. -23) ---
         # computing_core's image host and tag, and the RUNS_IMAGE / TAGS_IMAGE edges to them, for the containers
         # this batch carries (collectors/boto3_collector/ecs.py, image_writes). Staged here, after every reader, so
-        # only a container that reached the batch gets an image. A defect in this shaping is isolated like the two
-        # reads above: the run keeps its containers and loses only their images.
+        # only a container that reached the batch gets an image. A defect in this shaping keeps the run and its
+        # containers but is not quiet about the images it lost: core's job has no partial status (SUCCESSFUL or
+        # FAILED; a warning changes neither), so the failure is an entry in results["error"], the run log's error
+        # bucket, and named in the run summary. Failing the run would lose every node it read for one defect here.
+        images_failed: str | None = None
         container_dimensions = {
             envelope_ref(n): n["entity"]["dimensions"]
             for n in node_envelopes
@@ -1160,10 +1163,13 @@ class Boto3Collector(CollectorBase):
             try:
                 images = image_writes(walks_of(session), container_dimensions)
             except Exception as exc:  # noqa: BLE001 — isolates a defect in this shaping, never the run
-                self.record_warn(
+                images_failed = type(exc).__name__
+                self.record_error(
                     _SITE_ECS_IMAGE_NOTICE,
                     "ECS_IMAGE_WRITES_FAILED",
-                    f"ECS container images were not staged: {type(exc).__name__}: {exc}",
+                    f"ECS container images were not staged: {type(exc).__name__}: {exc}. The containers were "
+                    "collected; no RUNS_IMAGE or TAGS_IMAGE edge was written this run.",
+                    message_data={"containers": len(container_dimensions), "exception": type(exc).__name__},
                 )
             else:
                 for code, message in images.notices:
@@ -1316,6 +1322,10 @@ class Boto3Collector(CollectorBase):
             f"({skipped} skipped, {unavailable} not offered in this partition, {not_configured} not configured, "
             f"{imported} batch imported)."
         )
+        if images_failed is not None:
+            self.summary += (
+                f" ECS container images NOT staged ({images_failed}): no RUNS_IMAGE or TAGS_IMAGE edge this run."
+            )
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for
         # the future audit-verifiability theme. One event, full machine

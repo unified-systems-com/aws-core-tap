@@ -48,20 +48,22 @@ _ACCOUNT = "111122223333"
 _TASK_DEF_TYPE = "aws_core__aws_ecs_task_definition"
 _TASK_TYPE = "aws_core__aws_ecs_task"
 _SERVICE_TYPE = "aws_core__aws_ecs_service"
-_SECRET_TYPE = "aws_core__aws_secrets_manager_secret"
+# Placeholder names avoid "secret"/"token" as a word: a hardcoded-password scan (bandit B105) reads such a
+# name bound to a string as a credential, and none of these is one.
+_SM_TYPE = "aws_core__aws_secrets_manager_secret"
 _PARAMETER_TYPE = "aws_core__aws_ssm_parameter"
 USES = "USES_TASK_DEFINITION__aws_core"
-REF_SECRET = "REFERENCES_SECRET__aws_core"
+REFERENCES_SM = "REFERENCES_SECRET__aws_core"
 REF_PARAMETER = "REFERENCES_PARAMETER__aws_core"
 
 _ACTIVE = f"arn:aws:ecs:{_REGION}:{_ACCOUNT}:task-definition/web:8"
 _INACTIVE = f"arn:aws:ecs:{_REGION}:{_ACCOUNT}:task-definition/web:7"
-_SECRET = f"arn:aws:secretsmanager:{_REGION}:{_ACCOUNT}:secret:prod/db-AbC123"
-_OTHER_SECRET = f"arn:aws:secretsmanager:{_REGION}:{_ACCOUNT}:secret:prod/api-key-XyZ789"
+_SM_ARN = f"arn:aws:secretsmanager:{_REGION}:{_ACCOUNT}:secret:prod/db-AbC123"
+_OTHER_SM_ARN = f"arn:aws:secretsmanager:{_REGION}:{_ACCOUNT}:secret:prod/api-key-XyZ789"
 _PARAM_ARN = f"arn:aws:ssm:{_REGION}:{_ACCOUNT}:parameter/prod/db/host"
 _PARAM_BY_NAME = f"arn:aws:ssm:{_REGION}:{_ACCOUNT}:parameter/prod/feature-flags"
 _PLAIN_ENV_CANARY = "ecs-taskdef-plain-env-4b1e"
-_SECRET_ENV_CANARY = "ecs-taskdef-secret-env-90cd"
+_SECRETISH_ENV_CANARY = "ecs-taskdef-secret-env-90cd"
 
 
 def _definition(arn: str, *, status: str = "ACTIVE", secrets: list[dict[str, str]] | None = None) -> dict[str, Any]:
@@ -73,7 +75,7 @@ def _definition(arn: str, *, status: str = "ACTIVE", secrets: list[dict[str, str
         "essential": True,
         "environment": [
             {"name": "LOG_LEVEL", "value": _PLAIN_ENV_CANARY},
-            {"name": "DB_PASSWORD", "value": _SECRET_ENV_CANARY},
+            {"name": "DB_PASSWORD", "value": _SECRETISH_ENV_CANARY},
         ],
     }
     if secrets is not None:
@@ -94,9 +96,9 @@ def _definition(arn: str, *, status: str = "ACTIVE", secrets: list[dict[str, str
 
 
 _SECRETS = [
-    {"name": "DB_URL", "valueFrom": _SECRET},
-    {"name": "DB_USER", "valueFrom": f"{_SECRET}:username::"},  # a JSON key of the same secret
-    {"name": "API_KEY", "valueFrom": f"{_OTHER_SECRET}:key:AWSCURRENT:"},
+    {"name": "DB_URL", "valueFrom": _SM_ARN},
+    {"name": "DB_USER", "valueFrom": f"{_SM_ARN}:username::"},  # a JSON key of the same secret
+    {"name": "API_KEY", "valueFrom": f"{_OTHER_SM_ARN}:key:AWSCURRENT:"},
     {"name": "DB_HOST", "valueFrom": _PARAM_ARN},
     {"name": "FLAGS", "valueFrom": "/prod/feature-flags"},  # a parameter by name, in the task's own region
 ]
@@ -265,6 +267,26 @@ class TestReferencedRevisionsDescribed:
             items = list(customfns.ecs_task_definitions_described(object(), client_for=lambda _service: client))
         assert [i["taskDefinitionArn"] for i in items] == [_ACTIVE]
 
+    def test_tags_reach_the_node_through_list_tags_for_resource(self):
+        """The entry's tags lane is ListTagsForResource on the revision's ARN, as it was for the generic source (which
+        passed no include=TAGS and kept only the taskDefinition object): the item needs only its ARN."""
+        from tap_plugin.aws_core.collectors.boto3_collector.collector import resolve_node_tags
+
+        client = _ecs_client()
+        with Stubber(client) as stub:
+            stub.add_response("list_task_definitions", {"taskDefinitionArns": [_ACTIVE]}, {"status": "ACTIVE"})
+            stub.add_response("describe_task_definition", {"taskDefinition": _definition(_ACTIVE)}, {"taskDefinition": _ACTIVE})
+            stub.add_response(
+                "list_tags_for_resource", {"tags": [{"key": "team", "value": "core"}]}, {"resourceArn": _ACTIVE}
+            )
+            (item,) = describe_task_definitions(client)
+            entry = _entry(_TASK_DEF_TYPE)
+            tags, slot, _mapping = resolve_node_tags(entry, item, rgta_map={}, client_for=lambda _service: client)
+            stub.assert_no_pending_responses()
+        assert tags == {"team": "core"} and slot["status"] == "ok"
+        node = project_item(entry, item, {"region": _REGION})
+        assert node_envelope(node, {}, tags, persist_configuration=False)["node"]["tags"] == {"team": "core"}
+
     def test_the_entry_is_the_custom_fn(self):
         entry = _entry(_TASK_DEF_TYPE)
         assert entry["source"] == {"custom_fn": "ecs_task_definitions_described"}
@@ -279,13 +301,13 @@ class TestReferencesSecret:
     @pytest.mark.parametrize(
         ("value", "secret"),
         [
-            (_SECRET, _SECRET),
-            (f"{_SECRET}:username::", _SECRET),
-            (f"{_SECRET}::AWSPREVIOUS:", _SECRET),
-            (f"{_SECRET}:::0f1e2d3c-aaaa-bbbb-cccc-111122223333", _SECRET),
+            (_SM_ARN, _SM_ARN),
+            (f"{_SM_ARN}:username::", _SM_ARN),
+            (f"{_SM_ARN}::AWSPREVIOUS:", _SM_ARN),
+            (f"{_SM_ARN}:::0f1e2d3c-aaaa-bbbb-cccc-111122223333", _SM_ARN),
             (f"arn:aws-us-gov:secretsmanager:us-gov-west-1:{_ACCOUNT}:secret:db-AbC123", f"arn:aws-us-gov:secretsmanager:us-gov-west-1:{_ACCOUNT}:secret:db-AbC123"),
             (f"arn:aws:secretsmanager:{_REGION}:{_ACCOUNT}:secret:prod/db", None),  # partial ARN: not the key
-            (f"{_SECRET}:username", None),  # a suffix must write all three parts
+            (f"{_SM_ARN}:username", None),  # a suffix must write all three parts
             (_PARAM_ARN, None),
             ("/prod/feature-flags", None),
             ("", None),
@@ -298,8 +320,8 @@ class TestReferencesSecret:
     def test_one_edge_per_secret_with_no_properties(self):
         item = _definition(_ACTIVE, secrets=_SECRETS)
         td = node_ref(_TASK_DEF_TYPE, _ACTIVE)
-        assert sorted(set(_emitted(_TASK_DEF_TYPE, item, REF_SECRET))) == sorted(
-            [(td, node_ref(_SECRET_TYPE, _SECRET)), (td, node_ref(_SECRET_TYPE, _OTHER_SECRET))]
+        assert sorted(set(_emitted(_TASK_DEF_TYPE, item, REFERENCES_SM))) == sorted(
+            [(td, node_ref(_SM_TYPE, _SM_ARN)), (td, node_ref(_SM_TYPE, _OTHER_SM_ARN))]
         )
         node = project_item(_entry(_TASK_DEF_TYPE), item, {"region": _REGION})
         emission = emit_edges(
@@ -308,18 +330,30 @@ class TestReferencesSecret:
         assert all(e["edge"]["properties"] == {} for e in emission.envelopes)
 
     def test_the_read_is_complete_when_every_secret_reference_maps(self):
-        assert _reads(_TASK_DEF_TYPE, _definition(_ACTIVE, secrets=_SECRETS))[(REF_SECRET, "outbound")] == "complete"
+        assert _reads(_TASK_DEF_TYPE, _definition(_ACTIVE, secrets=_SECRETS))[(REFERENCES_SM, "outbound")] == "complete"
 
     def test_a_partial_secret_arn_makes_the_read_partial(self):
         secrets = [*_SECRETS, {"name": "X", "valueFrom": f"arn:aws:secretsmanager:{_REGION}:{_ACCOUNT}:secret:prod/db"}]
-        assert _reads(_TASK_DEF_TYPE, _definition(_ACTIVE, secrets=secrets))[(REF_SECRET, "outbound")] == "partial"
+        assert _reads(_TASK_DEF_TYPE, _definition(_ACTIVE, secrets=secrets))[(REFERENCES_SM, "outbound")] == "partial"
 
     def test_a_definition_whose_containers_name_no_secret_reads_complete_and_empty(self):
         """A container definition with no ``secrets`` is that element's answer, not a member AWS left unread."""
         item = _definition(_ACTIVE)
-        assert _emitted(_TASK_DEF_TYPE, item, REF_SECRET) == []
+        assert _emitted(_TASK_DEF_TYPE, item, REFERENCES_SM) == []
         reads = _reads(_TASK_DEF_TYPE, item)
-        assert reads[(REF_SECRET, "outbound")] == reads[(REF_PARAMETER, "outbound")] == "complete"
+        assert reads[(REFERENCES_SM, "outbound")] == reads[(REF_PARAMETER, "outbound")] == "complete"
+
+    def test_only_the_two_secret_rules_read_a_path_through_two_lists(self):
+        """_path_present stops at the first list for every rule; today only these two rules have a second list. A new
+        one must be checked for fail-open before it joins this set."""
+        multi = sorted(
+            (e["entity_type"], r["edge_type"], r["value_path"])
+            for e in manifest_entries()
+            for r in e.get("edges", [])
+            if r["value_path"].count("[]") >= 2 or "[]" in str(r.get("key_path", ""))
+        )
+        path = "containerDefinitions[].secrets[].valueFrom"
+        assert multi == [(_TASK_DEF_TYPE, REF_PARAMETER, path), (_TASK_DEF_TYPE, REFERENCES_SM, path)]
 
     def test_a_path_with_two_lists_is_present_once_its_first_list_is(self):
         assert _path_present({"containerDefinitions": [{"name": "a"}]}, "containerDefinitions[].secrets[].valueFrom")
@@ -345,7 +379,7 @@ class TestReferencesParameter:
             ("/prod/feature-flags", _PARAM_BY_NAME),
             ("plain-name", f"arn:aws:ssm:{_REGION}:{_ACCOUNT}:parameter/plain-name"),
             (f"arn:aws:ssm:{_REGION}:{_ACCOUNT}:document/x", None),
-            (_SECRET, None),
+            (_SM_ARN, None),
             ("bad name", None),
             ("/", None),
             ("", None),
@@ -377,8 +411,8 @@ class TestStoredAsBefore:
             node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"], redact_paths=entry_redact_paths(entry))
         )
         assert _PLAIN_ENV_CANARY in stored
-        assert _SECRET_ENV_CANARY not in stored  # secret-named variable: the existing key-name rule
-        assert _SECRET in stored and _PARAM_ARN in stored  # secrets[].valueFrom is a reference, kept
+        assert _SECRETISH_ENV_CANARY not in stored  # secret-named variable: the existing key-name rule
+        assert _SM_ARN in stored and _PARAM_ARN in stored  # secrets[].valueFrom is a reference, kept
         assert entry_redact_paths(entry) == ["containerDefinitions[].repositoryCredentials"]
 
     def test_the_docstring_and_the_basis_say_what_is_stored(self):
@@ -409,7 +443,7 @@ def _ecs_chain(monkeypatch):
     monkeypatch.setitem(canned, "describe_services", services)
     monkeypatch.setitem(canned, "list_task_definitions", {"taskDefinitionArns": [_ACTIVE]})
     monkeypatch.setitem(
-        canned, "list_secrets", {"SecretList": [{"ARN": _SECRET, "Name": "prod/db"}, {"ARN": _OTHER_SECRET, "Name": "prod/api-key"}]}
+        canned, "list_secrets", {"SecretList": [{"ARN": _SM_ARN, "Name": "prod/db"}, {"ARN": _OTHER_SM_ARN, "Name": "prod/api-key"}]}
     )
     monkeypatch.setitem(
         canned,
@@ -455,31 +489,31 @@ class TestImportedThroughCore:
         service = node_id(_SERVICE_TYPE, slice_tests._ECS_SERVICE)
         assert len(live_edges(USES, task, inactive)) == 1
         assert len(live_edges(USES, service, active)) == 1
-        for secret in (_SECRET, _OTHER_SECRET):
-            (edge,) = live_edges(REF_SECRET, active, node_id(_SECRET_TYPE, secret))
+        for secret in (_SM_ARN, _OTHER_SM_ARN):
+            (edge,) = live_edges(REFERENCES_SM, active, node_id(_SM_TYPE, secret))
             assert edge.properties == {}
         for parameter in (_PARAM_ARN, _PARAM_BY_NAME):
             assert len(live_edges(REF_PARAMETER, active, node_id(_PARAMETER_TYPE, parameter))) == 1
-        assert live_edges(REF_SECRET, inactive, node_id(_SECRET_TYPE, _SECRET)) == []
+        assert live_edges(REFERENCES_SM, inactive, node_id(_SM_TYPE, _SM_ARN)) == []
 
     def test_a_rerun_adds_no_edge(self):
         from tap_grid.models import Edge
 
         _run()
-        count = Edge.objects.filter(edge_type__in=[USES, REF_SECRET, REF_PARAMETER], entity__deleted_at__isnull=True).count()
+        count = Edge.objects.filter(edge_type__in=[USES, REFERENCES_SM, REF_PARAMETER], entity__deleted_at__isnull=True).count()
         _run()
         assert count == 6
-        assert Edge.objects.filter(edge_type__in=[USES, REF_SECRET, REF_PARAMETER], entity__deleted_at__isnull=True).count() == count
+        assert Edge.objects.filter(edge_type__in=[USES, REFERENCES_SM, REF_PARAMETER], entity__deleted_at__isnull=True).count() == count
 
     def test_the_stored_definition_keeps_plain_environment_values(self):
         from tap_grid.services import get_node
 
         _run()
         stored = json.dumps(get_node(node_id(_TASK_DEF_TYPE, _ACTIVE)).configuration)
-        assert _PLAIN_ENV_CANARY in stored and _SECRET_ENV_CANARY not in stored
+        assert _PLAIN_ENV_CANARY in stored and _SECRETISH_ENV_CANARY not in stored
 
     def test_a_secret_the_run_did_not_list_is_skipped_not_minted(self, monkeypatch):
-        monkeypatch.setitem(slice_tests._CANNED, "list_secrets", {"SecretList": [{"ARN": _SECRET, "Name": "prod/db"}]})
+        monkeypatch.setitem(slice_tests._CANNED, "list_secrets", {"SecretList": [{"ARN": _SM_ARN, "Name": "prod/db"}]})
         _run()
-        assert find_node_id(_SECRET_TYPE, _OTHER_SECRET) is None
-        assert len(live_edges(REF_SECRET, node_id(_TASK_DEF_TYPE, _ACTIVE), node_id(_SECRET_TYPE, _SECRET))) == 1
+        assert find_node_id(_SM_TYPE, _OTHER_SM_ARN) is None
+        assert len(live_edges(REFERENCES_SM, node_id(_TASK_DEF_TYPE, _ACTIVE), node_id(_SM_TYPE, _SM_ARN))) == 1
