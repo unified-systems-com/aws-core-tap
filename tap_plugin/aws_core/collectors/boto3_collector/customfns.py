@@ -246,8 +246,9 @@ def public_access_blocked(slot: dict[str, Any] | None) -> bool | None:
 
     - ``ok`` with all four flags true -> ``True``; any flag false or missing -> ``False``.
     - ``absent`` (``NoSuchPublicAccessBlockConfiguration``) -> ``False``: the bucket has no
-      bucket-level block. Account-level Block Public Access is not read or modelled, so this
-      says nothing about it.
+      bucket-level block. This says nothing about account-level Block Public Access, which the
+      landing-zone reader reads onto the account node (``s3_block_public_*``,
+      req-aws-landing-zone-security-services).
     - ``denied`` / ``error`` / no slot -> ``None``: not observed, never a guess either way.
     """
     if not slot:
@@ -1013,8 +1014,9 @@ def iam_groups_listed(
     """Enumerate the account's IAM groups (global) and list the managed policies attached to each.
 
     The same shape as :func:`iam_users_described`: list to the end, take the ``GetAccountSummary``
-    control, then fan out (``ListAttachedGroupPolicies``). A group's members are users and are read
-    from the user side, not here. IAM has no group tag operation, so there is no tag read.
+    control, then fan out (``ListAttachedGroupPolicies``). A group's members are not read, here or
+    from the user side (neither ``GetGroup`` nor ``ListGroupsForUser`` is called), so no edge says
+    which users are in a group. IAM has no group tag operation, so there is no tag read.
     """
     walk = walk if walk is not None else ListingWalk()
     client = _iam_client(session, client_for)
