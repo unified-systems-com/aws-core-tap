@@ -8,7 +8,15 @@ from tap_grid.models import BaseModel
 
 
 class EcsTaskDefinition(BaseModel):
-    """An AWS ECS Task Definition, read by DescribeTaskDefinition. Only its identity, name and tags are collected; the rest of the response is not stored."""
+    """One ECS task definition revision, read by DescribeTaskDefinition (req-aws-collector-ecs-25).
+
+    The typed fields are its identity, family name and tags. The whole ``taskDefinition`` object is stored too, in
+    ``configuration`` (the manifest entry's ``persist_configuration``), with ``containerDefinitions[].repositoryCredentials``
+    removed and any string whose key names a secret dropped, the value of an environment variable whose name names one
+    included. Every other ``containerDefinitions[].environment`` value is stored as the operator wrote it. ``secrets[]``
+    is stored: it names where each secret is read from (``valueFrom``), never its value, and is what
+    ``REFERENCES_SECRET`` and ``REFERENCES_PARAMETER`` are drawn from.
+    """
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ecs_task_definition"
     ENTITY_NAME: ClassVar[str] = "AWS ECS Task Definition"

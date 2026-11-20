@@ -292,10 +292,15 @@ def _task_item(
     item["_stopped_at"] = jsonable(stopped_at) if stopped_at else None
     if gap is not None:
         item["_hydrate"] = {"describe": gap}
+    # USES_TASK_DEFINITION (-24): DescribeTasks names the revision every task runs, stopped or not; a task that was
+    # not described names none we read.
+    definition_read = COMPLETE if described is not None else PARTIAL
     if stopped:
         item["_cluster_arn_running"] = None
         item["_service_arn"] = None
-        return with_edge_reads(item, {"_cluster_arn_running": PARTIAL, "_service_arn": PARTIAL})
+        return with_edge_reads(
+            item, {"_cluster_arn_running": PARTIAL, "_service_arn": PARTIAL, "taskDefinitionArn": definition_read}
+        )
     item["_cluster_arn_running"] = item.get("clusterArn") or cluster_arn
     group = item.get("group")
     service_arn: str | None = None
@@ -307,7 +312,9 @@ def _task_item(
         if service_arn is None:
             read = PARTIAL  # named by the task but absent from the service listing (deleted, or it failed)
     item["_service_arn"] = service_arn
-    return with_edge_reads(item, {"_cluster_arn_running": COMPLETE, "_service_arn": read})
+    return with_edge_reads(
+        item, {"_cluster_arn_running": COMPLETE, "_service_arn": read, "taskDefinitionArn": definition_read}
+    )
 
 
 def _container_items(
@@ -434,7 +441,9 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
             service.setdefault("clusterArn", cluster_arn)
             if arn in service_gaps:
                 service["_hydrate"] = {"describe": service_gaps[arn]}
-            walk.services.append(with_edge_reads(service, {"clusterArn": COMPLETE}))
+            # USES_TASK_DEFINITION (-24): the revision the service launches, read when the service was described.
+            definition_read = COMPLETE if arn in services else PARTIAL
+            walk.services.append(with_edge_reads(service, {"clusterArn": COMPLETE, "taskDefinition": definition_read}))
 
         by_name = {_last_segment(arn): arn for arn in service_arns}
         stopped_set = set(stopped_arns)
@@ -706,3 +715,48 @@ def image_writes(
             )
         )
     return out
+
+
+# --- Task definitions (req-aws-collector-ecs-25) --------------------------------------------------------------------
+
+
+def referenced_task_definitions(walk: EcsWalk) -> list[str]:
+    """Every task definition revision the walk's tasks and services name, once each, sorted."""
+    named = {task.get("taskDefinitionArn") for task in walk.tasks} | {s.get("taskDefinition") for s in walk.services}
+    return sorted(arn for arn in named if isinstance(arn, str) and arn)
+
+
+def describe_task_definitions(client: Any, referenced: Iterable[str] = ()) -> Iterator[dict[str, Any]]:
+    """The ACTIVE task definition revisions, then every ``referenced`` one the ACTIVE list lacks (``-25``).
+
+    ``ListTaskDefinitions(status="ACTIVE")`` is read to its end and each revision described, as the entry did
+    before it read references: a failed or short listing, or a failed describe of a listed revision, raises, so
+    the entry reads as skipped rather than as a shorter list. A referenced revision is one a task or service of the
+    region names; when it is deregistered (INACTIVE) it is not listed, so it is described here, with no new IAM
+    action, and its own ``status`` says it is inactive. One that cannot be described (deleted, or the call failed)
+    is left out; the edges naming it are skipped as dangling by the import and recorded there.
+
+    Each item is ``DescribeTaskDefinition``'s ``taskDefinition``, with ``containerDefinitions`` read ``complete``:
+    the response is the revision's whole document, and a revision never changes.
+    """
+    try:
+        active = _list_all(client, "list_task_definitions", "taskDefinitionArns", status="ACTIVE")
+    except _IncompleteListing:
+        raise SourceError("ListTaskDefinitions: the final page still reports a continuation") from None
+    listed = set(active)
+    for arn in active:
+        yield _task_definition_item(client.describe_task_definition(taskDefinition=arn))
+    for arn in referenced:
+        if arn in listed:
+            continue
+        listed.add(arn)
+        try:
+            response = client.describe_task_definition(taskDefinition=arn)
+        except (BotoCoreError, ClientError):
+            continue
+        yield _task_definition_item(response)
+
+
+def _task_definition_item(response: Any) -> dict[str, Any]:
+    definition = without_response_metadata(response).get("taskDefinition") or {}
+    return with_edge_reads(definition, {"containerDefinitions": COMPLETE})

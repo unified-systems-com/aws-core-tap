@@ -1716,6 +1716,13 @@
           "key_kind": "arn",
           "edge_type": "RUNS_SERVICE__aws_core",
           "direction": "inbound"
+        },
+        {
+          "value_path": "taskDefinition",
+          "target_type": "aws_core__aws_ecs_task_definition",
+          "key_kind": "arn",
+          "edge_type": "USES_TASK_DEFINITION__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -1816,6 +1823,13 @@
           "key_kind": "arn",
           "edge_type": "RUNS_TASK__aws_core",
           "direction": "inbound"
+        },
+        {
+          "value_path": "taskDefinitionArn",
+          "target_type": "aws_core__aws_ecs_task_definition",
+          "key_kind": "arn",
+          "edge_type": "USES_TASK_DEFINITION__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -37467,24 +37481,14 @@
       "service": "ecs",
       "scope": "regional",
       "source": {
-        "aws_op": "DescribeTaskDefinition",
-        "per": {
-          "aws_op": "ListTaskDefinitions",
-          "items_path": "taskDefinitionArns[]",
-          "params": {
-            "status": "ACTIVE"
-          }
-        },
-        "bind": {
-          "taskDefinition": ""
-        }
+        "custom_fn": "ecs_task_definitions_described"
       },
-      "why": "Enumerate the ACTIVE ECS task definition revisions (ListTaskDefinitions, then DescribeTaskDefinition for the definition) - the images, roles and network modes tasks run with. Deregistered (INACTIVE) revisions are not listed.",
+      "why": "Enumerate the ACTIVE ECS task definition revisions (ListTaskDefinitions, then DescribeTaskDefinition for the definition) - the images, roles, network modes and secret references tasks run with - and every deregistered (INACTIVE) revision a task or service of the region still names, described by its ARN so USES_TASK_DEFINITION never dangles for a running task (req-aws-collector-ecs-25).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: containerDefinitions[].repositoryCredentials; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore ecs DescribeTaskDefinition output shape and the CloudFormation schema for AWS::ECS::TaskDefinition (2026-10-31); botocore marks containerDefinitions[].repositoryCredentials, containerDefinitions[].environment sensitive in the ecs DescribeTaskDefinition item shape; those are declared. Declared on reviewer judgement: containerDefinitions[].repositoryCredentials.credentialsParameter, volumes[].fsxWindowsFileServerVolumeConfiguration.authorizationConfig.credentialsParameter. Nothing beyond identity, name and tags is stored.",
+        "basis": "Read botocore ecs DescribeTaskDefinition output shape and the CloudFormation schema for AWS::ECS::TaskDefinition (2026-10-31); botocore marks containerDefinitions[].repositoryCredentials, containerDefinitions[].environment sensitive in the ecs DescribeTaskDefinition item shape; those are declared. Declared on reviewer judgement: containerDefinitions[].repositoryCredentials.credentialsParameter, volumes[].fsxWindowsFileServerVolumeConfiguration.authorizationConfig.credentialsParameter. Re-read with custom_fn ecs_task_definitions_described (ecs.py), 2026-11-20: the whole DescribeTaskDefinition taskDefinition object is stored as configuration, beside the typed name, ARN and tags. containerDefinitions[].repositoryCredentials is removed before storage, and so is any string whose key names a secret, including the value of an environment variable whose name does (DB_PASSWORD); every other containerDefinitions[].environment value is stored as written. containerDefinitions[].secrets[] is stored: it holds only the name of each variable and the ARN or name of the secret or parameter it is read from (valueFrom), never the value.",
         "locations": [
           {
             "path": "containerDefinitions[].repositoryCredentials",
@@ -37496,7 +37500,7 @@
           {
             "path": "containerDefinitions[].environment",
             "category": "customer_content",
-            "reason": "botocore marks this member sensitive: operator-set content.",
+            "reason": "botocore marks this member sensitive: operator-set content. Stored (not redacted, ruled 2026-11-20 on aws-core-tap#95): a value is dropped only when its variable's name names a secret; a secret an operator writes into another variable is stored.",
             "evidence": "botocore_sensitive"
           },
           {
@@ -37536,7 +37540,25 @@
         "path": "tags",
         "shape": "list_kv_lower",
         "why": "Resource tags - ListTagsForResource by the task definition's ARN; DescribeTaskDefinition returns them beside the definition, not inside it."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "containerDefinitions[].secrets[].valueFrom",
+          "target_type": "aws_core__aws_secrets_manager_secret",
+          "key_kind": "arn",
+          "edge_type": "REFERENCES_SECRET__aws_core",
+          "direction": "outbound",
+          "transform": "secrets_manager_secret_arn_or_none"
+        },
+        {
+          "value_path": "containerDefinitions[].secrets[].valueFrom",
+          "target_type": "aws_core__aws_ssm_parameter",
+          "key_kind": "arn",
+          "edge_type": "REFERENCES_PARAMETER__aws_core",
+          "direction": "outbound",
+          "transform": "ssm_parameter_arn"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_eks_certificate_authority",

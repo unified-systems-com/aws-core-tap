@@ -79,12 +79,29 @@ def _aws_managed_policy(value: Any) -> bool:
     return isinstance(value, str) and bool(_AWS_MANAGED_POLICY_RE.match(value.strip()))
 
 
+_SECRETS_MANAGER_ARN_RE = re.compile(r"^arn:[a-z0-9-]+:secretsmanager:")
+
+
+def _not_a_secrets_manager_reference(value: Any) -> bool:
+    """A ``secrets[].valueFrom`` that is not a Secrets Manager ARN names a Parameter Store parameter (its ARN, or a
+    name), which ``REFERENCES_SECRET`` does not cover. A Secrets Manager ARN the transform could not read is NOT out
+    of scope."""
+    return isinstance(value, str) and not _SECRETS_MANAGER_ARN_RE.match(value.strip())
+
+
+def _a_secrets_manager_reference(value: Any) -> bool:
+    """The other side: a Secrets Manager ARN is not a parameter, which is all ``REFERENCES_PARAMETER`` covers."""
+    return isinstance(value, str) and bool(_SECRETS_MANAGER_ARN_RE.match(value.strip()))
+
+
 #: Transform name -> the test a value must pass for the transform's ``None`` to mean "this value is
 #: not a target of this edge", leaving the read complete. Any other ``None`` for a non-empty value,
 #: from these transforms or any other, is "a reference the collector could not map": ``partial``.
 FILTERING_TRANSFORMS: dict[str, Callable[[Any], bool]] = {
     "s3_bucket_name_from_origin_domain": _not_an_s3_origin,
     "customer_managed_policy_arn_or_none": _aws_managed_policy,
+    "secrets_manager_secret_arn_or_none": _not_a_secrets_manager_reference,
+    "ssm_parameter_arn": _a_secrets_manager_reference,
 }
 
 _OPPOSITE = {"outbound": "inbound", "inbound": "outbound"}
@@ -162,15 +179,18 @@ def _declared_read(item: Any, value_path: str, *, from_custom_fn: bool) -> str:
 
 
 def _path_present(item: Any, value_path: str) -> bool:
-    """Whether every key on ``value_path`` is present, up to its last list segment.
+    """Whether every key on ``value_path`` is present, up to its first list segment.
 
     A list segment's elements were read whole, so a key missing inside one element is that element's
-    own answer (a trust statement with no ``Federated`` principal). Above the last list, and on a path
-    with no list at all, a missing key is a field the response did not carry.
+    own answer (a trust statement with no ``Federated`` principal; a container definition with no
+    ``secrets``, which AWS leaves out when there are none). Above the first list, and on a path with no
+    list at all, a missing key is a field the response did not carry. (Checking on to a second list
+    segment would test a key of the list itself, which no list has, so a path with two lists could never
+    read complete.)
     """
     parts = value_path.split(".")
-    last_list = max((i for i, part in enumerate(parts) if part.endswith("[]")), default=None)
-    checked = parts if last_list is None else parts[: last_list + 1]
+    first_list = next((i for i, part in enumerate(parts) if part.endswith("[]")), None)
+    checked = parts if first_list is None else parts[: first_list + 1]
     value: Any = item
     for part in checked:
         key = part.removesuffix("[]")

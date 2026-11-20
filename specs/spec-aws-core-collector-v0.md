@@ -1073,7 +1073,7 @@ started and stopped between two runs is never created, because with no `RUNS_TAS
 nothing and could never be reconciled. A task absent from both listings is not deleted or modified
 ([Collector Scope](#collector-scope), `req-aws-collector-scope-3`); retiring it is the task falsifier's and
 reconcile's job (aws-core-tap#211), not this collector's. Stopped-task history beyond the last recorded state,
-task-definition revisions as nodes, ECS Anywhere and EKS are out of scope.
+ECS Anywhere and EKS are out of scope (task-definition revisions are nodes of their own entry, `-25`).
 
 **Retirement path (aws-core-tap#211).** A cluster contains its tasks (`RUNS_TASK`) and a task its containers
 (`RUNS_CONTAINER`); `RUNS_TASK` from a service is a reference, not containment (`-17`). The walk records a
@@ -1129,6 +1129,44 @@ the host is staged in the same batch.
   digest computing_core refuses and null when none is reported, while the host holds only a well-formed digest.
   The two sites carry `TAP-KNOWN-DUPE(ecs-image-digest)`.
 
+**Task definitions and what they name (`-24`..`-28`).** The secret a task reads is named in its task definition,
+not in `DescribeTasks`, so a task reaches it in two hops.
+
+- `USES_TASK_DEFINITION__aws_core`: `<aws_ecs_task> -> <aws_ecs_task_definition>` from the task's
+  `taskDefinitionArn`, and `<aws_ecs_service> -> <aws_ecs_task_definition>` from the service's `taskDefinition`
+  (the revision it launches now; `deployments[].taskDefinition` is not drawn). Manifest edge rules, plain
+  identity, a reference: a revision outlives its tasks. Both reads are `complete` when the task or service was
+  described; a service that names no revision (an `EXTERNAL` deployment controller) reads `partial`. A stopped task
+  keeps the edge: the revision it ran is still a fact.
+- The task definition entry is the `custom_fn` `ecs_task_definitions_described`: the ACTIVE revisions
+  (`ListTaskDefinitions(status="ACTIVE")` read to its end, then `DescribeTaskDefinition` each, as before), then
+  every revision a task or service of the region's ECS walk names that the ACTIVE list lacks, described by its ARN
+  (`DescribeTaskDefinition` answers for an INACTIVE revision and is already granted; no new IAM action). So a task
+  running a deregistered revision has its edge, and the revision's own `status` says it is inactive. A referenced
+  revision that cannot be described (deleted, or the call failed) is left out, and the edges naming it are skipped
+  as dangling and recorded by the import. A walk that failed names no revision, and the ACTIVE ones are still read.
+- `REFERENCES_SECRET__aws_core`: `<aws_ecs_task_definition> -> <aws_secrets_manager_secret>` from
+  `containerDefinitions[].secrets[].valueFrom` when it is a Secrets Manager ARN, mapped back to the secret's own
+  seven-segment ARN by dropping a `:json-key:version-stage:version-id` suffix. A partial ARN (without the
+  six-character suffix Secrets Manager adds) does not equal the secret's key and maps to nothing, which reads the
+  scope `partial`. No properties (D6): one edge per revision and secret; which container and variable name it is
+  in the revision's `configuration`. The ECS agent's fetch of the value under the execution role is a runtime flow
+  and is not this edge, nor is `RETRIEVES_SECRET_FROM` extended to ECS.
+- `REFERENCES_PARAMETER__aws_core`: `<aws_ecs_task_definition> -> <aws_ssm_parameter>` from the same `valueFrom`
+  when it is a Parameter Store ARN, or a parameter name, which ECS resolves in the task's own region: the name
+  becomes `arn:<partition>:ssm:<region>:<account>:parameter/<name without its leading slash>`, read from the
+  definition's own ARN. Each of the two rules treats the other's references as out of scope, so a definition that
+  names both reads `complete` for each. A path through two lists (`containerDefinitions[].secrets[]`) is
+  established once its first list is present: a container definition with no `secrets` is that element's answer.
+- Not drawn: `containerDefinitions[].repositoryCredentials.credentialsParameter` (a private-registry credential,
+  removed before storage) and `logConfiguration.secretOptions[].valueFrom` (a log driver's secrets).
+- Storage (`-28`): the task definition's whole `taskDefinition` object is stored as `configuration`, unchanged by
+  this requirement: `containerDefinitions[].repositoryCredentials` is removed, and any string whose key names a
+  secret, the value of an environment variable whose name names one included. Every other `environment` value is
+  stored as written (ruled 2026-11-20 on aws-core-tap#95: no further redaction). `secrets[]` holds only where each
+  value is read from. The model docstring and the entry's sensitivity `basis` say so; both said before that nothing
+  beyond identity, name and tags was stored.
+
 Not done here: whether Inspector's ECR `imageHash` and ECS's `imageDigest` are the same kind of digest for a
 multi-architecture image (an index or one platform's manifest). If they differ, computing_core mints two hosts and
 nothing joins them; the `-13` live trial should check it with an Inspector-scanned multi-architecture image.
@@ -1160,6 +1198,11 @@ nothing joins them; the `-13` live trial should check it with an Inspector-scann
 | req-aws-collector-ecs-21 | Image Host Written Without Overwriting | Implemented | A host the grid does not hold carries `name`, the container's image reference; one it holds is sent with its key and `kind` only and no envelope name, so a name, operating system or image fact another producer wrote is kept. A failed lookup sends the key-and-kind write and records `ECS_IMAGE_HOST_LOOKUP_FAILED`. Both image types are declared in `reader_sensitivity.json` and are not written without a safe declaration. | Ruled 2026-11-20 (aws-core-tap#95). |
 | req-aws-collector-ecs-22 | Image Tag ECS Resolved | Implemented | Where the container's `image` writes a registry, repository and tag (as written: no implied Docker Hub registry or `latest` tag, no digest reference) and the digest is well-formed, the run stages `computing_core__image_tag` and `TAGS_IMAGE__computing_core` to the image host, with `detected_at` the latest `startedAt` of the tasks that ran the pair, absent when none has started. | aws-core-tap#95 (f). |
 | req-aws-collector-ecs-23 | Digest Kept On The Container | Implemented | `aws_ecs_container.image_digest` stays, verbatim and null when unreported, beside the image host's `stable_id`; the two sites carry `TAP-KNOWN-DUPE(ecs-image-digest)`. | Decision D9. |
+| req-aws-collector-ecs-24 | Task And Service Use A Task Definition | Implemented | `USES_TASK_DEFINITION__aws_core` runs from `aws_ecs_task` (`taskDefinitionArn`) and `aws_ecs_service` (`taskDefinition`) to `aws_ecs_task_definition`, declared as manifest edge rules with plain identity, a reference; each read is `complete` when its source was described, and a service that names no revision reads `partial`. | aws-core-tap#95 (d). `tests/test_ecs_task_definitions.py` |
+| req-aws-collector-ecs-25 | Referenced Revisions Described | Implemented | The task definition entry describes every ACTIVE revision and every revision a task or service of the region names that the ACTIVE list lacks, so the edge does not dangle for a deregistered revision a task runs; a referenced revision that cannot be described is left out, a failed ACTIVE listing or describe still skips the entry, and a failed ECS walk still reads the ACTIVE revisions. | Decision D4. No new IAM action. |
+| req-aws-collector-ecs-26 | Task Definition References Secret | Implemented | `REFERENCES_SECRET__aws_core` runs from `aws_ecs_task_definition` to `aws_secrets_manager_secret`, from `containerDefinitions[].secrets[].valueFrom` mapped to the secret's own ARN (a `:json-key:version-stage:version-id` suffix dropped), with no properties; a partial or unreadable Secrets Manager ARN makes no edge and reads `partial`. No secret value is read. | aws-core-tap#95 (e), decisions D3, D6. |
+| req-aws-collector-ecs-27 | Task Definition References Parameter | Implemented | `REFERENCES_PARAMETER__aws_core` runs from `aws_ecs_task_definition` to `aws_ssm_parameter`, from the same `valueFrom` when it is a Parameter Store ARN, or a name resolved in the definition's own partition, region and account. | Decision D5. |
+| req-aws-collector-ecs-28 | Task Definition Storage Stated | Implemented | Environment values stay stored and the redaction is unchanged (`repositoryCredentials` and secret-named keys only); the task definition model's docstring and the entry's sensitivity basis state what `configuration` holds. | Ruled 2026-11-20 on aws-core-tap#95. |
 
 ### Load Balancer Topology
 ----
