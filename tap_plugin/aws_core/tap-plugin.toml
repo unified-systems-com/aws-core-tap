@@ -11,7 +11,10 @@ plugin_version = "0.8.3" # x-release-please-version
 # 0.4.0: the first core release with the per-model history opt-out (TRACK_HISTORY,
 # req-grid-history-optout), which the published-version types declare (aws-build Q86); on an older
 # core the flag is ignored and the 0056 migration would drop history tables the models still use.
-requires_tap = ">=0.4.0"
+# 0.4.2: the first core release that builds CI, dev and test databases from the models instead of
+# replaying every migration (unified-systems-com/tap#1258). Plugin CI tests against the core tag at
+# this floor, so raising it is what lets this plugin's CI skip the ~22-minute migrate from zero.
+requires_tap = ">=0.4.2"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
