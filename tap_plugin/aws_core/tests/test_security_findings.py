@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -203,10 +204,13 @@ SH_PASSED = _sh_finding(
 )
 
 
-def _sh_handler(table: dict[str, list[list[dict[str, Any]]]]) -> Any:
-    """Security Hub GetFindings: answers by the SeverityLabel filter, paginated."""
+def _sh_handler(table: dict[str, list[list[dict[str, Any]]]], closed: list[list[dict[str, Any]]] | None = None) -> Any:
+    """Security Hub GetFindings: answers the active reads by their SeverityLabel filter, and the
+    archived read (RecordState ARCHIVED, no label) with ``closed``, paginated."""
 
     def handler(region: str, kwargs: dict[str, Any]) -> Any:
+        if kwargs["Filters"]["RecordState"][0]["Value"] == "ARCHIVED":
+            return paged("Findings", *(closed or [[]]))(region, kwargs)
         label = kwargs["Filters"]["SeverityLabel"][0]["Value"]
         pages = table.get(label) or [[]]
         return paged("Findings", *pages)(region, kwargs)
@@ -214,10 +218,30 @@ def _sh_handler(table: dict[str, list[list[dict[str, Any]]]]) -> Any:
     return handler
 
 
+def _gd_list(active: list[list[str]], closed: list[list[str]] | None = None) -> Any:
+    """GuardDuty ListFindings: the unarchived read gets ``active``, the archived read ``closed``."""
+
+    def handler(region: str, kwargs: dict[str, Any]) -> Any:
+        archived = kwargs["FindingCriteria"]["Criterion"]["service.archived"]["Equals"] == ["true"]
+        return paged("FindingIds", *((closed or [[]]) if archived else active))(region, kwargs)
+
+    return handler
+
+
+def _aa_list(active: list[list[dict[str, Any]]], closed: list[list[dict[str, Any]]] | None = None) -> Any:
+    """Access Analyzer ListFindings(V2): the ACTIVE read gets ``active``, the ARCHIVED/RESOLVED read ``closed``."""
+
+    def handler(region: str, kwargs: dict[str, Any]) -> Any:
+        pages = active if kwargs["filter"]["status"]["eq"] == ["ACTIVE"] else (closed or [[]])
+        return paged("findings", *pages, token="nextToken")(region, kwargs)
+
+    return handler
+
+
 def with_findings(aws: FakeAws | None = None) -> FakeAws:
     """``govcloud()`` with findings in us-gov-west-1, Config rules and a conformance pack."""
     aws = aws or govcloud()
-    aws.on("guardduty", "list_findings", paged("FindingIds", ["gd-high", "gd-medium"], ["gd-low"]), region=WEST)
+    aws.on("guardduty", "list_findings", _gd_list([["gd-high", "gd-medium"], ["gd-low"]]), region=WEST)
     aws.on(
         "guardduty",
         "get_findings",
@@ -269,9 +293,9 @@ def with_findings(aws: FakeAws | None = None) -> FakeAws:
     aws.on(
         "accessanalyzer",
         "list_findings",
-        paged(
-            "findings",
+        _aa_list(
             [
+                [
                 {
                     "id": "aa-ext-1",
                     "resource": BUCKET_ARN,
@@ -286,16 +310,16 @@ def with_findings(aws: FakeAws | None = None) -> FakeAws:
                     "analyzedAt": "2026-10-01T00:00:00Z",
                     "updatedAt": "2026-10-01T00:00:00Z",
                 }
+                ]
             ],
-            token="nextToken",
         ),
     )
     aws.on(
         "accessanalyzer",
         "list_findings_v2",
-        paged(
-            "findings",
+        _aa_list(
             [
+                [
                 {
                     "id": "aa-unused-1",
                     "resource": ROLE_ARN,
@@ -307,8 +331,8 @@ def with_findings(aws: FakeAws | None = None) -> FakeAws:
                     "analyzedAt": "2026-10-01T00:00:00Z",
                     "updatedAt": "2026-10-01T00:00:00Z",
                 }
+                ]
             ],
-            token="nextToken",
         ),
     )
     aws.on(
@@ -461,7 +485,10 @@ class TestGuardDuty:
     def test_surface_is_filtered_uncontrolled_and_never_complete(self) -> None:
         read = collect(with_findings())
         surface = _surface_dict(read, HOLDS_GUARDDUTY_FINDING, _id(GUARDDUTY_DETECTOR, DETECTOR_KEY))
-        assert surface["filter"] == f"guardduty:ListFindings service.archived=false, accountId={MGMT}"
+        assert surface["filter"] == (
+            f"guardduty:ListFindings service.archived=false, accountId={MGMT}; "
+            f"and service.archived=true, accountId={MGMT}, updatedAt in the last 30 days"
+        )
         assert surface["filter_control"] is None
         assert surface["enumeration_complete"] is False and surface["scope_authorized"] is True
         assert surface["reasons"]["enumeration_complete"].startswith("filter_uncontrolled")
@@ -616,7 +643,7 @@ class TestSecurityHub:
         labels = [
             kw["Filters"]["SeverityLabel"][0]["Value"]
             for s, r, op, kw in aws.calls
-            if (s, op, r) == ("securityhub", "get_findings", WEST) and "NextToken" not in kw
+            if (s, op, r) == ("securityhub", "get_findings", WEST) and "NextToken" not in kw and "SeverityLabel" in kw["Filters"]
         ]
         assert labels == list(SECURITYHUB_SEVERITY_LABELS)
         [first, *_] = [kw for s, r, op, kw in aws.calls if (s, op) == ("securityhub", "get_findings")]
@@ -675,16 +702,15 @@ class TestAccessAnalyzer:
         assert finding["condition_keys"] == ["aws:SourceIp"]
         assert finding["principal"] == {"AWS": "999999999999"} and finding["is_public"] is False
         assert finding["actions"] == ["s3:GetObject", "s3:ListBucket"]
-        calls = {
-            (op, kw["analyzerArn"]): kw
-            for s, r, op, kw in aws.calls
-            if s == "accessanalyzer" and op.startswith("list_findings")
-        }
+        calls: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        for s, _r, op, kw in aws.calls:
+            if s == "accessanalyzer" and op.startswith("list_findings"):
+                calls.setdefault((op, kw["analyzerArn"]), []).append(kw["filter"])
         assert set(calls) == {("list_findings", ANALYZER_ARN), ("list_findings_v2", UNUSED_ANALYZER_ARN)}
-        assert calls[("list_findings", ANALYZER_ARN)]["filter"] == {
-            "status": {"eq": ["ACTIVE"]},
-            "resourceOwnerAccount": {"eq": [MGMT]},
-        }
+        assert calls[("list_findings", ANALYZER_ARN)] == [
+            {"status": {"eq": ["ACTIVE"]}, "resourceOwnerAccount": {"eq": [MGMT]}},
+            {"status": {"eq": ["ARCHIVED", "RESOLVED"]}, "resourceOwnerAccount": {"eq": [MGMT]}},
+        ]
 
     @pytest.mark.spec("req-aws-landing-zone-findings-2", "req-aws-landing-zone-findings-4")
     def test_unused_access_findings_through_v2_with_counts_by_type(self) -> None:
@@ -870,6 +896,154 @@ class TestSecurityHubDetail:
         assert node["types"] == [] and node["severity_normalized"] is None
         for group in ("remediation", "malware", "vulnerabilities", "product_fields", "compliance_status_reasons"):
             assert node[group] is None, group
+
+
+class TestGuardDutyResourceCoverage:
+    """aws-core-tap#264 (Q115b): CONCERNS_RESOURCE reaches Lambda, RDS, ECS, EKS and malware-scan targets."""
+
+    def _read(self, resource: dict[str, Any]) -> tuple[Any, str]:
+        finding = _gd_finding("gd-x", 8.0, Resource=resource)
+        aws = with_findings()
+        aws.on("guardduty", "list_findings", _gd_list([["gd-x"]]), region=WEST)
+        aws.on("guardduty", "get_findings", {"Findings": [finding]})
+        return collect(aws), _id(GUARDDUTY_FINDING, _gd_arn("gd-x"))
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-2")
+    def test_lambda_rds_ecs_eks_and_scanned_volumes(self) -> None:
+        function = f"arn:{PARTITION}:lambda:{WEST}:{MGMT}:function:orders-handler"
+        db = f"arn:{PARTITION}:rds:{WEST}:{MGMT}:db:orders-db"
+        cluster = f"arn:{PARTITION}:ecs:{WEST}:{MGMT}:cluster/orders"
+        eks = f"arn:{PARTITION}:eks:{WEST}:{MGMT}:cluster/platform"
+        volume = f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:volume/vol-0abc1234def567890"
+        cases = [
+            ({"ResourceType": "Lambda", "LambdaDetails": {"FunctionArn": function, "FunctionName": "orders-handler"}}, "orders-handler"),
+            ({"ResourceType": "RDSDBInstance", "RdsDbInstanceDetails": {"DbInstanceArn": db, "DbInstanceIdentifier": "orders-db"}}, "orders-db"),
+            ({"ResourceType": "ECSCluster", "EcsClusterDetails": {"Arn": cluster, "Name": "orders"}}, "orders"),
+            ({"ResourceType": "EKSCluster", "EksClusterDetails": {"Arn": eks, "Name": "platform"}}, "platform"),
+            (
+                {
+                    "ResourceType": "Instance",
+                    "InstanceDetails": {"InstanceId": INSTANCE_ID},
+                    "EbsVolumeDetails": {"ScannedVolumeDetails": [{"VolumeArn": volume}]},
+                },
+                INSTANCE_ID,
+            ),
+        ]
+        from tap_plugin.aws_core.collectors.boto3_collector.arn_resolver import resolve_arn
+
+        for resource, resource_id in cases:
+            read, source = self._read(resource)
+            node = next(n["node"] for n in _nodes(read, GUARDDUTY_FINDING) if n["node"]["finding_id"] == "gd-x")
+            assert node["resource_id"] == resource_id
+            targets = {to for f, to in _edges(read, CONCERNS_RESOURCE) if f == source}
+            for arn in (function, db, cluster, eks, volume):
+                if arn in json.dumps(resource):
+                    resolved = resolve_arn(arn)
+                    assert resolved is not None, arn
+                    assert _id(*resolved) in targets, arn
+
+    def test_an_arn_no_type_is_keyed_by_sends_no_edge(self) -> None:
+        point = f"arn:{PARTITION}:backup:{WEST}:{MGMT}:recovery-point:not-a-modelled-thing"
+        read, source = self._read({"ResourceType": "RecoveryPoint", "RecoveryPointDetails": {"RecoveryPointArn": point}})
+        assert {to for f, to in _edges(read, CONCERNS_RESOURCE) if f == source} == set()
+        assert _one(read, GUARDDUTY_FINDING)["resource_id"] == point
+
+
+class TestClosedFindings:
+    """aws-core-tap#264 (Q115a): findings closed in the last 30 days are read and written closed."""
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-9")
+    def test_guardduty_archived_findings_are_written_archived_and_not_counted(self) -> None:
+        closed = _gd_finding("gd-closed", 8.0, UpdatedAt="2026-11-15T00:00:00.000Z")
+        closed["Service"] = {**closed["Service"], "Archived": True}
+        aws = with_findings()
+        aws.on("guardduty", "list_findings", _gd_list([["gd-high", "gd-medium"], ["gd-low"]], [["gd-closed"]]), region=WEST)
+        everything = {**GD_FINDINGS, "gd-closed": closed}
+        aws.on("guardduty", "get_findings", lambda _r, kw: {"Findings": [everything[i] for i in kw["FindingIds"]]})
+        read = collect(aws)
+        nodes = {n["node"]["finding_id"]: n["node"] for n in _nodes(read, GUARDDUTY_FINDING)}
+        assert nodes["gd-closed"]["archived"] is True and nodes["gd-high"]["archived"] is False
+        assert (_id(GUARDDUTY_DETECTOR, DETECTOR_KEY), _id(GUARDDUTY_FINDING, _gd_arn("gd-closed"))) in _edges(
+            read, HOLDS_GUARDDUTY_FINDING
+        )
+        [archived] = [
+            kw
+            for s, _r, op, kw in aws.calls
+            if (s, op) == ("guardduty", "list_findings")
+            and kw["FindingCriteria"]["Criterion"]["service.archived"] == {"Equals": ["true"]}
+        ]
+        criterion = archived["FindingCriteria"]["Criterion"]
+        assert criterion["service.archived"] == {"Equals": ["true"]} and criterion["accountId"] == {"Equals": [MGMT]}
+        since = criterion["updatedAt"]["GreaterThanOrEqual"]
+        now_ms = datetime.now(UTC).timestamp() * 1000
+        assert now_ms - 30 * 86_400_000 - 60_000 < since <= now_ms - 30 * 86_400_000 + 60_000
+        assert archived["SortCriteria"] == {"AttributeName": "updatedAt", "OrderBy": "DESC"}
+        surface = _surface_dict(read, HOLDS_GUARDDUTY_FINDING, _id(GUARDDUTY_DETECTOR, DETECTOR_KEY))
+        assert surface["count_observed"] == 4 and surface["enumeration_complete"] is False
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-9")
+    def test_securityhub_archived_findings_are_written_archived_and_not_counted(self) -> None:
+        closed = _sh_finding("EC2.9", "HIGH", RecordState="ARCHIVED", Workflow={"Status": "RESOLVED"})
+        aws = with_findings()
+        aws.on(
+            "securityhub",
+            "get_findings",
+            _sh_handler({"HIGH": [[SH_CONTROL]], "INFORMATIONAL": [[SH_PASSED]]}, closed=[[closed]]),
+            region=WEST,
+        )
+        read = collect(aws)
+        node = next(n["node"] for n in _nodes(read, SECURITYHUB_FINDING) if n["node"]["finding_id"] == closed["Id"])
+        assert (node["record_state"], node["workflow_status"]) == ("ARCHIVED", "RESOLVED")
+        hub = _one(read, SECURITYHUB_HUB)
+        assert hub["active_finding_counts"]["HIGH"] == 1, "counts are of active findings only"
+        [archived] = [
+            kw
+            for s, r, op, kw in aws.calls
+            if (s, op, r) == ("securityhub", "get_findings", WEST) and kw["Filters"]["RecordState"][0]["Value"] == "ARCHIVED"
+        ]
+        assert archived["Filters"]["UpdatedAt"] == [{"DateRange": {"Value": 30, "Unit": "DAYS"}}]
+        assert archived["SortCriteria"] == [{"Field": "UpdatedAt", "SortOrder": "desc"}]
+        assert "SeverityLabel" not in archived["Filters"]
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-9")
+    def test_access_analyzer_keeps_closed_findings_updated_in_the_window(self) -> None:
+        recent = (datetime.now(UTC) - timedelta(days=3)).isoformat()
+        stale = (datetime.now(UTC) - timedelta(days=45)).isoformat()
+        base = {"resource": BUCKET_ARN, "resourceType": "AWS::S3::Bucket", "resourceOwnerAccount": MGMT, "createdAt": stale}
+        active = {**base, "id": "aa-ext-1", "status": "ACTIVE", "updatedAt": recent}
+        aws = with_findings()
+        aws.on(
+            "accessanalyzer",
+            "list_findings",
+            _aa_list(
+                [[active]],
+                [[{**base, "id": "aa-resolved", "status": "RESOLVED", "updatedAt": recent}],
+                 [{**base, "id": "aa-old", "status": "ARCHIVED", "updatedAt": stale}]],
+            ),
+        )
+        read = collect(aws)
+        found = {
+            n["node"]["finding_id"]: n["node"]["status"]
+            for n in _nodes(read, ACCESS_ANALYZER_FINDING)
+            if n["node"]["analyzer_arn"] == ANALYZER_ARN
+        }
+        assert found == {"aa-ext-1": "ACTIVE", "aa-resolved": "RESOLVED"}, "the closed one outside 30 days is not kept"
+        analyzer = next(n["node"] for n in _nodes(read, ACCESS_ANALYZER) if n["node"]["analyzer_arn"] == ANALYZER_ARN)
+        assert analyzer["active_finding_counts"] == {"ExternalAccess": 1}
+        surface = _surface_dict(read, HOLDS_ACCESS_ANALYZER_FINDING, _id(ACCESS_ANALYZER, ANALYZER_ARN))
+        assert "kept when updatedAt is in the last 30 days" in surface["filter"]
+        assert surface["enumeration_complete"] is False
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-3", "req-aws-landing-zone-findings-9")
+    def test_a_capped_closed_read_is_truncated_and_never_complete(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(findings_mod, "FINDINGS_CAP", 1)
+        aws = with_findings()
+        aws.on("guardduty", "list_findings", _gd_list([["gd-high"]], [["gd-a", "gd-b"]]), region=WEST)
+        read = collect(aws)
+        detector = _one(read, GUARDDUTY_DETECTOR)
+        assert detector["active_findings_truncated"] is False, "the active read was not cut"
+        surface = _surface_dict(read, HOLDS_GUARDDUTY_FINDING, _id(GUARDDUTY_DETECTOR, DETECTOR_KEY))
+        assert surface["enumeration_complete"] is False and "truncated" in surface["reasons"]
 
 
 # ---------------------------------------------------------------------------
@@ -1079,7 +1253,7 @@ class TestFindingFalsifiers:
         for answer, expected in (
             ({"Findings": [_gd_finding("gd-high", 8.0)]}, PRESENT_AT_PROBE),
             ({"Findings": []}, DROPPED_FROM_OBSERVATION),
-            ({"Findings": [archived]}, DROPPED_FROM_OBSERVATION),
+            ({"Findings": [archived]}, PRESENT_AT_PROBE),
             (_err("AccessDeniedException"), UNDETERMINED),
             (_err("BadRequestException"), UNDETERMINED),
         ):
@@ -1095,7 +1269,7 @@ class TestFindingFalsifiers:
         for answer, expected in (
             ({"Findings": [SH_CONTROL]}, PRESENT_AT_PROBE),
             ({"Findings": []}, DROPPED_FROM_OBSERVATION),
-            ({"Findings": [{**SH_CONTROL, "RecordState": "ARCHIVED"}]}, DROPPED_FROM_OBSERVATION),
+            ({"Findings": [{**SH_CONTROL, "RecordState": "ARCHIVED"}]}, PRESENT_AT_PROBE),
             (_err("InvalidAccessException"), UNDETERMINED),
         ):
             aws = FakeAws()
@@ -1109,8 +1283,8 @@ class TestFindingFalsifiers:
         payload = {"name": "f", "finding_id": "aa-ext-1", "analyzer_arn": ANALYZER_ARN}
         for answer, expected in (
             ({"id": "aa-ext-1", "status": "ACTIVE"}, PRESENT_AT_PROBE),
-            ({"id": "aa-ext-1", "status": "ARCHIVED"}, DROPPED_FROM_OBSERVATION),
-            ({"id": "aa-ext-1", "status": "RESOLVED"}, DROPPED_FROM_OBSERVATION),
+            ({"id": "aa-ext-1", "status": "ARCHIVED"}, PRESENT_AT_PROBE),
+            ({"id": "aa-ext-1", "status": "RESOLVED"}, PRESENT_AT_PROBE),
             (_err("ResourceNotFoundException"), DROPPED_FROM_OBSERVATION),
             (_err("AccessDeniedException"), UNDETERMINED),
         ):

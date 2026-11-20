@@ -2499,18 +2499,20 @@ class AccountAssignmentFalsifier(_LandingZoneFalsifier):
 
 # ---------------------------------------------------------------------------
 # Security findings and Config rule compliance (aws-core-tap#76, collectors/boto3_collector/findings.py).
-# Registered, not armed. A findings surface is filtered (active findings of one account) with no
-# positive control and capped, so it is never complete: these finding falsifiers are never asked
-# while that holds. They are written so the contained-type triple is whole, and each says "gone"
-# for the same set the collector reads: a finding no longer active (archived, resolved, or no longer
-# returned) has left its parent's active set.
+# Registered, not armed. A findings surface is filtered (active and recently closed findings of one
+# account) with no positive control and capped, so it is never complete: these finding falsifiers are
+# never asked while that holds. They are written so the contained-type triple is whole. A closed
+# finding (archived, resolved) is still a finding the service holds, and the collector writes it
+# closed (aws-core-tap#264, ruling Q115a), so it is PRESENT; a finding is gone only when the service no
+# longer returns it at all (GuardDuty and Security Hub delete closed findings after their retention).
 # ---------------------------------------------------------------------------
 
 
 class GuardDutyFindingFalsifier(_LandingZoneFalsifier):
     """``guardduty:GetFindings(DetectorId, FindingIds=[id])``. GuardDuty answers an unknown id with
     no finding rather than an error (its only modelled error is the generic ``BadRequestException``),
-    so an answer that names no finding, or names it archived, is ``DROPPED_FROM_OBSERVATION``."""
+    so an answer that names no finding is ``DROPPED_FROM_OBSERVATION``. An archived finding is present:
+    it is closed, and the grid holds it closed."""
 
     service = "guardduty"
 
@@ -2530,15 +2532,14 @@ class GuardDutyFindingFalsifier(_LandingZoneFalsifier):
         match = next((f for f in found if str(f.get("Id") or "") == finding_id), None)
         if match is None:
             return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="GetFindings names no such finding"))
-        if (match.get("Service") or {}).get("Archived") is True:
-            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="archived: the finding left the active set"))
-        probe = Probe(status="found", source_id=str(match.get("Arn") or "") or None, detail="GetFindings names it, unarchived")
+        state = "archived" if (match.get("Service") or {}).get("Archived") is True else "unarchived"
+        probe = Probe(status="found", source_id=str(match.get("Arn") or "") or None, detail=f"GetFindings names it, {state}")
         return _finish(candidate, expected, probe)
 
 
 class SecurityHubFindingFalsifier(_LandingZoneFalsifier):
-    """``securityhub:GetFindings`` filtered on the finding's ``Id`` and ``ProductArn``. No finding,
-    or the finding with ``RecordState`` ARCHIVED, is ``DROPPED_FROM_OBSERVATION``.
+    """``securityhub:GetFindings`` filtered on the finding's ``Id`` and ``ProductArn``. No finding is
+    ``DROPPED_FROM_OBSERVATION``; a finding whose ``RecordState`` is ARCHIVED is present, closed.
     ``InvalidAccessException`` (Security Hub disabled and access refused share it) is
     ``UNDETERMINED(forbidden)``, as for the hub."""
 
@@ -2567,9 +2568,8 @@ class SecurityHubFindingFalsifier(_LandingZoneFalsifier):
         match = next((f for f in found if isinstance(f, dict) and f.get("Id") == finding_id), None)
         if match is None:
             return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="GetFindings names no such finding"))
-        if match.get("RecordState") == "ARCHIVED":
-            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="archived: the finding left the active set"))
-        probe = Probe(status="found", source_id=f"{match.get('ProductArn') or ''}|{match.get('Id') or ''}", detail="GetFindings names it, active")
+        state = str(match.get("RecordState") or "ACTIVE")
+        probe = Probe(status="found", source_id=f"{match.get('ProductArn') or ''}|{match.get('Id') or ''}", detail=f"GetFindings names it, {state}")
         return _finish(candidate, expected, probe)
 
     def _failed(self, candidate: Candidate, row: Any, expected_account: str, exc: Exception) -> Verdict:
@@ -2584,7 +2584,7 @@ class AccessAnalyzerFindingFalsifier(_LandingZoneFalsifier):
     """``accessanalyzer:GetFindingV2(analyzerArn, id)`` (every analyzer type). Its
     ``ResourceNotFoundException`` ("the specified resource could not be found", botocore, distinct
     from ``AccessDeniedException``) names the finding or its analyzer; either way the finding is gone.
-    A finding whose status is no longer ACTIVE (ARCHIVED, RESOLVED) is ``DROPPED_FROM_OBSERVATION``.
+    A finding whose status is ARCHIVED or RESOLVED is present, closed.
     The probe needs ``access-analyzer:GetFindingV2``, which SecurityAudit does not grant."""
 
     service = "accessanalyzer"
@@ -2601,11 +2601,7 @@ class AccessAnalyzerFindingFalsifier(_LandingZoneFalsifier):
         if not expected.source_id or not analyzer:
             return _undetermined(candidate, "scope_unknown", "the grid holds no (analyzer, finding) id pair")
         found = client.get_finding_v2(analyzerArn=analyzer, id=expected.source_id)
-        if str(found.get("status") or "") != "ACTIVE":
-            return verdict_from_probe(
-                candidate, expected, Probe(status="not_found", detail=f"status {found.get('status')!r}: the finding left the active set")
-            )
-        probe = Probe(status="found", source_id=str(found.get("id") or "") or None, detail="GetFindingV2: ACTIVE")
+        probe = Probe(status="found", source_id=str(found.get("id") or "") or None, detail=f"GetFindingV2: {found.get('status') or 'no status'}")
         return _finish(candidate, expected, probe)
 
 

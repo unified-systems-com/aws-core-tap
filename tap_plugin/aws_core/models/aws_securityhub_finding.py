@@ -1,4 +1,4 @@
-"""AWS Security Hub finding — one active finding in one account and region, control results included."""
+"""AWS Security Hub finding — one finding, active or recently archived, in one account and region, control results included."""
 
 from typing import Any, ClassVar
 
@@ -8,10 +8,13 @@ from tap_grid.models import BaseModel
 
 
 class AwsSecurityHubFinding(BaseModel):
-    """One active Security Hub finding (ASFF).
+    """One Security Hub finding (ASFF): its record active, or archived in the last 30 days.
 
-    Read with ``securityhub:GetFindings``, filtered to the run's own account, the hub's region and
-    ``RecordState`` ACTIVE, one capped read per severity label from CRITICAL down. Keyed by
+    Read with ``securityhub:GetFindings``, filtered to the run's own account and the hub's region:
+    ``RecordState`` ACTIVE, one capped read per severity label from CRITICAL down, and ``RecordState``
+    ARCHIVED with ``UpdatedAt`` in the last 30 days, capped on its own (aws-core-tap#264, ruling
+    Q115a). ``record_state`` is Security Hub's own state (ARCHIVED: the product closed it, or the
+    resource is gone), beside ``workflow_status``, an operator's triage state. Keyed by
     (``ProductArn``, ``Id``), which is how ASFF identifies a finding. Contained by its hub
     (``HOLDS_SECURITYHUB_FINDING``). A control finding carries its compliance status and security
     control id, and ``EVALUATED_UNDER_STANDARD`` points at each enabled standard it is evaluated
@@ -31,8 +34,8 @@ class AwsSecurityHubFinding(BaseModel):
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_securityhub_finding"
     ENTITY_NAME: ClassVar[str] = "AWS Security Hub Finding"
     ENTITY_DESCRIPTION: ClassVar[str] = (
-        "An active AWS Security Hub finding: a control result or an integrated product's finding, "
-        "with its severity, workflow status and compliance status."
+        "An AWS Security Hub finding, active or recently archived: a control result or an integrated "
+        "product's finding, with its severity, workflow status, compliance status and detail."
     )
     ENTITY_ICON: ClassVar[str] = "aws-security-hub"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
