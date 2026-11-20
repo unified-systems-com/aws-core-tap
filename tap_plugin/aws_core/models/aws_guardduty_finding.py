@@ -15,9 +15,14 @@ class AwsGuardDutyFinding(BaseModel):
     detector (``HOLDS_GUARDDUTY_FINDING``); ``CONCERNS_RESOURCE`` points at the EC2 instance, S3
     bucket or IAM user it names, by that resource's natural key.
 
-    Only typed fields are kept: the finding's description, its action and network details (remote
-    IPs, ports, domains) and its evidence are not stored. ``severity_label`` is GuardDuty's documented
-    band for ``severity``. ``count`` and ``archived`` are null when GuardDuty did not return them.
+    What the finding says about itself is kept (aws-core-tap#264, ruling Q114c), each part in
+    GuardDuty's own shape: ``description``, ``action`` (``Service.Action``: the API call, network
+    connection, port probe, DNS request or login attempt, remote addresses included),
+    ``network_interfaces`` (``Resource.InstanceDetails.NetworkInterfaces``: private and public
+    addresses, subnets, security groups) and ``evidence`` (``Service.Evidence``: the threat
+    intelligence that matched); each is null when the finding carries none. ``severity_label`` is
+    GuardDuty's documented band for ``severity``. ``count`` and ``archived`` are null when GuardDuty
+    did not return them.
 
     Spec: specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-findings)
     """
@@ -71,6 +76,13 @@ class AwsGuardDutyFinding(BaseModel):
         "archived": {"type": ["boolean", "null"]},
         "created_at": {"type": ["string", "null"]},
         "updated_at": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
+        # Service.Action, verbatim (JSON-safe).
+        "action": {"type": ["object", "null"]},
+        # Resource.InstanceDetails.NetworkInterfaces, verbatim.
+        "network_interfaces": {"type": ["array", "null"], "items": {"type": "object"}},
+        # Service.Evidence, verbatim.
+        "evidence": {"type": ["object", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -98,6 +110,13 @@ class AwsGuardDutyFinding(BaseModel):
     archived = models.BooleanField(null=True, blank=True, default=None)
     created_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     updated_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    description = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    # Source: guardduty:GetFindings Findings[].Service.Action.
+    action = models.JSONField(null=True, blank=True, default=None)
+    # Source: guardduty:GetFindings Findings[].Resource.InstanceDetails.NetworkInterfaces.
+    network_interfaces = models.JSONField(null=True, blank=True, default=None)
+    # Source: guardduty:GetFindings Findings[].Service.Evidence.
+    evidence = models.JSONField(null=True, blank=True, default=None)
     # AWS cannot tag a finding: always {} (tag_lanes.json, lane `none`).
     tags = models.JSONField(null=True, blank=True, default=None)
 

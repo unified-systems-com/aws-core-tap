@@ -33,7 +33,6 @@ from tap_plugin.aws_core.collectors.boto3_collector.findings import (
     STANDARDS_SUBSCRIPTION,
     analyzer_finding_key,
     guardduty_severity_label,
-    redact_ips,
     securityhub_finding_key,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import (
@@ -762,6 +761,117 @@ class TestConfigRules:
         assert _one(collect(aws), CONFORMANCE_PACK)["compliance_status"] is None
 
 
+class TestConfigRuleDetail:
+    """aws-core-tap#264 (Q114c): a rule's scope, input parameters and Guard policy body are kept."""
+
+    POLICY_RULE_ARN = f"arn:{PARTITION}:config:{WEST}:{MGMT}:config-rule/config-rule-dddd44"
+    GUARD = "rule tagged when resourceType == 'AWS::S3::Bucket' { configuration.tags !empty }"
+
+    def _rules(self, aws: FakeAws, *rules: dict[str, Any]) -> None:
+        aws.on("config", "describe_config_rules", paged("ConfigRules", list(rules)), region=WEST)
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-7")
+    def test_scope_and_parameters_of_a_managed_rule(self) -> None:
+        aws = with_findings()
+        self._rules(
+            aws,
+            {
+                "ConfigRuleName": "access-keys-rotated",
+                "ConfigRuleArn": RULE_ARN,
+                "Source": {"Owner": "AWS", "SourceIdentifier": "ACCESS_KEYS_ROTATED"},
+                "Scope": {"ComplianceResourceTypes": ["AWS::IAM::User"]},
+                "InputParameters": '{"maxAccessKeyAge": "90"}',
+            },
+            {
+                "ConfigRuleName": "bare",
+                "ConfigRuleArn": LINKED_RULE_ARN,
+                "Source": {"Owner": "AWS", "SourceIdentifier": "EC2_IMDSV2_CHECK"},
+                "InputParameters": "not json",
+            },
+        )
+        rules = {n["node"]["rule_arn"]: n["node"] for n in _nodes(collect(aws), CONFIG_RULE)}
+        managed = rules[RULE_ARN]
+        assert managed["scope"] == {"ComplianceResourceTypes": ["AWS::IAM::User"]}
+        assert managed["input_parameters"] == {"maxAccessKeyAge": "90"}
+        assert (managed["policy_runtime"], managed["policy_text"]) == ("", ""), "a managed rule has no policy"
+        assert (rules[LINKED_RULE_ARN]["scope"], rules[LINKED_RULE_ARN]["input_parameters"]) == ({}, "not json")
+
+    @pytest.mark.spec("req-aws-landing-zone-findings-7")
+    def test_a_custom_policy_rule_carries_its_guard_body(self) -> None:
+        aws = with_findings()
+        self._rules(
+            aws,
+            {
+                "ConfigRuleName": "tagged-buckets",
+                "ConfigRuleArn": self.POLICY_RULE_ARN,
+                "Source": {"Owner": "CUSTOM_POLICY", "CustomPolicyDetails": {"PolicyRuntime": "guard-2.x.x"}},
+            },
+        )
+        aws.on("config", "get_custom_rule_policy", {"PolicyText": self.GUARD})
+        rule = _one(collect(aws), CONFIG_RULE)
+        assert (rule["policy_runtime"], rule["policy_text"]) == ("guard-2.x.x", self.GUARD)
+        assert [kw for s, _r, op, kw in aws.calls if (s, op) == ("config", "get_custom_rule_policy")] == [
+            {"ConfigRuleName": "tagged-buckets"}
+        ]
+
+    def test_a_failed_policy_read_is_null(self) -> None:
+        aws = with_findings()
+        self._rules(
+            aws,
+            {
+                "ConfigRuleName": "tagged-buckets",
+                "ConfigRuleArn": self.POLICY_RULE_ARN,
+                "Source": {"Owner": "CUSTOM_POLICY", "CustomPolicyDetails": {"PolicyRuntime": "guard-2.x.x"}},
+            },
+        )
+        aws.on("config", "get_custom_rule_policy", _err("AccessDeniedException"))
+        assert _one(collect(aws), CONFIG_RULE)["policy_text"] is None
+
+
+class TestSecurityHubDetail:
+    @pytest.mark.spec("req-aws-landing-zone-findings-7")
+    def test_asff_detail_groups_are_kept_verbatim(self) -> None:
+        vulnerabilities = [
+            {
+                "Id": "CVE-2026-0001",
+                "VulnerablePackages": [{"Name": "openssl", "Version": "3.0.1", "FixedInVersion": "3.0.9"}],
+                "Cvss": [{"Version": "3.1", "BaseScore": 9.8}],
+                "FixAvailable": "YES",
+            }
+        ]
+        finding = _sh_finding(
+            "Inspector.1",
+            "CRITICAL",
+            Types=["Software and Configuration Checks/Vulnerabilities/CVE"],
+            Severity={"Label": "CRITICAL", "Normalized": 90, "Original": "9.8"},
+            Remediation={"Recommendation": {"Text": "Upgrade openssl", "Url": "https://example.com/fix"}},
+            Malware=[{"Name": "EICAR", "Path": "/tmp/eicar"}],
+            Vulnerabilities=vulnerabilities,
+            ProductFields={"aws/inspector/ProductVersion": "2"},
+            Compliance={"Status": "FAILED", "StatusReasons": [{"ReasonCode": "CONFIG_EVALUATIONS_EMPTY", "Description": "d"}]},
+            FindingProviderFields={"Severity": {"Label": "CRITICAL"}, "Types": ["t"]},
+        )
+        aws = with_findings()
+        aws.on("securityhub", "get_findings", _sh_handler({"CRITICAL": [[finding]]}), region=WEST)
+        node = _one(collect(aws), SECURITYHUB_FINDING)
+        assert node["types"] == ["Software and Configuration Checks/Vulnerabilities/CVE"]
+        assert node["severity_normalized"] == 90
+        assert node["remediation"] == {"Recommendation": {"Text": "Upgrade openssl", "Url": "https://example.com/fix"}}
+        assert node["malware"] == [{"Name": "EICAR", "Path": "/tmp/eicar"}]
+        assert node["vulnerabilities"] == vulnerabilities
+        assert node["product_fields"] == {"aws/inspector/ProductVersion": "2"}
+        assert node["compliance_status_reasons"] == [{"ReasonCode": "CONFIG_EVALUATIONS_EMPTY", "Description": "d"}]
+        assert node["finding_provider_fields"] == {"Severity": {"Label": "CRITICAL"}, "Types": ["t"]}
+
+    def test_absent_groups_are_null(self) -> None:
+        node = next(
+            n["node"] for n in _nodes(collect(with_findings()), SECURITYHUB_FINDING) if n["node"]["security_control_id"] == "S3.1"
+        )
+        assert node["types"] == [] and node["severity_normalized"] is None
+        for group in ("remediation", "malware", "vulnerabilities", "product_fields", "compliance_status_reasons"):
+            assert node[group] is None, group
+
+
 # ---------------------------------------------------------------------------
 # Declarations, sensitivity, triple
 # ---------------------------------------------------------------------------
@@ -779,12 +889,12 @@ _NEW_TYPES = (
 
 class TestDeclarations:
     @pytest.mark.spec("req-aws-landing-zone-findings-7", "req-aws-collector-manifest-6")
-    def test_no_description_ip_condition_value_or_parameter_is_stored(self) -> None:
+    def test_what_a_finding_says_is_kept_and_titles_are_verbatim(self) -> None:
+        """aws-core-tap#264 (Q114b, Q114c): descriptions, actions, network detail, rule parameters and
+        addresses in titles and resource ids are stored as AWS wrote them."""
         aws = with_findings()
-        titled = {
-            **GD_FINDINGS,
-            "gd-high": _gd_finding("gd-high", 8.0, Title=f"Instance is communicating with {CANARY_IP} (ip-10-0-1-5)."),
-        }
+        title = f"Instance is communicating with {CANARY_IP} (ip-10-0-1-5)."
+        titled = {**GD_FINDINGS, "gd-high": _gd_finding("gd-high", 8.0, Title=title)}
         aws.on(
             "guardduty",
             "get_findings",
@@ -799,39 +909,28 @@ class TestDeclarations:
             "securityhub", "get_findings", _sh_handler({"HIGH": [[noisy]], "INFORMATIONAL": [[SH_PASSED]]}), region=WEST
         )
         read = collect(aws)
-        dumped = json.dumps([n["node"] for n in read.nodes])
-        for planted in (CANARY_IP, CANARY_TEXT, "not stored", "2001:db8::7", "ip-10-0-1-5"):
-            assert planted not in dumped, planted
         gd = next(n["node"] for n in _nodes(read, GUARDDUTY_FINDING) if n["node"]["finding_id"] == "gd-high")
-        assert gd["title"] == "Instance is communicating with [ip] ([ip])."
+        assert gd["title"] == title and gd["description"] == CANARY_TEXT
+        assert gd["action"] == {"NetworkConnectionAction": {"RemoteIpDetails": {"IpAddressV4": CANARY_IP}}}
+        assert (gd["network_interfaces"], gd["evidence"]) == (None, None), "null when the finding carries none"
         sh = next(n["node"] for n in _nodes(read, SECURITYHUB_FINDING) if n["node"]["security_control_id"] == "EC2.8")
-        assert sh["title"] == "Traffic from [ip] and [ip] to the instance" and "[ip]" in sh["resource_ids"]
+        assert sh["title"] == noisy["Title"] and "2001:db8::7" in sh["resource_ids"]
+        assert sh["description"] == CANARY_TEXT and sh["network"] == {"SourceIpV4": CANARY_IP}
+        rule = next(n["node"] for n in _nodes(read, CONFIG_RULE) if n["node"]["rule_arn"] == RULE_ARN)
+        assert rule["input_parameters"] == {"canary": CANARY_TEXT}
 
-    @pytest.mark.parametrize(
-        ("text", "expected"),
-        [
-            ("probe from 203.0.113.9.", "probe from [ip]."),
-            ("host ip-10-0-1-5.ec2.internal", "host [ip].ec2.internal"),
-            ("v6 fe80::1 and 2001:db8:0:0:0:0:0:1", "v6 [ip] and [ip]"),
-            (f"arn:{PARTITION}:s3:::bucket", f"arn:{PARTITION}:s3:::bucket"),
-            (
-                f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:instance/{INSTANCE_ID}",
-                f"arn:{PARTITION}:ec2:{WEST}:{MGMT}:instance/{INSTANCE_ID}",
-            ),
-            ("at 12:30:45 on 999.1.1.1", "at 12:30:45 on 999.1.1.1"),
-            (f"AWS::::Account:{MGMT}", f"AWS::::Account:{MGMT}"),
-            ("cafe bad face 1234 a:b", "cafe bad face 1234 a:b"),
-            ("mapped ::ffff:192.0.2.1 here", "mapped [ip] here"),
-            ("embedded 2001:db8::192.0.2.1 tail", "embedded [ip] tail"),
-            ("plain 2001:db8:85a3::8a2e:370:7334 v6", "plain [ip] v6"),
-            ("v6 at sentence end fe80::1.", "v6 at sentence end [ip]."),
-            ("plain 10.20.30.40 v4", "plain [ip] v4"),
-            ("node ip-172-31-5-9 down", "node [ip] down"),
-            ("No address here: just text, 3.5 stars, v1.2.3", "No address here: just text, 3.5 stars, v1.2.3"),
-        ],
-    )
-    def test_redact_ips(self, text: str, expected: str) -> None:
-        assert redact_ips(text) == expected
+    @pytest.mark.spec("req-aws-landing-zone-findings-7", "req-aws-collector-manifest-6")
+    def test_condition_values_standards_input_and_pack_parameters_are_still_not_stored(self) -> None:
+        read = collect(with_findings())
+        dumped = json.dumps(
+            [
+                n["node"]
+                for n in read.nodes
+                if n["entity"]["entity_type"] in (ACCESS_ANALYZER_FINDING, STANDARDS_SUBSCRIPTION, CONFORMANCE_PACK)
+            ]
+        )
+        for planted in (CANARY_IP, CANARY_TEXT, "not stored"):
+            assert planted not in dumped, planted
 
     @pytest.mark.spec("req-aws-collector-tags-14")
     def test_every_new_type_is_emitted_with_one_lane_and_a_sensitivity_row(self) -> None:

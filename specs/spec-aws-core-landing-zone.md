@@ -292,14 +292,21 @@ models; nothing was observed against a live account.
   the capped read and are marked incomplete. Security Hub's are exact for every label read to its
   end. GuardDuty's labels are its documented bands: Critical 9.0-10.0, High 7.0-8.9, Medium
   4.0-6.9, Low 1.0-3.9 (web: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html).
-- **Typed fields only.** No ASFF document, finding description, remediation, product fields, network
-  detail, remote or private IP (botocore marks GuardDuty's sensitive), Access Analyzer condition
-  value, Config rule `InputParameters` or conformance-pack parameter is stored. An Access Analyzer
-  finding's condition summary is its condition **keys**. A Config rule's own `description`
-  (operator-authored, at most 256 characters) is kept and declared `free_text`. A finding's title is service- or
-  product-written free text that can name an address it observed, so every IPv4 or IPv6 address,
-  and every EC2 `ip-a-b-c-d` host name, in a stored title or Security Hub resource id is replaced
-  with `[ip]` (`findings.redact_ips`). Each type's declaration is in `reader_sensitivity.json`.
+- **Typed fields, and what a finding says about itself.** Each reader stores typed fields, and each
+  group of a finding's own detail as one JSON field in AWS's shape (aws-core-tap#264, ruling Q114c):
+  GuardDuty `description`, `action` (`Service.Action`, remote addresses, ports, domains and API calls
+  included; botocore marks the addresses sensitive, and they are addresses, not secrets),
+  `network_interfaces` (`Resource.InstanceDetails.NetworkInterfaces`) and `evidence`
+  (`Service.Evidence`); Security Hub `description`, `types`, `severity_normalized`, `remediation`,
+  `network`, `malware`, `vulnerabilities`, `product_fields`, `compliance_status_reasons` and
+  `finding_provider_fields`; a Config rule's `scope`, `input_parameters` (parsed from its JSON string),
+  `policy_runtime` and `policy_text` (the Guard policy body). A JSON group is null when the finding
+  carries none. Titles and Security Hub resource ids are stored as AWS wrote them, addresses
+  included (ruling Q114b). Still not stored: the rest of the ASFF document (process, threats, resource
+  details, notes), GuardDuty `Service.AdditionalInfo` and runtime detail, an Access Analyzer
+  finding's condition **values** (its condition summary is the keys), and conformance-pack parameters.
+  A Config rule's own `description` (operator-authored, at most 256 characters) is kept and declared
+  `free_text`. Each type's declaration is in `reader_sensitivity.json`.
 - **Resource keys.** `CONCERNS_RESOURCE` is emitted by the target's natural key whether or not the
   target was collected; core resolves the key to the target's row when one is live, and otherwise
   skips the edge and records a `skip` event. GuardDuty names an IAM
@@ -335,7 +342,8 @@ models; nothing was observed against a live account.
 - **Permissions.** SecurityAudit (commercial v94, web:
   https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SecurityAudit.html; GovCloud's
   copy not verified) grants every read here through `guardduty:Get*`/`List*`,
-  `securityhub:Get*`, `access-analyzer:ListFindings` and `config:Describe*`/`Get*`/`List*`. The
+  `securityhub:Get*`, `access-analyzer:ListFindings` and `config:Describe*`/`Get*`/`List*`
+  (`config:GetCustomRulePolicy` included, by the `Get*` wildcard; inferred, not observed). The
   Access Analyzer finding falsifier's `access-analyzer:GetFindingV2` is not in it.
 
 #### Acceptance Criteria
@@ -348,7 +356,7 @@ models; nothing was observed against a live account.
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |
 | req-aws-landing-zone-findings-6 | Control Results And Standards | Proposed | A control finding carries its compliance status and security control id, and `EVALUATED_UNDER_STANDARD` to each enabled standard it names; enabled standards are nodes contained by the hub. | |
-| req-aws-landing-zone-findings-7 | Typed Fields Only | Proposed | No finding description, IP address, condition value or rule parameter reaches a node (a Config rule's own operator-authored `description` is kept, declared `free_text`); an address inside a title or resource id is replaced with `[ip]`. A test plants each, titles included, and finds none. | |
+| req-aws-landing-zone-findings-7 | What A Finding Says Is Kept | Proposed | A finding's description, action, network detail, evidence, remediation, malware, vulnerabilities, product fields, types, normalized severity, compliance status reasons and finding-provider fields, and a Config rule's scope, input parameters and Guard policy body, reach the node as tabled; titles and resource ids keep their addresses. An Access Analyzer condition value, a conformance-pack parameter and a standards subscription's `StandardsInput` still do not: a test plants each and finds none. | Revised 2026-11-20 by rulings Q114b and Q114c (aws-core-tap#264); it read "Typed Fields Only", with addresses replaced by `[ip]`. `tests/test_security_findings.py::TestDeclarations`, `::TestSecurityHubDetail`, `::TestConfigRuleDetail`. |
 | req-aws-landing-zone-findings-8 | Config Rules And Conformance Packs | Proposed | Every Config rule (service-linked included) and conformance pack is a footprint child with its compliance; a failed compliance read is null, never compliant. | |
 
 ### Non-Goals

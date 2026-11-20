@@ -18,8 +18,12 @@ class AwsSecurityHubFinding(BaseModel):
     under. ``CONCERNS_RESOURCE`` points at each resource it names that an aws_core type is keyed by:
     any ARN-keyed type by its ARN, and an EC2 instance by the instance id in its ARN.
 
-    Only typed fields are kept: no ASFF document, description, remediation, network or process
-    detail, product fields or resource details are stored.
+    What the finding says about itself is kept (aws-core-tap#264, ruling Q114c), each part in ASFF's
+    own shape: ``description``, ``types``, ``severity_normalized``, ``remediation``, ``network``,
+    ``malware``, ``vulnerabilities`` (CVE ids, CVSS, packages, fix availability), ``product_fields``,
+    ``compliance_status_reasons`` and ``finding_provider_fields``; each JSON part is null when the
+    finding carries none. The rest of the ASFF document (process, threats, resource details, notes)
+    is not stored.
 
     Spec: specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-findings)
     """
@@ -79,6 +83,20 @@ class AwsSecurityHubFinding(BaseModel):
         "last_observed_at": {"type": ["string", "null"]},
         "created_at": {"type": ["string", "null"]},
         "updated_at": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
+        # Types[]: the ASFF type taxonomy (namespace/category/classifier), verbatim.
+        "types": {"type": "array", "items": {"type": "string"}},
+        # Severity.Normalized, 0-100.
+        "severity_normalized": {"type": ["integer", "null"]},
+        # Remediation, Network, Malware[], Vulnerabilities[], ProductFields, Compliance.StatusReasons[]
+        # and FindingProviderFields, each verbatim.
+        "remediation": {"type": ["object", "null"]},
+        "network": {"type": ["object", "null"]},
+        "malware": {"type": ["array", "null"], "items": {"type": "object"}},
+        "vulnerabilities": {"type": ["array", "null"], "items": {"type": "object"}},
+        "product_fields": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "compliance_status_reasons": {"type": ["array", "null"], "items": {"type": "object"}},
+        "finding_provider_fields": {"type": ["object", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -108,6 +126,18 @@ class AwsSecurityHubFinding(BaseModel):
     last_observed_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     created_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     updated_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    description = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    types = models.JSONField(default=list, blank=True)
+    severity_normalized = models.IntegerField(null=True, blank=True, default=None)
+    # Sources: securityhub:GetFindings Findings[].Remediation, .Network, .Malware, .Vulnerabilities,
+    # .ProductFields, .Compliance.StatusReasons and .FindingProviderFields.
+    remediation = models.JSONField(null=True, blank=True, default=None)
+    network = models.JSONField(null=True, blank=True, default=None)
+    malware = models.JSONField(null=True, blank=True, default=None)
+    vulnerabilities = models.JSONField(null=True, blank=True, default=None)
+    product_fields = models.JSONField(null=True, blank=True, default=None)
+    compliance_status_reasons = models.JSONField(null=True, blank=True, default=None)
+    finding_provider_fields = models.JSONField(null=True, blank=True, default=None)
     # AWS cannot tag a finding: always {} (tag_lanes.json, lane `none`).
     tags = models.JSONField(null=True, blank=True, default=None)
 
