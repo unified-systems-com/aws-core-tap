@@ -105,6 +105,15 @@ class AwsAccountRegion(BaseModel):
             "nodes": [{"type": "aws_core__aws_config_conformance_pack"}],
             "edges": [{"type": "HOSTS_CONFORMANCE_PACK__aws_core"}],
         },
+        # Inspector v2 findings (aws-core-tap#261, collectors/boto3_collector/inspector.py).
+        {
+            "nodes": [{"type": "aws_core__aws_inspector2_finding"}],
+            "edges": [{"type": "HOSTS_INSPECTOR2_FINDING__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_inspector2_reachability_finding"}],
+            "edges": [{"type": "HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core"}],
+        },
     ]
     CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
         "HOSTS_VPC__aws_core",
@@ -121,6 +130,8 @@ class AwsAccountRegion(BaseModel):
         "HOSTS_ACCESS_ANALYZER__aws_core",
         "HOSTS_CONFIG_RULE__aws_core",
         "HOSTS_CONFORMANCE_PACK__aws_core",
+        "HOSTS_INSPECTOR2_FINDING__aws_core",
+        "HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core",
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -137,6 +148,18 @@ class AwsAccountRegion(BaseModel):
         # or failed, or the region was not read; false is AWS's own answer, stored as returned.
         "ebs_encryption_by_default": {"type": ["boolean", "null"]},
         "ebs_default_kms_key_id": {"type": ["string", "null"]},
+        # Amazon Inspector v2 in this account and region (req-aws-landing-zone-inspector): the account's status
+        # (inspector2:BatchGetAccountStatus accounts[].state.status, verbatim), each resource type's status
+        # ({ec2, ecr, lambda, ...: status}), and the active findings' true totals by finding type and severity
+        # (ListFindingAggregations, whatever the walk's cap). Null when not read.
+        "inspector2_status": {"type": ["string", "null"]},
+        "inspector2_resource_status": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        "inspector2_active_finding_counts": {
+            "type": ["object", "null"],
+            "additionalProperties": {"type": "object", "additionalProperties": {"type": "integer"}},
+        },
+        "inspector2_active_finding_counts_complete": {"type": ["boolean", "null"]},
+        "inspector2_active_findings_truncated": {"type": ["boolean", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -150,7 +173,22 @@ class AwsAccountRegion(BaseModel):
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
         "ebs_encryption_by_default": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "ebs_default_kms_key_id": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "inspector2_status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "inspector2_resource_status": {
+            "validation": "jsonschema",
+            "schema": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
+        },
+        "inspector2_active_finding_counts": {
+            "validation": "jsonschema",
+            "schema": {
+                "type": ["object", "null"],
+                "additionalProperties": {"type": "object", "additionalProperties": {"type": "integer"}},
+            },
+        },
+        "inspector2_active_finding_counts_complete": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "inspector2_active_findings_truncated": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
     }
+
     CREATE_REQUIRED: ClassVar[list[str]] = ["name"]
 
     name = models.CharField(max_length=255, blank=True, default="")
@@ -171,6 +209,13 @@ class AwsAccountRegion(BaseModel):
     tags = models.JSONField(null=True, blank=True, default=None)
     ebs_encryption_by_default = models.BooleanField(null=True, blank=True, default=None)
     ebs_default_kms_key_id = models.CharField(max_length=2048, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", distinct from ""
+    inspector2_status = models.CharField(max_length=16, null=True, blank=True, default=None)
+    # Source: inspector2:BatchGetAccountStatus accounts[].resourceState, each member's status.
+    inspector2_resource_status = models.JSONField(null=True, blank=True, default=None)
+    # Source: inspector2:ListFindingAggregations(FINDING_TYPE) responses[].findingTypeAggregation.severityCounts.
+    inspector2_active_finding_counts = models.JSONField(null=True, blank=True, default=None)
+    inspector2_active_finding_counts_complete = models.BooleanField(null=True, blank=True, default=None)
+    inspector2_active_findings_truncated = models.BooleanField(null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_account_region"

@@ -24,6 +24,8 @@ What it reads, all read-only, every paginated call to its last page (``req-aws-c
     guardduty      ListDetectors, GetDetector, GetAdministratorAccount
     securityhub    DescribeHub, GetEnabledStandards, GetAdministratorAccount, ListTagsForResource
     accessanalyzer ListAnalyzers(type) once per value of the pinned Type enum
+    inspector2     BatchGetAccountStatus, ListFindingAggregations, ListFindings (per region):
+                   ``inspector.py`` (aws-core-tap#261)
     (findings)     each detector's, hub's and analyzer's active findings, and the region's Config
                    rules and conformance packs: ``findings.py`` (aws-core-tap#76)
     ec2            GetEbsEncryptionByDefault, GetEbsDefaultKmsKeyId (per region)
@@ -56,11 +58,13 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from time import monotonic
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 
 from . import findings as findings_mod
+from . import inspector as inspector_mod
 from .containment import Listing as RegionListing
 from .containment import arn_account, footprint_key, footprint_ref, surface_of
 from .edges import edge_envelope
@@ -73,9 +77,11 @@ from .findings import (
     HOSTS_CONFORMANCE_PACK,
     RELATION_CONFIG_RULES,
     RELATION_CONFORMANCE_PACKS,
+    FindingsLimits,
     FindingsReads,
 )
 from .identity import edge_ref, node_ref
+from .inspector import HOSTS_INSPECTOR2_FINDING, HOSTS_INSPECTOR2_REACHABILITY_FINDING, InspectorReads
 from .organizations import (
     _DENIED_CODES,
     ACCOUNT,
@@ -145,6 +151,9 @@ CONTAINMENT_SURFACES: dict[str, tuple[str, ...]] = {
         HOSTS_ACCESS_ANALYZER,
         HOSTS_CONFIG_RULE,
         HOSTS_CONFORMANCE_PACK,
+        # Inspector findings (aws-core-tap#261, inspector.py): filtered and capped, so never recorded complete.
+        HOSTS_INSPECTOR2_FINDING,
+        HOSTS_INSPECTOR2_REACHABILITY_FINDING,
     ),
     LANDING_ZONE: (HOLDS_ENABLED_CONTROL, HOLDS_ENABLED_BASELINE),
     IDENTITY_CENTER_INSTANCE: (HOLDS_PERMISSION_SET, HOLDS_IDENTITY_GROUP, HOLDS_ACCOUNT_ASSIGNMENT),
@@ -202,6 +211,7 @@ PAGINATED_OPERATIONS: tuple[tuple[str, str], ...] = (
     ("securityhub", "get_enabled_standards"),
     ("accessanalyzer", "list_analyzers"),
     *findings_mod.PAGINATED_OPERATIONS,
+    *inspector_mod.PAGINATED_OPERATIONS,
 )
 #: The single calls, not paginated in the pinned botocore (a test checks that too).
 SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
@@ -220,10 +230,11 @@ SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
     ("ec2", "get_ebs_default_kms_key_id"),
     ("s3control", "get_public_access_block"),
     *findings_mod.SINGLE_OPERATIONS,
+    *inspector_mod.SINGLE_OPERATIONS,
 )
-#: The lower-camel continuation token Control Tower and Access Analyzer use; every other service
-#: here uses ``NextToken``.
-_LOWER_TOKEN_SERVICES = frozenset({"controltower", "accessanalyzer"})
+#: The lower-camel continuation token Control Tower, Access Analyzer and Inspector v2 use; every other
+#: service here uses ``NextToken``.
+_LOWER_TOKEN_SERVICES = frozenset({"controltower", "accessanalyzer", "inspector2"})
 
 
 def continuation_token(service: str) -> str:
@@ -264,6 +275,9 @@ class LandingZoneRead:
     footprint_fields: dict[str, dict[str, Any]] = field(default_factory=dict)
     #: Fields for the run account's own node (the S3 account public-access block).
     account_fields: dict[str, Any] = field(default_factory=dict)
+    #: The new watermark of each findings source this run read cleanly (``findings.READ_THROUGH``):
+    #: ``{"<service>|<account>|<region>": "<iso time>"}``. Sources not here keep the previous value.
+    read_through: dict[str, str] = field(default_factory=dict)
 
 
 def _now() -> datetime:
@@ -287,6 +301,9 @@ class _Walk:
     exc: BaseException | None = None
     #: The operation, for the reason text.
     operation: str = ""
+    #: Why the read stopped before its end when a limit stopped it (an operator's findings limit or read budget,
+    #: or a page bound), for the surface's ``reasons.truncated``; None when it ran to its end or failed.
+    truncation: str | None = None
 
     @property
     def complete(self) -> bool:
@@ -389,6 +406,11 @@ class _Reader:
         facts: dict[str, RegionFacts],
         member_accounts: list[str] | None,
         sensitivity: dict[str, dict[str, Any]] | None = None,
+        limits: FindingsLimits | None = None,
+        read_through: dict[str, str] | None = None,
+        run_started: datetime | None = None,
+        host_held: Callable[[str], bool] | None = None,
+        inspector_finding_types: tuple[str, ...] | None = None,
     ) -> None:
         self._client_for = client_for
         self._clients: dict[tuple[str, str], Any] = {}
@@ -405,7 +427,20 @@ class _Reader:
         self._tags_denied: set[str] = set()
         self._tags_missing = 0
         self._unavailable_said: set[str] = set()
+        #: The operator's trims on the findings reads (req-aws-core-secret-findings-settings); none by default.
+        self.limits = limits or FindingsLimits()
+        #: Findings written so far per (service, region), against ``limits.max_per_region``.
+        self._findings_used: dict[tuple[str, str], int] = {}
+        #: The previous clean read of each findings source (the watermark), and when this run started.
+        self.previous_read_through = dict(read_through or {})
+        self.run_started = run_started or _now()
+        self._unclean: set[str] = set()
         self.findings = FindingsReads(self)
+        self.inspector = InspectorReads(self)
+        #: The Inspector finding types to read (``inspector_finding_types``); None is every type.
+        self.inspector_finding_types = inspector_finding_types
+        #: Whether the grid holds an image host for a digest (``ecs.host_held_on_grid`` when None; tests inject).
+        self.host_held = host_held
 
     # -- plumbing ---------------------------------------------------------
 
@@ -479,6 +514,82 @@ class _Reader:
         result.last = _now()
         return result
 
+    @staticmethod
+    def iso(value: datetime) -> str:
+        """An ISO 8601 time in UTC with a ``Z``, the form the watermark and the date filters are written in."""
+        return _iso(value)
+
+    def since(self, service: str, region: str) -> datetime | None:
+        """When this source's last clean read began (minus the overlap): the incremental filter's lower bound, or
+        None for a full read (no watermark, or a service with no date filter)."""
+        if not findings_mod.incremental(service):
+            return None
+        raw = self.previous_read_through.get(findings_mod.watermark_key(service, self.account_id, region))
+        return findings_mod._when(raw) if raw else None
+
+    def mark_read(self, service: str, region: str, walks: list[_Walk], *, clean: bool) -> None:
+        """Record one source's reads in a region. Only when every one of them ran to its end without an error and
+        ``clean`` says nothing was cut or unfetched does the source get a new watermark (the run's start minus the
+        overlap); one unclean read keeps the previous value for the whole source."""
+        key = findings_mod.watermark_key(service, self.account_id, region)
+        if not findings_mod.incremental(service):
+            return
+        if not clean or not all(w.complete for w in walks):
+            self._unclean.add(key)
+            self.result.read_through.pop(key, None)
+            return
+        if key not in self._unclean:
+            self.result.read_through[key] = _iso(self.run_started - findings_mod.WATERMARK_OVERLAP)
+
+    def findings_left(self, service: str, region: str) -> int | None:
+        """How many more findings ``service`` may write in ``region`` under ``findings_max_per_region``; None is
+        no limit (the default)."""
+        limit = self.limits.max_per_region
+        return None if limit is None else max(0, limit - self._findings_used.get((service, region), 0))
+
+    def findings_walk(
+        self,
+        service: str,
+        region: str,
+        operation: str,
+        result_key: str,
+        *,
+        keep: Callable[[Any], bool] | None = None,
+        max_pages: int | None = None,
+        **params: Any,
+    ) -> tuple[_Walk, bool]:
+        """One findings read under the operator's limits: to its end by default; under
+        ``findings_max_per_region`` it shares the service's per-region budget with the service's other reads
+        there; under ``findings_read_budget_seconds`` it stops at its next page once that long has passed. A
+        read a limit stopped is ``truncated`` and says why in ``truncation``."""
+        left = self.findings_left(service, region)
+        if left == 0:
+            now = _now()
+            spent = _Walk([], now, now, operation=operation)
+            spent.truncation = (
+                f"the per-region limit of {self.limits.max_per_region} {service} findings (findings_max_per_region) "
+                "was reached before this read"
+            )
+            return spent, True
+        result, truncated = self.capped_walk(
+            service,
+            region,
+            operation,
+            result_key,
+            cap=left,
+            keep=keep,
+            max_pages=max_pages,
+            budget_seconds=self.limits.read_budget_seconds,
+            **params,
+        )
+        self._findings_used[(service, region)] = self._findings_used.get((service, region), 0) + len(result.items)
+        if truncated and result.truncation is None:
+            result.truncation = (
+                f"the read stopped at the per-region limit of {self.limits.max_per_region} {service} findings "
+                "(findings_max_per_region)"
+            )
+        return result, truncated
+
     def capped_walk(
         self,
         service: str,
@@ -486,22 +597,25 @@ class _Reader:
         operation: str,
         result_key: str,
         *,
-        cap: int,
+        cap: int | None = None,
         keep: Callable[[Any], bool] | None = None,
         max_pages: int | None = None,
+        budget_seconds: float | None = None,
         **params: Any,
     ) -> tuple[_Walk, bool]:
-        """Read one paginated call until its end or until ``cap`` items: ``(the read, truncated)``.
-        Truncated means the cap was reached with a continuation token still outstanding (or more
-        items on the last page than the cap allowed), so the listing is partial by design. A
-        failure is recorded as in ``walk``.
+        """Read one paginated call until its end, or until ``cap`` items when a cap is given: ``(the read,
+        truncated)``. Truncated means a bound stopped the read with a continuation token still outstanding (or
+        more items on the last page than the cap allowed), so the listing is partial by design. A failure is
+        recorded as in ``walk``.
 
-        ``keep`` filters each page as it arrives: only kept items are held and count against
-        ``cap`` (a filter the API cannot apply server-side). ``max_pages`` stops the read after that
-        many pages; stopping with a continuation token outstanding is a truncation."""
+        ``keep`` filters each page as it arrives: only kept items are held and count against ``cap`` (a filter
+        the API cannot apply server-side). ``max_pages`` stops the read after that many pages, and
+        ``budget_seconds`` once that long has passed at a page boundary; either, with a continuation token
+        outstanding, is a truncation, named in ``truncation``."""
         token = continuation_token(service)
         result = _Walk([], _now(), _now(), operation=operation)
         truncated = False
+        started = monotonic()
         try:
             fn: Callable[..., dict[str, Any]] = getattr(self.client(service, region), operation)
             next_token: str | None = None
@@ -513,16 +627,24 @@ class _Reader:
                 page = list(response.get(result_key) or [])
                 if keep is not None:
                     page = [item for item in page if keep(item)]
-                room = cap - len(result.items)
+                room = len(page) if cap is None else cap - len(result.items)
                 result.items.extend(page[:room])
                 next_token = response.get(token)
-                if len(page) > room or (next_token and len(result.items) >= cap):
+                if cap is not None and (len(page) > room or (next_token and len(result.items) >= cap)):
                     truncated = True
                     break
                 if not next_token:
                     break
                 if max_pages is not None and pages >= max_pages:
                     truncated = True
+                    result.truncation = f"the read stopped after {max_pages} page(s) with more outstanding"
+                    break
+                if budget_seconds is not None and monotonic() - started >= budget_seconds:
+                    truncated = True
+                    result.truncation = (
+                        f"the read stopped after its budget of {budget_seconds:g} seconds "
+                        "(findings_read_budget_seconds) with pages outstanding"
+                    )
                     break
             else:
                 raise EndpointConnectionError(endpoint_url=f"{operation}: continuation chain exceeded {_MAX_PAGES} pages")
@@ -536,6 +658,8 @@ class _Reader:
         """Several reads behind one surface (``_aggregate``), keeping every item read."""
         combined = _aggregate(walks)
         combined.items = [item for w in walks for item in w.items]
+        reasons = list(dict.fromkeys(w.truncation for w in walks if w.truncation))
+        combined.truncation = "; ".join(reasons) or None
         return combined
 
     def call(
@@ -621,14 +745,26 @@ class _Reader:
         )
         return True
 
-    def add_edge(self, edge_type: str, from_type: str, from_key: str, to_type: str, to_key: str, region: str) -> None:
+    def add_edge(
+        self,
+        edge_type: str,
+        from_type: str,
+        from_key: str,
+        to_type: str,
+        to_key: str,
+        region: str,
+        *,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
         from_ref, to_ref = node_ref(from_type, from_key), node_ref(to_type, to_key)
         ref = edge_ref(edge_type, from_ref, to_ref)
         if ref in self._edge_refs:
             return
         self._edge_refs.add(ref)
         self.result.edges.append(
-            edge_envelope(edge_type, from_ref=from_ref, to_ref=to_ref, dimensions=self.dimensions(region))
+            edge_envelope(
+                edge_type, from_ref=from_ref, to_ref=to_ref, dimensions=self.dimensions(region), properties=properties
+            )
         )
 
     def hosts(self, edge_type: str, region: str, child_type: str, child_key: str) -> None:
@@ -777,6 +913,8 @@ class _Reader:
             self._securityhub(region)
         for region in self.readable_regions(((HOSTS_ACCESS_ANALYZER, RELATION_ANALYZERS),), "accessanalyzer"):
             self._access_analyzers(region)
+        for region in self.readable_regions(self.inspector.containment(), "inspector2"):
+            self.inspector.read(region)
         for region in self.readable_regions((), "ec2"):
             self._ebs_defaults(region)
         self._public_access_block()
@@ -1575,10 +1713,12 @@ class _Reader:
         key, _ = self.call("ec2", region, "get_ebs_default_kms_key_id")
         value = (enabled or {}).get("EbsEncryptionByDefault")
         kms = (key or {}).get("KmsKeyId")
-        self.result.footprint_fields[region] = {
-            "ebs_encryption_by_default": value if isinstance(value, bool) else None,
-            "ebs_default_kms_key_id": str(kms) if key is not None and kms is not None else None,
-        }
+        self.result.footprint_fields.setdefault(region, {}).update(
+            {
+                "ebs_encryption_by_default": value if isinstance(value, bool) else None,
+                "ebs_default_kms_key_id": str(kms) if key is not None and kms is not None else None,
+            }
+        )
 
     def _public_access_block(self) -> None:
         """The account-level S3 public-access block, read exactly once per account through
@@ -1616,12 +1756,21 @@ def collect_landing_zone(
     facts: dict[str, RegionFacts],
     member_accounts: list[str] | None,
     sensitivity: dict[str, dict[str, Any]] | None = None,
+    limits: FindingsLimits | None = None,
+    read_through: dict[str, str] | None = None,
+    run_started: datetime | None = None,
+    host_held: Callable[[str], bool] | None = None,
+    inspector_finding_types: tuple[str, ...] | None = None,
 ) -> LandingZoneRead:
     """Read the landing zone's governance surface; never raises for an AWS failure.
 
     ``client_for(service, region)`` builds a client. ``member_accounts`` is the organization's
     complete account list (``OrganizationTree.member_accounts``), or None when it was not read to
-    the end. ``sensitivity`` replaces ``reader_sensitivity(READER)`` (tests only).
+    the end. ``limits`` are the operator's findings trims (none by default). ``read_through`` is the previous run's
+    findings watermark (``findings.read_through_of``) and ``run_started`` this run's start, from which a clean
+    source's new watermark is taken. ``sensitivity`` replaces ``reader_sensitivity(READER)`` and ``host_held`` the
+    grid lookup of an image host (tests only). ``inspector_finding_types`` down-selects Inspector's finding types
+    (None, the default, reads every type).
     """
     return _Reader(
         client_for,
@@ -1631,6 +1780,11 @@ def collect_landing_zone(
         facts=facts,
         member_accounts=member_accounts,
         sensitivity=sensitivity,
+        limits=limits,
+        read_through=read_through,
+        run_started=run_started,
+        host_held=host_held,
+        inspector_finding_types=inspector_finding_types,
     ).collect()
 
 

@@ -86,6 +86,18 @@ Both kinds carry operator-owned region scoping (`data.regions_allowed` /
 set, the `GetCallerIdentity` account must match or the run fails visibly,
 catching the "collected a real but wrong account" failure mode.
 
+Findings are collected in full by default: every GuardDuty, Security Hub, Access Analyzer and Inspector finding
+the run's account holds in each region, active and closed in the last 30 days, read to the last page. Two optional
+`data` keys trim that, both off unless set (`spec-aws-core-secrets.md`, `req-aws-core-secret-findings-settings`):
+
+```jsonc
+{
+  "findings_max_per_region": 5000,      // the most findings one service writes per region per run;
+                                         // a read it stops is recorded truncated
+  "findings_read_budget_seconds": 300   // each findings read stops at its next page after this long
+}
+```
+
 ## Service coverage — honest inventory
 
 Three tiers, from most to least covered. A model without a manifest entry

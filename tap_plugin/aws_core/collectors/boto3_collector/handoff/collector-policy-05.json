@@ -2,6 +2,16 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadInternetmonitor",
+      "Effect": "Allow",
+      "Action": [
+        "internetmonitor:GetMonitor",
+        "internetmonitor:ListMonitors",
+        "internetmonitor:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadIot",
       "Effect": "Allow",
       "Action": [
@@ -286,18 +296,6 @@
         "m2:ListApplications",
         "m2:ListEnvironments",
         "m2:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadManagedblockchain",
-      "Effect": "Allow",
-      "Action": [
-        "managedblockchain:ListAccessors",
-        "managedblockchain:ListMembers",
-        "managedblockchain:ListNetworks",
-        "managedblockchain:ListNodes",
-        "managedblockchain:ListTagsForResource"
       ],
       "Resource": "*"
     }

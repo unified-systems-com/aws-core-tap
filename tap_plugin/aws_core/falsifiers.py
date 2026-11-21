@@ -2537,6 +2537,36 @@ class GuardDutyFindingFalsifier(_LandingZoneFalsifier):
         return _finish(candidate, expected, probe)
 
 
+class InspectorFindingFalsifier(_LandingZoneFalsifier):
+    """``inspector2:ListFindings(filterCriteria: findingArn=<arn>)``, which filters on the ARN server-side and
+    answers an unknown one with no finding (no not-found error is modelled for it, read: botocore 1.44.4), so an
+    answer that names no finding is ``DROPPED_FROM_OBSERVATION``. A CLOSED or SUPPRESSED finding is present:
+    Inspector still returns it, and the grid holds its status (aws-core-tap#261). How long Inspector keeps a
+    closed finding is not documented in the API reference, so a finding gone from ListFindings may have aged
+    out rather than been deleted; either way it is no longer observed."""
+
+    service = "inspector2"
+
+    def _region_hint(self, row: Any) -> str | None:
+        return str(getattr(row, "region", "") or "") or None
+
+    def _expected(self, row: Any, expected_account: str) -> Expected:
+        return Expected(source_id=str(getattr(row, "finding_arn", "") or ""))
+
+    def _probe(self, client: Any, row: Any, candidate: Candidate, expected_account: str) -> Verdict:
+        expected = self._expected(row, expected_account)
+        if not expected.source_id:
+            return _undetermined(candidate, "scope_unknown", "the grid holds no finding ARN")
+        found = client.list_findings(
+            filterCriteria={"findingArn": [{"comparison": "EQUALS", "value": expected.source_id}]}, maxResults=1
+        ).get("findings") or []
+        match = next((f for f in found if isinstance(f, dict) and f.get("findingArn") == expected.source_id), None)
+        if match is None:
+            return verdict_from_probe(candidate, expected, Probe(status="not_found", detail="ListFindings names no such finding"))
+        probe = Probe(status="found", source_id=expected.source_id, detail=f"ListFindings names it, {match.get('status') or 'no status'}")
+        return _finish(candidate, expected, probe)
+
+
 class SecurityHubFindingFalsifier(_LandingZoneFalsifier):
     """``securityhub:GetFindings`` filtered on the finding's ``Id`` and ``ProductArn``. No finding is
     ``DROPPED_FROM_OBSERVATION``; a finding whose ``RecordState`` is ARCHIVED is present, closed.
@@ -2958,6 +2988,7 @@ __all__ = [
     "ConfigRuleFalsifier",
     "ConformancePackFalsifier",
     "GuardDutyFindingFalsifier",
+    "InspectorFindingFalsifier",
     "SecurityHubFindingFalsifier",
     "StandardsSubscriptionFalsifier",
     "AccountAssignmentFalsifier",

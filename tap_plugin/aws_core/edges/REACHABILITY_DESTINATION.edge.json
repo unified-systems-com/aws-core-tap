@@ -1,0 +1,17 @@
+{
+  "slug": "REACHABILITY_DESTINATION__aws_core",
+  "name": "Reachability Destination",
+  "description": "The destination role of the reachability compound edge (req-grid-edge-compound): an Amazon Inspector v2 network-reachability finding, the middle node -> the EC2 network interface its port range is open on, the last network-interface step of networkPath.steps. The interface, not the instance: an instance can have several, and it is one ATTACHED_TO_INSTANCE away. The finding retires with this end (COMPOUND_EDGE retires_with). Collected by collectors/boto3_collector/inspector.py (aws-core-tap#261).",
+  "sources": [
+    "aws_core__aws_inspector2_reachability_finding"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_network_interface"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

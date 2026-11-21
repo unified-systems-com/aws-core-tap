@@ -22,6 +22,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.findings import (
     HOLDS_ACCESS_ANALYZER_FINDING,
     SECURITYHUB_FINDING,
     SECURITYHUB_SEVERITY_LABELS,
+    FindingsLimits,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import (
     ACCESS_ANALYZER,
@@ -77,7 +78,7 @@ class _Stubbed:
             stub.assert_no_pending_responses()
 
 
-def _reader(aws: _Stubbed) -> _Reader:
+def _reader(aws: _Stubbed, *, limits: FindingsLimits | None = None) -> _Reader:
     return _Reader(
         aws.client_for,
         account_id=ACCOUNT,
@@ -85,6 +86,7 @@ def _reader(aws: _Stubbed) -> _Reader:
         regions=[REGION],
         facts={REGION: RegionFacts(REGION, "aws", "opt-in-not-required", STATUS_ENABLED, "test")},
         member_accounts=None,
+        limits=limits,
     )
 
 
@@ -381,12 +383,9 @@ def _closed_filter() -> dict[str, Any]:
 
 
 @pytest.mark.spec("req-aws-landing-zone-findings-9")
-def test_access_analyzer_old_closed_findings_first_do_not_use_up_the_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_access_analyzer_old_closed_findings_first_do_not_use_up_the_limit() -> None:
     """Old ARCHIVED rows come first (the API documents no updatedAt sort); the window is applied per page,
-    so only in-window findings count against the cap and the recent one on page three is kept."""
-    from tap_plugin.aws_core.collectors.boto3_collector import findings as findings_mod
-
-    monkeypatch.setattr(findings_mod, "FINDINGS_CAP", 2)
+    so only in-window findings count against an operator's limit and the recent one on page three is kept."""
     now = datetime.now(UTC)
     old = now - timedelta(days=90)
     with _Stubbed("accessanalyzer") as aws:
@@ -412,28 +411,99 @@ def test_access_analyzer_old_closed_findings_first_do_not_use_up_the_cap(monkeyp
             {"findings": [_closed_summary("new-1", "RESOLVED", now - timedelta(days=1)), _closed_summary("old-5", "ARCHIVED", old)]},
             {**base, "nextToken": "p3"},
         )
-        reader = _reader(aws)
+        reader = _reader(aws, limits=FindingsLimits(max_per_region=2))
         reader.findings.access_analyzer(REGION, ANALYZER_ARN, "ACCOUNT", ACCESS_ANALYZER).emit()
         aws.done()
     assert [n["finding_id"] for n in _nodes(reader, ACCESS_ANALYZER_FINDING)] == ["new-1"]
     [surface] = [s for s in reader.result.listings if s.edge_type == HOLDS_ACCESS_ANALYZER_FINDING]
-    assert "truncated" not in surface.reasons, "every page was read and the cap was not reached"
+    assert "truncated" not in surface.reasons, "every page was read and the limit was not reached"
 
 
-@pytest.mark.spec("req-aws-landing-zone-findings-9")
-def test_access_analyzer_closed_read_stops_at_its_page_cap_truncated(monkeypatch: pytest.MonkeyPatch) -> None:
-    from tap_plugin.aws_core.collectors.boto3_collector import findings as findings_mod
+@pytest.mark.spec("req-aws-landing-zone-findings-3", "req-aws-landing-zone-findings-9")
+def test_access_analyzer_closed_read_reads_every_page_by_default() -> None:
+    old = datetime.now(UTC) - timedelta(days=90)
+    with _Stubbed("accessanalyzer") as aws:
+        stub = aws.stubs["accessanalyzer"]
+        stub.add_response("list_findings", {"findings": []})
+        for page in range(1, 61):
+            response: dict[str, Any] = {"findings": [_closed_summary(f"old-{page}", "ARCHIVED", old)]}
+            if page < 60:
+                response["nextToken"] = f"p{page + 1}"
+            stub.add_response("list_findings", response)
+        reader = _reader(aws)
+        reader.findings.access_analyzer(REGION, ANALYZER_ARN, "ACCOUNT", ACCESS_ANALYZER).emit()
+        aws.done()
+    [surface] = [s for s in reader.result.listings if s.edge_type == HOLDS_ACCESS_ANALYZER_FINDING]
+    assert "truncated" not in surface.reasons, "60 pages, past the old 50-page bound: read to the end"
 
-    monkeypatch.setattr(findings_mod, "ACCESS_ANALYZER_CLOSED_MAX_PAGES", 2)
+
+@pytest.mark.spec("req-aws-landing-zone-findings-3", "req-aws-landing-zone-findings-9")
+def test_access_analyzer_closed_read_stops_at_the_read_budget_truncated(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector import landing_zone as lz
+
+    clock = iter(range(0, 10_000, 10))
+    monkeypatch.setattr(lz, "monotonic", lambda: next(clock))
     old = datetime.now(UTC) - timedelta(days=90)
     with _Stubbed("accessanalyzer") as aws:
         stub = aws.stubs["accessanalyzer"]
         stub.add_response("list_findings", {"findings": []})
         stub.add_response("list_findings", {"findings": [_closed_summary("old-1", "ARCHIVED", old)], "nextToken": "p2"})
-        stub.add_response("list_findings", {"findings": [_closed_summary("old-2", "ARCHIVED", old)], "nextToken": "p3"})
-        reader = _reader(aws)
+        reader = _reader(aws, limits=FindingsLimits(read_budget_seconds=5))
         reader.findings.access_analyzer(REGION, ANALYZER_ARN, "ACCOUNT", ACCESS_ANALYZER).emit()
         aws.done()
     assert _nodes(reader, ACCESS_ANALYZER_FINDING) == []
     [surface] = [s for s in reader.result.listings if s.edge_type == HOLDS_ACCESS_ANALYZER_FINDING]
-    assert surface.complete is False and "truncated" in surface.reasons
+    assert surface.complete is False
+    assert "budget of 5 seconds (findings_read_budget_seconds)" in surface.reasons["truncated"]
+
+
+@pytest.mark.spec("req-aws-landing-zone-findings-3", "req-aws-core-secret-findings-settings-1")
+def test_a_findings_read_runs_to_its_end_by_default_and_a_limit_is_shared_per_region() -> None:
+    """No fixed cap (rulings Q125a and b): 1,500 findings, past the old 1,000, are all read. Under
+    findings_max_per_region the service's reads in one region share the limit, and each says why it stopped."""
+    from .test_landing_zone import FakeAws, paged
+
+    pages = [[{"Id": f"f-{p}-{i}"} for i in range(100)] for p in range(15)]
+    aws = FakeAws()
+    aws.on("securityhub", "get_findings", paged("Findings", *pages))
+    reader = _Reader(
+        aws.client_for, account_id=ACCOUNT, partition="aws", regions=[REGION],
+        facts={REGION: RegionFacts(REGION, "aws", "opt-in-not-required", STATUS_ENABLED, "test")}, member_accounts=None,
+    )
+    walk, truncated = reader.findings_walk("securityhub", REGION, "get_findings", "Findings")
+    assert (len(walk.items), truncated, walk.truncation) == (1500, False, None)
+
+    limited = _Reader(
+        aws.client_for, account_id=ACCOUNT, partition="aws", regions=[REGION],
+        facts={REGION: RegionFacts(REGION, "aws", "opt-in-not-required", STATUS_ENABLED, "test")}, member_accounts=None,
+        limits=FindingsLimits(max_per_region=250),
+    )
+    first, cut = limited.findings_walk("securityhub", REGION, "get_findings", "Findings")
+    assert (len(first.items), cut) == (250, True)
+    assert first.truncation == "the read stopped at the per-region limit of 250 securityhub findings (findings_max_per_region)"
+    second, cut = limited.findings_walk("securityhub", REGION, "get_findings", "Findings")
+    assert (second.items, cut) == ([], True) and "was reached before this read" in str(second.truncation)
+    other, cut = limited.findings_walk("securityhub", "us-west-2", "get_findings", "Findings")
+    assert len(other.items) == 250, "another region has its own limit"
+
+
+def test_the_limits_read_from_a_credential() -> None:
+    assert FindingsLimits.of({}) == FindingsLimits(None, None)
+    assert FindingsLimits.of({"findings_max_per_region": 5, "findings_read_budget_seconds": 30}) == FindingsLimits(5, 30)
+    assert FindingsLimits.of({"findings_max_per_region": True}) == FindingsLimits(None, None)
+
+
+@pytest.mark.spec("req-aws-core-secret-findings-settings-2")
+def test_the_limits_are_one_fragment_on_both_kinds() -> None:
+    import jsonschema
+
+    from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
+
+    for key in ("findings_max_per_region", "findings_read_budget_seconds"):
+        for schema in (cred.AWS_STATIC_SCHEMA, cred.AWS_ASSUMED_ROLE_SCHEMA):
+            assert schema["properties"][key] is cred._FINDINGS_PROPS[key]
+        static = {"access_key_id": "AKIA", "secret_access_key": "x"}
+        jsonschema.validate({**static, key: 1}, cred.AWS_STATIC_SCHEMA)
+        for bad in (0, "10", 1.5):
+            with pytest.raises(jsonschema.ValidationError):
+                jsonschema.validate({**static, key: bad}, cred.AWS_STATIC_SCHEMA)

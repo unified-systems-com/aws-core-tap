@@ -450,6 +450,9 @@ class TestFalsifierManifestWiring:
             "aws_core__aws_access_analyzer_finding": "tap_plugin.aws_core.falsifiers.AccessAnalyzerFindingFalsifier",
             "aws_core__aws_config_rule": "tap_plugin.aws_core.falsifiers.ConfigRuleFalsifier",
             "aws_core__aws_config_conformance_pack": "tap_plugin.aws_core.falsifiers.ConformancePackFalsifier",
+            # aws-core-tap#261 (Inspector v2 findings).
+            "aws_core__aws_inspector2_finding": "tap_plugin.aws_core.falsifiers.InspectorFindingFalsifier",
+            "aws_core__aws_inspector2_reachability_finding": "tap_plugin.aws_core.falsifiers.InspectorFindingFalsifier",
             # aws-core-tap#211 (ECS): cluster -> task, task -> container.
             "aws_core__aws_ecs_task": "tap_plugin.aws_core.falsifiers.EcsTaskFalsifier",
             "aws_core__aws_ecs_container": "tap_plugin.aws_core.falsifiers.EcsContainerFalsifier",

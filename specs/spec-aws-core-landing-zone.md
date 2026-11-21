@@ -27,7 +27,7 @@ service models, which are offline data. GovCloud availability is **web**, cited 
 | 2. | Reachable | Who can reach which account with which permission set is a graph query: Identity Center permission sets, groups and account assignments |
 | 3. | Watched | Which security services are on, per account and region, is a collected fact, not an assumption |
 | 4. | Partition-honest | A service AWS does not offer in a partition is recorded as such, never collected as empty |
-| 5. | Reported | What those services report (GuardDuty, Security Hub and Access Analyzer findings, Config rule compliance) is on the grid, attached to the service and the resource it concerns, bounded and never mistaken for a complete inventory |
+| 5. | Reported | What those services report (GuardDuty, Security Hub, Access Analyzer and Inspector findings, Config rule compliance) is on the grid, attached to the service and the resource it concerns, bounded and never mistaken for a complete inventory |
 
 ## Requirements
 
@@ -37,8 +37,12 @@ service models, which are offline data. GovCloud availability is **web**, cited 
 | req-aws-landing-zone-control-tower | [Control Tower](#control-tower) | Proposed | Landing zone, enabled controls, enabled baselines; targets as reference edges; contained by the landing zone |
 | req-aws-landing-zone-identity-center | [Identity Center Access](#identity-center-access) | Proposed | Collect the instance; permission sets, groups and account assignments; users only as principal ids |
 | req-aws-landing-zone-security-services | [Security Services](#security-services) | Proposed | Config recorder, delivery channel and aggregator, GuardDuty detector, Security Hub hub, Access Analyzer analyzer per account × region; EBS default encryption and S3 account public-access block as typed fields |
-| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active and recently closed (30 days) GuardDuty, Security Hub (control results included) and Access Analyzer findings with what each says about itself, and Config rule and conformance pack compliance with each rule's scope, parameters and policy body, for the run's own account; bounded by a declared cap; per-severity totals of active findings on the parent; findings surfaces never complete |
-| req-aws-landing-zone-nongoals | [Non-Goals](#non-goals) | Proposed | Account vending, Macie, Control Tower Account Factory, AFT, findings closed before the 30-day window, writing back to a finding |
+| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active and recently closed (30 days) GuardDuty, Security Hub (control results included) and Access Analyzer findings with what each says about itself, and Config rule and conformance pack compliance with each rule's scope, parameters and policy body, for the run's own account; read to the end unless the operator sets a per-region limit or a read budget, incrementally from each source's last clean read; per-severity totals of active findings on the parent; findings surfaces never complete |
+| req-aws-landing-zone-inspector | [Inspector Findings](#inspector-findings) | Proposed | Every Amazon Inspector v2 finding type (package vulnerability, code vulnerability, network reachability) by default, down-selectable, for the run's own account, active and closed in 30 days, read to the end unless the shared findings limit is set; true totals and account status on the footprint; linked to the EC2 instance, Lambda function, ECR repository or image host they concern; never complete |
+| req-aws-landing-zone-inspector-reachability | [Inspector Reachability Is A Compound Edge](#inspector-reachability-is-a-compound-edge) | Proposed | The reachability finding is the middle node of the first compound edge: gateway source, network-interface destination, route table / security group / NACL path; retires with either end |
+| req-aws-landing-zone-inspector-compliance | [Inspector Findings In compliance_core](#inspector-findings-in-compliance_core) | Proposed | Off by default; an optional `depends_on` on compliance_core (>= 0.8.13), written by slug and never imported; projected from the stored rows as the run's last step; CVSS filled only when empty |
+| req-aws-landing-zone-inspector-packages | [Inspector Packages On The Image Host](#inspector-packages-on-the-image-host) | Proposed | An ECR image finding's packages as computing_core packages the image host installs, keyed as the SBOM parser keys them; with the projection on, the packages carry the finding, which is what fedramp_20x_vdr's reach walks |
+| req-aws-landing-zone-nongoals | [Non-Goals](#non-goals) | Proposed | Account vending, Macie, Control Tower Account Factory, AFT, findings closed before the 30-day window, writing back to a finding, joining Security Hub's copy of an Inspector finding |
 
 ### GovCloud Availability
 ----
@@ -271,22 +275,51 @@ models; nothing was observed against a live account.
 
 | Type | Source (read: botocore) | Key | Tags | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
-| `aws_guardduty_finding` **(new)** | `guardduty:ListFindings(FindingCriteria: service.archived=false, accountId=<run account>; SortCriteria: severity DESC; MaxResults 50)`, capped; then `ListFindings(FindingCriteria: service.archived=true, accountId=<run account>, updatedAt >= now - 30 days in epoch ms; SortCriteria: updatedAt DESC)`, capped on its own; `GetFindings` (≤50 ids a call) for both | finding ARN | **none** (a finding is not taggable; inferred) | detector, `HOLDS_GUARDDUTY_FINDING` | `GetFindings` names no such id (an archived finding is present, closed) | `CONCERNS_RESOURCE` (→ EC2 instance by `InstanceId`, S3 bucket by `S3BucketDetails[].Arn`, IAM user for an `IAMUser` access key, and whichever aws_core node `arn_resolver` finds for an ARN in `Resource`: `LambdaDetails.FunctionArn`, `RdsDbInstanceDetails.DbInstanceArn`, `RdsLimitlessDbDetails.DbShardGroupArn`, `EcsClusterDetails.Arn` and `.TaskDetails.Arn`, `EksClusterDetails.Arn`, and the malware-scan target `EbsVolumeDetails.ScannedVolumeDetails[].VolumeArn`; a closed list of target types, `findings.GUARDDUTY_CONCERNS_TARGETS`, equal to the model's declaration. An EBS snapshot, AMI or backup recovery point a finding names has no aws_core type and gets no edge) |
-| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down, sharing one cap; then `GetFindings(Filters: AwsAccountId, Region, RecordState=ARCHIVED, UpdatedAt DateRange 30 DAYS; SortCriteria: UpdatedAt desc)`, capped on its own | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none (an `ARCHIVED` record is present, closed); `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ whichever aws_core node is keyed by the ARN in `Resources[].Id`, whatever its type, and an `AwsEc2Instance` by the instance id from its ARN; aws-core-tap#242) |
+| `aws_guardduty_finding` **(new)** | `guardduty:ListFindings(FindingCriteria: service.archived=false, accountId=<run account>; SortCriteria: severity DESC; MaxResults 50)`; then `ListFindings(FindingCriteria: service.archived=true, accountId=<run account>, updatedAt >= now - 30 days in epoch ms; SortCriteria: updatedAt DESC)`; each to its end unless the operator's limits stop it; `GetFindings` (≤50 ids a call) for both | finding ARN | **none** (a finding is not taggable; inferred) | detector, `HOLDS_GUARDDUTY_FINDING` | `GetFindings` names no such id (an archived finding is present, closed) | `CONCERNS_RESOURCE` (→ EC2 instance by `InstanceId`, S3 bucket by `S3BucketDetails[].Arn`, IAM user for an `IAMUser` access key, and whichever aws_core node `arn_resolver` finds for an ARN in `Resource`: `LambdaDetails.FunctionArn`, `RdsDbInstanceDetails.DbInstanceArn`, `RdsLimitlessDbDetails.DbShardGroupArn`, `EcsClusterDetails.Arn` and `.TaskDetails.Arn`, `EksClusterDetails.Arn`, and the malware-scan target `EbsVolumeDetails.ScannedVolumeDetails[].VolumeArn`; a closed list of target types, `findings.GUARDDUTY_CONCERNS_TARGETS`, equal to the model's declaration. An EBS snapshot, AMI or backup recovery point a finding names has no aws_core type and gets no edge) |
+| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down; then `GetFindings(Filters: AwsAccountId, Region, RecordState=ARCHIVED, UpdatedAt DateRange 30 DAYS; SortCriteria: UpdatedAt desc)`; each to its end unless the operator's limits stop it | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none (an `ARCHIVED` record is present, closed); `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ whichever aws_core node is keyed by the ARN in `Resources[].Id`, whatever its type, and an `AwsEc2Instance` by the instance id from its ARN; aws-core-tap#242) |
 | `aws_securityhub_standards_subscription` **(new)** | `securityhub:GetEnabledStandards` (unfiltered, to its end; the listing the hub's `enabled_standards` already comes from) | `StandardsSubscriptionArn` | **none** (inferred) | hub, `HOLDS_STANDARDS_SUBSCRIPTION` | absent from `GetEnabledStandards` | — |
-| `aws_access_analyzer_finding` **(new)** | `accessanalyzer:ListFindings` for an external-access analyzer (`ACCOUNT`, `ORGANIZATION`), `ListFindingsV2` for the others (botocore: v1 "is supported only for external access analyzers"), `filter: status=ACTIVE, resourceOwnerAccount=<run account>`, capped; then the same with `status in [ARCHIVED, RESOLVED]`, capped on its own, keeping a finding whose `updatedAt` is in the last 30 days (the filter has no date operator: botocore `Criterion` is eq, neq, contains, exists, and no sort on `updatedAt` is documented), applied to each page as it arrives so only in-window findings count against the cap; the read walks at most `ACCESS_ANALYZER_CLOSED_MAX_PAGES` (50) pages and is recorded truncated if it stops with pages left | (analyzer ARN, finding id) | **none** (inferred) | analyzer, `HOLDS_ACCESS_ANALYZER_FINDING` | `GetFindingV2` → `ResourceNotFoundException` (an ARCHIVED or RESOLVED finding is present, closed) | `CONCERNS_RESOURCE` (→ S3 bucket, IAM role, IAM user by resource ARN) |
+| `aws_access_analyzer_finding` **(new)** | `accessanalyzer:ListFindings` for an external-access analyzer (`ACCOUNT`, `ORGANIZATION`), `ListFindingsV2` for the others (botocore: v1 "is supported only for external access analyzers"), `filter: status=ACTIVE, resourceOwnerAccount=<run account>`; then the same with `status in [ARCHIVED, RESOLVED]`, keeping a finding whose `updatedAt` is in the last 30 days (the filter has no date operator: botocore `Criterion` is eq, neq, contains, exists, and no sort on `updatedAt` is documented), applied to each page as it arrives so only in-window findings count against an operator's `findings_max_per_region`; the read walks every page (its 50-page bound was removed by rulings Q125a and b) unless `findings_read_budget_seconds` stops it, and is then recorded truncated | (analyzer ARN, finding id) | **none** (inferred) | analyzer, `HOLDS_ACCESS_ANALYZER_FINDING` | `GetFindingV2` → `ResourceNotFoundException` (an ARCHIVED or RESOLVED finding is present, closed) | `CONCERNS_RESOURCE` (→ S3 bucket, IAM role, IAM user by resource ARN) |
 | `aws_config_rule` **(new)** | `config:DescribeConfigRules` (no names, no filters: botocore documents that as every rule), `DescribeComplianceByConfigRule` (every rule and compliance type), each to its end; `GetCustomRulePolicy(ConfigRuleName)` for a `CUSTOM_POLICY` rule whose listing carries no `PolicyText` | rule ARN | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_CONFIG_RULE` | absent from a complete `DescribeConfigRules` (`NoSuchConfigRuleException` is documented as "not valid", not "does not exist", so it is not used) | — |
 | `aws_config_conformance_pack` **(new)** | `config:DescribeConformancePacks` (no names), `GetConformancePackComplianceSummary` (5 names a call) | pack ARN | service, as above | footprint, `HOSTS_CONFORMANCE_PACK` | `DescribeConformancePacks(name)` → `NoSuchConformancePackException` | — |
 
-- **Bounded.** `FINDINGS_CAP` is **1000 findings per parent** (detector, hub, analyzer) per run.
-  GuardDuty is read most severe first and Security Hub one label at a time from CRITICAL down, so
-  the cap drops the least severe. Access Analyzer findings carry no severity and are read in the
-  API's order. A read that reaches the cap stops; its surface records `reasons.truncated`.
+- **Everything by default, trimmed by the operator** (maintainer, 2026-11-20, rulings Q125a and b: "collect
+  everything by default and allow people to trim as necessary"). There is no fixed cap: every findings read
+  (GuardDuty, Security Hub, Access Analyzer and Inspector, `req-aws-landing-zone-inspector`) runs to its last page.
+  Two optional settings in the credential's `data` trim it (`spec-aws-core-secrets.md`,
+  `req-aws-core-secret-findings-settings`), both off by default:
+  - `findings_max_per_region`: the most findings one service writes per region per run, shared by that
+    service's reads there in order: GuardDuty active then closed; Security Hub one label at a time from CRITICAL
+    down, then closed; every analyzer of the region in turn, each active then closed. The order puts the most
+    severe and the active first, so the limit drops the least severe and never lets closed findings crowd out
+    active ones. Access Analyzer findings carry no severity and are read in the API's order.
+  - `findings_read_budget_seconds`: each findings read stops at its next page once it has run that long.
+  A read either one stops records `reasons.truncated` with the reason, and the parent's totals say so
+  (GuardDuty's still come exact from `GetFindingsStatistics`). `FINDINGS_CAP` (1000 per parent) and
+  `ACCESS_ANALYZER_CLOSED_MAX_PAGES` (50) are gone.
+- **Incremental** (maintainer, 2026-11-20, rulings Q126a and c). Each run asks a source only for findings updated
+  since that source's last clean read: GuardDuty with an `updatedAt` `GreaterThanOrEqual` criterion (epoch ms),
+  Security Hub with an `UpdatedAt` `Start`/`End` filter, Inspector with `updatedAt.startInclusive`
+  (`req-aws-landing-zone-inspector`); a closed read takes the later of its window and the watermark. Access Analyzer
+  has no date filter, so it is always read in full. The watermark lives on the collector's own run record, its GRIFT
+  `batch_node.metadata`, which the importer stores on `Batch.metadata` when it creates the batch (read:
+  `tap_grid/grift/importer.py`, `create_batch(..., metadata=batch_node.get("metadata") or {})`; checked by a
+  two-run test): `metadata.findings_read_through = {"<service>|<account>|<region>": "<ISO time>"}`, one entry per
+  source. A source whose reads in a region all finished cleanly (no error, no throttling cut-off, no limit or budget
+  truncation, every GuardDuty finding fetched) writes the run's start minus a 15-minute overlap
+  (`WATERMARK_OVERLAP`); every other key is carried forward unchanged from the previous watermark, so one failed
+  source resets nothing else. The next run reads the watermark of this collector's most recent closed batch
+  (`findings.read_through_of`); a key with no value is a full read. Totals: GuardDuty's still come from
+  `GetFindingsStatistics` over the whole active set; Security Hub has no count call, so an incremental run writes
+  its hub's `active_finding_counts` and `active_finding_counts_complete` as null (not read) rather than a lower bound.
+  **The consequence**, accepted: an incremental read is filtered, so it is never complete and never retires, and a
+  finding AWS deletes without updating it stays live on the grid until the watermark is cleared; clearing it (a run
+  whose previous batch carries no `findings_read_through`) forces one full read. A scheduled full read is deferred
+  until per-collector configuration exists.
 - **Closed in the last 30 days.** Beside the active read, each parent reads the findings it closed
   in the last 30 days (`CLOSED_WINDOW_DAYS`): GuardDuty archived, Security Hub `RecordState`
   ARCHIVED, Access Analyzer ARCHIVED or RESOLVED (aws-core-tap#264, ruling Q115a). Each closed read
-  has its own `FINDINGS_CAP`, most recently updated first where the API sorts, so closed findings
-  never crowd out active ones. A finding's state is the service's own field, stored verbatim:
+  comes after the active one, most recently updated first where the API sorts, so under an operator's limit
+  closed findings never crowd out active ones. A finding's state is the service's own field, stored verbatim:
   GuardDuty `archived`, Security Hub `record_state` (beside `workflow_status`, the operator's triage
   state), Access Analyzer `status`. No normalized copy is added: it would restate a field on the same
   node. A finding that closes is rewritten closed on the next run instead of staying on the grid as
@@ -296,16 +329,18 @@ models; nothing was observed against a live account.
   closed while the collector was not running for over 30 days stays as it was last read.
 - **Never complete.** Each findings surface depends on source-side filters (the run's account, active
   or closed in the window) with no bogus-value positive control, so it records `filter` verbatim and
-  `filter_control: null`, and is `enumeration_complete: false` (`req-grid-reconcile-evidence-4`).
-  It never nominates a retirement. The surface relation is `<parent>.findings` (one surface for both
+  `filter_control: null`, and is `enumeration_complete: false` (`req-grid-reconcile-evidence-4`)
+  however far the read ran: a read that reached its end uncapped is still filtered. It never nominates
+  a retirement. Removing the cap removed one reason a surface was incomplete, not the filter rule.
+  The surface relation is `<parent>.findings` (one surface for both
   reads). The falsifiers are registered so the triple is whole; a closed finding the service still
   returns is present, and a finding is gone only when the service no longer returns it.
 - **Totals on the parent.** The detector, hub and analyzer carry `active_finding_counts`
   (`{label: count}`; by finding type for an analyzer), `active_finding_counts_complete` and
   `active_findings_truncated`. GuardDuty's totals come from
-  `GetFindingsStatistics(GroupBy=SEVERITY)` and are exact whatever the cap; when that call fails
+  `GetFindingsStatistics(GroupBy=SEVERITY)` and are exact however far the read ran; when that call fails
   or answers more than one page (its input takes no continuation token), the counts fall back to
-  the capped read and are marked incomplete. Security Hub's are exact for every label read to its
+  the read and are marked incomplete. Security Hub's are exact for every label read to its
   end. GuardDuty's labels are its documented bands: Critical 9.0-10.0, High 7.0-8.9, Medium
   4.0-6.9, Low 1.0-3.9 (web: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html).
 - **Typed fields, and what a finding says about itself.** Each reader stores typed fields, and each
@@ -366,15 +401,323 @@ models; nothing was observed against a live account.
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page below the cap. | |
-| req-aws-landing-zone-findings-9 | Recently Closed Findings Collected | Proposed | Each written detector, hub and analyzer also has the findings it closed in the last 30 days written under it, with the service's own state field saying closed (`archived`, `record_state`, `status`), read with the closed filters tabled above under a cap of their own; parent counts stay counts of active findings, and the surface stays never complete. | aws-core-tap#264, ruling Q115a. `tests/test_security_findings.py::TestClosedFindings`, `tests/test_findings_stubbed.py` (requests and responses validated against botocore's models). |
+| req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page unless the operator's limits stop them (`-3`). | |
+| req-aws-landing-zone-findings-9 | Recently Closed Findings Collected | Proposed | Each written detector, hub and analyzer also has the findings it closed in the last 30 days written under it, with the service's own state field saying closed (`archived`, `record_state`, `status`), read with the closed filters tabled above, after the active read; parent counts stay counts of active findings, and the surface stays never complete. | aws-core-tap#264, ruling Q115a. `tests/test_security_findings.py::TestClosedFindings`, `tests/test_findings_stubbed.py` (requests and responses validated against botocore's models). |
 | req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A GuardDuty finding naming the ARN of a Lambda function, an RDS instance or Limitless shard group, an ECS cluster or task, an EKS cluster or a scanned EBS volume has `CONCERNS_RESOURCE` to the node `arn_resolver` finds for it (aws-core-tap#264, ruling Q115b); its targets are a closed list and any other type is refused. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN, or of a natively keyed type whose declaration reads its key from the ARN (`req-aws-collector-identity-14`), or naming an account by `AWS::::Account:<id>`, has `CONCERNS_RESOURCE` to that node by its natural key; an id no single keyed type claims stays a string with no edge. | aws-core-tap#242, #252; closes aws-core-tap#249. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
-| req-aws-landing-zone-findings-3 | Bounded And Never Complete | Proposed | A findings read stops at `FINDINGS_CAP`; its surface records the filter with no control, is never complete, and names a truncation in `reasons.truncated`. | |
+| req-aws-landing-zone-findings-3 | Read To The End Unless Trimmed, Never Complete | Proposed | A findings read runs to its last page by default; `findings_max_per_region` stops a service's reads in a region once they have written that many findings, and `findings_read_budget_seconds` stops a read that has run that long, each recorded in `reasons.truncated` with the reason; its surface records the filter with no control and is never complete. | Rulings Q125a and b (2026-11-20) replaced the fixed 1000-finding cap and the Access Analyzer 50-page bound. `tests/test_findings_stubbed.py`, `tests/test_security_findings.py`. |
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |
 | req-aws-landing-zone-findings-6 | Control Results And Standards | Proposed | A control finding carries its compliance status and security control id, and `EVALUATED_UNDER_STANDARD` to each enabled standard it names; enabled standards are nodes contained by the hub. | |
 | req-aws-landing-zone-findings-7 | What A Finding Says Is Kept | Proposed | A finding's description, action, network detail, evidence, remediation, malware, vulnerabilities, product fields, types, normalized severity, compliance status reasons and finding-provider fields, and a Config rule's scope, input parameters and Guard policy body, reach the node as tabled; titles and resource ids keep their addresses. An Access Analyzer condition value, a conformance-pack parameter and a standards subscription's `StandardsInput` still do not: a test plants each and finds none. | Revised 2026-11-20 by rulings Q114b and Q114c (aws-core-tap#264); it read "Typed Fields Only", with addresses replaced by `[ip]`. `tests/test_security_findings.py::TestDeclarations`, `::TestSecurityHubDetail`, `::TestConfigRuleDetail`. |
 | req-aws-landing-zone-findings-8 | Config Rules And Conformance Packs | Proposed | Every Config rule (service-linked included) and conformance pack is a footprint child with its compliance; a failed compliance read is null, never compliant. | |
+| req-aws-landing-zone-findings-10 | Incremental Reads | Proposed | GuardDuty, Security Hub and Inspector are asked only for findings updated since the source's watermark in the previous closed batch's `metadata.findings_read_through`; a source (for Inspector, each finding type) whose reads all finished cleanly, with every finding read also written, writes the run's start minus 15 minutes, every other key is carried forward, a missing key is a full read, and Access Analyzer is always read in full; an incremental surface is never complete. | Rulings Q126a and c. `tests/test_findings_incremental.py`. |
+
+### Inspector Findings
+----
+RID: `req-aws-landing-zone-inspector`
+
+Status: `Proposed`
+
+Requested by the maintainer on aws-core-tap#261 (reported by an outside contributor; built on the maintainer's
+rulings of 2026-11-20, which this section records). It lifts the non-goal "Inspector" for **findings only**:
+Amazon Inspector v2's own configuration types (`inspectorv2_filter`, `inspectorv2_connector` and the others) are
+manifest entries already and are unchanged. Collect-only: nothing here arms reconcile.
+
+Every VDR method on the grid reads `compliance_core` findings, and without a CVE id and a CVSS vector each falls
+back to its worst case. For AWS workloads Inspector is the natural CVE source for EC2, ECR and Lambda. aws_core
+keeps Inspector's findings **in its own format**, as typed aws_core types, and can project them into
+`compliance_core` (`req-aws-landing-zone-inspector-compliance`); there is no bridge plugin.
+
+#### Implementation
+
+Read by the landing-zone reader for the run's own account, once per region in scope
+(`collectors/boto3_collector/inspector.py`). Shapes are **read** from botocore 1.44.4's `inspector2` service
+model; nothing was observed against a live account (no Inspector-enabled account was available, so the reads
+are built to the model and tested with `botocore.stub.Stubber`, every request and response validated against it).
+
+| Type | Source (read: botocore) | Key | Tags | Contained by | Falsifier: gone when | Reference edges |
+| --- | --- | --- | --- | --- | --- | --- |
+| `aws_inspector2_finding` **(new)** | `inspector2:ListFindings(filterCriteria: awsAccountId=<run account>, findingType=PACKAGE_VULNERABILITY, findingStatus=ACTIVE; sortCriteria: SEVERITY DESC; maxResults 100)` to its end; then the same with `findingStatus=CLOSED, updatedAt` in the last 30 days, sorted `LAST_OBSERVED_AT` DESC; then both again with `findingType=CODE_VULNERABILITY` | finding ARN | **none** (a finding is not taggable; inferred: botocore's `Finding` shape has no tag member, and `resources[].tags` are the resource's tags) | footprint, `HOSTS_INSPECTOR2_FINDING` | `ListFindings(filterCriteria: findingArn=<arn>)` names none (a CLOSED or SUPPRESSED finding is present) | `CONCERNS_RESOURCE` (→ the EC2 instance, Lambda function or ECR repository `resources[]` names, and for an ECR image the image host, below) |
+| `aws_inspector2_reachability_finding` **(new)** | the same two reads with `findingType=NETWORK_REACHABILITY` | finding ARN | **none** (as above) | footprint, `HOSTS_INSPECTOR2_REACHABILITY_FINDING` | as above | the compound edge of `req-aws-landing-zone-inspector-reachability` |
+
+- **Everything by default, trimmed by choice** (maintainer, 2026-11-20, Q124a: "collect everything by default and
+  allow people to trim as necessary"). Every finding type is read: `PACKAGE_VULNERABILITY`, `CODE_VULNERABILITY`
+  and `NETWORK_REACHABILITY`. The credential's `inspector_finding_types` down-selects them
+  (`spec-aws-core-secrets.md`, `req-aws-core-secret-findings-settings`); absent means all three. A type left out is
+  not read and its surface says so. In GovCloud the code type returns nothing, because Lambda code scanning and
+  code-repository scanning are not offered there (web:
+  https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-inspector2.html); an empty answer is stored as
+  such, not treated as an error.
+- **Read to the end, unless the operator limits it.** No fixed cap: each read runs to its last page. The shared
+  findings settings of `req-aws-landing-zone-findings-3` apply here as to GuardDuty, Security Hub and Access
+  Analyzer: `findings_max_per_region` caps the findings one service writes per region (Inspector's reads, active
+  first and package before code before reachability, share that one budget), and `findings_read_budget_seconds`
+  stops a read that runs too long. A read stopped by either records `reasons.truncated`, and the footprint's true
+  totals still come from the aggregation call.
+- **Never complete, and never retires.** The surfaces (`account_region.inspector2_findings`, one for the package
+  and code reads, and `account_region.inspector2_reachability_findings`) depend on source-side filters (the run's
+  account, the status) with no positive control, so they record `filter` verbatim, `filter_control: null` and
+  `enumeration_complete: false` (`req-grid-reconcile-evidence-4`) however far the read ran, and nominate nothing.
+- **True totals.** The footprint carries `inspector2_active_finding_counts`, `{finding type: {severity:
+  count}}` from `ListFindingAggregations(aggregationType=FINDING_TYPE, accountIds=[<run account>],
+  aggregationRequest.findingTypeAggregation.findingType=<type>)`, which counts however far the walk ran; the
+  lowercase `severityCounts` members (`all`, `critical`, `high`, `medium`, `low`, `informational`, `untriaged`)
+  are stored upper-cased as Inspector's own `Severity` labels, `ALL` included. `inspector2_active_finding_counts_complete`
+  is true only when every aggregation call answered; `inspector2_active_findings_truncated` is true when an
+  active read was stopped by the operator's limit or budget. Null means not read. That the aggregation counts ACTIVE findings only is
+  inferred from the API reference, not observed.
+- **Not enabled is not empty.** `BatchGetAccountStatus(accountIds=[<run account>])` gives the footprint
+  `inspector2_status` (`state.status`, verbatim: `ENABLED`, `DISABLED`, `SUSPENDED`, ...) and
+  `inspector2_resource_status` (`{ec2, ecr, lambda, lambdaCode, codeRepository, ami: status}` as returned). A
+  failed status read is null on both. When the status is positively `DISABLED` or `SUSPENDED` no finding is
+  read and both surfaces say why; any other status, or none, still reads.
+- **What is stored.** Typed fields: `finding_type`, `status`, `severity`, `inspector_score`, `title`,
+  `description`, `remediation` (`remediation.recommendation.text`), `remediation_url`, `first_observed_at`,
+  `last_observed_at`, `updated_at`, `resource_type` and `resource_id` (the first `resources[]` entry). A
+  package-vulnerability finding also keeps `vulnerability_id`, `related_vulnerabilities`,
+  `vulnerability_source`, `source_url`, `vendor_severity`, `vendor_created_at`, `vendor_updated_at`,
+  `reference_urls`, **every** CVSS entry (`cvss`, Inspector's list verbatim: `baseScore`, `scoringVector`,
+  `version`, `source`), the environment-adjusted score (`adjusted_cvss`, `inspectorScoreDetails.adjustedCvss`
+  verbatim with its adjustments), `fix_available`, `exploit_available`, `last_known_exploit_at`,
+  `epss_score`, `vulnerable_packages` (each package's name, version, epoch, release, arch, package manager,
+  file path, fixed-in version, remediation, source layer hash and Lambda layer ARN, verbatim) and
+  `image_digest` (an ECR image's digest). A code-vulnerability finding keeps, from `codeVulnerabilityDetails`
+  (read: botocore `CodeVulnerabilityDetails`, `CodeFilePath`), `cwes`, `detector_id`, `detector_name`,
+  `detector_tags`, `rule_id`, `reference_urls`, `code_file_name`, `code_file_path`, `code_start_line`,
+  `code_end_line` and `code_source_lambda_layer_arn`; the code snippet itself (`GetCodeSnippet`) is not read.
+  **`resources[].details` is not stored**: the node the finding
+  concerns already holds those facts (addresses, key names, image tags), and keeping a second copy is the
+  defect add-model's 5a names. A reader that needs one transient fact from it (an image's `platform`, for
+  the package ecosystem) reads it in memory and stores only what it derived.
+- **The resource it concerns.** `resources[0]` names it. `AWS_EC2_INSTANCE`: the instance by the instance id
+  (Inspector's `id` is the instance id, or an instance ARN whose `instance/` id is taken). `AWS_LAMBDA_FUNCTION`:
+  the function by its unqualified ARN, a `:$LATEST` qualifier removed (Inspector scans `$LATEST`; any other
+  qualifier names a version aws_core does not model, so no edge). `AWS_ECR_REPOSITORY`: the repository by its
+  ARN. `AWS_ECR_CONTAINER_IMAGE` (`arn:…:repository/<name>/sha256:<hex>`): the repository by the ARN with the
+  digest removed, **and** the image as computing_core's image host, `computing_core__host` realm `oci-digest`
+  keyed by the digest, written by aws_core exactly as the ECS reader writes one (`req-aws-collector-ecs-21`): a
+  host the grid already holds is sent with its key and kind only. Any other resource type gets no edge and keeps
+  its id in `resource_id`. The edge is `CONCERNS_RESOURCE`, a reference, emitted by natural key whether or not
+  the target was collected.
+- **Lifecycle.** `status` is Inspector's own field, verbatim. A finding that closes is rewritten `CLOSED` by the
+  closed read while it is inside the 30-day window. One a read did not return because the operator's limit or
+  budget stopped it is left as it was last written: absence from a truncated read is never a state.
+- **Not Security Hub's copy.** Inspector also sends its findings to Security Hub, and `aws_securityhub_finding`
+  stores that copy's `Vulnerabilities[]` (`req-aws-landing-zone-findings-7`). Joining the two (the ASFF `Id` is
+  the Inspector finding ARN) is **deferred** (maintainer, 2026-11-20): the direct read is its own read, works
+  without Security Hub, and carries the adjusted score and the structured image digest. Until the join is built
+  an Inspector finding that Security Hub also holds is two aws_core nodes, one per service, and only this one is
+  projected into compliance_core, so nothing is counted twice there.
+- **GovCloud.** `inspector2` is in both GovCloud regions with FIPS endpoints (web: the GovCloud page above);
+  its row in the partition availability table says so.
+- **Permissions.** `inspector2:ListFindings`, `inspector2:ListFindingAggregations` and
+  `inspector2:BatchGetAccountStatus`, all in AWS-managed `SecurityAudit` (web:
+  https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SecurityAudit.html, v95). The generated
+  custom policy set carries them (`handoff/README.md`).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-landing-zone-inspector-1 | Package And Code Findings Collected | Proposed | In each region read, the run's account's ACTIVE `PACKAGE_VULNERABILITY` and `CODE_VULNERABILITY` findings, and those CLOSED in the last 30 days, are `aws_inspector2_finding` nodes keyed by finding ARN, contained by the footprint, read with the filters tabled above. | `tests/test_inspector_findings.py` (botocore Stubber). |
+| req-aws-landing-zone-inspector-2 | Vulnerability Fields Kept | Proposed | A package finding keeps its vulnerability id, related ids, every CVSS entry with vector, score, version and source, the adjusted score, EPSS, exploit and fix flags, and every vulnerable package with its version, fixed-in version and file path; a code finding keeps its CWEs, detector id and name, rule id, file path and line range; `resources[].details` reaches no field. | A test plants details and finds none. |
+| req-aws-landing-zone-inspector-3 | Linked To Its Resource | Proposed | A finding has `CONCERNS_RESOURCE` to the EC2 instance, Lambda function or ECR repository it names, by natural key; an ECR image finding also to the `oci-digest` image host, sent with key and kind only when the grid holds it. | |
+| req-aws-landing-zone-inspector-4 | Read To The End, Totalled, Never Complete | Proposed | Each read runs to its last page unless the shared findings limit or budget stops it, and then names the truncation; its surface records the filter with no control and is never complete; the footprint carries the true active totals from `ListFindingAggregations`. | `req-aws-landing-zone-findings-3`. |
+| req-aws-landing-zone-inspector-5 | Not Enabled Is Said | Proposed | The footprint carries Inspector's account and per-resource status from `BatchGetAccountStatus`; a positively disabled or suspended account reads no finding and its surfaces say why; a failed status read is null. | |
+| req-aws-landing-zone-inspector-6 | Retirement Path | Proposed | Both finding types are footprint containment targets with a registered falsifier; each footprint read records a surface for each containment edge. | `req-aws-core-contained-type-triple`. |
+| req-aws-landing-zone-inspector-7 | Every Type By Default | Proposed | With `inspector_finding_types` absent all three finding types are read; with it set only the named types are, and each type left out records why on its surface. | Q124a. |
+
+### Inspector Reachability Is A Compound Edge
+----
+RID: `req-aws-landing-zone-inspector-reachability`
+
+Status: `Proposed`
+
+The first compound edge (`req-grid-edge-compound`, `tap_grid/specs/spec-grid-edge.md` § Compound Edges; tap PR
+1268). A `NETWORK_REACHABILITY` finding says a port range is open from a VPC edge to an EC2 network interface
+along a path. It has an identity of its own (its ARN) and a sender, a receiver and the components in between, so
+the finding **is the middle node** (ruled 2026-11-20): `aws_inspector2_reachability_finding` declares
+
+```python
+COMPOUND_EDGE = {
+    "source": "REACHABILITY_SOURCE__aws_core",
+    "destination": "REACHABILITY_DESTINATION__aws_core",
+    "carrier": None,
+    "path": "TRAVERSES_COMPONENT__aws_core",
+    "retires_with": ("source", "destination"),
+}
+```
+
+#### Implementation
+
+| Role | Edge | From → to | Targets |
+| --- | --- | --- | --- |
+| source | `REACHABILITY_SOURCE__aws_core` | entry gateway → finding | closed list: `aws_internet_gateway` (`igw_id`), `aws_ec2_vpn_gateway` (a virtual private gateway, `ec2_vpn_gateway_id`), `aws_ec2_vpc_peering_connection` (`ec2_vpc_peering_connection_id`), `aws_alb` (`lb_arn`). AWS documents the edges as "an internet gateway (including instances behind Application Load Balancers or Classic Load Balancers), a VPC peering connection, or a VPN through a virtual gateway" (web: https://docs.aws.amazon.com/inspector/latest/user/findings-types.html, read 2026-11-20) |
+| destination | `REACHABILITY_DESTINATION__aws_core` | finding → `aws_ec2_network_interface` (`ec2_network_interface_id`) | the network interface, not the instance: it is what the port is open on, an instance can have several, and the instance is one `ATTACHED_TO_INSTANCE` away |
+| path | `TRAVERSES_COMPONENT__aws_core` | finding → each component the path passes through | closed list: `aws_route_table` (`route_table_id`), `aws_security_group` (`group_id`), `aws_network_acl` (`network_acl_id`). Property `step`, the component's position in `networkPath.steps` (not identity) |
+
+- **Fields.** `protocol` (`TCP`/`UDP`, verbatim), `open_port_begin`, `open_port_end`, `network_path`
+  (`networkPath.steps` verbatim, in order), and the shared fields of `req-aws-landing-zone-inspector`.
+- **Which component a step is.** botocore types `Step.componentType` as a plain string with no enum, and no AWS
+  page found lists its values (searched 2026-11-20: the API reference, the finding-types page, Security Hub's
+  `NetworkPathComponent`). So the role and target type of a step are decided from what AWS **does** document,
+  never from a guessed `componentType`: the `componentId`'s AWS resource-id prefix (`igw-`, `vgw-`, `pcx-`,
+  `rtb-`, `sg-`, `acl-`, `eni-`) or, for a load balancer, its `componentArn` read by `arn_resolver`. The first
+  step that is a gateway is the source; the last step that is a network interface is the destination; every
+  route table, security group and network ACL is on the path. `DOCUMENTED_COMPONENT_TYPES` is the table of
+  `componentType` values whose meaning AWS documents, and it is **empty**: every step's `componentType` is kept
+  verbatim in `network_path`, and each value not in the table is listed in `component_types_unmatched`, so the
+  gap is a field, not a guess. A step whose id and ARN name no tabled type (a subnet, a VPC, an endpoint, a
+  Classic Load Balancer named by its name) is listed in `unmatched_steps` with the reason and gets no edge.
+  **Real `componentType` values must be captured from a live finding** and the table filled from them.
+- **Retirement.** `retires_with` both ends: when the gateway or the network interface retires, by a plain
+  delete or a cascade, the finding retires with it (`req-grid-edge-compound-5`). A path component's retirement
+  ends only its edge (`req-grid-edge-compound-8`). History stays on (`req-grid-history-optout` is not used).
+- **Port range and protocol are fields**, not `computing_core__port` nodes: a range up to 0-65535 is not a set of
+  ports, and computing_core's network types have no natural key (tap#1261's answer, recorded in
+  `spec-grid-edge.md`).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-landing-zone-inspector-reachability-1 | The Finding Is The Middle Node | Proposed | `aws_inspector2_reachability_finding` declares the `COMPOUND_EDGE` above, which `parse_compound_edge` accepts and `tap_grid.E006` passes. | |
+| req-aws-landing-zone-inspector-reachability-2 | Ends And Path From The Steps | Proposed | A finding whose path starts at a tabled gateway and ends at a network interface has one source edge from the gateway, one destination edge to the interface, and one path edge (with `step`) to each route table, security group and network ACL on it. | |
+| req-aws-landing-zone-inspector-reachability-3 | Unknown Is A Field, Not A Guess | Proposed | Every `componentType` not in `DOCUMENTED_COMPONENT_TYPES` is listed in `component_types_unmatched`; a step no tabled type matches is listed in `unmatched_steps` and gets no edge. | |
+| req-aws-landing-zone-inspector-reachability-4 | Retires With Either End | Proposed | Deleting the gateway or the interface retires the finding; deleting a path component does not. | tap_grid's delete walk. |
+
+### Inspector Findings In compliance_core
+----
+RID: `req-aws-landing-zone-inspector-compliance`
+
+Status: `Proposed`
+
+An operator can turn on writing `compliance_core`'s neutral finding from the stored Inspector rows, so a VDR
+method reads a CVE id and a CVSS vector instead of its worst case. It is **off by default**: the switch is
+`inspector_compliance_findings` in the collector's credential data (`spec-aws-core-secrets.md`,
+`req-aws-core-secret-findings-settings`).
+
+**The cross-plugin dependency, named** (AGENTS.md, plugins are hermetic: "when a cross-plugin dependency IS
+right it becomes a first-class spec concern"). aws_core declares `compliance_core` an **optional** `depends_on`
+with `min_version = "0.8.13"`, and nothing more: no pyproject dependency and no import of compliance_core code
+(the preboot import scan would see one). The narrow contract is the slugs it writes and reads by name:
+`compliance_core__compliance_finding` (`source`, `source_key`, `name`, `summary`, `description`, `status`,
+`first_detected_at`), `compliance_core__compliance_vulnerability` (`vuln_id`, `aliases`, `cvss_score`,
+`cvss_vector`, `cvss_version`, `cvss_source`), `CONCERNS_COMPLIANCE_VULNERABILITY__compliance_core`
+(`fixed_versions`, `fix_state`) and `CARRIES_COMPLIANCE_FINDING__compliance_core`. 0.8.13 is the floor because
+it is the first release with all of them as written here: `fix_state` arrived in 0.8.8, the dimension
+declarations a live-dimension core needs in 0.8.12, and one `CARRIES_COMPLIANCE_FINDING` per pair in 0.8.13,
+which makes re-writing a carrier every run idempotent. Absent, compliance_core is simply not written, and every
+Inspector row is still collected.
+
+#### Implementation
+
+- **From the stored rows, as the run's last step.** After the collection batch has imported, the projection
+  reads the live `aws_inspector2_finding` rows of the run's account (not the API response) and writes one
+  further GRIFT batch. So turning the option on later back-fills every row already stored, and a projection
+  failure never touches the collection.
+- **Readiness.** The collector's self-test fails (`INSPECTOR_COMPLIANCE_READY`, misconfigured) when the option is
+  on and compliance_core is not installed, is older than 0.8.13, or lacks one of the types, fields or edges named
+  above. The run makes the same check before it projects: when it fails, the AWS data is still collected and
+  written, the projection is not attempted, and the run records `INSPECTOR_COMPLIANCE_PROJECTION_FAILED` as an
+  error with the reason (named in the run summary). A projection batch the importer rejects is recorded the same
+  way (the collection batch has already imported).
+- **Identity.** `source` = `aws_inspector`; `source_key` = the Inspector finding ARN, which is stable while the
+  finding lives and equals Security Hub's ASFF `Id`.
+- **The neutral finding.** `name` = the title (255), `summary` = severity, vulnerability id and package names
+  (500), `description` = Inspector's description, `first_detected_at` = `first_observed_at`. `status` is `open`
+  for an ACTIVE row and `resolved` for a CLOSED one: a row is CLOSED only when a read in the 30-day window
+  returned it CLOSED, so a finding resolves only on that positive record, never because a truncated read missed it.
+- **The vulnerability.** `vuln_id` is the Inspector `vulnerabilityId` when it is a CVE id, else the first CVE
+  id in `relatedVulnerabilities`, else the id as given (the grype rule). Before one is minted it is looked up
+  under that id as a `vuln_id` **or an alias** of a live vulnerability; one found is linked to and keeps its
+  own `vuln_id`; two found is ambiguous and that finding is not projected (a warning names it). A new one is
+  created with its `aliases` = the Inspector id when it differs. **CVSS is filled only when the node has none**
+  (`cvss_score` null): Inspector's entries are ranked NVD 3.x, then any other 3.x (the vendor's), then 2.x, the
+  highest version first within a rank, and the chosen entry's score, vector, version and source are written.
+  The full list stays on the aws_core row. Inspector's EPSS and exploit flags are **not** written: its EPSS has
+  no date (`req-compliance-core-vulnerability-5` needs one) and vuln_mosaic owns EPSS and KEV. The adjusted
+  Inspector score stays on the aws_core finding: it is a fact about this resource, not about the CVE. The
+  fill-only rule is read-then-write: a vulnerability another writer fills between the read and the write is
+  overwritten once (inferred risk, not guarded by version).
+- **A code finding has no vulnerability record** (maintainer, 2026-11-20, Q124b). A `CODE_VULNERABILITY` row is
+  projected as its `compliance_finding` and its carrier edge only: no `compliance_vulnerability` node and no
+  `CONCERNS_COMPLIANCE_VULNERABILITY` edge. A code finding usually names a CWE and a detector rule, not a CVE, and a
+  key invented for it would be a vulnerability record no other source can name.
+- **The fix, on the pair.** `CONCERNS_COMPLIANCE_VULNERABILITY` carries `fixed_versions` = every vulnerable
+  package's `fixedInVersion` (sorted, distinct; `[]` when none names one) and `fix_state` from `fixAvailable`:
+  `YES` → `fixed`, `NO` → `not-fixed`, `PARTIAL` → `fixed` with the partial list; absent when Inspector says
+  nothing.
+- **The carrier.** In v1 the neutral finding is carried (`CARRIES_COMPLIANCE_FINDING`) by the aws_core resource
+  node it concerns: the EC2 instance, the Lambda function, the ECR repository (for an image finding too). When the
+  package chain names the finding's packages (`req-aws-landing-zone-inspector-packages`), the packages carry it
+  instead (see there). A row whose resource aws_core cannot name is projected with no carrier.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-landing-zone-inspector-compliance-1 | Off By Default | Proposed | With the option absent or false, no compliance_core node or edge is written and readiness is not checked. | |
+| req-aws-landing-zone-inspector-compliance-2 | Optional, Never Imported | Proposed | `depends_on` names compliance_core `optional = true`, `min_version = "0.8.13"`; pyproject names no compliance-core-tap; no module imports `tap_plugin.compliance_core`. | A test scans the package. |
+| req-aws-landing-zone-inspector-compliance-3 | Readiness Fails Loud | Proposed | Self-test fails when the option is on and compliance_core is missing, too old or lacks a needed type, field or edge; at run start the same failure collects the AWS data, skips the projection and records the reason as an error. | |
+| req-aws-landing-zone-inspector-compliance-4 | Projected From Stored Rows | Proposed | The projection reads stored rows, so a row collected before the option was on is projected on the first run after. | |
+| req-aws-landing-zone-inspector-compliance-5 | The Neutral Shape | Proposed | Each projected package row is one `compliance_finding` (`aws_inspector`, finding ARN), a `CONCERNS_COMPLIANCE_VULNERABILITY` to the vulnerability chosen and looked up as above with `fixed_versions` and `fix_state` as mapped, and a carrier edge; a code row is the finding and its carrier edge only, with no vulnerability node or `CONCERNS` edge. | Q124b. |
+| req-aws-landing-zone-inspector-compliance-6 | CVSS Only When Empty | Proposed | A vulnerability with a CVSS score keeps it; one without gets Inspector's top-ranked entry with its vector; EPSS, exploit flags and the adjusted score are never written to the vulnerability. | |
+| req-aws-landing-zone-inspector-compliance-7 | Resolved Only On A Closed Read | Proposed | A neutral finding is `resolved` only when its row is CLOSED; a row a truncated read did not return stays as it was. | |
+
+### Inspector Packages On The Image Host
+----
+RID: `req-aws-landing-zone-inspector-packages`
+
+Status: `Proposed`
+
+Deferred from v1 until aws_core's ECS containers ran their images (aws-core-tap#95: `RUNS_IMAGE__computing_core`
+from `aws_ecs_container` to the `oci-digest` host, `req-aws-collector-ecs-20`), which they now do. With it,
+fedramp_20x_vdr's reach Search can name an owner for an Inspector finding instead of `owner_kind: none`.
+
+**What reach walks** (read: fedramp-20x-vdr-tap `tap_plugin/fedramp_20x_vdr/searches/reach.py`, 2026-11-20): an
+open finding with a `CONCERNS_COMPLIANCE_VULNERABILITY` edge; its `CARRIES_COMPLIANCE_FINDING` carriers; for a
+carrier that is a `computing_core__package`, the hosts that `INSTALLS_PACKAGE` it; for each host, the nodes that
+`RUNS_IMAGE` it (the containers); then each container's `RUNS_PROGRAM` closure. Any other carrier yields one row
+with no owner. So the chain aws_core writes is exactly: image host `INSTALLS_PACKAGE` package, and package
+`CARRIES_COMPLIANCE_FINDING` finding; the ECS reader already writes the container's `RUNS_IMAGE`.
+
+#### Implementation
+
+- **The package.** For an ECR image finding, each vulnerable package becomes a `computing_core__package` keyed
+  `(ecosystem, name, version)` exactly as computing_core's SBOM parser keys one (`classify_component`: the purl
+  type, the component name, the component version), so Inspector, grype and anchore name one node: grype and
+  anchore both take their packages from that parser. `ecosystem` comes from `packageManager`: `NPM`, `YARN`,
+  `NODEPKG` → `npm`; `PIP`, `PIPENV`, `POETRY`, `PYTHONPKG` → `pypi`; `BUNDLER`, `GEMSPEC` → `gem`; `CARGO` →
+  `cargo`; `NUGET`, `DOTNET_CORE` → `nuget`; `GOBINARY`, `GOMOD` → `golang`; `OS` → the image's distribution
+  family read from its transient `platform` (`AMAZON_LINUX*`, `RHEL*`, `CENTOS*`, `ORACLE*`, `ALMA*`, `ROCKY*`,
+  `FEDORA*`, `SUSE*`, `SLES*`, `OPENSUSE*` → `rpm`; `DEBIAN*`, `UBUNTU*` → `deb`; `ALPINE*` → `apk`).
+  `version` is `version` for a language package and, for an OS package, `version-release` with `epoch:`
+  prefixed when the epoch is above zero (inferred to be Syft's form for rpm, dpkg and apk versions; to be checked against a live finding and an SBOM of the same image). `JAR`, `POM` and
+  `COMPOSER` are **not mapped**: Syft names a Maven component by its artifact id and Inspector by
+  `group:artifact`, and composer is not a package type the parser keeps, so a node would join nothing. Every
+  vulnerable package is listed in the row's `package_identities` with the key it got, or `null` and the reason
+  it got none. The `platform` strings are free text in botocore: the prefixes are inferred from Inspector's
+  documented supported operating systems and must be checked against live findings.
+- **Only key fields are sent.** A package envelope carries `ecosystem`, `name` and `version`, nothing else, so a
+  purl, licence or architecture an SBOM writer stored is left as it was (the importer's keep-absent upsert).
+- **The host.** The image host the finding already concerns (`req-aws-landing-zone-inspector-3`) `INSTALLS_PACKAGE`
+  each package. EC2 and Lambda findings get no package chain: aws_core writes no computing_core host for an
+  instance or a function, and minting one here would be a second identity for a machine aws_core already
+  models.
+- **The carrier.** When the projection is on, an image finding whose packages got keys is carried by those
+  packages (`CARRIES_COMPLIANCE_FINDING` from each), **instead of** the repository: reach reads every carrier,
+  and a second carrier that is not a package would add a row with no owner beside the owned ones. An image
+  finding whose packages all failed to key keeps the repository as carrier. A carrier edge an earlier run wrote
+  from the repository is not retired by this run (pre-users: a reload clears it).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-landing-zone-inspector-packages-1 | Image Host Installs Its Packages | Proposed | Each vulnerable package of an ECR image finding with a mapped ecosystem is a `computing_core__package` keyed as the SBOM parser keys it, sent with its key only, with `INSTALLS_PACKAGE` from the image host. | |
+| req-aws-landing-zone-inspector-packages-2 | Unmapped Is Said | Proposed | A package with no mapped ecosystem gets no node, and `package_identities` gives the reason. | |
+| req-aws-landing-zone-inspector-packages-3 | Packages Carry The Finding | Proposed | With the projection on, an image finding whose packages got keys is carried by them and not by the repository; reach resolves it through `INSTALLS_PACKAGE` and `RUNS_IMAGE` to the containers running the image. | `tests/test_inspector_compliance.py`. |
 
 ### Non-Goals
 ----
@@ -394,7 +737,11 @@ Status: `Proposed`
   ACTIVE but whose workflow is RESOLVED or SUPPRESSED is read with the active ones, with
   `workflow_status` saying so: the workflow is an operator's triage state, not the record's. Nothing
   updates a finding's workflow or archives it. Member accounts' findings (Q115c) wait on fan-out.
-- **Inspector and Detective.** No Gruntwork baseline read enables them (not found in the module reference pages).
+- **Detective.** No Gruntwork baseline read enables it (not found in the module reference pages). Inspector's
+  findings were a non-goal on the same ground until aws-core-tap#261 lifted it (`req-aws-landing-zone-inspector`).
+- **Security Hub's copy of Inspector's findings.** Joining an `aws_securityhub_finding` whose `ProductName` is
+  Inspector to the `aws_inspector2_finding` with the same ARN, and projecting only one of them, is deferred
+  (maintainer, 2026-11-20; `req-aws-landing-zone-inspector`, *Not Security Hub's copy*).
 
 #### Acceptance Criteria
 

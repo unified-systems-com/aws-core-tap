@@ -1107,11 +1107,15 @@ class TestSecurityServices:
         aws = govcloud()
         aws.on("ec2", "get_ebs_default_kms_key_id", _err("UnauthorizedOperation"), region=EAST)
         read = collect(aws)
-        assert read.footprint_fields[WEST] == {
+        ebs = ("ebs_encryption_by_default", "ebs_default_kms_key_id")
+        assert {k: read.footprint_fields[WEST][k] for k in ebs} == {
             "ebs_encryption_by_default": True,
             "ebs_default_kms_key_id": "alias/aws/ebs",
         }
-        assert read.footprint_fields[EAST] == {"ebs_encryption_by_default": False, "ebs_default_kms_key_id": None}
+        assert {k: read.footprint_fields[EAST][k] for k in ebs} == {
+            "ebs_encryption_by_default": False,
+            "ebs_default_kms_key_id": None,
+        }
         assert sorted(r for _s, r, op, _ in aws.calls if op == "get_ebs_encryption_by_default") == sorted(REGIONS)
 
     @pytest.mark.spec("req-aws-landing-zone-security-services-1")

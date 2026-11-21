@@ -14,12 +14,18 @@ plugin_version = "0.8.3" # x-release-please-version
 # 0.4.2: the first core release that builds CI, dev and test databases from the models instead of
 # replaying every migration (unified-systems-com/tap#1258). Plugin CI tests against the core tag at
 # this floor, so raising it is what lets this plugin's CI skip the ~22-minute migrate from zero.
-requires_tap = ">=0.4.2"
+# 0.4.3: the first core release that carries compound edges (unified-systems-com/tap PR 1268, req-grid-edge-compound:
+# BaseModel.COMPOUND_EDGE, tap_grid.compound_edges, the E006 boot check and the retire-with-an-end delete walk), which
+# aws_inspector2_reachability_finding declares (aws-core-tap#261). WAITING ON THAT RELEASE: 0.4.3 is not cut yet, so
+# this floor names the release it will be; the PR is held until it exists. On an older core the declaration is an
+# unknown class attribute and the finding would not retire with its gateway or interface.
+requires_tap = ">=0.4.3"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
 
 depends_on = [
+    { slug = "compliance_core", optional = true, min_version = "0.8.13", note = "req-aws-landing-zone-inspector-compliance: when the credential's inspector_compliance_findings is true, the run's last step writes compliance_core's neutral finding, vulnerability, CONCERNS_COMPLIANCE_VULNERABILITY and CARRIES_COMPLIANCE_FINDING from the stored Inspector rows. Written by slug and read through the registries, never imported; no pyproject dependency. 0.8.13 is the first release with fix_state (0.8.8), the dimension declarations (0.8.12) and one CARRIES edge per pair (0.8.13). Absent or too old, the self-test fails when the option is on and the run collects the AWS data and records the projection as failed." },
     { slug = "computing_core", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and only computing_core's [grift] dimension bundle declares it. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin." },
 ]
 
@@ -940,6 +946,8 @@ aws_core__aws_securityhub_finding = "tap_plugin.aws_core.models.aws_securityhub_
 aws_core__aws_securityhub_standards_subscription = "tap_plugin.aws_core.models.aws_securityhub_standards_subscription.AwsSecurityHubStandardsSubscription"
 aws_core__aws_access_analyzer_finding = "tap_plugin.aws_core.models.aws_access_analyzer_finding.AwsAccessAnalyzerFinding"
 aws_core__aws_config_rule = "tap_plugin.aws_core.models.aws_config_rule.AwsConfigRule"
+aws_core__aws_inspector2_finding = "tap_plugin.aws_core.models.aws_inspector2_finding.AwsInspector2Finding"
+aws_core__aws_inspector2_reachability_finding = "tap_plugin.aws_core.models.aws_inspector2_reachability_finding.AwsInspector2ReachabilityFinding"
 aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.models.aws_config_conformance_pack.AwsConfigConformancePack"
 aws_core__aws_transit_gateway = "tap_plugin.aws_core.models.transit_gateway.TransitGateway"
 aws_core__aws_transit_gateway_attachment = "tap_plugin.aws_core.models.transit_gateway_attachment.TransitGatewayAttachment"
@@ -1070,6 +1078,12 @@ HOLDS_STANDARDS_SUBSCRIPTION__aws_core = "edges/HOLDS_STANDARDS_SUBSCRIPTION.edg
 HOLDS_ACCESS_ANALYZER_FINDING__aws_core = "edges/HOLDS_ACCESS_ANALYZER_FINDING.edge.json"
 HOSTS_CONFIG_RULE__aws_core = "edges/HOSTS_CONFIG_RULE.edge.json"
 HOSTS_CONFORMANCE_PACK__aws_core = "edges/HOSTS_CONFORMANCE_PACK.edge.json"
+HOSTS_INSPECTOR2_FINDING__aws_core = "edges/HOSTS_INSPECTOR2_FINDING.edge.json"
+# The reachability compound edge (req-grid-edge-compound, aws-core-tap#261): the finding is the middle node.
+HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core = "edges/HOSTS_INSPECTOR2_REACHABILITY_FINDING.edge.json"
+REACHABILITY_SOURCE__aws_core = "edges/REACHABILITY_SOURCE.edge.json"
+REACHABILITY_DESTINATION__aws_core = "edges/REACHABILITY_DESTINATION.edge.json"
+TRAVERSES_COMPONENT__aws_core = "edges/TRAVERSES_COMPONENT.edge.json"
 CONCERNS_RESOURCE__aws_core = "edges/CONCERNS_RESOURCE.edge.json"
 EVALUATED_UNDER_STANDARD__aws_core = "edges/EVALUATED_UNDER_STANDARD.edge.json"
 RETRIEVES_SOURCE_FROM__aws_core = "edges/RETRIEVES_SOURCE_FROM.edge.json"
@@ -1162,6 +1176,10 @@ aws_core__aws_securityhub_standards_subscription = "tap_plugin.aws_core.falsifie
 aws_core__aws_access_analyzer_finding = "tap_plugin.aws_core.falsifiers.AccessAnalyzerFindingFalsifier"
 aws_core__aws_config_rule = "tap_plugin.aws_core.falsifiers.ConfigRuleFalsifier"
 aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.falsifiers.ConformancePackFalsifier"
+# Inspector v2 findings (aws-core-tap#261, collectors/boto3_collector/inspector.py): the footprint contains them;
+# the surfaces are filtered and capped, so never complete, and the falsifier is registered so the triple holds.
+aws_core__aws_inspector2_finding = "tap_plugin.aws_core.falsifiers.InspectorFindingFalsifier"
+aws_core__aws_inspector2_reachability_finding = "tap_plugin.aws_core.falsifiers.InspectorFindingFalsifier"
 # ECS (aws-core-tap#211): EcsCluster -> RUNS_TASK -> task, EcsTask -> RUNS_CONTAINER -> container, each with a
 # per-parent surface recorded by the ECS walk (collectors/boto3_collector/ecs.py). A stopped task is recorded
 # while ECS lists it and retired after (ruled 2026-11-09). Registered, not armed: reconcile authority stays off.
@@ -1179,4 +1197,4 @@ pages = "grift/pages.grift.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "a3f317af1f08e3614a6f62110695050ee03f24cbada905a833261ce2eaff29f2"
+sha256 = "84a71ba95d711a23d12244bd536300023477df63604cfc098c4b434d4eae9548"

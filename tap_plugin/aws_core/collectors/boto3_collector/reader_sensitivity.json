@@ -324,6 +324,58 @@
       }
     },
     {
+      "entity_type": "aws_core__aws_inspector2_finding",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the finding model's typed fields and botocore 1.44.4 inspector2 ListFindings (Finding, PackageVulnerabilityDetails, VulnerablePackage, CvssScore, InspectorScoreDetails), BatchGetAccountStatus and ListFindingAggregations output shapes, 2026-11-20 (aws-core-tap#261). botocore marks no member sensitive. resources[].details (instance addresses, key names, IAM instance profile, image tags, Lambda execution role and layers) is not read into any field, nor is resources[].tags. CodeVulnerabilityDetails (CodeFilePath) is read for a CODE_VULNERABILITY finding: CWEs, detector, rule and file location; the code snippet itself (GetCodeSnippet) is never called.",
+        "locations": [
+          { "path": "title", "category": "free_text", "reason": "Inspector's finding title: names the vulnerability and the package as Inspector writes it.", "evidence": "reviewer_judgement" },
+          { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" },
+          { "path": "description", "category": "free_text", "reason": "Inspector's description of the vulnerability, from the vendor advisory.", "evidence": "reviewer_judgement" },
+          { "path": "remediation", "category": "free_text", "reason": "Inspector's remediation recommendation text.", "evidence": "reviewer_judgement" },
+          { "path": "vulnerable_packages", "category": "customer_content", "reason": "Each package's file path inside the image, instance or function (filePath can name an application directory or a home directory) and, for a Lambda layer, the layer ARN.", "evidence": "reviewer_judgement" },
+          { "path": "resource_id", "category": "customer_content", "reason": "The instance id, function ARN or repository ARN the finding concerns: operator-chosen repository and function names.", "evidence": "reviewer_judgement" },
+          { "path": "code_file_name", "category": "customer_content", "reason": "The name of the source file a code finding is in: an operator's file name.", "evidence": "reviewer_judgement" },
+          { "path": "code_file_path", "category": "customer_content", "reason": "The path of the source file a code finding is in: an operator's directory layout.", "evidence": "reviewer_judgement" },
+          { "path": "code_source_lambda_layer_arn", "category": "customer_content", "reason": "The Lambda layer a code finding's file came from, by ARN: an operator-chosen layer name.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_inspector2_reachability_finding",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the reachability finding model's typed fields and botocore 1.44.4 inspector2 ListFindings (Finding, NetworkReachabilityDetails, NetworkPath, Step, PortRange) output shapes, 2026-11-20 (aws-core-tap#261). botocore marks no member sensitive. resources[].details and resources[].tags are not read into any field.",
+        "locations": [
+          { "path": "title", "category": "free_text", "reason": "Inspector's finding title: names the port range and the instance, as Inspector writes it.", "evidence": "reviewer_judgement" },
+          { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" },
+          { "path": "description", "category": "free_text", "reason": "Inspector's description of the open path.", "evidence": "reviewer_judgement" },
+          { "path": "remediation", "category": "free_text", "reason": "Inspector's remediation recommendation text.", "evidence": "reviewer_judgement" },
+          { "path": "network_path", "category": "other", "reason": "The path's component ids and ARNs (gateways, route tables, ACLs, security groups, interfaces): resource ids, not secrets; the path is the finding's substance.", "evidence": "reviewer_judgement" },
+          { "path": "unmatched_steps", "category": "other", "reason": "The path steps no tabled type matched, with their component ids.", "evidence": "reviewer_judgement" },
+          { "path": "resource_id", "category": "customer_content", "reason": "The instance id the finding concerns.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
+      "entity_type": "computing_core__package",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the fields inspector.py sends for a vulnerable package of an ECR image finding (2026-11-20, aws-core-tap#261): ecosystem (a package-URL type mapped from packageManager and, for an OS package, the image's transient platform), name and version (vulnerablePackages[].name, version, release, epoch). No other package field is written; the file path stays on the Inspector finding."
+      }
+    },
+    {
+      "entity_type": "computing_core__host",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the fields inspector.py sends for an ECR image's host through ecs._host_envelope (2026-11-20, aws-core-tap#261): realm (the constant oci-digest), stable_id (the sha256 digest read from the finding's resource id) and kind (the constant container). No name is sent from an Inspector finding (the image references live in resources[].details, which is not read), and no other host field is written."
+      }
+    },
+    {
       "entity_type": "computing_core__host",
       "reader": "ecs",
       "sensitivity": {
