@@ -17,8 +17,14 @@ class AwsConfigRule(BaseModel):
 
     ``compliance_type`` is null when the compliance listing failed before naming the rule, and ``""``
     when it read to its end without naming it. ``non_compliant_resource_count`` is AWS's capped count
-    (``CappedCount``); ``non_compliant_count_capped`` says when AWS's own cap was exceeded. The
-    rule's ``InputParameters`` are not stored.
+    (``CappedCount``); ``non_compliant_count_capped`` says when AWS's own cap was exceeded.
+
+    What the rule evaluates is kept (aws-core-tap#264, ruling Q114c): ``scope`` (``Scope``: the
+    resource types, tag or resource id it covers; ``{}`` when it sets none), ``input_parameters``
+    (``InputParameters`` parsed from its JSON string; ``{}`` when it has none, the string verbatim
+    when it does not parse to an object), and for a custom policy rule ``policy_runtime`` and
+    ``policy_text``, the Guard policy body (``config:GetCustomRulePolicy``). ``policy_text`` is ``""``
+    for a rule of another kind and null when that read failed.
 
     Spec: specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-findings)
     """
@@ -55,6 +61,11 @@ class AwsConfigRule(BaseModel):
         "compliance_type": {"type": ["string", "null"]},
         "non_compliant_resource_count": {"type": ["integer", "null"]},
         "non_compliant_count_capped": {"type": ["boolean", "null"]},
+        "scope": {"type": ["object", "null"]},
+        "input_parameters": {"type": ["object", "string", "null"]},
+        # guard-2.x.x for a custom policy rule; "" otherwise.
+        "policy_runtime": {"type": ["string", "null"]},
+        "policy_text": {"type": ["string", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -77,6 +88,13 @@ class AwsConfigRule(BaseModel):
     compliance_type = models.CharField(max_length=32, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", "" is "not evaluated"
     non_compliant_resource_count = models.IntegerField(null=True, blank=True, default=None)
     non_compliant_count_capped = models.BooleanField(null=True, blank=True, default=None)
+    # Source: config:DescribeConfigRules ConfigRules[].Scope.
+    scope = models.JSONField(null=True, blank=True, default=None)
+    # Source: config:DescribeConfigRules ConfigRules[].InputParameters (a JSON string, parsed).
+    input_parameters = models.JSONField(null=True, blank=True, default=None)
+    policy_runtime = models.CharField(max_length=64, null=True, blank=True, default=None)
+    # Source: config:GetCustomRulePolicy PolicyText (or DescribeConfigRules' Source.CustomPolicyDetails.PolicyText).
+    policy_text = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read", "" is "none"
     # AWS tags, canonical flat {str: str}. Source: config:ListTagsForResource (`Tags`, list_kv).
     tags = models.JSONField(null=True, blank=True, default=None)
 

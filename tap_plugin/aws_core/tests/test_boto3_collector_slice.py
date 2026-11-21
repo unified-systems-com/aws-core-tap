@@ -269,8 +269,8 @@ _CANNED = {
                 "Role": _ROLE_ARN,
                 "LoggingConfig": {"LogGroup": "/aws/lambda/sam-handler"},
                 "LastModified": "2026-01-02T03:04:05.000+0000",
-                # Secret-shaped environment: the Lambda manifest entry has
-                # persist_configuration: false, so none of this may be stored.
+                # Environment variables are stored (aws-core-tap#264, Q114d); the value under a
+                # secret-named key is still removed by the key scrub (req-aws-collector-redaction-3).
                 "Environment": {"Variables": {"DB_PASSWORD": _ENV_CANARY, "STAGE": "prod"}},
                 "VpcConfig": {
                     "SubnetIds": ["subnet-0aaa1111", "subnet-0bbb2222"],
@@ -607,7 +607,7 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert isinstance(ledger_entries[0]["message_data"]["calls"], list)
 
     # The Lambda node landed, typed, found by its natural key. Its configuration is stored (every entry stores its
-    # response) without the environment variables, which AWS marks sensitive.
+    # response) with its environment variables (aws-core-tap#264, Q114d), less the value under a secret-named key.
     fn = get_node(node_id("aws_core__aws_lambda", _FN_ARN))
     assert fn.name == "sam-handler"
     assert fn.function_arn == _FN_ARN
@@ -616,8 +616,8 @@ def test_canned_lambda_and_role_land_on_grid(_stub_aws):
     assert fn.memory_size == 256
     assert fn.timeout == 30
     assert fn.configuration["FunctionName"] == "sam-handler"
-    assert "Variables" not in fn.configuration.get("Environment", {})
-    assert "Environment.Variables" in fn.configuration["_redacted"]
+    assert fn.configuration["Environment"]["Variables"] == {"STAGE": "prod"}
+    assert "Environment.Variables.DB_PASSWORD" in fn.configuration["_redacted"]
 
     # Lambda tags came via the RGTA path (joined by FunctionArn).
     assert fn.tags == {"Owner": "sam"}
