@@ -1115,14 +1115,23 @@ the host is staged in the same batch.
   producer wrote (Anchore's name, operating system and image facts). When the lookup fails, the key-and-kind write
   is sent, which is safe either way, and the run log says so (`ECS_IMAGE_HOST_LOOKUP_FAILED`). Neither image type
   carries an account or region dimension: one digest in two registries is one host.
-- Where the container's `image` writes a registry, a repository and a tag, and the digest is well-formed, the run
+- Where the container's `image` writes a tag, and the digest is well-formed, the run
   also stages `computing_core__image_tag` `(registry, repository, tag)` and
   `<image_tag> TAGS_IMAGE__computing_core <host>`: ECS resolved that tag to that digest when it pulled.
   `detected_at` is the latest `startedAt` of the tasks that ran the pair, and absent when none has started. The
-  parts are taken as written (`req-computing-core-image-tag`): the registry is the first path component only when
-  it holds a `.` or a `:` or is `localhost`; a reference with `@` was pulled by digest and makes no tag; a
-  reference with no `:tag` writes none. So `nginx:1.25` (Docker Hub implied, not written) and `app` (`latest`
-  implied) make no tag. A part longer than its column, or a tag that is not an OCI tag, makes none.
+  parts are sent as written, and computing_core stores them in Docker's canonical form
+  (`req-computing-core-image-tag-6`, computing_core 0.10.9, which is aws_core's floor): the registry is the first
+  path component when it holds a `.` or a `:` or is `localhost`, and otherwise `""` with the whole name as the
+  repository. So `nginx:1.25` is sent `("", "nginx", "1.25")` and stored `docker.io` / `library/nginx`, the same
+  node a scanner's `docker.io/library/nginx:1.25` makes; `myorg/app:2` is stored `docker.io` / `myorg/app`.
+  computing_core applies Docker's whole rule again on write, so a component this rule leaves to it still lands
+  right. The tag node carries no envelope name: the stored name is the model's, the canonical reference. Two
+  spellings of one tag in one run are one node and one `TAGS_IMAGE` edge, decided by computing_core's own
+  `canonical_repository`, which aws_core imports rather than copies. `registry` `""` is the one empty key part the
+  batch's identity check accepts (`batch.EMPTY_KEY_PART_MEANS`). Still no tag: a reference with `@` (pulled by
+  digest), and one with no `:tag` (`nginx`, `app`: `latest` is implied, not written). A tag that is not an OCI tag
+  makes none, and neither does a registry or repository whose canonical form is longer than its column (`nginx`
+  stores as `library/nginx`), which computing_core would refuse at write.
 - Both image types are custom-reader writes and are declared in `reader_sensitivity.json` (reader `ecs`); a type
   whose row is missing, unreviewed or names a credential is not written, and neither is any edge to it.
 - A defect in `image_writes` keeps the run and every container it read, and writes no image. It is not quiet:
@@ -1203,7 +1212,7 @@ nothing joins them; the `-13` live trial should check it with an Inspector-scann
 | req-aws-collector-ecs-19 | Task And Container Falsifiers | Implemented | `EcsTaskFalsifier` and `EcsContainerFalsifier` are registered in `[falsifiers]` and pass core's four proof cases. They probe `DescribeTasks` at most 100 ARNs a call per region and cluster; `MISSING` is gone, `STOPPED` is gone only once the row already records `STOPPED` (otherwise undetermined), an error is undetermined, and an ARN that names no cluster, or whose own account is not the credential's (whatever the row's `aws_account` dimension says), is not probed. | Reconcile authority stays off by default. Ruled 2026-11-09: a stopped task retires. |
 | req-aws-collector-ecs-20 | Container Runs Its Image | Implemented | Each container the batch carries whose `imageDigest` is a well-formed `sha256:` digest has `RUNS_IMAGE__computing_core` to the `computing_core__host` `(oci-digest, <digest>)`, kind `container`, staged in the same batch; a container with no digest, or one computing_core refuses, has neither, and no `RUNS_IMAGE` authority claim is made. `ecs.py` imports no other plugin's module and names no github_core type. | aws-core-tap#95 (c). Supersedes `-14`. `tests/test_ecs_images.py` |
 | req-aws-collector-ecs-21 | Image Host Written Without Overwriting | Implemented | A host the grid does not hold carries `name`, the container's image reference; one it holds is sent with its key and `kind` only and no envelope name, so a name, operating system or image fact another producer wrote is kept. A failed lookup sends the key-and-kind write and records `ECS_IMAGE_HOST_LOOKUP_FAILED`; a defect in the image shaping keeps the containers, writes no image, and is an `ECS_IMAGE_WRITES_FAILED` error entry named in the summary. Both image types are declared in `reader_sensitivity.json` and are not written without a safe declaration. | Ruled 2026-11-20 (aws-core-tap#95). |
-| req-aws-collector-ecs-22 | Image Tag ECS Resolved | Implemented | Where the container's `image` writes a registry, repository and tag (as written: no implied Docker Hub registry or `latest` tag, no digest reference) and the digest is well-formed, the run stages `computing_core__image_tag` and `TAGS_IMAGE__computing_core` to the image host, with `detected_at` the latest `startedAt` of the tasks that ran the pair, absent when none has started. | aws-core-tap#95 (f). |
+| req-aws-collector-ecs-22 | Image Tag ECS Resolved | Implemented | Where the container's `image` writes a tag (no implied `latest`, no digest reference) and the digest is well-formed, with its parts sent as written (`registry` `""` for a reference that names no host, which computing_core 0.10.9 stores as Docker Hub's canonical `docker.io` / `library/...`) and one node per canonical tag, the run stages `computing_core__image_tag` and `TAGS_IMAGE__computing_core` to the image host, with `detected_at` the latest `startedAt` of the tasks that ran the pair, absent when none has started. | aws-core-tap#95 (f). |
 | req-aws-collector-ecs-23 | Digest Kept On The Container | Implemented | `aws_ecs_container.image_digest` stays, verbatim and null when unreported, beside the image host's `stable_id`; the two sites carry `TAP-KNOWN-DUPE(ecs-image-digest)`. | Decision D9. |
 | req-aws-collector-ecs-24 | Task And Service Use A Task Definition | Implemented | `USES_TASK_DEFINITION__aws_core` runs from `aws_ecs_task` (`taskDefinitionArn`) and `aws_ecs_service` (`taskDefinition`) to `aws_ecs_task_definition`, declared as manifest edge rules with plain identity, a reference; each read is `complete` when its source was described, and a service that names no revision reads `partial`. | aws-core-tap#95 (d). `tests/test_ecs_task_definitions.py` |
 | req-aws-collector-ecs-25 | Referenced Revisions Described | Implemented | The task definition entry describes every ACTIVE revision and every revision a task or service of the region names that the ACTIVE list lacks, so the edge does not dangle for a deregistered revision a task runs; a referenced revision that cannot be described is left out and recorded as an `ECS_TASK_DEFINITION_NOT_DESCRIBED` error, with `USES_TASK_DEFINITION` read `partial` at every task and service naming it; a failed ACTIVE listing or describe still skips the entry, and a failed ECS walk still reads the ACTIVE revisions. | Decision D4. No new IAM action. |
