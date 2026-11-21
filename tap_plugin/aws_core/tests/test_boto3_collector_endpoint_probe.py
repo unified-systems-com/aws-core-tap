@@ -121,11 +121,22 @@ class TestEndpointProbe:
         # The clients live for the process, so each must not carry its own copy of a service model: built from a session
         # each, 140 clients for one collection held about 1.2 GB that nothing frees (aws-core-tap#275).
         endpoint_probe.clear_cache()
-        for service, region in (("ec2", "us-gov-west-1"), ("ec2", "us-gov-east-1"), ("sts", "us-gov-west-1")):
-            endpoint_probe.request_host(service, region, "DescribeVpcs" if service == "ec2" else "GetCallerIdentity")
-        loaders = {id(client._loader) for client, _seen in endpoint_probe._CLIENTS.values()}
-        assert len(endpoint_probe._CLIENTS) == 3
-        assert len(loaders) == 1, "every probe client is built from the one shared session"
+        calls = [
+            ("ec2", "us-gov-west-1", "DescribeVpcs", "ec2.us-gov-west-1.amazonaws.com"),
+            ("sts", "us-gov-west-1", "GetCallerIdentity", "sts.us-gov-west-1.amazonaws.com"),
+            ("ec2", "us-gov-east-1", "DescribeVpcs", "ec2.us-gov-east-1.amazonaws.com"),
+            ("sts", "us-gov-west-1", "GetCallerIdentity", "sts.us-gov-west-1.amazonaws.com"),
+            ("ec2", "us-gov-west-1", "DescribeSubnets", "ec2.us-gov-west-1.amazonaws.com"),
+        ]
+        for service, region, operation, host in calls:
+            assert endpoint_probe.request_host(service, region, operation) == host
+        clients = [client for client, _seen in endpoint_probe._CLIENTS.values()]
+        assert len(clients) == 3
+        assert len({id(client._loader) for client in clients}) == 1, "every probe client is built from the one shared session"
+        # Sharing the session shares the loader, not the events: botocore gives each client its own copy of the emitter,
+        # so one client's before-send stop never answers another client's request.
+        assert len({id(client.meta.events) for client in clients}) == 3
+        assert all(len(seen) == 1 and seen[0].startswith(key[0] + ".") for key, (_c, seen) in endpoint_probe._CLIENTS.items())
 
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_resolver_that_does_not_answer_ends_the_probe_instead_of_stalling_the_run(self, monkeypatch):
