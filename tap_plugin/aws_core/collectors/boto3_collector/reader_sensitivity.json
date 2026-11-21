@@ -1,5 +1,5 @@
 {
-  "description": "Sensitivity declarations for the types a custom reader emits. These types have no manifest entry, so they have no entry-level `sensitivity` block (req-aws-collector-manifest-6). One row per (entity type, reader). `sensitivity` validates against aws_resource_manifest.schema.json $defs/sensitivity. Location paths use the manifest's path dialect, rooted at the emitted node's TYPED FIELDS (a custom reader stores no configuration envelope), so a path's first segment is a model field. Enforced by each reader at write time (organizations.py and landing_zone.py, add_node): a type with no row is not written; an `unreviewed` row is not written, because typed fields have no persist_configuration switch, so this mirrors req-aws-collector-manifest-7; and a `credential` location is not written, because a typed field cannot be withheld while the node is kept, so this mirrors req-aws-collector-field-projection-7's credential default.",
+  "description": "Sensitivity declarations for the types a custom reader emits. These types have no manifest entry, so they have no entry-level `sensitivity` block (req-aws-collector-manifest-6). One row per (entity type, reader). `sensitivity` validates against aws_resource_manifest.schema.json $defs/sensitivity. Location paths use the manifest's path dialect, rooted at the emitted node's TYPED FIELDS (a custom reader stores no configuration envelope), so a path's first segment is a model field. Enforced by each reader at write time (organizations.py and landing_zone.py, add_node; ecs.py, image_writes): a type with no row is not written; an `unreviewed` row is not written, because typed fields have no persist_configuration switch, so this mirrors req-aws-collector-manifest-7; and a `credential` location is not written, because a typed field cannot be withheld while the node is kept, so this mirrors req-aws-collector-field-projection-7's credential default.",
   "rows": [
     {
       "entity_type": "aws_core__aws_organization",
@@ -321,6 +321,22 @@
         "locations": [
           { "path": "tags", "category": "customer_content", "reason": "Operator-set pack tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
         ]
+      }
+    },
+    {
+      "entity_type": "computing_core__host",
+      "reader": "ecs",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the fields ecs.py image_writes sends for an image host (2026-11-20): realm (the constant oci-digest), stable_id (DescribeTasks containers[].imageDigest, a sha256 digest), kind (the constant container) and name (containers[].image, the image reference the task definition names, already stored verbatim as aws_ecs_container.image). No other host field is written."
+      }
+    },
+    {
+      "entity_type": "computing_core__image_tag",
+      "reader": "ecs",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the fields ecs.py image_writes sends for an image tag (2026-11-20): registry, repository and tag, the three parts of DescribeTasks containers[].image, which is already stored verbatim as aws_ecs_container.image. No value is read from a registry."
       }
     }
   ]

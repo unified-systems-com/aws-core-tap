@@ -99,7 +99,8 @@ from .credentials import (
 )
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
-from .ecs import walks_of
+from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
+from .ecs import image_writes, revision_label, walks_of, withhold_undescribed_task_definitions
 from .elb_topology import walks_of as listener_walks_of
 from .elb_topology import withhold_unreplaced_lb_routes
 from .route53_records import walk_of as route53_walk_of
@@ -163,6 +164,8 @@ _SITE_ORG_DUPLICATE_ACCOUNT = "e6b2"
 _SITE_ORG_READ_FAILED = "a4f0"
 _SITE_LZ_NOTICE = "7e19"
 _SITE_LZ_READ_FAILED = "b3c6"
+_SITE_ECS_IMAGE_NOTICE = "e5c9"
+_SITE_ECS_TASK_DEFINITION_GAP = "7d4e"
 _SITE_EDGE_AUTHORITY = "f237"
 _SITE_ABORT_IDENTITY_INCOMPLETE = "93cd"
 _SITE_ADDRESSING = "7f5b"
@@ -415,7 +418,7 @@ class Boto3Collector(CollectorBase):
         counts = {"complete": 0, "partial": 0, "failed": 0}
         for claim in claims:
             counts[claim["read"]] = counts.get(claim["read"], 0) + 1
-        names = {_anchor_name(node_anchor(n)): n["entity"]["name"] for n in node_envelopes}
+        names = {_anchor_name(node_anchor(n)): n["entity"].get("name", "") for n in node_envelopes}
         incomplete = [
             {
                 "entity_type": claim["anchor"]["entity_type"],
@@ -1144,6 +1147,38 @@ class Boto3Collector(CollectorBase):
         if own_account is not None and landing_zone.account_fields:
             own_account["node"].update(landing_zone.account_fields)
 
+        # --- The images ECS containers run (req-aws-collector-ecs-20 .. -23) ---
+        # computing_core's image host and tag, and the RUNS_IMAGE / TAGS_IMAGE edges to them, for the containers
+        # this batch carries (collectors/boto3_collector/ecs.py, image_writes). Staged here, after every reader, so
+        # only a container that reached the batch gets an image. A defect in this shaping keeps the run and its
+        # containers but is not quiet about the images it lost: core's job has no partial status (SUCCESSFUL or
+        # FAILED; a warning changes neither), so the failure is an entry in results["error"], the run log's error
+        # bucket, and named in the run summary. Failing the run would lose every node it read for one defect here.
+        images_failed: str | None = None
+        container_dimensions = {
+            envelope_ref(n): n["entity"]["dimensions"]
+            for n in node_envelopes
+            if n["entity"]["entity_type"] == ECS_CONTAINER_TYPE
+        }
+        if container_dimensions:
+            try:
+                images = image_writes(walks_of(session), container_dimensions)
+            except Exception as exc:  # noqa: BLE001 — isolates a defect in this shaping, never the run
+                images_failed = type(exc).__name__
+                self.record_error(
+                    _SITE_ECS_IMAGE_NOTICE,
+                    "ECS_IMAGE_WRITES_FAILED",
+                    f"ECS container images were not staged: {type(exc).__name__}: {exc}. The containers were "
+                    "collected; no RUNS_IMAGE or TAGS_IMAGE edge was written this run.",
+                    message_data={"containers": len(container_dimensions), "exception": type(exc).__name__},
+                )
+            else:
+                for code, message in images.notices:
+                    self.record_warn(_SITE_ECS_IMAGE_NOTICE, code, message)
+                present = {envelope_ref(n) for n in node_envelopes}
+                node_envelopes.extend(n for n in images.nodes if envelope_ref(n) not in present)
+                edge_envelopes.extend(images.edges)
+
         # --- one GRIFT batch per run, everything named by identity (req-aws-collector-identity) ---
         # A node whose declared key has a hole would be created afresh on every run, so the run
         # fails here rather than send it. Permissive dangling mode: an endpoint naming a node no
@@ -1154,6 +1189,25 @@ class Boto3Collector(CollectorBase):
         withhold_unreplaced_zone_routes(judged, route53_walk_of(session))
         # Likewise a load balancer's replaced routes: claimed only once its listeners and rules all reached the batch.
         withhold_unreplaced_lb_routes(judged, listener_walks_of(session))
+        # A revision a task or service names that the task definition entry could not describe (-25): its
+        # USES_TASK_DEFINITION scope reads partial, and the omission is an error entry, never a quietly smaller set.
+        for revision, slot, naming in withhold_undescribed_task_definitions(judged, walks_of(session)):
+            region = revision.split(":")[3] if revision.count(":") >= 5 else ""
+            self.record_error(
+                _SITE_ECS_TASK_DEFINITION_GAP,
+                "ECS_TASK_DEFINITION_NOT_DESCRIBED",
+                f"ECS task definition {revision_label(revision)} in {region or 'its region'} is named by {naming} "
+                f"task(s) or service(s) but could not be described ({slot.get('error_code')}): it and its "
+                "REFERENCES_SECRET / REFERENCES_PARAMETER edges are missing from this run, and USES_TASK_DEFINITION "
+                "reads partial at each.",
+                message_data={
+                    "region": region,
+                    "revision": revision_label(revision),
+                    "status": slot.get("status"),
+                    "error_code": slot.get("error_code"),
+                    "named_by": naming,
+                },
+            )
         try:
             addressed = address_batch(node_envelopes, edge_envelopes)
         except IdentityError as exc:
@@ -1288,6 +1342,10 @@ class Boto3Collector(CollectorBase):
             f"({skipped} skipped, {unavailable} not offered in this partition, {not_configured} not configured, "
             f"{imported} batch imported)."
         )
+        if images_failed is not None:
+            self.summary += (
+                f" ECS container images NOT staged ({images_failed}): no RUNS_IMAGE or TAGS_IMAGE edge this run."
+            )
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for
         # the future audit-verifiability theme. One event, full machine

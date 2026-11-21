@@ -385,7 +385,7 @@ This specification does not yet define the exact cross-plugin edge family, hotli
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-core-computing-core-1 | AWS Adapts Downward | Proposed | Future AWS-to-generic mapping is defined in `aws_core` rather than in `computing_core`. | |
+| req-aws-core-computing-core-1 | AWS Adapts Downward | Proposed | Future AWS-to-generic mapping is defined in `aws_core` rather than in `computing_core`. | First instance: an ECS container's `RUNS_IMAGE` to computing_core's image host, written by aws_core (`req-aws-collector-ecs-20`). |
 | req-aws-core-computing-core-2 | Generic Substrate Respected | Proposed | `aws_core` treats `computing_core` as the lower generic substrate for relevant concepts. | |
 
 #### Open Questions

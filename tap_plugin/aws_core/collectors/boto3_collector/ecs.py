@@ -12,6 +12,19 @@ The digest ECS reports per container (``imageDigest``) is the join key to a buil
 stored as ECS reports it. This module makes no registry call and never resolves a tag (``-4``); a container
 with no ``imageDigest`` has none in its item, which projects to null, never an empty string (``-5``).
 
+The image a container runs (``-20``..``-23``). computing_core's image is a ``computing_core__host`` of realm
+``oci-digest`` keyed by the digest, and a container points at it with ``RUNS_IMAGE__computing_core``. ECS
+reported the digest, so :func:`image_writes` stages that host and edge for every container the batch carries
+with a well-formed ``imageDigest``, and, where the container's ``image`` names a registry, repository and tag,
+the ``computing_core__image_tag`` ECS resolved and its ``TAGS_IMAGE__computing_core`` edge. A host the grid
+already holds is sent with its key and kind only, so a name or operating system another producer wrote (Anchore)
+is left as it is. This is not a manifest edge rule: the target is another plugin's type, which the rule fence
+drops, and core never mints an edge's missing endpoint, so the host has to be staged in the same batch.
+
+Task definitions (``-25``). :func:`describe_task_definitions` describes the ACTIVE revisions and, beside them,
+every revision a task or service of the region's walk names that the ACTIVE list lacks (a deregistered revision
+a task still runs), so ``USES_TASK_DEFINITION`` never dangles for a task this run wrote.
+
 A denied or failed sub-call never reads as an empty result (``-10``): the node it concerns carries a
 ``_hydrate`` slot with status ``denied`` / ``error`` (the collector records each as ``HYDRATE_GAP``), and a
 service or task is still yielded from the ARN the listing gave when its Describe call failed. A failure of
@@ -28,7 +41,8 @@ edge it would be held by nothing and could never be reconciled.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator
+import re
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 from weakref import WeakKeyDictionary
@@ -36,8 +50,10 @@ from weakref import WeakKeyDictionary
 from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, PARTIAL, with_edge_reads
+from .edges import edge_envelope
 from .envelope import jsonable, without_response_metadata
 from .hydrate import _classify
+from .identity import composite_natural_key, node_ref
 from .listing import ListingWalk, error_code, page_says_more
 from .source import SourceError
 
@@ -106,6 +122,9 @@ class EcsWalk:
     containers: list[dict[str, Any]] = field(default_factory=list)
     #: A cluster's running-task listing and each described task's containers, one per parent.
     listings: list[EcsListing] = field(default_factory=list)
+    #: Revision ARN -> the ``_hydrate`` slot of a task definition a task or service names that could not be
+    #: described (``-25``): filled by the task definition entry, read once every reader has run.
+    undescribed_task_definitions: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 class _IncompleteListing(Exception):
@@ -276,10 +295,15 @@ def _task_item(
     item["_stopped_at"] = jsonable(stopped_at) if stopped_at else None
     if gap is not None:
         item["_hydrate"] = {"describe": gap}
+    # USES_TASK_DEFINITION (-24): DescribeTasks names the revision every task runs, stopped or not; a task that was
+    # not described names none we read.
+    definition_read = COMPLETE if described is not None else PARTIAL
     if stopped:
         item["_cluster_arn_running"] = None
         item["_service_arn"] = None
-        return with_edge_reads(item, {"_cluster_arn_running": PARTIAL, "_service_arn": PARTIAL})
+        return with_edge_reads(
+            item, {"_cluster_arn_running": PARTIAL, "_service_arn": PARTIAL, "taskDefinitionArn": definition_read}
+        )
     item["_cluster_arn_running"] = item.get("clusterArn") or cluster_arn
     group = item.get("group")
     service_arn: str | None = None
@@ -291,7 +315,9 @@ def _task_item(
         if service_arn is None:
             read = PARTIAL  # named by the task but absent from the service listing (deleted, or it failed)
     item["_service_arn"] = service_arn
-    return with_edge_reads(item, {"_cluster_arn_running": COMPLETE, "_service_arn": read})
+    return with_edge_reads(
+        item, {"_cluster_arn_running": COMPLETE, "_service_arn": read, "taskDefinitionArn": definition_read}
+    )
 
 
 def _container_items(
@@ -418,7 +444,9 @@ def walk_ecs(client: Any, *, held: Held = _held_by_none) -> EcsWalk:
             service.setdefault("clusterArn", cluster_arn)
             if arn in service_gaps:
                 service["_hydrate"] = {"describe": service_gaps[arn]}
-            walk.services.append(with_edge_reads(service, {"clusterArn": COMPLETE}))
+            # USES_TASK_DEFINITION (-24): the revision the service launches, read when the service was described.
+            definition_read = COMPLETE if arn in services else PARTIAL
+            walk.services.append(with_edge_reads(service, {"clusterArn": COMPLETE, "taskDefinition": definition_read}))
 
         by_name = {_last_segment(arn): arn for arn in service_arns}
         stopped_set = set(stopped_arns)
@@ -483,3 +511,306 @@ def shared_walk(session: Any, client_for: Any) -> EcsWalk:
     if memo is not None:
         memo[region] = walk
     return walk
+
+
+# --- The image a container runs (req-aws-collector-ecs-20 .. -23) ---------------------------------------------------
+
+HOST_TYPE = "computing_core__host"
+IMAGE_TAG_TYPE = "computing_core__image_tag"
+RUNS_IMAGE = "RUNS_IMAGE__computing_core"
+TAGS_IMAGE = "TAGS_IMAGE__computing_core"
+#: computing_core's realm for an image host: ``stable_id`` is the image manifest digest.
+IMAGE_REALM = "oci-digest"
+#: The ``stable_id`` shape computing_core accepts for that realm (``req-computing-core-host-4``); any other
+#: ``imageDigest`` is refused on write, so it makes no host and no edge here.
+_DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}")
+#: The custom-reader name the image types' rows carry in ``reader_sensitivity.json``.
+READER = "ecs"
+#: computing_core's column limits: ``host.name`` 255; ``image_tag`` registry and repository 255, tag 128.
+_MAX_HOST_NAME = 255
+_MAX_REGISTRY = 255
+_MAX_REPOSITORY = 255
+#: An OCI tag: at most 128 characters, starting with a word character (the distribution specification).
+_TAG_RE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,127}")
+
+#: ``host_held(digest)``: whether the grid already holds a live image host for that digest.
+HostHeld = Callable[[str], bool]
+
+
+def host_held_on_grid(digest: str) -> bool:
+    """The production :data:`HostHeld`: a live ``computing_core__host`` keyed ``(oci-digest, digest)``."""
+    from tap_grid.services import find_by_natural_key
+
+    return find_by_natural_key(HOST_TYPE, host_key(digest)) is not None
+
+
+def host_key(digest: str) -> dict[str, str]:
+    """An image host's natural key."""
+    # TAP-KNOWN-DUPE(ecs-image-digest): the digest is also aws_ecs_container.image_digest (models/ecs_container.py),
+    # ECS's verbatim observation, which stays on the container when no host can be made (req-aws-collector-ecs-23).
+    return {"realm": IMAGE_REALM, "stable_id": digest}
+
+
+def host_ref(digest: str) -> str:
+    """The batch ref of an image host (its composite key, so an endpoint naming it can be split back)."""
+    return node_ref(HOST_TYPE, composite_natural_key(host_key(digest)))
+
+
+def well_formed_digest(value: Any) -> str | None:
+    """``value`` when it is a digest computing_core accepts for an image host, else None."""
+    return value if isinstance(value, str) and _DIGEST_RE.fullmatch(value) else None
+
+
+def parse_image_tag(reference: Any) -> tuple[str, str, str] | None:
+    """``(registry, repository, tag)`` from an image reference that writes all three, else None.
+
+    computing_core keys a tag on its parts "as written in the reference" (``req-computing-core-image-tag``), so
+    nothing is supplied that the reference does not write:
+
+    - a reference with ``@`` names its image by digest; ECS pulled that digest, not a tag, so it makes no tag
+      (``app@sha256:...``, and ``app:1.2@sha256:...`` too);
+    - the registry is the first path component when it holds a ``.`` or a ``:``, or is ``localhost`` (the rule
+      Docker reads a reference by). ``nginx:1.25`` and ``library/nginx:1.25`` write no registry and make no
+      tag: Docker Hub is implied there, not written;
+    - a reference with no ``:tag`` after its last ``/`` writes no tag (``latest`` is implied, not written).
+
+    A part longer than the ``image_tag`` column, or a tag that is not an OCI tag, makes no tag.
+    """
+    if not isinstance(reference, str) or not reference or "@" in reference or reference != reference.strip():
+        return None
+    registry, slash, rest = reference.partition("/")
+    if not slash or not ("." in registry or ":" in registry or registry == "localhost"):
+        return None
+    repository, colon, tag = rest.rpartition(":")
+    if not colon or "/" in tag or not repository:
+        return None
+    if len(registry) > _MAX_REGISTRY or len(repository) > _MAX_REPOSITORY or not _TAG_RE.fullmatch(tag):
+        return None
+    return registry, repository, tag
+
+
+@dataclass
+class ImageWrites:
+    """The image hosts, image tags and their edges one run stages, and what it could not decide."""
+
+    nodes: list[dict[str, Any]] = field(default_factory=list)
+    edges: list[dict[str, Any]] = field(default_factory=list)
+    #: ``(code, message)`` for the run log.
+    notices: list[tuple[str, str]] = field(default_factory=list)
+
+
+def _host_envelope(digest: str, references: set[str], held: bool) -> dict[str, Any]:
+    """The image host node. A held host carries its key and kind only; a new one the reference it was seen as.
+
+    A held host's envelope names no ``name``: the importer leaves the stored name as it is when the envelope
+    omits one, and its keep-absent replace leaves every field the payload omits. ``kind`` is ``container``,
+    what computing_core gives an image host and what every other producer of one writes.
+    """
+    fields: dict[str, Any] = {**host_key(digest), "kind": "container"}
+    entity: dict[str, Any] = {"ref": host_ref(digest), "entity_type": HOST_TYPE, "dimensions": {}}
+    if not held:
+        # One stable choice when several containers name the digest differently: the first, sorted.
+        name = next((r for r in sorted(references) if len(r) <= _MAX_HOST_NAME), None)
+        if name:
+            fields["name"] = name
+        entity["name"] = name or digest
+    return {"entity": entity, "node": fields}
+
+
+def _tag_envelope(registry: str, repository: str, tag: str) -> dict[str, Any]:
+    key = {"registry": registry, "repository": repository, "tag": tag}
+    return {
+        "entity": {
+            "ref": node_ref(IMAGE_TAG_TYPE, composite_natural_key(key)),
+            "entity_type": IMAGE_TAG_TYPE,
+            "name": f"{registry}/{repository}:{tag}",
+            "dimensions": {},
+        },
+        "node": key,
+    }
+
+
+def image_writes(
+    walks: Iterable[EcsWalk],
+    container_dimensions: Mapping[str, Mapping[str, str]],
+    *,
+    host_held: HostHeld = host_held_on_grid,
+    sensitivity: Mapping[str, Mapping[str, Any]] | None = None,
+) -> ImageWrites:
+    """The image hosts, tags and edges for the containers this batch carries (``req-aws-collector-ecs-20``..``-23``).
+
+    ``container_dimensions`` maps the ref of every container node the batch carries to the dimensions it was
+    sent with; a container the batch does not carry (a selected run that left the type out) gets nothing, and
+    its ``RUNS_IMAGE`` edge takes the container's dimensions, as its ``RUNS_CONTAINER`` edge does. The image
+    nodes carry no dimension of their own: an image is not in an account or a region (one digest in two
+    registries is one host), so they take their types' defaults.
+
+    - Only a container whose ``imageDigest`` is a well-formed digest (:func:`well_formed_digest`) has an image
+      host and a ``RUNS_IMAGE`` edge. Any other has neither and is never claimed to have none: no authority
+      claim is made for ``RUNS_IMAGE``.
+    - An image tag is staged where the container's ``image`` writes one (:func:`parse_image_tag`) and the
+      digest is well-formed. Its ``TAGS_IMAGE`` edge carries ``detected_at``, the latest ``startedAt`` of the
+      tasks that ran the pair, and none when no such task has started.
+    - ``host_held`` decides how much of the host is written (:func:`_host_envelope`). A lookup that fails sends
+      the key and kind only, the write that is safe either way, and says so.
+    - A type whose ``reader_sensitivity.json`` row is missing, unreviewed or names a credential is not written
+      (the custom-reader rule, :func:`.organizations.sensitivity_refusal`), and neither is any edge to it.
+    """
+    from .organizations import reader_sensitivity, sensitivity_refusal
+
+    declared = dict(reader_sensitivity(READER) if sensitivity is None else sensitivity)
+    out = ImageWrites()
+    refused = {t: why for t in (HOST_TYPE, IMAGE_TAG_TYPE) if (why := sensitivity_refusal(t, declared)) is not None}
+    for entity_type, why in sorted(refused.items()):
+        out.notices.append(("ECS_IMAGE_TYPE_REFUSED", f"{entity_type}: not written, {why}"))
+    if HOST_TYPE in refused:
+        return out  # every edge here ends at a host
+
+    references: dict[str, set[str]] = {}
+    runs: dict[tuple[str, str], Mapping[str, str]] = {}
+    tags: dict[tuple[tuple[str, str, str], str], str | None] = {}
+    for walk in walks:
+        started = {task["taskArn"]: task.get("_started_at") for task in walk.tasks if task.get("taskArn")}
+        for container in walk.containers:
+            ref = node_ref(CONTAINER_TYPE, str(container.get("containerArn") or ""))
+            dimensions = container_dimensions.get(ref)
+            digest = well_formed_digest(container.get("imageDigest"))
+            if dimensions is None or digest is None:
+                continue
+            image = container.get("image")
+            references.setdefault(digest, set())
+            if isinstance(image, str) and image:
+                references[digest].add(image)
+            runs.setdefault((ref, digest), dimensions)
+            parsed = parse_image_tag(image) if IMAGE_TAG_TYPE not in refused else None
+            if parsed is not None:
+                seen = started.get(str(container.get("taskArn") or container.get("_task_arn") or ""))
+                prior = tags.get((parsed, digest))
+                tags[(parsed, digest)] = max((t for t in (prior, seen) if t), default=None)
+
+    for digest in sorted(references):
+        try:
+            held = bool(host_held(digest))
+        except Exception as exc:  # noqa: BLE001 — recorded, and the write that is safe either way is sent
+            held = True
+            out.notices.append(
+                (
+                    "ECS_IMAGE_HOST_LOOKUP_FAILED",
+                    f"image host {digest}: the grid lookup failed ({type(exc).__name__}); sent with its key and kind only",
+                )
+            )
+        out.nodes.append(_host_envelope(digest, references[digest], held))
+    for (container_ref, digest), dimensions in runs.items():
+        out.edges.append(edge_envelope(RUNS_IMAGE, from_ref=container_ref, to_ref=host_ref(digest), dimensions=dict(dimensions)))
+    staged_tags: set[str] = set()
+    for ((registry, repository, tag), digest), detected_at in sorted(tags.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        envelope = _tag_envelope(registry, repository, tag)
+        if envelope["entity"]["ref"] not in staged_tags:
+            staged_tags.add(envelope["entity"]["ref"])
+            out.nodes.append(envelope)
+        out.edges.append(
+            edge_envelope(
+                TAGS_IMAGE,
+                from_ref=envelope["entity"]["ref"],
+                to_ref=host_ref(digest),
+                dimensions={},
+                properties={"detected_at": detected_at} if detected_at else None,
+            )
+        )
+    return out
+
+
+# --- Task definitions (req-aws-collector-ecs-25) --------------------------------------------------------------------
+
+
+def referenced_task_definitions(walk: EcsWalk) -> list[str]:
+    """Every task definition revision the walk's tasks and services name, once each, sorted."""
+    named = {task.get("taskDefinitionArn") for task in walk.tasks} | {s.get("taskDefinition") for s in walk.services}
+    return sorted(arn for arn in named if isinstance(arn, str) and arn)
+
+
+def describe_task_definitions(
+    client: Any, referenced: Iterable[str] = (), undescribed: dict[str, dict[str, Any]] | None = None
+) -> Iterator[dict[str, Any]]:
+    """The ACTIVE task definition revisions, then every ``referenced`` one the ACTIVE list lacks (``-25``).
+
+    ``ListTaskDefinitions(status="ACTIVE")`` is read to its end and each revision described, as the entry did
+    before it read references: a failed or short listing, or a failed describe of a listed revision, raises, so
+    the entry reads as skipped rather than as a shorter list. A referenced revision is one a task or service of the
+    region names; when it is deregistered (INACTIVE) it is not listed, so it is described here, with no new IAM
+    action, and its own ``status`` says it is inactive. One that cannot be described (deleted, denied, throttled)
+    is left out, and its ARN and the failure's slot go into ``undescribed``: the collector then records the
+    omission as an error and reads the ``USES_TASK_DEFINITION`` scope of every task and service naming it
+    ``partial`` (:func:`withhold_undescribed_task_definitions`), so the revision and the secret and parameter
+    edges it would have carried are never read as absent.
+
+    Each item is ``DescribeTaskDefinition``'s ``taskDefinition``, with ``containerDefinitions`` read ``complete``:
+    the response is the revision's whole document, and a revision never changes.
+    """
+    try:
+        active = _list_all(client, "list_task_definitions", "taskDefinitionArns", status="ACTIVE")
+    except _IncompleteListing:
+        raise SourceError("ListTaskDefinitions: the final page still reports a continuation") from None
+    listed = set(active)
+    for arn in active:
+        yield _task_definition_item(client.describe_task_definition(taskDefinition=arn))
+    for arn in referenced:
+        if arn in listed:
+            continue
+        listed.add(arn)
+        try:
+            response = client.describe_task_definition(taskDefinition=arn)
+        except (BotoCoreError, ClientError) as exc:
+            if undescribed is not None:
+                undescribed[arn] = _slot("DescribeTaskDefinition", exc=exc)
+            continue
+        yield _task_definition_item(response)
+
+
+def _task_definition_item(response: Any) -> dict[str, Any]:
+    definition = without_response_metadata(response).get("taskDefinition") or {}
+    return with_edge_reads(definition, {"containerDefinitions": COMPLETE})
+
+
+USES_TASK_DEFINITION = "USES_TASK_DEFINITION__aws_core"
+_SERVICE_TYPE = "aws_core__aws_ecs_service"
+_USES_SCOPE = (USES_TASK_DEFINITION, "outbound")
+
+
+def revision_label(arn: str) -> str:
+    """A revision as the run log names it: ``<family>:<revision>``, the ARN's resource part. The partition, region
+    and account are the run's own, carried in the entry's ``message_data`` region and the run's account."""
+    return arn.rsplit("task-definition/", 1)[-1]
+
+
+def withhold_undescribed_task_definitions(
+    judged: list[tuple[dict[str, Any], dict[tuple[str, str], str]]], walks: Iterable[EcsWalk]
+) -> list[tuple[str, dict[str, Any], int]]:
+    """Read ``USES_TASK_DEFINITION`` ``partial`` at every task and service naming a revision that was not described.
+
+    Run once every reader has finished and before claims are made (the task definition entry is read after the
+    tasks and services it serves). Each such task or service node also gets the failure in its configuration's
+    ``_hydrate.task_definition`` slot, so the reason is stored beside the gap. Returns ``(revision ARN, slot, how
+    many nodes name it)`` per undescribed revision, for the run log.
+    """
+    named: dict[str, str] = {}
+    missing: dict[str, dict[str, Any]] = {}
+    for walk in walks:
+        missing.update(walk.undescribed_task_definitions)
+        named.update({t["taskArn"]: t.get("taskDefinitionArn") for t in walk.tasks if t.get("taskArn")})
+        named.update({s["serviceArn"]: s.get("taskDefinition") for s in walk.services if s.get("serviceArn")})
+    if not missing:
+        return []
+    counts = dict.fromkeys(missing, 0)
+    for envelope, reads in judged:
+        if envelope["entity"]["entity_type"] not in (TASK_TYPE, _SERVICE_TYPE):
+            continue
+        revision = named.get(str(envelope["node"].get("task_arn") or envelope["node"].get("service_arn") or ""))
+        if revision not in missing:
+            continue
+        counts[revision] += 1
+        reads[_USES_SCOPE] = PARTIAL
+        configuration = envelope["node"].get("configuration")
+        if isinstance(configuration, dict):
+            configuration.setdefault("_hydrate", {})["task_definition"] = dict(missing[revision])
+    return [(arn, missing[arn], counts[arn]) for arn in sorted(missing)]

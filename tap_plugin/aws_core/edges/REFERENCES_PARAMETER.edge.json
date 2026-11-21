@@ -1,0 +1,17 @@
+{
+  "slug": "REFERENCES_PARAMETER__aws_core",
+  "name": "References Parameter",
+  "description": "An ECS task definition revision names a Systems Manager Parameter Store parameter for one of its containers (revision -> parameter): containerDefinitions[].secrets[].valueFrom when it is a parameter ARN, or a parameter name, which ECS resolves in the task's own account and region. A name in a document, not a read: the ECS agent fetches the value under the execution role when a container starts, and that runtime flow is not this edge. One edge per revision and parameter.",
+  "sources": [
+    "aws_core__aws_ecs_task_definition"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_parameter"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

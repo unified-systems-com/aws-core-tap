@@ -3490,7 +3490,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'name': 'ROOT'},
     ),
     "aws_core__aws_ecs_task_definition": (
-        {'taskDefinitionArn': 'arn:aws:ecs:us-east-1:123456789012:task-definition/web:3', 'family': 'web', 'revision': 3},
+        {'taskDefinitionArn': 'arn:aws:ecs:us-east-1:123456789012:task-definition/web:3', 'family': 'web', 'revision': 3, 'containerDefinitions': [{'name': 'web', 'secrets': [{'name': 'DB', 'valueFrom': 'arn:aws:secretsmanager:us-east-1:123456789012:secret:db-AbC123'}, {'name': 'FLAGS', 'valueFrom': '/web/flags'}]}]},
         {'name': 'web'},
     ),
     "aws_core__aws_eks_certificate_authority": (

@@ -11,7 +11,10 @@ plugin_version = "0.8.3" # x-release-please-version
 # 0.4.0: the first core release with the per-model history opt-out (TRACK_HISTORY,
 # req-grid-history-optout), which the published-version types declare (aws-build Q86); on an older
 # core the flag is ignored and the 0056 migration would drop history tables the models still use.
-requires_tap = ">=0.4.0"
+# 0.4.2: the first core release that builds CI, dev and test databases from the models instead of
+# replaying every migration (unified-systems-com/tap#1258). Plugin CI tests against the core tag at
+# this floor, so raising it is what lets this plugin's CI skip the ~22-minute migrate from zero.
+requires_tap = ">=0.4.2"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
@@ -965,6 +968,9 @@ ROUTES_TO_TARGET__aws_core = "edges/ROUTES_TO_TARGET.edge.json"
 HOLDS_RECORD_SET__aws_core = "edges/HOLDS_RECORD_SET.edge.json"
 RESOLVES_TO_TARGET__aws_core = "edges/RESOLVES_TO_TARGET.edge.json"
 RUNS_CONTAINER__aws_core = "edges/RUNS_CONTAINER.edge.json"
+USES_TASK_DEFINITION__aws_core = "edges/USES_TASK_DEFINITION.edge.json"
+REFERENCES_SECRET__aws_core = "edges/REFERENCES_SECRET.edge.json"
+REFERENCES_PARAMETER__aws_core = "edges/REFERENCES_PARAMETER.edge.json"
 FEDERATES_INTO_ROLE__aws_core = "edges/FEDERATES_INTO_ROLE.edge.json"
 ENCRYPTED_WITH_KEY__aws_core = "edges/ENCRYPTED_WITH_KEY.edge.json"
 AUTHENTICATES_VIA_USER_POOL__aws_core = "edges/AUTHENTICATES_VIA_USER_POOL.edge.json"

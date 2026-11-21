@@ -258,7 +258,11 @@ class TestEdges:
         task = walk.tasks[0]
         assert task["_service_arn"] == _SERVICE
         assert task["_cluster_arn_running"] == _CLUSTER
-        assert task[EDGE_READS] == {"_cluster_arn_running": "complete", "_service_arn": "complete"}
+        assert task[EDGE_READS] == {
+            "_cluster_arn_running": "complete",
+            "_service_arn": "complete",
+            "taskDefinitionArn": "complete",
+        }
 
     def test_task_without_service_group_attaches_to_cluster_only(self):
         """req-aws-collector-ecs-8"""
@@ -281,7 +285,7 @@ class TestEdges:
             ("RUNS_CONTAINER__aws_core", "aws_core__aws_ecs_task")
         ]
         service_rules = _entry("aws_core__aws_ecs_service")["edges"]
-        assert [r["edge_type"] for r in service_rules] == ["RUNS_SERVICE__aws_core"]
+        assert [r["edge_type"] for r in service_rules] == ["RUNS_SERVICE__aws_core", "USES_TASK_DEFINITION__aws_core"]
 
 
 _STOPPED_TASK = f"arn:aws:ecs:{_REGION}:{_ACCOUNT}:task/prod/cccc3333"
@@ -424,7 +428,11 @@ class TestStoppedTasksAssertNoEdges:
         (stopped,) = [t for t in walk.tasks if t["taskArn"] == _STOPPED_TASK]
         assert stopped["_cluster_arn_running"] is None
         assert stopped["_service_arn"] is None
-        assert stopped[EDGE_READS] == {"_cluster_arn_running": "partial", "_service_arn": "partial"}
+        assert stopped[EDGE_READS] == {
+            "_cluster_arn_running": "partial",
+            "_service_arn": "partial",
+            "taskDefinitionArn": "complete",  # the revision it ran is still a fact (-24)
+        }
 
     def test_a_stopped_container_carries_no_runs_container_source_and_claims_nothing(self):
         _, walk = _stopped_walk(_holds(_STOPPED_TASK, _STOPPED_CONTAINER))
@@ -437,7 +445,11 @@ class TestStoppedTasksAssertNoEdges:
         (running,) = [t for t in walk.tasks if t["taskArn"] == _TASK]
         assert running["_cluster_arn_running"] == _CLUSTER
         assert running["_service_arn"] == _SERVICE
-        assert running[EDGE_READS] == {"_cluster_arn_running": "complete", "_service_arn": "complete"}
+        assert running[EDGE_READS] == {
+            "_cluster_arn_running": "complete",
+            "_service_arn": "complete",
+            "taskDefinitionArn": "complete",
+        }
 
 
 class TestDenialDegrades:
@@ -612,12 +624,3 @@ def test_ecs_tags_normalize_from_the_lowercase_wire_shape():
     }
     assert normalize_tags(None, "list_kv_lower") == {}
 
-
-def test_no_cross_plugin_import():
-    """req-aws-collector-ecs-14: no github_core or computing_core import and no digest matching here."""
-    from pathlib import Path
-
-    import tap_plugin.aws_core.collectors.boto3_collector.ecs as ecs_module
-
-    source = Path(ecs_module.__file__).read_text()
-    assert "github_core" not in source and "computing_core" not in source
