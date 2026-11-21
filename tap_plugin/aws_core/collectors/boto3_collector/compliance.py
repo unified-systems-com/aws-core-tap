@@ -42,6 +42,8 @@ FINDING = "compliance_core__compliance_finding"
 VULNERABILITY = "compliance_core__compliance_vulnerability"
 CONCERNS = "CONCERNS_COMPLIANCE_VULNERABILITY__compliance_core"
 CARRIES = "CARRIES_COMPLIANCE_FINDING__compliance_core"
+#: computing_core's package (a hard dependency of aws_core): the carrier of an image finding's neutral finding.
+PACKAGE = "computing_core__package"
 #: The fields the projection writes on each type: the narrow contract the spec names.
 NEEDED_FIELDS: dict[str, tuple[str, ...]] = {
     FINDING: ("source", "source_key", "name", "summary", "description", "status", "first_detected_at"),
@@ -213,7 +215,18 @@ def finding_ref(arn: str) -> str:
 
 
 def carriers_of(row: Mapping[str, Any]) -> list[tuple[str, str]]:
-    """``(entity type, natural key)`` of what carries a row's neutral finding: the aws_core resource it concerns."""
+    """``(entity type, natural key)`` of what carries a row's neutral finding.
+
+    An ECR image finding whose vulnerable packages got computing_core keys is carried by those packages, which the
+    image host installs: what fedramp_20x_vdr's reach walks (package <- INSTALLS_PACKAGE <- host <- RUNS_IMAGE <-
+    container; req-aws-landing-zone-inspector-packages-3), and instead of the repository, whose extra carrier would
+    add a reach row with no owner. Any other row is carried by the aws_core resource it concerns.
+    """
+    if row.get("resource_type") == "AWS_ECR_CONTAINER_IMAGE":
+        keys = [i["key"] for i in row.get("package_identities") or [] if isinstance(i, Mapping) and i.get("key")]
+        packages = sorted({composite_natural_key(k) for k in keys})
+        if packages:
+            return [(PACKAGE, key) for key in packages]
     target = concerned_resource(row.get("resource_type"), row.get("resource_id"))
     return [target] if target is not None else []
 

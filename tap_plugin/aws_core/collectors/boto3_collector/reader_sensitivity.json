@@ -360,6 +360,14 @@
       }
     },
     {
+      "entity_type": "computing_core__package",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read the fields inspector.py sends for a vulnerable package of an ECR image finding (2026-11-20, aws-core-tap#261): ecosystem (a package-URL type mapped from packageManager and, for an OS package, the image's transient platform), name and version (vulnerablePackages[].name, version, release, epoch). No other package field is written; the file path stays on the Inspector finding."
+      }
+    },
+    {
       "entity_type": "computing_core__host",
       "reader": "landing_zone",
       "sensitivity": {

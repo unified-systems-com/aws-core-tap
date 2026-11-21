@@ -39,6 +39,7 @@ from typing import TYPE_CHECKING, Any
 from .containment import footprint_key
 from .envelope import jsonable
 from .findings import CLOSED_WINDOW_DAYS, CONCERNS_RESOURCE
+from .identity import node_ref
 from .partition import parse_arn
 
 if TYPE_CHECKING:
@@ -55,6 +56,54 @@ CONCERNS_TARGETS: tuple[str, ...] = (EC2_INSTANCE, LAMBDA_FUNCTION, ECR_REPOSITO
 
 HOSTS_INSPECTOR2_FINDING = "HOSTS_INSPECTOR2_FINDING__aws_core"
 RELATION_INSPECTOR2_FINDINGS = "account_region.inspector2_findings"
+
+# --- the package chain (req-aws-landing-zone-inspector-packages) ----------------------------------------------------
+PACKAGE = "computing_core__package"
+INSTALLS_PACKAGE = "INSTALLS_PACKAGE__computing_core"
+#: Inspector ``packageManager`` (read: botocore ``PackageManager``) -> the package-URL type computing_core's SBOM
+#: parser keys a package by (``classify_component``: purl type, name, version), so Inspector, grype and anchore name
+#: one node. ``OS`` is the image's distribution family (:data:`OS_FAMILIES`).
+LANGUAGE_ECOSYSTEMS: dict[str, str] = {
+    "NPM": "npm",
+    "YARN": "npm",
+    "NODEPKG": "npm",
+    "PIP": "pypi",
+    "PIPENV": "pypi",
+    "POETRY": "pypi",
+    "PYTHONPKG": "pypi",
+    "BUNDLER": "gem",
+    "GEMSPEC": "gem",
+    "CARGO": "cargo",
+    "NUGET": "nuget",
+    "DOTNET_CORE": "nuget",
+    "GOBINARY": "golang",
+    "GOMOD": "golang",
+}
+#: Package managers given no key, and why: a node would join nothing another writer makes.
+UNMAPPED_MANAGERS: dict[str, str] = {
+    "JAR": "Syft names a Maven component by its artifact id and Inspector by group:artifact",
+    "POM": "Syft names a Maven component by its artifact id and Inspector by group:artifact",
+    "COMPOSER": "composer is not a package type computing_core's SBOM parser keeps",
+}
+#: An image ``platform`` prefix -> the OS package type (inferred from Inspector's supported operating systems;
+#: botocore types ``platform`` as a free string, so these must be checked against live findings).
+OS_FAMILIES: tuple[tuple[str, str], ...] = (
+    ("AMAZON_LINUX", "rpm"),
+    ("RHEL", "rpm"),
+    ("CENTOS", "rpm"),
+    ("ORACLE", "rpm"),
+    ("ALMA", "rpm"),
+    ("ROCKY", "rpm"),
+    ("FEDORA", "rpm"),
+    ("SUSE", "rpm"),
+    ("SLES", "rpm"),
+    ("OPENSUSE", "rpm"),
+    ("DEBIAN", "deb"),
+    ("UBUNTU", "deb"),
+    ("ALPINE", "apk"),
+)
+#: computing_core's package column limits.
+_MAX_ECOSYSTEM, _MAX_PACKAGE_NAME, _MAX_PACKAGE_VERSION = 32, 255, 128
 
 # --- the reachability compound edge (req-aws-landing-zone-inspector-reachability) ---------------------------------
 REACHABILITY_FINDING = "aws_core__aws_inspector2_reachability_finding"
@@ -148,6 +197,62 @@ def image_digest_of(resource_type: str | None, resource_id: str | None) -> str |
     if resource_type != "AWS_ECR_CONTAINER_IMAGE" or not resource_id or "/sha256:" not in resource_id:
         return None
     return well_formed_digest("sha256:" + resource_id.rsplit("/sha256:", 1)[1])
+
+
+def os_ecosystem(platform: Any) -> str | None:
+    """The OS package type of an image ``platform`` (``AMAZON_LINUX_2023`` -> ``rpm``), or None when unknown."""
+    if not isinstance(platform, str):
+        return None
+    upper = platform.upper()
+    return next((ecosystem for prefix, ecosystem in OS_FAMILIES if upper.startswith(prefix)), None)
+
+
+def package_identities(packages: Any, platform: Any) -> list[dict[str, Any]]:
+    """Per vulnerable package, the ``computing_core__package`` key it is written under, or why it has none.
+
+    ``{name, version, package_manager, key: {ecosystem, name, version} | None, unmatched: reason | None}``. A
+    language package keeps Inspector's ``version``; an OS package's version is ``version-release`` with ``epoch:``
+    first when the epoch is above zero (inferred to be Syft's form for rpm, dpkg and apk; to be checked against a
+    live finding and an SBOM of the same image).
+    """
+    out: list[dict[str, Any]] = []
+    for package in packages if isinstance(packages, list) else []:
+        if not isinstance(package, dict):
+            continue
+        name, version = str(package.get("name") or ""), str(package.get("version") or "")
+        manager = str(package.get("packageManager") or "")
+        ecosystem: str | None
+        unmatched: str | None = None
+        if manager == "OS":
+            ecosystem = os_ecosystem(platform)
+            if ecosystem is None:
+                unmatched = f"an OS package on an image whose platform {platform!r} names no known distribution family"
+            release = str(package.get("release") or "")
+            epoch = package.get("epoch")
+            full = version + (f"-{release}" if release else "")
+            if isinstance(epoch, int) and not isinstance(epoch, bool) and epoch > 0:
+                full = f"{epoch}:{full}"
+            version = full
+        elif manager in LANGUAGE_ECOSYSTEMS:
+            ecosystem = LANGUAGE_ECOSYSTEMS[manager]
+        else:
+            ecosystem = None
+            unmatched = UNMAPPED_MANAGERS.get(manager) or f"package manager {manager or 'none'!r} has no mapped type"
+        if ecosystem is not None and (not name or not version):
+            ecosystem, unmatched = None, "no name or version"
+        if ecosystem is not None and (len(name) > _MAX_PACKAGE_NAME or len(version) > _MAX_PACKAGE_VERSION):
+            ecosystem, unmatched = None, "a name or version longer than computing_core's package columns"
+        key = {"ecosystem": ecosystem[:_MAX_ECOSYSTEM], "name": name, "version": version} if ecosystem else None
+        out.append(
+            {
+                "name": str(package.get("name") or ""),
+                "version": str(package.get("version") or ""),
+                "package_manager": manager or None,
+                "key": key,
+                "unmatched": unmatched,
+            }
+        )
+    return out
 
 
 def concerned_resource(resource_type: str | None, resource_id: str | None) -> tuple[str, str] | None:
@@ -551,6 +656,10 @@ class InspectorReads:
         adjusted = (finding.get("inspectorScoreDetails") or {}).get("adjustedCvss")
         vulnerability_id = _str(details.get("vulnerabilityId"))
         digest = image_digest_of(common["resource_type"], common["resource_id"])
+        # The image's platform is read in memory from resources[].details (never stored) for the OS package type.
+        resources = [r for r in finding.get("resources") or [] if isinstance(r, dict)]
+        image = ((resources[0].get("details") or {}).get("awsEcrContainerImage") or {}) if resources else {}
+        identities = package_identities(details.get("vulnerablePackages"), image.get("platform")) if digest else None
         fields: dict[str, Any] = {
             "name": (common["title"] or vulnerability_id or _str(code.get("detectorName")) or arn)[:255],
             **common,
@@ -570,6 +679,7 @@ class InspectorReads:
             "epss_score": _num((finding.get("epss") or {}).get("score")),
             "vulnerable_packages": _doc(details.get("vulnerablePackages")),
             "image_digest": digest,
+            "package_identities": identities,
             # A code-vulnerability finding's detail (read: botocore CodeVulnerabilityDetails, CodeFilePath).
             "cwes": _str_list(code.get("cwes")),
             "detector_id": _str(code.get("detectorId")),
@@ -595,7 +705,34 @@ class InspectorReads:
             self.r.add_edge(
                 CONCERNS_RESOURCE, INSPECTOR_FINDING, arn, IMAGE_HOST, composite_natural_key(host_key(digest)), region
             )
+            self._installs(digest, identities or [])
         return True
+
+    def _installs(self, digest: str, identities: list[dict[str, Any]]) -> None:
+        """The image host ``INSTALLS_PACKAGE`` each keyed package (req-aws-landing-zone-inspector-packages-1). A
+        package envelope carries its key and nothing else, so what an SBOM writer stored (purl, licence) is kept."""
+        from .ecs import host_ref
+        from .edges import edge_envelope
+        from .identity import composite_natural_key, edge_ref
+        from .organizations import sensitivity_refusal
+
+        keyed = [i["key"] for i in identities if i.get("key")]
+        if not keyed:
+            return
+        refused = sensitivity_refusal(PACKAGE, self.r.sensitivity)
+        if refused is not None:
+            self.r.notice("warn", "LANDING_ZONE_NODE_SKIPPED", f"{PACKAGE}: skipped, {refused}", entity_type=PACKAGE)
+            return
+        for key in keyed:
+            ref = node_ref(PACKAGE, composite_natural_key(key))
+            if ref not in self.r._node_refs:
+                self.r._node_refs.add(ref)
+                self.r.result.nodes.append({"entity": {"ref": ref, "entity_type": PACKAGE, "dimensions": {}}, "node": dict(key)})
+            edge = edge_ref(INSTALLS_PACKAGE, host_ref(digest), ref)
+            if edge not in self.r._edge_refs:
+                self.r._edge_refs.add(edge)
+                # An image is not in an account or a region: the edge takes its type's default dimensions.
+                self.r.result.edges.append(edge_envelope(INSTALLS_PACKAGE, from_ref=host_ref(digest), to_ref=ref, dimensions={}))
 
     def _reachability_finding(self, region: str, finding: dict[str, Any]) -> bool:
         """The middle node of the reachability compound edge, its role edges and its containment."""
@@ -666,6 +803,7 @@ __all__ = [
     "DOCUMENTED_COMPONENT_TYPES",
     "REACHABILITY_FINDING",
     "classify_step",
+    "package_identities",
     "read_path",
     "HOSTS_INSPECTOR2_FINDING",
     "INSPECTOR_FINDING",
