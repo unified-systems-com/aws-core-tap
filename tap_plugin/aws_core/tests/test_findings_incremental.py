@@ -80,6 +80,20 @@ def test_an_unclean_read_writes_no_new_watermark() -> None:
     assert watermark_key("guardduty", MGMT, WEST) in read.read_through
 
 
+@pytest.mark.spec("req-aws-landing-zone-findings-10")
+@pytest.mark.parametrize(("service", "writer"), [("guardduty", "_guardduty_finding"), ("securityhub", "_securityhub_finding")])
+def test_a_finding_read_but_not_written_keeps_the_watermark(monkeypatch: pytest.MonkeyPatch, service: str, writer: str) -> None:
+    """The watermark moves only after the writes, and only when every finding read was written."""
+    from tap_plugin.aws_core.collectors.boto3_collector.findings import FindingsReads
+
+    monkeypatch.setattr(FindingsReads, writer, lambda self, *a, **kw: False)
+    aws = with_findings()
+    read = collect(aws, run_started=STARTED)
+    assert not [k for k in read.read_through if k.startswith(f"{service}|")]
+    other = "securityhub" if service == "guardduty" else "guardduty"
+    assert watermark_key(other, MGMT, WEST) in read.read_through, "the other source still moves"
+
+
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-landing-zone-findings-10")
 def test_two_runs_carry_the_watermark_on_the_batch_node(monkeypatch: pytest.MonkeyPatch) -> None:

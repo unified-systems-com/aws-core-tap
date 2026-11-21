@@ -431,7 +431,6 @@ class FindingsReads:
             region, detector_id, closed_criteria, "updatedAt"
         )
 
-        self.r.mark_read("guardduty", region, [listed, closed], clean=not (truncated or closed_cut or skipped or closed_skipped))
         exact = self._guardduty_statistics(region, detector_id, totals_criteria)
         if exact is not None:
             fields: dict[str, Any] = {
@@ -452,6 +451,8 @@ class FindingsReads:
             for finding in findings + closed_findings:
                 if not self._guardduty_finding(region, detector_id, detector_key, detector_type, finding):
                     unwritten += 1
+            # After the writes: a finding read but not written keeps the previous watermark, so it is asked for again.
+            self.r.mark_read("guardduty", region, [listed, closed], clean=not (truncated or closed_cut or unwritten))
             self._surface(
                 self.r.aggregate([listed, closed]),
                 RELATION_GUARDDUTY_FINDINGS,
@@ -693,7 +694,6 @@ class FindingsReads:
         reads.append(closed)
         findings.extend(f for f in closed.items if isinstance(f, dict))
         combined = self.r.aggregate(reads)
-        self.r.mark_read("securityhub", region, reads, clean=not (truncated or closed_cut))
         filter_text = (
             f"securityhub:GetFindings AwsAccountId={account}, Region={region}, RecordState=ACTIVE, "
             f"one read per SeverityLabel; and RecordState=ARCHIVED, UpdatedAt in the last {CLOSED_WINDOW_DAYS} days"
@@ -706,6 +706,8 @@ class FindingsReads:
                 if not self._securityhub_finding(region, hub_arn, hub_type, finding, standards):
                     unwritten += 1
             unwritten += sum(1 for r in reads for f in r.items if not isinstance(f, dict))
+            # After the writes, as GuardDuty's: an unwritten finding keeps the previous watermark.
+            self.r.mark_read("securityhub", region, reads, clean=not (truncated or closed_cut or unwritten))
             self._surface(
                 combined,
                 RELATION_SECURITYHUB_FINDINGS,
