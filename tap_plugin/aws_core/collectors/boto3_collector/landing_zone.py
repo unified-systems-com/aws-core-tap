@@ -56,6 +56,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from time import monotonic
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
@@ -73,6 +74,7 @@ from .findings import (
     HOSTS_CONFORMANCE_PACK,
     RELATION_CONFIG_RULES,
     RELATION_CONFORMANCE_PACKS,
+    FindingsLimits,
     FindingsReads,
 )
 from .identity import edge_ref, node_ref
@@ -287,6 +289,9 @@ class _Walk:
     exc: BaseException | None = None
     #: The operation, for the reason text.
     operation: str = ""
+    #: Why the read stopped before its end when a limit stopped it (an operator's findings limit or read budget,
+    #: or a page bound), for the surface's ``reasons.truncated``; None when it ran to its end or failed.
+    truncation: str | None = None
 
     @property
     def complete(self) -> bool:
@@ -389,6 +394,7 @@ class _Reader:
         facts: dict[str, RegionFacts],
         member_accounts: list[str] | None,
         sensitivity: dict[str, dict[str, Any]] | None = None,
+        limits: FindingsLimits | None = None,
     ) -> None:
         self._client_for = client_for
         self._clients: dict[tuple[str, str], Any] = {}
@@ -405,6 +411,10 @@ class _Reader:
         self._tags_denied: set[str] = set()
         self._tags_missing = 0
         self._unavailable_said: set[str] = set()
+        #: The operator's trims on the findings reads (req-aws-core-secret-findings-settings); none by default.
+        self.limits = limits or FindingsLimits()
+        #: Findings written so far per (service, region), against ``limits.max_per_region``.
+        self._findings_used: dict[tuple[str, str], int] = {}
         self.findings = FindingsReads(self)
 
     # -- plumbing ---------------------------------------------------------
@@ -479,6 +489,55 @@ class _Reader:
         result.last = _now()
         return result
 
+    def findings_left(self, service: str, region: str) -> int | None:
+        """How many more findings ``service`` may write in ``region`` under ``findings_max_per_region``; None is
+        no limit (the default)."""
+        limit = self.limits.max_per_region
+        return None if limit is None else max(0, limit - self._findings_used.get((service, region), 0))
+
+    def findings_walk(
+        self,
+        service: str,
+        region: str,
+        operation: str,
+        result_key: str,
+        *,
+        keep: Callable[[Any], bool] | None = None,
+        max_pages: int | None = None,
+        **params: Any,
+    ) -> tuple[_Walk, bool]:
+        """One findings read under the operator's limits: to its end by default; under
+        ``findings_max_per_region`` it shares the service's per-region budget with the service's other reads
+        there; under ``findings_read_budget_seconds`` it stops at its next page once that long has passed. A
+        read a limit stopped is ``truncated`` and says why in ``truncation``."""
+        left = self.findings_left(service, region)
+        if left == 0:
+            now = _now()
+            spent = _Walk([], now, now, operation=operation)
+            spent.truncation = (
+                f"the per-region limit of {self.limits.max_per_region} {service} findings (findings_max_per_region) "
+                "was reached before this read"
+            )
+            return spent, True
+        result, truncated = self.capped_walk(
+            service,
+            region,
+            operation,
+            result_key,
+            cap=left,
+            keep=keep,
+            max_pages=max_pages,
+            budget_seconds=self.limits.read_budget_seconds,
+            **params,
+        )
+        self._findings_used[(service, region)] = self._findings_used.get((service, region), 0) + len(result.items)
+        if truncated and result.truncation is None:
+            result.truncation = (
+                f"the read stopped at the per-region limit of {self.limits.max_per_region} {service} findings "
+                "(findings_max_per_region)"
+            )
+        return result, truncated
+
     def capped_walk(
         self,
         service: str,
@@ -486,22 +545,25 @@ class _Reader:
         operation: str,
         result_key: str,
         *,
-        cap: int,
+        cap: int | None = None,
         keep: Callable[[Any], bool] | None = None,
         max_pages: int | None = None,
+        budget_seconds: float | None = None,
         **params: Any,
     ) -> tuple[_Walk, bool]:
-        """Read one paginated call until its end or until ``cap`` items: ``(the read, truncated)``.
-        Truncated means the cap was reached with a continuation token still outstanding (or more
-        items on the last page than the cap allowed), so the listing is partial by design. A
-        failure is recorded as in ``walk``.
+        """Read one paginated call until its end, or until ``cap`` items when a cap is given: ``(the read,
+        truncated)``. Truncated means a bound stopped the read with a continuation token still outstanding (or
+        more items on the last page than the cap allowed), so the listing is partial by design. A failure is
+        recorded as in ``walk``.
 
-        ``keep`` filters each page as it arrives: only kept items are held and count against
-        ``cap`` (a filter the API cannot apply server-side). ``max_pages`` stops the read after that
-        many pages; stopping with a continuation token outstanding is a truncation."""
+        ``keep`` filters each page as it arrives: only kept items are held and count against ``cap`` (a filter
+        the API cannot apply server-side). ``max_pages`` stops the read after that many pages, and
+        ``budget_seconds`` once that long has passed at a page boundary; either, with a continuation token
+        outstanding, is a truncation, named in ``truncation``."""
         token = continuation_token(service)
         result = _Walk([], _now(), _now(), operation=operation)
         truncated = False
+        started = monotonic()
         try:
             fn: Callable[..., dict[str, Any]] = getattr(self.client(service, region), operation)
             next_token: str | None = None
@@ -513,16 +575,24 @@ class _Reader:
                 page = list(response.get(result_key) or [])
                 if keep is not None:
                     page = [item for item in page if keep(item)]
-                room = cap - len(result.items)
+                room = len(page) if cap is None else cap - len(result.items)
                 result.items.extend(page[:room])
                 next_token = response.get(token)
-                if len(page) > room or (next_token and len(result.items) >= cap):
+                if cap is not None and (len(page) > room or (next_token and len(result.items) >= cap)):
                     truncated = True
                     break
                 if not next_token:
                     break
                 if max_pages is not None and pages >= max_pages:
                     truncated = True
+                    result.truncation = f"the read stopped after {max_pages} page(s) with more outstanding"
+                    break
+                if budget_seconds is not None and monotonic() - started >= budget_seconds:
+                    truncated = True
+                    result.truncation = (
+                        f"the read stopped after its budget of {budget_seconds:g} seconds "
+                        "(findings_read_budget_seconds) with pages outstanding"
+                    )
                     break
             else:
                 raise EndpointConnectionError(endpoint_url=f"{operation}: continuation chain exceeded {_MAX_PAGES} pages")
@@ -536,6 +606,8 @@ class _Reader:
         """Several reads behind one surface (``_aggregate``), keeping every item read."""
         combined = _aggregate(walks)
         combined.items = [item for w in walks for item in w.items]
+        reasons = list(dict.fromkeys(w.truncation for w in walks if w.truncation))
+        combined.truncation = "; ".join(reasons) or None
         return combined
 
     def call(
@@ -1616,12 +1688,14 @@ def collect_landing_zone(
     facts: dict[str, RegionFacts],
     member_accounts: list[str] | None,
     sensitivity: dict[str, dict[str, Any]] | None = None,
+    limits: FindingsLimits | None = None,
 ) -> LandingZoneRead:
     """Read the landing zone's governance surface; never raises for an AWS failure.
 
     ``client_for(service, region)`` builds a client. ``member_accounts`` is the organization's
     complete account list (``OrganizationTree.member_accounts``), or None when it was not read to
-    the end. ``sensitivity`` replaces ``reader_sensitivity(READER)`` (tests only).
+    the end. ``limits`` are the operator's findings trims (none by default). ``sensitivity`` replaces
+    ``reader_sensitivity(READER)`` (tests only).
     """
     return _Reader(
         client_for,
@@ -1631,6 +1705,7 @@ def collect_landing_zone(
         facts=facts,
         member_accounts=member_accounts,
         sensitivity=sensitivity,
+        limits=limits,
     ).collect()
 
 

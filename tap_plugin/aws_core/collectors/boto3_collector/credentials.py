@@ -108,6 +108,15 @@ _SELECTION_PROPS: dict[str, Any] = {
     "retire_within_selection": {"type": "boolean"},
 }
 
+# The findings settings (req-aws-core-secret-findings-settings): scope, not credential, shared by both kinds for the
+# same reason the selection keys are. Every key is optional and trims; absent, the findings readers read everything.
+_FINDINGS_PROPS: dict[str, Any] = {
+    # The most findings one service writes per region per run; absent means no limit.
+    "findings_max_per_region": {"type": "integer", "minimum": 1},
+    # Each findings read stops at its next page once it has run this long; absent means no budget.
+    "findings_read_budget_seconds": {"type": "integer", "minimum": 1},
+}
+
 # The static-credential fragment: reused verbatim as the `aws_assumed_role`
 # kind's `data.base` (the identity that CALLS AssumeRole).
 _STATIC_CREDS_PROPS: dict[str, Any] = {
@@ -124,7 +133,13 @@ AWS_STATIC_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "required": ["access_key_id", "secret_access_key"],
-    "properties": {**_STATIC_CREDS_PROPS, **_REGION_SCOPE_PROPS, **_EXPECTED_ACCOUNT_PROPS, **_SELECTION_PROPS},
+    "properties": {
+        **_STATIC_CREDS_PROPS,
+        **_REGION_SCOPE_PROPS,
+        **_EXPECTED_ACCOUNT_PROPS,
+        **_SELECTION_PROPS,
+        **_FINDINGS_PROPS,
+    },
 }
 
 # aws_core owns this schema for the cross-account kind's `data`
@@ -159,6 +174,7 @@ AWS_ASSUMED_ROLE_SCHEMA: dict[str, Any] = {
         "duration_seconds": {"type": "integer", "minimum": 900, "maximum": 43200},
         **_REGION_SCOPE_PROPS,
         **_SELECTION_PROPS,
+        **_FINDINGS_PROPS,
     },
 }
 

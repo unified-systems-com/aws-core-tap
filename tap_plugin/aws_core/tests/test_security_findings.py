@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from tap_plugin.aws_core.collectors.boto3_collector import findings as findings_mod
 from tap_plugin.aws_core.collectors.boto3_collector.findings import (
     ACCESS_ANALYZER_FINDING,
     CONCERNS_RESOURCE,
@@ -35,6 +34,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.findings import (
     analyzer_finding_key,
     guardduty_severity_label,
     securityhub_finding_key,
+    FindingsLimits,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import (
     ACCESS_ANALYZER,
@@ -466,20 +466,19 @@ class TestGuardDuty:
         assert (detector["active_finding_counts_complete"], detector["active_findings_truncated"]) == (True, False)
 
     @pytest.mark.spec("req-aws-landing-zone-findings-3", "req-aws-landing-zone-findings-4")
-    def test_cap_truncates_and_failed_statistics_fall_back_to_a_lower_bound(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(findings_mod, "FINDINGS_CAP", 2)
+    def test_a_limit_truncates_and_failed_statistics_fall_back_to_a_lower_bound(self) -> None:
         aws = with_findings()
         aws.on("guardduty", "get_findings_statistics", _err("BadRequestException"))
-        read = collect(aws)
+        read = collect(aws, limits=FindingsLimits(max_per_region=2))
         assert {n["node"]["finding_id"] for n in _nodes(read, GUARDDUTY_FINDING)} == {"gd-high", "gd-medium"}
         detector = _one(read, GUARDDUTY_DETECTOR)
         assert detector["active_finding_counts"] == {"HIGH": 1, "MEDIUM": 1}
         assert (detector["active_finding_counts_complete"], detector["active_findings_truncated"]) == (False, True)
         surface = _surface_dict(read, HOLDS_GUARDDUTY_FINDING, _id(GUARDDUTY_DETECTOR, DETECTOR_KEY))
         assert surface["enumeration_complete"] is False
-        assert surface["reasons"]["truncated"].startswith("truncated: the read stopped at the cap of 2")
+        assert surface["reasons"]["truncated"].startswith(
+            "truncated: the read stopped at the per-region limit of 2 guardduty findings (findings_max_per_region)"
+        )
 
     @pytest.mark.spec("req-aws-landing-zone-findings-3", "req-grid-reconcile-evidence-4")
     def test_surface_is_filtered_uncontrolled_and_never_complete(self) -> None:
@@ -655,10 +654,9 @@ class TestSecurityHub:
         assert (hub["active_finding_counts_complete"], hub["active_findings_truncated"]) == (True, False)
 
     @pytest.mark.spec("req-aws-landing-zone-findings-3")
-    def test_the_cap_is_shared_across_labels_and_drops_the_least_severe(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(findings_mod, "FINDINGS_CAP", 1)
+    def test_the_limit_is_shared_across_labels_and_drops_the_least_severe(self) -> None:
         aws = with_findings()
-        read = collect(aws)
+        read = collect(aws, limits=FindingsLimits(max_per_region=1))
         assert [n["node"]["security_control_id"] for n in _nodes(read, SECURITYHUB_FINDING)] == ["EC2.8"]
         hub = _one(read, SECURITYHUB_HUB)
         assert (hub["active_finding_counts_complete"], hub["active_findings_truncated"]) == (False, True)
@@ -1035,11 +1033,10 @@ class TestClosedFindings:
         assert surface["enumeration_complete"] is False
 
     @pytest.mark.spec("req-aws-landing-zone-findings-3", "req-aws-landing-zone-findings-9")
-    def test_a_capped_closed_read_is_truncated_and_never_complete(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(findings_mod, "FINDINGS_CAP", 1)
+    def test_a_limited_closed_read_is_truncated_and_never_complete(self) -> None:
         aws = with_findings()
         aws.on("guardduty", "list_findings", _gd_list([["gd-high"]], [["gd-a", "gd-b"]]), region=WEST)
-        read = collect(aws)
+        read = collect(aws, limits=FindingsLimits(max_per_region=1))
         detector = _one(read, GUARDDUTY_DETECTOR)
         assert detector["active_findings_truncated"] is False, "the active read was not cut"
         surface = _surface_dict(read, HOLDS_GUARDDUTY_FINDING, _id(GUARDDUTY_DETECTOR, DETECTOR_KEY))

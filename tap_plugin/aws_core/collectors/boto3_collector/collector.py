@@ -100,6 +100,7 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
+from .findings import FindingsLimits
 from .ecs import image_writes, revision_label, walks_of, withhold_undescribed_task_definitions
 from .elb_topology import walks_of as listener_walks_of
 from .elb_topology import withhold_unreplaced_lb_routes
@@ -1119,6 +1120,7 @@ class Boto3Collector(CollectorBase):
                     regions=regions,
                     facts=facts,
                     member_accounts=org_tree.member_accounts,
+                    limits=FindingsLimits.of(data),
                 )
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(
