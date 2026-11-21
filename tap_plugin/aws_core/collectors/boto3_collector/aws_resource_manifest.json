@@ -8638,7 +8638,7 @@
           {
             "path": "_hydrate.detail.data.ModelCard.ModelCardContent",
             "category": "customer_content",
-            "reason": "The model card's content: operator-authored documentation of the model (intended use, evaluation, risk ratings). botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The model card's content: operator-authored documentation of the model (intended use, evaluation, risk ratings). botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -11388,7 +11388,7 @@
           {
             "path": "_hydrate.detail.data.app.tags",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -11442,7 +11442,7 @@
           {
             "path": "_hydrate.detail.data.policy.tags",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -11496,7 +11496,7 @@
           {
             "path": "_hydrate.detail.data.service.tags",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -11958,7 +11958,7 @@
           {
             "path": "_hydrate.detail.data.ScheduledQuery.QueryString",
             "category": "customer_content",
-            "reason": "The scheduled query's SQL text: operator-authored, and can embed literal values. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The scheduled query's SQL text: operator-authored, and can embed literal values. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -12627,13 +12627,13 @@
           {
             "path": "_hydrate.detail.data.tags",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.scopeTags",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. botocore marks the member sensitive; tags are not secret material and are stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -18528,7 +18528,7 @@
           {
             "path": "_hydrate.detail.data.Content",
             "category": "customer_content",
-            "reason": "The model card's JSON content: operator-authored documentation of the model. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The model card's JSON content: operator-authored documentation of the model. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -18965,19 +18965,19 @@
           {
             "path": "_hydrate.detail.data.definition",
             "category": "customer_content",
-            "reason": "The Amazon States Language definition: what the state machine runs; it can embed literal parameters. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The Amazon States Language definition: what the state machine runs; it can embed literal parameters. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.description",
             "category": "free_text",
-            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.variableReferences",
             "category": "customer_content",
-            "reason": "The names of the variables each state references: names, not values. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The names of the variables each state references: names, not values. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -19161,13 +19161,13 @@
           {
             "path": "_hydrate.detail.data.Certificate.Certificate",
             "category": "other",
-            "reason": "A public X.509 certificate: public material (DescribeCertificate never returns the private key). botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A public X.509 certificate: public material (DescribeCertificate never returns the private key). botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.Certificate.CertificateChain",
             "category": "other",
-            "reason": "The certificate's public chain: public material. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The certificate's public chain: public material. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -19220,7 +19220,7 @@
           {
             "path": "_hydrate.detail.data.Connector.As2Config.MessageSubject",
             "category": "free_text",
-            "reason": "The AS2 message subject line an operator sets. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The AS2 message subject line an operator sets. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -19360,7 +19360,7 @@
           {
             "path": "_hydrate.detail.data.description",
             "category": "free_text",
-            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -29690,13 +29690,13 @@
           {
             "path": "_hydrate.detail.data.blueprint.schema",
             "category": "customer_content",
-            "reason": "The blueprint's extraction schema: operator-authored JSON. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The blueprint's extraction schema: operator-authored JSON. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.blueprint.blueprintName",
             "category": "customer_content",
-            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -29764,13 +29764,13 @@
           {
             "path": "_hydrate.detail.data.library.libraryName",
             "category": "customer_content",
-            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.library.libraryDescription",
             "category": "free_text",
-            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -29841,13 +29841,13 @@
           {
             "path": "_hydrate.detail.data.project.projectName",
             "category": "customer_content",
-            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.project.projectDescription",
             "category": "free_text",
-            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -30076,19 +30076,19 @@
           {
             "path": "_hydrate.detail.data.name",
             "category": "customer_content",
-            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "An operator-chosen name. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.instruction",
             "category": "customer_content",
-            "reason": "The retrieval instruction: operator-authored prompt text. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The retrieval instruction: operator-authored prompt text. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "_hydrate.detail.data.description",
             "category": "free_text",
-            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "Operator-authored description. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -38106,13 +38106,13 @@
           {
             "path": "CreateTime",
             "category": "other",
-            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "UpdateTime",
             "category": "other",
-            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -38177,19 +38177,19 @@
           {
             "path": "Configuration.PoliticalView",
             "category": "other",
-            "reason": "The map's political-view setting (an ISO 3166 country code). botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The map's political-view setting (an ISO 3166 country code). botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "CreateTime",
             "category": "other",
-            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "UpdateTime",
             "category": "other",
-            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -38396,13 +38396,13 @@
           {
             "path": "CreateTime",
             "category": "other",
-            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
             "path": "UpdateTime",
             "category": "other",
-            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "A timestamp. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {
@@ -40152,7 +40152,7 @@
           {
             "path": "encryptionConfiguration.kmsKeyId",
             "category": "other",
-            "reason": "The id of the KMS key that encrypts the application: a reference, not key material. botocore marks the member sensitive; it is not secret material and is stored (reviewer pass 2026-11-20, aws-core-tap#264).",
+            "reason": "The id of the KMS key that encrypts the application: a reference, not key material. botocore marks the member sensitive; it is not secret material and is stored (maintainer ruling aws-core-tap#264, Q114a; classified by an automated pass, not a human review).",
             "evidence": "botocore_sensitive"
           },
           {

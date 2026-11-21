@@ -64,6 +64,21 @@ EC2_INSTANCE = "aws_core__aws_ec2_instance"
 IAM_USER = "aws_core__aws_iam_user"
 IAM_ROLE = "aws_core__aws_iam_role"
 S3_BUCKET = "aws_core__aws_s3_bucket"
+#: Every type a GuardDuty finding's CONCERNS_RESOURCE can reach (aws-core-tap#264, Q115b): the
+#: instance, bucket and access-key user it names by id, and the types ``_guardduty_resource_arns``
+#: resolves. The model's OUTBOUND_EDGES declares exactly these.
+GUARDDUTY_CONCERNS_TARGETS: tuple[str, ...] = (
+    EC2_INSTANCE,
+    S3_BUCKET,
+    IAM_USER,
+    "aws_core__aws_lambda",
+    "aws_core__aws_rds_instance",
+    "aws_core__aws_rds_db_shard_group",
+    "aws_core__aws_ecs_cluster",
+    "aws_core__aws_ecs_task",
+    "aws_core__aws_eks_cluster",
+    "aws_core__aws_ebs_volume",
+)
 
 HOLDS_GUARDDUTY_FINDING = "HOLDS_GUARDDUTY_FINDING__aws_core"
 HOLDS_SECURITYHUB_FINDING = "HOLDS_SECURITYHUB_FINDING__aws_core"
@@ -92,6 +107,11 @@ FINDINGS_CAP = 1000
 CLOSED_WINDOW_DAYS = 30
 #: Access Analyzer's closed statuses (read: botocore ``FindingStatus``: ACTIVE, ARCHIVED, RESOLVED).
 ACCESS_ANALYZER_CLOSED = ("ARCHIVED", "RESOLVED")
+#: The most pages the Access Analyzer closed read walks. Its filter has no date operator and no
+#: sort on updatedAt is documented (botocore ``SortCriteria.attributeName`` is free text with no
+#: listed values), so old closed findings can come first and every page must be read to find the
+#: recent ones; past this many pages the read stops and is recorded truncated.
+ACCESS_ANALYZER_CLOSED_MAX_PAGES = 50
 #: Page sizes: each API's documented maximum (read: botocore ``MaxResults`` shapes; Access
 #: Analyzer's ``maxResults`` is an unbounded integer, so its documented default page of 100 is asked).
 GUARDDUTY_PAGE = 50
@@ -454,7 +474,9 @@ class FindingsReads:
                 GUARDDUTY_FINDING, arn, (IAM_USER, f"arn:{self.r.partition}:iam::{account}:user/{user_name}"), region
             )
         for target_arn in _guardduty_resource_arns(resource):
-            self._concerns(GUARDDUTY_FINDING, arn, resolve_arn(target_arn), region)
+            target = resolve_arn(target_arn)
+            if target is not None and target[0] in GUARDDUTY_CONCERNS_TARGETS:
+                self._concerns(GUARDDUTY_FINDING, arn, target, region)
         return True
 
     # -- Security Hub -------------------------------------------------------
@@ -671,7 +693,7 @@ class FindingsReads:
         external = analyzer_type in EXTERNAL_ACCESS_ANALYZER_TYPES
         operation = "list_findings" if external else "list_findings_v2"
 
-        def read(statuses: list[str]) -> tuple[_Walk, bool]:
+        def read(statuses: list[str], **window: Any) -> tuple[_Walk, bool]:
             return self.r.capped_walk(
                 "accessanalyzer",
                 region,
@@ -681,17 +703,25 @@ class FindingsReads:
                 analyzerArn=analyzer_arn,
                 filter={"status": {"eq": statuses}, "resourceOwnerAccount": {"eq": [account]}},
                 maxResults=ACCESS_ANALYZER_PAGE,
+                **window,
             )
 
-        listed, truncated = read(["ACTIVE"])
-        closed, closed_cut = read(list(ACCESS_ANALYZER_CLOSED))
-        findings = [f for f in listed.items if isinstance(f, dict)]
         since = self._since()
-        recent = [
-            f
-            for f in closed.items
-            if isinstance(f, dict) and ((when := _when(f.get("updatedAt"))) is None or when >= since)
-        ]
+
+        def recent(finding: Any) -> bool:
+            """In the window as the page arrives, so only recent closed findings count against the
+            cap. A finding without a readable updatedAt is kept, never silently dropped."""
+            if not isinstance(finding, dict):
+                return True
+            when = _when(finding.get("updatedAt"))
+            return when is None or when >= since
+
+        listed, truncated = read(["ACTIVE"])
+        closed, closed_cut = read(
+            list(ACCESS_ANALYZER_CLOSED), keep=recent, max_pages=ACCESS_ANALYZER_CLOSED_MAX_PAGES
+        )
+        findings = [f for f in listed.items if isinstance(f, dict)]
+        closed_findings = [f for f in closed.items if isinstance(f, dict)]
         kinds = [str(f.get("findingType") or ("ExternalAccess" if external else "")) for f in findings]
         fields = self._counts(
             kinds, complete=listed.complete and not truncated, truncated=truncated if listed.complete else None
@@ -700,12 +730,13 @@ class FindingsReads:
         filter_text = (
             f"accessanalyzer:{name} status=ACTIVE, resourceOwnerAccount={account}; "
             f"and status in ARCHIVED, RESOLVED, resourceOwnerAccount={account}, "
-            f"kept when updatedAt is in the last {CLOSED_WINDOW_DAYS} days"
+            f"kept when updatedAt is in the last {CLOSED_WINDOW_DAYS} days (applied per page, at most "
+            f"{ACCESS_ANALYZER_CLOSED_MAX_PAGES} pages)"
         )
 
         def emit() -> None:
             unwritten = len(listed.items) - len(findings) + sum(1 for f in closed.items if not isinstance(f, dict))
-            for finding in findings + recent:
+            for finding in findings + closed_findings:
                 if not self._analyzer_finding(region, analyzer_arn, parent_type, finding, external):
                     unwritten += 1
             self._surface(
@@ -714,7 +745,7 @@ class FindingsReads:
                 HOLDS_ACCESS_ANALYZER_FINDING,
                 parent_type,
                 analyzer_arn,
-                count=len(listed.items) + len(recent) + sum(1 for f in closed.items if not isinstance(f, dict)),
+                count=len(listed.items) + len(closed.items),
                 skipped=unwritten,
                 filter_text=filter_text,
                 truncated=truncated or closed_cut,
@@ -896,9 +927,12 @@ class FindingsReads:
 def _guardduty_resource_arns(resource: dict[str, Any]) -> list[str]:
     """The ARNs a GuardDuty finding's ``Resource`` names beyond the instance, buckets and access-key
     user (aws-core-tap#264, ruling Q115b): a Lambda function, an RDS instance or Aurora Limitless shard
-    group, an ECS cluster and task, an EKS cluster, and what a malware scan scanned (EBS volumes, an
-    EBS snapshot, an AMI, a backup recovery point). Read: botocore guardduty ``Resource``. Each is
-    resolved by ``arn_resolver``; one no aws_core type is keyed by names nothing and sends no edge."""
+    group, an ECS cluster and task, an EKS cluster, and the EBS volumes a malware scan scanned. Read:
+    botocore guardduty ``Resource``. Each is resolved by ``arn_resolver`` and the edge is sent only
+    when it resolves to a type the model's ``CONCERNS_RESOURCE`` declaration names
+    (``GUARDDUTY_CONCERNS_TARGETS``). An EBS snapshot, an AMI and a backup recovery point are named too,
+    but no aws_core type models them, so they are not read; the recovery point stays in
+    ``resource_id``."""
     ecs = resource.get("EcsClusterDetails") or {}
     candidates = [
         (resource.get("LambdaDetails") or {}).get("FunctionArn"),
@@ -907,9 +941,6 @@ def _guardduty_resource_arns(resource: dict[str, Any]) -> list[str]:
         ecs.get("Arn"),
         (ecs.get("TaskDetails") or {}).get("Arn"),
         (resource.get("EksClusterDetails") or {}).get("Arn"),
-        (resource.get("EbsSnapshotDetails") or {}).get("SnapshotArn"),
-        (resource.get("Ec2ImageDetails") or {}).get("ImageArn"),
-        (resource.get("RecoveryPointDetails") or {}).get("RecoveryPointArn"),
     ]
     volumes = (resource.get("EbsVolumeDetails") or {}).get("ScannedVolumeDetails") or []
     candidates += [v.get("VolumeArn") for v in volumes if isinstance(v, dict)]
@@ -930,6 +961,7 @@ __all__ = [
     "CLOSED_WINDOW_DAYS",
     "CONCERNS_RESOURCE",
     "FINDINGS_CAP",
+    "GUARDDUTY_CONCERNS_TARGETS",
     "PAGINATED_OPERATIONS",
     "SINGLE_OPERATIONS",
     "FindingsReads",

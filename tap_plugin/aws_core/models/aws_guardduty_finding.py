@@ -17,8 +17,9 @@ class AwsGuardDutyFinding(BaseModel):
     rule), so it shows closed instead of vanishing; ``updated_at`` minus ``created_at`` bounds its time
     to close. Contained by its detector (``HOLDS_GUARDDUTY_FINDING``); ``CONCERNS_RESOURCE`` points at
     the resource it names, by that resource's natural key: the EC2 instance, S3 bucket or IAM user,
-    and any aws_core node keyed by an ARN it names (a Lambda function, an RDS instance, an ECS
-    cluster or task, an EKS cluster, a scanned EBS volume; ruling Q115b).
+    and the aws_core node an ARN it names resolves to (a Lambda function, an RDS instance, an ECS
+    cluster or task, an EKS cluster, a scanned EBS volume; ruling Q115b). The targets are a closed
+    list: no other type is accepted.
 
     What the finding says about itself is kept (aws-core-tap#264, ruling Q114c), each part in
     GuardDuty's own shape: ``description``, ``action`` (``Service.Action``: the API call, network
@@ -50,9 +51,23 @@ class AwsGuardDutyFinding(BaseModel):
     ARN_RESOURCE: ClassVar[str | None] = None
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
-        # Open: the instance, bucket or user it names, and any aws_core node keyed by an ARN in its
-        # Resource (aws-core-tap#264, Q115b), as for a Security Hub finding (aws-core-tap#242).
-        {"edges": [{"type": "CONCERNS_RESOURCE__aws_core"}]},
+        # The instance, bucket or user it names, and the types an ARN in its Resource resolves to
+        # (aws-core-tap#264, Q115b). Kept equal to findings.GUARDDUTY_CONCERNS_TARGETS by a test.
+        {
+            "nodes": [
+                {"type": "aws_core__aws_ec2_instance"},
+                {"type": "aws_core__aws_s3_bucket"},
+                {"type": "aws_core__aws_iam_user"},
+                {"type": "aws_core__aws_lambda"},
+                {"type": "aws_core__aws_rds_instance"},
+                {"type": "aws_core__aws_rds_db_shard_group"},
+                {"type": "aws_core__aws_ecs_cluster"},
+                {"type": "aws_core__aws_ecs_task"},
+                {"type": "aws_core__aws_eks_cluster"},
+                {"type": "aws_core__aws_ebs_volume"},
+            ],
+            "edges": [{"type": "CONCERNS_RESOURCE__aws_core"}],
+        },
     ]
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {

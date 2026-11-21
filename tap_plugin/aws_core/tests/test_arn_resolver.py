@@ -513,15 +513,25 @@ class TestOverTheRealModels:
             validate_edge(SECURITYHUB_FINDING, target, CONCERNS_RESOURCE)
 
     @pytest.mark.spec("req-aws-landing-zone-findings-2")
-    def test_guardduty_is_open_and_access_analyzer_keeps_its_named_targets(self) -> None:
-        """Security Hub's and GuardDuty's targets are open (GuardDuty since aws-core-tap#264, Q115b: it names
-        Lambda, RDS, ECS, EKS and malware-scan targets by ARN); Access Analyzer still refuses a type it does
-        not name, because its model declares the edge with its targets (PR 245 review)."""
+    def test_guardduty_and_access_analyzer_keep_their_named_targets(self) -> None:
+        """The open target is Security Hub's alone. GuardDuty names its targets: the instance, bucket and
+        user, and the types its Resource ARNs resolve to (aws-core-tap#264, Q115b), exactly the reader's
+        ``GUARDDUTY_CONCERNS_TARGETS``; Access Analyzer names its own. Each refuses any other type
+        (PR 245 review, PR 267 review)."""
+        from tap_plugin.aws_core.collectors.boto3_collector.findings import GUARDDUTY_CONCERNS_TARGETS
+        from tap_plugin.aws_core.models.aws_guardduty_finding import AwsGuardDutyFinding
+
         from tap_grid.constraints import InvalidEdgeError, validate_edge
 
-        for target in ("aws_core__aws_kms_key", "aws_core__aws_rds_db_cluster", "aws_core__aws_lambda"):
-            validate_edge("aws_core__aws_guardduty_finding", target, CONCERNS_RESOURCE)
+        declared = [
+            node["type"]
+            for rule in AwsGuardDutyFinding.OUTBOUND_EDGES
+            if any(edge["type"] == CONCERNS_RESOURCE for edge in rule["edges"])
+            for node in rule.get("nodes", [])
+        ]
+        assert sorted(declared) == sorted(GUARDDUTY_CONCERNS_TARGETS), "the reader and the model name the same targets"
         allowed = {
+            "aws_core__aws_guardduty_finding": GUARDDUTY_CONCERNS_TARGETS,
             "aws_core__aws_access_analyzer_finding": (
                 "aws_core__aws_s3_bucket",
                 "aws_core__aws_iam_role",

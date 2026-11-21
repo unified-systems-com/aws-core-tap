@@ -19,6 +19,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.findings import (
     ACCESS_ANALYZER_FINDING,
     CONFIG_RULE,
     GUARDDUTY_FINDING,
+    HOLDS_ACCESS_ANALYZER_FINDING,
     SECURITYHUB_FINDING,
     SECURITYHUB_SEVERITY_LABELS,
 )
@@ -359,3 +360,80 @@ def test_config_rule_scope_parameters_and_guard_body_through_the_real_model(inli
     assert node["input_parameters"] == {"requiredTag": "owner"}
     assert (node["policy_runtime"], node["policy_text"]) == ("guard-2.x.x", GUARD)
     assert node["tags"] == {"env": "prod"}
+
+
+def _closed_summary(finding_id: str, status: str, updated: datetime) -> dict[str, Any]:
+    return {
+        "id": finding_id,
+        "resource": BUCKET_ARN,
+        "resourceType": "AWS::S3::Bucket",
+        "condition": {},
+        "createdAt": updated - timedelta(days=1),
+        "analyzedAt": updated,
+        "updatedAt": updated,
+        "status": status,
+        "resourceOwnerAccount": ACCOUNT,
+    }
+
+
+def _closed_filter() -> dict[str, Any]:
+    return {"status": {"eq": ["ARCHIVED", "RESOLVED"]}, "resourceOwnerAccount": {"eq": [ACCOUNT]}}
+
+
+@pytest.mark.spec("req-aws-landing-zone-findings-9")
+def test_access_analyzer_old_closed_findings_first_do_not_use_up_the_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Old ARCHIVED rows come first (the API documents no updatedAt sort); the window is applied per page,
+    so only in-window findings count against the cap and the recent one on page three is kept."""
+    from tap_plugin.aws_core.collectors.boto3_collector import findings as findings_mod
+
+    monkeypatch.setattr(findings_mod, "FINDINGS_CAP", 2)
+    now = datetime.now(UTC)
+    old = now - timedelta(days=90)
+    with _Stubbed("accessanalyzer") as aws:
+        stub = aws.stubs["accessanalyzer"]
+        stub.add_response(
+            "list_findings",
+            {"findings": []},
+            {"analyzerArn": ANALYZER_ARN, "filter": {"status": {"eq": ["ACTIVE"]}, "resourceOwnerAccount": {"eq": [ACCOUNT]}}, "maxResults": 100},
+        )
+        base = {"analyzerArn": ANALYZER_ARN, "filter": _closed_filter(), "maxResults": 100}
+        stub.add_response(
+            "list_findings",
+            {"findings": [_closed_summary("old-1", "ARCHIVED", old), _closed_summary("old-2", "ARCHIVED", old)], "nextToken": "p2"},
+            base,
+        )
+        stub.add_response(
+            "list_findings",
+            {"findings": [_closed_summary("old-3", "RESOLVED", old), _closed_summary("old-4", "ARCHIVED", old)], "nextToken": "p3"},
+            {**base, "nextToken": "p2"},
+        )
+        stub.add_response(
+            "list_findings",
+            {"findings": [_closed_summary("new-1", "RESOLVED", now - timedelta(days=1)), _closed_summary("old-5", "ARCHIVED", old)]},
+            {**base, "nextToken": "p3"},
+        )
+        reader = _reader(aws)
+        reader.findings.access_analyzer(REGION, ANALYZER_ARN, "ACCOUNT", ACCESS_ANALYZER).emit()
+        aws.done()
+    assert [n["finding_id"] for n in _nodes(reader, ACCESS_ANALYZER_FINDING)] == ["new-1"]
+    [surface] = [s for s in reader.result.listings if s.edge_type == HOLDS_ACCESS_ANALYZER_FINDING]
+    assert "truncated" not in surface.reasons, "every page was read and the cap was not reached"
+
+
+@pytest.mark.spec("req-aws-landing-zone-findings-9")
+def test_access_analyzer_closed_read_stops_at_its_page_cap_truncated(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector import findings as findings_mod
+
+    monkeypatch.setattr(findings_mod, "ACCESS_ANALYZER_CLOSED_MAX_PAGES", 2)
+    old = datetime.now(UTC) - timedelta(days=90)
+    with _Stubbed("accessanalyzer") as aws:
+        stub = aws.stubs["accessanalyzer"]
+        stub.add_response("list_findings", {"findings": []})
+        stub.add_response("list_findings", {"findings": [_closed_summary("old-1", "ARCHIVED", old)], "nextToken": "p2"})
+        stub.add_response("list_findings", {"findings": [_closed_summary("old-2", "ARCHIVED", old)], "nextToken": "p3"})
+        reader = _reader(aws)
+        reader.findings.access_analyzer(REGION, ANALYZER_ARN, "ACCOUNT", ACCESS_ANALYZER).emit()
+        aws.done()
+    assert _nodes(reader, ACCESS_ANALYZER_FINDING) == []
+    [surface] = [s for s in reader.result.listings if s.edge_type == HOLDS_ACCESS_ANALYZER_FINDING]
+    assert surface.complete is False and "truncated" in surface.reasons
