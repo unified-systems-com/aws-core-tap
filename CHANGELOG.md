@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.5](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.4...v0.8.5) (2026-11-21)
+
+
+### Bug Fixes
+
+* **collector:** build every endpoint-probe client from one shared session ([#276](https://github.com/unified-systems-com/aws-core-tap/issues/276)) ([a483a69](https://github.com/unified-systems-com/aws-core-tap/commit/a483a69b5d3cad7ca5c544186c2d31a2e024c46d))
+
 ## [0.8.4](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.3...v0.8.4) (2026-11-21)
 
 
