@@ -26,6 +26,7 @@ concrete instance of the consumer-owned-shape contract.
 | req-aws-core-secret-aws-assumed-role | [AWS Assumed-Role Kind (cross-account)](#aws-assumed-role-kind-cross-account) | Proposed | `aws_assumed_role` `data` shape; STS AssumeRole + mandatory External ID for cross-account read-only collection; supersedes the deferral in `req-aws-core-secret-aws-static-3` |
 | req-aws-core-secret-member-fanout | [Member Fan-Out Settings](#member-fan-out-settings) | Proposed | Optional `data.member_fanout` block on the static kind: the dedicated member role's name, its required External ID, an exclude list and a cap; consumed by `req-aws-collector-fanout` |
 | req-aws-core-secret-selection | [Collection Selection Settings](#collection-selection-settings) | Proposed | Optional `data.include_types`, `data.exclude_types` and `data.accounts_allowed` on both kinds: which types and which accounts a run collects; consumed by `req-aws-collector-selection` |
+| req-aws-core-secret-findings-settings | [Findings Settings](#findings-settings) | Proposed | Optional keys on both kinds that trim what the findings readers collect, all off by default: `inspector_compliance_findings` (project Inspector rows into compliance_core), `inspector_finding_types` (down-select Inspector's finding types), `findings_max_per_region` and `findings_read_budget_seconds` (limit the findings reads); consumed by `req-aws-landing-zone-inspector` and `req-aws-landing-zone-findings-3` |
 
 ## AWS Static Access Key Kind
 ----
@@ -289,6 +290,42 @@ criteria, with their secret and template inputs defined. The candidates are:
 | req-aws-core-secret-member-fanout-5 | Partition-Neutral Member Artifact | Proposed | The member-role handoff artifact uses the deploying partition (`${AWS::Partition}` / `data.aws_partition`) for every ARN, deploys in `aws-us-gov` without edits, and attaches only the repo-owned `member-read-policy.json`, never an AWS-managed policy. | `req-aws-collector-fanout-13`, `-17`; the same templates unified-systems-com/aws-core-tap#51 names. |
 | req-aws-core-secret-member-fanout-6 | Redacted | Proposed | `external_id` is never logged, matching the assumed-role kind. | |
 | req-aws-core-secret-member-fanout-7 | External ID Required | Proposed | `enabled: true` without a non-empty `external_id` fails validation, and the collector never calls `AssumeRole` into a member without it. | Ruling 2026-10-01; mirrors `req-aws-core-secret-aws-assumed-role-2`. |
+
+## Findings Settings
+----
+RID: `req-aws-core-secret-findings-settings`
+
+Status: `Proposed`
+
+Ruled by the maintainer on 2026-11-20 (aws-core-tap#261, Q124a, Q125a and b): "our goal is to collect everything by
+default and allow people to trim as necessary". These keys trim; with none of them set the findings readers write
+everything they can read. They live in the collector's existing configuration, the credential's `data`, beside the
+selection keys and for the same reason (the collector has no configuration of its own yet), defined once as a
+shared schema fragment (`_FINDINGS_PROPS`) for both kinds:
+
+- `data.inspector_compliance_findings` — boolean. Absent or `false`: no compliance_core node or edge is written
+  and compliance_core is not looked for. `true`: the run projects its account's stored Inspector findings into
+  compliance_core as its last step, and the self-test checks that compliance_core is installed, at least 0.8.13,
+  and carries the types, fields and edges the projection writes
+  (`spec-aws-core-landing-zone.md`, `req-aws-landing-zone-inspector-compliance`).
+- `data.inspector_finding_types` — non-empty array of distinct values from `PACKAGE_VULNERABILITY`,
+  `CODE_VULNERABILITY` and `NETWORK_REACHABILITY`. Absent means all three (`req-aws-landing-zone-inspector-7`).
+- `data.findings_max_per_region` — integer, at least 1. Absent means no limit: every findings read (GuardDuty,
+  Security Hub, Access Analyzer, Inspector) runs to its last page. Set, it is the most findings one service writes
+  per region per run, shared by that service's reads there, and a read it stops is recorded truncated
+  (`req-aws-landing-zone-findings-3`).
+- `data.findings_read_budget_seconds` — integer, at least 1. Absent means no budget. Set, each findings read
+  stops at its next page boundary once it has run that long, and is recorded truncated.
+
+They are scope, not secret material, and move with the other non-credential keys when the collector gains its own
+configuration.
+
+### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-secret-findings-settings-1 | Optional, Everything By Default | Proposed | A secret without any of the keys validates and runs exactly as before the keys existed, except that nothing is capped: every finding type is read, every read runs to its end, and no compliance_core data is written. | |
+| req-aws-core-secret-findings-settings-2 | One Fragment, Both Kinds | Proposed | Both kinds accept the four keys from one shared fragment; a non-boolean toggle, an unknown or repeated finding type, an empty type list, and a limit or budget below 1 are refused at validation. | |
 
 ## Collection Selection Settings
 ----
