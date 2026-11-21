@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.4](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.3...v0.8.4) (2026-11-21)
+
+
+### Features
+
+* **ecs:** a Docker Hub image reference makes its tag, stored canonical by computing_core 0.10.9 ([#268](https://github.com/unified-systems-com/aws-core-tap/issues/268)) ([92cd7e0](https://github.com/unified-systems-com/aws-core-tap/commit/92cd7e090f5d12f0e57ee213042807ed5b8d94cb))
+* **ecs:** containers run their image hosts; tasks use their task definitions, which reference secrets ([#262](https://github.com/unified-systems-com/aws-core-tap/issues/262)) ([5f9b3b7](https://github.com/unified-systems-com/aws-core-tap/commit/5f9b3b7d455bb5a945870af413a124d04ab80d20))
+* **findings:** keep what aws_core dropped: finding detail, closed findings, wider GuardDuty links, reviewed redactions ([#267](https://github.com/unified-systems-com/aws-core-tap/issues/267)) ([51a96cb](https://github.com/unified-systems-com/aws-core-tap/commit/51a96cb501ad76f8195df3ac7a7ee8326bc64529))
+* **inspector:** Amazon Inspector v2 findings, reachability compound edge, optional compliance_core projection ([#270](https://github.com/unified-systems-com/aws-core-tap/issues/270)) ([21333f4](https://github.com/unified-systems-com/aws-core-tap/commit/21333f4305b42ba3368c0b31c20cdbe858799338))
+
+
+### Bug Fixes
+
+* **deps:** update aws sdk to v1.44.7 ([8c8355b](https://github.com/unified-systems-com/aws-core-tap/commit/8c8355b98f7ab0b779b5782d7ba8385d3c81fac3))
+* **deps:** update aws sdk to v1.44.7 ([b2fdb6b](https://github.com/unified-systems-com/aws-core-tap/commit/b2fdb6b922a32be6f816d2f5940b5fe1093608f9))
+
 ## [0.8.3](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.2...v0.8.3) (2026-11-19)
 
 
