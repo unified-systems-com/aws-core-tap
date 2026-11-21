@@ -48,6 +48,7 @@ from typing import Any
 from weakref import WeakKeyDictionary
 
 from botocore.exceptions import BotoCoreError, ClientError
+from tap_plugin.computing_core.image_reference import canonical_repository
 
 from .authority import COMPLETE, PARTIAL, with_edge_reads
 from .edges import edge_envelope
@@ -562,31 +563,44 @@ def well_formed_digest(value: Any) -> str | None:
 
 
 def parse_image_tag(reference: Any) -> tuple[str, str, str] | None:
-    """``(registry, repository, tag)`` from an image reference that writes all three, else None.
+    """``(registry, repository, tag)`` as the reference writes them, for one that writes a tag; else None.
 
-    computing_core keys a tag on its parts "as written in the reference" (``req-computing-core-image-tag``), so
-    nothing is supplied that the reference does not write:
+    computing_core takes a tag's parts as written and stores them in Docker's canonical form
+    (``req-computing-core-image-tag-6``, computing_core 0.10.9): a writer sends ``registry`` ``""`` when the
+    reference names no host, and ``nginx`` becomes ``docker.io`` ``library/nginx`` on write. So:
 
+    - the registry is the first path component when it holds a ``.`` or a ``:``, or is ``localhost``; otherwise
+      the reference names no registry, and ``registry`` is ``""`` with the whole name as the repository
+      (``nginx:1.25`` gives ``("", "nginx", "1.25")``, ``myorg/app:2`` gives ``("", "myorg/app", "2")``).
+      computing_core applies Docker's full rule again, so a part this rule leaves to it still lands right;
     - a reference with ``@`` names its image by digest; ECS pulled that digest, not a tag, so it makes no tag
       (``app@sha256:...``, and ``app:1.2@sha256:...`` too);
-    - the registry is the first path component when it holds a ``.`` or a ``:``, or is ``localhost`` (the rule
-      Docker reads a reference by). ``nginx:1.25`` and ``library/nginx:1.25`` write no registry and make no
-      tag: Docker Hub is implied there, not written;
     - a reference with no ``:tag`` after its last ``/`` writes no tag (``latest`` is implied, not written).
 
-    A part longer than the ``image_tag`` column, or a tag that is not an OCI tag, makes no tag.
+    A tag that is not an OCI tag makes no tag, and neither does a registry or repository whose CANONICAL form is
+    longer than the ``image_tag`` column (``nginx`` stores as ``library/nginx``), which computing_core would
+    refuse at write and fail the batch with.
     """
     if not isinstance(reference, str) or not reference or "@" in reference or reference != reference.strip():
         return None
-    registry, slash, rest = reference.partition("/")
-    if not slash or not ("." in registry or ":" in registry or registry == "localhost"):
+    first, slash, rest = reference.partition("/")
+    if slash and ("." in first or ":" in first or first == "localhost"):
+        registry, name = first, rest
+    else:
+        registry, name = "", reference
+    repository, colon, tag = name.rpartition(":")
+    if not colon or "/" in tag or not repository or repository.startswith("/") or repository.endswith("/"):
         return None
-    repository, colon, tag = rest.rpartition(":")
-    if not colon or "/" in tag or not repository:
-        return None
-    if len(registry) > _MAX_REGISTRY or len(repository) > _MAX_REPOSITORY or not _TAG_RE.fullmatch(tag):
+    stored_registry, stored_repository = canonical_repository(registry, repository)
+    if len(stored_registry) > _MAX_REGISTRY or len(stored_repository) > _MAX_REPOSITORY or not _TAG_RE.fullmatch(tag):
         return None
     return registry, repository, tag
+
+
+def canonical_tag(parts: tuple[str, str, str]) -> tuple[str, str, str]:
+    """The ``(registry, repository, tag)`` computing_core stores for ``parts``: one tag however it was spelled."""
+    registry, repository, tag = parts
+    return (*canonical_repository(registry, repository), tag)
 
 
 @dataclass
@@ -617,16 +631,19 @@ def _host_envelope(digest: str, references: set[str], held: bool) -> dict[str, A
     return {"entity": entity, "node": fields}
 
 
-def _tag_envelope(registry: str, repository: str, tag: str) -> dict[str, Any]:
-    key = {"registry": registry, "repository": repository, "tag": tag}
+def _tag_ref(canonical: tuple[str, str, str]) -> str:
+    """A tag's batch ref, by its canonical parts, so two spellings of one tag are one envelope."""
+    registry, repository, tag = canonical
+    return node_ref(IMAGE_TAG_TYPE, composite_natural_key({"registry": registry, "repository": repository, "tag": tag}))
+
+
+def _tag_envelope(spelled: tuple[str, str, str], canonical: tuple[str, str, str]) -> dict[str, Any]:
+    """The tag node: the parts as the reference wrote them, which computing_core stores canonically. No envelope
+    name: the importer takes the model's name, the canonical reference (``docker.io/library/nginx:1.25``)."""
+    registry, repository, tag = spelled
     return {
-        "entity": {
-            "ref": node_ref(IMAGE_TAG_TYPE, composite_natural_key(key)),
-            "entity_type": IMAGE_TAG_TYPE,
-            "name": f"{registry}/{repository}:{tag}",
-            "dimensions": {},
-        },
-        "node": key,
+        "entity": {"ref": _tag_ref(canonical), "entity_type": IMAGE_TAG_TYPE, "dimensions": {}},
+        "node": {"registry": registry, "repository": repository, "tag": tag},
     }
 
 
@@ -668,7 +685,9 @@ def image_writes(
 
     references: dict[str, set[str]] = {}
     runs: dict[tuple[str, str], Mapping[str, str]] = {}
+    #: (canonical tag, digest) -> latest sighting; canonical tag -> the spellings the containers wrote.
     tags: dict[tuple[tuple[str, str, str], str], str | None] = {}
+    spellings: dict[tuple[str, str, str], set[tuple[str, str, str]]] = {}
     for walk in walks:
         started = {task["taskArn"]: task.get("_started_at") for task in walk.tasks if task.get("taskArn")}
         for container in walk.containers:
@@ -684,9 +703,11 @@ def image_writes(
             runs.setdefault((ref, digest), dimensions)
             parsed = parse_image_tag(image) if IMAGE_TAG_TYPE not in refused else None
             if parsed is not None:
+                canonical = canonical_tag(parsed)
+                spellings.setdefault(canonical, set()).add(parsed)
                 seen = started.get(str(container.get("taskArn") or container.get("_task_arn") or ""))
-                prior = tags.get((parsed, digest))
-                tags[(parsed, digest)] = max((t for t in (prior, seen) if t), default=None)
+                prior = tags.get((canonical, digest))
+                tags[(canonical, digest)] = max((t for t in (prior, seen) if t), default=None)
 
     for digest in sorted(references):
         try:
@@ -703,8 +724,9 @@ def image_writes(
     for (container_ref, digest), dimensions in runs.items():
         out.edges.append(edge_envelope(RUNS_IMAGE, from_ref=container_ref, to_ref=host_ref(digest), dimensions=dict(dimensions)))
     staged_tags: set[str] = set()
-    for ((registry, repository, tag), digest), detected_at in sorted(tags.items(), key=lambda kv: (kv[0][0], kv[0][1])):
-        envelope = _tag_envelope(registry, repository, tag)
+    for (canonical, digest), detected_at in sorted(tags.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        # One stable spelling when containers wrote one tag two ways (nginx:1.25, docker.io/library/nginx:1.25).
+        envelope = _tag_envelope(min(spellings[canonical]), canonical)
         if envelope["entity"]["ref"] not in staged_tags:
             staged_tags.add(envelope["entity"]["ref"])
             out.nodes.append(envelope)

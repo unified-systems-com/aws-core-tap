@@ -179,16 +179,25 @@ def node_anchor(envelope: Mapping[str, Any]) -> dict[str, Any]:
     return {"entity_type": str(envelope["entity"]["entity_type"]), "key": node_key(envelope)}
 
 
+#: Key parts a type gives a meaning to when empty, so ``""`` there is an answer, not a hole. computing_core's
+#: ``image_tag`` takes ``registry`` ``""`` for a reference that names no registry and stores Docker Hub's
+#: canonical form for it (``req-computing-core-image-tag-6``, 0.10.9); its search applies the same rule, so the
+#: row is found again (``req-aws-collector-ecs-22``).
+EMPTY_KEY_PART_MEANS: dict[str, frozenset[str]] = {"computing_core__image_tag": frozenset({"registry"})}
+
+
 def _node_identity(envelope: Mapping[str, Any]) -> tuple[str, str]:
     """``(entity_type, declared key values)`` of a node envelope, refusing a key with a hole.
 
     A hole (absent, null, or ``""``) is refused: core's search finds nothing on a null part, so
     such a node would be created afresh on every run. An AWS identifier is never legitimately
-    empty, so ``""`` is refused here too.
+    empty, so ``""`` is refused here too, except where the type gives the empty part a meaning
+    (:data:`EMPTY_KEY_PART_MEANS`).
     """
     entity_type = str(envelope["entity"]["entity_type"])
     values = node_key(envelope)
-    holes = missing_parts(values)
+    allowed = EMPTY_KEY_PART_MEANS.get(entity_type, frozenset())
+    holes = [part for part in missing_parts(values) if not (part in allowed and values.get(part) == "")]
     if holes:
         raise IdentityError(
             f"{entity_type} {envelope_ref(envelope)!r}: declared key part(s) {holes} of {list(values)} are "

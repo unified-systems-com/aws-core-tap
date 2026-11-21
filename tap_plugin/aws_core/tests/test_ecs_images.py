@@ -345,17 +345,41 @@ class TestImageTagParsing:
             ("localhost:5000/app:dev", ("localhost:5000", "app", "dev")),
             ("localhost/app:1", ("localhost", "app", "1")),
             ("docker.io/library/nginx:1.25", ("docker.io", "library/nginx", "1.25")),
+            ("docker.io/nginx:1.25", ("docker.io", "nginx", "1.25")),
+            # No registry host: "" and the name as written; computing_core stores Docker Hub's canonical form.
+            ("nginx:1.25", ("", "nginx", "1.25")),
+            ("library/nginx:1.25", ("", "library/nginx", "1.25")),
+            ("myorg/app:2", ("", "myorg/app", "2")),
+            ("myorg/team/app:2.1", ("", "myorg/team/app", "2.1")),
+            ("registry.example/" + "a" * 255 + ":1", ("registry.example", "a" * 255, "1")),  # at the column, kept
+            ("a" * 247 + ":1", ("", "a" * 247, "1")),  # library/ + 247 is the column exactly
         ],
     )
-    def test_a_reference_that_writes_all_three_parts(self, reference, parts):
+    def test_a_reference_that_writes_a_tag(self, reference, parts):
         assert parse_image_tag(reference) == parts
+
+    @pytest.mark.parametrize(
+        ("reference", "stored"),
+        [
+            ("nginx:1.25", ("docker.io", "library/nginx", "1.25")),
+            ("myorg/app:2", ("docker.io", "myorg/app", "2")),
+            ("docker.io/nginx:1.25", ("docker.io", "library/nginx", "1.25")),
+            ("index.docker.io/library/nginx:1.25", ("docker.io", "library/nginx", "1.25")),
+            ("localhost:5000/app:dev", ("localhost:5000", "app", "dev")),  # library/ is Docker Hub's alone
+            (_ECR_IMAGE, (f"{_ACCOUNT}.dkr.ecr.{_REGION}.amazonaws.com", "team/web", "1.4.2")),
+        ],
+    )
+    def test_the_canonical_tag_is_the_one_computing_core_stores(self, reference, stored):
+        from tap_plugin.aws_core.collectors.boto3_collector.ecs import canonical_tag
+
+        assert canonical_tag(parse_image_tag(reference)) == stored
 
     @pytest.mark.parametrize(
         "reference",
         [
-            "nginx:1.25",  # Docker Hub implied, not written
-            "library/nginx:1.25",  # likewise: no '.', ':' or localhost in the first component
-            "registry.example/app",  # no tag written (latest is implied)
+            "nginx",  # no tag written (latest is implied, not written)
+            "myorg/app",
+            "registry.example/app",
             "registry.example:5000/app",  # the colon is the port's, not a tag
             "registry.example/app@" + _DIGEST,  # pulled by digest
             "registry.example/app:1.0@" + _DIGEST,  # pulled by digest, whatever tag it also writes
@@ -363,6 +387,8 @@ class TestImageTagParsing:
             "registry.example/app:" + "t" * 129,  # longer than an OCI tag
             "r" * 256 + ".example/app:1",  # registry longer than the column
             "registry.example/" + "r" * 256 + ":1",  # repository longer than the column
+            "a" * 248 + ":1",  # fits as written, but library/ + 248 is longer than the column
+            "nginx@" + _DIGEST,  # a Docker Hub image pulled by digest
             "registry.example/:1",  # no repository
             " registry.example/app:1",
             "",
@@ -391,7 +417,7 @@ class TestTagsImage:
             "repository": "team/web",
             "tag": "1.4.2",
         }
-        assert tag["entity"]["name"] == _ECR_IMAGE
+        assert "name" not in tag["entity"]  # the importer takes the model's name: the canonical reference
         assert tag["entity"]["dimensions"] == {}
         (edge,) = _edges(writes, TAGS_IMAGE)
         assert edge["edge"]["from_ref"] == tag["entity"]["ref"]
@@ -416,6 +442,47 @@ class TestTagsImage:
         (edge,) = _edges(image_writes([walk], _carried(walk), host_held=_holding()), TAGS_IMAGE)
         assert edge["edge"]["properties"] == {}
 
+    def test_a_docker_hub_reference_sends_its_parts_as_written(self):
+        walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web", image="nginx:1.25")])])
+        writes = image_writes([walk], _carried(walk), host_held=_holding())
+        (tag,) = _of_type(writes, IMAGE_TAG_TYPE)
+        assert tag["node"] == {"registry": "", "repository": "nginx", "tag": "1.25"}
+        (edge,) = _edges(writes, TAGS_IMAGE)
+        assert edge["edge"]["from_ref"] == tag["entity"]["ref"] and edge["edge"]["to_ref"] == host_ref(_DIGEST)
+
+    def test_two_spellings_of_one_tag_are_one_tag_node(self):
+        """nginx:1.25 and docker.io/library/nginx:1.25 are one tag in computing_core: one envelope and one edge, so
+        the batch never carries two refs for one row."""
+        walk = _stubbed_walk(
+            [
+                _task(_TASK_1, [_container(_TASK_1, "web", image="nginx:1.25")]),
+                _task(_TASK_2, [_container(_TASK_2, "web", image="docker.io/library/nginx:1.25")]),
+            ]
+        )
+        writes = image_writes([walk], _carried(walk), host_held=_holding())
+        (tag,) = _of_type(writes, IMAGE_TAG_TYPE)
+        assert tag["node"] == {"registry": "", "repository": "nginx", "tag": "1.25"}  # the first spelling, sorted
+        assert len(_edges(writes, TAGS_IMAGE)) == 1
+
+    def test_a_short_reference_passes_the_batch_identity_check(self):
+        """registry "" is an answer for an image tag, not a hole, so address_batch keeps it."""
+        from tap_plugin.aws_core.collectors.boto3_collector.batch import address_batch
+
+        walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web", image="nginx:1.25")])])
+        writes = image_writes([walk], _carried(walk), host_held=_holding())
+        addressed = address_batch(writes.nodes, writes.edges)
+        assert [n["node"] for n in addressed.nodes if n["entity"]["entity_type"] == IMAGE_TAG_TYPE] == [
+            {"registry": "", "repository": "nginx", "tag": "1.25"}
+        ]
+
+    def test_an_empty_key_part_is_still_a_hole_for_every_other_type(self):
+        from tap_plugin.aws_core.collectors.boto3_collector.batch import address_batch
+        from tap_plugin.aws_core.collectors.boto3_collector.identity import IdentityError
+
+        bad = {"entity": {"ref": "h", "entity_type": HOST_TYPE, "dimensions": {}}, "node": {"realm": "", "stable_id": _DIGEST}}
+        with pytest.raises(IdentityError):
+            address_batch([bad], [])
+
     def test_a_moved_tag_points_at_each_image_it_was_seen_on(self):
         walk = _stubbed_walk(
             [
@@ -429,7 +496,7 @@ class TestTagsImage:
             [host_ref(_DIGEST), host_ref(_OTHER_DIGEST)]
         )
 
-    @pytest.mark.parametrize("image", ["nginx:1.25", "registry.example/app@" + "sha256:" + "ab" * 32])
+    @pytest.mark.parametrize("image", ["nginx", "registry.example/app", "registry.example/app@" + "sha256:" + "ab" * 32])
     def test_no_tag_where_the_reference_writes_none(self, image):
         walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web", image=image)])])
         writes = image_writes([walk], _carried(walk), host_held=_holding())
@@ -615,6 +682,50 @@ class TestImportedThroughCore:
         assert error["message_data"] == {"containers": 1, "exception": "RuntimeError"}
         assert "ECS container images NOT staged (RuntimeError)" in collector.summary
 
+    def test_a_docker_hub_tag_lands_canonical_and_joins_the_one_a_scanner_wrote(self, monkeypatch):
+        """computing_core 0.10.9 stores nginx:1.25 as docker.io/library/nginx:1.25, so ECS's short spelling and a
+        scanner's expanded one are one image_tag node."""
+        from tap_grid.grift import grift_import
+        from tap_grid.services import get_node
+
+        canonical = {"registry": "docker.io", "repository": "library/nginx", "tag": "1.25"}
+        scanner = {
+            "metadata": {"grift_version": "0"},
+            "_reserved": {},
+            "batches": [
+                {
+                    "batch_entity": {"entity_id": str(uuid.uuid7()), "entity_type": "batch", "name": "scanner", "dimensions": {}},
+                    "batch_node": {"source": "test.scanner", "name": "scanner", "description": "a scanner's tag"},
+                    "nodes": [{"entity": {"ref": "t", "entity_type": IMAGE_TAG_TYPE, "dimensions": {}}, "node": canonical}],
+                    "edges": [],
+                }
+            ],
+        }
+        assert grift_import(scanner).success
+        before = node_id(IMAGE_TAG_TYPE, canonical)
+
+        tasks = json.loads(json.dumps(slice_tests._CANNED["describe_tasks"]))
+        tasks["tasks"][0]["containers"][0]["image"] = "nginx:1.25"
+        monkeypatch.setitem(slice_tests._CANNED, "describe_tasks", tasks)
+        _run()
+        assert _live(IMAGE_TAG_TYPE) == 1
+        tag = get_node(node_id(IMAGE_TAG_TYPE, canonical))
+        assert tag.entity_id == before
+        assert (tag.registry, tag.repository, tag.tag) == ("docker.io", "library/nginx", "1.25")
+        assert len(live_edges(TAGS_IMAGE, before, node_id(HOST_TYPE, _HOST_KEY))) == 1
+        _run()  # and a rerun finds it again
+        assert _live(IMAGE_TAG_TYPE) == 1
+
+    def test_a_docker_hub_tag_alone_is_stored_canonical(self, monkeypatch):
+        from tap_grid.models import Entity
+
+        tasks = json.loads(json.dumps(slice_tests._CANNED["describe_tasks"]))
+        tasks["tasks"][0]["containers"][0]["image"] = "myorg/app:2"
+        monkeypatch.setitem(slice_tests._CANNED, "describe_tasks", tasks)
+        _run()
+        tag_id = node_id(IMAGE_TAG_TYPE, {"registry": "docker.io", "repository": "myorg/app", "tag": "2"})
+        assert Entity.objects.get(pk=tag_id).name == "docker.io/myorg/app:2"
+
     def test_a_container_without_a_digest_lands_without_an_image(self, monkeypatch):
         tasks = json.loads(json.dumps(slice_tests._CANNED["describe_tasks"]))
         del tasks["tasks"][0]["containers"][0]["imageDigest"]
@@ -640,4 +751,7 @@ def test_ecs_names_no_github_core_and_imports_no_other_plugin():
         if isinstance(node, (ast.Import, ast.ImportFrom))
         for alias in node.names
     ]
-    assert not [m for m in imported if m and m.startswith("tap_plugin.") and not m.startswith("tap_plugin.aws_core")]
+    # computing_core's tag canonicalisation is the one rule both plugins apply, so aws_core uses its function
+    # rather than a copy (a declared, downward dependency); nothing else of another plugin is imported.
+    others = [m for m in imported if m and m.startswith("tap_plugin.") and not m.startswith("tap_plugin.aws_core")]
+    assert others == ["tap_plugin.computing_core.image_reference"]
