@@ -291,9 +291,11 @@ def _covered(path: str, declared: set[str]) -> bool:
     return any(path == d or path.startswith((d + ".", d + "[]")) for d in declared)
 
 
+def _unreviewed(entry) -> bool:
+    return entry.get("sensitivity", {}).get("status") == "unreviewed"
+
+
 def _check_botocore_sensitive_members_declared(entry):
-    if entry.get("sensitivity", {}).get("status") == "unreviewed":
-        return  # unreviewed declares nothing to be complete against
     model = _service_model(entry["service"])
     shape = model.operation_model(entry["source"]["aws_op"]).output_shape
     for segment in entry["items_path"].split("."):
@@ -308,7 +310,19 @@ def test_every_botocore_sensitive_member_is_declared():
     # sensitive in the item shape must be on the declared list (a declared
     # ancestor covers its subtree). custom_fn entries compose their items and
     # are reviewed by reading the custom_fn.
-    assert_every(_by_type(e for e in _entries() if e["source"].get("aws_op")), _check_botocore_sensitive_members_declared)
+    # Unreviewed entries declare nothing to be complete against, so they are left out of the walk
+    # (an all-unreviewed manifest walks nothing and fails) and reported as skips below.
+    reviewed = (e for e in _entries() if e["source"].get("aws_op") and not _unreviewed(e))
+    assert_every(_by_type(reviewed), _check_botocore_sensitive_members_declared)
+
+
+@pytest.mark.parametrize(
+    "entity_type",
+    sorted(e["entity_type"] for e in _entries() if e["source"].get("aws_op") and _unreviewed(e)),
+)
+def test_unreviewed_entry_is_not_checked_for_completeness(entity_type):
+    # A skip per unreviewed entry keeps "nobody looked" visible in the run summary: it is not a pass.
+    pytest.skip(f"{entity_type}: unreviewed declares nothing to be complete against")
 
 
 # --- persist_configuration ↔ sensitivity ------------------------------------
