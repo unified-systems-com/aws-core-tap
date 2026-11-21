@@ -338,6 +338,7 @@ def assemble_batch(
     now: datetime | None = None,
     batch_entity_id: str | None = None,
     authority: list[dict[str, Any]] | None = None,
+    batch_metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble the single GRIFT document for one collection run.
 
@@ -354,6 +355,9 @@ def assemble_batch(
         authority: Edge-authority claims (``req-aws-collector-edge-authority``),
             carried as the batch's ``edge_cases.authority``. ``None`` or empty
             leaves the section out, which claims nothing.
+        batch_metadata: The batch node's ``metadata`` (the importer stores it on
+            ``Batch.metadata`` when it creates the batch): the findings watermark
+            (``findings.READ_THROUGH``). ``None`` leaves it out.
     """
     moment = (now or datetime.now(UTC)).astimezone(UTC)
     now_iso = moment.isoformat().replace("+00:00", "Z")
@@ -383,6 +387,7 @@ def assemble_batch(
             "source": source,
             "name": label,
             "description": "AWS account collection via tap_cares.",
+            **({"metadata": batch_metadata} if batch_metadata is not None else {}),
             "description_json": {
                 "format": COLLECTION_FORMAT,
                 "data": description_data,

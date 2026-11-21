@@ -26,7 +26,16 @@ operator trims with the credential's ``findings_max_per_region`` (the most findi
 per region, shared by its reads there) and ``findings_read_budget_seconds`` (a read stops at its next
 page once it has run that long), both off by default (:class:`FindingsLimits`). The parent's surface
 records the filters verbatim with no positive control, and a read a limit stopped as a truncation, so a
-findings surface is never complete and never nominates a retirement. The parent (detector, hub, analyzer) carries per-severity counts of its ACTIVE findings,
+findings surface is never complete and never nominates a retirement.
+
+Incremental (rulings Q126a and c). A run asks GuardDuty and Security Hub (and Inspector, ``inspector.py``) only for
+findings updated since that source's last clean read: the watermark ``findings_read_through``, one ISO time per
+``<service>|<account>|<region>``, kept in the ``metadata`` of the collector's own batch node (:func:`read_through_of`,
+:data:`READ_THROUGH`). A source whose reads in a region all finished cleanly (no error, no cut-off, no limit or budget
+truncation, every finding fetched) writes the run's start minus ``WATERMARK_OVERLAP``; every other key is carried
+forward unchanged. No watermark for a key is a full read. Access Analyzer has no date filter, so it is always read in
+full. An incremental read is filtered, so it is never complete and never retires: a finding AWS deletes without an
+update stays live until the watermark is cleared, which forces one full read. The parent (detector, hub, analyzer) carries per-severity counts of its ACTIVE findings,
 so a page can show totals without every finding.
 
 A finding's state is the service's own field, verbatim: GuardDuty's ``archived``, Security Hub's
@@ -103,6 +112,34 @@ RELATION_CONFORMANCE_PACKS = "account_region.conformance_packs"
 #: days are read beside the active ones (aws-core-tap#264, ruling Q115a). The active read comes first, so
 #: under an operator's ``findings_max_per_region`` closed findings never crowd out active ones.
 CLOSED_WINDOW_DAYS = 30
+#: The batch-node metadata key that carries the watermark, and the overlap subtracted from the run's start so a
+#: finding updated while the previous run was reading is read again rather than missed.
+READ_THROUGH = "findings_read_through"
+WATERMARK_OVERLAP = timedelta(minutes=15)
+#: The sources a run reads incrementally (Access Analyzer has no date filter).
+INCREMENTAL_SERVICES = frozenset({"guardduty", "securityhub", "inspector2"})
+
+
+def watermark_key(service: str, account_id: str, region: str) -> str:
+    """One source's key in ``findings_read_through``."""
+    return f"{service}|{account_id}|{region}"
+
+
+def read_through_of(source: str) -> dict[str, str]:
+    """The watermark the most recent committed (closed) batch of ``source`` recorded; ``{}`` when there is none.
+
+    A read of the grid's own batch rows (``tap_grid.models.Batch``), never a write. Values that are not an ISO time are
+    dropped, so a damaged watermark forces a full read of that source rather than a filter on garbage.
+    """
+    from tap_grid.models import Batch, BatchStatus
+
+    batch = Batch.objects.filter(source=source, status=BatchStatus.CLOSED).order_by("-closed_at", "-started_at").first()
+    raw = (getattr(batch, "metadata", None) or {}).get(READ_THROUGH) if batch is not None else None
+    if not isinstance(raw, dict):
+        return {}
+    return {str(k): str(v) for k, v in raw.items() if isinstance(v, str) and _when(v) is not None}
+
+
 #: Access Analyzer's closed statuses (read: botocore ``FindingStatus``: ACTIVE, ARCHIVED, RESOLVED).
 ACCESS_ANALYZER_CLOSED = ("ARCHIVED", "RESOLVED")
 #: Page sizes: each API's documented maximum (read: botocore ``MaxResults`` shapes; Access
@@ -334,25 +371,32 @@ class FindingsReads:
         """Active findings of one detector, for the run's own account, most severe first; then the
         findings it archived in the last ``CLOSED_WINDOW_DAYS`` days, most recently updated first."""
         account = self.r.account_id
-        criteria = {"Criterion": {"service.archived": {"Equals": ["false"]}, "accountId": {"Equals": [account]}}}
+        totals_criteria = {"Criterion": {"service.archived": {"Equals": ["false"]}, "accountId": {"Equals": [account]}}}
+        since = self.r.since("guardduty", region)
+        criteria: dict[str, Any] = {"Criterion": dict(totals_criteria["Criterion"])}
+        if since is not None:
+            criteria["Criterion"]["updatedAt"] = {"GreaterThanOrEqual": int(since.timestamp() * 1000)}
+        closed_since = max(self._since(), since) if since is not None else self._since()
         closed_criteria = {
             "Criterion": {
                 "service.archived": {"Equals": ["true"]},
                 "accountId": {"Equals": [account]},
                 # Epoch milliseconds (GuardDuty's documented form for updatedAt).
-                "updatedAt": {"GreaterThanOrEqual": int(self._since().timestamp() * 1000)},
+                "updatedAt": {"GreaterThanOrEqual": int(closed_since.timestamp() * 1000)},
             }
         }
         filter_text = (
             f"guardduty:ListFindings service.archived=false, accountId={account}; "
             f"and service.archived=true, accountId={account}, updatedAt in the last {CLOSED_WINDOW_DAYS} days"
+            + (f"; incremental: updatedAt >= {self.r.iso(since)}" if since is not None else "")
         )
         listed, truncated, findings, skipped = self._guardduty_read(region, detector_id, criteria, "severity")
         closed, closed_cut, closed_findings, closed_skipped = self._guardduty_read(
             region, detector_id, closed_criteria, "updatedAt"
         )
 
-        exact = self._guardduty_statistics(region, detector_id, criteria)
+        self.r.mark_read("guardduty", region, [listed, closed], clean=not (truncated or closed_cut or skipped or closed_skipped))
+        exact = self._guardduty_statistics(region, detector_id, totals_criteria)
         if exact is not None:
             fields: dict[str, Any] = {
                 "active_finding_counts": exact,
@@ -362,7 +406,8 @@ class FindingsReads:
         else:
             fields = self._counts(
                 [guardduty_severity_label(f.get("Severity")) for f in findings],
-                complete=listed.complete and not truncated and skipped == 0,
+                # An incremental read counts only what changed: a lower bound, never the total.
+                complete=listed.complete and not truncated and skipped == 0 and since is None,
                 truncated=truncated if listed.complete else None,
             )
 
@@ -552,6 +597,12 @@ class FindingsReads:
         counts: dict[str, int] = {}
         exact = True
         truncated = False
+        since = self.r.since("securityhub", region)
+        updated = (
+            {"UpdatedAt": [{"Start": self.r.iso(since), "End": self.r.iso(self.r.run_started + timedelta(days=1))}]}
+            if since is not None
+            else {}
+        )
         for label in SECURITYHUB_SEVERITY_LABELS:
             read, cut = self.r.findings_walk(
                 "securityhub",
@@ -563,6 +614,7 @@ class FindingsReads:
                     "Region": [{"Value": region, "Comparison": "EQUALS"}],
                     "RecordState": [{"Value": "ACTIVE", "Comparison": "EQUALS"}],
                     "SeverityLabel": [{"Value": label, "Comparison": "EQUALS"}],
+                    **updated,
                 },
                 MaxResults=SECURITYHUB_PAGE,
             )
@@ -576,10 +628,17 @@ class FindingsReads:
                 break
         active = self.r.aggregate(reads)
         fields = {
-            "active_finding_counts": counts,
-            "active_finding_counts_complete": exact,
+            # Security Hub has no count call: the counts are the reads'. An incremental read counts only what
+            # changed, so it gives no total, and says so (null) rather than overwrite one with a lower bound.
+            "active_finding_counts": counts if since is None else None,
+            "active_finding_counts_complete": exact if since is None else None,
             "active_findings_truncated": truncated if active.complete or truncated else None,
         }
+        closed_filter = (
+            {"UpdatedAt": [{"Start": self.r.iso(max(self._since(), since)), "End": self.r.iso(self.r.run_started + timedelta(days=1))}]}
+            if since is not None
+            else {"UpdatedAt": [{"DateRange": {"Value": CLOSED_WINDOW_DAYS, "Unit": "DAYS"}}]}
+        )
         # Findings whose record Security Hub archived in the window, most recently updated first.
         closed, closed_cut = self.r.findings_walk(
             "securityhub",
@@ -590,7 +649,7 @@ class FindingsReads:
                 "AwsAccountId": [{"Value": account, "Comparison": "EQUALS"}],
                 "Region": [{"Value": region, "Comparison": "EQUALS"}],
                 "RecordState": [{"Value": "ARCHIVED", "Comparison": "EQUALS"}],
-                "UpdatedAt": [{"DateRange": {"Value": CLOSED_WINDOW_DAYS, "Unit": "DAYS"}}],
+                **closed_filter,
             },
             SortCriteria=[{"Field": "UpdatedAt", "SortOrder": "desc"}],
             MaxResults=SECURITYHUB_PAGE,
@@ -598,9 +657,11 @@ class FindingsReads:
         reads.append(closed)
         findings.extend(f for f in closed.items if isinstance(f, dict))
         combined = self.r.aggregate(reads)
+        self.r.mark_read("securityhub", region, reads, clean=not (truncated or closed_cut))
         filter_text = (
             f"securityhub:GetFindings AwsAccountId={account}, Region={region}, RecordState=ACTIVE, "
             f"one read per SeverityLabel; and RecordState=ARCHIVED, UpdatedAt in the last {CLOSED_WINDOW_DAYS} days"
+            + (f"; incremental: UpdatedAt >= {self.r.iso(since)}" if since is not None else "")
         )
 
         def write(hub_arn: str, hub_type: str, standards: dict[str, str]) -> None:
@@ -971,6 +1032,10 @@ __all__ = [
     "CLOSED_WINDOW_DAYS",
     "CONCERNS_RESOURCE",
     "FindingsLimits",
+    "READ_THROUGH",
+    "WATERMARK_OVERLAP",
+    "read_through_of",
+    "watermark_key",
     "GUARDDUTY_CONCERNS_TARGETS",
     "PAGINATED_OPERATIONS",
     "SINGLE_OPERATIONS",

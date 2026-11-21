@@ -37,7 +37,7 @@ service models, which are offline data. GovCloud availability is **web**, cited 
 | req-aws-landing-zone-control-tower | [Control Tower](#control-tower) | Proposed | Landing zone, enabled controls, enabled baselines; targets as reference edges; contained by the landing zone |
 | req-aws-landing-zone-identity-center | [Identity Center Access](#identity-center-access) | Proposed | Collect the instance; permission sets, groups and account assignments; users only as principal ids |
 | req-aws-landing-zone-security-services | [Security Services](#security-services) | Proposed | Config recorder, delivery channel and aggregator, GuardDuty detector, Security Hub hub, Access Analyzer analyzer per account × region; EBS default encryption and S3 account public-access block as typed fields |
-| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active and recently closed (30 days) GuardDuty, Security Hub (control results included) and Access Analyzer findings with what each says about itself, and Config rule and conformance pack compliance with each rule's scope, parameters and policy body, for the run's own account; read to the end unless the operator sets a per-region limit or a read budget; per-severity totals of active findings on the parent; findings surfaces never complete |
+| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active and recently closed (30 days) GuardDuty, Security Hub (control results included) and Access Analyzer findings with what each says about itself, and Config rule and conformance pack compliance with each rule's scope, parameters and policy body, for the run's own account; read to the end unless the operator sets a per-region limit or a read budget, incrementally from each source's last clean read; per-severity totals of active findings on the parent; findings surfaces never complete |
 | req-aws-landing-zone-inspector | [Inspector Findings](#inspector-findings) | Proposed | Every Amazon Inspector v2 finding type (package vulnerability, code vulnerability, network reachability) by default, down-selectable, for the run's own account, active and closed in 30 days, read to the end unless the shared findings limit is set; true totals and account status on the footprint; linked to the EC2 instance, Lambda function, ECR repository or image host they concern; never complete |
 | req-aws-landing-zone-inspector-reachability | [Inspector Reachability Is A Compound Edge](#inspector-reachability-is-a-compound-edge) | Proposed | The reachability finding is the middle node of the first compound edge: gateway source, network-interface destination, route table / security group / NACL path; retires with either end |
 | req-aws-landing-zone-inspector-compliance | [Inspector Findings In compliance_core](#inspector-findings-in-compliance_core) | Proposed | Off by default; an optional `depends_on` on compliance_core (>= 0.8.13), written by slug and never imported; projected from the stored rows as the run's last step; CVSS filled only when empty |
@@ -296,6 +296,25 @@ models; nothing was observed against a live account.
   A read either one stops records `reasons.truncated` with the reason, and the parent's totals say so
   (GuardDuty's still come exact from `GetFindingsStatistics`). `FINDINGS_CAP` (1000 per parent) and
   `ACCESS_ANALYZER_CLOSED_MAX_PAGES` (50) are gone.
+- **Incremental** (maintainer, 2026-11-20, rulings Q126a and c). Each run asks a source only for findings updated
+  since that source's last clean read: GuardDuty with an `updatedAt` `GreaterThanOrEqual` criterion (epoch ms),
+  Security Hub with an `UpdatedAt` `Start`/`End` filter, Inspector with `updatedAt.startInclusive`
+  (`req-aws-landing-zone-inspector`); a closed read takes the later of its window and the watermark. Access Analyzer
+  has no date filter, so it is always read in full. The watermark lives on the collector's own run record, its GRIFT
+  `batch_node.metadata`, which the importer stores on `Batch.metadata` when it creates the batch (read:
+  `tap_grid/grift/importer.py`, `create_batch(..., metadata=batch_node.get("metadata") or {})`; checked by a
+  two-run test): `metadata.findings_read_through = {"<service>|<account>|<region>": "<ISO time>"}`, one entry per
+  source. A source whose reads in a region all finished cleanly (no error, no throttling cut-off, no limit or budget
+  truncation, every GuardDuty finding fetched) writes the run's start minus a 15-minute overlap
+  (`WATERMARK_OVERLAP`); every other key is carried forward unchanged from the previous watermark, so one failed
+  source resets nothing else. The next run reads the watermark of this collector's most recent closed batch
+  (`findings.read_through_of`); a key with no value is a full read. Totals: GuardDuty's still come from
+  `GetFindingsStatistics` over the whole active set; Security Hub has no count call, so an incremental run writes
+  its hub's `active_finding_counts` and `active_finding_counts_complete` as null (not read) rather than a lower bound.
+  **The consequence**, accepted: an incremental read is filtered, so it is never complete and never retires, and a
+  finding AWS deletes without updating it stays live on the grid until the watermark is cleared; clearing it (a run
+  whose previous batch carries no `findings_read_through`) forces one full read. A scheduled full read is deferred
+  until per-collector configuration exists.
 - **Closed in the last 30 days.** Beside the active read, each parent reads the findings it closed
   in the last 30 days (`CLOSED_WINDOW_DAYS`): GuardDuty archived, Security Hub `RecordState`
   ARCHIVED, Access Analyzer ARCHIVED or RESOLVED (aws-core-tap#264, ruling Q115a). Each closed read
@@ -391,6 +410,7 @@ models; nothing was observed against a live account.
 | req-aws-landing-zone-findings-6 | Control Results And Standards | Proposed | A control finding carries its compliance status and security control id, and `EVALUATED_UNDER_STANDARD` to each enabled standard it names; enabled standards are nodes contained by the hub. | |
 | req-aws-landing-zone-findings-7 | What A Finding Says Is Kept | Proposed | A finding's description, action, network detail, evidence, remediation, malware, vulnerabilities, product fields, types, normalized severity, compliance status reasons and finding-provider fields, and a Config rule's scope, input parameters and Guard policy body, reach the node as tabled; titles and resource ids keep their addresses. An Access Analyzer condition value, a conformance-pack parameter and a standards subscription's `StandardsInput` still do not: a test plants each and finds none. | Revised 2026-11-20 by rulings Q114b and Q114c (aws-core-tap#264); it read "Typed Fields Only", with addresses replaced by `[ip]`. `tests/test_security_findings.py::TestDeclarations`, `::TestSecurityHubDetail`, `::TestConfigRuleDetail`. |
 | req-aws-landing-zone-findings-8 | Config Rules And Conformance Packs | Proposed | Every Config rule (service-linked included) and conformance pack is a footprint child with its compliance; a failed compliance read is null, never compliant. | |
+| req-aws-landing-zone-findings-10 | Incremental Reads | Proposed | GuardDuty, Security Hub and Inspector are asked only for findings updated since the source's watermark in the previous closed batch's `metadata.findings_read_through`; a source whose reads all finished cleanly writes the run's start minus 15 minutes, every other key is carried forward, a missing key is a full read, and Access Analyzer is always read in full; an incremental surface is never complete. | Rulings Q126a and c. `tests/test_findings_incremental.py`. |
 
 ### Inspector Findings
 ----

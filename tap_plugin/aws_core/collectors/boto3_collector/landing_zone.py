@@ -266,6 +266,9 @@ class LandingZoneRead:
     footprint_fields: dict[str, dict[str, Any]] = field(default_factory=dict)
     #: Fields for the run account's own node (the S3 account public-access block).
     account_fields: dict[str, Any] = field(default_factory=dict)
+    #: The new watermark of each findings source this run read cleanly (``findings.READ_THROUGH``):
+    #: ``{"<service>|<account>|<region>": "<iso time>"}``. Sources not here keep the previous value.
+    read_through: dict[str, str] = field(default_factory=dict)
 
 
 def _now() -> datetime:
@@ -395,6 +398,8 @@ class _Reader:
         member_accounts: list[str] | None,
         sensitivity: dict[str, dict[str, Any]] | None = None,
         limits: FindingsLimits | None = None,
+        read_through: dict[str, str] | None = None,
+        run_started: datetime | None = None,
     ) -> None:
         self._client_for = client_for
         self._clients: dict[tuple[str, str], Any] = {}
@@ -415,6 +420,10 @@ class _Reader:
         self.limits = limits or FindingsLimits()
         #: Findings written so far per (service, region), against ``limits.max_per_region``.
         self._findings_used: dict[tuple[str, str], int] = {}
+        #: The previous clean read of each findings source (the watermark), and when this run started.
+        self.previous_read_through = dict(read_through or {})
+        self.run_started = run_started or _now()
+        self._unclean: set[str] = set()
         self.findings = FindingsReads(self)
 
     # -- plumbing ---------------------------------------------------------
@@ -488,6 +497,33 @@ class _Reader:
             self._failed(service, operation, exc)
         result.last = _now()
         return result
+
+    @staticmethod
+    def iso(value: datetime) -> str:
+        """An ISO 8601 time in UTC with a ``Z``, the form the watermark and the date filters are written in."""
+        return _iso(value)
+
+    def since(self, service: str, region: str) -> datetime | None:
+        """When this source's last clean read began (minus the overlap): the incremental filter's lower bound, or
+        None for a full read (no watermark, or a service with no date filter)."""
+        if service not in findings_mod.INCREMENTAL_SERVICES:
+            return None
+        raw = self.previous_read_through.get(findings_mod.watermark_key(service, self.account_id, region))
+        return findings_mod._when(raw) if raw else None
+
+    def mark_read(self, service: str, region: str, walks: list[_Walk], *, clean: bool) -> None:
+        """Record one source's reads in a region. Only when every one of them ran to its end without an error and
+        ``clean`` says nothing was cut or unfetched does the source get a new watermark (the run's start minus the
+        overlap); one unclean read keeps the previous value for the whole source."""
+        key = findings_mod.watermark_key(service, self.account_id, region)
+        if service not in findings_mod.INCREMENTAL_SERVICES:
+            return
+        if not clean or not all(w.complete for w in walks):
+            self._unclean.add(key)
+            self.result.read_through.pop(key, None)
+            return
+        if key not in self._unclean:
+            self.result.read_through[key] = _iso(self.run_started - findings_mod.WATERMARK_OVERLAP)
 
     def findings_left(self, service: str, region: str) -> int | None:
         """How many more findings ``service`` may write in ``region`` under ``findings_max_per_region``; None is
@@ -1689,12 +1725,16 @@ def collect_landing_zone(
     member_accounts: list[str] | None,
     sensitivity: dict[str, dict[str, Any]] | None = None,
     limits: FindingsLimits | None = None,
+    read_through: dict[str, str] | None = None,
+    run_started: datetime | None = None,
 ) -> LandingZoneRead:
     """Read the landing zone's governance surface; never raises for an AWS failure.
 
     ``client_for(service, region)`` builds a client. ``member_accounts`` is the organization's
     complete account list (``OrganizationTree.member_accounts``), or None when it was not read to
-    the end. ``limits`` are the operator's findings trims (none by default). ``sensitivity`` replaces
+    the end. ``limits`` are the operator's findings trims (none by default). ``read_through`` is the previous run's
+    findings watermark (``findings.read_through_of``) and ``run_started`` this run's start, from which a clean
+    source's new watermark is taken. ``sensitivity`` replaces
     ``reader_sensitivity(READER)`` (tests only).
     """
     return _Reader(
@@ -1706,6 +1746,8 @@ def collect_landing_zone(
         member_accounts=member_accounts,
         sensitivity=sensitivity,
         limits=limits,
+        read_through=read_through,
+        run_started=run_started,
     ).collect()
 
 

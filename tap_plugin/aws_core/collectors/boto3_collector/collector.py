@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
@@ -100,7 +101,7 @@ from .credentials import (
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
-from .findings import FindingsLimits
+from .findings import READ_THROUGH, FindingsLimits, read_through_of
 from .ecs import image_writes, revision_label, walks_of, withhold_undescribed_task_definitions
 from .elb_topology import walks_of as listener_walks_of
 from .elb_topology import withhold_unreplaced_lb_routes
@@ -521,6 +522,7 @@ class Boto3Collector(CollectorBase):
 
     def run(self) -> None:
         self.record_info(_SITE_RUN_STARTED, "RUN_STARTED", "AWS Core collection started.")
+        run_started = datetime.now(UTC)
 
         # --- credentials / region scope / account identity (unrecoverable) ---
         try:
@@ -1111,6 +1113,9 @@ class Boto3Collector(CollectorBase):
         # armed. It never lets an AWS call escape; this guard isolates a defect in its own shaping code,
         # exactly as the Organizations read above is isolated.
         landing_zone = LandingZoneRead()
+        # The findings watermark (req-aws-landing-zone-findings-10): read through to the previous committed batch of
+        # this collector; a source with no value is read in full.
+        previous_read_through = read_through_of(_SOURCE)
         try:
             if not selected_run:  # not a manifest entry: a run that chose its types does not read it
                 landing_zone = collect_landing_zone(
@@ -1121,6 +1126,8 @@ class Boto3Collector(CollectorBase):
                     facts=facts,
                     member_accounts=org_tree.member_accounts,
                     limits=FindingsLimits.of(data),
+                    read_through=previous_read_through,
+                    run_started=run_started,
                 )
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(
@@ -1239,6 +1246,8 @@ class Boto3Collector(CollectorBase):
             node_envelopes=node_envelopes,
             edge_envelopes=edge_envelopes,
             authority=claims if authority_emitted else None,
+            # Every source this run did not read cleanly keeps its previous value.
+            batch_metadata={READ_THROUGH: {**previous_read_through, **landing_zone.read_through}},
         )
         self._record_authority(claims, emitted=authority_emitted, node_envelopes=node_envelopes)
         # Abort-on-rejection is owned by CollectorBase.submit_grift
