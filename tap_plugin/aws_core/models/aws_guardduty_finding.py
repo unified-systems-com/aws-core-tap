@@ -1,4 +1,4 @@
-"""Amazon GuardDuty finding — one active GuardDuty finding in one account and region."""
+"""Amazon GuardDuty finding — one GuardDuty finding, active or recently archived, in one account and region."""
 
 from typing import Any, ClassVar
 
@@ -8,16 +8,27 @@ from tap_grid.models import BaseModel
 
 
 class AwsGuardDutyFinding(BaseModel):
-    """One active (unarchived) GuardDuty finding.
+    """One GuardDuty finding: active, or archived in the last 30 days.
 
-    Read with ``guardduty:ListFindings`` (filtered to unarchived findings of the run's own account,
-    most severe first, capped) and ``GetFindings``. Keyed by the finding's ARN. Contained by its
-    detector (``HOLDS_GUARDDUTY_FINDING``); ``CONCERNS_RESOURCE`` points at the EC2 instance, S3
-    bucket or IAM user it names, by that resource's natural key.
+    Read with ``guardduty:ListFindings`` twice for the run's own account (unarchived findings most
+    severe first, and findings archived in the last 30 days most recently updated first, each capped;
+    aws-core-tap#264, ruling Q115a) and ``GetFindings``. Keyed by the finding's ARN. ``archived`` is
+    GuardDuty's own state: true for a finding that was closed (archived by hand or by a suppression
+    rule), so it shows closed instead of vanishing; ``updated_at`` minus ``created_at`` bounds its time
+    to close. Contained by its detector (``HOLDS_GUARDDUTY_FINDING``); ``CONCERNS_RESOURCE`` points at
+    the resource it names, by that resource's natural key: the EC2 instance, S3 bucket or IAM user,
+    and the aws_core node an ARN it names resolves to (a Lambda function, an RDS instance, an ECS
+    cluster or task, an EKS cluster, a scanned EBS volume; ruling Q115b). The targets are a closed
+    list: no other type is accepted.
 
-    Only typed fields are kept: the finding's description, its action and network details (remote
-    IPs, ports, domains) and its evidence are not stored. ``severity_label`` is GuardDuty's documented
-    band for ``severity``. ``count`` and ``archived`` are null when GuardDuty did not return them.
+    What the finding says about itself is kept (aws-core-tap#264, ruling Q114c), each part in
+    GuardDuty's own shape: ``description``, ``action`` (``Service.Action``: the API call, network
+    connection, port probe, DNS request or login attempt, remote addresses included),
+    ``network_interfaces`` (``Resource.InstanceDetails.NetworkInterfaces``: private and public
+    addresses, subnets, security groups) and ``evidence`` (``Service.Evidence``: the threat
+    intelligence that matched); each is null when the finding carries none. ``severity_label`` is
+    GuardDuty's documented band for ``severity``. ``count`` and ``archived`` are null when GuardDuty
+    did not return them.
 
     Spec: specs/spec-aws-core-landing-zone.md (req-aws-landing-zone-findings)
     """
@@ -25,8 +36,8 @@ class AwsGuardDutyFinding(BaseModel):
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_guardduty_finding"
     ENTITY_NAME: ClassVar[str] = "Amazon GuardDuty Finding"
     ENTITY_DESCRIPTION: ClassVar[str] = (
-        "An active Amazon GuardDuty finding: a threat GuardDuty detected in one account and region, "
-        "with its type, severity and the resource it concerns."
+        "An Amazon GuardDuty finding, active or recently archived: a threat GuardDuty detected in one "
+        "account and region, with its type, severity, what it observed and the resource it concerns."
     )
     ENTITY_ICON: ClassVar[str] = "aws-guardduty"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
@@ -40,14 +51,23 @@ class AwsGuardDutyFinding(BaseModel):
     ARN_RESOURCE: ClassVar[str | None] = None
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        # The instance, bucket or user it names, and the types an ARN in its Resource resolves to
+        # (aws-core-tap#264, Q115b). Kept equal to findings.GUARDDUTY_CONCERNS_TARGETS by a test.
         {
             "nodes": [
                 {"type": "aws_core__aws_ec2_instance"},
                 {"type": "aws_core__aws_s3_bucket"},
                 {"type": "aws_core__aws_iam_user"},
+                {"type": "aws_core__aws_lambda"},
+                {"type": "aws_core__aws_rds_instance"},
+                {"type": "aws_core__aws_rds_db_shard_group"},
+                {"type": "aws_core__aws_ecs_cluster"},
+                {"type": "aws_core__aws_ecs_task"},
+                {"type": "aws_core__aws_eks_cluster"},
+                {"type": "aws_core__aws_ebs_volume"},
             ],
             "edges": [{"type": "CONCERNS_RESOURCE__aws_core"}],
-        }
+        },
     ]
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -63,14 +83,23 @@ class AwsGuardDutyFinding(BaseModel):
         "severity_label": {"type": ["string", "null"]},
         "title": {"type": ["string", "null"]},
         "resource_type": {"type": ["string", "null"]},
-        # The instance id, bucket name(s), access-key user name or EKS cluster name, as the finding names it.
+        # The instance id, bucket name(s), access-key user name, EKS cluster name, Lambda function name,
+        # RDS instance or shard group identifier, ECS cluster name or recovery point ARN, as the finding names it.
         "resource_id": {"type": ["string", "null"]},
         "first_seen": {"type": ["string", "null"]},
         "last_seen": {"type": ["string", "null"]},
         "count": {"type": ["integer", "null"]},
+        # GuardDuty's Service.Archived: true for a closed (archived) finding.
         "archived": {"type": ["boolean", "null"]},
         "created_at": {"type": ["string", "null"]},
         "updated_at": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
+        # Service.Action, verbatim (JSON-safe).
+        "action": {"type": ["object", "null"]},
+        # Resource.InstanceDetails.NetworkInterfaces, verbatim.
+        "network_interfaces": {"type": ["array", "null"], "items": {"type": "object"}},
+        # Service.Evidence, verbatim.
+        "evidence": {"type": ["object", "null"]},
         "tags": {"type": ["object", "null"], "additionalProperties": {"type": "string"}},
     }
 
@@ -98,6 +127,13 @@ class AwsGuardDutyFinding(BaseModel):
     archived = models.BooleanField(null=True, blank=True, default=None)
     created_at = models.CharField(max_length=40, null=True, blank=True, default=None)
     updated_at = models.CharField(max_length=40, null=True, blank=True, default=None)
+    description = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not read"
+    # Source: guardduty:GetFindings Findings[].Service.Action.
+    action = models.JSONField(null=True, blank=True, default=None)
+    # Source: guardduty:GetFindings Findings[].Resource.InstanceDetails.NetworkInterfaces.
+    network_interfaces = models.JSONField(null=True, blank=True, default=None)
+    # Source: guardduty:GetFindings Findings[].Service.Evidence.
+    evidence = models.JSONField(null=True, blank=True, default=None)
     # AWS cannot tag a finding: always {} (tag_lanes.json, lane `none`).
     tags = models.JSONField(null=True, blank=True, default=None)
 

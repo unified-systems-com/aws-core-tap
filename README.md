@@ -92,7 +92,12 @@ Three tiers, from most to least covered. A model without a manifest entry
 renders fine on the grid if data arrives some other way (GRIFT import), but the
 collector will not populate it.
 
-### Collected by the boto3 collector (17 manifest entries)
+### Collected by the boto3 collector (898 manifest entries)
+
+The manifest (`collectors/boto3_collector/aws_resource_manifest.json`) has 898
+entries, and three custom readers (Organizations, the landing zone, findings)
+write the types no manifest entry can describe. The table below is the original
+v0 set, kept for its edge column; the manifest is the full list.
 
 | AWS service | Resource type(s) | Edges emitted |
 | --- | --- | --- |
@@ -131,25 +136,13 @@ Regions and availability zones ship as GRIFT seed data
 (`grift/regions.grift.json`), kept current by the `refresh-aws-catalog` skill
 rather than by the collector.
 
-### Modeled, but NOT collected (40 models)
+### Modeled, but NOT collected (1 model)
 
-These have first-class TAP models and icons but **no manifest entry** — the
-collector does not populate them today:
-
-- **Compute**: EC2 instances, EBS volumes
-- **Containers**: ECS clusters / services / tasks, EKS clusters, ECR repositories
-- **Networking**: VPCs, subnets, security groups, network ACLs, internet
-  gateways, NAT gateways, Elastic IPs, route tables, ALBs, classic ELBs,
-  target groups, Network Firewalls, transit gateways and their attachments,
-  Direct Connect connections / gateways / virtual interfaces, VPC endpoints and
-  endpoint services, Route 53 Resolver DNS Firewall rule groups
-- **Organization**: the organization (which also stands for its root),
-  organizational units, service control policies
-- **Data**: RDS instances, Elasticsearch/OpenSearch domains, ElastiCache clusters
-- **Identity & secrets**: IAM users, IAM policies, SSM parameters, IAM Identity
-  Center instances, ACM Private CAs
-- **AI/ML**: Bedrock models, SageMaker endpoints
-- **Developer tools**: CodePipeline pipelines, CodeBuild projects
+Every model has a collector source (a manifest entry or a custom reader) except
+**Bedrock foundation models** (`aws_bedrock_model`): they are AWS-owned, with no
+CloudFormation resource type (`ledger/decisions.json`). The (account, region)
+footprint is derived by the collector, and regions and availability zones are
+seeded (above).
 
 ### Everything else
 
@@ -357,7 +350,11 @@ currently exist, which goes stale the moment AWS adds one.
 - **S3 public access is observed.** `aws_s3_bucket.public_access_blocked` is
   filled from the bucket's own `GetPublicAccessBlock`: true when all four
   settings are on, false when any is off or none is configured, null when the
-  read was denied or failed. Account-level Block Public Access is not read.
+  read was denied or failed. It is the bucket's own setting; the account-level
+  Block Public Access is read separately, once per account, onto the account
+  node (`s3_block_public_acls`, `s3_ignore_public_acls`,
+  `s3_block_public_policy`, `s3_restrict_public_buckets`; the landing-zone
+  reader, `req-aws-landing-zone-security-services`).
 - **FIPS.** `use_fips_endpoint` (or `AWS_USE_FIPS_ENDPOINT`) is threaded onto
   the `botocore.session.Session` behind every `boto3.session.Session` the
   collector builds (static, assumed-role base, and the assumed-role working

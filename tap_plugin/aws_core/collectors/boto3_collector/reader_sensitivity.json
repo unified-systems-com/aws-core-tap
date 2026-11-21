@@ -241,9 +241,13 @@
       "reader": "landing_zone",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read the finding model's typed fields and botocore 1.43.103 guardduty ListFindings, GetFindings and GetFindingsStatistics output shapes, 2026-10-02. botocore marks LocalIpDetails/RemoteIpDetails IpAddressV4/V6, NetworkInterface.PrivateIpAddress and PrivateIpAddressDetails.PrivateIpAddress sensitive; none is stored, because Service.Action, Resource.InstanceDetails.NetworkInterfaces, Description and Evidence are not read into any field.",
+        "basis": "Read the finding model's typed fields and botocore 1.43.103 guardduty ListFindings, GetFindings and GetFindingsStatistics output shapes, 2026-10-02; re-read against botocore 1.44.4, 2026-11-20 (aws-core-tap#264, rulings Q114b and Q114c). botocore marks LocalIpDetails/RemoteIpDetails IpAddressV4/V6, NetworkInterface.PrivateIpAddress and PrivateIpAddressDetails.PrivateIpAddress sensitive: addresses, not secret material. They are stored, in action and network_interfaces, as is the title verbatim. Service.AdditionalInfo, Service.RuntimeDetails, Detection and the rest of Resource are not read into any field.",
         "locations": [
-          { "path": "title", "category": "free_text", "reason": "GuardDuty's finding title can name a remote host, domain, port or user it observed. IPv4/IPv6 addresses and EC2 ip-a-b-c-d host names in it are replaced with [ip] (findings.redact_ips).", "evidence": "reviewer_judgement" },
+          { "path": "title", "category": "free_text", "reason": "GuardDuty's finding title can name a remote host, address, domain, port or user it observed; stored verbatim (Q114b).", "evidence": "reviewer_judgement" },
+          { "path": "description", "category": "free_text", "reason": "GuardDuty's finding description: names the resource, the remote party and what was observed.", "evidence": "reviewer_judgement" },
+          { "path": "action", "category": "other", "reason": "Service.Action: the remote IP addresses, ports, domains, API names, caller user agents and login user names GuardDuty observed. Addresses are not secret; the action is the finding's substance (Q114c).", "evidence": "botocore_sensitive" },
+          { "path": "network_interfaces", "category": "other", "reason": "Resource.InstanceDetails.NetworkInterfaces: the instance's private and public IPv4/IPv6 addresses and DNS names, subnets, VPC and security groups.", "evidence": "botocore_sensitive" },
+          { "path": "evidence", "category": "other", "reason": "Service.Evidence: the threat-intelligence list names and threat names that matched.", "evidence": "reviewer_judgement" },
           { "path": "resource_id", "category": "customer_content", "reason": "The instance id, bucket name(s), access-key user name or EKS cluster name the finding concerns: operator-chosen names.", "evidence": "reviewer_judgement" },
           { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" }
         ]
@@ -254,11 +258,19 @@
       "reader": "landing_zone",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read the finding model's typed fields and botocore 1.43.103 securityhub GetFindings output shape (AwsSecurityFinding), 2026-10-02. botocore marks no member sensitive. Description, Remediation, Network, NetworkPath, Process, Threats, Malware, Vulnerabilities, ProductFields, UserDefinedFields, Note and Resources[].Details are not read into any field.",
+        "basis": "Read the finding model's typed fields and botocore 1.43.103 securityhub GetFindings output shape (AwsSecurityFinding), 2026-10-02; re-read against botocore 1.44.4, 2026-11-20 (aws-core-tap#264, rulings Q114b and Q114c). botocore marks no member sensitive. Description, Types, Severity.Normalized, Remediation, Network, Malware, Vulnerabilities, ProductFields, Compliance.StatusReasons and FindingProviderFields are stored; NetworkPath, Process, Threats, ThreatIntelIndicators, UserDefinedFields, Note, Action and Resources[].Details are not read into any field.",
         "locations": [
-          { "path": "title", "category": "free_text", "reason": "An integrated product's finding title can name hosts, users or values it observed. IPv4/IPv6 addresses and EC2 ip-a-b-c-d host names in it are replaced with [ip] (findings.redact_ips).", "evidence": "reviewer_judgement" },
+          { "path": "title", "category": "free_text", "reason": "An integrated product's finding title can name hosts, addresses, users or values it observed; stored verbatim (Q114b).", "evidence": "reviewer_judgement" },
+          { "path": "description", "category": "free_text", "reason": "The product's finding description: can name hosts, addresses, users or values it observed.", "evidence": "reviewer_judgement" },
+          { "path": "network", "category": "other", "reason": "Network: the source and destination IP addresses, ports, domains and MAC addresses of the observed traffic.", "evidence": "reviewer_judgement" },
+          { "path": "malware", "category": "other", "reason": "Malware[]: names and on-host paths of the malware a product found.", "evidence": "reviewer_judgement" },
+          { "path": "vulnerabilities", "category": "other", "reason": "Vulnerabilities[]: CVE ids, CVSS vectors, vulnerable package names, versions and file paths, and fix availability.", "evidence": "reviewer_judgement" },
+          { "path": "product_fields", "category": "customer_content", "reason": "ProductFields: a product-defined string map; a third-party product can put any value here.", "evidence": "reviewer_judgement" },
+          { "path": "remediation", "category": "free_text", "reason": "Remediation.Recommendation: product-written guidance text and a URL.", "evidence": "reviewer_judgement" },
+          { "path": "compliance_status_reasons", "category": "diagnostic", "reason": "Compliance.StatusReasons[]: Security Hub's reason codes and descriptions for a control result, which can echo resource configuration.", "evidence": "reviewer_judgement" },
+          { "path": "finding_provider_fields", "category": "other", "reason": "FindingProviderFields: the provider's own severity, types, confidence, criticality and related finding ids.", "evidence": "reviewer_judgement" },
           { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" },
-          { "path": "resource_ids", "category": "customer_content", "reason": "Resource identifiers (ARNs, ids) the finding names, which can carry operator-chosen names. An address used as an id is replaced with [ip].", "evidence": "reviewer_judgement" },
+          { "path": "resource_ids", "category": "customer_content", "reason": "Resource identifiers (ARNs, ids, or an address a product names a resource by) the finding names, which can carry operator-chosen names; stored verbatim (Q114b).", "evidence": "reviewer_judgement" },
           { "path": "generator_id", "category": "other", "reason": "The producing rule or detector's identifier; for a third-party product this is product-defined text.", "evidence": "reviewer_judgement" }
         ]
       }
@@ -290,9 +302,12 @@
       "reader": "landing_zone",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read the rule model's typed fields and botocore 1.43.103 config DescribeConfigRules, DescribeComplianceByConfigRule and ListTagsForResource output shapes, 2026-10-02. botocore marks no config member sensitive. InputParameters, Scope and CustomPolicyDetails (a policy body) are not stored.",
+        "basis": "Read the rule model's typed fields and botocore 1.43.103 config DescribeConfigRules, DescribeComplianceByConfigRule and ListTagsForResource output shapes, 2026-10-02; with GetCustomRulePolicy, re-read against botocore 1.44.4, 2026-11-20 (aws-core-tap#264, ruling Q114c). botocore marks no config member sensitive. Scope, InputParameters and the Guard policy body are stored; EvaluationModes and Source.SourceDetails are not read into any field.",
         "locations": [
           { "path": "description", "category": "free_text", "reason": "Operator-authored rule description.", "evidence": "reviewer_judgement" },
+          { "path": "scope", "category": "customer_content", "reason": "Scope: the resource types, tag key and value, or resource id the rule covers; tag values and ids are operator-chosen.", "evidence": "reviewer_judgement" },
+          { "path": "input_parameters", "category": "customer_content", "reason": "InputParameters: operator-set rule parameters (thresholds, allowed values, ids); free-form JSON AWS does not constrain.", "evidence": "reviewer_judgement" },
+          { "path": "policy_text", "category": "access_policy", "reason": "The Guard policy body of a custom policy rule: operator-authored logic that can embed literal values.", "evidence": "reviewer_judgement" },
           { "path": "tags", "category": "customer_content", "reason": "Operator-set rule tag values: arbitrary strings AWS does not constrain.", "evidence": "reviewer_judgement" }
         ]
       }

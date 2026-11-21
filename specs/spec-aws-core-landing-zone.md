@@ -37,8 +37,8 @@ service models, which are offline data. GovCloud availability is **web**, cited 
 | req-aws-landing-zone-control-tower | [Control Tower](#control-tower) | Proposed | Landing zone, enabled controls, enabled baselines; targets as reference edges; contained by the landing zone |
 | req-aws-landing-zone-identity-center | [Identity Center Access](#identity-center-access) | Proposed | Collect the instance; permission sets, groups and account assignments; users only as principal ids |
 | req-aws-landing-zone-security-services | [Security Services](#security-services) | Proposed | Config recorder, delivery channel and aggregator, GuardDuty detector, Security Hub hub, Access Analyzer analyzer per account × region; EBS default encryption and S3 account public-access block as typed fields |
-| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active GuardDuty, Security Hub (control results included) and Access Analyzer findings, and Config rule and conformance pack compliance, for the run's own account; bounded by a declared cap; per-severity totals on the parent; findings surfaces never complete |
-| req-aws-landing-zone-nongoals | [Non-Goals](#non-goals) | Proposed | Account vending, Macie, Control Tower Account Factory, AFT, archived findings, writing back to a finding |
+| req-aws-landing-zone-findings | [Security Findings](#security-findings) | Proposed | Active and recently closed (30 days) GuardDuty, Security Hub (control results included) and Access Analyzer findings with what each says about itself, and Config rule and conformance pack compliance with each rule's scope, parameters and policy body, for the run's own account; bounded by a declared cap; per-severity totals of active findings on the parent; findings surfaces never complete |
+| req-aws-landing-zone-nongoals | [Non-Goals](#non-goals) | Proposed | Account vending, Macie, Control Tower Account Factory, AFT, findings closed before the 30-day window, writing back to a finding |
 
 ### GovCloud Availability
 ----
@@ -259,6 +259,9 @@ Status: `Proposed`
 Approved 2026-10-02 (highbar Q137a), scoped to the account the collector's credential reads, the
 GovCloud management account (Q137b). Member accounts and the delegated security administrator are
 fan-out's (`req-aws-collector-fanout`, aws-core-tap#63). Collect-only: nothing here arms reconcile.
+Extended 2026-11-20 by the maintainer's rulings on what aws_core left out (aws-core-tap#264): Q114b
+(addresses are stored as AWS wrote them), Q114c (what a finding says about itself is kept), Q115a
+(recently closed findings are read) and Q115b (GuardDuty reaches every resource type it names).
 
 #### Implementation
 
@@ -268,22 +271,35 @@ models; nothing was observed against a live account.
 
 | Type | Source (read: botocore) | Key | Tags | Contained by | Falsifier: gone when | Reference edges |
 | --- | --- | --- | --- | --- | --- | --- |
-| `aws_guardduty_finding` **(new)** | `guardduty:ListFindings(FindingCriteria: service.archived=false, accountId=<run account>; SortCriteria: severity DESC; MaxResults 50)`, capped; `GetFindings` (≤50 ids a call) | finding ARN | **none** (a finding is not taggable; inferred) | detector, `HOLDS_GUARDDUTY_FINDING` | `GetFindings` names no such id, or names it archived | `CONCERNS_RESOURCE` (→ EC2 instance by `InstanceId`, S3 bucket by `S3BucketDetails[].Arn`, IAM user for an `IAMUser` access key) |
-| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down, sharing one cap | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none, or names it `ARCHIVED`; `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ whichever aws_core node is keyed by the ARN in `Resources[].Id`, whatever its type, and an `AwsEc2Instance` by the instance id from its ARN; aws-core-tap#242) |
+| `aws_guardduty_finding` **(new)** | `guardduty:ListFindings(FindingCriteria: service.archived=false, accountId=<run account>; SortCriteria: severity DESC; MaxResults 50)`, capped; then `ListFindings(FindingCriteria: service.archived=true, accountId=<run account>, updatedAt >= now - 30 days in epoch ms; SortCriteria: updatedAt DESC)`, capped on its own; `GetFindings` (≤50 ids a call) for both | finding ARN | **none** (a finding is not taggable; inferred) | detector, `HOLDS_GUARDDUTY_FINDING` | `GetFindings` names no such id (an archived finding is present, closed) | `CONCERNS_RESOURCE` (→ EC2 instance by `InstanceId`, S3 bucket by `S3BucketDetails[].Arn`, IAM user for an `IAMUser` access key, and whichever aws_core node `arn_resolver` finds for an ARN in `Resource`: `LambdaDetails.FunctionArn`, `RdsDbInstanceDetails.DbInstanceArn`, `RdsLimitlessDbDetails.DbShardGroupArn`, `EcsClusterDetails.Arn` and `.TaskDetails.Arn`, `EksClusterDetails.Arn`, and the malware-scan target `EbsVolumeDetails.ScannedVolumeDetails[].VolumeArn`; a closed list of target types, `findings.GUARDDUTY_CONCERNS_TARGETS`, equal to the model's declaration. An EBS snapshot, AMI or backup recovery point a finding names has no aws_core type and gets no edge) |
+| `aws_securityhub_finding` **(new)** | `securityhub:GetFindings(Filters: AwsAccountId=<run account>, Region=<region>, RecordState=ACTIVE, SeverityLabel=<label>; MaxResults 100)`, one read per label from CRITICAL down, sharing one cap; then `GetFindings(Filters: AwsAccountId, Region, RecordState=ARCHIVED, UpdatedAt DateRange 30 DAYS; SortCriteria: UpdatedAt desc)`, capped on its own | (`ProductArn`, `Id`) | **none** (inferred) | hub, `HOLDS_SECURITYHUB_FINDING` | `GetFindings(Id, ProductArn)` names none (an `ARCHIVED` record is present, closed); `InvalidAccessException` is `UNDETERMINED` | `EVALUATED_UNDER_STANDARD` (→ the enabled standard each `Compliance.AssociatedStandards[].StandardsId` names); `CONCERNS_RESOURCE` (→ whichever aws_core node is keyed by the ARN in `Resources[].Id`, whatever its type, and an `AwsEc2Instance` by the instance id from its ARN; aws-core-tap#242) |
 | `aws_securityhub_standards_subscription` **(new)** | `securityhub:GetEnabledStandards` (unfiltered, to its end; the listing the hub's `enabled_standards` already comes from) | `StandardsSubscriptionArn` | **none** (inferred) | hub, `HOLDS_STANDARDS_SUBSCRIPTION` | absent from `GetEnabledStandards` | — |
-| `aws_access_analyzer_finding` **(new)** | `accessanalyzer:ListFindings` for an external-access analyzer (`ACCOUNT`, `ORGANIZATION`), `ListFindingsV2` for the others (botocore: v1 "is supported only for external access analyzers"), `filter: status=ACTIVE, resourceOwnerAccount=<run account>`, capped | (analyzer ARN, finding id) | **none** (inferred) | analyzer, `HOLDS_ACCESS_ANALYZER_FINDING` | `GetFindingV2` → `ResourceNotFoundException`, or a status other than `ACTIVE` | `CONCERNS_RESOURCE` (→ S3 bucket, IAM role, IAM user by resource ARN) |
-| `aws_config_rule` **(new)** | `config:DescribeConfigRules` (no names, no filters: botocore documents that as every rule), `DescribeComplianceByConfigRule` (every rule and compliance type), each to its end | rule ARN | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_CONFIG_RULE` | absent from a complete `DescribeConfigRules` (`NoSuchConfigRuleException` is documented as "not valid", not "does not exist", so it is not used) | — |
+| `aws_access_analyzer_finding` **(new)** | `accessanalyzer:ListFindings` for an external-access analyzer (`ACCOUNT`, `ORGANIZATION`), `ListFindingsV2` for the others (botocore: v1 "is supported only for external access analyzers"), `filter: status=ACTIVE, resourceOwnerAccount=<run account>`, capped; then the same with `status in [ARCHIVED, RESOLVED]`, capped on its own, keeping a finding whose `updatedAt` is in the last 30 days (the filter has no date operator: botocore `Criterion` is eq, neq, contains, exists, and no sort on `updatedAt` is documented), applied to each page as it arrives so only in-window findings count against the cap; the read walks at most `ACCESS_ANALYZER_CLOSED_MAX_PAGES` (50) pages and is recorded truncated if it stops with pages left | (analyzer ARN, finding id) | **none** (inferred) | analyzer, `HOLDS_ACCESS_ANALYZER_FINDING` | `GetFindingV2` → `ResourceNotFoundException` (an ARCHIVED or RESOLVED finding is present, closed) | `CONCERNS_RESOURCE` (→ S3 bucket, IAM role, IAM user by resource ARN) |
+| `aws_config_rule` **(new)** | `config:DescribeConfigRules` (no names, no filters: botocore documents that as every rule), `DescribeComplianceByConfigRule` (every rule and compliance type), each to its end; `GetCustomRulePolicy(ConfigRuleName)` for a `CUSTOM_POLICY` rule whose listing carries no `PolicyText` | rule ARN | service, `config:ListTagsForResource(ResourceArn)`, `Tags`, list_kv | footprint, `HOSTS_CONFIG_RULE` | absent from a complete `DescribeConfigRules` (`NoSuchConfigRuleException` is documented as "not valid", not "does not exist", so it is not used) | — |
 | `aws_config_conformance_pack` **(new)** | `config:DescribeConformancePacks` (no names), `GetConformancePackComplianceSummary` (5 names a call) | pack ARN | service, as above | footprint, `HOSTS_CONFORMANCE_PACK` | `DescribeConformancePacks(name)` → `NoSuchConformancePackException` | — |
 
 - **Bounded.** `FINDINGS_CAP` is **1000 findings per parent** (detector, hub, analyzer) per run.
   GuardDuty is read most severe first and Security Hub one label at a time from CRITICAL down, so
   the cap drops the least severe. Access Analyzer findings carry no severity and are read in the
   API's order. A read that reaches the cap stops; its surface records `reasons.truncated`.
-- **Never complete.** Each findings surface depends on a source-side filter (the run's account,
-  active only) with no bogus-value positive control, so it records `filter` verbatim and
+- **Closed in the last 30 days.** Beside the active read, each parent reads the findings it closed
+  in the last 30 days (`CLOSED_WINDOW_DAYS`): GuardDuty archived, Security Hub `RecordState`
+  ARCHIVED, Access Analyzer ARCHIVED or RESOLVED (aws-core-tap#264, ruling Q115a). Each closed read
+  has its own `FINDINGS_CAP`, most recently updated first where the API sorts, so closed findings
+  never crowd out active ones. A finding's state is the service's own field, stored verbatim:
+  GuardDuty `archived`, Security Hub `record_state` (beside `workflow_status`, the operator's triage
+  state), Access Analyzer `status`. No normalized copy is added: it would restate a field on the same
+  node. A finding that closes is rewritten closed on the next run instead of staying on the grid as
+  active, and its time to close is visible: AWS stamps no closed-at, so `updated_at` (the last change,
+  which for a closed finding is its closing or later) minus `created_at` bounds it. One closed longer
+  than the window is not read again and keeps the closed state it was last written with; one that
+  closed while the collector was not running for over 30 days stays as it was last read.
+- **Never complete.** Each findings surface depends on source-side filters (the run's account, active
+  or closed in the window) with no bogus-value positive control, so it records `filter` verbatim and
   `filter_control: null`, and is `enumeration_complete: false` (`req-grid-reconcile-evidence-4`).
-  It never nominates a retirement. The falsifiers are registered so the triple is whole, and they
-  say "gone" for the same set the collector reads (a finding no longer active has left it).
+  It never nominates a retirement. The surface relation is `<parent>.findings` (one surface for both
+  reads). The falsifiers are registered so the triple is whole; a closed finding the service still
+  returns is present, and a finding is gone only when the service no longer returns it.
 - **Totals on the parent.** The detector, hub and analyzer carry `active_finding_counts`
   (`{label: count}`; by finding type for an analyzer), `active_finding_counts_complete` and
   `active_findings_truncated`. GuardDuty's totals come from
@@ -292,14 +308,21 @@ models; nothing was observed against a live account.
   the capped read and are marked incomplete. Security Hub's are exact for every label read to its
   end. GuardDuty's labels are its documented bands: Critical 9.0-10.0, High 7.0-8.9, Medium
   4.0-6.9, Low 1.0-3.9 (web: https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings-severity.html).
-- **Typed fields only.** No ASFF document, finding description, remediation, product fields, network
-  detail, remote or private IP (botocore marks GuardDuty's sensitive), Access Analyzer condition
-  value, Config rule `InputParameters` or conformance-pack parameter is stored. An Access Analyzer
-  finding's condition summary is its condition **keys**. A Config rule's own `description`
-  (operator-authored, at most 256 characters) is kept and declared `free_text`. A finding's title is service- or
-  product-written free text that can name an address it observed, so every IPv4 or IPv6 address,
-  and every EC2 `ip-a-b-c-d` host name, in a stored title or Security Hub resource id is replaced
-  with `[ip]` (`findings.redact_ips`). Each type's declaration is in `reader_sensitivity.json`.
+- **Typed fields, and what a finding says about itself.** Each reader stores typed fields, and each
+  group of a finding's own detail as one JSON field in AWS's shape (aws-core-tap#264, ruling Q114c):
+  GuardDuty `description`, `action` (`Service.Action`, remote addresses, ports, domains and API calls
+  included; botocore marks the addresses sensitive, and they are addresses, not secrets),
+  `network_interfaces` (`Resource.InstanceDetails.NetworkInterfaces`) and `evidence`
+  (`Service.Evidence`); Security Hub `description`, `types`, `severity_normalized`, `remediation`,
+  `network`, `malware`, `vulnerabilities`, `product_fields`, `compliance_status_reasons` and
+  `finding_provider_fields`; a Config rule's `scope`, `input_parameters` (parsed from its JSON string),
+  `policy_runtime` and `policy_text` (the Guard policy body). A JSON group is null when the finding
+  carries none. Titles and Security Hub resource ids are stored as AWS wrote them, addresses
+  included (ruling Q114b). Still not stored: the rest of the ASFF document (process, threats, resource
+  details, notes), GuardDuty `Service.AdditionalInfo` and runtime detail, an Access Analyzer
+  finding's condition **values** (its condition summary is the keys), and conformance-pack parameters.
+  A Config rule's own `description` (operator-authored, at most 256 characters) is kept and declared
+  `free_text`. Each type's declaration is in `reader_sensitivity.json`.
 - **Resource keys.** `CONCERNS_RESOURCE` is emitted by the target's natural key whether or not the
   target was collected; core resolves the key to the target's row when one is live, and otherwise
   skips the edge and records a `skip` event. GuardDuty names an IAM
@@ -335,7 +358,8 @@ models; nothing was observed against a live account.
 - **Permissions.** SecurityAudit (commercial v94, web:
   https://docs.aws.amazon.com/aws-managed-policy/latest/reference/SecurityAudit.html; GovCloud's
   copy not verified) grants every read here through `guardduty:Get*`/`List*`,
-  `securityhub:Get*`, `access-analyzer:ListFindings` and `config:Describe*`/`Get*`/`List*`. The
+  `securityhub:Get*`, `access-analyzer:ListFindings` and `config:Describe*`/`Get*`/`List*`
+  (`config:GetCustomRulePolicy` included, by the `Get*` wildcard; inferred, not observed). The
   Access Analyzer finding falsifier's `access-analyzer:GetFindingV2` is not in it.
 
 #### Acceptance Criteria
@@ -343,12 +367,13 @@ models; nothing was observed against a live account.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-landing-zone-findings-1 | Active Findings Collected | Proposed | Each written detector, hub and analyzer has its active findings for the run's own account written under it, read with the filters tabled above and to their last page below the cap. | |
-| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN, or of a natively keyed type whose declaration reads its key from the ARN (`req-aws-collector-identity-14`), or naming an account by `AWS::::Account:<id>`, has `CONCERNS_RESOURCE` to that node by its natural key; an id no single keyed type claims stays a string with no edge. | aws-core-tap#242, #252; closes aws-core-tap#249. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
+| req-aws-landing-zone-findings-9 | Recently Closed Findings Collected | Proposed | Each written detector, hub and analyzer also has the findings it closed in the last 30 days written under it, with the service's own state field saying closed (`archived`, `record_state`, `status`), read with the closed filters tabled above under a cap of their own; parent counts stay counts of active findings, and the surface stays never complete. | aws-core-tap#264, ruling Q115a. `tests/test_security_findings.py::TestClosedFindings`, `tests/test_findings_stubbed.py` (requests and responses validated against botocore's models). |
+| req-aws-landing-zone-findings-2 | Findings Reference Their Resource | Proposed | A finding naming an EC2 instance, S3 bucket, IAM user or IAM role has `CONCERNS_RESOURCE` to it by natural key. A GuardDuty finding naming the ARN of a Lambda function, an RDS instance or Limitless shard group, an ECS cluster or task, an EKS cluster or a scanned EBS volume has `CONCERNS_RESOURCE` to the node `arn_resolver` finds for it (aws-core-tap#264, ruling Q115b); its targets are a closed list and any other type is refused. A Security Hub finding naming the ARN of any aws_core type keyed by its ARN, or of a natively keyed type whose declaration reads its key from the ARN (`req-aws-collector-identity-14`), or naming an account by `AWS::::Account:<id>`, has `CONCERNS_RESOURCE` to that node by its natural key; an id no single keyed type claims stays a string with no edge. | aws-core-tap#242, #252; closes aws-core-tap#249. `collectors/boto3_collector/arn_resolver.py`, `findings.py::_asff_target`; `tests/test_arn_resolver.py`, `tests/test_security_findings.py::TestSecurityHub::test_a_finding_concerns_whatever_aws_core_node_its_arns_name`. |
 | req-aws-landing-zone-findings-3 | Bounded And Never Complete | Proposed | A findings read stops at `FINDINGS_CAP`; its surface records the filter with no control, is never complete, and names a truncation in `reasons.truncated`. | |
 | req-aws-landing-zone-findings-4 | Totals On The Parent | Proposed | The parent carries per-label counts and says whether they are exact and whether the read was truncated. | |
 | req-aws-landing-zone-findings-5 | Retirement Path | Proposed | Every new type is a containment target with a registered falsifier; each parent records a surface for each of its containment edges. | |
 | req-aws-landing-zone-findings-6 | Control Results And Standards | Proposed | A control finding carries its compliance status and security control id, and `EVALUATED_UNDER_STANDARD` to each enabled standard it names; enabled standards are nodes contained by the hub. | |
-| req-aws-landing-zone-findings-7 | Typed Fields Only | Proposed | No finding description, IP address, condition value or rule parameter reaches a node (a Config rule's own operator-authored `description` is kept, declared `free_text`); an address inside a title or resource id is replaced with `[ip]`. A test plants each, titles included, and finds none. | |
+| req-aws-landing-zone-findings-7 | What A Finding Says Is Kept | Proposed | A finding's description, action, network detail, evidence, remediation, malware, vulnerabilities, product fields, types, normalized severity, compliance status reasons and finding-provider fields, and a Config rule's scope, input parameters and Guard policy body, reach the node as tabled; titles and resource ids keep their addresses. An Access Analyzer condition value, a conformance-pack parameter and a standards subscription's `StandardsInput` still do not: a test plants each and finds none. | Revised 2026-11-20 by rulings Q114b and Q114c (aws-core-tap#264); it read "Typed Fields Only", with addresses replaced by `[ip]`. `tests/test_security_findings.py::TestDeclarations`, `::TestSecurityHubDetail`, `::TestConfigRuleDetail`. |
 | req-aws-landing-zone-findings-8 | Config Rules And Conformance Packs | Proposed | Every Config rule (service-linked included) and conformance pack is a footprint child with its compliance; a failed compliance read is null, never compliant. | |
 
 ### Non-Goals
@@ -363,12 +388,12 @@ Status: `Proposed`
 - **Macie.** It is not available in GovCloud (inferred from https://docs.aws.amazon.com/general/latest/gr/macie.html), so it is not
   modelled. Gruntwork's baseline must run there with `disable_macie`.
 - **AFT.** It is closed to new customers in GovCloud ([C-GCCT](https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-controltower.html)).
-- **Archived findings, and writing back.** Config rules, conformance packs and active findings are
-  collected (`req-aws-landing-zone-findings`, aws-core-tap#76). Findings that left their
-  service's active set are not read: GuardDuty archived, Security Hub `RecordState` ARCHIVED,
-  Access Analyzer ARCHIVED or RESOLVED. A Security Hub finding whose record is ACTIVE but whose
-  workflow is RESOLVED or SUPPRESSED is still read, with `workflow_status` saying so: the workflow
-  is an operator's triage state, not the record's. Nothing updates a finding's workflow or archives it.
+- **Old closed findings, and writing back.** Config rules, conformance packs, active findings and
+  findings closed in the last 30 days are collected (`req-aws-landing-zone-findings`, aws-core-tap#76,
+  #264). Findings closed before that window are not read. A Security Hub finding whose record is
+  ACTIVE but whose workflow is RESOLVED or SUPPRESSED is read with the active ones, with
+  `workflow_status` saying so: the workflow is an operator's triage state, not the record's. Nothing
+  updates a finding's workflow or archives it. Member accounts' findings (Q115c) wait on fan-out.
 - **Inspector and Detective.** No Gruntwork baseline read enables them (not found in the module reference pages).
 
 #### Acceptance Criteria

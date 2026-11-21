@@ -8,11 +8,13 @@ from tap_grid.models import BaseModel
 
 
 class AwsAccessAnalyzerFinding(BaseModel):
-    """One active IAM Access Analyzer finding.
+    """One IAM Access Analyzer finding: active, or archived or resolved in the last 30 days.
 
     Read with ``accessanalyzer:ListFindings`` for an external-access analyzer (``ACCOUNT``,
-    ``ORGANIZATION``) and ``ListFindingsV2`` for the others, filtered to ``status`` ACTIVE on the run's
-    own account's resources, capped. Keyed by (analyzer ARN, finding id). Contained by its analyzer
+    ``ORGANIZATION``) and ``ListFindingsV2`` for the others, on the run's own account's resources:
+    ``status`` ACTIVE, and ``status`` ARCHIVED or RESOLVED kept when updated in the last 30 days, each
+    read capped (aws-core-tap#264, ruling Q115a). ``status`` is Access Analyzer's own state: RESOLVED
+    when the access was removed, ARCHIVED when an operator or an archive rule dismissed it. Keyed by (analyzer ARN, finding id). Contained by its analyzer
     (``HOLDS_ACCESS_ANALYZER_FINDING``). ``CONCERNS_RESOURCE`` points at the S3 bucket, IAM role or IAM
     user it names, by ARN.
 
@@ -26,8 +28,8 @@ class AwsAccessAnalyzerFinding(BaseModel):
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_access_analyzer_finding"
     ENTITY_NAME: ClassVar[str] = "AWS IAM Access Analyzer Finding"
     ENTITY_DESCRIPTION: ClassVar[str] = (
-        "An active IAM Access Analyzer finding: a resource reachable from outside its zone of trust, "
-        "or unused or internal access, on one resource."
+        "An IAM Access Analyzer finding, active or recently archived or resolved: a resource reachable "
+        "from outside its zone of trust, or unused or internal access, on one resource."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}

@@ -81,8 +81,9 @@ def test_a_refused_detail_call_is_a_denied_slot_not_a_crash() -> None:
 
 
 def test_a_secret_in_the_detail_response_is_removed_before_storage() -> None:
-    entry = next(e for e in ENRICHED if entry_redact_paths(e) and any(p.startswith("_hydrate.detail.data.") for p in entry_redact_paths(e)))
-    path = next(p for p in entry_redact_paths(entry) if p.startswith("_hydrate.detail.data."))
+    # No shipped entry redacts a detail-response member today (aws-core-tap#264 found the 32 that did were not
+    # secret), so the mechanism is checked on a declared path of the shape such an entry would carry.
+    path = "_hydrate.detail.data.Connector.Material"
     keys = path.removeprefix("_hydrate.detail.data.").replace("[]", "").split(".")
     data: dict = {}
     cursor = data
@@ -100,13 +101,15 @@ def test_the_stored_envelope_has_no_secret_from_the_detail_response() -> None:
     from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
     from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 
-    entry = next(e for e in ENRICHED if any(p.startswith("_hydrate.detail.data.") and "[]" not in p and "." not in p.removeprefix("_hydrate.detail.data.") for p in entry_redact_paths(e)))
-    path = next(p for p in entry_redact_paths(entry) if p.startswith("_hydrate.detail.data.") and "[]" not in p and "." not in p.removeprefix("_hydrate.detail.data."))
-    member = path.removeprefix("_hydrate.detail.data.")
+    # A declared detail path on an enriched entry (none ships one today, aws-core-tap#264); "Material" names no
+    # secret, so only the declared path, not the key scrub, can remove it.
+    entry = ENRICHED[0]
+    member = "Material"
+    path = f"_hydrate.detail.data.{member}"
     item = {entry["natural_key"]: "arn:aws:x:us-east-1:123456789012:thing/y"}
     node = project_item(entry, item)
     node.configuration.setdefault("_hydrate", {})["detail"] = {"status": "ok", "op": entry["enrich"]["op"], "data": {member: "PLANTED-SECRET-77aa"}}
-    payload = node_envelope(node, {}, {}, persist_configuration=True, redact_paths=entry_redact_paths(entry))["node"]
+    payload = node_envelope(node, {}, {}, persist_configuration=True, redact_paths=[*entry_redact_paths(entry), path])["node"]
     assert "PLANTED-SECRET-77aa" not in str(payload["configuration"])
 
 

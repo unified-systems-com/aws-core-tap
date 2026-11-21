@@ -11,30 +11,44 @@ hands it back to that reader, which owns the node, edge and surface plumbing:
     guardduty      ListFindings (capped), GetFindings (≤50 ids per call), GetFindingsStatistics
     securityhub    GetFindings (capped, one read per severity label, highest first)
     accessanalyzer ListFindings (external-access analyzers), ListFindingsV2 (the others), capped
-    config         DescribeConfigRules, DescribeComplianceByConfigRule, DescribeConformancePacks,
-                   GetConformancePackComplianceSummary, ListTagsForResource
+    config         DescribeConfigRules, DescribeComplianceByConfigRule, GetCustomRulePolicy (a Guard
+                   rule's policy body), DescribeConformancePacks, GetConformancePackComplianceSummary,
+                   ListTagsForResource
 
 Collect-only, and bounded. A finding is an event the service keeps for a while, not a resource an
-operator creates, and an account can hold many. Each read is limited to the run's own account and to
-active (unarchived) findings, and stops at ``FINDINGS_CAP`` findings per parent. Both limits are
-recorded on the parent's surface: the filter verbatim with no positive control, and the cap as a
-truncation, so a findings surface is never complete and never nominates a retirement. The parent
-(detector, hub, analyzer) carries per-severity counts, so a page can show totals without every
-finding.
+operator creates, and an account can hold many. Each parent is read twice, both times limited to the
+run's own account: its active findings, and the findings it closed in the last ``CLOSED_WINDOW_DAYS``
+days (GuardDuty archived, Security Hub ``RecordState`` ARCHIVED, Access Analyzer ARCHIVED or RESOLVED;
+aws-core-tap#264, ruling Q115a), so a finding that is fixed or dismissed shows as closed instead of
+staying on the grid as active, and its time to close is visible. Each read stops at ``FINDINGS_CAP``
+findings. The limits are recorded on the parent's surface: the filters verbatim with no positive
+control, and the cap as a truncation, so a findings surface is never complete and never nominates a
+retirement. The parent (detector, hub, analyzer) carries per-severity counts of its ACTIVE findings,
+so a page can show totals without every finding.
 
-Only typed fields are stored. No ASFF document, finding description, remote IP, network detail or
-policy body is kept (``reader_sensitivity.json``).
+A finding's state is the service's own field, verbatim: GuardDuty's ``archived``, Security Hub's
+``record_state`` (beside its ``workflow_status``), Access Analyzer's ``status``. AWS stamps no
+closed-at time; a closed finding's ``updated_at`` is when it last changed, which for a closed finding
+is its closing or later.
+
+Only typed fields are stored, each declared in ``reader_sensitivity.json``. What a finding says about
+itself is kept (aws-core-tap#264, ruling Q114c): GuardDuty's description, action, instance network
+interfaces and evidence; Security Hub's description, remediation, network, malware, vulnerabilities,
+product fields, types, normalized severity, compliance status reasons and finding-provider fields; a
+Config rule's scope, input parameters and Guard policy body. Addresses in titles and resource ids are
+stored as AWS wrote them (ruling Q114b). Each group is one JSON field, in AWS's own shape.
 """
 
 from __future__ import annotations
 
-import ipaddress
-import re
+import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from .arn_resolver import resolve_arn
+from .envelope import jsonable
 from .partition import parse_arn
 
 if TYPE_CHECKING:
@@ -50,6 +64,21 @@ EC2_INSTANCE = "aws_core__aws_ec2_instance"
 IAM_USER = "aws_core__aws_iam_user"
 IAM_ROLE = "aws_core__aws_iam_role"
 S3_BUCKET = "aws_core__aws_s3_bucket"
+#: Every type a GuardDuty finding's CONCERNS_RESOURCE can reach (aws-core-tap#264, Q115b): the
+#: instance, bucket and access-key user it names by id, and the types ``_guardduty_resource_arns``
+#: resolves. The model's OUTBOUND_EDGES declares exactly these.
+GUARDDUTY_CONCERNS_TARGETS: tuple[str, ...] = (
+    EC2_INSTANCE,
+    S3_BUCKET,
+    IAM_USER,
+    "aws_core__aws_lambda",
+    "aws_core__aws_rds_instance",
+    "aws_core__aws_rds_db_shard_group",
+    "aws_core__aws_ecs_cluster",
+    "aws_core__aws_ecs_task",
+    "aws_core__aws_eks_cluster",
+    "aws_core__aws_ebs_volume",
+)
 
 HOLDS_GUARDDUTY_FINDING = "HOLDS_GUARDDUTY_FINDING__aws_core"
 HOLDS_SECURITYHUB_FINDING = "HOLDS_SECURITYHUB_FINDING__aws_core"
@@ -60,10 +89,10 @@ HOSTS_CONFORMANCE_PACK = "HOSTS_CONFORMANCE_PACK__aws_core"
 CONCERNS_RESOURCE = "CONCERNS_RESOURCE__aws_core"
 EVALUATED_UNDER_STANDARD = "EVALUATED_UNDER_STANDARD__aws_core"
 
-RELATION_GUARDDUTY_FINDINGS = "guardduty_detector.active_findings"
-RELATION_SECURITYHUB_FINDINGS = "securityhub_hub.active_findings"
+RELATION_GUARDDUTY_FINDINGS = "guardduty_detector.findings"
+RELATION_SECURITYHUB_FINDINGS = "securityhub_hub.findings"
 RELATION_STANDARDS_SUBSCRIPTIONS = "securityhub_hub.standards_subscriptions"
-RELATION_ANALYZER_FINDINGS = "access_analyzer.active_findings"
+RELATION_ANALYZER_FINDINGS = "access_analyzer.findings"
 RELATION_CONFIG_RULES = "account_region.config_rules"
 RELATION_CONFORMANCE_PACKS = "account_region.conformance_packs"
 
@@ -72,6 +101,17 @@ RELATION_CONFORMANCE_PACKS = "account_region.conformance_packs"
 #: first and Security Hub one severity label at a time from CRITICAL down, so the cap drops the
 #: least severe; Access Analyzer findings carry no severity and are read in the API's order.
 FINDINGS_CAP = 1000
+#: How far back the closed-findings read reaches: findings closed (archived, resolved) in the last 30
+#: days are read beside the active ones (aws-core-tap#264, ruling Q115a). Each closed read has its own
+#: cap of ``FINDINGS_CAP``, so closed findings never crowd out active ones.
+CLOSED_WINDOW_DAYS = 30
+#: Access Analyzer's closed statuses (read: botocore ``FindingStatus``: ACTIVE, ARCHIVED, RESOLVED).
+ACCESS_ANALYZER_CLOSED = ("ARCHIVED", "RESOLVED")
+#: The most pages the Access Analyzer closed read walks. Its filter has no date operator and no
+#: sort on updatedAt is documented (botocore ``SortCriteria.attributeName`` is free text with no
+#: listed values), so old closed findings can come first and every page must be read to find the
+#: recent ones; past this many pages the read stops and is recorded truncated.
+ACCESS_ANALYZER_CLOSED_MAX_PAGES = 50
 #: Page sizes: each API's documented maximum (read: botocore ``MaxResults`` shapes; Access
 #: Analyzer's ``maxResults`` is an unbounded integer, so its documented default page of 100 is asked).
 GUARDDUTY_PAGE = 50
@@ -111,6 +151,7 @@ PAGINATED_OPERATIONS: tuple[tuple[str, str], ...] = (
 SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
     ("guardduty", "get_findings"),
     ("guardduty", "get_findings_statistics"),
+    ("config", "get_custom_rule_policy"),
 )
 
 
@@ -138,50 +179,6 @@ def standards_id_of(standards_arn: str) -> str:
     return parsed.resource if parsed else ""
 
 
-#: What an IP address in stored free text is replaced with.
-IP_REDACTION = "[ip]"
-_IPV4 = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d])")
-#: An IPv6 candidate: one bounded run of hex digits, colons and dots (a single character class, no
-#: nested quantifier, so no catastrophic backtracking). The dot admits an embedded IPv4 tail
-#: (``2001:db8::192.0.2.1``), so the address is replaced whole. A candidate is replaced only when
-#: it has two or more colons and ``ipaddress`` accepts it, after a trailing sentence period is set aside.
-_IPV6 = re.compile(r"(?<![\w:.])[0-9A-Fa-f:.]{2,45}(?![\w:])")
-#: An EC2 private DNS host name spells its address with dashes (``ip-10-0-1-5``).
-_EC2_HOST = re.compile(r"\bip-(\d{1,3})-(\d{1,3})-(\d{1,3})-(\d{1,3})\b")
-
-
-def _is_ip(text: str) -> bool:
-    try:
-        ipaddress.ip_address(text)
-    except ValueError:
-        return False
-    return True
-
-
-def redact_ips(text: str) -> str:
-    """``text`` with every IPv6 or IPv4 address, and every EC2 ``ip-a-b-c-d`` host name, replaced by
-    ``IP_REDACTION``. A finding's title is service- or product-written free text that can name an
-    address it observed; only the address is removed, so the title stays readable.
-
-    IPv6 is replaced first, whole, so an IPv6 address with an embedded IPv4 tail never leaves its
-    network prefix behind; the IPv4 pass then sees only what is left."""
-
-    def ipv6(match: re.Match[str]) -> str:
-        candidate = match.group(0)
-        core = candidate.rstrip(".")
-        if core.count(":") >= 2 and _is_ip(core):
-            return IP_REDACTION + candidate[len(core) :]
-        return candidate
-
-    def ipv4(match: re.Match[str]) -> str:
-        return IP_REDACTION if _is_ip(match.group(0)) else match.group(0)
-
-    def host(match: re.Match[str]) -> str:
-        return IP_REDACTION if _is_ip(".".join(match.groups())) else match.group(0)
-
-    return _EC2_HOST.sub(host, _IPV4.sub(ipv4, _IPV6.sub(ipv6, text)))
-
-
 def _int(value: Any) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) else None
 
@@ -190,8 +187,37 @@ def _bool(value: Any) -> bool | None:
     return value if isinstance(value, bool) else None
 
 
+def _when(value: Any) -> datetime | None:
+    """A timestamp AWS returned (a datetime, or an ISO 8601 string), in UTC; None when unreadable."""
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if not isinstance(value, datetime):
+        return None
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
 def _str_list(values: Any) -> list[str]:
     return sorted({str(v) for v in values if v}) if isinstance(values, list) else []
+
+
+def _doc(value: Any) -> Any:
+    """A finding's own sub-document, JSON-safe, in AWS's shape; None when the finding carries none."""
+    return None if value is None else jsonable(value)
+
+
+def _parameters(raw: Any) -> Any:
+    """A Config rule's ``InputParameters``: a JSON object AWS returns as a string. The object when it
+    parses to one, ``{}`` when the rule has none, else the string verbatim (never dropped)."""
+    if raw in (None, ""):
+        return {}
+    try:
+        parsed = json.loads(str(raw))
+    except ValueError:
+        return str(raw)
+    return parsed if isinstance(parsed, dict) else str(raw)
 
 
 @dataclass
@@ -259,11 +285,13 @@ class FindingsReads:
 
     # -- GuardDuty ----------------------------------------------------------
 
-    def guardduty(self, region: str, detector_id: str, detector_key: str, detector_type: str) -> Prepared:
-        """Active findings of one detector, for the run's own account, most severe first."""
-        account = self.r.account_id
-        criteria = {"Criterion": {"service.archived": {"Equals": ["false"]}, "accountId": {"Equals": [account]}}}
-        filter_text = f"guardduty:ListFindings service.archived=false, accountId={account}"
+    def _since(self) -> datetime:
+        return datetime.now(UTC) - timedelta(days=CLOSED_WINDOW_DAYS)
+
+    def _guardduty_read(
+        self, region: str, detector_id: str, criteria: dict[str, Any], sort: str
+    ) -> tuple[_Walk, bool, list[dict[str, Any]], int]:
+        """One capped ``ListFindings`` and its ``GetFindings``: ``(listing, truncated, findings, skipped)``."""
         listed, truncated = self.r.capped_walk(
             "guardduty",
             region,
@@ -272,7 +300,7 @@ class FindingsReads:
             cap=FINDINGS_CAP,
             DetectorId=detector_id,
             FindingCriteria=criteria,
-            SortCriteria={"AttributeName": "severity", "OrderBy": "DESC"},
+            SortCriteria={"AttributeName": sort, "OrderBy": "DESC"},
             MaxResults=GUARDDUTY_PAGE,
         )
         ids = [str(i) for i in listed.items if i]
@@ -284,6 +312,29 @@ class FindingsReads:
             got = [f for f in (response or {}).get("Findings") or [] if isinstance(f, dict)]
             skipped += len(chunk) - len(got)
             findings.extend(got)
+        return listed, truncated, findings, skipped
+
+    def guardduty(self, region: str, detector_id: str, detector_key: str, detector_type: str) -> Prepared:
+        """Active findings of one detector, for the run's own account, most severe first; then the
+        findings it archived in the last ``CLOSED_WINDOW_DAYS`` days, most recently updated first."""
+        account = self.r.account_id
+        criteria = {"Criterion": {"service.archived": {"Equals": ["false"]}, "accountId": {"Equals": [account]}}}
+        closed_criteria = {
+            "Criterion": {
+                "service.archived": {"Equals": ["true"]},
+                "accountId": {"Equals": [account]},
+                # Epoch milliseconds (GuardDuty's documented form for updatedAt).
+                "updatedAt": {"GreaterThanOrEqual": int(self._since().timestamp() * 1000)},
+            }
+        }
+        filter_text = (
+            f"guardduty:ListFindings service.archived=false, accountId={account}; "
+            f"and service.archived=true, accountId={account}, updatedAt in the last {CLOSED_WINDOW_DAYS} days"
+        )
+        listed, truncated, findings, skipped = self._guardduty_read(region, detector_id, criteria, "severity")
+        closed, closed_cut, closed_findings, closed_skipped = self._guardduty_read(
+            region, detector_id, closed_criteria, "updatedAt"
+        )
 
         exact = self._guardduty_statistics(region, detector_id, criteria)
         if exact is not None:
@@ -300,20 +351,20 @@ class FindingsReads:
             )
 
         def emit() -> None:
-            unwritten = skipped
-            for finding in findings:
+            unwritten = skipped + closed_skipped
+            for finding in findings + closed_findings:
                 if not self._guardduty_finding(region, detector_id, detector_key, detector_type, finding):
                     unwritten += 1
             self._surface(
-                listed,
+                self.r.aggregate([listed, closed]),
                 RELATION_GUARDDUTY_FINDINGS,
                 HOLDS_GUARDDUTY_FINDING,
                 detector_type,
                 detector_key,
-                count=len(listed.items),
+                count=len(listed.items) + len(closed.items),
                 skipped=unwritten,
                 filter_text=filter_text,
-                truncated=truncated,
+                truncated=truncated or closed_cut,
             )
 
         return Prepared(fields, emit)
@@ -358,15 +409,24 @@ class FindingsReads:
         buckets = [b for b in resource.get("S3BucketDetails") or [] if isinstance(b, dict)]
         access_key = resource.get("AccessKeyDetails") or {}
         user_name = str(access_key.get("UserName") or "")
+        lambda_fn = resource.get("LambdaDetails") or {}
+        rds = resource.get("RdsDbInstanceDetails") or {}
+        ecs = resource.get("EcsClusterDetails") or {}
         resource_id = (
             instance_id
             or ",".join(str(b.get("Name") or "") for b in buckets if b.get("Name"))
             or user_name
             or str((resource.get("EksClusterDetails") or {}).get("Name") or "")
+            or str(lambda_fn.get("FunctionName") or "")
+            or str(rds.get("DbInstanceIdentifier") or "")
+            or str((resource.get("RdsLimitlessDbDetails") or {}).get("DbShardGroupIdentifier") or "")
+            or str(ecs.get("Name") or "")
+            or str((resource.get("RecoveryPointDetails") or {}).get("RecoveryPointArn") or "")
         )
         severity = finding.get("Severity")
-        title = redact_ips(str(finding.get("Title") or ""))
+        title = str(finding.get("Title") or "")
         finding_type = str(finding.get("Type") or "")
+        instance = resource.get("InstanceDetails") or {}
         fields: dict[str, Any] = {
             "name": (title or finding_type or finding_id)[:255],
             "finding_arn": arn,
@@ -388,6 +448,11 @@ class FindingsReads:
             "archived": _bool(service.get("Archived")),
             "created_at": str(finding.get("CreatedAt") or ""),
             "updated_at": str(finding.get("UpdatedAt") or ""),
+            # What the finding says about itself (aws-core-tap#264, Q114c); null when it carries none.
+            "description": str(finding.get("Description") or ""),
+            "action": _doc(service.get("Action")),
+            "network_interfaces": _doc(instance.get("NetworkInterfaces")),
+            "evidence": _doc(service.get("Evidence")),
             # AWS cannot tag a GuardDuty finding (lane `none`, tag_lanes.json).
             "tags": {},
         }
@@ -408,6 +473,10 @@ class FindingsReads:
             self._concerns(
                 GUARDDUTY_FINDING, arn, (IAM_USER, f"arn:{self.r.partition}:iam::{account}:user/{user_name}"), region
             )
+        for target_arn in _guardduty_resource_arns(resource):
+            target = resolve_arn(target_arn)
+            if target is not None and target[0] in GUARDDUTY_CONCERNS_TARGETS:
+                self._concerns(GUARDDUTY_FINDING, arn, target, region)
         return True
 
     # -- Security Hub -------------------------------------------------------
@@ -457,8 +526,9 @@ class FindingsReads:
 
     def securityhub(self, region: str) -> tuple[Prepared, Callable[[str, str, dict[str, str]], None]]:
         """Active findings for the run's own account in this region, one capped read per severity
-        label from CRITICAL down, sharing one budget of ``FINDINGS_CAP``. Returns the hub's count
-        fields and the writer, called with the hub's key once the hub is kept."""
+        label from CRITICAL down, sharing one budget of ``FINDINGS_CAP``; then the findings archived in
+        the last ``CLOSED_WINDOW_DAYS`` days, with a cap of their own. Returns the hub's count fields
+        (active findings only) and the writer, called with the hub's key once the hub is kept."""
         account = self.r.account_id
         reads: list[_Walk] = []
         findings: list[dict[str, Any]] = []
@@ -493,15 +563,34 @@ class FindingsReads:
             if cut:
                 truncated = True
                 break
-        combined = self.r.aggregate(reads)
+        active = self.r.aggregate(reads)
         fields = {
             "active_finding_counts": counts,
             "active_finding_counts_complete": exact,
-            "active_findings_truncated": truncated if combined.complete or truncated else None,
+            "active_findings_truncated": truncated if active.complete or truncated else None,
         }
+        # Findings whose record Security Hub archived in the window, most recently updated first.
+        closed, closed_cut = self.r.capped_walk(
+            "securityhub",
+            region,
+            "get_findings",
+            "Findings",
+            cap=FINDINGS_CAP,
+            Filters={
+                "AwsAccountId": [{"Value": account, "Comparison": "EQUALS"}],
+                "Region": [{"Value": region, "Comparison": "EQUALS"}],
+                "RecordState": [{"Value": "ARCHIVED", "Comparison": "EQUALS"}],
+                "UpdatedAt": [{"DateRange": {"Value": CLOSED_WINDOW_DAYS, "Unit": "DAYS"}}],
+            },
+            SortCriteria=[{"Field": "UpdatedAt", "SortOrder": "desc"}],
+            MaxResults=SECURITYHUB_PAGE,
+        )
+        reads.append(closed)
+        findings.extend(f for f in closed.items if isinstance(f, dict))
+        combined = self.r.aggregate(reads)
         filter_text = (
             f"securityhub:GetFindings AwsAccountId={account}, Region={region}, RecordState=ACTIVE, "
-            "one read per SeverityLabel"
+            f"one read per SeverityLabel; and RecordState=ARCHIVED, UpdatedAt in the last {CLOSED_WINDOW_DAYS} days"
         )
 
         def write(hub_arn: str, hub_type: str, standards: dict[str, str]) -> None:
@@ -519,7 +608,7 @@ class FindingsReads:
                 count=sum(len(r.items) for r in reads),
                 skipped=unwritten,
                 filter_text=filter_text,
-                truncated=truncated,
+                truncated=truncated or closed_cut,
             )
 
         return Prepared(fields), write
@@ -537,7 +626,8 @@ class FindingsReads:
             [s.get("StandardsId") for s in compliance.get("AssociatedStandards") or [] if isinstance(s, dict)]
         )
         resources = [r for r in finding.get("Resources") or [] if isinstance(r, dict)]
-        title = redact_ips(str(finding.get("Title") or ""))
+        title = str(finding.get("Title") or "")
+        severity = finding.get("Severity") or {}
         fields: dict[str, Any] = {
             "name": (title or finding_id)[:255],
             "finding_id": finding_id[:512],
@@ -547,7 +637,8 @@ class FindingsReads:
             "aws_account_id": str(finding.get("AwsAccountId") or ""),
             "region": str(finding.get("Region") or region),
             "title": title[:1024],
-            "severity_label": str((finding.get("Severity") or {}).get("Label") or ""),
+            "severity_label": str(severity.get("Label") or ""),
+            "severity_normalized": _int(severity.get("Normalized")),
             "workflow_status": str((finding.get("Workflow") or {}).get("Status") or ""),
             "record_state": str(finding.get("RecordState") or ""),
             # Present only on a control finding: "" otherwise.
@@ -555,12 +646,21 @@ class FindingsReads:
             "security_control_id": str(compliance.get("SecurityControlId") or ""),
             "associated_standards": associated,
             "resource_types": _str_list([r.get("Type") for r in resources]),
-            # A product may identify a resource by its address alone: redacted like the title.
-            "resource_ids": _str_list([redact_ips(str(r.get("Id") or "")) for r in resources]),
+            "resource_ids": _str_list([str(r.get("Id") or "") for r in resources]),
             "first_observed_at": str(finding.get("FirstObservedAt") or ""),
             "last_observed_at": str(finding.get("LastObservedAt") or ""),
             "created_at": str(finding.get("CreatedAt") or ""),
             "updated_at": str(finding.get("UpdatedAt") or ""),
+            # What the finding says about itself (aws-core-tap#264, Q114c), in ASFF's shape; null when absent.
+            "description": str(finding.get("Description") or ""),
+            "types": [str(v) for v in finding.get("Types") or [] if v],
+            "remediation": _doc(finding.get("Remediation")),
+            "network": _doc(finding.get("Network")),
+            "malware": _doc(finding.get("Malware")),
+            "vulnerabilities": _doc(finding.get("Vulnerabilities")),
+            "product_fields": _doc(finding.get("ProductFields")),
+            "compliance_status_reasons": _doc(compliance.get("StatusReasons")),
+            "finding_provider_fields": _doc(finding.get("FindingProviderFields")),
             # AWS cannot tag a finding (lane `none`, tag_lanes.json).
             "tags": {},
         }
@@ -585,42 +685,70 @@ class FindingsReads:
     # -- Access Analyzer ----------------------------------------------------
 
     def access_analyzer(self, region: str, analyzer_arn: str, analyzer_type: str, parent_type: str) -> Prepared:
-        """Active findings of one analyzer on the run's own account's resources."""
+        """Active findings of one analyzer on the run's own account's resources; then its ARCHIVED and
+        RESOLVED findings, of which those updated in the last ``CLOSED_WINDOW_DAYS`` days are kept. The
+        Access Analyzer filter has no date operator (read: botocore ``Criterion``: eq, neq, contains,
+        exists), so the window is applied to what the read returns."""
         account = self.r.account_id
         external = analyzer_type in EXTERNAL_ACCESS_ANALYZER_TYPES
         operation = "list_findings" if external else "list_findings_v2"
-        listed, truncated = self.r.capped_walk(
-            "accessanalyzer",
-            region,
-            operation,
-            "findings",
-            cap=FINDINGS_CAP,
-            analyzerArn=analyzer_arn,
-            filter={"status": {"eq": ["ACTIVE"]}, "resourceOwnerAccount": {"eq": [account]}},
-            maxResults=ACCESS_ANALYZER_PAGE,
+
+        def read(statuses: list[str], **window: Any) -> tuple[_Walk, bool]:
+            return self.r.capped_walk(
+                "accessanalyzer",
+                region,
+                operation,
+                "findings",
+                cap=FINDINGS_CAP,
+                analyzerArn=analyzer_arn,
+                filter={"status": {"eq": statuses}, "resourceOwnerAccount": {"eq": [account]}},
+                maxResults=ACCESS_ANALYZER_PAGE,
+                **window,
+            )
+
+        since = self._since()
+
+        def recent(finding: Any) -> bool:
+            """In the window as the page arrives, so only recent closed findings count against the
+            cap. A finding without a readable updatedAt is kept, never silently dropped."""
+            if not isinstance(finding, dict):
+                return True
+            when = _when(finding.get("updatedAt"))
+            return when is None or when >= since
+
+        listed, truncated = read(["ACTIVE"])
+        closed, closed_cut = read(
+            list(ACCESS_ANALYZER_CLOSED), keep=recent, max_pages=ACCESS_ANALYZER_CLOSED_MAX_PAGES
         )
         findings = [f for f in listed.items if isinstance(f, dict)]
+        closed_findings = [f for f in closed.items if isinstance(f, dict)]
         kinds = [str(f.get("findingType") or ("ExternalAccess" if external else "")) for f in findings]
         fields = self._counts(
             kinds, complete=listed.complete and not truncated, truncated=truncated if listed.complete else None
         )
-        filter_text = f"accessanalyzer:{'ListFindings' if external else 'ListFindingsV2'} status=ACTIVE, resourceOwnerAccount={account}"
+        name = "ListFindings" if external else "ListFindingsV2"
+        filter_text = (
+            f"accessanalyzer:{name} status=ACTIVE, resourceOwnerAccount={account}; "
+            f"and status in ARCHIVED, RESOLVED, resourceOwnerAccount={account}, "
+            f"kept when updatedAt is in the last {CLOSED_WINDOW_DAYS} days (applied per page, at most "
+            f"{ACCESS_ANALYZER_CLOSED_MAX_PAGES} pages)"
+        )
 
         def emit() -> None:
-            unwritten = len(listed.items) - len(findings)
-            for finding in findings:
+            unwritten = len(listed.items) - len(findings) + sum(1 for f in closed.items if not isinstance(f, dict))
+            for finding in findings + closed_findings:
                 if not self._analyzer_finding(region, analyzer_arn, parent_type, finding, external):
                     unwritten += 1
             self._surface(
-                listed,
+                self.r.aggregate([listed, closed]),
                 RELATION_ANALYZER_FINDINGS,
                 HOLDS_ACCESS_ANALYZER_FINDING,
                 parent_type,
                 analyzer_arn,
-                count=len(listed.items),
+                count=len(listed.items) + len(closed.items),
                 skipped=unwritten,
                 filter_text=filter_text,
-                truncated=truncated,
+                truncated=truncated or closed_cut,
             )
 
         return Prepared(fields, emit)
@@ -694,6 +822,7 @@ class FindingsReads:
                 continue
             name = str(rule.get("ConfigRuleName") or arn.rsplit("/", 1)[-1])
             source = rule.get("Source") or {}
+            policy = source.get("CustomPolicyDetails") or {}
             state = by_name.get(name)
             contributors = (state or {}).get("ComplianceContributorCount") or {}
             known = compliance.complete or state is not None
@@ -713,6 +842,11 @@ class FindingsReads:
                 "compliance_type": str((state or {}).get("ComplianceType") or "") if known else None,
                 "non_compliant_resource_count": _int(contributors.get("CappedCount")) if state is not None else None,
                 "non_compliant_count_capped": _bool(contributors.get("CapExceeded")) if state is not None else None,
+                # What the rule evaluates and with what (aws-core-tap#264, Q114c).
+                "scope": _doc(rule.get("Scope")) or {},
+                "input_parameters": _parameters(rule.get("InputParameters")),
+                "policy_runtime": str(policy.get("PolicyRuntime") or ""),
+                "policy_text": self._policy_text(region, name, source),
                 "tags": self.r.tags("config", region, "list_tags_for_resource", "list_kv", "Tags", ResourceArn=arn),
             }
             if not self.r.add_node(CONFIG_RULE, arn, name, fields, region):
@@ -730,6 +864,18 @@ class FindingsReads:
         self.r.footprint_surface(
             region, HOSTS_CONFIG_RULE, RELATION_CONFIG_RULES, read, count=len(read.items), skipped=skipped
         )
+
+    def _policy_text(self, region: str, name: str, source: dict[str, Any]) -> str | None:
+        """A custom policy rule's Guard policy body: ``""`` for a rule of another kind (it has none),
+        the text ``DescribeConfigRules`` returned when it returned one, else ``GetCustomRulePolicy``'s,
+        and None when that call failed."""
+        if source.get("Owner") != "CUSTOM_POLICY":
+            return ""
+        inline = (source.get("CustomPolicyDetails") or {}).get("PolicyText")
+        if inline:
+            return str(inline)
+        response, _ = self.r.call("config", region, "get_custom_rule_policy", ConfigRuleName=name)
+        return None if response is None else str(response.get("PolicyText") or "")
 
     def conformance_packs(self, region: str) -> None:
         """Every conformance pack in the region with its compliance summary. Contained by the
@@ -778,6 +924,29 @@ class FindingsReads:
         )
 
 
+def _guardduty_resource_arns(resource: dict[str, Any]) -> list[str]:
+    """The ARNs a GuardDuty finding's ``Resource`` names beyond the instance, buckets and access-key
+    user (aws-core-tap#264, ruling Q115b): a Lambda function, an RDS instance or Aurora Limitless shard
+    group, an ECS cluster and task, an EKS cluster, and the EBS volumes a malware scan scanned. Read:
+    botocore guardduty ``Resource``. Each is resolved by ``arn_resolver`` and the edge is sent only
+    when it resolves to a type the model's ``CONCERNS_RESOURCE`` declaration names
+    (``GUARDDUTY_CONCERNS_TARGETS``). An EBS snapshot, an AMI and a backup recovery point are named too,
+    but no aws_core type models them, so they are not read; the recovery point stays in
+    ``resource_id``."""
+    ecs = resource.get("EcsClusterDetails") or {}
+    candidates = [
+        (resource.get("LambdaDetails") or {}).get("FunctionArn"),
+        (resource.get("RdsDbInstanceDetails") or {}).get("DbInstanceArn"),
+        (resource.get("RdsLimitlessDbDetails") or {}).get("DbShardGroupArn"),
+        ecs.get("Arn"),
+        (ecs.get("TaskDetails") or {}).get("Arn"),
+        (resource.get("EksClusterDetails") or {}).get("Arn"),
+    ]
+    volumes = (resource.get("EbsVolumeDetails") or {}).get("ScannedVolumeDetails") or []
+    candidates += [v.get("VolumeArn") for v in volumes if isinstance(v, dict)]
+    return [str(c) for c in candidates if isinstance(c, str) and c.startswith("arn:")]
+
+
 def _asff_target(resource_id: str) -> tuple[str, str] | None:
     """``(entity type, natural key)`` of the grid resource an ASFF ``Resources[]`` entry names, or None
     (aws-core-tap#242, #252). Security Hub names a resource by ARN (read: ASFF ``Resource.Id``), and an account by
@@ -789,16 +958,16 @@ def _asff_target(resource_id: str) -> tuple[str, str] | None:
 
 
 __all__ = [
+    "CLOSED_WINDOW_DAYS",
     "CONCERNS_RESOURCE",
     "FINDINGS_CAP",
-    "IP_REDACTION",
+    "GUARDDUTY_CONCERNS_TARGETS",
     "PAGINATED_OPERATIONS",
     "SINGLE_OPERATIONS",
     "FindingsReads",
     "Prepared",
     "analyzer_finding_key",
     "guardduty_severity_label",
-    "redact_ips",
     "securityhub_finding_key",
     "standards_id_of",
 ]

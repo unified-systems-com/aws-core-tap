@@ -480,24 +480,39 @@ class _Reader:
         return result
 
     def capped_walk(
-        self, service: str, region: str, operation: str, result_key: str, *, cap: int, **params: Any
+        self,
+        service: str,
+        region: str,
+        operation: str,
+        result_key: str,
+        *,
+        cap: int,
+        keep: Callable[[Any], bool] | None = None,
+        max_pages: int | None = None,
+        **params: Any,
     ) -> tuple[_Walk, bool]:
         """Read one paginated call until its end or until ``cap`` items: ``(the read, truncated)``.
         Truncated means the cap was reached with a continuation token still outstanding (or more
         items on the last page than the cap allowed), so the listing is partial by design. A
-        failure is recorded as in ``walk``."""
+        failure is recorded as in ``walk``.
+
+        ``keep`` filters each page as it arrives: only kept items are held and count against
+        ``cap`` (a filter the API cannot apply server-side). ``max_pages`` stops the read after that
+        many pages; stopping with a continuation token outstanding is a truncation."""
         token = continuation_token(service)
         result = _Walk([], _now(), _now(), operation=operation)
         truncated = False
         try:
             fn: Callable[..., dict[str, Any]] = getattr(self.client(service, region), operation)
             next_token: str | None = None
-            for _ in range(_MAX_PAGES):
+            for pages in range(1, _MAX_PAGES + 1):
                 kwargs = dict(params)
                 if next_token:
                     kwargs[token] = next_token
                 response = fn(**kwargs)
                 page = list(response.get(result_key) or [])
+                if keep is not None:
+                    page = [item for item in page if keep(item)]
                 room = cap - len(result.items)
                 result.items.extend(page[:room])
                 next_token = response.get(token)
@@ -505,6 +520,9 @@ class _Reader:
                     truncated = True
                     break
                 if not next_token:
+                    break
+                if max_pages is not None and pages >= max_pages:
+                    truncated = True
                     break
             else:
                 raise EndpointConnectionError(endpoint_url=f"{operation}: continuation chain exceeded {_MAX_PAGES} pages")
