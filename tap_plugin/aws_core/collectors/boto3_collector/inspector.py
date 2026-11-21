@@ -305,6 +305,11 @@ def classify_step(step: dict[str, Any]) -> tuple[str, str] | None:
     return None
 
 
+def watermark_source(finding_type: str) -> str:
+    """The watermark source of one Inspector finding type (``findings.watermark_key``)."""
+    return f"inspector2:{finding_type}"
+
+
 @dataclass
 class Reach:
     """What one reachability finding's path says: its ends, its path components, and what matched nothing."""
@@ -532,7 +537,8 @@ class InspectorReads:
         selected = self.selected_types()
         fields: dict[str, Any] = {"inspector2_status": status, "inspector2_resource_status": resource_status}
         not_scanning = status if status in NOT_SCANNING else None
-        since = self.r.since("inspector2", region)
+        # One watermark per finding type, so a type left out of an earlier run is read in full when it is added.
+        since = {t: self.r.since(watermark_source(t), region) for t in selected}
         reads: dict[str, _TypeRead] = {}
         if not_scanning:
             self.r.notice(
@@ -550,7 +556,7 @@ class InspectorReads:
         else:
             counts, complete = self._totals(region, selected)
             for finding_type in selected:
-                reads[finding_type] = self._read(region, finding_type, since)
+                reads[finding_type] = self._read(region, finding_type, since[finding_type])
             cut = any(r.active_cut for r in reads.values())
             active_complete = all(r.active.complete for r in reads.values())
             fields.update(
@@ -567,12 +573,12 @@ class InspectorReads:
                 if not writer(region, finding):
                     unwritten += 1
             unwritten_by_relation[relation] = unwritten_by_relation.get(relation, 0) + unwritten
-        if reads:
+            # A finding read but not written keeps the previous watermark, so the next run asks for it again.
             self.r.mark_read(
-                "inspector2",
+                watermark_source(finding_type),
                 region,
-                [w for r in reads.values() for w in (r.active, r.closed)],
-                clean=not any(r.active_cut or r.closed_cut for r in reads.values()),
+                [read.active, read.closed],
+                clean=not (read.active_cut or read.closed_cut or unwritten),
             )
         for relation, edge_type, types in self.surfaces():
             chosen = tuple(t for t in types if t in selected)
@@ -582,7 +588,7 @@ class InspectorReads:
                 edge_type,
                 chosen or types,
                 [reads[t] for t in chosen if t in reads],
-                since=since,
+                since=min((since[t] for t in chosen if since.get(t) is not None), default=None),
                 unwritten=unwritten_by_relation.get(relation, 0),
                 not_scanning=not_scanning,
                 not_selected=not chosen,

@@ -314,6 +314,27 @@ def _inspector_row(n: int, **extra: Any) -> None:
 
 @pytest.mark.django_db
 @requires_compliance_core
+@pytest.mark.spec("req-aws-landing-zone-inspector-compliance-4")
+def test_held_vulnerabilities_are_found_by_id_or_alias_without_reading_other_rows() -> None:
+    """The alias lookup asks the database for the wanted names (jsonb ``?|``), not every row that has aliases."""
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    from tap_grid.services import create_node
+    from tap_plugin.aws_core.collectors.boto3_collector.compliance import held_vulnerabilities
+
+    create_node(VULNERABILITY, {"vuln_id": "CVE-2026-0042", "aliases": ["GHSA-aaaa-bbbb-cccc"]})
+    create_node(VULNERABILITY, {"vuln_id": "CVE-2026-0043", "aliases": ["GHSA-dddd-eeee-ffff"]})
+    create_node(VULNERABILITY, {"vuln_id": "CVE-2026-0044"})
+    with CaptureQueriesContext(connection) as queries:
+        by_alias = held_vulnerabilities(["GHSA-aaaa-bbbb-cccc"])
+    assert [v.vuln_id for v in by_alias] == ["CVE-2026-0042"]
+    assert "?|" in queries.captured_queries[-1]["sql"]
+    assert [v.vuln_id for v in held_vulnerabilities(["CVE-2026-0044"])] == ["CVE-2026-0044"]
+    assert held_vulnerabilities(["CVE-2026-9999"]) == []
+
+
+@pytest.mark.django_db
+@requires_compliance_core
 @pytest.mark.spec("req-aws-landing-zone-inspector-compliance-4", "req-aws-landing-zone-inspector-compliance-6")
 def test_stored_rows_are_projected_and_a_filled_cvss_is_kept() -> None:
     from tap_grid.registry import get_model_class

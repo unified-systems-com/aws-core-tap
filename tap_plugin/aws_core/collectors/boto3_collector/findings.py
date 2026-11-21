@@ -122,8 +122,15 @@ INCREMENTAL_SERVICES = frozenset({"guardduty", "securityhub", "inspector2"})
 
 
 def watermark_key(service: str, account_id: str, region: str) -> str:
-    """One source's key in ``findings_read_through``."""
+    """One source's key in ``findings_read_through``. ``service`` may name one of a service's reads as
+    ``<service>:<part>`` (Inspector keeps one watermark per finding type, so a type the operator adds later is read
+    in full rather than from another type's watermark)."""
     return f"{service}|{account_id}|{region}"
+
+
+def incremental(service: str) -> bool:
+    """Whether ``service`` (or ``<service>:<part>``) is read incrementally."""
+    return service.split(":", 1)[0] in INCREMENTAL_SERVICES
 
 
 def read_through_of(source: str) -> dict[str, str]:
@@ -1064,6 +1071,7 @@ __all__ = [
     "READ_THROUGH",
     "WATERMARK_OVERLAP",
     "read_through_of",
+    "incremental",
     "watermark_key",
     "GUARDDUTY_CONCERNS_TARGETS",
     "PAGINATED_OPERATIONS",

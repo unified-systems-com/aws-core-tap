@@ -375,7 +375,7 @@ def held_vulnerabilities(names: Iterable[str]) -> list[HeldVulnerability]:
     wanted = {n for n in names if n}
     if not wanted:
         return []
-    rows = model.objects.filter(Q(vuln_id__in=wanted) | Q(aliases__isnull=False)).values_list("vuln_id", "aliases", "cvss_score")
+    rows = model.objects.filter(Q(vuln_id__in=wanted) | Q(aliases__has_any_keys=sorted(wanted))).values_list("vuln_id", "aliases", "cvss_score")
     out = []
     for vuln_id, aliases, score in rows:
         aliases = tuple(str(a) for a in aliases or ())

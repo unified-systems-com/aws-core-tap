@@ -503,7 +503,7 @@ def test_a_watermark_filters_the_reads_and_a_clean_read_moves_it() -> None:
 
     since = datetime(2026, 11, 19, 11, 45, tzinfo=UTC)
     started = datetime(2026, 11, 20, 12, 0, tzinfo=UTC)
-    key = watermark_key("inspector2", ACCOUNT, REGION)
+    key = watermark_key("inspector2:PACKAGE_VULNERABILITY", ACCOUNT, REGION)
     with _Stubbed() as aws:
         expect_status(aws.stub)
         expect_totals(aws.stub, "PACKAGE_VULNERABILITY", {"all": 0})
@@ -516,6 +516,53 @@ def test_a_watermark_filters_the_reads_and_a_clean_read_moves_it() -> None:
     surface = _listing(reader, "account_region.inspector2_findings").surface(["b"])
     assert "incremental: updatedAt >= 2026-11-19T11:45:00Z" in surface["filter"]
     assert surface["enumeration_complete"] is False
+
+
+@pytest.mark.spec("req-aws-landing-zone-findings-10")
+def test_a_finding_type_added_later_is_read_in_full_not_from_another_types_watermark() -> None:
+    """Each finding type keeps its own watermark: a package-only run's watermark never filters a code read."""
+    from tap_plugin.aws_core.collectors.boto3_collector.findings import watermark_key
+
+    since = datetime(2026, 11, 19, 11, 45, tzinfo=UTC)
+    started = datetime(2026, 11, 20, 12, 0, tzinfo=UTC)
+    package_key = watermark_key("inspector2:PACKAGE_VULNERABILITY", ACCOUNT, REGION)
+    code_key = watermark_key("inspector2:CODE_VULNERABILITY", ACCOUNT, REGION)
+    with _Stubbed() as aws:
+        expect_status(aws.stub)
+        expect_totals(aws.stub, "PACKAGE_VULNERABILITY", {"all": 0})
+        expect_totals(aws.stub, "CODE_VULNERABILITY", {"all": 0})
+        expect_list(aws.stub, "PACKAGE_VULNERABILITY", "ACTIVE", [], since=since)
+        expect_list(aws.stub, "PACKAGE_VULNERABILITY", "CLOSED", [])
+        expect_list(aws.stub, "CODE_VULNERABILITY", "ACTIVE", [])  # no updatedAt: a full read
+        expect_list(aws.stub, "CODE_VULNERABILITY", "CLOSED", [])
+        reader = _reader(
+            aws,
+            types=("PACKAGE_VULNERABILITY", "CODE_VULNERABILITY"),
+            read_through={package_key: "2026-11-19T11:45:00Z"},
+            run_started=started,
+        )
+        reader.inspector.read(REGION)
+        aws.stub.assert_no_pending_responses()
+    assert reader.result.read_through == {package_key: "2026-11-20T11:45:00Z", code_key: "2026-11-20T11:45:00Z"}
+
+
+@pytest.mark.spec("req-aws-landing-zone-findings-10")
+def test_a_finding_read_but_not_written_keeps_the_previous_watermark(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A refused write is not a clean read: the next run asks for that finding again."""
+    from tap_plugin.aws_core.collectors.boto3_collector.findings import watermark_key
+
+    monkeypatch.setattr(inspector_mod.InspectorReads, "_finding", lambda self, region, finding: False)
+    key = watermark_key("inspector2:PACKAGE_VULNERABILITY", ACCOUNT, REGION)
+    with _Stubbed() as aws:
+        expect_status(aws.stub)
+        expect_totals(aws.stub, "PACKAGE_VULNERABILITY", {"all": 1, "high": 1})
+        expect_list(aws.stub, "PACKAGE_VULNERABILITY", "ACTIVE", [package_finding(1, ec2_instance())])
+        expect_list(aws.stub, "PACKAGE_VULNERABILITY", "CLOSED", [])
+        reader = _reader(aws, run_started=datetime(2026, 11, 20, 12, 0, tzinfo=UTC))
+        reader.inspector.read(REGION)
+        aws.stub.assert_no_pending_responses()
+    assert key not in reader.result.read_through
+    assert reader.result.read_through == {}  # no other form of Inspector key moved either
 
 
 # ---------------------------------------------------------------------------

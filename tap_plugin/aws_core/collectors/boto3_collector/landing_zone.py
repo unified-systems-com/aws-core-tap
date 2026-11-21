@@ -522,7 +522,7 @@ class _Reader:
     def since(self, service: str, region: str) -> datetime | None:
         """When this source's last clean read began (minus the overlap): the incremental filter's lower bound, or
         None for a full read (no watermark, or a service with no date filter)."""
-        if service not in findings_mod.INCREMENTAL_SERVICES:
+        if not findings_mod.incremental(service):
             return None
         raw = self.previous_read_through.get(findings_mod.watermark_key(service, self.account_id, region))
         return findings_mod._when(raw) if raw else None
@@ -532,7 +532,7 @@ class _Reader:
         ``clean`` says nothing was cut or unfetched does the source get a new watermark (the run's start minus the
         overlap); one unclean read keeps the previous value for the whole source."""
         key = findings_mod.watermark_key(service, self.account_id, region)
-        if service not in findings_mod.INCREMENTAL_SERVICES:
+        if not findings_mod.incremental(service):
             return
         if not clean or not all(w.complete for w in walks):
             self._unclean.add(key)
