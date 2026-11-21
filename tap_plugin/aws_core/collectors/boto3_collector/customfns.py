@@ -29,7 +29,7 @@ from urllib.parse import urlsplit, urlunsplit
 from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads
-from .ecs import shared_walk
+from .ecs import describe_task_definitions, referenced_task_definitions, shared_walk
 from .elb_topology import LoadBalancerListeners
 from .elb_topology import forwards as elb_forwards
 from .elb_topology import shared_walk as shared_listener_walk
@@ -3421,6 +3421,22 @@ def ecs_containers_described(session: Any, *, client_for: Any) -> Iterator[dict[
     yield from shared_walk(session, client_for).containers
 
 
+def ecs_task_definitions_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """ECS task definition revisions: the ACTIVE ones, and every one a task or service of the region names
+    (req-aws-collector-ecs-25), so ``USES_TASK_DEFINITION`` reaches a deregistered revision a task still runs.
+
+    The references come from the shared ECS walk. A walk that failed (``ListClusters`` denied) names none, and the
+    ACTIVE revisions are still read: they never depended on it.
+    """
+    try:
+        walk = shared_walk(session, client_for)
+    except (BotoCoreError, ClientError, SourceError):
+        walk = None
+    referenced = referenced_task_definitions(walk) if walk is not None else []
+    undescribed = walk.undescribed_task_definitions if walk is not None else None
+    yield from describe_task_definitions(client_for("ecs"), referenced, undescribed)
+
+
 # Manifest custom_fn name -> callable.
 _CUSTOM_FNS = {
     "aws_account_singleton": aws_account_singleton,
@@ -3525,6 +3541,7 @@ _CUSTOM_FNS = {
     "ecs_services_described": ecs_services_described,
     "ecs_tasks_described": ecs_tasks_described,
     "ecs_containers_described": ecs_containers_described,
+    "ecs_task_definitions_described": ecs_task_definitions_described,
 }
 
 

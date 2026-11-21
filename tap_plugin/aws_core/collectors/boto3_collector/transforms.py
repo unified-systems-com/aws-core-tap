@@ -174,6 +174,58 @@ def customer_managed_policy_arn_or_none(value: object) -> str | None:
     return value.strip() if isinstance(value, str) and account_of_iam_arn(value) is not None else None
 
 
+#: A Secrets Manager secret's own ARN: ``arn:<partition>:secretsmanager:<region>:<account>:secret:<name>-<6 chars>``.
+#: A secret name holds no colon, and Secrets Manager appends a hyphen and six characters to it in the ARN.
+_SECRET_ARN_RE = re.compile(
+    rf"^arn:{PARTITION_RE}:secretsmanager:[a-z0-9-]+:\d{{12}}:secret:[A-Za-z0-9/_+=.@-]+-[A-Za-z0-9]{{6}}$"
+)
+#: A Parameter Store parameter name: letters, digits and ``_.-/`` (Systems Manager's rule for a name).
+_PARAMETER_NAME_RE = re.compile(r"^[A-Za-z0-9_.\-/]+$")
+
+
+def secrets_manager_secret_arn_or_none(value: object) -> str | None:
+    """A task definition's ``secrets[].valueFrom`` -> the Secrets Manager secret's natural key (its ARN), or None.
+
+    ECS takes the secret's full ARN, optionally followed by ``:json-key:version-stage:version-id`` (each part may be
+    empty, the colons are written), to pick a JSON key or a version of the secret. The secret is the first seven
+    colon-separated segments either way. A partial ARN (without the six-character suffix Secrets Manager adds) does
+    not equal the secret's key, and anything else, a Parameter Store ARN or name included, is not a secret: both are
+    None (no edge).
+    """
+    if not isinstance(value, str):
+        return None
+    parts = value.strip().split(":")
+    if len(parts) not in (7, 10):
+        return None
+    candidate = ":".join(parts[:7])
+    return candidate if _SECRET_ARN_RE.match(candidate) else None
+
+
+def ssm_parameter_arn(value: object, *, source_key: object = None) -> str | None:
+    """A task definition's ``secrets[].valueFrom`` -> the Parameter Store parameter's natural key (its ARN), or None.
+
+    ECS takes a parameter's full ARN, or, for a parameter in the task's own region, its name. A name is turned into
+    ``arn:<partition>:ssm:<region>:<account>:parameter/<name without its leading slash>``, the ARN
+    ``DescribeParameters`` reports, with partition, region and account read from ``source_key``, the task
+    definition's own ARN (a task definition reads parameters of its own account). Anything else, a Secrets Manager
+    ARN included, is None (no edge).
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    candidate = value.strip()
+    if candidate.startswith("arn:"):
+        parsed = parse_arn(candidate)
+        if parsed is None or parsed.service != "ssm" or not parsed.resource.startswith("parameter/"):
+            return None
+        return candidate
+    if not _PARAMETER_NAME_RE.match(candidate) or not candidate.strip("/"):
+        return None
+    source = parse_arn(source_key)
+    if source is None or not source.region or not source.account.isdigit():
+        return None
+    return build_arn(source.partition, "ssm", source.region, source.account, "parameter/" + candidate.lstrip("/"))
+
+
 # Manifest transform name -> callable. The single source of truth wired into
 # the engine's TransformRegistry by build_transform_registry().
 _TRANSFORMS: dict[str, Callable[..., Any]] = {
@@ -185,6 +237,8 @@ _TRANSFORMS: dict[str, Callable[..., Any]] = {
     "elasticache_subnet_group_arn": elasticache_subnet_group_arn,
     "rds_instance_arn": rds_instance_arn,
     "rds_cluster_arn": rds_cluster_arn,
+    "secrets_manager_secret_arn_or_none": secrets_manager_secret_arn_or_none,
+    "ssm_parameter_arn": ssm_parameter_arn,
 }
 
 
@@ -194,7 +248,9 @@ _PARTITION_AWARE = frozenset({"s3_bucket_name_from_origin_domain", "s3_bucket_ar
 
 # Transforms that read the REFERRING node's natural key (its ARN) for the region and account the
 # referring value does not carry (TransformRegistry.register(source_aware=True)).
-_SOURCE_AWARE = frozenset({"log_group_arn", "elasticache_subnet_group_arn", "rds_instance_arn", "rds_cluster_arn"})
+_SOURCE_AWARE = frozenset(
+    {"log_group_arn", "elasticache_subnet_group_arn", "rds_instance_arn", "rds_cluster_arn", "ssm_parameter_arn"}
+)
 
 
 def build_transform_registry(partition: str = PARTITION_AWS) -> TransformRegistry:

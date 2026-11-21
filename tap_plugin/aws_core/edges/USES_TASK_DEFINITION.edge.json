@@ -1,0 +1,18 @@
+{
+  "slug": "USES_TASK_DEFINITION__aws_core",
+  "name": "Uses Task Definition",
+  "description": "An ECS task runs from a task definition revision, or an ECS service launches its tasks from one (task -> revision, service -> revision): the task's taskDefinitionArn, the service's taskDefinition. A revision is immutable, so a task's edge names exactly what it ran; a service's names the revision it launches now. The revision a running task names is collected even when it is deregistered (INACTIVE), so the edge does not dangle. A reference, not containment: a revision outlives the tasks that ran it.",
+  "sources": [
+    "aws_core__aws_ecs_task",
+    "aws_core__aws_ecs_service"
+  ],
+  "targets": [
+    "aws_core__aws_ecs_task_definition"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}
