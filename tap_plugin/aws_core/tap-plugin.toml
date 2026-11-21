@@ -14,7 +14,12 @@ plugin_version = "0.8.3" # x-release-please-version
 # 0.4.2: the first core release that builds CI, dev and test databases from the models instead of
 # replaying every migration (unified-systems-com/tap#1258). Plugin CI tests against the core tag at
 # this floor, so raising it is what lets this plugin's CI skip the ~22-minute migrate from zero.
-requires_tap = ">=0.4.2"
+# 0.4.3: the first core release that carries compound edges (unified-systems-com/tap PR 1268, req-grid-edge-compound:
+# BaseModel.COMPOUND_EDGE, tap_grid.compound_edges, the E006 boot check and the retire-with-an-end delete walk), which
+# aws_inspector2_reachability_finding declares (aws-core-tap#261). WAITING ON THAT RELEASE: 0.4.3 is not cut yet, so
+# this floor names the release it will be; the PR is held until it exists. On an older core the declaration is an
+# unknown class attribute and the finding would not retire with its gateway or interface.
+requires_tap = ">=0.4.3"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
@@ -941,6 +946,7 @@ aws_core__aws_securityhub_standards_subscription = "tap_plugin.aws_core.models.a
 aws_core__aws_access_analyzer_finding = "tap_plugin.aws_core.models.aws_access_analyzer_finding.AwsAccessAnalyzerFinding"
 aws_core__aws_config_rule = "tap_plugin.aws_core.models.aws_config_rule.AwsConfigRule"
 aws_core__aws_inspector2_finding = "tap_plugin.aws_core.models.aws_inspector2_finding.AwsInspector2Finding"
+aws_core__aws_inspector2_reachability_finding = "tap_plugin.aws_core.models.aws_inspector2_reachability_finding.AwsInspector2ReachabilityFinding"
 aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.models.aws_config_conformance_pack.AwsConfigConformancePack"
 aws_core__aws_transit_gateway = "tap_plugin.aws_core.models.transit_gateway.TransitGateway"
 aws_core__aws_transit_gateway_attachment = "tap_plugin.aws_core.models.transit_gateway_attachment.TransitGatewayAttachment"
@@ -1072,6 +1078,11 @@ HOLDS_ACCESS_ANALYZER_FINDING__aws_core = "edges/HOLDS_ACCESS_ANALYZER_FINDING.e
 HOSTS_CONFIG_RULE__aws_core = "edges/HOSTS_CONFIG_RULE.edge.json"
 HOSTS_CONFORMANCE_PACK__aws_core = "edges/HOSTS_CONFORMANCE_PACK.edge.json"
 HOSTS_INSPECTOR2_FINDING__aws_core = "edges/HOSTS_INSPECTOR2_FINDING.edge.json"
+# The reachability compound edge (req-grid-edge-compound, aws-core-tap#261): the finding is the middle node.
+HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core = "edges/HOSTS_INSPECTOR2_REACHABILITY_FINDING.edge.json"
+REACHABILITY_SOURCE__aws_core = "edges/REACHABILITY_SOURCE.edge.json"
+REACHABILITY_DESTINATION__aws_core = "edges/REACHABILITY_DESTINATION.edge.json"
+TRAVERSES_COMPONENT__aws_core = "edges/TRAVERSES_COMPONENT.edge.json"
 CONCERNS_RESOURCE__aws_core = "edges/CONCERNS_RESOURCE.edge.json"
 EVALUATED_UNDER_STANDARD__aws_core = "edges/EVALUATED_UNDER_STANDARD.edge.json"
 RETRIEVES_SOURCE_FROM__aws_core = "edges/RETRIEVES_SOURCE_FROM.edge.json"
@@ -1167,6 +1178,7 @@ aws_core__aws_config_conformance_pack = "tap_plugin.aws_core.falsifiers.Conforma
 # Inspector v2 findings (aws-core-tap#261, collectors/boto3_collector/inspector.py): the footprint contains them;
 # the surfaces are filtered and capped, so never complete, and the falsifier is registered so the triple holds.
 aws_core__aws_inspector2_finding = "tap_plugin.aws_core.falsifiers.InspectorFindingFalsifier"
+aws_core__aws_inspector2_reachability_finding = "tap_plugin.aws_core.falsifiers.InspectorFindingFalsifier"
 # ECS (aws-core-tap#211): EcsCluster -> RUNS_TASK -> task, EcsTask -> RUNS_CONTAINER -> container, each with a
 # per-parent surface recorded by the ECS walk (collectors/boto3_collector/ecs.py). A stopped task is recorded
 # while ECS lists it and retired after (ruled 2026-11-09). Registered, not armed: reconcile authority stays off.

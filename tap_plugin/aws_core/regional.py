@@ -180,6 +180,13 @@ LANDING_ZONE_CHILDREN: Final[tuple[RegionalChild, ...]] = (
         "an Amazon Inspector package-vulnerability finding",
         "inspector2:ListFindings",
     ),
+    RegionalChild(
+        "aws_core__aws_inspector2_reachability_finding",
+        "HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core",
+        "account_region.inspector2_reachability_findings",
+        "an Amazon Inspector network-reachability finding",
+        "inspector2:ListFindings",
+    ),
 )
 
 LANDING_ZONE_CHILD_BY_TYPE: Final = {c.entity_type: c for c in LANDING_ZONE_CHILDREN}

@@ -21,6 +21,10 @@ packages, a code finding's CWEs, detector, rule and file location) verbatim. ``r
 stored: the node the finding concerns already holds those facts. In GovCloud the code type returns nothing (no
 Lambda code scanning there), which is stored as such.
 
+A ``NETWORK_REACHABILITY`` finding is the middle node of the first compound edge (``req-grid-edge-compound``):
+``REACHABILITY_SOURCE`` from the entry gateway, ``REACHABILITY_DESTINATION`` to the network interface and
+``TRAVERSES_COMPONENT`` to each route table, security group and network ACL on the path (:func:`read_path`).
+
 Nothing here was observed against a live Inspector account: shapes and filters are read from botocore's
 ``inspector2`` model, and the tests drive this module through ``botocore.stub.Stubber``.
 """
@@ -52,8 +56,43 @@ CONCERNS_TARGETS: tuple[str, ...] = (EC2_INSTANCE, LAMBDA_FUNCTION, ECR_REPOSITO
 HOSTS_INSPECTOR2_FINDING = "HOSTS_INSPECTOR2_FINDING__aws_core"
 RELATION_INSPECTOR2_FINDINGS = "account_region.inspector2_findings"
 
+# --- the reachability compound edge (req-aws-landing-zone-inspector-reachability) ---------------------------------
+REACHABILITY_FINDING = "aws_core__aws_inspector2_reachability_finding"
+HOSTS_INSPECTOR2_REACHABILITY_FINDING = "HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core"
+RELATION_INSPECTOR2_REACHABILITY_FINDINGS = "account_region.inspector2_reachability_findings"
+REACHABILITY_SOURCE = "REACHABILITY_SOURCE__aws_core"
+REACHABILITY_DESTINATION = "REACHABILITY_DESTINATION__aws_core"
+TRAVERSES_COMPONENT = "TRAVERSES_COMPONENT__aws_core"
+INTERNET_GATEWAY = "aws_core__aws_internet_gateway"
+VPN_GATEWAY = "aws_core__aws_ec2_vpn_gateway"
+PEERING_CONNECTION = "aws_core__aws_ec2_vpc_peering_connection"
+ALB = "aws_core__aws_alb"
+NETWORK_INTERFACE = "aws_core__aws_ec2_network_interface"
+ROUTE_TABLE = "aws_core__aws_route_table"
+SECURITY_GROUP = "aws_core__aws_security_group"
+NETWORK_ACL = "aws_core__aws_network_acl"
+#: The closed lists the role edges declare (``edges/REACHABILITY_SOURCE.edge.json`` and ``TRAVERSES_COMPONENT``).
+SOURCE_TYPES: tuple[str, ...] = (INTERNET_GATEWAY, VPN_GATEWAY, PEERING_CONNECTION, ALB)
+PATH_TYPES: tuple[str, ...] = (ROUTE_TABLE, SECURITY_GROUP, NETWORK_ACL)
+#: AWS resource-id prefixes, each documented with its resource (``igw-``, ``vgw-``, ``pcx-``, ``rtb-``, ``sg-``,
+#: ``acl-``, ``eni-``), and the aws_core type keyed by that id. A step's role is read from this, or from its ARN.
+ID_PREFIXES: dict[str, str] = {
+    "igw-": INTERNET_GATEWAY,
+    "vgw-": VPN_GATEWAY,
+    "pcx-": PEERING_CONNECTION,
+    "rtb-": ROUTE_TABLE,
+    "sg-": SECURITY_GROUP,
+    "acl-": NETWORK_ACL,
+    "eni-": NETWORK_INTERFACE,
+}
+#: ``Step.componentType`` values whose meaning AWS documents. botocore types the member as a free string with no
+#: enum, and no AWS page found lists its values (searched 2026-11-20), so the table is empty: every value is listed
+#: in ``component_types_unmatched`` and the role comes from the id or ARN. Fill it from live findings.
+DOCUMENTED_COMPONENT_TYPES: dict[str, str] = {}
+
 PACKAGE_VULNERABILITY = "PACKAGE_VULNERABILITY"
 CODE_VULNERABILITY = "CODE_VULNERABILITY"
+NETWORK_REACHABILITY = "NETWORK_REACHABILITY"
 #: Every finding type botocore's ``FindingType`` enum names, in the order a run reads them (read: botocore 1.44.4).
 #: ``inspector_finding_types`` in the credential down-selects them; absent, all are read (ruling Q124a).
 FINDING_TYPES: tuple[str, ...] = ("PACKAGE_VULNERABILITY", "CODE_VULNERABILITY", "NETWORK_REACHABILITY")
@@ -141,6 +180,76 @@ def concerned_resource(resource_type: str | None, resource_id: str | None) -> tu
             return ECR_REPOSITORY, arn
         return None
     return None
+
+
+def classify_step(step: dict[str, Any]) -> tuple[str, str] | None:
+    """``(aws_core type, natural key)`` of one path step: from its ``componentId``'s documented resource-id prefix,
+    else from its ``componentArn`` (or an ARN-shaped id) read by ``arn_resolver``; None when neither names a type the
+    role edges can reach. ``componentType`` plays no part (``DOCUMENTED_COMPONENT_TYPES`` is empty)."""
+    from .arn_resolver import resolve_arn
+
+    component_id = str(step.get("componentId") or "")
+    for prefix, entity_type in ID_PREFIXES.items():
+        if component_id.startswith(prefix):
+            return entity_type, component_id
+    for value in (step.get("componentArn"), component_id):
+        if isinstance(value, str) and value.startswith("arn:"):
+            target = resolve_arn(value)
+            if target is not None and target[0] in (*SOURCE_TYPES, *PATH_TYPES, NETWORK_INTERFACE):
+                return target
+    return None
+
+
+@dataclass
+class Reach:
+    """What one reachability finding's path says: its ends, its path components, and what matched nothing."""
+
+    source: tuple[str, str] | None = None
+    destination: tuple[str, str] | None = None
+    path: list[tuple[int, str, str]] = field(default_factory=list)
+    unmatched_steps: list[dict[str, Any]] = field(default_factory=list)
+    component_types_unmatched: list[str] = field(default_factory=list)
+
+
+def read_path(steps: Any) -> Reach:
+    """The compound edge's pieces from ``networkPath.steps``. The first gateway step is the source; the last
+    network-interface step is the destination; every route table, security group and network ACL is on the path.
+    A step no tabled type matches, a second gateway and an earlier interface are listed in ``unmatched_steps``."""
+    reach = Reach()
+    steps = [s for s in steps or [] if isinstance(s, dict)]
+    types: list[str] = []
+    interfaces: list[tuple[int, tuple[str, str]]] = []
+    for index, step in enumerate(steps):
+        component_type = str(step.get("componentType") or "")
+        if component_type and component_type not in DOCUMENTED_COMPONENT_TYPES and component_type not in types:
+            types.append(component_type)
+        target = classify_step(step)
+        record = {"step": index, "componentId": step.get("componentId"), "componentType": step.get("componentType")}
+        if target is None:
+            reach.unmatched_steps.append({**record, "reason": "no tabled aws_core type matches its id or ARN"})
+        elif target[0] in SOURCE_TYPES:
+            if reach.source is None:
+                reach.source = target
+            else:
+                reach.unmatched_steps.append({**record, "reason": "a second gateway on the path; the first is the source"})
+        elif target[0] in PATH_TYPES:
+            reach.path.append((index, *target))
+        else:
+            interfaces.append((index, target))
+    if interfaces:
+        reach.destination = interfaces[-1][1]
+        for index, _target in interfaces[:-1]:
+            step = steps[index]
+            reach.unmatched_steps.append(
+                {
+                    "step": index,
+                    "componentId": step.get("componentId"),
+                    "componentType": step.get("componentType"),
+                    "reason": "a network interface before the last; the last is the destination",
+                }
+            )
+    reach.component_types_unmatched = types
+    return reach
 
 
 @dataclass
@@ -394,6 +503,11 @@ class InspectorReads:
         return {
             PACKAGE_VULNERABILITY: (RELATION_INSPECTOR2_FINDINGS, HOSTS_INSPECTOR2_FINDING, self._finding),
             CODE_VULNERABILITY: (RELATION_INSPECTOR2_FINDINGS, HOSTS_INSPECTOR2_FINDING, self._finding),
+            NETWORK_REACHABILITY: (
+                RELATION_INSPECTOR2_REACHABILITY_FINDINGS,
+                HOSTS_INSPECTOR2_REACHABILITY_FINDING,
+                self._reachability_finding,
+            ),
         }
 
     # -- writing ------------------------------------------------------------
@@ -483,6 +597,40 @@ class InspectorReads:
             )
         return True
 
+    def _reachability_finding(self, region: str, finding: dict[str, Any]) -> bool:
+        """The middle node of the reachability compound edge, its role edges and its containment."""
+        common = self._common(region, finding)
+        arn = common["finding_arn"]
+        if not arn:
+            return False
+        details = finding.get("networkReachabilityDetails") or {}
+        ports = details.get("openPortRange") or {}
+        steps = (details.get("networkPath") or {}).get("steps")
+        reach = read_path(steps)
+        begin, end = ports.get("begin"), ports.get("end")
+        fields: dict[str, Any] = {
+            "name": (common["title"] or arn)[:255],
+            **common,
+            "protocol": _str(details.get("protocol")),
+            "open_port_begin": begin if isinstance(begin, int) and not isinstance(begin, bool) else None,
+            "open_port_end": end if isinstance(end, int) and not isinstance(end, bool) else None,
+            "network_path": _doc(steps),
+            "component_types_unmatched": reach.component_types_unmatched if steps is not None else None,
+            "unmatched_steps": reach.unmatched_steps if steps is not None else None,
+        }
+        if not self.r.add_node(REACHABILITY_FINDING, arn, str(fields["name"]), fields, region):
+            return False
+        self.r.hosts(HOSTS_INSPECTOR2_REACHABILITY_FINDING, region, REACHABILITY_FINDING, arn)
+        if reach.source is not None:
+            self.r.add_edge(REACHABILITY_SOURCE, reach.source[0], reach.source[1], REACHABILITY_FINDING, arn, region)
+        if reach.destination is not None:
+            self.r.add_edge(
+                REACHABILITY_DESTINATION, REACHABILITY_FINDING, arn, reach.destination[0], reach.destination[1], region
+            )
+        for index, entity_type, key in reach.path:
+            self.r.add_edge(TRAVERSES_COMPONENT, REACHABILITY_FINDING, arn, entity_type, key, region, properties={"step": index})
+        return True
+
     def _image_host(self, digest: str) -> bool:
         """Stage computing_core's image host for ``digest`` once, as the ECS reader does (``ecs._host_envelope``):
         a host the grid holds is sent with its key and kind only. False when the host type is refused."""
@@ -515,6 +663,10 @@ class InspectorReads:
 
 __all__ = [
     "CONCERNS_TARGETS",
+    "DOCUMENTED_COMPONENT_TYPES",
+    "REACHABILITY_FINDING",
+    "classify_step",
+    "read_path",
     "HOSTS_INSPECTOR2_FINDING",
     "INSPECTOR_FINDING",
     "FINDING_TYPES",

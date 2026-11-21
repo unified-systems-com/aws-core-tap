@@ -1,0 +1,30 @@
+{
+  "slug": "TRAVERSES_COMPONENT__aws_core",
+  "name": "Traverses Component",
+  "description": "The path role of the reachability compound edge (req-grid-edge-compound): an Amazon Inspector v2 network-reachability finding -> each route table, security group and network ACL its networkPath.steps passes through. The property step is the component's position in the path (0-based), not identity. A reference that retires nothing: deleting a component ends this edge and leaves the finding. Collected by collectors/boto3_collector/inspector.py (aws-core-tap#261).",
+  "sources": [
+    "aws_core__aws_inspector2_reachability_finding"
+  ],
+  "targets": [
+    "aws_core__aws_route_table",
+    "aws_core__aws_security_group",
+    "aws_core__aws_network_acl"
+  ],
+  "property_schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "step": {
+        "type": "integer",
+        "minimum": 0,
+        "description": "The component's 0-based position in networkPath.steps, as Inspector returned them."
+      }
+    }
+  },
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

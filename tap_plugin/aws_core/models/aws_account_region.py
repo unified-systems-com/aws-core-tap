@@ -110,6 +110,10 @@ class AwsAccountRegion(BaseModel):
             "nodes": [{"type": "aws_core__aws_inspector2_finding"}],
             "edges": [{"type": "HOSTS_INSPECTOR2_FINDING__aws_core"}],
         },
+        {
+            "nodes": [{"type": "aws_core__aws_inspector2_reachability_finding"}],
+            "edges": [{"type": "HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core"}],
+        },
     ]
     CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
         "HOSTS_VPC__aws_core",
@@ -127,6 +131,7 @@ class AwsAccountRegion(BaseModel):
         "HOSTS_CONFIG_RULE__aws_core",
         "HOSTS_CONFORMANCE_PACK__aws_core",
         "HOSTS_INSPECTOR2_FINDING__aws_core",
+        "HOSTS_INSPECTOR2_REACHABILITY_FINDING__aws_core",
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {

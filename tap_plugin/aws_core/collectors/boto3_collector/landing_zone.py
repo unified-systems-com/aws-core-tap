@@ -81,7 +81,7 @@ from .findings import (
     FindingsReads,
 )
 from .identity import edge_ref, node_ref
-from .inspector import HOSTS_INSPECTOR2_FINDING, InspectorReads
+from .inspector import HOSTS_INSPECTOR2_FINDING, HOSTS_INSPECTOR2_REACHABILITY_FINDING, InspectorReads
 from .organizations import (
     _DENIED_CODES,
     ACCOUNT,
@@ -153,6 +153,7 @@ CONTAINMENT_SURFACES: dict[str, tuple[str, ...]] = {
         HOSTS_CONFORMANCE_PACK,
         # Inspector findings (aws-core-tap#261, inspector.py): filtered and capped, so never recorded complete.
         HOSTS_INSPECTOR2_FINDING,
+        HOSTS_INSPECTOR2_REACHABILITY_FINDING,
     ),
     LANDING_ZONE: (HOLDS_ENABLED_CONTROL, HOLDS_ENABLED_BASELINE),
     IDENTITY_CENTER_INSTANCE: (HOLDS_PERMISSION_SET, HOLDS_IDENTITY_GROUP, HOLDS_ACCOUNT_ASSIGNMENT),
@@ -744,14 +745,26 @@ class _Reader:
         )
         return True
 
-    def add_edge(self, edge_type: str, from_type: str, from_key: str, to_type: str, to_key: str, region: str) -> None:
+    def add_edge(
+        self,
+        edge_type: str,
+        from_type: str,
+        from_key: str,
+        to_type: str,
+        to_key: str,
+        region: str,
+        *,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
         from_ref, to_ref = node_ref(from_type, from_key), node_ref(to_type, to_key)
         ref = edge_ref(edge_type, from_ref, to_ref)
         if ref in self._edge_refs:
             return
         self._edge_refs.add(ref)
         self.result.edges.append(
-            edge_envelope(edge_type, from_ref=from_ref, to_ref=to_ref, dimensions=self.dimensions(region))
+            edge_envelope(
+                edge_type, from_ref=from_ref, to_ref=to_ref, dimensions=self.dimensions(region), properties=properties
+            )
         )
 
     def hosts(self, edge_type: str, region: str, child_type: str, child_key: str) -> None:

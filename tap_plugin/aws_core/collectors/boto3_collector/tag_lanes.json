@@ -122,6 +122,11 @@
       "why": "Access Analyzer tags."
     },
     {
+      "entity_type": "aws_core__aws_inspector2_reachability_finding",
+      "reader": "landing_zone",
+      "tags": { "source": "none", "why": "An Inspector finding is not a taggable AWS resource (inferred: botocore inspector2's Finding shape has no tag member; resources[].tags are the scanned resource's tags, not the finding's)." }
+    },
+    {
       "entity_type": "aws_core__aws_inspector2_finding",
       "reader": "landing_zone",
       "tags": { "source": "none", "why": "An Inspector finding is not a taggable AWS resource (inferred: botocore inspector2's Finding shape has no tag member; resources[].tags are the scanned resource's tags, not the finding's)." }

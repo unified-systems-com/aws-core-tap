@@ -343,6 +343,23 @@
       }
     },
     {
+      "entity_type": "aws_core__aws_inspector2_reachability_finding",
+      "reader": "landing_zone",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read the reachability finding model's typed fields and botocore 1.44.4 inspector2 ListFindings (Finding, NetworkReachabilityDetails, NetworkPath, Step, PortRange) output shapes, 2026-11-20 (aws-core-tap#261). botocore marks no member sensitive. resources[].details and resources[].tags are not read into any field.",
+        "locations": [
+          { "path": "title", "category": "free_text", "reason": "Inspector's finding title: names the port range and the instance, as Inspector writes it.", "evidence": "reviewer_judgement" },
+          { "path": "name", "category": "free_text", "reason": "The finding title, truncated (see title).", "evidence": "reviewer_judgement" },
+          { "path": "description", "category": "free_text", "reason": "Inspector's description of the open path.", "evidence": "reviewer_judgement" },
+          { "path": "remediation", "category": "free_text", "reason": "Inspector's remediation recommendation text.", "evidence": "reviewer_judgement" },
+          { "path": "network_path", "category": "other", "reason": "The path's component ids and ARNs (gateways, route tables, ACLs, security groups, interfaces): resource ids, not secrets; the path is the finding's substance.", "evidence": "reviewer_judgement" },
+          { "path": "unmatched_steps", "category": "other", "reason": "The path steps no tabled type matched, with their component ids.", "evidence": "reviewer_judgement" },
+          { "path": "resource_id", "category": "customer_content", "reason": "The instance id the finding concerns.", "evidence": "reviewer_judgement" }
+        ]
+      }
+    },
+    {
       "entity_type": "computing_core__host",
       "reader": "landing_zone",
       "sensitivity": {

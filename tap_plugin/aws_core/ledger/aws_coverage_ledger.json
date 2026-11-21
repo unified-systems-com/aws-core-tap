@@ -87,6 +87,10 @@
    "reason": "A package-vulnerability finding Amazon Inspector reports; no CloudFormation resource type."
   },
   {
+   "entity_type": "aws_core__aws_inspector2_reachability_finding",
+   "reason": "A network-reachability finding Amazon Inspector reports; no CloudFormation resource type."
+  },
+  {
    "entity_type": "aws_core__aws_policy_statement",
    "reason": "One statement of a policy document, not an AWS resource; only the policy can be tagged."
   },

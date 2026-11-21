@@ -241,9 +241,32 @@ def _aa_list(active: list[list[dict[str, Any]]], closed: list[list[dict[str, Any
 def _inspector_list() -> Any:
     def handler(_region: str, kwargs: dict[str, Any]) -> Any:
         criteria = kwargs["filterCriteria"]
-        wanted = criteria["findingType"][0]["value"] == "PACKAGE_VULNERABILITY" and criteria["findingStatus"][0]["value"] == "ACTIVE"
-        if not wanted:
+        kind, status = criteria["findingType"][0]["value"], criteria["findingStatus"][0]["value"]
+        if status != "ACTIVE" or kind == "CODE_VULNERABILITY":
             return {"findings": []}
+        if kind == "NETWORK_REACHABILITY":
+            return {
+                "findings": [
+                    {
+                        "findingArn": f"arn:{PARTITION}:inspector2:{WEST}:{MGMT}:finding/{2:032x}",
+                        "awsAccountId": MGMT,
+                        "type": "NETWORK_REACHABILITY",
+                        "title": "Port 22 is reachable from an Internet Gateway",
+                        "description": "Port 22 is reachable.",
+                        "remediation": {},
+                        "severity": "MEDIUM",
+                        "firstObservedAt": "2026-11-01T00:00:00Z",
+                        "lastObservedAt": "2026-11-01T00:00:00Z",
+                        "status": "ACTIVE",
+                        "resources": [{"type": "AWS_EC2_INSTANCE", "id": INSTANCE_ID, "region": WEST}],
+                        "networkReachabilityDetails": {
+                            "openPortRange": {"begin": 22, "end": 22},
+                            "protocol": "TCP",
+                            "networkPath": {"steps": [{"componentId": "igw-0a1b", "componentType": "X"}]},
+                        },
+                    }
+                ]
+            }
         return {
             "findings": [
                 {
@@ -1081,6 +1104,7 @@ class TestClosedFindings:
 
 _NEW_TYPES = (
     "aws_core__aws_inspector2_finding",
+    "aws_core__aws_inspector2_reachability_finding",
     GUARDDUTY_FINDING,
     SECURITYHUB_FINDING,
     STANDARDS_SUBSCRIPTION,
