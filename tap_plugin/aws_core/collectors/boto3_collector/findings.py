@@ -65,6 +65,7 @@ from .partition import parse_arn
 
 if TYPE_CHECKING:
     from .landing_zone import _Reader, _Walk
+    from .organizations import Listing
 
 GUARDDUTY_FINDING = "aws_core__aws_guardduty_finding"
 SECURITYHUB_FINDING = "aws_core__aws_securityhub_finding"
@@ -321,6 +322,33 @@ class FindingsReads:
         filter_text: str,
         truncated: bool,
     ) -> None:
+        self.surface(
+            read,
+            relation,
+            edge_type,
+            parent_type,
+            parent_key,
+            count=count,
+            skipped=skipped,
+            filter_text=filter_text,
+            truncated=truncated,
+        )
+
+    def surface(
+        self,
+        read: _Walk,
+        relation: str,
+        edge_type: str,
+        parent_type: str,
+        parent_key: str,
+        *,
+        count: int,
+        skipped: int,
+        filter_text: str,
+        truncated: bool,
+    ) -> Listing:
+        """A findings parent's surface: filtered with no positive control, so never complete; a read a limit or
+        budget stopped says why in ``reasons.truncated``. Shared with the Inspector reads (``inspector.py``)."""
         listing = self.r.parent_surface(
             read, relation, edge_type, parent_type, parent_key, count=count, skipped=skipped
         )
@@ -335,6 +363,7 @@ class FindingsReads:
             # Its own key: the recorder rewrites the enumeration_complete reason of a filtered
             # surface with its own, and the truncation must survive that.
             listing.reasons["truncated"] = f"truncated: {read.truncation or 'a limit stopped the read'}"
+        return listing
 
     # -- GuardDuty ----------------------------------------------------------
 

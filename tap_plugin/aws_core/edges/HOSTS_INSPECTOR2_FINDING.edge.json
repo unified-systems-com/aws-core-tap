@@ -1,0 +1,17 @@
+{
+  "slug": "HOSTS_INSPECTOR2_FINDING__aws_core",
+  "name": "Hosts Inspector Finding",
+  "description": "An account's footprint in one region hosts an Amazon Inspector v2 package-vulnerability finding (footprint -> finding): one inspector2:ListFindings returned for the run's account, ACTIVE or CLOSED in the last 30 days, each read capped at 1,000 per region. Containment, parent -> child: the footprint declares this edge in CONTAINMENT_EDGES, and the reader records that footprint's account_region.inspector2_findings surface, filtered and capped, so never complete. Inspector has no detector-like parent resource, so the footprint holds its findings. Collected by the landing-zone reader's Inspector half (collectors/boto3_collector/inspector.py, aws-core-tap#261).",
+  "sources": [
+    "aws_core__aws_account_region"
+  ],
+  "targets": [
+    "aws_core__aws_inspector2_finding"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

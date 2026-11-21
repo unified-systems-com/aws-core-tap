@@ -1206,6 +1206,9 @@
   "inspector2:Filter": [
    "arn:${Partition}:inspector2:${Region}:${Account}:owner/${OwnerId}/filter/${FilterId}"
   ],
+  "inspector2:Finding": [
+   "arn:${Partition}:inspector2:${Region}:${Account}:finding/${FindingId}"
+  ],
   "internetmonitor:Monitor": [
    "arn:${Partition}:internetmonitor:${Region}:${Account}:monitor/${MonitorName}"
   ],

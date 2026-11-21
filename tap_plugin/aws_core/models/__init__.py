@@ -57,6 +57,7 @@ from tap_plugin.aws_core.models.aws_config_conformance_pack import AwsConfigConf
 from tap_plugin.aws_core.models.aws_config_delivery_channel import AwsConfigDeliveryChannel
 from tap_plugin.aws_core.models.aws_config_recorder import AwsConfigRecorder
 from tap_plugin.aws_core.models.aws_config_rule import AwsConfigRule
+from tap_plugin.aws_core.models.aws_inspector2_finding import AwsInspector2Finding
 from tap_plugin.aws_core.models.aws_controltower_enabled_baseline import AwsControlTowerEnabledBaseline
 from tap_plugin.aws_core.models.aws_controltower_enabled_control import AwsControlTowerEnabledControl
 from tap_plugin.aws_core.models.aws_controltower_landing_zone import AwsControlTowerLandingZone
@@ -1050,6 +1051,7 @@ __all__ = [
     "AwsConfigDeliveryChannel",
     "AwsConfigRecorder",
     "AwsConfigRule",
+    "AwsInspector2Finding",
     "AwsControlTowerEnabledBaseline",
     "AwsControlTowerEnabledControl",
     "AwsControlTowerLandingZone",

@@ -115,6 +115,13 @@ _FINDINGS_PROPS: dict[str, Any] = {
     "findings_max_per_region": {"type": "integer", "minimum": 1},
     # Each findings read stops at its next page once it has run this long; absent means no budget.
     "findings_read_budget_seconds": {"type": "integer", "minimum": 1},
+    # The Inspector finding types a run reads; absent means every type (ruling Q124a).
+    "inspector_finding_types": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": True,
+        "items": {"type": "string", "enum": ["PACKAGE_VULNERABILITY", "CODE_VULNERABILITY", "NETWORK_REACHABILITY"]},
+    },
 }
 
 # The static-credential fragment: reused verbatim as the `aws_assumed_role`

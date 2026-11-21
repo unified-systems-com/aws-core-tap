@@ -3262,6 +3262,12 @@
    ],
    "dropped": []
   },
+  "inspector2:batch_get_account_status": {
+   "actions": [
+    "inspector2:BatchGetAccountStatus"
+   ],
+   "dropped": []
+  },
   "inspector2:list_cis_scan_configurations": {
    "actions": [
     "inspector2:ListCisScanConfigurations"
@@ -3289,6 +3295,18 @@
   "inspector2:list_filters": {
    "actions": [
     "inspector2:ListFilters"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_finding_aggregations": {
+   "actions": [
+    "inspector2:ListFindingAggregations"
+   ],
+   "dropped": []
+  },
+  "inspector2:list_findings": {
+   "actions": [
+    "inspector2:ListFindings"
    ],
    "dropped": []
   },

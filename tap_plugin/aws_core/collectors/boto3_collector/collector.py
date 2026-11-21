@@ -1128,6 +1128,9 @@ class Boto3Collector(CollectorBase):
                     limits=FindingsLimits.of(data),
                     read_through=previous_read_through,
                     run_started=run_started,
+                    inspector_finding_types=tuple(data["inspector_finding_types"])
+                    if data.get("inspector_finding_types")
+                    else None,
                 )
         except Exception as exc:  # noqa: BLE001 — isolates a defect in this read, never the run
             self.record_warn(

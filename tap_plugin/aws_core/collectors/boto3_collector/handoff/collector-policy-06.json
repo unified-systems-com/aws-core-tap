@@ -2,6 +2,18 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadManagedblockchain",
+      "Effect": "Allow",
+      "Action": [
+        "managedblockchain:ListAccessors",
+        "managedblockchain:ListMembers",
+        "managedblockchain:ListNetworks",
+        "managedblockchain:ListNodes",
+        "managedblockchain:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadMediaconvert",
       "Effect": "Allow",
       "Action": [
@@ -270,26 +282,6 @@
         "redshift:DescribeSnapshotCopyGrants",
         "redshift:DescribeSnapshotSchedules",
         "redshift:DescribeUsageLimits"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadRedshiftServerless",
-      "Effect": "Allow",
-      "Action": [
-        "redshift-serverless:ListNamespaces",
-        "redshift-serverless:ListSnapshots",
-        "redshift-serverless:ListTagsForResource",
-        "redshift-serverless:ListWorkgroups"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadRekognition",
-      "Effect": "Allow",
-      "Action": [
-        "rekognition:DescribeProjects",
-        "rekognition:ListTagsForResource"
       ],
       "Resource": "*"
     }

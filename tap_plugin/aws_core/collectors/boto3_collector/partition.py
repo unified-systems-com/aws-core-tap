@@ -230,6 +230,16 @@ LANDING_ZONE_AVAILABILITY: dict[str, dict[str, Availability]] = {
         PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
         PARTITION_US_GOV: Availability(True, "read", "botocore 1.43.104 endpoint data (S3 account public-access block)"),
     },
+    "inspector2": {
+        PARTITION_AWS: Availability(True, "read", "botocore endpoint rules"),
+        PARTITION_US_GOV: Availability(
+            True,
+            "web",
+            "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-inspector2.html: both GovCloud "
+            "regions with FIPS endpoints; Lambda code scanning and code-repository scanning are not available "
+            "(aws-core-tap#261)",
+        ),
+    },
     "macie2": {
         PARTITION_AWS: Availability(True, "read", "botocore endpoint rules; not collected (req-aws-landing-zone-nongoals)"),
         PARTITION_US_GOV: Availability(

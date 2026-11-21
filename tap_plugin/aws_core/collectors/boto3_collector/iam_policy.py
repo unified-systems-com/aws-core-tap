@@ -56,6 +56,11 @@ CODE_MODULES = (
     "rgta.py", "ecs.py", "iam_trust.py", "policy_documents.py", "credentials.py", "authority.py", "hydrate.py",
     "elb_topology.py",
 )  # fmt: skip
+#: Modules whose reads go through a shared reader helper (``self.r.walk("inspector2", ...)``), which the per-function
+#: scan cannot see, and which therefore declare every operation they make as module-level literal tuples
+#: ``PAGINATED_OPERATIONS`` / ``SINGLE_OPERATIONS`` of ``(service, snake_operation)`` (aws-core-tap#261).
+DECLARED_OPERATION_MODULES = ("inspector.py",)
+_DECLARED_OPERATION_NAMES = frozenset({"PAGINATED_OPERATIONS", "SINGLE_OPERATIONS"})
 _CLIENT_CALLS = {"client_for", "client", "get_client", "_client", "make_client"}
 _OP_WORD = re.compile(r"^([a-z]+(_[a-z0-9]+)+|[A-Z][A-Za-z0-9]+)$")
 
@@ -147,6 +152,28 @@ def _code_pairs() -> set[tuple[str, str]]:
     return pairs
 
 
+def _declared_operation_pairs() -> set[tuple[str, str]]:
+    """The ``(service, operation)`` pairs a module in ``DECLARED_OPERATION_MODULES`` declares, read from its literal
+    ``PAGINATED_OPERATIONS`` / ``SINGLE_OPERATIONS`` tuples (a starred or computed element is not read). A pair naming
+    an operation botocore does not have is refused, so a typo cannot drop an action silently."""
+    pairs: set[tuple[str, str]] = set()
+    for module in DECLARED_OPERATION_MODULES:
+        tree = ast.parse((HERE / module).read_text())
+        for node in tree.body:
+            target = node.target if isinstance(node, ast.AnnAssign) else (node.targets[0] if isinstance(node, ast.Assign) else None)
+            if not (isinstance(target, ast.Name) and target.id in _DECLARED_OPERATION_NAMES and isinstance(node.value, ast.Tuple)):
+                continue
+            for element in node.value.elts:
+                if not (isinstance(element, ast.Tuple) and len(element.elts) == 2):
+                    continue
+                service, operation = (e.value if isinstance(e, ast.Constant) else None for e in element.elts)
+                known = operations_of(str(service))
+                if not isinstance(operation, str) or operation not in known:
+                    raise SystemExit(f"{module}: {service}:{operation} is not a botocore operation")
+                pairs.add((str(service), known[operation]))
+    return pairs
+
+
 def _declared_reader_pairs(tree: ast.AST) -> set[tuple[str, str]]:
     """Operations of readers declared as data rather than written as functions: a call such as ``_reader(name, doc,
     service="appconfig", list_method="list_applications", parent=_APPCONFIG_APPS)``, whose generic body builds the
@@ -186,7 +213,8 @@ def catalog() -> dict[str, Any]:
 def inventory() -> set[tuple[str, str]]:
     """Every (botocore service, operation) the collector can make, except those that need no permission."""
     ov = overrides()
-    return {p for p in _manifest_pairs() | _code_pairs() if f"{p[0]}:{p[1]}" not in ov["no_permission_needed"]}
+    pairs = _manifest_pairs() | _code_pairs() | _declared_operation_pairs()
+    return {p for p in pairs if f"{p[0]}:{p[1]}" not in ov["no_permission_needed"]}
 
 
 def _key(service: str, operation: str) -> str:

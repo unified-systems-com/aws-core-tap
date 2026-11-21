@@ -238,10 +238,41 @@ def _aa_list(active: list[list[dict[str, Any]]], closed: list[list[dict[str, Any
     return handler
 
 
+def _inspector_list() -> Any:
+    def handler(_region: str, kwargs: dict[str, Any]) -> Any:
+        criteria = kwargs["filterCriteria"]
+        wanted = criteria["findingType"][0]["value"] == "PACKAGE_VULNERABILITY" and criteria["findingStatus"][0]["value"] == "ACTIVE"
+        if not wanted:
+            return {"findings": []}
+        return {
+            "findings": [
+                {
+                    "findingArn": f"arn:{PARTITION}:inspector2:{WEST}:{MGMT}:finding/{1:032x}",
+                    "awsAccountId": MGMT,
+                    "type": "PACKAGE_VULNERABILITY",
+                    "title": "CVE-2026-0001 - openssl",
+                    "description": "A flaw in openssl.",
+                    "remediation": {},
+                    "severity": "HIGH",
+                    "firstObservedAt": "2026-11-01T00:00:00Z",
+                    "lastObservedAt": "2026-11-01T00:00:00Z",
+                    "status": "ACTIVE",
+                    "resources": [{"type": "AWS_EC2_INSTANCE", "id": INSTANCE_ID, "region": WEST}],
+                    "packageVulnerabilityDetails": {"vulnerabilityId": "CVE-2026-0001", "source": "NVD"},
+                }
+            ]
+        }
+
+    return handler
+
+
 def with_findings(aws: FakeAws | None = None) -> FakeAws:
     """``govcloud()`` with findings in us-gov-west-1, Config rules and a conformance pack."""
     aws = aws or govcloud()
     aws.on("guardduty", "list_findings", _gd_list([["gd-high", "gd-medium"], ["gd-low"]]), region=WEST)
+    # One active Inspector package finding in west (aws-core-tap#261; the reads themselves are tested against
+    # botocore's model in test_inspector_findings.py).
+    aws.on("inspector2", "list_findings", _inspector_list(), region=WEST)
     aws.on(
         "guardduty",
         "get_findings",
@@ -1049,6 +1080,7 @@ class TestClosedFindings:
 
 
 _NEW_TYPES = (
+    "aws_core__aws_inspector2_finding",
     GUARDDUTY_FINDING,
     SECURITYHUB_FINDING,
     STANDARDS_SUBSCRIPTION,

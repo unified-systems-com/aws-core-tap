@@ -172,6 +172,14 @@ LANDING_ZONE_CHILDREN: Final[tuple[RegionalChild, ...]] = (
         "an AWS Config conformance pack",
         "config:DescribeConformancePacks",
     ),
+    # aws-core-tap#261 (collectors/boto3_collector/inspector.py).
+    RegionalChild(
+        "aws_core__aws_inspector2_finding",
+        "HOSTS_INSPECTOR2_FINDING__aws_core",
+        "account_region.inspector2_findings",
+        "an Amazon Inspector package-vulnerability finding",
+        "inspector2:ListFindings",
+    ),
 )
 
 LANDING_ZONE_CHILD_BY_TYPE: Final = {c.entity_type: c for c in LANDING_ZONE_CHILDREN}

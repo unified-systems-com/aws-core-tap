@@ -2,6 +2,26 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadRedshiftServerless",
+      "Effect": "Allow",
+      "Action": [
+        "redshift-serverless:ListNamespaces",
+        "redshift-serverless:ListSnapshots",
+        "redshift-serverless:ListTagsForResource",
+        "redshift-serverless:ListWorkgroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadRekognition",
+      "Effect": "Allow",
+      "Action": [
+        "rekognition:DescribeProjects",
+        "rekognition:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadResiliencehub",
       "Effect": "Allow",
       "Action": [

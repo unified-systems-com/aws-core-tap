@@ -2844,6 +2844,10 @@
         "AWS::IdentityStore::User"
       ]
     },
+    "aws_core__aws_inspector2_finding": {
+      "cfn": [],
+      "reason": "A package-vulnerability finding Amazon Inspector reports; no CloudFormation resource type."
+    },
     "aws_core__aws_inspectorv2_cis_scan_configuration": {
       "cfn": [
         "AWS::InspectorV2::CisScanConfiguration"
