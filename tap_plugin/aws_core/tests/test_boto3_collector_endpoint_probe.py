@@ -117,6 +117,16 @@ class TestEndpointProbe:
         assert endpoint_probe.request_host("ec2", "us-gov-east-1", "DescribeVpcs") == "ec2.us-gov-east-1.amazonaws.com"
         assert built == ["ec2", "ec2"], "one client per (service, region, FIPS)"
 
+    def test_every_probe_client_shares_one_loader(self):
+        # The clients live for the process, so each must not carry its own copy of a service model: built from a session
+        # each, 140 clients for one collection held about 1.2 GB that nothing frees (aws-core-tap#275).
+        endpoint_probe.clear_cache()
+        for service, region in (("ec2", "us-gov-west-1"), ("ec2", "us-gov-east-1"), ("sts", "us-gov-west-1")):
+            endpoint_probe.request_host(service, region, "DescribeVpcs" if service == "ec2" else "GetCallerIdentity")
+        loaders = {id(client._loader) for client, _seen in endpoint_probe._CLIENTS.values()}
+        assert len(endpoint_probe._CLIENTS) == 3
+        assert len(loaders) == 1, "every probe client is built from the one shared session"
+
     @pytest.mark.spec("req-aws-collector-partition-13")
     def test_a_resolver_that_does_not_answer_ends_the_probe_instead_of_stalling_the_run(self, monkeypatch):
         release = threading.Event()
