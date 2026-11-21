@@ -70,35 +70,53 @@ def request_host(
 #: collection that probes hundreds of entries would otherwise spend a minute here.
 _CLIENTS: dict[tuple[str, str, bool | None], tuple[Any, list[str]]] = {}
 
+#: The one session every probe client is built from. A session owns the loader that holds each service's parsed model,
+#: so a session per client kept a private copy of the model in every client: about 8 MB each, 140 clients for one
+#: collection in one partition, all of it held for the life of the process. Built from one session, a service's model is
+#: loaded once and every client of that service shares it.
+_SESSION: Any = None
+_LOCK = threading.Lock()
+
 
 def clear_cache() -> None:
-    """Forget the clients (tests that watch client construction)."""
-    _CLIENTS.clear()
+    """Forget the clients and their session (tests that watch client construction)."""
+    global _SESSION
+    with _LOCK:
+        _CLIENTS.clear()
+        _SESSION = None
 
 
 def _client(service: str, region: str, use_fips: bool | None) -> tuple[Any, list[str]]:
     key = (service, region, use_fips)
-    if key not in _CLIENTS:
-        import boto3
-        from botocore import UNSIGNED
-        from botocore.awsrequest import AWSResponse
-        from .credentials import client_config
+    with _LOCK:
+        return _CLIENTS[key] if key in _CLIENTS else _build_client(key)
 
-        seen: list[str] = []
 
-        def stop(request: Any, **_kw: Any) -> AWSResponse:
-            host = urlparse(request.url).hostname
-            if host:
-                seen.append(host)
-            return AWSResponse(request.url, 200, {}, _Raw(b"{}"))
+def _build_client(key: tuple[str, str, bool | None]) -> tuple[Any, list[str]]:
+    """Build and keep the probe client for ``key``; the caller holds ``_LOCK``."""
+    global _SESSION
+    import boto3
+    from botocore import UNSIGNED
+    from botocore.awsrequest import AWSResponse
+    from .credentials import client_config
 
-        session = boto3.session.Session(region_name=region)
-        # The package's one client configuration; nothing is sent, so its timeouts and retries never apply. Unsigned: the
-        # request is only built, so no credential of any kind is needed or read.
-        config = client_config(signature_version=UNSIGNED, **({} if use_fips is None else {"use_fips_endpoint": use_fips}))
-        client = session.client(service, region_name=region, config=config)
-        client.meta.events.register("before-send", stop)
-        _CLIENTS[key] = (client, seen)
+    service, region, use_fips = key
+    seen: list[str] = []
+
+    def stop(request: Any, **_kw: Any) -> AWSResponse:
+        host = urlparse(request.url).hostname
+        if host:
+            seen.append(host)
+        return AWSResponse(request.url, 200, {}, _Raw(b"{}"))
+
+    if _SESSION is None:
+        _SESSION = boto3.session.Session()
+    # The package's one client configuration; nothing is sent, so its timeouts and retries never apply. Unsigned: the
+    # request is only built, so no credential of any kind is needed or read.
+    config = client_config(signature_version=UNSIGNED, **({} if use_fips is None else {"use_fips_endpoint": use_fips}))
+    client = _SESSION.client(service, region_name=region, config=config)
+    client.meta.events.register("before-send", stop)
+    _CLIENTS[key] = (client, seen)
     return _CLIENTS[key]
 
 
