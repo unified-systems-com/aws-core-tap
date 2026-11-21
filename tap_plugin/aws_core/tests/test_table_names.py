@@ -7,8 +7,9 @@ it absent, which keeps a booted web container from ever becoming ready.
 
 from __future__ import annotations
 
-import pytest
 from django.apps import apps
+
+from tap_plugin.aws_core.tests.every_case import assert_every
 
 _LIMIT = 63
 
@@ -20,6 +21,9 @@ def _owned_tables() -> list[str]:
     )
 
 
-@pytest.mark.parametrize("table", _owned_tables())
-def test_table_name_fits_postgres(table: str) -> None:
+def _check_fits(table: str) -> None:
     assert len(table) <= _LIMIT, f"{table} is {len(table)} characters; Postgres keeps {_LIMIT}"
+
+
+def test_table_name_fits_postgres() -> None:
+    assert_every(((table, table) for table in _owned_tables()), _check_fits)

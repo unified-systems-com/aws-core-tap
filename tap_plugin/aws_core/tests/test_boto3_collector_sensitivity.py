@@ -10,12 +10,14 @@ must fail, so "nobody looked" can never read as "safe".
 from __future__ import annotations
 
 import copy
+import functools
 import json
 
 import botocore.session
 import jsonschema
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import MANIFEST_PATH, SCHEMA_PATH
+from tap_plugin.aws_core.tests.every_case import assert_every
 
 # The plugin-CI fast set (req-tap-plugin-extdev-repo-ci-14): DB-free and seconds long, and it is
 # where botocore drift lands (a removed shape member failed here at minute 58 of run
@@ -40,8 +42,11 @@ def _entries() -> list[dict]:
     return _raw_manifest()["entries"]
 
 
-@pytest.mark.parametrize("entry", _entries(), ids=lambda e: e["entity_type"])
-def test_every_manifest_entry_declares_sensitivity(entry):
+def _by_type(entries) -> list[tuple[str, dict]]:
+    return [(entry["entity_type"], entry) for entry in entries]
+
+
+def _check_declares_sensitivity(entry):
     assert "sensitivity" in entry, (
         f"{entry['entity_type']} has no sensitivity declaration; declare "
         '{"status": "unreviewed"} if nobody has reviewed its response shape yet'
@@ -54,6 +59,10 @@ def test_every_manifest_entry_declares_sensitivity(entry):
         assert "locations" not in declared
     if declared["status"] != "unreviewed":
         assert declared.get("basis"), "a reviewed status must name its basis"
+
+
+def test_every_manifest_entry_declares_sensitivity():
+    assert_every(_by_type(_entries()), _check_declares_sensitivity)
 
 
 class TestSchema:
@@ -149,6 +158,12 @@ class TestSchema:
 # of the AWS payload.
 
 
+@functools.cache
+def _service_model(service: str):
+    # One botocore session for the whole file: a fresh session per check reloads the service JSON each time.
+    return botocore.session.get_session().get_service_model(service)
+
+
 def _step(shape, segment: str):
     name, is_list = (segment[:-2], True) if segment.endswith("[]") else (segment, False)
     if name:
@@ -166,12 +181,12 @@ def _aws_op_locations():
         op = entry["source"].get("aws_op")
         for loc in entry.get("sensitivity", {}).get("locations", []):
             if op and not loc["path"].startswith("_"):
-                yield pytest.param(entry, loc, id=f"{entry['entity_type']}:{loc['path']}")
+                yield f"{entry['entity_type']}:{loc['path']}", (entry, loc)
 
 
-@pytest.mark.parametrize(("entry", "location"), list(_aws_op_locations()))
-def test_declared_path_exists_in_botocore_shape(entry, location):
-    model = botocore.session.get_session().get_service_model(entry["service"])
+def _check_declared_path_exists(case):
+    entry, location = case
+    model = _service_model(entry["service"])
     shape = model.operation_model(entry["source"]["aws_op"]).output_shape
     for segment in entry["items_path"].split("."):
         shape = _step(shape, segment)
@@ -182,6 +197,10 @@ def test_declared_path_exists_in_botocore_shape(entry, location):
             shape.type_name == "map" and shape.value.metadata.get("sensitive")
         )
         assert flagged, f"{location['path']} is not marked sensitive in botocore"
+
+
+def test_declared_path_exists_in_botocore_shape():
+    assert_every(_aws_op_locations(), _check_declared_path_exists)
 
 
 def _tag_slot_locations():
@@ -196,7 +215,7 @@ def _tag_slot_locations():
 
 @pytest.mark.parametrize(("entry", "location"), list(_tag_slot_locations()))
 def test_declared_tag_slot_path_exists_in_the_tag_call_shape(entry, location):
-    model = botocore.session.get_session().get_service_model(entry["service"])
+    model = _service_model(entry["service"])
     shape = model.operation_model(entry["tags"]["op"]).output_shape
     for segment in location["path"].removeprefix("_hydrate.tags.data.").split("."):
         shape = _step(shape, segment)
@@ -210,7 +229,7 @@ def test_declared_tag_slot_path_exists_in_the_tag_call_shape(entry, location):
 def test_every_sensitive_member_of_the_agent_profile_tag_call_is_declared():
     # GetAgentProfile returns the whole profile, not only its tags; what botocore marks sensitive in it is named.
     entry = next(e for e in _entries() if e["entity_type"] == "aws_core__aws_wellarchitected_agent_profile")
-    model = botocore.session.get_session().get_service_model("wellarchitected")
+    model = _service_model("wellarchitected")
     shape = model.operation_model(entry["tags"]["op"]).output_shape
     declared = {loc["path"] for loc in entry["sensitivity"]["locations"]}
     expected = {f"_hydrate.tags.data.{p}" for p in _sensitive_member_paths(shape)}
@@ -233,16 +252,15 @@ def _tag_carrier(entry: dict) -> str | None:
     return None
 
 
-@pytest.mark.parametrize(
-    "entry",
-    [e for e in _entries() if _tag_carrier(e)],
-    ids=lambda e: e["entity_type"],
-)
-def test_tag_values_in_the_envelope_are_declared(entry):
+def _check_tag_values_declared(entry):
     # Tag values are operator-set arbitrary strings; where they ride inside
     # the raw envelope they must be on the declared work list.
     paths = {loc["path"] for loc in entry.get("sensitivity", {}).get("locations", [])}
     assert _tag_carrier(entry) in paths
+
+
+def test_tag_values_in_the_envelope_are_declared():
+    assert_every(_by_type(e for e in _entries() if _tag_carrier(e)), _check_tag_values_declared)
 
 
 def _sensitive_member_paths(shape, prefix: str = "", seen: frozenset = frozenset()) -> list[str]:
@@ -273,25 +291,38 @@ def _covered(path: str, declared: set[str]) -> bool:
     return any(path == d or path.startswith((d + ".", d + "[]")) for d in declared)
 
 
-@pytest.mark.parametrize(
-    "entry",
-    [e for e in _entries() if e["source"].get("aws_op")],
-    ids=lambda e: e["entity_type"],
-)
-def test_every_botocore_sensitive_member_is_declared(entry):
-    # The completeness ratchet for aws_op entries: whatever botocore marks
-    # sensitive in the item shape must be on the declared list (a declared
-    # ancestor covers its subtree). custom_fn entries compose their items and
-    # are reviewed by reading the custom_fn.
-    if entry.get("sensitivity", {}).get("status") == "unreviewed":
-        pytest.skip("unreviewed declares nothing to be complete against")
-    model = botocore.session.get_session().get_service_model(entry["service"])
+def _unreviewed(entry) -> bool:
+    return entry.get("sensitivity", {}).get("status") == "unreviewed"
+
+
+def _check_botocore_sensitive_members_declared(entry):
+    model = _service_model(entry["service"])
     shape = model.operation_model(entry["source"]["aws_op"]).output_shape
     for segment in entry["items_path"].split("."):
         shape = _step(shape, segment)
     declared = {loc["path"] for loc in entry["sensitivity"].get("locations", [])}
     missing = [p for p in _sensitive_member_paths(shape) if not _covered(p, declared)]
     assert missing == [], f"{entry['entity_type']}: botocore-sensitive members not declared: {missing}"
+
+
+def test_every_botocore_sensitive_member_is_declared():
+    # The completeness ratchet for aws_op entries: whatever botocore marks
+    # sensitive in the item shape must be on the declared list (a declared
+    # ancestor covers its subtree). custom_fn entries compose their items and
+    # are reviewed by reading the custom_fn.
+    # Unreviewed entries declare nothing to be complete against, so they are left out of the walk
+    # (an all-unreviewed manifest walks nothing and fails) and reported as skips below.
+    reviewed = (e for e in _entries() if e["source"].get("aws_op") and not _unreviewed(e))
+    assert_every(_by_type(reviewed), _check_botocore_sensitive_members_declared)
+
+
+@pytest.mark.parametrize(
+    "entity_type",
+    sorted(e["entity_type"] for e in _entries() if e["source"].get("aws_op") and _unreviewed(e)),
+)
+def test_unreviewed_entry_is_not_checked_for_completeness(entity_type):
+    # A skip per unreviewed entry keeps "nobody looked" visible in the run summary: it is not a pass.
+    pytest.skip(f"{entity_type}: unreviewed declares nothing to be complete against")
 
 
 # --- persist_configuration ↔ sensitivity ------------------------------------
@@ -318,12 +349,15 @@ _NOT_SECRET = {
 }
 
 
-@pytest.mark.parametrize("entry", [e for e in _entries() if _credential_locations(e)], ids=lambda e: e["entity_type"])
-def test_every_member_aws_marks_sensitive_is_removed_before_storage(entry):
+def _check_sensitive_credentials_redacted(entry):
     for loc in _credential_locations(entry):
         if loc["evidence"] != "botocore_sensitive" or (entry["entity_type"], loc["path"]) in _NOT_SECRET:
             continue
         assert loc.get("redact") is True, f"{entry['entity_type']}: AWS marks {loc['path']} sensitive and it is stored"
+
+
+def test_every_member_aws_marks_sensitive_is_removed_before_storage():
+    assert_every(_by_type(e for e in _entries() if _credential_locations(e)), _check_sensitive_credentials_redacted)
 
 
 def test_only_secret_material_is_ever_redacted():
@@ -341,11 +375,14 @@ def test_every_entry_stores_its_response():
     assert [e["entity_type"] for e in _entries() if not e["persist_configuration"]] == []
 
 
-@pytest.mark.parametrize("entry", _entries(), ids=lambda e: e["entity_type"])
-def test_the_reason_names_what_is_removed(entry):
+def _check_reason_names_removed(entry):
     for loc in entry.get("sensitivity", {}).get("locations", []):
         if loc.get("redact"):
             assert loc["path"] in entry["persist_configuration_why"], loc["path"]
+
+
+def test_the_reason_names_what_is_removed():
+    assert_every(_by_type(_entries()), _check_reason_names_removed)
 
 
 def _plant(path: str, value: str):
@@ -379,8 +416,7 @@ def _contains(obj, needle: str) -> bool:
     return obj == needle
 
 
-@pytest.mark.parametrize("entry", [e for e in _entries() if any(loc.get("redact") for loc in e["sensitivity"].get("locations", []))], ids=lambda e: e["entity_type"])
-def test_a_secret_planted_at_every_redacted_path_is_not_stored(entry):
+def _check_planted_secret_not_stored(entry):
     from tap_plugin.aws_core.collectors.boto3_collector.batch import entry_redact_paths, persisted_configuration
     from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectedNode
 
@@ -390,3 +426,8 @@ def test_a_secret_planted_at_every_redacted_path_is_not_stored(entry):
         stored = persisted_configuration(node, persist_configuration=True, redact_paths=entry_redact_paths(entry))
         assert not _contains(stored, canary), f"{entry['entity_type']}: {path} was stored"
         assert path in stored["_redacted"]
+
+
+def test_a_secret_planted_at_every_redacted_path_is_not_stored():
+    redacting = (e for e in _entries() if any(loc.get("redact") for loc in e["sensitivity"].get("locations", [])))
+    assert_every(_by_type(redacting), _check_planted_secret_not_stored)
