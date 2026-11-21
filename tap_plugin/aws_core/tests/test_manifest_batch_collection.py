@@ -13,13 +13,13 @@ from pathlib import Path
 from typing import Any
 
 import jsonschema
-import pytest
 from django.apps import apps
 from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.paths import eval_path
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 from tap_plugin.aws_core.collectors.boto3_collector.tags import normalize_tags
+from tap_plugin.aws_core.tests.every_case import assert_every
 from tap_plugin.aws_core.tests.test_trial_run_live import _create_verb_schema, _prepare_null_payload
 
 ACCOUNT = "123456789012"
@@ -3765,81 +3765,106 @@ def _edge_json(slug: str) -> dict[str, Any]:
     return json.loads(path.read_text())  # type: ignore[no-any-return]
 
 
-@pytest.mark.parametrize("entity_type", sorted(CASES))
+def _cases() -> list[tuple[str, str]]:
+    return [(entity_type, entity_type) for entity_type in sorted(CASES)]
+
+
+def _check_the_item_projects_to_the_typed_fields(entity_type: str) -> None:
+    item, expected = CASES[entity_type]
+    node = project_item(_entry(entity_type), item)
+    for field, value in expected.items():
+        assert node.fields[field] == value, field
+
+
+def _check_the_payload_imports_under_the_model_schema(entity_type: str) -> None:
+    item, _ = CASES[entity_type]
+    entry = _entry(entity_type)
+    payload = node_envelope(
+        project_item(entry, item), {}, _read_tags(entry, item), persist_configuration=entry["persist_configuration"]
+    )["node"]
+    schema = _create_verb_schema(_model(entity_type))
+    jsonschema.validate(_prepare_null_payload(payload, schema), schema)
+    if entry["tags"]["source"] == "none":
+        assert payload["tags"] == {}  # AWS has no tag operation for the type: observed, untagged
+    else:
+        assert payload["tags"].get("owner") == "net-team"
+
+
+def _check_the_tags_are_read_by_a_declared_lane(entity_type: str) -> None:
+    tags = _entry(entity_type)["tags"]
+    if tags["source"] == "none":
+        assert tags["why"]
+        return
+    if tags["source"] == "rgta":
+        # Joined by ARN from the region's one sweep; the item must carry the ARN it is joined on.
+        item, _ = CASES[entity_type]
+        assert eval_path(item, tags["arn_from"]), tags
+        return
+    if tags["source"] == "service":
+        # Read by a side call the engine makes by the item's own id or ARN.
+        item, _ = CASES[entity_type]
+        assert all(eval_path(item, p["from"]) for p in tags["params"].values() if "from" in p), tags
+        return
+    assert tags["source"] == "field"
+    assert (tags["from"], tags["shape"]) in (
+        ("Tags[]", "list_kv"),
+        ("TagList", "list_kv"),
+        ("TagSet[]", "list_kv"),
+        ("Tags", "list_kv"),
+        ("tags", "list_kv_lower"),
+        ("tags[]", "list_kv_lower"),
+        ("_tags", "map"),
+        ("tags", "map"),
+        ("Tags", "map"),
+        ("IdentityPoolTags", "map"),
+    )
+
+
+def _check_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(entity_type: str) -> None:
+    item, _ = CASES[entity_type]
+    rules = _entry(entity_type).get("edges", [])
+    for rule in rules:
+        edge = _edge_json(rule["edge_type"])
+        # Most edge types name both ends. The few that leave one open on purpose (a source that any service
+        # type may be) are listed here; any other edge type must declare its ends.
+        open_ends = OPEN_ENDED_EDGES.get(rule["edge_type"], ())
+        if "sources" not in open_ends:
+            assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
+        if "targets" not in open_ends:
+            assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
+    # A rule may be conditional on a sibling (a transit gateway attachment's VPC id exists only for a VPC
+    # attachment), so the canned item need only resolve some rule, not all.
+    assert not rules or any(eval_path(item, rule["value_path"]) for rule in rules)
+
+
+def _check_configuration_is_stored_only_when_the_entry_says_so(entity_type: str) -> None:
+    item, _ = CASES[entity_type]
+    entry = _entry(entity_type)
+    node = project_item(entry, item)
+    envelope = node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"])["node"]
+    assert bool(envelope["configuration"]) is entry["persist_configuration"]
+    if not entry["persist_configuration"]:
+        assert envelope["configuration"] == {}
+        assert "never-stored" not in json.dumps(envelope, default=str)
+
+
 class TestBatchTypes:
-    def test_the_item_projects_to_the_typed_fields(self, entity_type: str) -> None:
-        item, expected = CASES[entity_type]
-        node = project_item(_entry(entity_type), item)
-        for field, value in expected.items():
-            assert node.fields[field] == value, field
+    """Each invariant walks every case and fails once, naming every type that breaks it."""
 
-    def test_the_payload_imports_under_the_model_schema(self, entity_type: str) -> None:
-        item, _ = CASES[entity_type]
-        entry = _entry(entity_type)
-        payload = node_envelope(
-            project_item(entry, item), {}, _read_tags(entry, item), persist_configuration=entry["persist_configuration"]
-        )["node"]
-        schema = _create_verb_schema(_model(entity_type))
-        jsonschema.validate(_prepare_null_payload(payload, schema), schema)
-        if entry["tags"]["source"] == "none":
-            assert payload["tags"] == {}  # AWS has no tag operation for the type: observed, untagged
-        else:
-            assert payload["tags"].get("owner") == "net-team"
+    def test_the_item_projects_to_the_typed_fields(self) -> None:
+        assert_every(_cases(), _check_the_item_projects_to_the_typed_fields)
 
-    def test_the_tags_are_read_by_a_declared_lane(self, entity_type: str) -> None:
-        tags = _entry(entity_type)["tags"]
-        if tags["source"] == "none":
-            assert tags["why"]
-            return
-        if tags["source"] == "rgta":
-            # Joined by ARN from the region's one sweep; the item must carry the ARN it is joined on.
-            item, _ = CASES[entity_type]
-            assert eval_path(item, tags["arn_from"]), tags
-            return
-        if tags["source"] == "service":
-            # Read by a side call the engine makes by the item's own id or ARN.
-            item, _ = CASES[entity_type]
-            assert all(eval_path(item, p["from"]) for p in tags["params"].values() if "from" in p), tags
-            return
-        assert tags["source"] == "field"
-        assert (tags["from"], tags["shape"]) in (
-            ("Tags[]", "list_kv"),
-            ("TagList", "list_kv"),
-            ("TagSet[]", "list_kv"),
-            ("Tags", "list_kv"),
-            ("tags", "list_kv_lower"),
-            ("tags[]", "list_kv_lower"),
-            ("_tags", "map"),
-            ("tags", "map"),
-            ("Tags", "map"),
-            ("IdentityPoolTags", "map"),
-        )
+    def test_the_payload_imports_under_the_model_schema(self) -> None:
+        assert_every(_cases(), _check_the_payload_imports_under_the_model_schema)
 
-    def test_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(self, entity_type: str) -> None:
-        item, _ = CASES[entity_type]
-        rules = _entry(entity_type).get("edges", [])
-        for rule in rules:
-            edge = _edge_json(rule["edge_type"])
-            # Most edge types name both ends. The few that leave one open on purpose (a source that any service
-            # type may be) are listed here; any other edge type must declare its ends.
-            open_ends = OPEN_ENDED_EDGES.get(rule["edge_type"], ())
-            if "sources" not in open_ends:
-                assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
-            if "targets" not in open_ends:
-                assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
-        # A rule may be conditional on a sibling (a transit gateway attachment's VPC id exists only for a VPC
-        # attachment), so the canned item need only resolve some rule, not all.
-        assert not rules or any(eval_path(item, rule["value_path"]) for rule in rules)
+    def test_the_tags_are_read_by_a_declared_lane(self) -> None:
+        assert_every(_cases(), _check_the_tags_are_read_by_a_declared_lane)
 
-    def test_configuration_is_stored_only_when_the_entry_says_so(self, entity_type: str) -> None:
-        item, _ = CASES[entity_type]
-        entry = _entry(entity_type)
-        node = project_item(entry, item)
-        envelope = node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"])["node"]
-        assert bool(envelope["configuration"]) is entry["persist_configuration"]
-        if not entry["persist_configuration"]:
-            assert envelope["configuration"] == {}
-            assert "never-stored" not in json.dumps(envelope, default=str)
+    def test_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one(self) -> None:
+        assert_every(_cases(), _check_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resolves_one)
+
+    def test_configuration_is_stored_only_when_the_entry_says_so(self) -> None:
+        assert_every(_cases(), _check_configuration_is_stored_only_when_the_entry_says_so)
 
 
 def _read_tags(entry: dict[str, Any], item: dict[str, Any]) -> dict[str, str]:
@@ -3852,10 +3877,13 @@ def _read_tags(entry: dict[str, Any], item: dict[str, Any]) -> dict[str, str]:
     return normalize_tags(eval_path(item, block["from"]), block["shape"])
 
 
-@pytest.mark.parametrize("entry", manifest_entries(), ids=lambda e: e["entity_type"])
-def test_every_collected_model_declares_the_configuration_the_envelope_always_carries(entry: dict[str, Any]) -> None:
-    """``node_envelope`` writes ``configuration`` on every node (the full envelope, or ``{}``), so a model
-    without the field has its whole batch rejected at import, as v0.4.0 did for ``tags``."""
+def _check_declares_configuration(entry: dict[str, Any]) -> None:
     model = _model(entry["entity_type"])
     assert "configuration" in model.FIELD_CRUD_SCHEMA and "configuration" in model.FIELD_VALIDATION_SCHEMA
     assert any(f.name == "configuration" for f in model._meta.get_fields())
+
+
+def test_every_collected_model_declares_the_configuration_the_envelope_always_carries() -> None:
+    """``node_envelope`` writes ``configuration`` on every node (the full envelope, or ``{}``), so a model
+    without the field has its whole batch rejected at import, as v0.4.0 did for ``tags``."""
+    assert_every(((e["entity_type"], e) for e in manifest_entries()), _check_declares_configuration)

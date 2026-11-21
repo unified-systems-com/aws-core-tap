@@ -16,9 +16,9 @@ a future manifest entry is covered the moment it exists.
 
 from __future__ import annotations
 
-import pytest
 from tap_plugin.aws_core import models as models_pkg
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import load_manifest
+from tap_plugin.aws_core.tests.every_case import assert_every
 
 _MANIFEST_ENTRIES = load_manifest()["entries"]
 
@@ -33,47 +33,72 @@ def _collected_model(entry):
     return model
 
 
-@pytest.mark.parametrize("entry", _MANIFEST_ENTRIES, ids=lambda e: e["entity_type"])
+def _cases():
+    return ((entry["entity_type"], entry) for entry in _MANIFEST_ENTRIES)
+
+
+def _check_field_exists_nullable_and_starts_unset(entry):
+    model = _collected_model(entry)
+    field = model._meta.get_field("tags")
+    assert field.get_internal_type() == "JSONField"
+    # null means "not read"; {} means "read, untagged" (aws-core-tap#111, migration 0021).
+    assert field.null is True and field.default is None
+    assert field.blank is True
+
+
+def _check_declared_in_both_schemas(entry):
+    model = _collected_model(entry)
+    assert model.FIELD_CRUD_SCHEMA["tags"]["type"] == ["object", "null"]
+    validation = model.FIELD_VALIDATION_SCHEMA["tags"]
+    assert validation["validation"] == "jsonschema" and validation["schema"]["type"] == ["object", "null"]
+
+
+def _check_uniform_name_across_family(entry):
+    # The query-by-convention contract: same attribute name everywhere.
+    assert hasattr(_collected_model(entry), "tags")
+
+
+def _check_tags_never_projected_via_fields(entry):
+    """Tags reach the envelope ONLY through resolve_node_tags.
+
+    node_envelope stamps the resolved tags map AFTER the projected fields,
+    so a `fields.tags` projection is silently clobbered to {} (the second
+    v0.4.0 scar: five types fetched real tags in their custom fns and lost
+    them here). An entry whose enumeration carries tags declares
+    `tags: {source: "field", from: ..., shape: ...}` instead.
+    """
+    assert "tags" not in entry.get("fields", {}), (
+        f"{entry['entity_type']} projects tags via fields — the envelope clobbers "
+        f"projected tags; declare a tags block with source 'field' instead"
+    )
+
+
+def _check_tags_block_shape_when_declared(entry):
+    block = entry.get("tags")
+    if block is None:
+        return  # extraction is optional (e.g. aws_account is untaggable); the FIELD is not
+    assert block["source"] in ("rgta", "field", "service", "none")
+    if block["source"] == "none":
+        assert block["why"], "an untaggable type must say why AWS has no tag operation for it"
+    if block["source"] == "field":
+        assert block["shape"] in ("list_kv", "list_kv_lower", "map")
+        assert block["from"], "field-lane tags block needs a source path"
+
+
 class TestCanonicalTagsField:
-    def test_field_exists_nullable_and_starts_unset(self, entry):
-        model = _collected_model(entry)
-        field = model._meta.get_field("tags")
-        assert field.get_internal_type() == "JSONField"
-        # null means "not read"; {} means "read, untagged" (aws-core-tap#111, migration 0021).
-        assert field.null is True and field.default is None
-        assert field.blank is True
+    """Each invariant walks every manifest entry and fails once, naming every entry that breaks it."""
 
-    def test_declared_in_both_schemas(self, entry):
-        model = _collected_model(entry)
-        assert model.FIELD_CRUD_SCHEMA["tags"]["type"] == ["object", "null"]
-        validation = model.FIELD_VALIDATION_SCHEMA["tags"]
-        assert validation["validation"] == "jsonschema" and validation["schema"]["type"] == ["object", "null"]
+    def test_field_exists_nullable_and_starts_unset(self):
+        assert_every(_cases(), _check_field_exists_nullable_and_starts_unset)
 
-    def test_uniform_name_across_family(self, entry):
-        # The query-by-convention contract: same attribute name everywhere.
-        assert hasattr(_collected_model(entry), "tags")
+    def test_declared_in_both_schemas(self):
+        assert_every(_cases(), _check_declared_in_both_schemas)
 
-    def test_tags_never_projected_via_fields(self, entry):
-        """Tags reach the envelope ONLY through resolve_node_tags.
+    def test_uniform_name_across_family(self):
+        assert_every(_cases(), _check_uniform_name_across_family)
 
-        node_envelope stamps the resolved tags map AFTER the projected fields,
-        so a `fields.tags` projection is silently clobbered to {} (the second
-        v0.4.0 scar: five types fetched real tags in their custom fns and lost
-        them here). An entry whose enumeration carries tags declares
-        `tags: {source: "field", from: ..., shape: ...}` instead.
-        """
-        assert "tags" not in entry.get("fields", {}), (
-            f"{entry['entity_type']} projects tags via fields — the envelope clobbers "
-            f"projected tags; declare a tags block with source 'field' instead"
-        )
+    def test_tags_never_projected_via_fields(self):
+        assert_every(_cases(), _check_tags_never_projected_via_fields)
 
-    def test_tags_block_shape_when_declared(self, entry):
-        block = entry.get("tags")
-        if block is None:
-            return  # extraction is optional (e.g. aws_account is untaggable); the FIELD is not
-        assert block["source"] in ("rgta", "field", "service", "none")
-        if block["source"] == "none":
-            assert block["why"], "an untaggable type must say why AWS has no tag operation for it"
-        if block["source"] == "field":
-            assert block["shape"] in ("list_kv", "list_kv_lower", "map")
-            assert block["from"], "field-lane tags block needs a source path"
+    def test_tags_block_shape_when_declared(self):
+        assert_every(_cases(), _check_tags_block_shape_when_declared)
