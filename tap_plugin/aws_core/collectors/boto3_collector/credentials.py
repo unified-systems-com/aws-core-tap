@@ -115,6 +115,9 @@ _FINDINGS_PROPS: dict[str, Any] = {
     "findings_max_per_region": {"type": "integer", "minimum": 1},
     # Each findings read stops at its next page once it has run this long; absent means no budget.
     "findings_read_budget_seconds": {"type": "integer", "minimum": 1},
+    # Write compliance_core findings from the stored Inspector rows (req-aws-landing-zone-inspector-compliance); absent or
+    # false: nothing is written into compliance_core and it is not looked for.
+    "inspector_compliance_findings": {"type": "boolean"},
     # The Inspector finding types a run reads; absent means every type (ruling Q124a).
     "inspector_finding_types": {
         "type": "array",

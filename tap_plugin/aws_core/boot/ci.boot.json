@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "description": "aws_core CI record (req-boot-bootstrap-ci-record, tap#365) — the stack this plugin's own tests run in, and the one claim per-plugin CI is allowed to make: that aws_core is correct against the dependencies it DECLARES and nothing else. Install set is exactly the depends_on closure (computing_core) plus aws_core itself; the consumer flips the self entry to editable so the CHECKOUT under test runs, not the pinned revision. Population seeds aws_core (seed-only, offline). DELIBERATELY EXCLUDED: every other plugin, all credentials, all required_secrets, and any population step that reaches the network — so a fork can run this lane and a nightly cannot flake on a third party (req-boot-bootstrap-ci-record-5). Reproduce CI exactly: spawn --from 'git+https://github.com/unified-systems-com/aws-core-tap@<release tag>#ci' --dev-plugins aws_core",
+  "description": "aws_core CI record (req-boot-bootstrap-ci-record, tap#365) — the stack this plugin's own tests run in, and the one claim per-plugin CI is allowed to make: that aws_core is correct against the dependencies it DECLARES and nothing else. Install set is exactly the depends_on closure (computing_core, and the optional compliance_core the Inspector projection writes into, so its tests run here; req-aws-landing-zone-inspector-compliance) plus aws_core itself; the consumer flips the self entry to editable so the CHECKOUT under test runs, not the pinned revision. Population seeds aws_core (seed-only, offline). DELIBERATELY EXCLUDED: every other plugin, all credentials, all required_secrets, and any population step that reaches the network — so a fork can run this lane and a nightly cannot flake on a third party (req-boot-bootstrap-ci-record-5). Reproduce CI exactly: spawn --from 'git+https://github.com/unified-systems-com/aws-core-tap@<release tag>#ci' --dev-plugins aws_core",
   "install": {
     "plugins": [
       {
@@ -11,6 +11,16 @@
           "url": "https://github.com/unified-systems-com/computing-core-tap",
           "rev": "v0.10.9",
           "commit": "9995fe301e27ea41e7fe1faae93bfc1f1291371e"
+        }
+      },
+      {
+        "slug": "compliance_core",
+        "enabled": true,
+        "source": {
+          "type": "git",
+          "url": "https://github.com/unified-systems-com/compliance-core-tap",
+          "rev": "v0.8.13",
+          "commit": "4169092e43aeb60ab23919688890318b584ea1a0"
         }
       },
       {

@@ -25,6 +25,7 @@ name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
 
 depends_on = [
+    { slug = "compliance_core", optional = true, min_version = "0.8.13", note = "req-aws-landing-zone-inspector-compliance: when the credential's inspector_compliance_findings is true, the run's last step writes compliance_core's neutral finding, vulnerability, CONCERNS_COMPLIANCE_VULNERABILITY and CARRIES_COMPLIANCE_FINDING from the stored Inspector rows. Written by slug and read through the registries, never imported; no pyproject dependency. 0.8.13 is the first release with fix_state (0.8.8), the dimension declarations (0.8.12) and one CARRIES edge per pair (0.8.13). Absent or too old, the self-test fails when the option is on and the run collects the AWS data and records the projection as failed." },
     { slug = "computing_core", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and only computing_core's [grift] dimension bundle declares it. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin." },
 ]
 
@@ -1196,4 +1197,4 @@ pages = "grift/pages.grift.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "a3f317af1f08e3614a6f62110695050ee03f24cbada905a833261ce2eaff29f2"
+sha256 = "84a71ba95d711a23d12244bd536300023477df63604cfc098c4b434d4eae9548"

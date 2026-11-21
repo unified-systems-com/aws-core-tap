@@ -98,6 +98,7 @@ from .credentials import (
     resolve_partition,
     resolve_regions,
 )
+from . import compliance
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
@@ -180,6 +181,10 @@ _SITE_PROBE_SUMMARY = "8c2f"
 _SITE_EDGES_NOT_SELECTED = "c47e"
 _SITE_ABORT_SELECTION = "d2a9"
 _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
+# The Inspector compliance projection (req-aws-landing-zone-inspector-compliance).
+_SITE_COMPLIANCE_FAILED = "f728"
+_SITE_COMPLIANCE_NOTICE = "9116"
+_SITE_COMPLIANCE_SUBMITTED = "054f"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -1348,6 +1353,11 @@ class Boto3Collector(CollectorBase):
             if not org_tree.listings and not landing_zone.listings and not ecs_listings and not zone_listings:
                 self.declare_no_surfaces()
 
+        # --- Inspector findings into compliance_core (req-aws-landing-zone-inspector-compliance) ---
+        # The run's last write, after the collection batch imported: it reads the stored Inspector rows, so turning
+        # the option on later back-fills. A failure here never touches what was collected.
+        projection_failed = self._project_inspector_findings(data, account_id) if compliance.enabled(data) else None
+
         imported = result.counts.batches_imported
         progress.finished(batches_imported=imported)
         self.summary = (
@@ -1360,6 +1370,8 @@ class Boto3Collector(CollectorBase):
             self.summary += (
                 f" ECS container images NOT staged ({images_failed}): no RUNS_IMAGE or TAGS_IMAGE edge this run."
             )
+        if projection_failed is not None:
+            self.summary += f" Inspector findings NOT projected into compliance_core: {projection_failed}"
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for
         # the future audit-verifiability theme. One event, full machine
@@ -1371,6 +1383,55 @@ class Boto3Collector(CollectorBase):
             message_data={"calls": ledger.entries},
         )
         self.record_info(_SITE_RUN_COMPLETED, "RUN_COMPLETED", "AWS Core collection complete.")
+
+    def _project_inspector_findings(self, data: Mapping[str, Any], account_id: str) -> str | None:
+        """Write the account's stored Inspector rows as compliance_core findings, in a batch of their own.
+
+        Returns None when the projection was written, else why not, which is also an entry in ``results["error"]``:
+        compliance_core missing, too old or short of a type (:func:`.compliance.readiness`), a batch the importer
+        rejected, or a defect in the shaping. The collection batch has already imported, so the AWS data stands.
+        """
+
+        def failed(reason: str) -> str:
+            self.record_error(
+                _SITE_COMPLIANCE_FAILED,
+                "INSPECTOR_COMPLIANCE_PROJECTION_FAILED",
+                f"Inspector findings were collected but not projected into compliance_core: {reason}",
+                message_data={"option": compliance.OPTION, "reason": reason},
+            )
+            return reason
+
+        reason = compliance.readiness()
+        if reason is not None:
+            return failed(reason)
+        try:
+            rows = compliance.stored_rows(account_id)
+            projection = compliance.project(rows, compliance.held_vulnerabilities(compliance.names_of(rows)))
+            for code, message in projection.notices:
+                self.record_warn(_SITE_COMPLIANCE_NOTICE, code, message)
+            if not projection.nodes and not projection.edges:
+                return None
+            addressed = address_batch(projection.nodes, projection.edges)
+            document = assemble_batch(
+                source=f"{_SOURCE}.inspector_compliance",
+                manifest_version=str(load_manifest()["manifest_version"]),
+                account_id=account_id,
+                regions=[],
+                node_envelopes=addressed.nodes,
+                edge_envelopes=addressed.edges,
+            )
+            outcome = self.submit_grift(document, dangling_edge_mode="permissive", on_rejection="return")
+        except Exception as exc:  # noqa: BLE001 — isolates a defect in the projection, never the run
+            return failed(f"{type(exc).__name__}: {exc}")
+        if getattr(outcome, "errors", None):
+            return failed(f"the projection batch was rejected: {outcome.errors[0]}")
+        self.record_info(
+            _SITE_COMPLIANCE_SUBMITTED,
+            "INSPECTOR_COMPLIANCE_PROJECTED",
+            f"{projection.projected} Inspector finding(s) projected into compliance_core ({projection.skipped} skipped).",
+            message_data={"projected": projection.projected, "skipped": projection.skipped},
+        )
+        return None
 
     @classmethod
     def self_test(cls) -> CollectorSelfTestResult:
@@ -1468,6 +1529,30 @@ class Boto3Collector(CollectorBase):
                 docs=_DOCS,
             )
         )
+
+        # 2c. The Inspector compliance projection, when the credential turns it on, needs compliance_core
+        #     (req-aws-landing-zone-inspector-compliance-3). Off, nothing is looked for.
+        if compliance.enabled(data):
+            reason = compliance.readiness()
+            if reason is not None:
+                checks.append(
+                    check_fail(
+                        "INSPECTOR_COMPLIANCE_READY",
+                        f"{compliance.OPTION} is on, but {reason}. Install compliance_core >= {compliance.MIN_VERSION} "
+                        "or turn the option off; the AWS data is collected either way.",
+                        readiness_status=CollectorReadinessStatus.MISCONFIGURED,
+                        context={"option": compliance.OPTION, "min_version": compliance.MIN_VERSION},
+                        docs=_DOCS,
+                    )
+                )
+            else:
+                checks.append(
+                    check_pass(
+                        "INSPECTOR_COMPLIANCE_READY",
+                        f"{compliance.OPTION} is on and compliance_core carries what the projection writes.",
+                        docs=_DOCS,
+                    )
+                )
 
         # 3. Read-only reachability: STS within budget. For the assumed-role
         #    kind this also performs the AssumeRole (proving the cross-account
