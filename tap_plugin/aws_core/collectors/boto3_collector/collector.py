@@ -130,7 +130,7 @@ from .regions import (
     read_region_facts,
 )
 from .rgta import rgta_resource_type_filters, sweep_tags
-from .source import SourceError, iter_source
+from .source import SourceError, UndescribedError, iter_source
 from .tags import normalize_tags, rgta_join_arn
 from .transforms import build_transform_registry
 
@@ -848,8 +848,13 @@ class Boto3Collector(CollectorBase):
                         )
                     continue
                 try:
-                    items = list(
-                        iter_source(
+                    items: list[Any] = []
+                    # A reader that described what it could and then raised UndescribedError has read
+                    # its listing to the end: keep what it yielded, process it, and raise once that is
+                    # done, so the entry is reported as read-but-not-processed (aws-core-tap#265).
+                    undescribed: UndescribedError | None = None
+                    try:
+                        for item in iter_source(
                             entry,
                             client_for=client_factory(session, region),
                             custom_fns=custom_fns,
@@ -858,8 +863,10 @@ class Boto3Collector(CollectorBase):
                             truncated=listing.truncated if listing else None,
                             account_id=account_id,
                             scope={"partition": partition, "region": region, "account": account_id},
-                        )
-                    )
+                        ):
+                            items.append(item)
+                    except UndescribedError as exc:
+                        undescribed = exc
                     listed = True
                     if listing:
                         listing.count = len(items)
@@ -962,6 +969,8 @@ class Boto3Collector(CollectorBase):
                                     node, contained, account_id=account_id, dimensions=owned
                                 )
                             )
+                    if undescribed is not None:
+                        raise undescribed
                 except (
                     SourceError,
                     EdgeError,

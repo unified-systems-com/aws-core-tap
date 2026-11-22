@@ -49,6 +49,17 @@ class SourceError(Exception):
     """A manifest ``source`` could not be driven (unknown ``custom_fn``)."""
 
 
+class UndescribedError(SourceError):
+    """A reader listed items, yielded every one it could describe, and could not describe the rest.
+
+    The listing itself was read to its end, so the items already yielded are good and the engine
+    keeps them. The failure is about processing that listing, not about reading it: the entry is
+    reported as ``ENTRY_SKIPPED`` and its completeness surface says ``admitted`` false, so the
+    missing items never read as deleted (aws-core-tap#265). Every other ``SourceError`` still drops
+    the entry, because a listing that stopped short is not known to have been read.
+    """
+
+
 # A custom_fn yields raw items in the same shape an aws_op would. It receives
 # a bound session/region context (built by the runtime integration, later).
 CustomFn = Callable[[Any], Iterator[Any]]
