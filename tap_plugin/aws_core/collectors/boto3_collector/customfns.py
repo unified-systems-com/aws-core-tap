@@ -48,7 +48,7 @@ from .partition import (
     partition_of_region,
     service_unavailable_reason,
 )
-from .source import CustomFnRegistry, SourceError, iter_listing
+from .source import CustomFnRegistry, SourceError, UndescribedError, iter_listing
 
 
 def _hydrate_ops(entity_type: str) -> list[dict[str, str]]:
@@ -3008,11 +3008,14 @@ def rds_db_cluster_snapshots_described(session: Any, *, client_for: Any) -> Iter
     yield from _rds_snapshots(client_for, "describe_db_cluster_snapshots", "DBClusterSnapshots", "DBClusterSnapshotArn", "describe_db_cluster_snapshot_attributes", "DBClusterSnapshotIdentifier", "DBClusterSnapshotIdentifier", "DBClusterSnapshotAttributesResult")
 
 
-def _undescribed(kind: str, names: list[str]) -> SourceError:
+def _undescribed(kind: str, names: list[str]) -> UndescribedError:
     """The error a reader raises, after yielding what it could describe, when some listed ``kind`` could not
-    be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded, so a
-    description that failed is a loud gap in the run and never a quietly smaller inventory."""
-    return SourceError(f"{len(names)} {kind} could not be described and are missing from this run: {', '.join(names)}")
+    be described. The engine reports it as ``ENTRY_SKIPPED`` and keeps the items already yielded
+    (:class:`UndescribedError`, aws-core-tap#265), so a description that failed is a loud gap in the run
+    and never a quietly smaller inventory."""
+    return UndescribedError(
+        f"{len(names)} {kind} could not be described and are missing from this run: {', '.join(names)}"
+    )
 
 
 def eks_clusters_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:

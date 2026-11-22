@@ -382,3 +382,47 @@ class TestDisabledRegion:
             assert surface["admitted"] is False, surface
             assert surface["count_observed"] is None, surface
             assert "region_disabled" in surface["reasons"]["scope_authorized"]
+
+
+def _late_failure(monkeypatch, error: Exception) -> None:
+    """The VPC listing yields every item it read, then raises ``error``, as an undescribing reader does."""
+    real = collector_mod.iter_source
+
+    def iter_source(entry, **kwargs):
+        yield from real(entry, **kwargs)
+        if entry["entity_type"] == "aws_core__aws_vpc":
+            raise error
+
+    monkeypatch.setattr(collector_mod, "iter_source", iter_source)
+
+
+@pytest.mark.django_db
+class TestLateFailure:
+    """aws-core-tap#265: a late ``UndescribedError`` keeps what was already yielded, and nothing else does."""
+
+    def test_an_undescribed_item_keeps_the_ones_yielded_before_it(self, _stub_aws, monkeypatch):
+        from tap_plugin.aws_core.collectors.boto3_collector.source import UndescribedError
+
+        _late_failure(monkeypatch, UndescribedError("1 VPCs could not be described and are missing from this run: vpc-x"))
+        collector = _run()
+        assert has_edge(
+            "HOSTS_VPC__aws_core", _FOOTPRINT, _fp(_ACCOUNT, _REGION_ENABLED), "aws_core__aws_vpc", _VPC_ID
+        ), "the VPC yielded before the failure was dropped"
+        surface = _surface(collector, "account_region.vpcs", _REGION_ENABLED)
+        # Read to the end, not all processed: the surface licenses no retirement of the missing one.
+        assert surface["enumeration_complete"] is True, surface
+        assert surface["admitted"] is False, surface
+        skips = [w for w in collector.results["warn"] if w["message_code"] == "ENTRY_SKIPPED" and "vpc-x" in w["message"]]
+        assert len(skips) == 1, collector.results["warn"]
+
+    def test_any_other_late_source_error_still_drops_the_entry(self, _stub_aws, monkeypatch):
+        from tap_plugin.aws_core.collectors.boto3_collector.source import SourceError
+
+        _late_failure(monkeypatch, SourceError("DescribeVpcs: the listing did not reach its end"))
+        collector = _run()
+        assert not has_edge(
+            "HOSTS_VPC__aws_core", _FOOTPRINT, _fp(_ACCOUNT, _REGION_ENABLED), "aws_core__aws_vpc", _VPC_ID
+        )
+        surface = _surface(collector, "account_region.vpcs", _REGION_ENABLED)
+        assert surface["enumeration_complete"] is not True, surface
+        assert surface["admitted"] is False, surface
