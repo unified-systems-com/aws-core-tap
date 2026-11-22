@@ -16,10 +16,14 @@ plugin_version = "0.8.5" # x-release-please-version
 # this floor, so raising it is what lets this plugin's CI skip the ~22-minute migrate from zero.
 # 0.4.3: the first core release that carries compound edges (unified-systems-com/tap PR 1268, req-grid-edge-compound:
 # BaseModel.COMPOUND_EDGE, tap_grid.compound_edges, the E006 boot check and the retire-with-an-end delete walk), which
-# aws_inspector2_reachability_finding declares (aws-core-tap#261). WAITING ON THAT RELEASE: 0.4.3 is not cut yet, so
-# this floor names the release it will be; the PR is held until it exists. On an older core the declaration is an
-# unknown class attribute and the finding would not retire with its gateway or interface.
-requires_tap = ">=0.4.3"
+# aws_inspector2_reachability_finding declares (aws-core-tap#261). On an older core the declaration is an unknown
+# class attribute and the finding would not retire with its gateway or interface.
+# 0.4.4: the first core release whose test harness commits its baseline seed once per test database instead of
+# re-seeding it in every DB test, and caches each JSON Schema validator (unified-systems-com/tap PR 1281), and whose
+# harness forgets test-local models between tests (unified-systems-com/tap PR 1296). Worksteal, the other half of
+# PR 1296, reaches this repo through the plugin-ci.yml pin in .github/workflows/ci.yml, moved with this floor.
+# Plugin CI tests against the core tag at this floor, so raising it is what gives this plugin's CI that speed.
+requires_tap = ">=0.4.4"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
