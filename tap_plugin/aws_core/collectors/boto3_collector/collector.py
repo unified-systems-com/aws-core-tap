@@ -864,7 +864,7 @@ class Boto3Collector(CollectorBase):
                             account_id=account_id,
                             scope={"partition": partition, "region": region, "account": account_id},
                         ):
-                            items.append(item)
+                            items.append(item)  # noqa: PERF402 — list() would lose the items on a late raise
                     except UndescribedError as exc:
                         undescribed = exc
                     listed = True

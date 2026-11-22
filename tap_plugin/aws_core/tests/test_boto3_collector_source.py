@@ -99,6 +99,25 @@ class TestSourceDispatch:
         with pytest.raises(SourceError, match="not registered"):
             list(iter_source(entry, client_for=self._client_for, custom_fns=CustomFnRegistry()))
 
+    def test_a_readers_undescribed_error_reaches_the_engine_as_itself_after_its_items(self):
+        """aws-core-tap#265: the engine keeps a reader's items only on UndescribedError, so iter_source
+        must hand over every item first and then the error unwrapped, as the reader raised it."""
+        from tap_plugin.aws_core.collectors.boto3_collector.customfns import _undescribed
+        from tap_plugin.aws_core.collectors.boto3_collector.source import UndescribedError
+
+        def zones(_ctx, *, client_for):
+            yield {"Id": "z1"}
+            raise _undescribed("hosted zones", ["z2"])
+
+        reg = CustomFnRegistry()
+        reg.register("zones", zones)
+        entry = {"service": "route53", "source": {"custom_fn": "zones"}, "items_path": "[]"}
+        seen = []
+        with pytest.raises(UndescribedError, match="1 hosted zones could not be described"):
+            for item in iter_source(entry, client_for=self._client_for, custom_fns=reg):
+                seen.append(item)  # noqa: PERF402 — list() would lose the items on the raise
+        assert seen == [{"Id": "z1"}]
+
     def test_custom_fn_receives_context(self):
         reg = CustomFnRegistry()
         reg.register("probe", lambda ctx, *, client_for: iter([{"Id": ctx}]))
