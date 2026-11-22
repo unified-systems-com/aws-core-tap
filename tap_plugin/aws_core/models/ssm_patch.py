@@ -1,0 +1,63 @@
+"""SSM Patch — a vendor patch managed instances report (req-aws-core-ssm-patch-state, ruling B2)."""
+
+from typing import Any, ClassVar
+
+from django.db import models
+
+from tap_grid.models import BaseModel
+
+
+class SsmPatch(BaseModel):
+    """One patch, as DescribeInstancePatches names it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the KBId (a Windows KB number, or a Linux package name, epoch, version and release). One node serves every instance that reports it; each instance's state, severity and install time are on its REPORTS_PATCH edge. cve_ids is the CVE list AWS gives the patch, split from its comma-separated string; no edge to a vulnerability node yet."""
+
+    ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ssm_patch"
+    ENTITY_NAME: ClassVar[str] = "SSM Patch"
+    ENTITY_DESCRIPTION: ClassVar[str] = "A patch SSM managed instances report, shared by every instance that reports it."
+    ENTITY_ICON: ClassVar[str] = "aws-generic"
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # Identity (req-grid-entity-natural-key): Partition, SSM operating system and KBId: a patch has no ARN and is not an account's resource.
+    NATURAL_KEY: ClassVar[tuple[str, ...]] = ("partition", "operating_system", "kb_id")
+
+    DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
+        "tap_viz": {
+            "shape": "rectangle",
+            "colors": {"fill": "#C3CFDC", "border": "#2B5783", "label": "#0C1824"},
+        }
+    }
+
+    FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
+        "name": {"type": "string"},
+        "partition": {"type": "string"},
+        "operating_system": {"type": "string"},
+        "kb_id": {"type": "string"},
+        "title": {"type": ["string", "null"]},
+        "classification": {"type": ["string", "null"]},
+        "cve_ids": {"type": ["array", "null"], "items": {"type": "string"}},
+        "configuration": {"type": "object"},
+        "tags": {"type": ["object", "null"]},
+    }
+
+    FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
+        name: {"validation": "jsonschema", "schema": schema} for name, schema in FIELD_CRUD_SCHEMA.items()
+    }
+    CREATE_REQUIRED: ClassVar[list[str]] = ["kb_id"]
+
+    name = models.CharField(max_length=255, blank=True, default="")
+    partition = models.CharField(max_length=32, blank=True, default="")
+    # The SSM OperatingSystem enum (WINDOWS, AMAZON_LINUX_2023, ...).
+    operating_system = models.CharField(max_length=64, blank=True, default="")
+    kb_id = models.CharField(max_length=1024, blank=True, default="")
+    title = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
+    classification = models.CharField(max_length=255, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
+    cve_ids = models.JSONField(null=True, blank=True, default=None)
+    configuration = models.JSONField(default=dict, blank=True)
+    tags = models.JSONField(null=True, blank=True, default=None)
+
+    class Meta(BaseModel.Meta):
+        db_table = "aws_core__aws_ssm_patch"
+
+    def get_name(self) -> str:
+        return self.title or self.kb_id
+
+    def __str__(self) -> str:
+        return self.get_name()

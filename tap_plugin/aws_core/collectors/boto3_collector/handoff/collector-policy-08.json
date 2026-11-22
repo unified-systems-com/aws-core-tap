@@ -123,12 +123,17 @@
       "Effect": "Allow",
       "Action": [
         "ssm:DescribeDocument",
+        "ssm:DescribeInstanceInformation",
+        "ssm:DescribeInstancePatchStates",
+        "ssm:DescribeInstancePatches",
         "ssm:DescribeMaintenanceWindows",
         "ssm:DescribeParameters",
         "ssm:DescribePatchBaselines",
         "ssm:ListAssociations",
         "ssm:ListCloudConnectors",
+        "ssm:ListComplianceItems",
         "ssm:ListDocuments",
+        "ssm:ListResourceComplianceSummaries",
         "ssm:ListResourceDataSync",
         "ssm:ListTagsForResource"
       ],

@@ -33,6 +33,7 @@ from .ecs import describe_task_definitions, referenced_task_definitions, shared_
 from .elb_topology import LoadBalancerListeners
 from .elb_topology import forwards as elb_forwards
 from .elb_topology import shared_walk as shared_listener_walk
+from . import ssm_patch
 from .route53_records import bare_zone_id, record_set_key
 from .route53_records import shared_walk as shared_records_walk
 from .envelope import jsonable, without_response_metadata
@@ -3426,6 +3427,34 @@ def ecs_containers_described(session: Any, *, client_for: Any) -> Iterator[dict[
     yield from shared_walk(session, client_for).containers
 
 
+def _ssm_walk(session: Any, client_for: Any) -> ssm_patch.SsmWalk:
+    """The region's shared SSM walk (see :mod:`.ssm_patch`)."""
+    return ssm_patch.shared_walk(session, client_for, partition=_client_partition(client_for("ssm")))
+
+
+def ssm_managed_instances_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """SSM managed instances (regional), each with its last patch operation and the patches, compliance summaries
+    and non-Patch compliance items it reports, from the region's shared SSM walk (req-aws-core-ssm-patch-state)."""
+    yield from _ssm_walk(session, client_for).instances
+
+
+def ssm_patches_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """The patches the region's managed instances report, one per (partition, operating system, KBId), each sent
+    once per run however many regions report it, from the shared SSM walk."""
+    yield from ssm_patch.new_patches(session, _ssm_walk(session, client_for))
+
+
+def ssm_compliance_summaries_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Every compliance summary of the region (ListResourceComplianceSummaries), from the shared SSM walk."""
+    yield from _ssm_walk(session, client_for).summaries
+
+
+def ssm_compliance_items_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Each managed instance's Association and Custom compliance items (ListComplianceItems, ComplianceType not
+    Patch), from the shared SSM walk."""
+    yield from _ssm_walk(session, client_for).items
+
+
 def ecs_task_definitions_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """ECS task definition revisions: the ACTIVE ones, and every one a task or service of the region names
     (req-aws-collector-ecs-25), so ``USES_TASK_DEFINITION`` reaches a deregistered revision a task still runs.
@@ -3547,6 +3576,10 @@ _CUSTOM_FNS = {
     "ecs_tasks_described": ecs_tasks_described,
     "ecs_containers_described": ecs_containers_described,
     "ecs_task_definitions_described": ecs_task_definitions_described,
+    "ssm_managed_instances_described": ssm_managed_instances_described,
+    "ssm_patches_described": ssm_patches_described,
+    "ssm_compliance_summaries_described": ssm_compliance_summaries_described,
+    "ssm_compliance_items_described": ssm_compliance_items_described,
 }
 
 

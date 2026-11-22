@@ -1,0 +1,17 @@
+{
+  "slug": "REPRESENTS_EC2_INSTANCE__aws_core",
+  "name": "Represents EC2 Instance",
+  "description": "An SSM managed instance is SSM's record of an EC2 instance (managed instance -> instance): DescribeInstanceInformation's InstanceId when its ResourceType is EC2Instance. A hybrid (mi-) node has none. A reference, not containment. Collected by the SSM walk (collectors/boto3_collector/ssm_patch.py, aws-core-tap#281, req-aws-core-ssm-patch-state).",
+  "sources": [
+    "aws_core__aws_ssm_managed_instance"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_instance"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

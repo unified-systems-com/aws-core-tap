@@ -7198,5 +7198,35 @@
    ],
    "dropped": []
   }
+ },
+ "ssm:describe_instance_information": {
+  "actions": [
+   "ssm:DescribeInstanceInformation"
+  ],
+  "dropped": []
+ },
+ "ssm:describe_instance_patch_states": {
+  "actions": [
+   "ssm:DescribeInstancePatchStates"
+  ],
+  "dropped": []
+ },
+ "ssm:describe_instance_patches": {
+  "actions": [
+   "ssm:DescribeInstancePatches"
+  ],
+  "dropped": []
+ },
+ "ssm:list_compliance_items": {
+  "actions": [
+   "ssm:ListComplianceItems"
+  ],
+  "dropped": []
+ },
+ "ssm:list_resource_compliance_summaries": {
+  "actions": [
+   "ssm:ListResourceComplianceSummaries"
+  ],
+  "dropped": []
  }
 }

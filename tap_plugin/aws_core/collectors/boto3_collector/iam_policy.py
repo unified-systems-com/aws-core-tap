@@ -55,6 +55,7 @@ CODE_MODULES = (
     "customfns.py", "customfns_longtail.py", "landing_zone.py", "organizations.py", "identity.py", "regions.py",
     "rgta.py", "ecs.py", "iam_trust.py", "policy_documents.py", "credentials.py", "authority.py", "hydrate.py",
     "elb_topology.py",
+    "ssm_patch.py",
 )  # fmt: skip
 #: Modules whose reads go through a shared reader helper (``self.r.walk("inspector2", ...)``), which the per-function
 #: scan cannot see, and which therefore declare every operation they make as module-level literal tuples

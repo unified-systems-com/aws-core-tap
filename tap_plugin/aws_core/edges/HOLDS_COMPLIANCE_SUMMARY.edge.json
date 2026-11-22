@@ -1,0 +1,17 @@
+{
+  "slug": "HOLDS_COMPLIANCE_SUMMARY__aws_core",
+  "name": "Holds Compliance Summary",
+  "description": "An SSM managed instance holds its compliance summary for one compliance type (managed instance -> summary): ListResourceComplianceSummaries rows whose ResourceId is the instance. Collected by the SSM walk (collectors/boto3_collector/ssm_patch.py, aws-core-tap#281, req-aws-core-ssm-patch-state).",
+  "sources": [
+    "aws_core__aws_ssm_managed_instance"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_compliance_summary"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

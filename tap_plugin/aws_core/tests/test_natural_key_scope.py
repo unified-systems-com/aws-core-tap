@@ -133,6 +133,8 @@ GLOBALLY_UNIQUE: dict[str, tuple[str, str]] = {
     "ssm_cloud_connector": ("CloudConnectorId", "an id AWS generates"),
     "ssm_maintenance_window": ("WindowId", "an id AWS generates"),
     "ssm_patch_baseline": ("BaselineId", "an id AWS generates"),
+    "ssm_managed_instance": ("InstanceId", "an id AWS generates: the EC2 instance id, or the mi- id SSM generates for a hybrid node"),
+    "ssm_patch": ("{partition}:{OperatingSystem}:{KBId}", "a vendor patch, not an account's resource: partition, SSM operating system and the KBId AWS returns, one node for every instance, region and account that reports it (ruling B2)"),
     "servicecatalog_service_action": ("Id", "an id AWS generates"),
     "servicecatalog_tag_option": ("Id", "an id AWS generates"),
     "cloudformation_stack": ("StackId", "an id AWS generates"),

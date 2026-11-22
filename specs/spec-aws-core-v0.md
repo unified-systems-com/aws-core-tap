@@ -64,6 +64,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-contained-type-triple | [Every Contained Type Has Its Three Parts](#every-contained-type-has-its-three-parts) | Proposed | Every (parent, edge type) the epic adds has containment, a completeness surface and a falsifier; empty parents are complete-empty; unfinished listings are incomplete |
 | req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
 | req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
+| req-aws-core-ssm-patch-state | [SSM Patch And Compliance State](#ssm-patch-and-compliance-state) | Implemented | Managed instances with their last patch operation as typed fields, the EC2 instance and baseline they link to, shared patch nodes reached by `REPORTS_PATCH`, compliance summaries and non-Patch items as nodes; no cap (aws-core-tap#281) |
 
 ### Plugin Scope
 ----
@@ -2378,3 +2379,100 @@ provisioned-product requirement and no `CreateGovCloudAccount` workflow model.
 | req-aws-core-partition-pairing-2 | No Partition Dimension | Proposed | No dimension key is added or changed by this requirement. | Ruling 2026-09-30. |
 | req-aws-core-partition-pairing-3 | Pairing Edge | Proposed | `PAIRED_WITH_ACCOUNT` declares GovCloud account → commercial account, reference, and the spec states it is declared, not collected, from the GovCloud side. | Ruling 2026-10-01: declared as data in highbar's design. |
 | req-aws-core-partition-pairing-4 | No Vending Model | Proposed | No model or requirement here represents account vending (Service Catalog provisioned product, `CreateGovCloudAccount` request). | Ruling 2026-09-30. |
+
+### SSM Patch And Compliance State
+----
+RID: `req-aws-core-ssm-patch-state`
+
+Status: `Implemented`
+
+Which instances SSM manages, what their last patch operation found, which patches each reports and in what state,
+and how each stands on every compliance type. This is evidence for vulnerability (VDR) and compliance work. Before
+this, aws_core called none of the calls below, and no patch state was on the grid. Raised as Issue# 281 -
+aws-core-tap (https://github.com/unified-systems-com/aws-core-tap/issues/281). Ruled for build by George (Q116b,
+reaffirmed Q137a). Design rulings, 2026-11-22: patch state is typed fields on the managed instance (A1); a patch
+is a node shared by every instance that reports it, with the per-instance facts on the edge (B2).
+
+#### Implementation
+
+- **One walk, four types** (`collectors/boto3_collector/ssm_patch.py`). The pattern is ECS's: `shared_walk`
+  makes the calls once per run and region, and four `custom_fn` entries take their slice.
+  - `DescribeInstanceInformation` lists every managed instance. A failure here skips all four entries for the
+    region, rather than reading the region as having nothing managed.
+  - `DescribeInstancePatchStates` reads 50 instances per call, the API's maximum.
+  - `DescribePatchBaselines` is read with no filter, only to learn each baseline's operating system. It emits
+    nothing.
+  - `DescribeInstancePatches` is read per instance that has a patch state.
+  - `ListResourceComplianceSummaries` is read once per region.
+  - `ListComplianceItems` is read per instance, with `ComplianceType` `NOT_EQUAL` `Patch`.
+  - `ListTagsForResource` (`ManagedInstance`) is read per hybrid node.
+  - Every listing is read to its end, with no cap (ruling Q124a).
+- **`aws_ssm_managed_instance`**, keyed by `instance_id`: the EC2 instance id, or SSM's `mi-` id for a hybrid
+  node. AWS generates it, and the API returns no ARN. `ARN_RESOURCE = "ssm:managed-instance"`.
+  - It carries the agent's fields: ping status and time, agent version, platform, and association status.
+  - It carries the last patch operation's fields, all nullable: patch group, baseline id, operation, start and
+    end, reboot option, snapshot, and the twelve counts.
+  - Null means not observed: never scanned, or the read failed.
+  - `OwnerInformation` is botocore-sensitive. It is dropped as the response is read and is in no item.
+  - `IPAddress` is botocore-sensitive. It is declared and not projected.
+  - A hybrid node's tags are SSM's. An EC2 node's tags are the EC2 instance's, so on this node they stay unread
+    (null).
+- **`aws_ssm_patch`**, keyed by (`partition`, `operating_system`, `kb_id`).
+  - The operating system is the SSM `OperatingSystem` of the baseline the instance's last operation used, so a
+    package name or KB number names one patch per operating system.
+  - One node serves every instance, region and account that reports the patch. A run sends it once; its
+    dimensions are those of the first region that reported it, since a vendor patch belongs to no account.
+  - `cve_ids` is `CVEIds` split into a list of strings, in order, repeats dropped. No edge to a vulnerability node
+    yet: whether to link `compliance_core__compliance_vulnerability`, as the Inspector projection does, is open.
+- **`aws_ssm_compliance_summary`**, keyed by (`account_id`, `region`, `resource_type`, `resource_id`,
+  `compliance_type`). It carries status, overall severity, the last execution, and the compliant and
+  non-compliant counts, in total and by severity.
+- **`aws_ssm_compliance_item`**, keyed by (`account_id`, `region`, `resource_type`, `resource_id`,
+  `compliance_type`, `item_id`). These are Association and Custom items only: an instance's Patch items are its
+  `REPORTS_PATCH` edges, read from `DescribeInstancePatches`. `item_id` is AWS's `Id`, or the `Title` when a
+  Custom item has none. `details` is the item's `Details` map.
+- **Edges.** None of them is containment.
+  - `REPRESENTS_EC2_INSTANCE` (managed instance → EC2 instance), only when `ResourceType` is `EC2Instance`.
+  - `USES_PATCH_BASELINE` (managed instance → patch baseline): the `BaselineId` of the last operation.
+  - `REPORTS_PATCH` (managed instance → patch), carrying `state`, `severity` and `installed_time`. AWS's epoch
+    means not installed and is stored as null.
+  - `HOLDS_COMPLIANCE_SUMMARY` and `HOLDS_COMPLIANCE_ITEM` (managed instance → summary or item), written from the
+    summary's or item's `ResourceId`.
+  - `CONCERNS_ASSOCIATION` (Association item → `aws_ssm_association`, by `AssociationId`).
+- **An AWS-provided baseline.** Its `BaselineId` is an ARN under AWS's own account. The baseline entry still
+  lists `OWNER=Self` only; whether AWS's baselines and the per-account default are collected is unruled. So
+  `USES_PATCH_BASELINE` to an AWS-provided baseline names no node: core skips it and records the skip. The
+  instance's `patch_baseline_id` keeps the id.
+- **Degradation.** A denied or failed per-instance call is a `_hydrate` slot, which the run records as
+  `HYDRATE_GAP`. The edge reads it fed are `failed`, so no authority claim covers edges the run could not see. A
+  patch reported without a known operating system or a KBId makes that instance's `REPORTS_PATCH` read `partial`.
+- **Stored, as every entry is** (`req-aws-collector-redaction-1`). `OwnerInformation` is never in an item, so it
+  is never stored. `IPAddress` is declared under its real category and stored, as `req-aws-collector-redaction-2`
+  rules for a botocore-sensitive member that is not secret material. The managed instance's stored item carries the
+  per-patch list its `REPORTS_PATCH` edges come from, so it grows with the number of patches the instance reports.
+- **Keys.** The patch, summary and item entries build their batch refs with `derive` from the run's scope. The walk
+  makes no STS call; a summary and an item name their managed instance by `ResourceId`, an inbound rule.
+
+#### Deliberately Not Included
+
+- AWS-provided patch baselines, the per-OS default (`GetDefaultPatchBaseline`) and patch groups as nodes
+  (`DescribePatchGroups`): unruled, so the baseline listing is unchanged and the patch group is a field.
+- The patch → vulnerability edge: under discussion. `cve_ids` stays a property.
+- AWS-owned SSM documents, the other half of the same omission.
+- The live trial, which needs a provisioned instance; credentials are pending.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-ssm-patch-state-1 | Managed Instances Keyed By Instance Id | Implemented | Every instance `DescribeInstanceInformation` returns, read to its end, is one `aws_ssm_managed_instance` keyed by its `InstanceId`. | `tests/test_ssm_patch_state.py` |
+| req-aws-core-ssm-patch-state-2 | Patch State On The Instance | Implemented | The last patch operation's group, baseline, operation, times and counts are typed nullable fields of the instance (ruling A1). `OwnerInformation` reaches no item, field or stored configuration; the IP address reaches no field. | |
+| req-aws-core-ssm-patch-state-3 | Linked To Its EC2 Instance And Baseline | Implemented | An EC2-backed instance has `REPRESENTS_EC2_INSTANCE` to the EC2 instance, a hybrid one does not. `USES_PATCH_BASELINE` names the baseline by the `BaselineId` AWS returns, an AWS-provided ARN included. | |
+| req-aws-core-ssm-patch-state-4 | Tags From The Right Surface | Implemented | A hybrid node's tags are read by `ListTagsForResource` (`ManagedInstance`). An EC2 node's are left unread, because they are the EC2 instance's. | |
+| req-aws-core-ssm-patch-state-5 | Shared Patch Nodes | Implemented | A patch is one `aws_ssm_patch` per (partition, operating system, KBId), sent once per run. Each reporting instance reaches it by `REPORTS_PATCH` carrying its own `state`, `severity` and `installed_time` (null for not installed) (ruling B2). | |
+| req-aws-core-ssm-patch-state-6 | CVE Ids As A Property | Implemented | `cve_ids` is a list of the CVE ids AWS gives the patch. No edge to a vulnerability node is emitted. | The link is under discussion. |
+| req-aws-core-ssm-patch-state-7 | Compliance Summaries | Implemented | Each `ListResourceComplianceSummaries` row is one `aws_ssm_compliance_summary`, scoped by account and region, held by its managed instance. | |
+| req-aws-core-ssm-patch-state-8 | Non-Patch Compliance Items | Implemented | `ListComplianceItems` is read per instance with `ComplianceType` not `Patch`. Each item is an `aws_ssm_compliance_item` held by its instance, and an Association item has `CONCERNS_ASSOCIATION` to its association. | |
+| req-aws-core-ssm-patch-state-9 | No Cap | Implemented | Every instance, patch, summary and item is read. Patch states are read in chunks of 50. A region with nothing managed makes only the two listings, and the walk never calls STS. | Ruling Q124a. |
+| req-aws-core-ssm-patch-state-10 | A Failed Read Is Never Empty | Implemented | A denied per-instance call is a `_hydrate` gap, and the edge reads it fed are `failed`. A patch that cannot be keyed makes the read `partial`. A failed `DescribeInstanceInformation` fails the listing. | |
+| req-aws-core-ssm-patch-state-11 | Declared And Importable | Implemented | The four entries are registered `custom_fn` entries that store their configuration, with a reviewed sensitivity naming the botocore-sensitive members. Every payload passes the create schema, and a collector run imports the nodes and edges into the grid. | |

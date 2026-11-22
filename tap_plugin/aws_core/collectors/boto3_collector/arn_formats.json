@@ -2246,6 +2246,9 @@
   "ssm:maintenancewindow": [
    "arn:${Partition}:ssm:${Region}:${Account}:maintenancewindow/${ResourceId}"
   ],
+  "ssm:managed-instance": [
+   "arn:${Partition}:ssm:${Region}:${Account}:managed-instance/${InstanceId}"
+  ],
   "ssm:parameter": [
    "arn:${Partition}:ssm:${Region}:${Account}:parameter/${ParameterNameWithoutLeadingSlash}"
   ],
