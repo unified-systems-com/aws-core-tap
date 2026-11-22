@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.6](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.5...v0.8.6) (2026-11-22)
+
+
+### Bug Fixes
+
+* **collector:** a late UndescribedError keeps the items its reader already yielded ([#279](https://github.com/unified-systems-com/aws-core-tap/issues/279)) ([adc905b](https://github.com/unified-systems-com/aws-core-tap/commit/adc905b320d32708f8ec63fe98e49550dbcc800d))
+
 ## [0.8.5](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.4...v0.8.5) (2026-11-21)
 
 
