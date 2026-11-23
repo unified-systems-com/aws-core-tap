@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -20,6 +21,14 @@ class EcsContainer(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the container's ARN, unique across tasks and clusters.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("container_arn",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time in its own record (DescribeTasks tasks[].containers[]). The collector also reads "
+        "DescribeServices services[], whose createdAt is that record's, not this one's; AWS states no time for this "
+        "one."
+    )
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.
     ARN_RESOURCE: ClassVar[str | None] = None

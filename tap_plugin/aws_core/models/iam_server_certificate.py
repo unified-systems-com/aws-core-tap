@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -20,6 +21,9 @@ class IamServerCertificate(BaseModel):
     # Identity (req-grid-entity-natural-key): The certificate's ARN: a name is unique only within an account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificate_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:server-certificate"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): UploadDate, when the certificate was uploaded to
+    # IAM, until Expiration, the end AWS states for it. An interval that ends where AWS states an end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="upload_date", kind="created", end="expiration")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

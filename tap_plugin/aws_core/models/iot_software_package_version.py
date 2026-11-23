@@ -18,6 +18,13 @@ class IotSoftwarePackageVersion(BaseModel):
     # Identity (req-grid-entity-natural-key): The package version's ARN, built as arn:{partition}:iot:{region}:{account}:package/{packageName}/version/{versionName} (the AWS Service Authorization Reference iot 'packageversion' resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("iot_software_package_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iot:packageversion"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (ListPackageVersions packageVersionSummaries[].creationDate, a botocore "
+        "timestamp), held only inside configuration. Undeclared until a declaration can read it through a reader "
+        "function (unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -33,6 +34,13 @@ class AwsConfigConformancePack(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("pack_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:ConformancePack"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states only LastUpdateRequestedTime (DescribeConformancePacks), when an update was last requested: a "
+        "last-change time, and none of the four kinds names it (reported on unified-systems-com/tap#1289)."
+    )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -46,6 +47,9 @@ class AwsGuardDutyFinding(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("finding_arn",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): CreatedAt, when the finding was created. An
+    # interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="created_at", kind="created")
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.
     ARN_RESOURCE: ClassVar[str | None] = None

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -19,6 +20,13 @@ class EcsCluster(BaseModel):
     # an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("cluster_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ecs:cluster"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time in its own record (DescribeClusters clusters[]). The collector also reads DescribeServices"
+        " services[], whose createdAt is that record's, not this one's; AWS states no time for this one."
+    )
     # A cluster contains the tasks it runs (aws-core-tap#211): a task the cluster's complete running listing
     # no longer names is a retirement candidate, and retiring the cluster cascades to its tasks. RUNS_TASK from
     # a service is a reference, not containment. Literals, for validate_plugin's AST reader.

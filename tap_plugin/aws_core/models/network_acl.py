@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -21,6 +22,10 @@ class NetworkAcl(BaseModel):
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("network_acl_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:network-acl"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (DescribeNetworkAcls NetworkAcls[])."
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -26,6 +26,13 @@ class Elb(BaseModel):
     # within an account and region, so neither can be the key for all three types.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dns_name",)
     ARN_RESOURCE: ClassVar[str | None] = "elasticloadbalancing:loadbalancer"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (DescribeLoadBalancers LoadBalancers[].CreatedTime, a botocore timestamp), held"
+        " only inside configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

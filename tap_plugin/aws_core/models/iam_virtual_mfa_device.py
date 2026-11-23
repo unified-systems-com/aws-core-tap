@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -20,6 +21,13 @@ class IamVirtualMfaDevice(BaseModel):
     # Identity (req-grid-entity-natural-key): The device's serial number, an ARN that embeds the user name for a virtual device.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("serial_number",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:mfa"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states only EnableDate (ListVirtualMFADevices), when the device was enabled for a user, not when it was "
+        "created; none of the four kinds names it (reported on unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

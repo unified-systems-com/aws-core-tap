@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,12 @@ class Ec2IpamPrefixListResolverTarget(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's ARN (IpamPrefixListResolverTargetArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_ipam_prefix_list_resolver_target_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:ipam-prefix-list-resolver-target"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time in its own record (DescribeIpamPrefixListResolverTargets IpamPrefixListResolverTargets[])."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

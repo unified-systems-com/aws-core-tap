@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -44,6 +45,9 @@ class AwsInspector2Finding(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("finding_arn",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): firstObservedAt; Inspector states no creation time
+    # for a finding. An interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="first_observed_at", kind="first_seen")
     # The service reference's inspector2 Finding (arn:...:inspector2:<region>:<account>:finding/<id>); the key is the
     # ARN ListFindings returns.
     ARN_RESOURCE: ClassVar[str | None] = "inspector2:Finding"

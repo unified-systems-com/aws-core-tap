@@ -17,6 +17,13 @@ class LogsMetricFilter(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The log group name and the filter name together (group:filter): a filter name is unique only within a log group. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("filter_key",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (DescribeMetricFilters metricFilters[].creationTime, an epoch number), held "
+        "only inside configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

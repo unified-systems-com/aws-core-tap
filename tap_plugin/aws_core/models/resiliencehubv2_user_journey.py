@@ -17,6 +17,13 @@ class Resiliencehubv2UserJourney(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the system's ARN and the userJourneyId joined with '|' (the CloudFormation primary identifier of AWS::ResilienceHubV2::UserJourney is SystemIdentifier and UserJourneyId): a journey id is scoped to its system and the item carries no ARN of its own
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("resiliencehubv2_user_journey_id",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (ListUserJourneys userJourneySummaries[].createdAt, a botocore timestamp), held"
+        " only inside configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

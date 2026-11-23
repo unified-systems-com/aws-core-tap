@@ -20,6 +20,13 @@ class LambdaLayerVersion(BaseModel):
     # Identity (req-grid-entity-natural-key): The layer version's ARN: a layer name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("layer_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "lambda:layerVersion"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "Lambda states CreatedDate as text with a +0000 offset (2018-11-27T15:10:45.123+0000), which is not a FHIR "
+        "form, and the typed field keeps it as sent (core rule 22). Undeclared until a declaration can read it through "
+        "a reader function (unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

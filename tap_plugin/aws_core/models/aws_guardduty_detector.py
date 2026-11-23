@@ -39,6 +39,13 @@ class AwsGuardDutyDetector(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "detector_id")
     ARN_RESOURCE: ClassVar[str | None] = "guardduty:detector"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (GetDetector CreatedAt, text), and the collector stores it in no field of this "
+        "model yet. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
     # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.
