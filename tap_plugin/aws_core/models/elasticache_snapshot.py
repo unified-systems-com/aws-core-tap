@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,15 @@ class ElasticacheSnapshot(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's ARN (ARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("snapshot_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "elasticache:snapshot"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no creation time in its own record (DescribeSnapshots Snapshots[]); the times it does return there"
+        " (CacheClusterCreateTime) are held only inside configuration. The CacheNodeCreateTime inside its record "
+        "(DescribeSnapshots Snapshots[].NodeSnapshots[]) belongs to a nested record, not to it; AWS states no time for "
+        "this one."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

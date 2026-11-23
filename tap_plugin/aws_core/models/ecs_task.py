@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,9 @@ class EcsTask(BaseModel):
     # Identity (req-grid-entity-natural-key): The task's ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("task_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ecs:task"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): the task ran from startedAt (PENDING to RUNNING)
+    # to stoppedAt (RUNNING to STOPPED). An interval: the run has a start and, once it stops, an end.
+    EVENT_TIME: ClassVar[Interval] = Interval(start="started_at", kind="occurred", end="stopped_at")
     # A task contains its containers (aws-core-tap#211): retiring a task cascades to them. Literals, for
     # validate_plugin's AST reader.
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [

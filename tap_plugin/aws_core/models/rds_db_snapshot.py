@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,9 @@ class RdsDbSnapshot(BaseModel):
     # Identity (req-grid-entity-natural-key): The snapshot's ARN: a snapshot identifier is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("db_snapshot_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:snapshot"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): SnapshotCreateTime, when the snapshot was taken.
+    # An interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="created_at", kind="created")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

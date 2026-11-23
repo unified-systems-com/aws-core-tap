@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,13 @@ class Ec2LgwRouteTableVifGroupAssociation(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's own id (LocalGatewayRouteTableVirtualInterfaceGroupAssociationId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_lgw_route_table_vif_group_association_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:local-gateway-route-table-virtual-interface-group-association"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time in its own record (DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociations "
+        "LocalGatewayRouteTableVirtualInterfaceGroupAssociations[])."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

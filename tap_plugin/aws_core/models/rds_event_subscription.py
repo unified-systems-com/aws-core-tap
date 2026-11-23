@@ -18,6 +18,13 @@ class RdsEventSubscription(BaseModel):
     # Identity (req-grid-entity-natural-key): The subscription's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("event_subscription_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:es"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (DescribeEventSubscriptions EventSubscriptionsList[].SubscriptionCreationTime, "
+        "text), held only inside configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

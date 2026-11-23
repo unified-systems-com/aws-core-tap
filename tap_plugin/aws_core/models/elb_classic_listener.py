@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -19,6 +20,15 @@ class ElbClassicListener(BaseModel):
     # <partition>:<account>:<region>:<load balancer name>:<protocol>:<load balancer port>. The load balancer's name is
     # unique within its account and region, and the listener by its protocol and port (aws-core-tap#224's convention).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("listener_key",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time in its own record (DescribeLoadBalancers "
+        "LoadBalancerDescriptions[].ListenerDescriptions[].Listener). It is a sub-record of the DescribeLoadBalancers "
+        "LoadBalancerDescriptions[] record, whose CreatedTime is that record's, not its own; AWS states no time for "
+        "this one."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

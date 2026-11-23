@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -36,6 +37,9 @@ class AwsAccessAnalyzer(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("analyzer_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "access-analyzer:Analyzer"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): createdAt, when the analyzer was created. An
+    # interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="created_at", kind="created")
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {

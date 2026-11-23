@@ -18,6 +18,13 @@ class Ec2VpcBlockPublicAccessExclusion(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's own id (ExclusionId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_vpc_block_public_access_exclusion_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-block-public-access-exclusion"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (DescribeVpcBlockPublicAccessExclusions "
+        "VpcBlockPublicAccessExclusions[].CreationTimestamp, a botocore timestamp), held only inside configuration. "
+        "Undeclared until a declaration can read it through a reader function (unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

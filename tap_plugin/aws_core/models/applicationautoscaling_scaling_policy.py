@@ -17,6 +17,13 @@ class ApplicationautoscalingScalingPolicy(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The scaling policy's ARN (PolicyARN): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("applicationautoscaling_scaling_policy_arn",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (DescribeScalingPolicies ScalingPolicies[].CreationTime, a botocore timestamp),"
+        " held only inside configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.
     ARN_RESOURCE: ClassVar[str | None] = None

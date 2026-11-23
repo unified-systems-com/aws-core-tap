@@ -17,6 +17,13 @@ class GlueSecurityConfiguration(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The configuration's name, the identifier GetSecurityConfiguration takes; the AWS Service Authorization Reference lists no ARN for a Glue security configuration. Unique within the account and region. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("glue_security_configuration_name",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (GetSecurityConfigurations SecurityConfigurations[].CreatedTimeStamp, a "
+        "botocore timestamp), held only inside configuration. Undeclared until a declaration can read it through a "
+        "reader function (unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

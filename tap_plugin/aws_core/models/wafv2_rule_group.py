@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,10 @@ class Wafv2RuleGroup(BaseModel):
     # Identity (req-grid-entity-natural-key): The rule group's ARN: a name is unique only within an account, region and scope.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_group_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "wafv2:rulegroup"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (GetRuleGroup RuleGroup)."
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

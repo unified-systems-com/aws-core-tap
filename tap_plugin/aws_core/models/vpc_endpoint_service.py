@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -36,6 +37,12 @@ class VpcEndpointService(BaseModel):
     # AWS's service id (vpce-svc-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("service_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-endpoint-service"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time in its own record (DescribeVpcEndpointServiceConfigurations ServiceConfigurations[])."
+    )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

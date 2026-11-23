@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -33,6 +34,9 @@ class AwsIdentityCenterPermissionSet(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("permission_set_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sso:PermissionSet"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): CreatedDate, when the permission set was created.
+    # An interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="created_at", kind="created")
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

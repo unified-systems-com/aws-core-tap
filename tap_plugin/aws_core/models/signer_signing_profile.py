@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,15 @@ class SignerSigningProfile(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("signing_profile_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "signer:signing-profile"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no creation time in its own record (GetSigningProfile, GetSigningProfile overrides, "
+        "GetSigningProfile revocationRecord, GetSigningProfile signatureValidityPeriod, GetSigningProfile "
+        "signingMaterial, ListSigningProfiles profiles[]); the times it does return there (revocationEffectiveFrom, "
+        "revokedAt) are held only inside configuration."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

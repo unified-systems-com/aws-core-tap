@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -38,6 +39,9 @@ class AwsAccessAnalyzerFinding(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("analyzer_arn", "finding_id")
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): createdAt, when the finding was created. An
+    # interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="created_at", kind="created")
     # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.

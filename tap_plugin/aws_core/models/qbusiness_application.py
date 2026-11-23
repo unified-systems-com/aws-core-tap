@@ -18,6 +18,13 @@ class QbusinessApplication(BaseModel):
     # Identity (req-grid-entity-natural-key): The ARN GetApplication returns (applicationArn), read for each resource ListApplications names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("qbusiness_application_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "qbusiness:application"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (GetApplication createdAt, a botocore timestamp), held only inside "
+        "configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

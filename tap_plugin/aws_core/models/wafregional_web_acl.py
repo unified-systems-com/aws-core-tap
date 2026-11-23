@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,10 @@ class WafregionalWebAcl(BaseModel):
     # Identity (req-grid-entity-natural-key): The ARN GetWebACL returns (WebACL.WebACLArn), read for each resource ListWebACLs names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("wafregional_web_acl_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "waf-regional:webacl"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (GetWebACL WebACL)."
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

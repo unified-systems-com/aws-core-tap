@@ -23,7 +23,10 @@ plugin_version = "0.8.6" # x-release-please-version
 # harness forgets test-local models between tests (unified-systems-com/tap PR 1296). Worksteal, the other half of
 # PR 1296, reaches this repo through the plugin-ci.yml pin in .github/workflows/ci.yml, moved with this floor.
 # Plugin CI tests against the core tag at this floor, so raising it is what gives this plugin's CI that speed.
-requires_tap = ">=0.4.4"
+# 0.4.6: the first core release with event time on the spine (req-grid-entity-event-time: tap_grid.event_time's
+# Interval and NO_EVENT_TIME, which the models here import). On an older core the import fails and no model loads
+# (aws-core-tap#283).
+requires_tap = ">=0.4.6"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
