@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -17,13 +18,10 @@ class EcrRepositoryCreationTemplate(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The account, the region and the template prefix (prefix, the CloudFormation primary identifier): AWS gives it no ARN, and a bare name repeats across accounts and regions, so the key is the account, the region and the prefix. The key leads with <partition>:<account>:<region>: (req-aws-collector-identity-8), because these names repeat in other regions and accounts (issue 224).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ecr_repository_creation_template_key",)
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (DescribeRepositoryCreationTemplates repositoryCreationTemplates[].createdAt, a"
-        " botocore timestamp), held only inside configuration. Undeclared until a declaration can read it through a "
-        "reader function (unified-systems-com/tap#1284)."
-    )
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it
+    # (DescribeRepositoryCreationTemplates repositoryCreationTemplates[].createdAt, a botocore timestamp), read from
+    # configuration['createdAt'], where the collector stores it as AWS sent it. AWS states no end for it.
+    EVENT_TIME: ClassVar[Interval] = Interval(start="configuration", kind="created", member="createdAt")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

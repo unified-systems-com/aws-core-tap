@@ -18,12 +18,11 @@ class IdentityCenterUser(BaseModel):
     # Identity (req-grid-entity-natural-key): The user's identity store id and user id together (identity_store_id:user_id): a user id is unique only within its identity store.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("user_key",)
     ARN_RESOURCE: ClassVar[str | None] = "identitystore:User"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (ListUsers Users[].CreatedAt, a botocore timestamp), held only inside "
-        "configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
+        "AWS states when it was created (ListUsers Users[].CreatedAt), but the collector keeps it in no field and "
+        "drops it from configuration. Not declared (unified-systems-com/aws-core-tap#287)."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
