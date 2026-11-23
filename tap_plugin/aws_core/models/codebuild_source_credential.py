@@ -15,7 +15,8 @@ class CodebuildSourceCredential(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS CodeBuild Source Credential"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS CodeBuild Source Credential."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # A credential: tap.computing.credential names its kind (George 2026-11-23, aws-build Q146).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "token"}
     # Identity (req-grid-entity-natural-key): The object's ARN (arn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("codebuild_source_credential_arn",)
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when

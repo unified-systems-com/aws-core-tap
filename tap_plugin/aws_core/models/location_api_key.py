@@ -14,7 +14,8 @@ class LocationApiKey(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS Location API Key"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS Location API Key."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # A credential: tap.computing.credential names its kind (George 2026-11-23, aws-build Q146).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "api_key"}
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:api-key/{KeyName} (the AWS Service Authorization Reference 'geo' api-key resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_api_key_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:api-key"

@@ -14,7 +14,8 @@ class CertificatemanagerAcmeExternalAccountBinding(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS CertificateManager Acme External Account Binding"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS CertificateManager Acme External Account Binding."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # A credential: tap.computing.credential names its kind (George 2026-11-23, aws-build Q146).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "access_key"}
     # Identity (req-grid-entity-natural-key): The object's ARN (AcmeExternalAccountBindingArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificatemanager_acme_external_account_binding_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "acm:acme-external-account-binding"

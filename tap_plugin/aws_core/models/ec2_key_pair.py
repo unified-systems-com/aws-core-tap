@@ -14,7 +14,8 @@ class Ec2KeyPair(BaseModel):
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Key Pair"
     ENTITY_DESCRIPTION: ClassVar[str] = "An AWS EC2 Key Pair."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # A credential: tap.computing.credential names its kind (George 2026-11-23, aws-build Q146).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "ssh_key"}
     # Identity (req-grid-entity-natural-key): The object's own id (KeyPairId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_key_pair_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:key-pair"

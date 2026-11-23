@@ -4,7 +4,8 @@ Core's dimension-map reshape (tap#708, #711) refers to dimensions by their node'
 ruled on 2026-11-12 that nodes are never minted on the fly. So every key aws_core writes must be
 seeded somewhere: ``aws.account`` and ``aws.region`` (stamped by the collector on every node and edge
 it writes) here, and ``tap.computing.cloud`` (every model's and edge type's default) by computing_core,
-which owns the cloud dimension and keeps the id of aws_core's former ``tap.cloud`` node (Q56).
+which owns the cloud dimension and keeps the id of aws_core's former ``tap.cloud`` node (Q56), as it owns
+``tap.computing.credential`` (the default of each credential type, Q146).
 ``cloud`` was retired (Q55a): it duplicated the cloud dimension. It stays declared, so grids whose rows
 still carry it resolve it, but nothing writes it.
 """
@@ -26,8 +27,9 @@ REGION_ID = "01a1d109-3ae5-77e3-857e-41abf1031159"
 KEYS = {"cloud", "aws.account", "aws.region"}
 # Declared but never written any more.
 RETIRED = {"cloud"}
-# Written by aws_core (its type defaults) but declared by computing_core, which owns them.
-COMPUTING_KEYS = {"tap.computing.cloud"}
+# Written by aws_core (its type defaults) but declared by computing_core, which owns them: the cloud (Q56) and the
+# kind of credential a credential type is (Q146).
+COMPUTING_KEYS = {"tap.computing.cloud", "tap.computing.credential"}
 
 
 def _seed() -> dict[str, Any]:
