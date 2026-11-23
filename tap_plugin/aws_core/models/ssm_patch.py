@@ -4,11 +4,12 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
 class SsmPatch(BaseModel):
-    """One patch, as DescribeInstancePatches names it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the KBId (a Windows KB number, or a Linux package name, epoch, version and release). One node serves every instance that reports it; each instance's state, severity and install time are on its REPORTS_PATCH edge. cve_ids is the CVE list AWS gives the patch, split from its comma-separated string; no edge to a vulnerability node yet."""
+    """One patch, as DescribeInstancePatches names it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the KBId (a Windows KB number, or a Linux package name, epoch, version and release). One node serves every instance that reports it; each instance's state, severity and install time are on its REPORTS_PATCH edge. cve_ids is the CVE list AWS gives the patch, split from its comma-separated string. With ssm_compliance_findings on, each CVE also links the patch to compliance_core's vulnerability by RESOLVES_VULNERABILITY."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ssm_patch"
     ENTITY_NAME: ClassVar[str] = "SSM Patch"
@@ -17,6 +18,14 @@ class SsmPatch(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): Partition, SSM operating system and KBId: a patch has no ARN and is not an account's resource.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("partition", "operating_system", "kb_id")
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states no time for the patch itself in its own record (DescribeInstancePatches Patches[]): no release or "
+        "creation date. InstalledTime there is when one instance installed it, which is that instance's fact and is "
+        "held on its REPORTS_PATCH edge, not the patch's."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

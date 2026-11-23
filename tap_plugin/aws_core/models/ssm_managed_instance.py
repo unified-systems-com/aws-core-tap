@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,11 @@ class SsmManagedInstance(BaseModel):
     # Identity (req-grid-entity-natural-key): The id AWS generates for the node: the EC2 instance id, or SSM's mi- id for a hybrid node. DescribeInstanceInformation returns no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("instance_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ssm:managed-instance"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): RegistrationDate (DescribeInstanceInformation
+    # InstanceInformationList[]), when the node was registered with AWS as a managed node, which is when this record
+    # came to exist; AWS states it for a hybrid (mi-) node. An EC2 node's record states none (the EC2 instance's
+    # LaunchTime is the EC2 instance's own, on that node), so its spine is empty. No end: AWS states none (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="registration_date", kind="created")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

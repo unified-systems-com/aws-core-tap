@@ -98,7 +98,7 @@ from .credentials import (
     resolve_partition,
     resolve_regions,
 )
-from . import compliance
+from . import compliance, ssm_compliance
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
@@ -185,6 +185,10 @@ _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 _SITE_COMPLIANCE_FAILED = "f728"
 _SITE_COMPLIANCE_NOTICE = "9116"
 _SITE_COMPLIANCE_SUBMITTED = "054f"
+# The SSM patch-state projection (req-aws-core-ssm-compliance).
+_SITE_SSM_COMPLIANCE_FAILED = "4abb"
+_SITE_SSM_COMPLIANCE_NOTICE = "e362"
+_SITE_SSM_COMPLIANCE_SUBMITTED = "1775"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -1366,6 +1370,10 @@ class Boto3Collector(CollectorBase):
         # The run's last write, after the collection batch imported: it reads the stored Inspector rows, so turning
         # the option on later back-fills. A failure here never touches what was collected.
         projection_failed = self._project_inspector_findings(data, account_id) if compliance.enabled(data) else None
+        # --- SSM patch state into compliance_core (req-aws-core-ssm-compliance): its own gate (Q141c), same shape ---
+        ssm_projection_failed = (
+            self._project_ssm_compliance(data, account_id) if ssm_compliance.enabled(data) else None
+        )
 
         imported = result.counts.batches_imported
         progress.finished(batches_imported=imported)
@@ -1381,6 +1389,8 @@ class Boto3Collector(CollectorBase):
             )
         if projection_failed is not None:
             self.summary += f" Inspector findings NOT projected into compliance_core: {projection_failed}"
+        if ssm_projection_failed is not None:
+            self.summary += f" SSM patch state NOT projected into compliance_core: {ssm_projection_failed}"
         # Drain the per-run AWS call audit ledger as one structured run-log
         # entry (req-aws-collector-audit-ledger): the evidentiary spine for
         # the future audit-verifiability theme. One event, full machine
@@ -1438,6 +1448,61 @@ class Boto3Collector(CollectorBase):
             _SITE_COMPLIANCE_SUBMITTED,
             "INSPECTOR_COMPLIANCE_PROJECTED",
             f"{projection.projected} Inspector finding(s) projected into compliance_core ({projection.skipped} skipped).",
+            message_data={"projected": projection.projected, "skipped": projection.skipped},
+        )
+        return None
+
+    def _project_ssm_compliance(self, data: Mapping[str, Any], account_id: str) -> str | None:
+        """Write the account's stored SSM patch state into compliance_core, in a batch of its own.
+
+        The Inspector projection's twin (:meth:`_project_inspector_findings`), behind ``ssm_compliance_findings``:
+        each patch links to the vulnerability of every CVE it names, and each (instance, CVE) pair a patch leaves
+        exposed is a neutral finding carried by the instance. Returns None when written, else why not, which is also
+        an entry in ``results["error"]``. The collection batch has already imported, so the AWS data stands.
+        """
+
+        def failed(reason: str) -> str:
+            self.record_error(
+                _SITE_SSM_COMPLIANCE_FAILED,
+                "SSM_COMPLIANCE_PROJECTION_FAILED",
+                f"SSM patch state was collected but not projected into compliance_core: {reason}",
+                message_data={"option": ssm_compliance.OPTION, "reason": reason},
+            )
+            return reason
+
+        reason = compliance.readiness()
+        if reason is not None:
+            return failed(reason)
+        try:
+            reports = ssm_compliance.stored_reports(account_id)
+            projection = ssm_compliance.project(
+                reports,
+                compliance.held_vulnerabilities(ssm_compliance.names_of(reports)),
+                account_id=account_id,
+                held_open=ssm_compliance.held_open_findings(ssm_compliance.resolvable_keys(account_id, reports)),
+            )
+            for code, message in projection.notices:
+                self.record_warn(_SITE_SSM_COMPLIANCE_NOTICE, code, message)
+            if not projection.nodes and not projection.edges:
+                return None
+            addressed = address_batch(projection.nodes, projection.edges)
+            document = assemble_batch(
+                source=f"{_SOURCE}.ssm_compliance",
+                manifest_version=str(load_manifest()["manifest_version"]),
+                account_id=account_id,
+                regions=[],
+                node_envelopes=addressed.nodes,
+                edge_envelopes=addressed.edges,
+            )
+            outcome = self.submit_grift(document, dangling_edge_mode="permissive", on_rejection="return")
+        except Exception as exc:  # noqa: BLE001 — isolates a defect in the projection, never the run
+            return failed(f"{type(exc).__name__}: {exc}")
+        if getattr(outcome, "errors", None):
+            return failed(f"the projection batch was rejected: {outcome.errors[0]}")
+        self.record_info(
+            _SITE_SSM_COMPLIANCE_SUBMITTED,
+            "SSM_COMPLIANCE_PROJECTED",
+            f"{projection.projected} SSM patch finding(s) projected into compliance_core ({projection.skipped} skipped).",
             message_data={"projected": projection.projected, "skipped": projection.skipped},
         )
         return None
@@ -1559,6 +1624,29 @@ class Boto3Collector(CollectorBase):
                     check_pass(
                         "INSPECTOR_COMPLIANCE_READY",
                         f"{compliance.OPTION} is on and compliance_core carries what the projection writes.",
+                        docs=_DOCS,
+                    )
+                )
+
+        # 2d. The SSM patch-state projection, its own gate (req-aws-core-ssm-compliance, Q141c), needs the same.
+        if ssm_compliance.enabled(data):
+            reason = compliance.readiness()
+            if reason is not None:
+                checks.append(
+                    check_fail(
+                        "SSM_COMPLIANCE_READY",
+                        f"{ssm_compliance.OPTION} is on, but {reason}. Install compliance_core >= "
+                        f"{compliance.MIN_VERSION} or turn the option off; the AWS data is collected either way.",
+                        readiness_status=CollectorReadinessStatus.MISCONFIGURED,
+                        context={"option": ssm_compliance.OPTION, "min_version": compliance.MIN_VERSION},
+                        docs=_DOCS,
+                    )
+                )
+            else:
+                checks.append(
+                    check_pass(
+                        "SSM_COMPLIANCE_READY",
+                        f"{ssm_compliance.OPTION} is on and compliance_core carries what the projection writes.",
                         docs=_DOCS,
                     )
                 )

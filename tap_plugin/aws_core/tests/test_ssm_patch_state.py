@@ -382,8 +382,8 @@ def test_a_patch_is_sent_once_per_run_however_many_regions_report_it() -> None:
 
 @pytest.mark.spec("req-aws-core-ssm-patch-state-6")
 def test_the_patch_node_keeps_cve_ids_in_the_shape_the_inspector_projection_reads() -> None:
-    """The CVE link is not built yet; when it is, it reads ``cve_ids`` as compliance.py reads a finding's CVE: a
-    list of strings, each the CVE id as AWS gives it."""
+    """The walk emits no CVE link; the optional projection (ssm_compliance.py, req-aws-core-ssm-compliance) reads
+    ``cve_ids`` as compliance.py reads a finding's CVE: a list of strings, each the CVE id as AWS gives it."""
     from tap_plugin.aws_core.collectors.boto3_collector.compliance import _CVE
     from tap_plugin.aws_core.models.ssm_patch import SsmPatch
 

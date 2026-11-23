@@ -29415,7 +29415,7 @@
       "source": {
         "custom_fn": "ssm_patches_described"
       },
-      "why": "Enumerate the patches SSM managed instances report (DescribeInstancePatches), one node per patch shared by every instance that reports it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the patch's KBId (ruling B2). Each instance reaches it by REPORTS_PATCH, which carries that instance's state, severity and install time. CVEIds are kept on the node as a list; the link to a vulnerability node is not built yet.",
+      "why": "Enumerate the patches SSM managed instances report (DescribeInstancePatches), one node per patch shared by every instance that reports it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the patch's KBId (ruling B2). Each instance reaches it by REPORTS_PATCH, which carries that instance's state, severity and install time. CVEIds are kept on the node as a list; with ssm_compliance_findings on, the run's last step links the patch to compliance_core's vulnerability for each (RESOLVES_VULNERABILITY, ssm_compliance.py).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {

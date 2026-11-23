@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -17,6 +18,15 @@ class SsmComplianceSummary(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): Account, region, resource type and id, and compliance type: a summary has no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("account_id", "region", "resource_type", "resource_id", "compliance_type")
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states only ExecutionSummary.ExecutionTime (ListResourceComplianceSummaries "
+        "ResourceComplianceSummaryItems[]), when the latest compliance execution ran, which the next execution "
+        "replaces on this same summary: a last-change time, and none of the four kinds names it (reported on "
+        "unified-systems-com/tap#1289). It stays the typed execution_time field."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
