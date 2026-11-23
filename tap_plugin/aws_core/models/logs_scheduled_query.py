@@ -18,12 +18,12 @@ class LogsScheduledQuery(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's ARN (scheduledQueryArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("scheduled_query_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "logs:scheduled-query"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (ListScheduledQueries scheduledQueries[].creationTime, an epoch number), held "
-        "only inside configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
+        "AWS states when it was created (ListScheduledQueries scheduledQueries[].creationTime, an epoch number), but "
+        "it is an epoch number and AWS's documentation of this member states no unit, seconds or milliseconds. Not "
+        "declared (unified-systems-com/aws-core-tap#287)."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

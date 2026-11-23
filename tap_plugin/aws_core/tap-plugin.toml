@@ -26,7 +26,13 @@ plugin_version = "0.8.7" # x-release-please-version
 # 0.4.6: the first core release with event time on the spine (req-grid-entity-event-time: tap_grid.event_time's
 # Interval and NO_EVENT_TIME, which the models here import). On an older core the import fails and no model loads
 # (aws-core-tap#283).
-requires_tap = ">=0.4.6"
+# 0.4.7: the first core release with member paths into a JSON field and reader functions on an event-time
+# declaration (unified-systems-com/tap PR 1340, req-grid-entity-event-time rules 23 to 30: Interval's member,
+# end_member, reader and end_reader, and tap_grid.event_time's from_epoch_seconds and from_epoch_milliseconds), which
+# the 512 types that read their creation time from configuration declare (aws-core-tap#287). On an older core the
+# Interval keywords are unknown and no model loads. Plugin CI tests against the core tag at this floor, and the
+# plugin-ci.yml pin in .github/workflows/ci.yml moves to that tag's commit with it.
+requires_tap = ">=0.4.7"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."

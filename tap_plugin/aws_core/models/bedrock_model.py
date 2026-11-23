@@ -19,12 +19,12 @@ class BedrockModel(BaseModel):
     # deployment, so the same model reached from two regions is one node.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("model_id",)
     ARN_RESOURCE: ClassVar[str | None] = "bedrock:foundation-model"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
         "Design vocabulary no collector writes; AWS states a lifecycle start (ListFoundationModels "
-        "modelLifecycle.startOfLifeTime, a botocore timestamp), held in no field of this model yet. Undeclared until a "
-        "declaration can read it through a reader function (unified-systems-com/tap#1284)."
+        "modelLifecycle.startOfLifeTime, a botocore timestamp), but the collector stores it in no field of this model "
+        "and no configuration. Not declared (unified-systems-com/aws-core-tap#287)."
     )
     # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
