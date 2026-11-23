@@ -22,10 +22,7 @@ class SnsTopic(BaseModel):
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
-    EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (GetTopicAttributes, ListTagsForResource, "
-        "ListTopics)."
-    )
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (ListTopics Topics[])."
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

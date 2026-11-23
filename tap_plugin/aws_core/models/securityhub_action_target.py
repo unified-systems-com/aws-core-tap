@@ -21,9 +21,7 @@ class SecurityhubActionTarget(BaseModel):
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
-    EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (DescribeActionTargets)."
-    )
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (DescribeActionTargets ActionTargets[])."
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.
     ARN_RESOURCE: ClassVar[str | None] = None

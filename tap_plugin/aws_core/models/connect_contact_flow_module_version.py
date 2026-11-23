@@ -24,8 +24,7 @@ class ConnectContactFlowModuleVersion(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (ListContactFlowModuleVersions, "
-        "ListContactFlowModules)."
+        "AWS returns no time in its own record (ListContactFlowModuleVersions ContactFlowModuleVersionSummaryList[])."
     )
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.

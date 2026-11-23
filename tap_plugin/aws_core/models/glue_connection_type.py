@@ -23,7 +23,12 @@ class GlueConnectionType(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (DescribeConnectionType, ListConnectionTypes)."
+        "AWS returns no time in its own record (DescribeConnectionType, DescribeConnectionType "
+        "AthenaConnectionProperties{}, DescribeConnectionType AuthenticationConfiguration, DescribeConnectionType "
+        "Capabilities, DescribeConnectionType ComputeEnvironmentConfigurations{}, DescribeConnectionType "
+        "ConnectionOptions{}, DescribeConnectionType ConnectionProperties{}, DescribeConnectionType "
+        "PhysicalConnectionRequirements{}, DescribeConnectionType PythonConnectionProperties{}, DescribeConnectionType "
+        "RestConfiguration, DescribeConnectionType SparkConnectionProperties{}, ListConnectionTypes ConnectionTypes[])."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

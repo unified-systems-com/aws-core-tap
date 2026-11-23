@@ -23,8 +23,10 @@ class ElasticacheSnapshot(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no creation time at the top level of its record; the times it does return there "
-        "(CacheClusterCreateTime) are held only inside configuration."
+        "AWS returns no creation time in its own record (DescribeSnapshots Snapshots[]); the times it does return there"
+        " (CacheClusterCreateTime) are held only inside configuration. The CacheNodeCreateTime inside its record "
+        "(DescribeSnapshots Snapshots[].NodeSnapshots[]) belongs to a nested record, not to it; AWS states no time for "
+        "this one."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

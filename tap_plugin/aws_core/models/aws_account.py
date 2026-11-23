@@ -22,9 +22,7 @@ class AwsAccount(BaseModel):
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
-    EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (GetCallerIdentity)."
-    )
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (GetCallerIdentity)."
     # The account has an ARN only as a member of an Organization (the format needs the organization id), so the key
     # stays the account id (KEY_NOT_ARN in tests/test_arn_resources.py); the ARN is stored when Organizations returns it.
     ARN_RESOURCE: ClassVar[str | None] = "organizations:account"

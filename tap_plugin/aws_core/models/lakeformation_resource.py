@@ -22,8 +22,8 @@ class LakeformationResource(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no creation time at the top level of its record; the times it does return there (LastModified) are"
-        " held only inside configuration."
+        "AWS returns no creation time in its own record (ListResources ResourceInfoList[]); the times it does return "
+        "there (LastModified) are held only inside configuration."
     )
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.

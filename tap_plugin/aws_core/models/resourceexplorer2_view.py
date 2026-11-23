@@ -23,7 +23,7 @@ class Resourceexplorer2View(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no creation time at the top level of its record; the times it does return there (LastUpdatedAt) "
+        "AWS returns no creation time in its own record (GetView View); the times it does return there (LastUpdatedAt) "
         "are held only inside configuration."
     )
 

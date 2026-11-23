@@ -24,7 +24,7 @@ class Route53HostedZone(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (ListTagsForResource)."
+        "AWS returns no time in its own record (ListHostedZones HostedZones[], shape HostedZone)."
     )
     # A zone contains its record sets (aws-core-tap#220): a record set the zone's complete listing no longer names
     # is a retirement candidate, and retiring the zone cascades to its record sets. Literals, for validate_plugin's

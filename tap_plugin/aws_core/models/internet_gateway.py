@@ -26,7 +26,7 @@ class InternetGateway(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (DescribeInternetGateways)."
+        "AWS returns no time in its own record (DescribeInternetGateways InternetGateways[])."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

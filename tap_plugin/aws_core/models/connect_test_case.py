@@ -22,8 +22,9 @@ class ConnectTestCase(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no creation time at the top level of its record; the times it does return there (LastModifiedTime)"
-        " are held only inside configuration."
+        "AWS returns no creation time in its own record (ListTestCases TestCaseSummaryList[]); the times it does return"
+        " there (LastModifiedTime) are held only inside configuration. The collector also reads ListInstances "
+        "InstanceSummaryList[], whose CreatedTime is that record's, not this one's; AWS states no time for this one."
     )
     # The ARN AWS returns is this resource's own; the service reference lists no resource type for it,
     # so it cannot be built when absent.

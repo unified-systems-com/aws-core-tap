@@ -22,9 +22,7 @@ class GuarddutyIpSet(BaseModel):
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
-    EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no time for it in the responses the collector reads (GetIPSet, ListIPSets)."
-    )
+    EVENT_TIME_REASON: ClassVar[str] = "AWS returns no time in its own record (GetIPSet)."
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}

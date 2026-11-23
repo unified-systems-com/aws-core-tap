@@ -21,9 +21,9 @@ class Route53resolverResolverRule(BaseModel):
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
     # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
     EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (ListResolverRules CreationTime, unconfirmed (shape Rfc3339TimeString, docs say"
-        " Unix time)), held only inside configuration. Undeclared until a declaration can read it through a reader "
-        "function (unified-systems-com/tap#1284)."
+        "AWS states when it was created (ListResolverRules ResolverRules[].CreationTime, unconfirmed (shape "
+        "Rfc3339TimeString, docs say Unix time)), held only inside configuration. Undeclared until a declaration can "
+        "read it through a reader function (unified-systems-com/tap#1284)."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

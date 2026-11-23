@@ -23,8 +23,8 @@ class ApigatewayDomainName(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no creation time at the top level of its record; the times it does return there "
-        "(certificateUploadDate) are held only inside configuration."
+        "AWS returns no creation time in its own record (GetDomainNames items[]); the time it does return there "
+        "(certificateUploadDate) is the certificate's, and is held only inside configuration."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

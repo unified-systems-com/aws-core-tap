@@ -23,7 +23,7 @@ class CloudwatchLogAlarm(BaseModel):
     # the thing happened in the world; EVENT_TIME_REASON says why.
     EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
     EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS returns no creation time at the top level of its record; the times it does return there "
+        "AWS returns no creation time in its own record (DescribeAlarms LogAlarms[]); the times it does return there "
         "(AlarmConfigurationUpdatedTimestamp, StateTransitionedTimestamp, StateUpdatedTimestamp) are held only inside "
         "configuration."
     )
