@@ -23,7 +23,7 @@ class IamSamlProvider(BaseModel):
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("provider_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:saml-provider"
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): CreateDate, when the provider was created, until
-    # ValidUntil, the expiration AWS states for it (core rule 8: an end only where the source states one).
+    # ValidUntil, the expiration AWS states for it. An interval that ends where AWS states an end (core rule 8).
     EVENT_TIME: ClassVar[Interval] = Interval(start="created_at", kind="created", end="valid_until")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

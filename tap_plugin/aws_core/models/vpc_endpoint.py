@@ -4,7 +4,6 @@ from typing import Any, ClassVar
 
 from django.db import models
 
-from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 # ec2 VpcEndpointType, as DescribeVpcEndpoints reports it.
@@ -41,12 +40,12 @@ class VpcEndpoint(BaseModel):
     # AWS's endpoint id (vpce-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("vpc_endpoint_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-endpoint"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
-    # the thing happened in the world; EVENT_TIME_REASON says why.
-    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
-    EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS states when it was created (DescribeVpcEndpoints CreationTimestamp), held only inside configuration: a "
-        "declaration names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (DescribeVpcEndpoints CreationTimestamp, a botocore timestamp), held only "
+        "inside configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {

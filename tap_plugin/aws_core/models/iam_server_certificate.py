@@ -22,7 +22,7 @@ class IamServerCertificate(BaseModel):
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("certificate_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:server-certificate"
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): UploadDate, when the certificate was uploaded to
-    # IAM, until Expiration, the end AWS states for it (core rule 8: an end only where the source states one).
+    # IAM, until Expiration, the end AWS states for it. An interval that ends where AWS states an end (core rule 8).
     EVENT_TIME: ClassVar[Interval] = Interval(start="upload_date", kind="created", end="expiration")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

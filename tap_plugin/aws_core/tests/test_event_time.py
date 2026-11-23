@@ -1,12 +1,13 @@
 """Every aws_core model declares its event time (req-aws-core-models-5; tap req-grid-entity-event-time).
 
 Core copies the field a model declares into ``Entity.event_start``/``event_end``/``event_precision`` and stamps the
-kind as the row's ``time`` dimension. These tests hold four things:
+kind as the row's ``time`` dimension. Every model is in exactly one of three states, and these tests hold them:
 
-- plugin validation reports exactly the types left undeclared, each because its time arrives in a form core
-  cannot read yet (the stored value keeps the source's form, core rule 22), and nothing else;
-- exactly the types below declare a time, and each says what it declares;
-- every other type states ``NO_EVENT_TIME`` and records why, in ``EVENT_TIME_REASON``;
+- declared: exactly the types below, each saying what it declares;
+- ``NO_EVENT_TIME``: AWS states no time for the thing itself, and ``EVENT_TIME_REASON`` says why;
+- undeclared, on purpose: AWS states a time, but in a place (inside ``configuration``) or a form (Lambda's
+  ``+0000``) core cannot read yet, so it waits for a reader function (unified-systems-com/tap#1284), and
+  ``EVENT_TIME_PENDING`` says where. Plugin validation reports exactly these, and nothing else;
 - a time read from AWS reaches the spine as AWS stated it: a botocore datetime at second precision, and an Inspector
   finding as an interval from its first observation with no end.
 """
@@ -61,9 +62,9 @@ DECLARED: dict[str, Interval] = {
 }
 
 
-#: Left undeclared until core can declare a source form (unified-systems-com/tap#1289): the field, and the form AWS
-#: sends it in, which is not a FHIR dateTime and is stored as sent (core rule 22).
-UNDECLARED: dict[str, tuple[str, str]] = {
+#: A typed field left undeclared over its form (unified-systems-com/tap#1284): the field, and the form AWS sends it in,
+#: which is not a FHIR dateTime and is stored as sent (core rule 22).
+FORM_PENDING: dict[str, tuple[str, str]] = {
     "aws_core__aws_lambda_layer_version": ("created_date", "2018-11-27T15:10:45.123+0000"),
 }
 
@@ -112,27 +113,22 @@ class _Client:
 # --- declarations -------------------------------------------------------------------------------------------------
 
 
+def _pending() -> set[str]:
+    return {m.ENTITY_TYPE for m in _aws_models() if "EVENT_TIME_PENDING" in m.__dict__}
+
+
 @pytest.mark.django_db
-def test_validation_reports_exactly_the_types_left_undeclared(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_validation_reports_exactly_the_pending_types(monkeypatch: pytest.MonkeyPatch) -> None:
     """req-grid-entity-event-time-3: undeclared is a note, not a failure, until the switch is on."""
     monkeypatch.delenv(event_time.REQUIRE_DECLARATION_ENV, raising=False)
     result = validate_plugin(PLUGIN_ROOT, level="loads")
     check = next(c for c in result.checks if c.id == "event-time-declarations")
-    assert check.details == {"undeclared": sorted(UNDECLARED), "required": False}
+    undeclared = check.details["undeclared"]
+    assert (set(undeclared), len(undeclared), check.details["required"]) == (_pending(), len(_pending()), False)
     assert check.status == "pass", check.messages
 
 
-def test_an_undeclared_types_time_arrives_in_a_form_the_reader_refuses() -> None:
-    """Each type left undeclared is one whose time core cannot read as AWS sends it; none is undeclared by accident."""
-    for entity_type, (field, example) in UNDECLARED.items():
-        model = next(m for m in _aws_models() if m.ENTITY_TYPE == entity_type)
-        assert model.__dict__.get("EVENT_TIME") is None, entity_type
-        model._meta.get_field(field)
-        with pytest.raises(event_time.Unreadable):
-            event_time.read_value(example)
-
-
-def test_exactly_these_types_declare_a_time_and_every_other_type_states_none() -> None:
+def test_every_type_is_declared_timeless_or_pending_and_only_one() -> None:
     models = _aws_models()
     assert len(models) == len({m.ENTITY_TYPE for m in models})
     declared = {
@@ -140,22 +136,42 @@ def test_exactly_these_types_declare_a_time_and_every_other_type_states_none() -
     }
     assert declared == DECLARED
     for model in models:
-        if model.ENTITY_TYPE not in UNDECLARED:
-            assert model.__dict__.get("EVENT_TIME") is not None, model.ENTITY_TYPE
-        assert declaration_problems(model) == [], model.ENTITY_TYPE
-
-
-def test_every_type_with_no_event_time_records_why_and_no_declared_type_does() -> None:
-    """Core's NO_EVENT_TIME carries no reason, so each such model states one beside it, as NATURAL_KEY_REASON does."""
-    for model in _aws_models():
+        declaration = model.__dict__.get("EVENT_TIME")
         reason = model.__dict__.get("EVENT_TIME_REASON")
-        if model.__dict__.get("EVENT_TIME") is NO_EVENT_TIME:
+        pending = model.__dict__.get("EVENT_TIME_PENDING")
+        assert declaration_problems(model) == [], model.ENTITY_TYPE
+        if declaration is NO_EVENT_TIME:
             # A reason cites where it was read: the AWS call, the policy document, or the reference data.
             assert isinstance(reason, str) and len(reason) > 40 and ("(" in reason or "derives" in reason), (
                 model.ENTITY_TYPE
             )
-        else:
+            assert pending is None, model.ENTITY_TYPE
+        elif declaration is None:
+            # Not decided, on purpose: the note names the AWS member and the core issue it waits on.
+            assert isinstance(pending, str) and "(" in pending and "unified-systems-com/tap#1284" in pending, (
+                model.ENTITY_TYPE
+            )
             assert reason is None, model.ENTITY_TYPE
+        else:
+            assert reason is None and pending is None, model.ENTITY_TYPE
+
+
+def test_a_typed_field_left_pending_over_its_form_is_one_the_reader_refuses() -> None:
+    for entity_type, (field, example) in FORM_PENDING.items():
+        model = next(m for m in _aws_models() if m.ENTITY_TYPE == entity_type)
+        assert entity_type in _pending(), entity_type
+        model._meta.get_field(field)
+        with pytest.raises(event_time.Unreadable):
+            event_time.read_value(example)
+
+
+def test_no_pending_type_has_a_typed_field_that_would_serve_today() -> None:
+    """A pending note says the time is in configuration, stored nowhere, or in a refused form; never on a typed field
+    that could be declared now."""
+    for model in _aws_models():
+        pending = model.__dict__.get("EVENT_TIME_PENDING")
+        if pending is not None and model.ENTITY_TYPE not in FORM_PENDING:
+            assert "configuration" in pending or "no field of this model" in pending, model.ENTITY_TYPE
 
 
 def test_no_declared_field_is_a_time_the_grid_or_the_collector_made() -> None:

@@ -4,7 +4,6 @@ from typing import Any, ClassVar
 
 from django.db import models
 
-from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -19,12 +18,12 @@ class LocationPlaceIndex(BaseModel):
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:place-index/{IndexName} (the AWS Service Authorization Reference 'geo' place-index resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_place_index_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:place-index"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
-    # the thing happened in the world; EVENT_TIME_REASON says why.
-    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
-    EVENT_TIME_REASON: ClassVar[str] = (
-        "AWS states when it was created (ListPlaceIndexes CreateTime), held only inside configuration: a declaration "
-        "names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
+    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    EVENT_TIME_PENDING: ClassVar[str] = (
+        "AWS states when it was created (ListPlaceIndexes CreateTime, a botocore timestamp), held only inside "
+        "configuration. Undeclared until a declaration can read it through a reader function "
+        "(unified-systems-com/tap#1284)."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
