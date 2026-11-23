@@ -1047,9 +1047,12 @@ the password, which AWS does not return.
 the user name wherever it appears (`UserName`, the reader's `_user_name` and `_user_arn`, the hydrate slots, the
 service user name) as `personal_data`, as the existing IAM user entry does.
 
-**Dimensions.** The four types take aws_core's normal default dimension (`tap.computing.cloud`), declared once per
-type in its `DEFAULT_DIMENSIONS`. A standardized credentials dimension is being weighed for computing_core; adding
-it is a one-line change per type, and none is added here.
+**Dimensions** (ruling Q146, 2026-11-23). Each of the four types declares, in its `DEFAULT_DIMENSIONS`, aws_core's
+cloud default (`tap.computing.cloud: aws`) and computing_core's standard credential dimension,
+`tap.computing.credential`, whose value is the kind of credential: `access_key`, `ssh_key`, `certificate`, and
+`password` for a service-specific credential (a generated user name and password). computing_core owns and seeds
+the dimension; aws_core only writes it. The root user, the IAM user, and the password-policy and login-profile
+fields carry no credential dimension.
 
 **Event time** (`req-aws-core-models-5`). The access key starts at `create_date` and the SSH key and signing
 certificate at `upload_date` (kind `created`, no end: AWS states none; a signing certificate's own expiry is inside
@@ -1069,6 +1072,7 @@ rotation times are other times and stay typed fields.
 | req-aws-core-iam-credentials-6 | Password Policy On The Account | Proposed | The account carries the password policy's settings; "no policy" (`NoSuchEntity`) is `password_policy_present: false`, and a denied or failed read leaves it `null`. | `tests/test_iam_credentials.py::TestAccountPosture`, `tests/test_boto3_collector_customfns.py`. Ruling Q143c. |
 | req-aws-core-iam-credentials-7 | Login Profile On The User | Proposed | The user carries whether a login profile exists, when it was created and whether a reset is required; `NoSuchEntity` is "no console password", a denied read is `null`. | `tests/test_iam_credentials.py::TestLoginProfile`. Ruling Q143d. |
 | req-aws-core-iam-credentials-8 | Root User From The Report | Proposed | The report's root row becomes one `aws_iam_root_user` node keyed on the ARN the report states, its flags and times taken from the row; no report yields no root node; an unreadable report fails the entry. | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143b. |
+| req-aws-core-iam-credentials-9 | Credential Dimension | Proposed | The four credential types carry `tap.computing.credential` (`access_key`, `ssh_key`, `certificate`, `password`) beside the cloud default; the root user, the user and the account do not. | `tests/test_iam_credentials.py::TestReaders::test_each_credential_type_carries_its_kind_on_the_credential_dimension`, `tests/test_dimension_seed.py`. Ruling Q146. Needs computing_core's seed of the dimension. |
 
 ### Transit Gateway
 ----

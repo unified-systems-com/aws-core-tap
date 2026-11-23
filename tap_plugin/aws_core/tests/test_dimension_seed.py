@@ -27,7 +27,7 @@ KEYS = {"cloud", "aws.account", "aws.region"}
 # Declared but never written any more.
 RETIRED = {"cloud"}
 # Written by aws_core (its type defaults) but declared by computing_core, which owns them.
-COMPUTING_KEYS = {"tap.computing.cloud"}
+COMPUTING_KEYS = {"tap.computing.cloud", "tap.computing.credential"}
 
 
 def _seed() -> dict[str, Any]:

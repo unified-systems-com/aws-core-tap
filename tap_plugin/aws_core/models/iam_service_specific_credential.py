@@ -20,9 +20,9 @@ class IamServiceSpecificCredential(BaseModel):
         "A credential an IAM user holds for one AWS service: id, service, status and age, never the password."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    # The type's dimensions, declared in this one place (aws_core's normal default). A standardized credentials
-    # dimension is being weighed for computing_core (aws-core-tap#282); adding it is a change to this line only.
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # The type's dimensions, declared in this one place: aws_core's cloud default and computing_core's standard
+    # credential dimension, its value the kind of credential (a generated user name and password, or an API key) (ruling Q146, 2026-11-23).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "password"}
     # Identity (req-grid-entity-natural-key, req-aws-collector-identity-13).
     # AWS gives a service-specific credential no ARN and CloudFormation no type; it
     # is keyed by the id AWS generates, scoped by partition and account (ruling Q142a).

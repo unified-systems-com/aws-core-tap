@@ -20,9 +20,9 @@ class IamSigningCertificate(BaseModel):
         "An X.509 signing certificate an IAM user has uploaded: id, status and upload time, never the certificate body."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    # The type's dimensions, declared in this one place (aws_core's normal default). A standardized credentials
-    # dimension is being weighed for computing_core (aws-core-tap#282); adding it is a change to this line only.
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # The type's dimensions, declared in this one place: aws_core's cloud default and computing_core's standard
+    # credential dimension, its value the kind of credential (ruling Q146, 2026-11-23).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "certificate"}
     # Identity (req-grid-entity-natural-key, req-aws-collector-identity-13).
     # AWS gives a signing certificate no ARN and CloudFormation no type; it is keyed by
     # the id AWS generates, scoped by partition and account (ruling Q142a).

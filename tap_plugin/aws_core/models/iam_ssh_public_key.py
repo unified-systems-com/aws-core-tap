@@ -19,9 +19,9 @@ class IamSshPublicKey(BaseModel):
         "An SSH public key an IAM user has uploaded (for CodeCommit): id, status and upload time, never the key body."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    # The type's dimensions, declared in this one place (aws_core's normal default). A standardized credentials
-    # dimension is being weighed for computing_core (aws-core-tap#282); adding it is a change to this line only.
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # The type's dimensions, declared in this one place: aws_core's cloud default and computing_core's standard
+    # credential dimension, its value the kind of credential (ruling Q146, 2026-11-23).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "ssh_key"}
     # Identity (req-grid-entity-natural-key, req-aws-collector-identity-13).
     # AWS gives an SSH public key no ARN and CloudFormation no type; it is keyed by the id AWS
     # generates, scoped by partition and account (ruling Q142a).

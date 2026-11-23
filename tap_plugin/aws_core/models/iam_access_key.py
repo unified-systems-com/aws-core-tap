@@ -19,9 +19,9 @@ class IamAccessKey(BaseModel):
         "An access key an IAM user holds: id, status, age and last use, never the secret."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    # The type's dimensions, declared in this one place (aws_core's normal default). A standardized credentials
-    # dimension is being weighed for computing_core (aws-core-tap#282); adding it is a change to this line only.
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # The type's dimensions, declared in this one place: aws_core's cloud default and computing_core's standard
+    # credential dimension, its value the kind of credential (ruling Q146, 2026-11-23).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "access_key"}
     # Identity (req-grid-entity-natural-key, req-aws-collector-identity-13).
     # AWS gives an access key no ARN; it is keyed by its id (CloudFormation's AWS::IAM::AccessKey identifier),
     # scoped by partition and account (ruling Q142a).

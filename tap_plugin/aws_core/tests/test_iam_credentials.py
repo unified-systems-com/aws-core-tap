@@ -39,7 +39,7 @@ from tap_plugin.aws_core.falsifiers import (
     IamSigningCertificateFalsifier,
     IamSshPublicKeyFalsifier,
 )
-from tap_plugin.aws_core.tests.grid_dimensions import stamp_dimensions
+from tap_plugin.aws_core.tests.grid_dimensions import declare_credential_dimension, stamp_dimensions
 from tap_plugin.aws_core.tests.test_trial_run_live import _create_verb_schema, _prepare_null_payload
 
 from tap_grid.falsifiers import DROPPED_FROM_OBSERVATION, PRESENT_AT_PROBE, UNDETERMINED, Candidate, FalsifyContext
@@ -432,9 +432,16 @@ class TestReaders:
         }
         assert all(identities[t]["cfn_type"] is None and identities[t]["reason"] for t in (SSH, CERT, SVC))
 
-    @pytest.mark.parametrize("entity_type", (*NEW_TYPES, ROOT))
-    def test_dimensions_are_declared_once_on_the_model_and_add_nothing_new(self, entity_type: str) -> None:
-        assert _model(entity_type).DEFAULT_DIMENSIONS == {"tap.computing.cloud": "aws"}
+    def test_each_credential_type_carries_its_kind_on_the_credential_dimension(self) -> None:
+        """Ruling Q146: computing_core's ``tap.computing.credential``, the kind of credential; nothing else is tagged."""
+        assert {t: _model(t).DEFAULT_DIMENSIONS for t in NEW_TYPES} == {
+            ACCESS_KEY: {"tap.computing.cloud": "aws", "tap.computing.credential": "access_key"},
+            SSH: {"tap.computing.cloud": "aws", "tap.computing.credential": "ssh_key"},
+            CERT: {"tap.computing.cloud": "aws", "tap.computing.credential": "certificate"},
+            SVC: {"tap.computing.cloud": "aws", "tap.computing.credential": "password"},
+        }
+        for entity_type in (ROOT, USER, "aws_core__aws_account"):
+            assert "tap.computing.credential" not in _model(entity_type).DEFAULT_DIMENSIONS, entity_type
 
 
 # --- login profile ------------------------------------------------------------------------------------------------------
@@ -721,6 +728,12 @@ def _judge(falsifier_cls: type, client: Any, candidate: Candidate, *, account: s
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-iam-credentials-4")
 class TestFalsifiers:
+    @pytest.fixture(autouse=True)
+    def _credential_dimension(self) -> None:
+        # The four types write computing_core's tap.computing.credential (ruling Q146); seeded here until a
+        # computing_core release declares it.
+        declare_credential_dimension()
+
     @pytest.mark.parametrize("case", _FALSIFIERS, ids=lambda c: c[0])
     def test_present_dropped_and_forbidden(self, case: tuple[Any, ...]) -> None:
         entity_type, cls, id_field, credential_id, method, items_key, id_member = case

@@ -39,3 +39,19 @@ def dimensions_of(row: Any) -> dict[str, Any]:
     """A row's dimensions as ``{name: value}``. ``row`` is a typed grid row, an ``Entity``, or a stored map."""
     stored = row if isinstance(row, dict) else getattr(getattr(row, "entity", row), "dimensions", None)
     return view(stored)
+
+
+#: computing_core's credential dimension (ruling Q146, 2026-11-23), which the four IAM credential types write. Until a
+#: computing_core release seeds it, the test grid has no Dimension row for it and core refuses the write.
+CREDENTIAL_DIMENSION = "tap.computing.credential"
+
+
+def declare_credential_dimension() -> None:
+    """Give the test grid the ``tap.computing.credential`` Dimension row when no installed bundle declared it, the way
+    core's test harness adds names the suites write (``tap/pytest_harness.py::_seed_test_dimensions``). A no-op once
+    computing_core seeds it, so the real declaration is never shadowed."""
+    from tap_grid.live_dimensions import vocabulary
+    from tap_grid.models import Dimension
+
+    if CREDENTIAL_DIMENSION not in vocabulary().by_name:
+        Dimension.objects.create(name=CREDENTIAL_DIMENSION)
