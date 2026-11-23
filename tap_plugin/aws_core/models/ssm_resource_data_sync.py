@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,13 @@ class SsmResourceDataSync(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's ARN, built from the listing's name by the entry's derive template (the listing carries none): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_resource_data_sync_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "ssm:resourcedatasync"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states when it was created (ListResourceDataSync SyncCreatedTime), held only inside configuration: a "
+        "declaration names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,13 @@ class LocationMap(BaseModel):
     # Identity (req-grid-entity-natural-key): The ARN DescribeMap returns (MapArn), read for each resource ListMaps names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_map_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:map"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states when it was created (DescribeMap CreateTime), held only inside configuration: a declaration names a"
+        " typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

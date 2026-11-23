@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -19,6 +20,12 @@ class Route53HostedZone(BaseModel):
     # it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("hosted_zone_id",)
     ARN_RESOURCE: ClassVar[str | None] = "route53:hostedzone"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time for it in the responses the collector reads (ListTagsForResource)."
+    )
     # A zone contains its record sets (aws-core-tap#220): a record set the zone's complete listing no longer names
     # is a retirement candidate, and retiring the zone cascades to its record sets. Literals, for validate_plugin's
     # AST reader.

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,13 @@ class Route53profilesProfileAssociation(BaseModel):
     # Identity (req-grid-entity-natural-key): The association's ARN, built as arn:<partition>:route53profiles:<region>:<OwnerId>:profile-association/<Id> (the reference's ${ResourceId} is the association's own id, as it is the profile's in profile/${ResourceId}; the ProfileAssociation object has no Arn member). The account is the association's owner (OwnerId), not the caller (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("route53profiles_profile_association_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "route53profiles:profile-association"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states when it was created (ListProfileAssociations CreationTime), held only inside configuration: a "
+        "declaration names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

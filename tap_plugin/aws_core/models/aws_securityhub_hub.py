@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -37,6 +38,9 @@ class AwsSecurityHubHub(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("hub_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "securityhub:hub"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): SubscribedAt, when Security Hub was enabled, which
+    # creates the hub. An interval with no end: the thing holds from then on and AWS states no end (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="subscribed_at", kind="created")
 
     OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
         {"nodes": [{"type": "aws_core__aws_account"}], "edges": [{"type": "REPORTS_TO_ADMINISTRATOR__aws_core"}]},

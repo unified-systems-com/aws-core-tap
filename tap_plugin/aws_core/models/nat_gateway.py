@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -21,6 +22,13 @@ class NatGateway(BaseModel):
     # if a collector records one.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("nat_gateway_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:natgateway"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states when it was created (DescribeNatGateways CreateTime), held only inside configuration: a declaration"
+        " names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

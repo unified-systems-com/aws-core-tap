@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,14 @@ class S3Bucket(BaseModel):
     # Identity (req-grid-entity-natural-key): The bucket's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bucket_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "s3:bucket"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "Its typed size_observed_at is the time of a CloudWatch size datapoint, not the bucket's. AWS's CreationDate "
+        "(ListBuckets) is held only inside configuration: a declaration names a typed field, and this model has none "
+        "for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,14 @@ class CloudwatchCompositeAlarm(BaseModel):
     # Identity (req-grid-entity-natural-key): The alarm's ARN: an alarm name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("alarm_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudwatch:alarm"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no creation time at the top level of its record; the times it does return there "
+        "(AlarmConfigurationUpdatedTimestamp, StateTransitionedTimestamp, StateUpdatedTimestamp) are held only inside "
+        "configuration."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

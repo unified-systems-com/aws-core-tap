@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -40,6 +41,10 @@ class AwsDelegatedAdministration(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("organization_id", "account_id", "service_principal")
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): DelegationEnabledDate, when the account became the
+    # service's delegated administrator. An interval with no end: the thing holds from then on and AWS states no end
+    # (core rule 8).
+    EVENT_TIME: ClassVar[Interval] = Interval(start="delegation_enabled_at", kind="created")
     # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.

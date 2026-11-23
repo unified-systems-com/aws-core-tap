@@ -20,6 +20,9 @@ class LambdaLayerVersion(BaseModel):
     # Identity (req-grid-entity-natural-key): The layer version's ARN: a layer name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("layer_version_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "lambda:layerVersion"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): left undeclared on purpose. Lambda states
+    # CreatedDate as text with a "+0000" offset (2018-11-27T15:10:45.123+0000), which is not a FHIR form; the stored
+    # value keeps the form AWS gave it (core rule 22), so it waits for core's declared source form (tap#1289).
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

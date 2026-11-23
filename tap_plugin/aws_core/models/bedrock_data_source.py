@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -17,6 +18,13 @@ class BedrockDataSource(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): the CloudFormation primary identifier of AWS::Bedrock::DataSource, KnowledgeBaseId and DataSourceId joined with '|': a data source id is only unique within its knowledge base, and the botocore service model and the Service Authorization Reference define no data source ARN
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bedrock_data_source_id",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no creation time at the top level of its record; the times it does return there (updatedAt) are "
+        "held only inside configuration."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

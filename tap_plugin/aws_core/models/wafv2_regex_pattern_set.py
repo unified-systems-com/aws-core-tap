@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,12 @@ class Wafv2RegexPatternSet(BaseModel):
     # Identity (req-grid-entity-natural-key): The pattern set's ARN: a name is unique only within an account, region and scope.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("regex_pattern_set_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "wafv2:regexpatternset"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time for it in the responses the collector reads (GetRegexPatternSet, ListRegexPatternSets)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "round-rectangle", "colors": {"fill": "#F8BDDA", "border": "#E7157B", "label": "#400522"}}

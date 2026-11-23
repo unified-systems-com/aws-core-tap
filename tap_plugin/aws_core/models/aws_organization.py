@@ -5,6 +5,7 @@ from typing import Any, ClassVar
 from django.db import models
 from tap_plugin.aws_core.policy_types import POLICY_TYPES
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -49,6 +50,10 @@ class AwsOrganization(BaseModel):
     # AWS's organization id (o-…). Blank ids never converge: identity_lock_key treats "" as a hole.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("organization_id",)
     ARN_RESOURCE: ClassVar[str | None] = "organizations:organization"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = "AWS states no time for an organization (DescribeOrganization)."
     # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.

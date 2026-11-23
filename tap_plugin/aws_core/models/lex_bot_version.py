@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -17,6 +18,13 @@ class LexBotVersion(BaseModel):
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The bot id and the numbered version joined with a colon, the CloudFormation primary identifier of AWS::Lex::BotVersion (BotId, BotVersion); the Service Authorization Reference's bot version ARN is name-based (Lex V1) and a V2 listing carries no such ARN. Unique within the account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("lex_bot_version_key",)
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states when it was created (ListBotVersions creationDateTime), held only inside configuration: a "
+        "declaration names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

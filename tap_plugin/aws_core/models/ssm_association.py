@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,13 @@ class SsmAssociation(BaseModel):
     # Identity (req-grid-entity-natural-key): The association's AssociationId: ListAssociations returns no ARN, and an association id is a service-generated UUID.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ssm_association_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ssm:association"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no creation time at the top level of its record; the times it does return there "
+        "(LastExecutionDate) are held only inside configuration."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 _STRING_LIST = {"type": "string"}
@@ -73,6 +74,12 @@ class AwsPolicyStatement(BaseModel):
     }
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("policy_arn", "statement_key")
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "A statement the collector derives from a policy document; the document states no time for it."
+    )
     # Identity (req-aws-collector-identity-13): no manifest entry collects this type, so its declaration lives
     # here, in the shape of a manifest entry's `identity` block, checked against the CloudFormation ledger by
     # tests/test_identity_declarations.py.

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -27,6 +28,12 @@ class CloudfrontDistribution(BaseModel):
     # for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("distribution_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "cloudfront:distribution"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS returns no time for it in the responses the collector reads (GetOriginAccessControl, ListDistributions)."
+    )
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 # acm-pca enums, as DescribeCertificateAuthority reports them.
@@ -41,6 +42,13 @@ class AcmPrivateCa(BaseModel):
     # AWS's CA ARN; there is no shorter id.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ca_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "acm-pca:certificate-authority"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "AWS states when it was created (ListCertificateAuthorities CreatedAt), held only inside configuration: a "
+        "declaration names a typed field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},

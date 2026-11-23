@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import NO_EVENT_TIME, NoEventTime
 from tap_grid.models import BaseModel
 
 
@@ -18,6 +19,14 @@ class AccessAnalyzerArchiveRule(BaseModel):
     # Identity (req-grid-entity-natural-key): The analyzer's ARN plus /archive-rule/ and the rule name: AWS gives a rule no ARN in its API, and the name is unique only within an analyzer.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "access-analyzer:ArchiveRule"
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): no typed field of this model says when
+    # the thing happened in the world; EVENT_TIME_REASON says why.
+    EVENT_TIME: ClassVar[NoEventTime] = NO_EVENT_TIME
+    EVENT_TIME_REASON: ClassVar[str] = (
+        "Its typed updated_at says when the rule last changed, which is not declared while a creation time exists (core"
+        " rule 13). AWS's createdAt (ListArchiveRules) is held only inside configuration: a declaration names a typed "
+        "field, and this model has none for it (unified-systems-com/tap#1289)."
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {"shape": "rectangle", "colors": {"fill": "#F5C6CC", "border": "#DD344C", "label": "#3D0E15"}}
