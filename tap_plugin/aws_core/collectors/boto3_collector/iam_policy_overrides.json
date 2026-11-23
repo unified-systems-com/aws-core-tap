@@ -43,6 +43,12 @@
   "sts:GetCallerIdentity": "STS GetCallerIdentity needs no IAM permission and cannot be denied.",
   "sts:AssumeRole": "The collector principal assumes the customer's role; the role itself is never asked to assume anything. The trust policy, not this document, grants it."
  },
+ "gated": {
+  "iam:GenerateCredentialReport": {
+   "option": "generate_credential_report",
+   "why": "Makes AWS build a new credential report: the one call aws_core can make that changes state in the account (it changes no configuration and no access). Made only when the operator sets data.generate_credential_report (default off, spec-aws-core-secrets.md req-aws-core-secret-credential-report), so it is never in the read policy; gated-generate-credential-report-policy.json grants it, attached only by an operator who turns the option on (ruling Q143a, 2026-11-23)."
+  }
+ },
  "deny": {
   "appsync:GetFunction": "Returns credentials, tokens or secret values (GetFunction); the read guard refuses the operation too.",
   "athena:GetQueryResults": "Reads query results.",

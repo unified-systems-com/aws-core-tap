@@ -2,6 +2,143 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadStates",
+      "Effect": "Allow",
+      "Action": [
+        "states:DescribeStateMachine",
+        "states:ListActivities",
+        "states:ListStateMachineAliases",
+        "states:ListStateMachineVersions",
+        "states:ListStateMachines",
+        "states:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadStoragegateway",
+      "Effect": "Allow",
+      "Action": [
+        "storagegateway:ListFileShares",
+        "storagegateway:ListTagsForResource",
+        "storagegateway:ListTapePools",
+        "storagegateway:ListTapes",
+        "storagegateway:ListVolumes"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadSynthetics",
+      "Effect": "Allow",
+      "Action": [
+        "synthetics:DescribeCanaries",
+        "synthetics:GetGroup",
+        "synthetics:ListGroups",
+        "synthetics:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTag",
+      "Effect": "Allow",
+      "Action": [
+        "tag:GetResources"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTextract",
+      "Effect": "Allow",
+      "Action": [
+        "textract:GetAdapter",
+        "textract:ListAdapters",
+        "textract:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTimestream",
+      "Effect": "Allow",
+      "Action": [
+        "timestream:DescribeScheduledQuery",
+        "timestream:ListDatabases",
+        "timestream:ListScheduledQueries",
+        "timestream:ListTables",
+        "timestream:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTimestreamInfluxdb",
+      "Effect": "Allow",
+      "Action": [
+        "timestream-influxdb:ListDbBackups",
+        "timestream-influxdb:ListDbClusters",
+        "timestream-influxdb:ListDbInstances",
+        "timestream-influxdb:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTranscribe",
+      "Effect": "Allow",
+      "Action": [
+        "transcribe:GetVocabulary",
+        "transcribe:GetVocabularyFilter",
+        "transcribe:ListCallAnalyticsCategories",
+        "transcribe:ListMedicalVocabularies",
+        "transcribe:ListTagsForResource",
+        "transcribe:ListVocabularies",
+        "transcribe:ListVocabularyFilters"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTransfer",
+      "Effect": "Allow",
+      "Action": [
+        "transfer:DescribeCertificate",
+        "transfer:DescribeConnector",
+        "transfer:DescribeServer",
+        "transfer:DescribeWebApp",
+        "transfer:DescribeWorkflow",
+        "transfer:ListAgreements",
+        "transfer:ListCertificates",
+        "transfer:ListConnectors",
+        "transfer:ListHostKeys",
+        "transfer:ListProfiles",
+        "transfer:ListServers",
+        "transfer:ListTagsForResource",
+        "transfer:ListUsers",
+        "transfer:ListWebApps",
+        "transfer:ListWorkflows"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadTranslate",
+      "Effect": "Allow",
+      "Action": [
+        "translate:ListParallelData",
+        "translate:ListTagsForResource",
+        "translate:ListTerminologies"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadVerifiedpermissions",
+      "Effect": "Allow",
+      "Action": [
+        "verifiedpermissions:GetPolicyStore",
+        "verifiedpermissions:ListIdentitySources",
+        "verifiedpermissions:ListPolicies",
+        "verifiedpermissions:ListPolicyStoreAliases",
+        "verifiedpermissions:ListPolicyStores",
+        "verifiedpermissions:ListPolicyTemplates",
+        "verifiedpermissions:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadWafRegional",
       "Effect": "Allow",
       "Action": [

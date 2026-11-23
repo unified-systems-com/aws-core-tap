@@ -127,6 +127,14 @@ _FINDINGS_PROPS: dict[str, Any] = {
     },
 }
 
+# The credential report setting (req-aws-core-secret-credential-report, ruling Q143a 2026-11-23): scope, not credential,
+# shared by both kinds for the same reason the findings keys are. Absent or false (the default): the run reads an
+# existing report only. True: the run first calls iam:GenerateCredentialReport, the one call aws_core makes that changes
+# state in the account (it makes AWS build a new report), and the operator attaches the gated policy that grants it.
+_CREDENTIAL_REPORT_PROPS: dict[str, Any] = {
+    "generate_credential_report": {"type": "boolean"},
+}
+
 # The static-credential fragment: reused verbatim as the `aws_assumed_role`
 # kind's `data.base` (the identity that CALLS AssumeRole).
 _STATIC_CREDS_PROPS: dict[str, Any] = {
@@ -149,6 +157,7 @@ AWS_STATIC_SCHEMA: dict[str, Any] = {
         **_EXPECTED_ACCOUNT_PROPS,
         **_SELECTION_PROPS,
         **_FINDINGS_PROPS,
+        **_CREDENTIAL_REPORT_PROPS,
     },
 }
 
@@ -185,6 +194,7 @@ AWS_ASSUMED_ROLE_SCHEMA: dict[str, Any] = {
         **_REGION_SCOPE_PROPS,
         **_SELECTION_PROPS,
         **_FINDINGS_PROPS,
+        **_CREDENTIAL_REPORT_PROPS,
     },
 }
 

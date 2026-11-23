@@ -27,6 +27,7 @@ concrete instance of the consumer-owned-shape contract.
 | req-aws-core-secret-member-fanout | [Member Fan-Out Settings](#member-fan-out-settings) | Proposed | Optional `data.member_fanout` block on the static kind: the dedicated member role's name, its required External ID, an exclude list and a cap; consumed by `req-aws-collector-fanout` |
 | req-aws-core-secret-selection | [Collection Selection Settings](#collection-selection-settings) | Proposed | Optional `data.include_types`, `data.exclude_types` and `data.accounts_allowed` on both kinds: which types and which accounts a run collects; consumed by `req-aws-collector-selection` |
 | req-aws-core-secret-findings-settings | [Findings Settings](#findings-settings) | Proposed | Optional keys on both kinds that trim what the findings readers collect, all off by default: `inspector_compliance_findings` (project Inspector rows into compliance_core), `inspector_finding_types` (down-select Inspector's finding types), `findings_max_per_region` and `findings_read_budget_seconds` (limit the findings reads); consumed by `req-aws-landing-zone-inspector` and `req-aws-landing-zone-findings-3` |
+| req-aws-core-secret-credential-report | [Credential Report Setting](#credential-report-setting) | Proposed | Optional `data.generate_credential_report` on both kinds, default off: when true the run calls `iam:GenerateCredentialReport` before reading the report, the one state-changing call aws_core makes; consumed by `req-aws-core-iam-credentials` |
 
 ## AWS Static Access Key Kind
 ----
@@ -326,6 +327,38 @@ configuration.
 | --- | --- | :---: | --- | --- |
 | req-aws-core-secret-findings-settings-1 | Optional, Everything By Default | Proposed | A secret without any of the keys validates and runs exactly as before the keys existed, except that nothing is capped: every finding type is read, every read runs to its end, and no compliance_core data is written. | |
 | req-aws-core-secret-findings-settings-2 | One Fragment, Both Kinds | Proposed | Both kinds accept the four keys from one shared fragment; a non-boolean toggle, an unknown or repeated finding type, an empty type list, and a limit or budget below 1 are refused at validation. | |
+
+## Credential Report Setting
+----
+RID: `req-aws-core-secret-credential-report`
+
+Status: `Proposed`
+
+Ruled by the maintainer on 2026-11-23 (aws-core-tap#282, Q143a). The credential report is the only source of the
+root user's password and key use (`spec-aws-core-v0.md`, `req-aws-core-iam-credentials`). Reading an existing report
+changes nothing; asking AWS to build one does. So generation is an operator's choice, off by default, held in the
+collector's existing configuration beside the findings keys and for the same reason, as a shared schema fragment
+(`_CREDENTIAL_REPORT_PROPS`) for both kinds:
+
+- `data.generate_credential_report` — boolean. Absent or `false`: the run reads whatever report exists and never
+  calls `GenerateCredentialReport`; no report is recorded on the account as `credential_report_state:
+  not_present`, distinct from a report that could not be read (`null`). `true`: the run first calls
+  `iam:GenerateCredentialReport` and waits a bounded time (ten polls, two seconds apart) for AWS to finish, then
+  reads the report; a denied or failed generation is not fatal, and the run reads whatever report exists.
+
+This is the one written exception to the collector's read-only invariant, and it applies only when the operator
+sets the key. The action is never in the generated read policy: the operator who sets the key also attaches
+`handoff/gated-generate-credential-report-policy.json` (`spec-aws-core-collector-v0.md`,
+`req-aws-collector-iam-policy-2`). A run with the key set says so in its run record (`CREDENTIAL_REPORT_GENERATION_ON`).
+It is scope, not secret material, and moves with the other non-credential keys when the collector gains its own
+configuration.
+
+### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-secret-credential-report-1 | Optional, Off By Default | Proposed | A secret without the key validates and runs without ever calling `GenerateCredentialReport`. | `tests/test_iam_credentials.py::TestCredentialReport`. |
+| req-aws-core-secret-credential-report-2 | One Fragment, Both Kinds | Proposed | Both kinds accept the key from one shared fragment; a non-boolean value is refused at validation. | `tests/test_iam_credentials.py::TestOption`. |
 
 ## Collection Selection Settings
 ----

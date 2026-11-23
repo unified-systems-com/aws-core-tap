@@ -11,7 +11,7 @@
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore sts GetCallerIdentity and iam ListAccountAliases output shapes and custom_fn aws_account_singleton, 2026-09-23.",
+        "basis": "Read botocore sts GetCallerIdentity and iam ListAccountAliases output shapes and custom_fn aws_account_singleton, 2026-09-23; iam GetAccountPasswordPolicy (PasswordPolicy: settings only, no member carries the sensitive trait) and GetCredentialReport, of which only the report state and GeneratedTime reach this item (the report's rows never do), 2026-11-23.",
         "locations": [
           {
             "path": "Arn",
@@ -39,7 +39,20 @@
         "name": "_account_name",
         "account_id": "Account",
         "email": "_email",
-        "status": "_status"
+        "status": "_status",
+        "password_policy_present": "_password_policy_present",
+        "password_minimum_length": "_password_policy.MinimumPasswordLength",
+        "password_require_symbols": "_password_policy.RequireSymbols",
+        "password_require_numbers": "_password_policy.RequireNumbers",
+        "password_require_uppercase": "_password_policy.RequireUppercaseCharacters",
+        "password_require_lowercase": "_password_policy.RequireLowercaseCharacters",
+        "password_allow_users_to_change": "_password_policy.AllowUsersToChangePassword",
+        "password_expire_passwords": "_password_policy.ExpirePasswords",
+        "password_max_age_days": "_password_policy.MaxPasswordAge",
+        "password_reuse_prevention": "_password_policy.PasswordReusePrevention",
+        "password_hard_expiry": "_password_policy.HardExpiry",
+        "credential_report_state": "_credential_report_state",
+        "credential_report_generated_at": "_credential_report_generated_at"
       }
     },
     {
@@ -802,7 +815,7 @@
       },
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore iam ListUsers and GetUser output shapes (User), ListAttachedUserPolicies, ListMFADevices, and custom_fn iam_users_described, 2026-09-28. Access keys, login profiles and MFA seeds are never requested; ListMFADevices returns device serial numbers only.",
+        "basis": "Read botocore iam ListUsers and GetUser output shapes (User), ListAttachedUserPolicies, ListMFADevices, and custom_fn iam_users_described, 2026-09-28; GetLoginProfile (LoginProfile: UserName, CreateDate, PasswordResetRequired, MaxSigninSessionDuration; no password, which AWS never returns), 2026-11-23. MFA seeds are never requested; ListMFADevices returns device serial numbers only. Access keys and the other credentials are their own entries (aws_iam_access_key and its siblings).",
         "locations": [
           {
             "path": "UserName",
@@ -820,6 +833,12 @@
             "path": "_hydrate.user.data.User.Tags",
             "category": "customer_content",
             "reason": "GetUser returns the user's tags inline. Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.login_profile.data.LoginProfile.UserName",
+            "category": "personal_data",
+            "reason": "GetLoginProfile repeats the user name inside the hydrate slot.",
             "evidence": "reviewer_judgement"
           },
           {
@@ -846,7 +865,10 @@
         "mfa_enabled": "_mfa_enabled",
         "permissions_boundary_arn": "_permissions_boundary_arn",
         "password_last_used": "_password_last_used",
-        "attached_policy_arns": "_attached_policy_arns"
+        "attached_policy_arns": "_attached_policy_arns",
+        "login_profile_exists": "_login_profile_exists",
+        "login_profile_created_at": "_login_profile_created_at",
+        "password_reset_required": "_password_reset_required"
       },
       "hydrate": [
         {
@@ -863,6 +885,11 @@
           "key": "mfa_devices",
           "op": "ListMFADevices",
           "why": "Registered MFA devices — whether the user has a second factor."
+        },
+        {
+          "key": "login_profile",
+          "op": "GetLoginProfile",
+          "why": "The console login profile — whether the user has a console password, when it was set and whether a reset is required; NoSuchEntity is 'no console password' (ruling Q143d). Never the password."
         }
       ],
       "tags": {
@@ -2162,6 +2189,362 @@
           "direction": "outbound"
         }
       ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_access_key",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_access_keys_listed"
+      },
+      "why": "Enumerate every IAM user's access keys — long-lived credentials and the first thing a credential-hygiene check reads: status, age and last use (GetAccessKeyLastUsed: date, service and region). Metadata only: the secret access key AWS returns only at creation is never requested. The run lists every user's access keys once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a key the listing stops naming is a question for its falsifier, not a deletion.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListAccessKeys (AccessKeyMetadata: UserName, AccessKeyId, Status, CreateDate) and GetAccessKeyLastUsed (UserName, AccessKeyLastUsed: LastUsedDate, ServiceName, Region) output shapes and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait; the secret access key is returned only by CreateAccessKey, which is never called.",
+        "locations": [
+          {
+            "path": "UserName",
+            "category": "personal_data",
+            "reason": "The name of the user that holds the credential is often a person's username or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_name",
+            "category": "personal_data",
+            "reason": "The reader repeats the holding user's name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_arn",
+            "category": "personal_data",
+            "reason": "The holding user's ARN embeds the user name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.last_used.data.UserName",
+            "category": "personal_data",
+            "reason": "GetAccessKeyLastUsed repeats the user name inside the hydrate slot.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "AccessKeyId",
+            "category": "other",
+            "reason": "An access key id is an identifier, not the secret, and is kept (ruling Q142a); listed because it names the account it belongs to and, with the secret, grants access.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:global:{AccessKeyId}",
+        "_partition": "{partition}",
+        "_account_id": "{account}"
+      },
+      "identity": {
+        "cfn_type": "AWS::IAM::AccessKey",
+        "key": {
+          "partition": "@partition",
+          "account_id": "@account",
+          "access_key_id": "Id"
+        }
+      },
+      "fields": {
+        "name": "AccessKeyId",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "access_key_id": "AccessKeyId",
+        "user_name": "_user_name",
+        "user_arn": "_user_arn",
+        "status": "Status",
+        "create_date": "_created",
+        "last_used_date": "_last_used_date",
+        "last_used_service": "_last_used_service",
+        "last_used_region": "_last_used_region"
+      },
+      "hydrate": [
+        {
+          "key": "last_used",
+          "op": "GetAccessKeyLastUsed",
+          "why": "When the key was last used, and for which service and region — whether a key is still needed."
+        }
+      ],
+      "tags": {
+        "source": "none",
+        "why": "AWS has no tagging operation for access keys: the iam service model defines Tag and Untag operations for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates, and none for access keys (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "_user_arn",
+          "target_type": "aws_core__aws_iam_user",
+          "key_kind": "arn",
+          "edge_type": "HOLDS_ACCESS_KEY__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_ssh_public_key",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_ssh_public_keys_listed"
+      },
+      "why": "Enumerate every IAM user's SSH public keys (CodeCommit access over SSH): status and upload time. Metadata only: the key body is never requested (ListSSHPublicKeys returns none; GetSSHPublicKey, which would, is never called). The run lists every user's SSH public keys once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a key the listing stops naming is a question for its falsifier, not a deletion.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListSSHPublicKeys output shape (SSHPublicKeys: UserName, SSHPublicKeyId, Status, UploadDate) and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait, and the listing returns no key body or fingerprint.",
+        "locations": [
+          {
+            "path": "UserName",
+            "category": "personal_data",
+            "reason": "The name of the user that holds the credential is often a person's username or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_name",
+            "category": "personal_data",
+            "reason": "The reader repeats the holding user's name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_arn",
+            "category": "personal_data",
+            "reason": "The holding user's ARN embeds the user name.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:global:{SSHPublicKeyId}",
+        "_partition": "{partition}",
+        "_account_id": "{account}"
+      },
+      "identity": {
+        "cfn_type": null,
+        "reason": "CloudFormation has no resource type for an IAM SSH public key, and AWS gives it no ARN; it is named by the id AWS generates (SSHPublicKeyId), scoped by partition and account (ruling Q142a, 2026-11-23)."
+      },
+      "fields": {
+        "name": "SSHPublicKeyId",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "ssh_public_key_id": "SSHPublicKeyId",
+        "user_name": "_user_name",
+        "user_arn": "_user_arn",
+        "status": "Status",
+        "upload_date": "_created"
+      },
+      "tags": {
+        "source": "none",
+        "why": "AWS has no tagging operation for SSH public keys: the iam service model defines Tag and Untag operations for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates, and none for SSH public keys (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "_user_arn",
+          "target_type": "aws_core__aws_iam_user",
+          "key_kind": "arn",
+          "edge_type": "HOLDS_SSH_PUBLIC_KEY__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_signing_certificate",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_signing_certificates_listed"
+      },
+      "why": "Enumerate every IAM user's X.509 signing certificates: status and upload time. Metadata only: ListSigningCertificates returns each certificate's body with its row, and the reader removes it before the item is yielded. The run lists every user's signing certificates once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a certificate the listing stops naming is a question for its falsifier, not a deletion.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). CertificateBody is removed by the reader before the item is yielded, so it is never stored.",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListSigningCertificates output shape (Certificates: UserName, CertificateId, CertificateBody, Status, UploadDate) and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait. CertificateBody (the public PEM certificate) is removed by the reader (iam_credentials.DROPPED), so it is never in the item, the configuration or a field (metadata only, ruling Q142a).",
+        "locations": [
+          {
+            "path": "UserName",
+            "category": "personal_data",
+            "reason": "The name of the user that holds the credential is often a person's username or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_name",
+            "category": "personal_data",
+            "reason": "The reader repeats the holding user's name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_arn",
+            "category": "personal_data",
+            "reason": "The holding user's ARN embeds the user name.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:global:{CertificateId}",
+        "_partition": "{partition}",
+        "_account_id": "{account}"
+      },
+      "identity": {
+        "cfn_type": null,
+        "reason": "CloudFormation has no resource type for an IAM signing certificate, and AWS gives it no ARN; it is named by the id AWS generates (CertificateId), scoped by partition and account (ruling Q142a, 2026-11-23)."
+      },
+      "fields": {
+        "name": "CertificateId",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "certificate_id": "CertificateId",
+        "user_name": "_user_name",
+        "user_arn": "_user_arn",
+        "status": "Status",
+        "upload_date": "_created"
+      },
+      "tags": {
+        "source": "none",
+        "why": "AWS has no tagging operation for signing certificates: the iam service model defines Tag and Untag operations for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates, and none for signing certificates (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "_user_arn",
+          "target_type": "aws_core__aws_iam_user",
+          "key_kind": "arn",
+          "edge_type": "HOLDS_SIGNING_CERTIFICATE__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_service_specific_credential",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_service_specific_credentials_listed"
+      },
+      "why": "Enumerate every IAM user's service-specific credentials (CodeCommit Git, Amazon Keyspaces, Bedrock API keys): service, status, age and expiry. Metadata only: the password AWS returns only when one is created or reset is never requested. The run lists every user's service-specific credentials once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a credential the listing stops naming is a question for its falsifier, not a deletion.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore iam ListServiceSpecificCredentials output shape (ServiceSpecificCredentials: UserName, Status, ServiceUserName, ServiceCredentialAlias, CreateDate, ExpirationDate, ServiceSpecificCredentialId, ServiceName) and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait; ServicePassword and ServiceCredentialSecret are returned only by Create/ResetServiceSpecificCredential, which are never called.",
+        "locations": [
+          {
+            "path": "UserName",
+            "category": "personal_data",
+            "reason": "The name of the user that holds the credential is often a person's username or email address.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_name",
+            "category": "personal_data",
+            "reason": "The reader repeats the holding user's name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_user_arn",
+            "category": "personal_data",
+            "reason": "The holding user's ARN embeds the user name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ServiceUserName",
+            "category": "personal_data",
+            "reason": "The service user name is the IAM user name joined to the account id.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:global:{ServiceSpecificCredentialId}",
+        "_partition": "{partition}",
+        "_account_id": "{account}"
+      },
+      "identity": {
+        "cfn_type": null,
+        "reason": "CloudFormation has no resource type for an IAM service-specific credential, and AWS gives it no ARN; it is named by the id AWS generates (ServiceSpecificCredentialId), scoped by partition and account (ruling Q142a, 2026-11-23)."
+      },
+      "fields": {
+        "name": "ServiceSpecificCredentialId",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "service_specific_credential_id": "ServiceSpecificCredentialId",
+        "user_name": "_user_name",
+        "user_arn": "_user_arn",
+        "status": "Status",
+        "service_name": "ServiceName",
+        "service_user_name": "ServiceUserName",
+        "service_credential_alias": "ServiceCredentialAlias",
+        "create_date": "_created",
+        "expiration_date": "_expires"
+      },
+      "tags": {
+        "source": "none",
+        "why": "AWS has no tagging operation for service-specific credentials: the iam service model defines Tag and Untag operations for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates, and none for service-specific credentials (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "_user_arn",
+          "target_type": "aws_core__aws_iam_user",
+          "key_kind": "arn",
+          "edge_type": "HOLDS_SERVICE_CREDENTIAL__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_iam_root_user",
+      "service": "iam",
+      "scope": "global",
+      "source": {
+        "custom_fn": "iam_root_user_from_credential_report"
+      },
+      "why": "The account's root user, as the credential report describes it: whether it has a password and MFA, and its access keys' and signing certificates' state and use. The report (GetCredentialReport) is the only source of these facts. The report is read, never generated, unless the operator turns on generate_credential_report (req-aws-core-secret-credential-report); no report, an expired one, or one in progress yields no root user and is recorded on the account (credential_report_state), and a report that could not be read fails the entry.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). Only the report's root row is kept; the other users' rows are not part of this item.",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Read botocore iam GetCredentialReport output shape (Content, ReportFormat, GeneratedTime), the credential report's documented columns, and iam_credentials.root_item, 2026-11-23. No member carries botocore's sensitive trait. The item is the report's root row only (user is the literal <root_account>; arn is the account's root ARN), which holds no password, key or secret and names no person; every other user's row is dropped."
+      },
+      "items_path": "[]",
+      "natural_key": "arn",
+      "fields": {
+        "name": "user",
+        "root_arn": "arn",
+        "report_generated_at": "_report_generated_at",
+        "created_at": "_created_at",
+        "password_enabled": "_password_enabled",
+        "password_last_used": "_password_last_used",
+        "mfa_active": "_mfa_active",
+        "access_key_1_active": "_access_key_1_active",
+        "access_key_1_last_rotated": "_access_key_1_last_rotated",
+        "access_key_1_last_used_date": "_access_key_1_last_used_date",
+        "access_key_1_last_used_region": "_access_key_1_last_used_region",
+        "access_key_1_last_used_service": "_access_key_1_last_used_service",
+        "access_key_2_active": "_access_key_2_active",
+        "access_key_2_last_rotated": "_access_key_2_last_rotated",
+        "access_key_2_last_used_date": "_access_key_2_last_used_date",
+        "access_key_2_last_used_region": "_access_key_2_last_used_region",
+        "access_key_2_last_used_service": "_access_key_2_last_used_service",
+        "cert_1_active": "_cert_1_active",
+        "cert_1_last_rotated": "_cert_1_last_rotated",
+        "cert_2_active": "_cert_2_active",
+        "cert_2_last_rotated": "_cert_2_last_rotated"
+      },
+      "tags": {
+        "source": "none",
+        "why": "The root user has no tags: IAM's tag operations name users, roles and other resources by name or ARN, and none takes the root user (botocore 1.44.7)."
+      }
     },
     {
       "entity_type": "aws_core__aws_elastic_ip",

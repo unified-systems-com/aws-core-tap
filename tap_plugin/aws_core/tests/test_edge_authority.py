@@ -298,6 +298,7 @@ def _user_item(attached: Any) -> dict[str, Any]:
             "get_user": {"User": user},
             "list_attached_user_policies": attached,
             "list_mfa_devices": {"MFADevices": []},
+            "get_login_profile": ClientError({"Error": {"Code": "NoSuchEntity", "Message": "no"}}, "GetLoginProfile"),
         }
     )
     return next(iter(iam_users_described(None, client_for=lambda _svc: client)))

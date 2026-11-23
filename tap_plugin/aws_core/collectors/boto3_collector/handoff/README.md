@@ -131,6 +131,17 @@ default; the set uses nine. `iam_policy.unverified()` lists the operations whose
 `<prefix>:<Operation>` because AWS's reference data does not name one; they are checked by the policy simulator,
 not yet by a live round trip with the role.
 
+### The one gated action: `iam:GenerateCredentialReport`
+
+`gated-generate-credential-report-policy.json` grants `iam:GenerateCredentialReport` and nothing else. It is not one
+of the `collector-policy-NN.json` documents, and neither `cross-account-role-custom.tf` nor
+`create-collector-policies.sh` attaches it. The call makes AWS build a new credential report, the one change the
+collector can make in the account (it changes no configuration and no access), and the collector makes it only when
+the secret sets `data.generate_credential_report: true` (default off; `spec-aws-core-secrets.md`,
+`req-aws-core-secret-credential-report`). Without it the collector reads whatever report exists
+(`iam:GetCredentialReport`, in the read documents) and records "no report" on the account when there is none. Attach
+this document by hand only when you turn the option on.
+
 ### Residual access the policy cannot remove
 
 Two services authorise their control-plane reads with an action that also covers data, and IAM has no separate action

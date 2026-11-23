@@ -408,13 +408,18 @@ from tap_plugin.aws_core.models.guardduty_ip_set import GuarddutyIpSet
 from tap_plugin.aws_core.models.guardduty_member import GuarddutyMember
 from tap_plugin.aws_core.models.guardduty_publishing_destination import GuarddutyPublishingDestination
 from tap_plugin.aws_core.models.guardduty_threat_intel_set import GuarddutyThreatIntelSet
+from tap_plugin.aws_core.models.iam_access_key import IamAccessKey
 from tap_plugin.aws_core.models.iam_group import IamGroup
 from tap_plugin.aws_core.models.iam_instance_profile import IamInstanceProfile
 from tap_plugin.aws_core.models.iam_oidc_provider import IamOidcProvider
 from tap_plugin.aws_core.models.iam_policy import IamPolicy
 from tap_plugin.aws_core.models.iam_role import IamRole
+from tap_plugin.aws_core.models.iam_root_user import IamRootUser
 from tap_plugin.aws_core.models.iam_saml_provider import IamSamlProvider
 from tap_plugin.aws_core.models.iam_server_certificate import IamServerCertificate
+from tap_plugin.aws_core.models.iam_service_specific_credential import IamServiceSpecificCredential
+from tap_plugin.aws_core.models.iam_signing_certificate import IamSigningCertificate
+from tap_plugin.aws_core.models.iam_ssh_public_key import IamSshPublicKey
 from tap_plugin.aws_core.models.iam_user import IamUser
 from tap_plugin.aws_core.models.iam_virtual_mfa_device import IamVirtualMfaDevice
 from tap_plugin.aws_core.models.identity_center_application import IdentityCenterApplication
@@ -1403,13 +1408,18 @@ __all__ = [
     "GuarddutyMember",
     "GuarddutyPublishingDestination",
     "GuarddutyThreatIntelSet",
+    "IamAccessKey",
     "IamGroup",
     "IamInstanceProfile",
     "IamOidcProvider",
     "IamPolicy",
     "IamRole",
+    "IamRootUser",
     "IamSamlProvider",
     "IamServerCertificate",
+    "IamServiceSpecificCredential",
+    "IamSigningCertificate",
+    "IamSshPublicKey",
     "IamUser",
     "IamVirtualMfaDevice",
     "IdentityCenterApplication",

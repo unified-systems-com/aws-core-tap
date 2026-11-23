@@ -78,6 +78,11 @@ aws_core__aws_iam_instance_profile = "tap_plugin.aws_core.models.iam_instance_pr
 aws_core__aws_iam_saml_provider = "tap_plugin.aws_core.models.iam_saml_provider.IamSamlProvider"
 aws_core__aws_iam_server_certificate = "tap_plugin.aws_core.models.iam_server_certificate.IamServerCertificate"
 aws_core__aws_iam_virtual_mfa_device = "tap_plugin.aws_core.models.iam_virtual_mfa_device.IamVirtualMfaDevice"
+aws_core__aws_iam_access_key = "tap_plugin.aws_core.models.iam_access_key.IamAccessKey"
+aws_core__aws_iam_ssh_public_key = "tap_plugin.aws_core.models.iam_ssh_public_key.IamSshPublicKey"
+aws_core__aws_iam_signing_certificate = "tap_plugin.aws_core.models.iam_signing_certificate.IamSigningCertificate"
+aws_core__aws_iam_service_specific_credential = "tap_plugin.aws_core.models.iam_service_specific_credential.IamServiceSpecificCredential"
+aws_core__aws_iam_root_user = "tap_plugin.aws_core.models.iam_root_user.IamRootUser"
 aws_core__aws_inspector_assessment_template = "tap_plugin.aws_core.models.inspector_assessment_template.InspectorAssessmentTemplate"
 aws_core__aws_inspector_assessment_target = "tap_plugin.aws_core.models.inspector_assessment_target.InspectorAssessmentTarget"
 aws_core__aws_guardduty_trusted_entity_set = "tap_plugin.aws_core.models.guardduty_trusted_entity_set.GuarddutyTrustedEntitySet"
@@ -1026,6 +1031,10 @@ OWNS_SAML_PROVIDER__aws_core = "edges/OWNS_SAML_PROVIDER.edge.json"
 OWNS_SERVER_CERTIFICATE__aws_core = "edges/OWNS_SERVER_CERTIFICATE.edge.json"
 CONTAINS_ROLE__aws_core = "edges/CONTAINS_ROLE.edge.json"
 AUTHENTICATES_USER__aws_core = "edges/AUTHENTICATES_USER.edge.json"
+HOLDS_ACCESS_KEY__aws_core = "edges/HOLDS_ACCESS_KEY.edge.json"
+HOLDS_SSH_PUBLIC_KEY__aws_core = "edges/HOLDS_SSH_PUBLIC_KEY.edge.json"
+HOLDS_SIGNING_CERTIFICATE__aws_core = "edges/HOLDS_SIGNING_CERTIFICATE.edge.json"
+HOLDS_SERVICE_CREDENTIAL__aws_core = "edges/HOLDS_SERVICE_CREDENTIAL.edge.json"
 NOTIFIES_ON_EVENTS__aws_core = "edges/NOTIFIES_ON_EVENTS.edge.json"
 PROTECTED_BY_WEB_ACL__aws_core = "edges/PROTECTED_BY_WEB_ACL.edge.json"
 AUTHORIZES_API__aws_core = "edges/AUTHORIZES_API.edge.json"
@@ -1142,6 +1151,13 @@ aws_core__aws_iam_group = "tap_plugin.aws_core.falsifiers.IamGroupFalsifier"
 aws_core__aws_iam_instance_profile = "tap_plugin.aws_core.falsifiers.IamInstanceProfileFalsifier"
 aws_core__aws_iam_saml_provider = "tap_plugin.aws_core.falsifiers.IamSamlProviderFalsifier"
 aws_core__aws_iam_server_certificate = "tap_plugin.aws_core.falsifiers.IamServerCertificateFalsifier"
+# IAM credential hygiene (aws-core-tap#282): a user holds its access keys, SSH public keys, signing certificates and
+# service-specific credentials (HOLDS_*), each listing recorded per user as a surface (iam_credentials.py). Each
+# falsifier lists the user's credentials of that kind and looks for the id. Registered, not armed.
+aws_core__aws_iam_access_key = "tap_plugin.aws_core.falsifiers.IamAccessKeyFalsifier"
+aws_core__aws_iam_ssh_public_key = "tap_plugin.aws_core.falsifiers.IamSshPublicKeyFalsifier"
+aws_core__aws_iam_signing_certificate = "tap_plugin.aws_core.falsifiers.IamSigningCertificateFalsifier"
+aws_core__aws_iam_service_specific_credential = "tap_plugin.aws_core.falsifiers.IamServiceSpecificCredentialFalsifier"
 # Organizations completeness (aws-core-tap#65, req-aws-core-organizations-completeness): the
 # organization contains its delegations (HOLDS_DELEGATION) and its customer-managed policies
 # (HOLDS_SERVICE_CONTROL_POLICY, HOLDS_ORGANIZATIONS_POLICY); a policy contains its statements

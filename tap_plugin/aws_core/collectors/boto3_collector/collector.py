@@ -107,6 +107,7 @@ from .ecs import image_writes, revision_label, walks_of, withhold_undescribed_ta
 from .elb_topology import walks_of as listener_walks_of
 from .elb_topology import withhold_unreplaced_lb_routes
 from .route53_records import walk_of as route53_walk_of
+from . import iam_credentials
 from .route53_records import withhold_unreplaced_zone_routes
 from .endpoint_probe import EndpointProbe, request_host
 from .envelope import jsonable
@@ -185,6 +186,8 @@ _SITE_ABORT_ACCOUNT_NOT_SELECTED = "6b84"
 _SITE_COMPLIANCE_FAILED = "f728"
 _SITE_COMPLIANCE_NOTICE = "9116"
 _SITE_COMPLIANCE_SUBMITTED = "054f"
+# The credential report generation option (req-aws-core-secret-credential-report).
+_SITE_CREDENTIAL_REPORT_GENERATION = "3c71"
 
 #: How many non-complete claims the run log names one by one; the counts always cover all of them.
 _AUTHORITY_DETAIL_CAP = 200
@@ -647,6 +650,19 @@ class Boto3Collector(CollectorBase):
         # emitted (`req-aws-collector-selection-3`): the type is still modelled, but the run never read the far end.
         modeled_types = {e["entity_type"] for e in all_entries}
         custom_fns = build_custom_fn_registry()
+        # The credential report is read, never generated, unless the operator turned generation on
+        # (req-aws-core-secret-credential-report): the one call this collector can make that changes state in the
+        # account, so it is named in the run record whenever it is allowed.
+        generate_report = iam_credentials.generate_enabled(data)
+        iam_credentials.configure(session, generate=generate_report)
+        if generate_report:
+            self.record_info(
+                _SITE_CREDENTIAL_REPORT_GENERATION,
+                "CREDENTIAL_REPORT_GENERATION_ON",
+                f"{iam_credentials.GENERATE_OPTION} is on: this run may call iam:GenerateCredentialReport, which makes "
+                "AWS build a new credential report (it changes no configuration and no access).",
+                message_data={"option": iam_credentials.GENERATE_OPTION},
+            )
         transforms = build_transform_registry(partition)
 
         # --- partition + region facts (req-aws-core-regional-containment) ---
@@ -1359,7 +1375,31 @@ class Boto3Collector(CollectorBase):
                         applied_batches=applied_batches,
                     )
                 )
-            if not org_tree.listings and not landing_zone.listings and not ecs_listings and not zone_listings:
+            # IAM credentials: each user's access keys, SSH public keys, signing certificates and service-specific
+            # credentials (aws-core-tap#282), the user node as the parent.
+            credential_walk = iam_credentials.walk_of(session)
+            credential_listings = credential_walk.surface_listings() if credential_walk is not None else []
+            for credential_listing in credential_listings:
+                self.record_surface(
+                    **surface_statement(
+                        credential_listing.walk,
+                        relation=credential_listing.relation,
+                        edge_type=credential_listing.edge_type,
+                        subject=resolve_subject(
+                            node_ref(credential_listing.parent_type, credential_listing.parent_key),
+                            addressed,
+                            resolved_refs,
+                        ),
+                        applied_batches=applied_batches,
+                    )
+                )
+            if (
+                not org_tree.listings
+                and not landing_zone.listings
+                and not ecs_listings
+                and not zone_listings
+                and not credential_listings
+            ):
                 self.declare_no_surfaces()
 
         # --- Inspector findings into compliance_core (req-aws-landing-zone-inspector-compliance) ---

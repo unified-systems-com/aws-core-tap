@@ -3168,6 +3168,36 @@
    ],
    "dropped": []
   },
+  "iam:generate_credential_report": {
+   "actions": [
+    "iam:GenerateCredentialReport"
+   ],
+   "dropped": []
+  },
+  "iam:get_access_key_last_used": {
+   "actions": [
+    "iam:GetAccessKeyLastUsed"
+   ],
+   "dropped": []
+  },
+  "iam:get_account_password_policy": {
+   "actions": [
+    "iam:GetAccountPasswordPolicy"
+   ],
+   "dropped": []
+  },
+  "iam:get_credential_report": {
+   "actions": [
+    "iam:GetCredentialReport"
+   ],
+   "dropped": []
+  },
+  "iam:get_login_profile": {
+   "actions": [
+    "iam:GetLoginProfile"
+   ],
+   "dropped": []
+  },
   "iam:get_role": {
    "actions": [
     "iam:GetRole"
@@ -3177,6 +3207,12 @@
   "iam:get_user": {
    "actions": [
     "iam:GetUser"
+   ],
+   "dropped": []
+  },
+  "iam:list_access_keys": {
+   "actions": [
+    "iam:ListAccessKeys"
    ],
    "dropped": []
   },
@@ -3237,6 +3273,24 @@
   "iam:list_server_certificate_tags": {
    "actions": [
     "iam:ListServerCertificateTags"
+   ],
+   "dropped": []
+  },
+  "iam:list_service_specific_credentials": {
+   "actions": [
+    "iam:ListServiceSpecificCredentials"
+   ],
+   "dropped": []
+  },
+  "iam:list_signing_certificates": {
+   "actions": [
+    "iam:ListSigningCertificates"
+   ],
+   "dropped": []
+  },
+  "iam:list_ssh_public_keys": {
+   "actions": [
+    "iam:ListSSHPublicKeys"
    ],
    "dropped": []
   },
