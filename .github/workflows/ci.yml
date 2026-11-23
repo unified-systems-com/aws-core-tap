@@ -27,7 +27,7 @@ jobs:
       security-events: write
     # tap#365 / PR# 373 - tap: plugin-ci fails closed and tests the declared floor. Move
     # this pin to the SHA of tap main once PR# 373 merges (Renovate does not track it).
-    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@17f5756081e9919ebde0f5eeba4036fe66cd6528
+    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@2338a593f89afde5db271d2fad4572539babef1f
     with:
       plugin_slug: aws_core
       # The test database is built by applying every migration, and each generated type adds a live and
