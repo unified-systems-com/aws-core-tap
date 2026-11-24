@@ -2197,6 +2197,10 @@
         "AWS::EC2::LocalGatewayVirtualInterfaceGroup"
       ]
     },
+    "aws_core__aws_ec2_network_access_scope_finding": {
+      "cfn": [],
+      "reason": "A finding a VPC Network Access Analyzer analysis reports; no CloudFormation resource type."
+    },
     "aws_core__aws_ec2_network_insights_access_scope": {
       "cfn": [
         "AWS::EC2::NetworkInsightsAccessScope"

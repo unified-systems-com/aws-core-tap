@@ -97,6 +97,7 @@ no encrypted secrets) are inherited as v0 fences.
 | req-aws-collector-s3-bucket-size | [S3 Bucket Size Metrics](#s3-bucket-size-metrics) | Approved for Development | Aggregate size/count from CloudWatch storage metrics; `size_observed_at` data-currency disclosure |
 | req-aws-collector-ecs | [ECS Clusters, Tasks And Container Images](#ecs-clusters-tasks-and-container-images) | Proposed | Collect ECS clusters, services, tasks and containers; per-container image and image digest as the join key to builds, SBOMs and findings; credential-bearing overrides declared, configuration off |
 | req-aws-collector-lb-topology | [Load Balancer Topology](#load-balancer-topology) | In Development | A load balancer reaches its targets through listener, rule and target group nodes, Classic ones included; each target edge carries its port and health; load balancer and Lambda targets are linked; Route 53 record sets become nodes between a zone and what they resolve to |
+| req-aws-collector-network-analyzer | [Network Analyzer Paths](#network-analyzer-paths) | In Development | A Network Access Analyzer finding is a node and the middle of a compound edge from its path's first component to its last; a Reachability Analyzer analysis that found a path is the middle of its own; the hops are path edges; a finding is dated by its analysis |
 | req-aws-collector-credentials | [Credential Resolution](#credential-resolution) | Approved for Development | `tap_cares` secret, `aws_static_access_key`, single account |
 | req-aws-collector-runtime | [Collector Runtime Integration](#collector-runtime-integration) | Approved for Development | `CollectorBase` pipeline; mirrors the KSI reference collector |
 | req-aws-collector-regions | [Region Iteration And Resilience](#region-iteration-and-resilience) | Approved for Development | Classify-and-skip; bounded throttle backoff |
@@ -1305,6 +1306,72 @@ edges are replaced the same way the load balancers' are.
 | req-aws-collector-lb-topology-7 | Live Trial | Proposed | A staging seed wave with an Application Load Balancer that has host and path rules and a weighted forward, a Network Load Balancer in front of it, instance and Lambda targets, and a private hosted zone with alias, CNAME and weighted records is collected, and each edge above is found on the grid. | |
 | req-aws-collector-lb-topology-8 | Classic Targets With Health | Implemented | A Classic load balancer has `ROUTES_TO_TARGET` to each registered instance, one per instance port its listeners forward to, carrying `health_state`, `health_reason` and `health_description` from `DescribeInstanceHealth` and `availability_zone` null. A health read that fails leaves the health null and the routes read: the instances come from the load balancer's own listing. | `tests/test_elb_collection.py::TestClassicRoutes` |
 | req-aws-collector-lb-topology-9 | Classic Listeners As Nodes | Implemented | Each `ListenerDescriptions` entry of a Classic load balancer is an `aws_elb_classic_listener` node keyed `<partition>:<account>:<region>:<load balancer name>:<protocol>:<port>`, with its instance protocol and port, policies and certificate ARN, `LISTENS_ON_LOAD_BALANCER` to the load balancer and `PRESENTS_CERTIFICATE` to an ACM certificate. The account comes from `sts:GetCallerIdentity`; a run that cannot read it raises rather than key a listener without it. | `tests/test_elb_listener_topology.py::TestClassicListeners` |
+
+### Network Analyzer Paths
+----
+RID: `req-aws-collector-network-analyzer`
+
+Status: `In Development`
+
+VPC Network Access Analyzer and Reachability Analyzer each say a network path exists from one resource to another,
+through others. That is a sender, a thing in the middle with an identity of its own, and a receiver, so each is a
+compound edge (`req-grid-edge-compound`), used exactly as core ships it and following the first one, the Inspector
+reachability finding (`req-aws-landing-zone-inspector-reachability`). A consumer can then tell which resource a path
+reaches, and when AWS observed it, from typed edges and fields instead of parsing stored responses
+(aws-core-tap#248). Rendering is core's: the middle node and its role edges are drawn as one arrow.
+
+**Network Access Analyzer findings** (aws-core-tap#212, ruled by George on 2026-11-09: a finding is its own node
+type). For each access scope analysis that succeeded and does not say it found nothing (`FindingsFound` `false`),
+`GetNetworkInsightsAccessScopeAnalysisFindings` is read to its end, and every finding is an
+`aws_ec2_network_access_scope_finding` node. A finding has no ARN and AWS addresses it only through its analysis, so
+it is keyed natively by `(analysis_arn, finding_id)`, both as AWS returns them; the analysis ARN carries partition,
+account and region (`req-aws-collector-identity-8`, `-13`). Its analysis has
+`REPORTS_ACCESS_SCOPE_FINDING` to it. The finding is the middle node: `ACCESS_SCOPE_FINDING_SOURCE` from the first
+component of its `FindingComponents`, `ACCESS_SCOPE_FINDING_DESTINATION` to the last, and `TRAVERSES_COMPONENT`, with
+`step`, to each component between them. AWS gives a finding no time of its own, so it carries its analysis's
+`StartDate` and `EndDate` as `analysis_start_date` and `analysis_end_date`, and declares them as its event time, an
+interval of kind `occurred`, as the analysis does. The typed fields also name the first and last components as AWS
+sent them (`source_component_id` and `_arn`, `destination_component_id` and `_arn`), so the resource a path reaches
+is stated even when no node matches it. The whole finding is stored.
+
+**Reachability Analyzer analyses.** An `aws_ec2_network_insights_analysis` is itself the middle node, as the
+Inspector finding is: it has its own identity (its ARN) and time (`StartDate`), and when AWS found a path a sender,
+a receiver and the hops between them. A separate path node would carry no fact the analysis does not, under an
+identity borrowed from it. When the analysis succeeded and `NetworkPathFound` is true, `REACHABILITY_ANALYSIS_SOURCE`
+runs from the first component of its `ForwardPathComponents`, `REACHABILITY_ANALYSIS_DESTINATION` to the last, and
+`TRAVERSES_COMPONENT`, with `step`, to each one between. An analysis that found no path, or has not finished, has no
+role edges. The analysis's typed fields and event time are aws-core-tap#248's other half.
+
+**Ends and hops.** A path's components are put in `SequenceNumber` order; AWS documents neither that order nor that
+the first and last components are its ends, so both are inferences to check on a live finding (-7). A component's
+type is read from its `Component.Id`'s resource-id prefix or from its `Component.Arn` (`arn_resolver`), never from its
+position. Each role accepts only the types the service's own guide lists for it: for Network Access Analyzer, the
+types a finding's path can start or end at (internet gateway, network interface, transit gateway attachment, VPC
+endpoint, endpoint service, peering connection, virtual private gateway) and the types it lists as path resources;
+for Reachability Analyzer, the types it lists as sources and destinations and as path components. A component that
+matches no tabled type, or a type its role does not accept, gets no edge and is listed in `unmatched_components`
+with the reason (on the finding as a field, on the analysis in its stored response).
+
+**Retirement.** Both middle nodes declare `retires_with: ("source", "destination")`: deleting either end retires
+the finding or the analysis; deleting a hop ends that edge only. Neither type, nor the analyses and scopes around
+them, has a containment surface or a falsifier yet, so a finding is not retired because a later run no longer lists
+it.
+
+**The engine.** Two `custom_fn` readers (`collectors/boto3_collector/network_insights.py`) shape each item into one
+slot per role and target type (`_source_<type>`, `_destination_<type>`, `_hops_<type>`), each always present and read
+`complete` (a running or failed analysis's slots read `partial`), and the manifest declares one edge rule per slot.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-collector-network-analyzer-1 | One Node Per Finding | Implemented | Every finding `GetNetworkInsightsAccessScopeAnalysisFindings` returns, read to its end, for an analysis whose `Status` is `succeeded` and whose `FindingsFound` is not `false`, is one `aws_ec2_network_access_scope_finding` node keyed `(analysis_arn, finding_id)`, with `REPORTS_ACCESS_SCOPE_FINDING` from its analysis. A running or failed analysis, or one that found nothing, is not asked. | `tests/test_network_insights.py::TestAccessScopeReader` |
+| req-aws-collector-network-analyzer-2 | A Cut Read Is A Gap | Implemented | An analysis whose findings could not all be read contributes none of them; the reader yields the rest and raises once, so the entry is reported skipped, never a quietly shorter list. | `TestAccessScopeReader` |
+| req-aws-collector-network-analyzer-3 | The Finding Is The Middle Node | Implemented | `aws_ec2_network_access_scope_finding` and `aws_ec2_network_insights_analysis` declare `COMPOUND_EDGE` with their own `<KIND>_SOURCE` and `<KIND>_DESTINATION`, `TRAVERSES_COMPONENT` for the path and `retires_with` both ends; `parse_compound_edge` accepts both and every role edge reaches its middle node. | `TestDeclarations` |
+| req-aws-collector-network-analyzer-4 | Ends And Hops From The Components | Implemented | In `SequenceNumber` order, the first component is the source and the last the destination, each with a role edge when its type is one the service lists as an end; every component between with a type the service lists for paths has `TRAVERSES_COMPONENT` with its 0-based `step`; any other component is listed in `unmatched_components` with the reason and gets no edge. A Reachability Analyzer analysis has role edges only when it succeeded and `NetworkPathFound` is true. | `TestReadPath`, `TestThroughTheEngine` |
+| req-aws-collector-network-analyzer-5 | Which Resource, And When | Implemented | A finding carries its analysis's `StartDate` and `EndDate` as `analysis_start_date` and `analysis_end_date`, declared as its event time (an interval of kind `occurred`), and the first and last components' ids and ARNs as AWS sent them. | `tests/test_event_time.py`, `TestThroughTheEngine` |
+| req-aws-collector-network-analyzer-6 | The Manifest Holds To The Tables | Implemented | The manifest declares exactly one edge rule per slot of each kind, of the types the role tables list, and each role edge's definition lists exactly those types. | `TestManifestRules` |
+| req-aws-collector-network-analyzer-7 | Live Trial | Proposed | On an account with one succeeded access scope analysis with at least one finding and one Reachability Analyzer analysis that found a path, a run lands each as specified; the first and last components are the path's ends and `SequenceNumber` orders them; an account with neither lands nothing and raises no gap. | Analyses are writes: the seeder identity creates them, never the collector. |
 
 ### Credential Resolution
 ----

@@ -105,7 +105,7 @@ class TestManifest:
         m = load_manifest()
         assert m["manifest_version"] == "0"
         entries = manifest_entries()
-        assert len(entries) == 898  # 900, less the two Pinpoint Email duplicates of SES types (aws-core-tap#251)
+        assert len(entries) == 899  # 900, less the two Pinpoint Email duplicates of SES types (aws-core-tap#251), plus the Network Access Analyzer finding (aws-core-tap#212)
         for e in entries:
             assert {
                 "entity_type",

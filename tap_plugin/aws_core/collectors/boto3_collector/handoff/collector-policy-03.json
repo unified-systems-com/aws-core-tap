@@ -119,7 +119,8 @@
         "ec2:DescribeVpnConcentrators",
         "ec2:DescribeVpnConnections",
         "ec2:DescribeVpnGateways",
-        "ec2:GetIpamPoolCidrs"
+        "ec2:GetIpamPoolCidrs",
+        "ec2:GetNetworkInsightsAccessScopeAnalysisFindings"
       ],
       "Resource": "*"
     },

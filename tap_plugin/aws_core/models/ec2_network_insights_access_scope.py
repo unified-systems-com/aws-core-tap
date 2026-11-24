@@ -9,7 +9,7 @@ from tap_grid.models import BaseModel
 
 
 class Ec2NetworkInsightsAccessScope(BaseModel):
-    """An AWS EC2 Network Insights Access Scope, listed by DescribeNetworkInsightsAccessScopes. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS EC2 Network Insights Access Scope, listed by DescribeNetworkInsightsAccessScopes: a Network Access Analyzer scope, which says which network paths to look for. Its ARN, name and tags are typed fields; the whole response is kept in configuration. What a scope matches (GetNetworkInsightsAccessScopeContent) is not read; what each analysis of it found is (aws_ec2_network_access_scope_finding)."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ec2_network_insights_access_scope"
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Network Insights Access Scope"

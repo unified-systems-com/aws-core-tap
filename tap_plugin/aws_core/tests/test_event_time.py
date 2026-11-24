@@ -60,6 +60,9 @@ DECLARED: dict[str, Interval] = {
     "aws_core__aws_access_analyzer": Interval(start="created_at", kind="created"),
     "aws_core__aws_access_analyzer_finding": Interval(start="created_at", kind="created"),
     "aws_core__aws_delegated_administration": Interval(start="delegation_enabled_at", kind="created"),
+    "aws_core__aws_ec2_network_access_scope_finding": Interval(
+        start="analysis_start_date", kind="occurred", end="analysis_end_date"
+    ),
     "aws_core__aws_ecs_task": Interval(start="started_at", kind="occurred", end="stopped_at"),
     "aws_core__aws_guardduty_finding": Interval(start="created_at", kind="created"),
     "aws_core__aws_iam_saml_provider": Interval(start="created_at", kind="created", end="valid_until"),
@@ -812,7 +815,7 @@ def test_every_type_is_declared_timeless_or_pending_and_only_one() -> None:
     assert declared == expected
     assert _pending() == set(PENDING)
     timeless = [m for m in models if m.__dict__.get("EVENT_TIME") is NO_EVENT_TIME]
-    assert (len(declared), len(PENDING), len(timeless), len(models)) == (526, 36, 368, 930)
+    assert (len(declared), len(PENDING), len(timeless), len(models)) == (527, 36, 368, 931)
     for model in models:
         declaration = model.__dict__.get("EVENT_TIME")
         reason = model.__dict__.get("EVENT_TIME_REASON")
@@ -1143,6 +1146,27 @@ def test_a_stopped_ecs_task_is_the_interval_it_ran() -> None:
     assert (row.event_start, row.event_end, _kind(row)) == (
         datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC),
         datetime(2026, 1, 2, 4, 0, 0, tzinfo=UTC),
+        "occurred",
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-network-analyzer-5")
+def test_a_network_access_finding_is_dated_by_the_analysis_run_that_found_it() -> None:
+    """A finding carries no time of its own (botocore AccessScopeAnalysisFinding); AWS dates the analysis run."""
+    row = _create(
+        "aws_core__aws_ec2_network_access_scope_finding",
+        {
+            "name": "f-1",
+            "analysis_arn": f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-access-scope-analysis/nisa-1",
+            "finding_id": "f-1",
+            "analysis_start_date": "2026-01-02T03:04:05Z",
+            "analysis_end_date": "2026-01-02T03:09:00Z",
+        },
+    )
+    assert (row.event_start, row.event_end, _kind(row)) == (
+        datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC),
+        datetime(2026, 1, 2, 3, 9, 0, tzinfo=UTC),
         "occurred",
     )
 

@@ -27,6 +27,20 @@ class Ec2NetworkInsightsAnalysis(BaseModel):
         "the times it does return there (StartDate) are held only inside configuration."
     )
 
+    # The compound edge (req-grid-edge-compound, req-aws-collector-network-analyzer): the analysis is itself the middle
+    # node, as the Inspector reachability finding is: it has its own identity (its ARN) and time (StartDate), and when
+    # AWS found a path (NetworkPathFound) a sender, a receiver and the hops between them (ForwardPathComponents).
+    # REACHABILITY_ANALYSIS_SOURCE runs from the forward path's first component, REACHABILITY_ANALYSIS_DESTINATION to its
+    # last, TRAVERSES_COMPONENT to each one between (collectors/boto3_collector/network_insights.py). It retires with
+    # either end. An analysis that found no path has no role edges.
+    COMPOUND_EDGE: ClassVar[dict[str, Any] | None] = {
+        "source": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+        "destination": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+        "carrier": None,
+        "path": "TRAVERSES_COMPONENT__aws_core",
+        "retires_with": ("source", "destination"),
+    }
+
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
             "shape": "rectangle",

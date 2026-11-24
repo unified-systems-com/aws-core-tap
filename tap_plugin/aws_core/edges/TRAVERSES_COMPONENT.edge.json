@@ -1,14 +1,34 @@
 {
   "slug": "TRAVERSES_COMPONENT__aws_core",
   "name": "Traverses Component",
-  "description": "The path role of the reachability compound edge (req-grid-edge-compound): an Amazon Inspector v2 network-reachability finding -> each route table, security group and network ACL its networkPath.steps passes through. The property step is the component's position in the path (0-based), not identity. A reference that retires nothing: deleting a component ends this edge and leaves the finding. Collected by collectors/boto3_collector/inspector.py (aws-core-tap#261).",
+  "description": "The path role of a compound edge (req-grid-edge-compound): a middle node -> each component its path passes through. Three kinds use it: an Amazon Inspector v2 network-reachability finding, to each route table, security group and network ACL its networkPath.steps passes through (collectors/boto3_collector/inspector.py, aws-core-tap#261); a VPC Network Access Analyzer finding, to each component between its path's first and last, of the types the Network Access Analyzer guide lists as path resources; and a Reachability Analyzer analysis, to each component between the first and last of its ForwardPathComponents, of the types the Reachability Analyzer guide lists as path components (collectors/boto3_collector/network_insights.py, aws-core-tap#212, #248). The property step is the component's position in the path (0-based), not identity. A reference that retires nothing: deleting a component ends this edge and leaves the middle node.",
   "sources": [
-    "aws_core__aws_inspector2_reachability_finding"
+    "aws_core__aws_inspector2_reachability_finding",
+    "aws_core__aws_ec2_network_access_scope_finding",
+    "aws_core__aws_ec2_network_insights_analysis"
   ],
   "targets": [
     "aws_core__aws_route_table",
     "aws_core__aws_security_group",
-    "aws_core__aws_network_acl"
+    "aws_core__aws_network_acl",
+    "aws_core__aws_alb",
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_ec2_network_interface",
+    "aws_core__aws_ec2_prefix_list",
+    "aws_core__aws_ec2_transit_gateway_route_table",
+    "aws_core__aws_ec2_vpc_peering_connection",
+    "aws_core__aws_ec2_vpn_connection",
+    "aws_core__aws_ec2_vpn_gateway",
+    "aws_core__aws_internet_gateway",
+    "aws_core__aws_nat_gateway",
+    "aws_core__aws_network_firewall",
+    "aws_core__aws_subnet",
+    "aws_core__aws_target_group",
+    "aws_core__aws_transit_gateway",
+    "aws_core__aws_transit_gateway_attachment",
+    "aws_core__aws_vpc",
+    "aws_core__aws_vpc_endpoint",
+    "aws_core__aws_vpc_endpoint_service"
   ],
   "property_schema": {
     "type": "object",
@@ -17,7 +37,7 @@
       "step": {
         "type": "integer",
         "minimum": 0,
-        "description": "The component's 0-based position in networkPath.steps, as Inspector returned them."
+        "description": "The component's 0-based position in the path: in networkPath.steps as Inspector returned them, or in a Network Access Analyzer finding's FindingComponents or a Reachability Analyzer analysis's ForwardPathComponents in SequenceNumber order."
       }
     }
   },
