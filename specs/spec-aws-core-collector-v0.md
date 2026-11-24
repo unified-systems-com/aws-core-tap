@@ -375,7 +375,12 @@ it is engine-level, not a manifest transform:
   into a `datetime` (uniform regardless of wire format). The engine serializes
   every `datetime` to ISO 8601 UTC (`…Z`) when writing the `configuration` blob
   and GRIFT — a single mandatory rule (a `datetime` is not JSON-serializable),
-  not a per-field transform.
+  not a per-field transform. It covers a typed field mapped straight to a
+  `timestamp` member (a network analysis's `StartDate`, `req-aws-core-fields-11`)
+  as it covers the blob: one such value would make the batch invalid JSON and
+  reject it whole (aws-core-tap#213). Only a typed field's `datetime` or `date`
+  is rendered; any other value is sent as projected, so an object no field
+  should hold still fails the batch loudly.
 - The raw `configuration` blob otherwise keeps AWS's value verbatim, including
   the two known non-`timestamp` date shapes (epoch-millis `long` — CloudWatch
   Logs `creationTime`; offset-string — Lambda `LastModified`). The blob is for
