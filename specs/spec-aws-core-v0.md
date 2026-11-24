@@ -2433,7 +2433,8 @@ on each alias and published version, since each carries its own; an alias-scoped
   `NONE`, written as `*` with a `lambda:FunctionUrlAuthType` condition, reads wildcard `true`, unconditioned
   `false`). Only `Allow` statements grant. Principal ARNs are read whatever their partition. A document that cannot
   be read with certainty (unparseable, no statement list, `NotPrincipal`, a principal member other than `AWS` /
-  `Service`) gives no summary: Lambda builds policies only from `AddPermission` statements, so none is expected, and
+  `Service`, or an `AWS` principal that names no account, such as the opaque unique id IAM leaves for a deleted
+  principal, whose account is unknown) gives no summary: Lambda builds policies only from `AddPermission` statements, so none is expected, and
   nothing is guessed if one appears.
 - **No policy is not not read.** `GetPolicy` answers `ResourceNotFoundException` for a resource with no policy, which
   the hydrate template's own rule would call `error`. A reviewed row of `error_outcomes.json` (outcome `absent`,

@@ -116,6 +116,10 @@ class _Named:
     #: A member this reader does not know (``Federated`` in a resource policy, a non-string entry): the caller
     #: decides whether that makes the document unreadable.
     unread: bool = False
+    #: An ``AWS`` entry that is neither ``*`` nor an account id nor an ARN with an account (an opaque unique id such
+    #: as ``AROA...``, which IAM writes back when the named principal was deleted): it names someone, but not which
+    #: account. The caller decides whether that makes the account list unknown.
+    opaque: bool = False
 
     @property
     def outside(self) -> bool:
@@ -145,7 +149,9 @@ def _named_principals(principal: Any, *, own_account: str | None, members: tuple
             named.wildcard = True
             continue
         account = _principal_account(entry)
-        if account is not None and account != own_account:
+        if account is None:
+            named.opaque = True
+        elif account != own_account:
             named.accounts.add(account)
     for entry in _as_list(principal.get("Service")):
         if isinstance(entry, str) and entry.strip():
@@ -230,7 +236,9 @@ def summarize_resource_policy(raw: Any, *, own_account: str | None) -> dict[str,
     Only ``Effect: Allow`` statements grant; a ``Deny`` is not summarised (the stored document keeps it).
     ARNs are read whatever their partition. ``None`` when the document cannot be read with certainty: it
     does not parse, has no statement list, or an ``Allow`` statement uses ``NotPrincipal``, a principal
-    member other than ``AWS`` / ``Service``, or a principal shape this reader does not know. Lambda builds
+    member other than ``AWS`` / ``Service``, an ``AWS`` principal that names no account (an opaque unique id left
+    by a deleted principal: its account is unknown, so the account list would not be complete), or a principal
+    shape this reader does not know. Lambda builds
     its policies only from ``AddPermission`` statements, so none of those is expected; nothing is guessed if
     one appears. Lists are sorted so the same policy always yields the same output.
     """
@@ -254,7 +262,7 @@ def summarize_resource_policy(raw: Any, *, own_account: str | None) -> dict[str,
         if "NotPrincipal" in statement:
             return None
         named = _named_principals(statement.get("Principal"), own_account=own_account)
-        if named.unread:
+        if named.unread or named.opaque:
             return None
         accounts |= named.accounts
         services |= named.services

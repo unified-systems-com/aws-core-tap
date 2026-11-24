@@ -233,8 +233,13 @@ class TestSummary:
             _policy(_statement({"Federated": "cognito-identity.amazonaws.com"})),
             _policy(_statement({"AWS": 12})),
             _policy(_statement(["*"])),
+            _policy(_statement({"AWS": "AROAEXAMPLEDELETEDROLE"})),
+            _policy(_statement({"AWS": [OTHER, "AIDAEXAMPLEDELETEDUSER"]}, condition={"Bool": {"aws:x": "true"}})),
         ],
-        ids=["none", "empty", "unparseable", "no-statement", "not-principal", "federated", "non-string", "list-principal"],
+        ids=[
+            "none", "empty", "unparseable", "no-statement", "not-principal", "federated", "non-string", "list-principal",
+            "opaque-id", "opaque-id-beside-an-account",
+        ],
     )
     def test_a_document_that_cannot_be_read_with_certainty_is_none(self, raw: Any) -> None:
         assert summarize_resource_policy(raw, own_account=OWN) is None
@@ -335,6 +340,14 @@ class TestFunctionReader:
         raw = _policy(_statement(None, NotPrincipal={"AWS": OTHER}))
         [item] = _functions(_Lambda([_function()], get_policy=raw))
         assert item["_hydrate"]["policy"]["status"] == "ok"
+        assert _fields(item) == NOT_READ
+        assert item[EDGE_READS]["_resource_policy_account_ids"] == PARTIAL
+
+    def test_a_principal_that_names_no_account_never_reads_as_a_complete_grant_set(self) -> None:
+        # An opaque unique id (a deleted principal) names someone in an unknown account: the account list cannot be
+        # called complete, so PERMITS_ACCOUNT edges are never retired on it (PR #299 review, Codex seat).
+        raw = _policy(_statement({"AWS": "AROAEXAMPLEDELETEDROLE"}))
+        [item] = _functions(_Lambda([_function()], get_policy=raw))
         assert _fields(item) == NOT_READ
         assert item[EDGE_READS]["_resource_policy_account_ids"] == PARTIAL
 
