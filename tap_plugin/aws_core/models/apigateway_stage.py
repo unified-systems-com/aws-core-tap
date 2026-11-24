@@ -4,7 +4,9 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
+from tap_plugin.aws_core.times import either_created_date
 
 
 class ApigatewayStage(BaseModel):
@@ -18,13 +20,12 @@ class ApigatewayStage(BaseModel):
     # Identity (req-grid-entity-natural-key): The stage's ARN (the API's ARN plus /stages/<name>): a stage name is unique only within an API.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("stage_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "apigateway:Stage"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
-    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (GetStages item[].createdDate, a botocore timestamp), but REST stages store it "
-        "as createdDate and HTTP/WebSocket stages as CreatedDate, so no one member path reaches both. Not declared "
-        "(unified-systems-com/aws-core-tap#287)."
-    )
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it, a botocore timestamp the
+    # collector stores as AWS sent it at the root of configuration. REST stages spell it createdDate (apigateway
+    # GetStages item[]) and HTTP/WebSocket stages CreatedDate (apigatewayv2 GetStages Items[]), so no one member path
+    # reaches both: the reader is given the whole configuration and returns whichever is present
+    # (unified-systems-com/aws-core-tap#296). AWS states no end for it.
+    EVENT_TIME: ClassVar[Interval] = Interval(start="configuration", kind="created", reader=either_created_date)
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
