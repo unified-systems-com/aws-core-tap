@@ -33,7 +33,7 @@ from .ecs import describe_task_definitions, referenced_task_definitions, shared_
 from .elb_topology import LoadBalancerListeners
 from .elb_topology import forwards as elb_forwards
 from .elb_topology import shared_walk as shared_listener_walk
-from . import ssm_patch
+from . import ssm_baselines, ssm_patch
 from .route53_records import bare_zone_id, record_set_key
 from .route53_records import shared_walk as shared_records_walk
 from .envelope import jsonable, without_response_metadata
@@ -3456,6 +3456,29 @@ def ssm_compliance_items_described(session: Any, *, client_for: Any) -> Iterator
     yield from _ssm_walk(session, client_for).items
 
 
+def _ssm_baselines(session: Any, client_for: Any) -> ssm_baselines.BaselineWalk:
+    """The region's shared baseline walk (see :mod:`.ssm_baselines`)."""
+    return ssm_baselines.shared_baselines(session, client_for, partition=_client_partition(client_for("ssm")))
+
+
+def ssm_patch_baselines_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """Every patch baseline of the region (DescribePatchBaselines, no filter): the account's own, with their tags, and
+    AWS's, each one node per region shared by every account (Q139a option 2, req-aws-core-ssm-baselines)."""
+    yield from _ssm_baselines(session, client_for).baselines
+
+
+def ssm_default_patch_baselines_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """The account's default patch baseline for each operating system in the region (Q139a), from the shared
+    baseline walk."""
+    yield from _ssm_baselines(session, client_for).defaults
+
+
+def ssm_patch_groups_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
+    """The region's patch groups (DescribePatchGroups), each with the baselines registered for it and the managed
+    instances whose last patch operation names it (Q139b), from the shared baseline walk."""
+    yield from ssm_baselines.patch_groups(_ssm_baselines(session, client_for))
+
+
 def ecs_task_definitions_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """ECS task definition revisions: the ACTIVE ones, and every one a task or service of the region names
     (req-aws-collector-ecs-25), so ``USES_TASK_DEFINITION`` reaches a deregistered revision a task still runs.
@@ -3579,6 +3602,9 @@ _CUSTOM_FNS = {
     "ecs_task_definitions_described": ecs_task_definitions_described,
     "ssm_managed_instances_described": ssm_managed_instances_described,
     "ssm_patches_described": ssm_patches_described,
+    "ssm_patch_baselines_described": ssm_patch_baselines_described,
+    "ssm_default_patch_baselines_described": ssm_default_patch_baselines_described,
+    "ssm_patch_groups_described": ssm_patch_groups_described,
     "ssm_compliance_summaries_described": ssm_compliance_summaries_described,
     "ssm_compliance_items_described": ssm_compliance_items_described,
 }

@@ -93,6 +93,8 @@ NO_ARN: dict[str, str] = {
     "ssm_compliance_item": "the service reference defines no ARN for a compliance item",
     "ssm_compliance_summary": "the service reference defines no ARN for a compliance summary",
     "ssm_patch": "a patch an instance reports is the vendor's; the service reference defines no ARN for it",
+    "ssm_default_patch_baseline": "an account's default baseline per operating system is a setting; the service reference defines no ARN for it",
+    "ssm_patch_group": "a patch group is a tag value registered with a baseline; the service reference defines no ARN for it",
     "tag_policy_rule": "a rule inside a tag policy, which has no ARN of its own",
     "verifiedpermissions_identity_source": "the service reference defines an ARN for the policy store only",
     "verifiedpermissions_policy": "the service reference defines an ARN for the policy store only",

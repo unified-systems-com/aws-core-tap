@@ -29213,58 +29213,64 @@
       "service": "ssm",
       "scope": "regional",
       "source": {
-        "aws_op": "DescribePatchBaselines",
-        "params": {
-          "Filters": [
-            {
-              "Key": "OWNER",
-              "Values": [
-                "Self"
-              ]
-            }
-          ]
-        }
+        "custom_fn": "ssm_patch_baselines_described"
       },
-      "why": "Enumerate SSM Patch Baseline objects with DescribePatchBaselines at OWNER Self (the customer's own baselines; the AWS-provided ones are not the account's resources) — an inventory of the account's patch baselines and how each is tagged.",
+      "why": "Enumerate SSM patch baselines with DescribePatchBaselines and no filter (req-aws-core-ssm-baselines, ruling Q139a option 2): the account's own baselines, with their tags, and AWS's, each one node per region shared by every account that lists it, keyed by the ARN AWS names it by, whose account segment is AWS's and becomes its aws.account dimension. Managed instances, defaults and patch groups reach them.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore ssm DescribePatchBaselines item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Walked botocore 1.44.7 ssm DescribePatchBaselines (PatchBaselineIdentity) and ListTagsForResource output shapes for the sensitive trait (none) and read custom_fn walk_baselines (ssm_baselines.py), 2026-11-24. An AWS-owned baseline's DefaultBaseline, the listing account's choice, is dropped from its item as it is read.",
         "locations": [
           {
-            "path": "_hydrate.tags",
+            "path": "BaselineName",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "reason": "An own baseline's name is whatever its creator chose.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "BaselineDescription",
+            "category": "customer_content",
+            "reason": "An own baseline's description is free text its creator wrote.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values of an own baseline: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "The error code of a failed tag read (AccessDenied and the like).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "BaselineIdentities[]",
+      "items_path": "[]",
       "natural_key": "BaselineId",
       "identity": {
         "cfn_type": "AWS::SSM::PatchBaseline",
-        "key": { "ssm_patch_baseline_id": "Id" },
-        "arn_key": { "ssm_patch_baseline_id": "${PatchBaselineIdResourceId}" }
+        "key": {
+          "ssm_patch_baseline_id": "Id"
+        },
+        "arn_key": {
+          "ssm_patch_baseline_id": "${PatchBaselineIdResourceId}"
+        }
       },
       "fields": {
         "name": "BaselineName",
-        "ssm_patch_baseline_id": "BaselineId"
+        "ssm_patch_baseline_id": "BaselineId",
+        "operating_system": "OperatingSystem",
+        "description": "BaselineDescription",
+        "aws_owned": "_aws_owned"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceType": {
-            "literal": "PatchBaseline"
-          },
-          "ResourceId": {
-            "from": "BaselineId"
-          }
-        },
-        "path": "TagList",
+        "source": "field",
+        "from": "_tags",
         "shape": "list_kv",
-        "why": "Resource tags — ListTagsForResource by the object's own identifier; the listing carries none."
+        "why": "An own baseline's tags are read by ListTagsForResource (ResourceType PatchBaseline) in the walk; an AWS-owned baseline's are AWS's, not read, and stay unread (null)."
       }
     },
     {
@@ -29603,6 +29609,143 @@
           "key_kind": "id",
           "edge_type": "CONCERNS_ASSOCIATION__aws_core",
           "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_default_patch_baseline",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_default_patch_baselines_described"
+      },
+      "why": "Enumerate the account's default patch baseline for each operating system in the region (ruling Q139a option 2): the DescribePatchBaselines rows whose DefaultBaseline is true, one node per (partition, account, region, operating system) with DEFAULTS_TO_PATCH_BASELINE to the baseline it names, AWS-owned or the account's own. Read from the baseline listing, so no GetDefaultPatchBaseline call is made.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm DescribePatchBaselines (PatchBaselineIdentity) output shape for the sensitive trait (none) and read custom_fn walk_baselines (ssm_baselines.py), 2026-11-24. The item is the default row's operating system, baseline id and name.",
+        "locations": [
+          {
+            "path": "BaselineName",
+            "category": "customer_content",
+            "reason": "An own default baseline's name is whatever its creator chose.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{OperatingSystem}",
+        "_account_id": "{account}",
+        "_partition": "{partition}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A default baseline setting has no ARN and no CloudFormation type (AWS::SSM::PatchBaseline's DefaultBaseline property sets it from the baseline's side); AWS names it by the operating system, scoped here by partition, account and region."
+      },
+      "fields": {
+        "name": "_name",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "region": "$region",
+        "operating_system": "OperatingSystem",
+        "baseline_id": "BaselineId",
+        "baseline_name": "BaselineName",
+        "aws_owned": "_aws_owned"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A default baseline setting is not a taggable resource: the ssm service model's tagging operations take no such resource type (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "BaselineId",
+          "target_type": "aws_core__aws_ssm_patch_baseline",
+          "key_kind": "id",
+          "edge_type": "DEFAULTS_TO_PATCH_BASELINE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_patch_group",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_patch_groups_described"
+      },
+      "why": "Enumerate the region's patch groups (DescribePatchGroups, ruling Q139b): one node per (partition, account, region, group) with REGISTERED_TO_PATCH_BASELINE to every baseline registered for it, and IN_PATCH_GROUP from each managed instance whose last patch operation names it. The mapping names the baseline, so no GetPatchBaselineForPatchGroup call is made.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm DescribePatchGroups output shape for the sensitive trait (none) and read custom_fn walk_baselines (ssm_baselines.py), 2026-11-24.",
+        "locations": [
+          {
+            "path": "PatchGroup",
+            "category": "customer_content",
+            "reason": "A patch group's name is the value operators put in the instances' Patch Group tag.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "BaselineIdentities[].BaselineName",
+            "category": "customer_content",
+            "reason": "An own baseline's name is whatever its creator chose.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "BaselineIdentities[].BaselineDescription",
+            "category": "customer_content",
+            "reason": "An own baseline's description is free text its creator wrote.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "The error code of a failed managed-instance read the group's members come from.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{PatchGroup}",
+        "_account_id": "{account}",
+        "_partition": "{partition}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A patch group has no ARN and no CloudFormation type of its own (AWS::SSM::PatchBaseline's PatchGroups property registers it from the baseline's side); AWS names it by the group's name, scoped here by partition, account and region."
+      },
+      "fields": {
+        "name": "PatchGroup",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "region": "$region",
+        "patch_group": "PatchGroup",
+        "baseline_ids": "_baseline_ids"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A patch group is a tag value, not a taggable resource: the ssm service model's tagging operations take no patch group (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "_baseline_ids",
+          "target_type": "aws_core__aws_ssm_patch_baseline",
+          "key_kind": "id",
+          "edge_type": "REGISTERED_TO_PATCH_BASELINE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_members",
+          "target_type": "aws_core__aws_ssm_managed_instance",
+          "key_kind": "id",
+          "edge_type": "IN_PATCH_GROUP__aws_core",
+          "direction": "inbound"
         }
       ]
     },

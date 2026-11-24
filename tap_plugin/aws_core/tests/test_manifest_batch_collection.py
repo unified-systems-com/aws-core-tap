@@ -2904,9 +2904,9 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'WindowId': 'gen-1', 'Name': 'gen-1'},
         {'name': 'gen-1'},
     ),
-    "aws_core__aws_ssm_patch_baseline": (
-        {'BaselineId': 'gen-1', 'BaselineName': 'gen-1'},
-        {'name': 'gen-1'},
+    "aws_core__aws_ssm_patch_baseline": (  # the baseline walk's item (ssm_baselines.py, Q139a): tags read by the walk
+        {'BaselineId': 'gen-1', 'BaselineName': 'gen-1', 'OperatingSystem': 'WINDOWS', '_aws_owned': False, '_tags': TAGS},
+        {'name': 'gen-1', 'operating_system': 'WINDOWS', 'aws_owned': False},
     ),
     "aws_core__aws_servicecatalog_provisioned_product": (
         {'Arn': 'arn:aws:servicecatalog:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
@@ -3814,6 +3814,7 @@ def _check_the_tags_are_read_by_a_declared_lane(entity_type: str) -> None:
         ("tags", "list_kv_lower"),
         ("tags[]", "list_kv_lower"),
         ("_tags", "map"),
+        ("_tags", "list_kv"),
         ("tags", "map"),
         ("Tags", "map"),
         ("IdentityPoolTags", "map"),

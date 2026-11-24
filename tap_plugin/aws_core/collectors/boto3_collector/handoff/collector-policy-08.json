@@ -129,6 +129,7 @@
         "ssm:DescribeMaintenanceWindows",
         "ssm:DescribeParameters",
         "ssm:DescribePatchBaselines",
+        "ssm:DescribePatchGroups",
         "ssm:ListAssociations",
         "ssm:ListCloudConnectors",
         "ssm:ListComplianceItems",

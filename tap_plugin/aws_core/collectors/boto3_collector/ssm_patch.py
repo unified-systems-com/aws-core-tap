@@ -14,8 +14,8 @@ makes the calls once per (run, region) and the four ``custom_fn`` wrappers in :m
   (A1). ``OwnerInformation``, which botocore marks sensitive, is dropped as the response is read and never reaches an
   item.
 - ``DescribePatchBaselines`` with no filter, read only when some instance has a patch state: which operating system
-  each baseline patches, so a patch can be keyed by operating system. Nothing from it is emitted; the baseline entry
-  in the manifest still lists ``OWNER=Self`` only.
+  each baseline patches, so a patch can be keyed by operating system. Nothing from it is emitted here; the baselines
+  themselves are the baseline walk's (:mod:`.ssm_baselines`, Q139a).
 - ``DescribeInstancePatches`` per instance with a patch state, read to its end. A row whose state needs action
   (:data:`GAP_STATES`) is a ``REPORTS_PATCH`` from the instance, carrying its state, severity and install time, to a
   shared ``aws_ssm_patch`` node keyed (partition, operating system, KBId) (B2). Any other row (``INSTALLED``,

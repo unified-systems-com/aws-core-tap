@@ -217,9 +217,7 @@ class _FakeSsm:
                 {"BaselineId": AWS_BASELINE, "BaselineName": "AWS-AmazonLinux2023DefaultPatchBaseline", "OperatingSystem": "AMAZON_LINUX_2023", "DefaultBaseline": True},
                 {"BaselineId": OWN_BASELINE, "BaselineName": "lab-windows", "OperatingSystem": "WINDOWS", "DefaultBaseline": False},
             ]
-            if kwargs.get("Filters") == [{"Key": "OWNER", "Values": ["Self"]}]:  # the baseline entry, unchanged
-                return [{"BaselineIdentities": [b for b in baselines if not b["BaselineId"].startswith("arn:")]}]
-            assert "Filters" not in kwargs  # the walk: every baseline, AWS's included, for the operating system lookup
+            assert "Filters" not in kwargs  # both walks read every baseline, AWS's included
             self.unfiltered_baseline_reads += 1
             return [{"BaselineIdentities": baselines}]
         if method == "describe_instance_patches":
@@ -324,8 +322,7 @@ def test_a_managed_instance_links_to_its_ec2_instance_and_the_baseline_its_last_
     nodes = _by_key(_nodes(MI, ssm_managed_instances_described, _FakeSsm()))
     ec2_edges = {(e["edge_type"], e["to_ref"]) for e in _edges(nodes[EC2_ID])}
     assert ("REPRESENTS_EC2_INSTANCE__aws_core", f"aws_core__aws_ec2_instance:{EC2_ID}") in ec2_edges
-    # An AWS-provided baseline is named by the ARN AWS returns: the edge is sent, and core skips it while the
-    # baseline listing reads OWNER=Self only (the instance keeps patch_baseline_id).
+    # An AWS-provided baseline is named by the ARN AWS returns, its natural key since Q139a (test_ssm_baselines.py).
     assert ("USES_PATCH_BASELINE__aws_core", f"aws_core__aws_ssm_patch_baseline:{AWS_BASELINE}") in ec2_edges
     hybrid_edges = {(e["edge_type"], e["to_ref"]) for e in _edges(nodes[HYBRID_ID])}
     assert not any(t == "REPRESENTS_EC2_INSTANCE__aws_core" for t, _ in hybrid_edges)  # a hybrid node is no EC2 instance
@@ -689,12 +686,12 @@ def test_a_collector_run_lands_the_instances_patches_and_compliance_on_the_grid(
     item = {"account_id": ACCOUNT, "region": REGION, "resource_type": "ManagedInstance", "resource_id": EC2_ID,
             "compliance_type": "Custom:CIS", "item_id": "1.1.1 Ensure mounting of cramfs is disabled"}
     edge_between("HOLDS_COMPLIANCE_ITEM__aws_core", MI, EC2_ID, ITEM, item)
-    # The account's own baseline is collected by its entry (OWNER=Self, unchanged), so the hybrid node's edge lands.
+    # The account's own baseline is collected by its entry, so the hybrid node's edge lands.
     edge_between("USES_PATCH_BASELINE__aws_core", MI, HYBRID_ID, "aws_core__aws_ssm_patch_baseline", OWN_BASELINE)
-    # No EC2 instance, association or AWS-provided baseline was collected: those edges were skipped, never minted.
+    # No EC2 instance or association was collected: those edges were skipped, never minted.
     assert find_node_id("aws_core__aws_ec2_instance", EC2_ID) is None
-    assert find_node_id("aws_core__aws_ssm_patch_baseline", AWS_BASELINE) is None
-    assert _stub_ssm.unfiltered_baseline_reads == 1  # the walk's lookup, once for the region
+    # The patch walk's operating-system lookup and the baseline walk, each once for the region.
+    assert _stub_ssm.unfiltered_baseline_reads == 2
     assert OWNER_CANARY not in json.dumps([get_node(node_id(MI, i)).__dict__ for i in (EC2_ID, EC2_ID_2, HYBRID_ID)], default=str)
 
 

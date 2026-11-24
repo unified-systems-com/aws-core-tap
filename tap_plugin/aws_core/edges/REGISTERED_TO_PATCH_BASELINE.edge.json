@@ -1,0 +1,17 @@
+{
+  "slug": "REGISTERED_TO_PATCH_BASELINE__aws_core",
+  "name": "Registered To Patch Baseline",
+  "description": "A patch group is registered with a patch baseline (patch group -> baseline): one DescribePatchGroups mapping, matched to the baseline's natural key; a group has one per operating system (ruling Q139b). A reference, not containment. Collected by the SSM baseline walk (collectors/boto3_collector/ssm_baselines.py, aws-core-tap#281, req-aws-core-ssm-baselines).",
+  "sources": [
+    "aws_core__aws_ssm_patch_group"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_patch_baseline"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

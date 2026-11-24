@@ -1,0 +1,17 @@
+{
+  "slug": "IN_PATCH_GROUP__aws_core",
+  "name": "In Patch Group",
+  "description": "A managed instance is in a patch group (managed instance -> patch group): its last patch operation (DescribeInstancePatchStates) names the group as PatchGroup, and DescribePatchGroups lists the group (ruling Q139b). An instance naming a group no baseline is registered for has no edge; its patch_group field keeps the name. A reference, not containment. Collected by the SSM baseline walk (collectors/boto3_collector/ssm_baselines.py, aws-core-tap#281, req-aws-core-ssm-baselines).",
+  "sources": [
+    "aws_core__aws_ssm_managed_instance"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_patch_group"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

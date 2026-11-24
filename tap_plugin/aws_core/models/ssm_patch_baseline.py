@@ -1,4 +1,4 @@
-"""AWS SSM Patch Baseline — an AWS SSM Patch Baseline."""
+"""AWS SSM Patch Baseline — an account's own patch baseline, or one of AWS's, shared per region (Q139a)."""
 
 from typing import Any, ClassVar
 
@@ -9,11 +9,11 @@ from tap_grid.models import BaseModel
 
 
 class SsmPatchBaseline(BaseModel):
-    """An AWS SSM Patch Baseline, listed by DescribePatchBaselines. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS SSM Patch Baseline, listed by DescribePatchBaselines with no filter (req-aws-core-ssm-baselines). An account's own baseline is keyed by the pb- id SSM generates for it and carries its tags. An AWS-owned baseline is keyed by its ARN, which names AWS's account: one node per region shared by every account that lists it, carrying AWS's account in its aws.account dimension, never the collecting account's (ruling Q139a option 2). Which baseline is an account's default for an operating system is the aws_ssm_default_patch_baseline node, not a field here."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ssm_patch_baseline"
     ENTITY_NAME: ClassVar[str] = "AWS SSM Patch Baseline"
-    ENTITY_DESCRIPTION: ClassVar[str] = "An AWS SSM Patch Baseline."
+    ENTITY_DESCRIPTION: ClassVar[str] = "An SSM patch baseline: an account's own, or one of AWS's, shared by every account in its region."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): The baseline's BaselineId: DescribePatchBaselines returns no ARN, and a patch baseline id is service-generated.
@@ -37,6 +37,9 @@ class SsmPatchBaseline(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string", "minLength": 1},
         "ssm_patch_baseline_id": {"type": "string"},
+        "operating_system": {"type": ["string", "null"]},
+        "description": {"type": ["string", "null"]},
+        "aws_owned": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -48,6 +51,11 @@ class SsmPatchBaseline(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     ssm_patch_baseline_id = models.CharField(max_length=2048, blank=True, default="")
+    # The SSM OperatingSystem the baseline patches (WINDOWS, AMAZON_LINUX_2023 and so on).
+    operating_system = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
+    description = models.TextField(null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
+    # True for AWS's baseline (its id is an ARN under AWS's account), False for the account's own.
+    aws_owned = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

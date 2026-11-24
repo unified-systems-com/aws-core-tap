@@ -65,6 +65,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
 | req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
 | req-aws-core-ssm-patch-state | [SSM Patch And Compliance State](#ssm-patch-and-compliance-state) | Implemented | Managed instances with their last patch operation as typed fields, the EC2 instance and baseline they link to, shared patch nodes reached by `REPORTS_PATCH` for the patches that need action only (Q147), compliance summaries and non-Patch items as nodes; no cap (aws-core-tap#281) |
+| req-aws-core-ssm-baselines | [SSM Patch Baselines, Defaults And Patch Groups](#ssm-patch-baselines-defaults-and-patch-groups) | Implemented | Every patch baseline, AWS's as one shared node per region keyed by its ARN under AWS's account, each account's default baseline per operating system and region, and patch groups with their baselines and member instances (aws-core-tap#281, Q139a option 2, Q139b) |
 | req-aws-core-ssm-compliance | [SSM Patch State In compliance_core](#ssm-patch-state-in-compliance_core) | Implemented | Behind its own off-by-default switch `ssm_compliance_findings`, the run's last step links each patch to compliance_core's vulnerability for every CVE it names (`RESOLVES_VULNERABILITY`) and writes a neutral finding per exposed (instance, CVE), carried by the instance, from the stored patch state (aws-core-tap#281, Q141a to c) |
 
 ### Plugin Scope
@@ -2462,9 +2463,8 @@ and the per-patch list is not stored.
   - `HOLDS_COMPLIANCE_SUMMARY` and `HOLDS_COMPLIANCE_ITEM` (managed instance → summary or item), written from the
     summary's or item's `ResourceId`.
   - `CONCERNS_ASSOCIATION` (Association item → `aws_ssm_association`, by `AssociationId`).
-- **An AWS-provided baseline.** Its `BaselineId` is an ARN under AWS's own account. The baseline entry still
-  lists `OWNER=Self` only; whether AWS's baselines and the per-account default are collected is unruled. So
-  `USES_PATCH_BASELINE` to an AWS-provided baseline names no node: core skips it and records the skip. The
+- **An AWS-provided baseline.** Its `BaselineId` is an ARN under AWS's own account. Since Q139a it is collected as
+  one node per region shared by every account (`req-aws-core-ssm-baselines`), so `USES_PATCH_BASELINE` reaches it. The
   instance's `patch_baseline_id` keeps the id.
 - **Degradation.** A denied or failed per-instance call is a `_hydrate` slot, which the run records as
   `HYDRATE_GAP`. The edge reads it fed are `failed`, so no authority claim covers edges the run could not see. A
@@ -2488,8 +2488,8 @@ and the per-patch list is not stored.
 
 #### Deliberately Not Included
 
-- AWS-provided patch baselines, the per-OS default (`GetDefaultPatchBaseline`) and patch groups as nodes
-  (`DescribePatchGroups`): unruled, so the baseline listing is unchanged and the patch group is a field.
+- AWS-provided patch baselines, the per-OS default and patch groups: `req-aws-core-ssm-baselines` (Q139a, Q139b). The
+  instance keeps `patch_group` as a field as well.
 - The patch → vulnerability edge in the walk itself: it is written by the optional projection of
   `req-aws-core-ssm-compliance`, from the stored patches, and `cve_ids` stays a property.
 - AWS-owned SSM documents, the other half of the same omission.
@@ -2510,6 +2510,78 @@ and the per-patch list is not stored.
 | req-aws-core-ssm-patch-state-9 | No Cap | Implemented | Every instance, patch, summary and item is read. Patch states are read in chunks of 50. A region with nothing managed makes only the two listings, and the walk never calls STS. | Ruling Q124a. |
 | req-aws-core-ssm-patch-state-10 | A Failed Read Is Never Empty | Implemented | A denied per-instance call is a `_hydrate` gap, and the edge reads it fed are `failed`. A patch that cannot be keyed makes the read `partial`. A failed `DescribeInstanceInformation` fails the listing. | |
 | req-aws-core-ssm-patch-state-11 | Declared And Importable | Implemented | The four entries are registered `custom_fn` entries that store their configuration, with a reviewed sensitivity naming the botocore-sensitive members. Every payload passes the create schema, and a collector run imports the nodes and edges into the grid. | |
+
+### SSM Patch Baselines, Defaults And Patch Groups
+----
+RID: `req-aws-core-ssm-baselines`
+
+Status: `Implemented`
+
+Which baseline governs a managed instance's patching, read from every side AWS states it: the baseline itself, the
+account's default for each operating system, and the patch group an instance is in. Raised under Issue# 281 -
+aws-core-tap (https://github.com/unified-systems-com/aws-core-tap/issues/281). Ruled by George, 2026-11-24:
+**Q139a option 2**, AWS-owned patch baselines are one shared node per region keyed by their ARN (which names AWS's
+account), never stamped with the collecting account's dimension, and each account's default baseline per operating
+system per region is a small node keyed (partition, account, region, operating system) with an edge to the baseline it
+names; **Q139b**, patch groups are nodes keyed (partition, account, region, group name), with an edge to the baseline
+registered for the group and an edge from each managed instance in it.
+
+#### Implementation
+
+- **One walk, three types** (`collectors/boto3_collector/ssm_baselines.py`), made once per run and region as the SSM
+  patch walk is.
+  - `DescribePatchBaselines` with no filter, to its end. Its failure skips the baseline and default entries for the
+    region rather than reading the region as having none.
+  - `ListTagsForResource` (`PatchBaseline`) per own baseline.
+  - `DescribePatchGroups`, to its end. Its failure skips the group entry only.
+  - No `GetDefaultPatchBaseline` or `GetPatchBaselineForPatchGroup` call: the listing's `DefaultBaseline` flag and the
+    group mapping's `BaselineIdentity` already state the answer. The one new permission is `ssm:DescribePatchGroups`.
+- **`aws_ssm_patch_baseline`**, keyed by `BaselineId`, as before; the entry is now a `custom_fn` and lists every
+  baseline, not `OWNER=Self` only. New nullable fields: `operating_system`, `description`, `aws_owned`.
+  - An **own** baseline (`pb-...`) carries its tags. A failed tag read leaves them unread and is a `_hydrate` gap.
+  - An **AWS-owned** baseline (an ARN under AWS's account) is one node per region, shared by every account that lists
+    it. Its `aws.account` dimension is the ARN's own account segment (`resource_owner`, the Q57 rule), so it is AWS's
+    and never the collecting account's. Its tags are AWS's and are not read (null). Its `DefaultBaseline` flag is the
+    listing account's choice, not a fact of the shared baseline, so it is dropped from the item: the default node holds
+    it.
+- **`aws_ssm_default_patch_baseline`**, keyed (`partition`, `account_id`, `region`, `operating_system`): each listing
+  row whose `DefaultBaseline` is true. It carries `baseline_id`, `baseline_name` and `aws_owned`, and has
+  `DEFAULTS_TO_PATCH_BASELINE` to the baseline it names, AWS-owned or the account's own.
+- **`aws_ssm_patch_group`**, keyed (`partition`, `account_id`, `region`, `patch_group`): each group `DescribePatchGroups`
+  lists. It carries `baseline_ids`, every baseline registered for it (one per operating system), and has
+  `REGISTERED_TO_PATCH_BASELINE` to each.
+- **`IN_PATCH_GROUP`** (managed instance → patch group), written from the group's side: each instance of the region
+  whose last patch operation (`DescribeInstancePatchStates`) names the group as `PatchGroup`. An instance naming a group
+  no baseline is registered for has no node to reach; its `patch_group` field keeps the name. A failed SSM walk makes
+  the read `failed`, and a walk whose patch-state read failed for some instance makes it `partial`, so no authority
+  claim covers members the run could not see.
+- **Keys and identity.** The default and group entries build their batch refs with `derive` from the run's scope; the
+  walk makes no STS call. Neither has an ARN or a CloudFormation type of its own: CloudFormation sets both from the
+  baseline's side (`AWS::SSM::PatchBaseline` `DefaultBaseline`, `PatchGroups`).
+- **Retirement**, as the other SSM types: no containment and no falsifier. The edges are claimed by edge authority
+  (`req-aws-collector-edge-authority`), so a group that moves to another baseline, a default that changes, or an instance
+  that leaves a group is sent as no edge under a complete claim, and its old edge becomes a removal proposal.
+- **Event time** (`req-aws-core-models-5`): all three are `NO_EVENT_TIME`. Neither listing states a time for a
+  baseline, a default or a group.
+- **Stored**, as every entry is (`req-aws-collector-redaction-1`). No member of the three output shapes is
+  botocore-sensitive; names, descriptions, tags and group names are declared customer content.
+
+#### Deliberately Not Included
+
+- `GetPatchBaseline` (approval rules, sources, approved and rejected patch lists): not ruled.
+- A patch group that is only an instance's tag value, registered with no baseline: no node (the instance uses its
+  operating system's default).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-ssm-baselines-1 | Every Baseline, AWS's Shared | Implemented | `DescribePatchBaselines` is read with no filter. An own baseline is keyed by its `pb-` id and carries its tags; an AWS-owned one is keyed by its ARN, has no tags read and no `DefaultBaseline` in its item, and its `aws.account` dimension is the ARN's account, not the collecting account's. | Q139a option 2. `tests/test_ssm_baselines.py` |
+| req-aws-core-ssm-baselines-2 | Default Baseline Per Operating System | Implemented | Each `DefaultBaseline` row is one `aws_ssm_default_patch_baseline` keyed (partition, account, region, operating system) with `DEFAULTS_TO_PATCH_BASELINE` to the baseline it names, AWS-owned or own. No `GetDefaultPatchBaseline` call is made. | Q139a. |
+| req-aws-core-ssm-baselines-3 | Patch Groups | Implemented | Each group `DescribePatchGroups` lists is one `aws_ssm_patch_group` keyed (partition, account, region, group) with `REGISTERED_TO_PATCH_BASELINE` to every baseline registered for it. | Q139b. |
+| req-aws-core-ssm-baselines-4 | Instances In Their Group | Implemented | Each managed instance whose patch state names a listed group has `IN_PATCH_GROUP` to it; the read is `failed` when the SSM walk failed and `partial` when some instance's patch state was not read. | Q139b. |
+| req-aws-core-ssm-baselines-5 | A Failed Read Is Never Empty | Implemented | A failed baseline listing skips the baseline and default entries, a failed group listing skips the group entry, and a failed own-baseline tag read is a `_hydrate` gap with the tags unread. | |
+| req-aws-core-ssm-baselines-6 | Declared And Importable | Implemented | The three entries are registered `custom_fn` entries that store their configuration with a reviewed sensitivity; `ssm:DescribePatchGroups` is in the catalog and the generated policy; every payload passes the create schema, and a collector run imports the nodes and edges into the grid. | |
 
 ### SSM Patch State In compliance_core
 ----

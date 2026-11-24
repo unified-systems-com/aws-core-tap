@@ -107,7 +107,7 @@ class SsmManagedInstance(BaseModel):
     last_successful_association_execution_at = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
     source_id = models.CharField(max_length=255, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
     source_type = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
-    # The Patch Group tag value the last operation ran under; patch groups are not nodes yet (Fork D unruled).
+    # The Patch Group tag value the last operation ran under; a registered group is also a node (IN_PATCH_GROUP, Q139b).
     patch_group = models.CharField(max_length=256, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
     # The baseline the last operation used: pb-... for the account's own, an ARN for an AWS-provided one.
     patch_baseline_id = models.CharField(max_length=2048, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
