@@ -2140,6 +2140,12 @@
    ],
    "dropped": []
   },
+  "ec2:get_network_insights_access_scope_analysis_findings": {
+   "actions": [
+    "ec2:GetNetworkInsightsAccessScopeAnalysisFindings"
+   ],
+   "dropped": []
+  },
   "ecr-public:describe_repositories": {
    "actions": [
     "ecr-public:DescribeRepositories"

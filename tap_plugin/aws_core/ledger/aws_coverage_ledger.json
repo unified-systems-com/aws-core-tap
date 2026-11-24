@@ -67,6 +67,10 @@
    "reason": "A (member account, service principal) registration, not a resource."
   },
   {
+   "entity_type": "aws_core__aws_ec2_network_access_scope_finding",
+   "reason": "A finding a VPC Network Access Analyzer analysis reports; no CloudFormation resource type."
+  },
+  {
    "entity_type": "aws_core__aws_ecs_container",
    "reason": "A container inside a running task: an embedded detail with no CloudFormation resource."
   },
