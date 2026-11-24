@@ -40,12 +40,13 @@ class Route53ResolverFirewallRuleGroup(BaseModel):
     # AWS's rule group id (rslvr-frg-…).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("rule_group_id",)
     ARN_RESOURCE: ClassVar[str | None] = "route53resolver:firewall-rule-group"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
         "AWS states when it was created (GetFirewallRuleGroup FirewallRuleGroup.CreationTime, unconfirmed (shape "
-        "Rfc3339TimeString, docs say Unix time)), held only inside configuration. Undeclared until a declaration can "
-        "read it through a reader function (unified-systems-com/tap#1284)."
+        "Rfc3339TimeString, docs say Unix time), but botocore types it Rfc3339TimeString while AWS's documentation "
+        "says Unix time, and no stored value has been seen to settle which. Not declared "
+        "(unified-systems-com/aws-core-tap#287)."
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {

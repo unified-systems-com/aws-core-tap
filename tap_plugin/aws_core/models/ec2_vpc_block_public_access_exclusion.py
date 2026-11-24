@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,12 +19,16 @@ class Ec2VpcBlockPublicAccessExclusion(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's own id (ExclusionId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_vpc_block_public_access_exclusion_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:vpc-block-public-access-exclusion"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (DescribeVpcBlockPublicAccessExclusions "
-        "VpcBlockPublicAccessExclusions[].CreationTimestamp, a botocore timestamp), held only inside configuration. "
-        "Undeclared until a declaration can read it through a reader function (unified-systems-com/tap#1284)."
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it
+    # (DescribeVpcBlockPublicAccessExclusions VpcBlockPublicAccessExclusions[].CreationTimestamp, a botocore timestamp),
+    # read from configuration['CreationTimestamp'], where the collector stores it as AWS sent it. It holds until
+    # configuration['DeletionTimestamp'], the end AWS states.
+    EVENT_TIME: ClassVar[Interval] = Interval(
+        start="configuration",
+        kind="created",
+        member="CreationTimestamp",
+        end="configuration",
+        end_member="DeletionTimestamp",
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,13 +19,10 @@ class LocationPlaceIndex(BaseModel):
     # Identity (req-grid-entity-natural-key): The resource's ARN, built as arn:{partition}:geo:{region}:{account}:place-index/{IndexName} (the AWS Service Authorization Reference 'geo' place-index resource); the listing carries no ARN.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("location_place_index_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "geo:place-index"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (ListPlaceIndexes Entries[].CreateTime, a botocore timestamp), held only inside"
-        " configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
-    )
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it (ListPlaceIndexes
+    # Entries[].CreateTime, a botocore timestamp), read from configuration['CreateTime'], where the collector stores it
+    # as AWS sent it. AWS states no end for it.
+    EVENT_TIME: ClassVar[Interval] = Interval(start="configuration", kind="created", member="CreateTime")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {
