@@ -376,7 +376,12 @@ it is engine-level, not a manifest transform:
   into a `datetime` (uniform regardless of wire format). The engine serializes
   every `datetime` to ISO 8601 UTC (`…Z`) when writing the `configuration` blob
   and GRIFT — a single mandatory rule (a `datetime` is not JSON-serializable),
-  not a per-field transform.
+  not a per-field transform. It covers a typed field mapped straight to a
+  `timestamp` member (a network analysis's `StartDate`, `req-aws-core-fields-11`)
+  as it covers the blob: one such value would make the batch invalid JSON and
+  reject it whole (aws-core-tap#213). Only a typed field's `datetime` or `date`
+  is rendered; any other value is sent as projected, so an object no field
+  should hold still fails the batch loudly.
 - The raw `configuration` blob otherwise keeps AWS's value verbatim, including
   the two known non-`timestamp` date shapes (epoch-millis `long` — CloudWatch
   Logs `creationTime`; offset-string — Lambda `LastModified`). The blob is for
@@ -1340,7 +1345,7 @@ a receiver and the hops between them. A separate path node would carry no fact t
 identity borrowed from it. When the analysis succeeded and `NetworkPathFound` is true, `REACHABILITY_ANALYSIS_SOURCE`
 runs from the first component of its `ForwardPathComponents`, `REACHABILITY_ANALYSIS_DESTINATION` to the last, and
 `TRAVERSES_COMPONENT`, with `step`, to each one between. An analysis that found no path, or has not finished, has no
-role edges. The analysis's typed fields and event time are aws-core-tap#248's other half.
+role edges. The analysis's typed fields and `StartDate` event time are aws-core-tap#248's other half (PR 297).
 
 **Ends and hops.** A path's components are put in `SequenceNumber` order; AWS documents neither that order nor that
 the first and last components are its ends, so both are inferences to check on a live finding (-7). A component's
@@ -1367,7 +1372,7 @@ slot per role and target type (`_source_<type>`, `_destination_<type>`, `_hops_<
 | --- | --- | :---: | --- | --- |
 | req-aws-collector-network-analyzer-1 | One Node Per Finding | Implemented | Every finding `GetNetworkInsightsAccessScopeAnalysisFindings` returns, read to its end, for an analysis whose `Status` is `succeeded` and whose `FindingsFound` is not `false`, is one `aws_ec2_network_access_scope_finding` node keyed `(analysis_arn, finding_id)`, with `REPORTS_ACCESS_SCOPE_FINDING` from its analysis. A running or failed analysis, or one that found nothing, is not asked. | `tests/test_network_insights.py::TestAccessScopeReader` |
 | req-aws-collector-network-analyzer-2 | A Cut Read Is A Gap | Implemented | An analysis whose findings could not all be read contributes none of them; the reader yields the rest and raises once, so the entry is reported skipped, never a quietly shorter list. | `TestAccessScopeReader` |
-| req-aws-collector-network-analyzer-3 | The Finding Is The Middle Node | Implemented | `aws_ec2_network_access_scope_finding` and `aws_ec2_network_insights_analysis` declare `COMPOUND_EDGE` with their own `<KIND>_SOURCE` and `<KIND>_DESTINATION`, `TRAVERSES_COMPONENT` for the path and `retires_with` both ends; `parse_compound_edge` accepts both and every role edge reaches its middle node. | `TestDeclarations` |
+| req-aws-collector-network-analyzer-3 | The Finding Is The Middle Node | Implemented | `aws_ec2_network_access_scope_finding` and `aws_ec2_network_insights_analysis` declare `COMPOUND_EDGE` with their own `<KIND>_SOURCE` and `<KIND>_DESTINATION`, `TRAVERSES_COMPONENT` for the path and `retires_with` both ends; `parse_compound_edge` accepts both and every role edge reaches its middle node. Deleting either end retires the finding or the analysis; deleting a hop does not, and a later batch that does not list an end retires nothing. | `TestDeclarations`, `test_a_finding_retires_with_either_end_and_not_with_a_hop`, `test_a_reachability_analysis_retires_with_either_end_and_not_with_a_hop`, `test_an_end_a_later_batch_does_not_list_retires_nothing` |
 | req-aws-collector-network-analyzer-4 | Ends And Hops From The Components | Implemented | In `SequenceNumber` order, the first component is the source and the last the destination, each with a role edge when its type is one the service lists as an end; every component between with a type the service lists for paths has `TRAVERSES_COMPONENT` with its 0-based `step`; any other component is listed in `unmatched_components` with the reason and gets no edge. A Reachability Analyzer analysis has role edges only when it succeeded and `NetworkPathFound` is true. | `TestReadPath`, `TestThroughTheEngine` |
 | req-aws-collector-network-analyzer-5 | Which Resource, And When | Implemented | A finding carries its analysis's `StartDate` and `EndDate` as `analysis_start_date` and `analysis_end_date`, declared as its event time (an interval of kind `occurred`), and the first and last components' ids and ARNs as AWS sent them. | `tests/test_event_time.py`, `TestThroughTheEngine` |
 | req-aws-collector-network-analyzer-6 | The Manifest Holds To The Tables | Implemented | The manifest declares exactly one edge rule per slot of each kind, of the types the role tables list, and each role edge's definition lists exactly those types. | `TestManifestRules` |

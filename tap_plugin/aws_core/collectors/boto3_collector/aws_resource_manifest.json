@@ -14247,7 +14247,11 @@
       "items_path": "NetworkInsightsPaths[]",
       "natural_key": "NetworkInsightsPathArn",
       "fields": {
-        "network_insights_path_arn": "NetworkInsightsPathArn"
+        "network_insights_path_arn": "NetworkInsightsPathArn",
+        "source": "Source",
+        "source_arn": "SourceArn",
+        "destination": "Destination",
+        "destination_arn": "DestinationArn"
       },
       "tags": {
         "source": "field",
@@ -25485,7 +25489,13 @@
       "natural_key": "NetworkInsightsAccessScopeAnalysisArn",
       "name_tag": "Name",
       "fields": {
-        "ec2_network_insights_access_scope_analysis_arn": "NetworkInsightsAccessScopeAnalysisArn"
+        "ec2_network_insights_access_scope_analysis_arn": "NetworkInsightsAccessScopeAnalysisArn",
+        "status": "Status",
+        "findings_found": "FindingsFound",
+        "analyzed_eni_count": "AnalyzedEniCount",
+        "start_date": "StartDate",
+        "end_date": "EndDate",
+        "access_scope_id": "NetworkInsightsAccessScopeId"
       },
       "tags": {
         "source": "field",
@@ -25921,7 +25931,11 @@
       "natural_key": "NetworkInsightsAnalysisArn",
       "name_tag": "Name",
       "fields": {
-        "ec2_network_insights_analysis_arn": "NetworkInsightsAnalysisArn"
+        "ec2_network_insights_analysis_arn": "NetworkInsightsAnalysisArn",
+        "status": "Status",
+        "network_path_found": "NetworkPathFound",
+        "start_date": "StartDate",
+        "network_insights_path_id": "NetworkInsightsPathId"
       },
       "tags": {
         "source": "field",

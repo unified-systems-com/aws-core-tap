@@ -9,6 +9,7 @@ manifest entry is written for.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -1304,8 +1305,21 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_ec2_network_insights_path": (
-        {'NetworkInsightsPathArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {},
+        {
+            'NetworkInsightsPathArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'Source': 'igw-0a1b2c3d4e5f60718',
+            'SourceArn': 'arn:aws:ec2:us-east-1:123456789012:internet-gateway/igw-0a1b2c3d4e5f60718',
+            'Destination': 'i-0a1b2c3d4e5f60718',
+            'DestinationArn': 'arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f60718',
+            'CreatedDate': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'Tags': [{'Key': 'owner', 'Value': 'net-team'}],
+        },
+        {
+            'source': 'igw-0a1b2c3d4e5f60718',
+            'source_arn': 'arn:aws:ec2:us-east-1:123456789012:internet-gateway/igw-0a1b2c3d4e5f60718',
+            'destination': 'i-0a1b2c3d4e5f60718',
+            'destination_arn': 'arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f60718',
+        },
     ),
     "aws_core__aws_ec2_placement_group": (
         {'GroupArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
@@ -2573,13 +2587,46 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         },
     ),
     "aws_core__aws_ec2_network_insights_access_scope_analysis": (
-        {'NetworkInsightsAccessScopeAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
-        {'ec2_network_insights_access_scope_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {
+            'NetworkInsightsAccessScopeAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'NetworkInsightsAccessScopeId': 'nis-0a1b2c3d4e5f60718',
+            'Status': 'succeeded',
+            'FindingsFound': 'unknown',
+            'AnalyzedEniCount': 0,
+            'StartDate': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'EndDate': datetime(2026, 11, 2, 9, 4, 30, tzinfo=UTC),
+            'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}],
+        },
+        {
+            'ec2_network_insights_access_scope_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'name': 'gen-1',
+            'status': 'succeeded',
+            'findings_found': 'unknown',
+            'analyzed_eni_count': 0,
+            'start_date': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'end_date': datetime(2026, 11, 2, 9, 4, 30, tzinfo=UTC),
+            'access_scope_id': 'nis-0a1b2c3d4e5f60718',
+        },
     ),
     "aws_core__aws_ec2_network_insights_analysis": (
-        # The custom_fn's item: AWS's analysis plus the compound edge's slots (aws-core-tap#248).
-        reachability_analysis_item({'NetworkInsightsAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}], **_FOUND_PATH}),
-        {'ec2_network_insights_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        # The custom_fn's item: AWS's analysis plus the compound edge's slots (aws-core-tap#248), here with a found path.
+        reachability_analysis_item(
+            {
+                'NetworkInsightsAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+                'NetworkInsightsPathId': 'nip-0a1b2c3d4e5f60718',
+                'StartDate': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+                'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}],
+                **_FOUND_PATH,
+            }
+        ),
+        {
+            'ec2_network_insights_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'name': 'gen-1',
+            'status': 'succeeded',
+            'network_path_found': True,
+            'start_date': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'network_insights_path_id': 'nip-0a1b2c3d4e5f60718',
+        },
     ),
     "aws_core__aws_ec2_network_interface": (
         {'NetworkInterfaceId': 'net-0a1b2c3d4e5f60718', 'SubnetId': 'subnet-0a1b2c3d4e5f60718', 'TagSet': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},

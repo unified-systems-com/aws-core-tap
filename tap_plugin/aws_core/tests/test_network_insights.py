@@ -410,3 +410,74 @@ def test_a_finding_retires_with_either_end_and_not_with_a_hop(retire: str) -> No
     result = delete_node({"source": igw, "destination": eni, "hop": sg}[retire].entity_id)
     assert result.success, result.errors
     assert (Entity.objects.get(id=found.entity_id).deleted_at is not None) is (retire != "hop")
+
+
+def _reachability_graph() -> dict[str, Any]:
+    """An analysis that found a path: instance -> analysis -> internet gateway, through a security group."""
+    from tap_grid.services import create_edge
+
+    nodes = {
+        "source": _node(ni.EC2_INSTANCE, {"instance_id": INSTANCE}),
+        "destination": _node(ni.INTERNET_GATEWAY, {"igw_id": IGW}),
+        "hop": _node(ni.SECURITY_GROUP, {"group_id": SG}),
+        "analysis": _node(ni.REACHABILITY_ANALYSIS, {"ec2_network_insights_analysis_arn": ANALYSIS_ARN}),
+    }
+    create_edge(nodes["source"].entity, nodes["analysis"].entity, ni.REACHABILITY_ANALYSIS_SOURCE)
+    create_edge(nodes["analysis"].entity, nodes["destination"].entity, ni.REACHABILITY_ANALYSIS_DESTINATION)
+    create_edge(nodes["analysis"].entity, nodes["hop"].entity, ni.TRAVERSES_COMPONENT, {"step": 2})
+    return nodes
+
+
+def _live(node: Any) -> bool:
+    from tap_grid.models import Entity
+
+    return Entity.objects.get(id=node.entity_id).deleted_at is None
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-network-analyzer-3")
+@pytest.mark.parametrize("retire", ["source", "destination", "hop"])
+def test_a_reachability_analysis_retires_with_either_end_and_not_with_a_hop(retire: str) -> None:
+    from tap_grid.services import delete_node
+
+    nodes = _reachability_graph()
+    result = delete_node(nodes[retire].entity_id)
+    assert result.success, result.errors
+    assert _live(nodes["analysis"]) is (retire == "hop")
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-network-analyzer-3")
+def test_an_end_a_later_batch_does_not_list_retires_nothing() -> None:
+    """A run that re-observes the analysis and simply does not name its ends is not a deletion of either end:
+    only a real retirement of an end retires the middle node (req-grid-edge-compound-5)."""
+    import uuid
+
+    from tap_grid.grift import grift_import
+
+    nodes = _reachability_graph()
+    later = {
+        "metadata": {"grift_version": "0"},
+        "_reserved": {},
+        "batches": [
+            {
+                "batch_entity": {"entity_id": str(uuid.uuid7()), "entity_type": "batch", "name": "later", "dimensions": {}},
+                "batch_node": {"source": "test", "name": "later", "description": "the analysis alone, its ends unlisted"},
+                "nodes": [
+                    {
+                        "entity": {
+                            "entity_id": str(nodes["analysis"].entity_id),
+                            "entity_type": ni.REACHABILITY_ANALYSIS,
+                            "name": "n",
+                            "dimensions": {},
+                        },
+                        "node": {"name": "n", "ec2_network_insights_analysis_arn": ANALYSIS_ARN},
+                    }
+                ],
+                "edges": [],
+            }
+        ],
+    }
+    imported = grift_import(later)
+    assert imported.success, [(i.code, i.message) for i in imported.errors]
+    assert all(_live(node) for node in nodes.values())

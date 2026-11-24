@@ -34,6 +34,7 @@ from tap_grid.dimension_names import view
 from tap_grid.event_time import (
     NO_EVENT_TIME,
     Interval,
+    Moment,
     declaration_problems,
     from_epoch_milliseconds,
     from_epoch_seconds,
@@ -56,7 +57,7 @@ PLUGIN_ROOT = find_plugin_source_root(__file__)
 ACCOUNT = "0000"
 
 #: The types that declare an event time on a typed field, and what each declares.
-DECLARED: dict[str, Interval] = {
+DECLARED: dict[str, Moment | Interval] = {
     "aws_core__aws_access_analyzer": Interval(start="created_at", kind="created"),
     "aws_core__aws_access_analyzer_finding": Interval(start="created_at", kind="created"),
     # The whole configuration, read by a reader: REST and HTTP/WebSocket stages spell the member differently.
@@ -65,6 +66,10 @@ DECLARED: dict[str, Interval] = {
     "aws_core__aws_ec2_network_access_scope_finding": Interval(
         start="analysis_start_date", kind="occurred", end="analysis_end_date"
     ),
+    "aws_core__aws_ec2_network_insights_access_scope_analysis": Interval(
+        start="start_date", kind="occurred", end="end_date"
+    ),
+    "aws_core__aws_ec2_network_insights_analysis": Moment(field="start_date", kind="occurred"),
     "aws_core__aws_ecs_task": Interval(start="started_at", kind="occurred", end="stopped_at"),
     "aws_core__aws_guardduty_finding": Interval(start="created_at", kind="created"),
     "aws_core__aws_iam_saml_provider": Interval(start="created_at", kind="created", end="valid_until"),
@@ -816,7 +821,7 @@ def test_every_type_is_declared_timeless_or_pending_and_only_one() -> None:
     assert declared == expected
     assert _pending() == set(PENDING)
     timeless = [m for m in models if m.__dict__.get("EVENT_TIME") is NO_EVENT_TIME]
-    assert (len(declared), len(PENDING), len(timeless), len(models)) == (528, 35, 368, 931)
+    assert (len(declared), len(PENDING), len(timeless), len(models)) == (530, 35, 366, 931)
     for model in models:
         declaration = model.__dict__.get("EVENT_TIME")
         reason = model.__dict__.get("EVENT_TIME_REASON")
@@ -1234,3 +1239,86 @@ def test_a_stage_with_neither_spelling_states_no_time_and_no_warning() -> None:
     row = _stage("/apis/c3", {"StageName": "prod", "_api_kind": "http"})
     assert (row.event_start, row.event_end, row.event_precision, _kind(row)) == (None, None, None, None)
 
+
+# --- network analyses: a run that happened, read from typed fields the collector fills -----------------------------
+
+
+@pytest.mark.parametrize(
+    ("entity_type", "member", "field"),
+    [
+        ("aws_core__aws_ec2_network_insights_access_scope_analysis", "StartDate", "start_date"),
+        ("aws_core__aws_ec2_network_insights_access_scope_analysis", "EndDate", "end_date"),
+        ("aws_core__aws_ec2_network_insights_analysis", "StartDate", "start_date"),
+    ],
+)
+def test_a_network_analysis_time_field_is_read_off_a_botocore_timestamp(entity_type: str, member: str, field: str) -> None:
+    """The typed field is mapped to the member as AWS names it, and botocore types that member a timestamp."""
+    entry = _entry(entity_type)
+    assert entry["fields"][field] == member
+    if "custom_fn" in entry["source"]:
+        # The Reachability Analyzer reader yields DescribeNetworkInsightsAnalyses's own items, plus its compound-edge
+        # slots (network_insights.reachability_analysis_item, aws-core-tap#248); CUSTOM_FN_ITEMS lists only the types
+        # that read a member of configuration.
+        assert entry["source"]["custom_fn"] == "ec2_network_insights_analyses_described"
+        leaf = _step(_item("ec2", "DescribeNetworkInsightsAnalyses", "NetworkInsightsAnalyses[]"), member)
+    else:
+        (leaf,) = _leaves(entity_type, (member,))
+    assert leaf.type_name == "timestamp"
+
+
+@pytest.mark.django_db
+def test_an_access_scope_analysis_is_the_interval_it_ran() -> None:
+    row = _create(
+        "aws_core__aws_ec2_network_insights_access_scope_analysis",
+        {
+            "name": "nisa-1",
+            "ec2_network_insights_access_scope_analysis_arn": (
+                f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-access-scope-analysis/nisa-1"
+            ),
+            "status": "succeeded",
+            "findings_found": "true",
+            "start_date": "2026-11-02T09:00:00Z",
+            "end_date": "2026-11-02T09:04:30Z",
+        },
+    )
+    assert (row.event_start, row.event_end, row.event_precision, _kind(row)) == (
+        datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+        datetime(2026, 11, 2, 9, 4, 30, tzinfo=UTC),
+        "second",
+        "occurred",
+    )
+
+
+@pytest.mark.django_db
+def test_a_running_access_scope_analysis_holds_from_its_start() -> None:
+    """AWS states no EndDate until the analysis ends; the start is kept and no end is made up."""
+    row = _create(
+        "aws_core__aws_ec2_network_insights_access_scope_analysis",
+        {
+            "name": "nisa-2",
+            "ec2_network_insights_access_scope_analysis_arn": (
+                f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-access-scope-analysis/nisa-2"
+            ),
+            "status": "running",
+            "findings_found": "unknown",
+            "start_date": "2026-11-02T09:00:00Z",
+        },
+    )
+    assert (row.event_start, row.event_end, _kind(row)) == (datetime(2026, 11, 2, 9, 0, tzinfo=UTC), None, "occurred")
+
+
+@pytest.mark.django_db
+def test_a_reachability_analysis_happened_at_its_start() -> None:
+    row = _create(
+        "aws_core__aws_ec2_network_insights_analysis",
+        {
+            "name": "nia-1",
+            "ec2_network_insights_analysis_arn": f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-analysis/nia-1",
+            "status": "succeeded",
+            "network_path_found": True,
+            "start_date": "2026-11-02T09:00:00.125000Z",
+        },
+    )
+    # A moment to the second: core stores it as a zero-length span.
+    at = datetime(2026, 11, 2, 9, 0, 0, 125000, tzinfo=UTC)
+    assert (row.event_start, row.event_end, row.event_precision, _kind(row)) == (at, at, "second", "occurred")
