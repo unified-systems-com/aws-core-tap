@@ -46,13 +46,13 @@
       "entity_type": "aws_core__aws_lambda",
       "service": "lambda",
       "scope": "regional",
-      "source": { "aws_op": "ListFunctions" },
-      "why": "Enumerate Lambda functions — serverless compute and a common runtime/compliance surface.",
+      "source": { "custom_fn": "lambda_functions_described" },
+      "why": "Enumerate Lambda functions — serverless compute and a common runtime/compliance surface. ListFunctions lists them; each function's resource-based policy is read with GetPolicy, because the policy is what bounds who may invoke it beyond the invokers the grid sees (aws-core-tap#290).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore lambda ListFunctions output shape (FunctionConfiguration), 2026-09-23. Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed.",
+        "basis": "Read botocore lambda ListFunctions output shape (FunctionConfiguration), 2026-09-23. Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed. Read botocore lambda GetPolicy output shape (Policy, RevisionId: no member marked sensitive) and custom_fn lambda_functions_described, 2026-11-24 (aws-core-tap#290).",
         "locations": [
           {
             "path": "Environment.Variables",
@@ -83,10 +83,16 @@
             "category": "free_text",
             "reason": "Operator-authored description.",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.policy.data.Policy",
+            "category": "access_policy",
+            "reason": "The function's resource-based policy document: the accounts, services and principals allowed to invoke or manage it, and the conditions on them. Stored, as an S3 bucket policy is.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Functions[]",
+      "items_path": "[]",
       "natural_key": "FunctionArn",
       "fields": {
         "name": "FunctionName",
@@ -96,8 +102,19 @@
         "memory_size": "MemorySize",
         "timeout": "Timeout",
         "vpc_subnet_ids": "VpcConfig.SubnetIds[]",
-        "vpc_security_group_ids": "VpcConfig.SecurityGroupIds[]"
+        "vpc_security_group_ids": "VpcConfig.SecurityGroupIds[]",
+        "resource_policy_account_ids": "_resource_policy_account_ids",
+        "resource_policy_services": "_resource_policy_services",
+        "resource_policy_wildcard_principal": "_resource_policy_wildcard_principal",
+        "resource_policy_unconditioned": "_resource_policy_unconditioned"
       },
+      "hydrate": [
+        {
+          "key": "policy",
+          "op": "GetPolicy",
+          "why": "The function's resource-based policy (unqualified): who may invoke it beyond the invokers the grid sees. ResourceNotFoundException means no policy and is recorded absent by its reviewed outcome row (error_outcomes.json)."
+        }
+      ],
       "tags": {
         "source": "rgta",
         "resource_type_filter": "lambda:function",
@@ -118,6 +135,13 @@
           "edge_type": "WRITES_LOGS__aws_core",
           "direction": "outbound",
           "transform": "log_group_arn"
+        },
+        {
+          "value_path": "_resource_policy_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "PERMITS_ACCOUNT__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -22455,40 +22479,60 @@
       "service": "lambda",
       "scope": "regional",
       "source": {
-        "aws_op": "ListAliases",
-        "per": {
-          "aws_op": "ListFunctions",
-          "items_path": "Functions[]"
-        },
-        "bind": {
-          "FunctionName": "FunctionName"
-        }
+        "custom_fn": "lambda_aliases_described"
       },
-      "why": "Enumerate Lambda Alias objects with ListAliases — an inventory of the account's aliass and how each is tagged.",
+      "why": "Enumerate Lambda Alias objects with ListAliases (for each function ListFunctions names) — an inventory of the account's aliases. Each alias carries its own resource-based policy, read with GetPolicy and the alias name as Qualifier: an alias-scoped grant is invisible on the function's own policy (aws-core-tap#290).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore lambda ListAliases item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore lambda ListAliases item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Read botocore lambda GetPolicy output shape (Policy, RevisionId: no member marked sensitive) and custom_fn lambda_aliases_described, 2026-11-24 (aws-core-tap#290).",
         "locations": [
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.policy.data.Policy",
+            "category": "access_policy",
+            "reason": "The alias's own resource-based policy document: the accounts, services and principals allowed to invoke the function through this alias, and the conditions on them. Stored, as an S3 bucket policy is.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Aliases[]",
+      "items_path": "[]",
       "natural_key": "AliasArn",
       "fields": {
         "name": "Name",
-        "lambda_alias_arn": "AliasArn"
+        "lambda_alias_arn": "AliasArn",
+        "resource_policy_account_ids": "_resource_policy_account_ids",
+        "resource_policy_services": "_resource_policy_services",
+        "resource_policy_wildcard_principal": "_resource_policy_wildcard_principal",
+        "resource_policy_unconditioned": "_resource_policy_unconditioned"
       },
+      "hydrate": [
+        {
+          "key": "policy",
+          "op": "GetPolicy",
+          "why": "The alias's own resource-based policy (Qualifier: the alias name), separate from the function's. ResourceNotFoundException means no policy and is recorded absent by its reviewed outcome row (error_outcomes.json)."
+        }
+      ],
+
       "tags": {
         "source": "none",
         "why": "Lambda does not support tags on function aliases: the lambda ListTags operation documents its Resource parameter as 'Lambda does not support adding tags to function aliases or versions' (botocore 1.43.121)."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "_resource_policy_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "PERMITS_ACCOUNT__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_msk_channel",
@@ -27180,17 +27224,14 @@
       "service": "lambda",
       "scope": "regional",
       "source": {
-        "aws_op": "ListFunctions",
-        "params": {
-          "FunctionVersion": "ALL"
-        }
+        "custom_fn": "lambda_function_versions_described"
       },
-      "why": "Enumerate Lambda Function Version objects with ListFunctions — an inventory of the account's lambda function version objects and how each is tagged.",
+      "why": "Enumerate Lambda Function Version objects with ListFunctions (FunctionVersion ALL) — an inventory of the account's lambda function version objects. Each published version carries its own resource-based policy, read with GetPolicy and the version as Qualifier (aws-core-tap#290); $LATEST is listed but carries no policy of its own, so none is read for it.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan (2026-10-31): botocore marks Environment.Variables, Environment.Error.Message, ImageConfigResponse.Error.Message, RuntimeVersionConfig.Error.Message sensitive in the lambda ListFunctions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed.",
+        "basis": "Mechanical scan (2026-10-31): botocore marks Environment.Variables, Environment.Error.Message, ImageConfigResponse.Error.Message, RuntimeVersionConfig.Error.Message sensitive in the lambda ListFunctions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed. Read botocore lambda GetPolicy output shape (Policy, RevisionId: no member marked sensitive) and custom_fn lambda_function_versions_described, 2026-11-24 (aws-core-tap#290).",
         "locations": [
           {
             "path": "Environment.Variables",
@@ -27215,18 +27256,44 @@
             "category": "customer_content",
             "reason": "botocore marks this member sensitive: operator-set content.",
             "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.policy.data.Policy",
+            "category": "access_policy",
+            "reason": "The published version's own resource-based policy document: the accounts, services and principals allowed to invoke this version by its qualified ARN, and the conditions on them. Stored, as an S3 bucket policy is.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Functions[]",
+      "items_path": "[]",
       "natural_key": "FunctionArn",
       "fields": {
-        "lambda_function_version_arn": "FunctionArn"
+        "lambda_function_version_arn": "FunctionArn",
+        "resource_policy_account_ids": "_resource_policy_account_ids",
+        "resource_policy_services": "_resource_policy_services",
+        "resource_policy_wildcard_principal": "_resource_policy_wildcard_principal",
+        "resource_policy_unconditioned": "_resource_policy_unconditioned"
       },
+      "hydrate": [
+        {
+          "key": "policy",
+          "op": "GetPolicy",
+          "why": "The published version's own resource-based policy (Qualifier: the version number), separate from the function's. ResourceNotFoundException means no policy and is recorded absent by its reviewed outcome row (error_outcomes.json). Not read for $LATEST, which Lambda does not let carry a policy."
+        }
+      ],
       "tags": {
         "source": "none",
         "why": "The CloudFormation schema says tagging.taggable is false, and botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions'."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "_resource_policy_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "PERMITS_ACCOUNT__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_licensemanager_license_asset_rule_set",

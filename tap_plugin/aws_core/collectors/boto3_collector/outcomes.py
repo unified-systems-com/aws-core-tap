@@ -13,6 +13,12 @@ A listing that raised is one of four things, and the collector must not blur the
   the source did not say the list ended. Never read as empty.
 - anything else is a failed call, as before.
 
+A per-resource read (a hydrate slot) has one more named result, ``absent``: a reviewed row says the error is
+AWS's way of answering "this resource has no such configuration" with a code the hydrate template's own
+``NoSuch*`` / ``*NotFound*`` rule does not recognise (``lambda:GetPolicy``'s ``ResourceNotFoundException``
+for a function with no policy). It applies to hydrate reads only (:func:`classify_hydrate_read`), never to a
+listing.
+
 The first two are **data**, not code and not a broad catch: ``error_outcomes.json`` holds one reviewed
 row per (service, operation or entity type, error code) with a ``why``, validated against
 ``error_outcomes.schema.json`` at load. A ``not_configured`` row must name its service, error code and
@@ -41,6 +47,9 @@ UNSUPPORTED_IN_PARTITION = "unsupported_in_partition"
 THROTTLED = "throttled"
 NOT_TAGGABLE = "not_taggable"
 NOT_READABLE = "not_readable"
+ABSENT = "absent"
+#: Outcomes that name the answer to a per-resource read, never a listing's result.
+_READ_ONLY_OUTCOMES = frozenset({ABSENT})
 
 _DIR = Path(__file__).resolve().parent
 OUTCOMES_PATH = _DIR / "error_outcomes.json"
@@ -122,8 +131,25 @@ def classify(
     if code in THROTTLE_CODES:
         return Outcome(THROTTLED, code, "the service rate-limited the call past the client's retries; the listing did not finish")
     for row in rows if rows is not None else load_rows():
+        if row["outcome"] in _READ_ONLY_OUTCOMES:
+            continue
         if _row_matches(row, entry, exc, code, partition):
             return Outcome(row["outcome"], code or type(exc).__name__, row["why"])
+    return None
+
+
+def classify_hydrate_read(
+    entry: dict[str, Any], exc: BaseException, rows: tuple[dict[str, Any], ...] | None = None
+) -> Outcome | None:
+    """``absent`` when a reviewed row says this hydrate-read error means the resource has no such configuration
+    (a Lambda function with no resource policy); ``None`` for every other error, which stays as the hydrate
+    template classified it. Passed to :func:`.hydrate.hydrate_item` as its ``reclassify`` hook."""
+    if not isinstance(exc, ClientError):
+        return None
+    code = error_code(exc)
+    for row in rows if rows is not None else load_rows():
+        if row["outcome"] == ABSENT and _row_matches(row, entry, exc, code, ""):
+            return Outcome(ABSENT, code or type(exc).__name__, row["why"])
     return None
 
 

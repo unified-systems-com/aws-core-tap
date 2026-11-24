@@ -64,6 +64,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-contained-type-triple | [Every Contained Type Has Its Three Parts](#every-contained-type-has-its-three-parts) | Proposed | Every (parent, edge type) the epic adds has containment, a completeness surface and a falsifier; empty parents are complete-empty; unfinished listings are incomplete |
 | req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
 | req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
+| req-aws-core-lambda-policy | [Lambda Resource Policy](#lambda-resource-policy) | Implemented | Each Lambda function's, alias's and published version's own resource-based policy (`lambda:GetPolicy`), stored raw and summarised: other accounts, services, wildcard, unconditioned; `PERMITS_ACCOUNT` to each other account; no policy kept apart from not read (aws-core-tap#290) |
 
 ### Plugin Scope
 ----
@@ -244,7 +245,7 @@ The categories (representative; the manifest is the canonical, enforced list):
 | Structural | DIVIDED_INTO_AZ, NESTED_UNDER_PARENT, BELONGS_TO_ACCOUNT, RESIDES_IN_VPC, PARTITIONED_INTO_SUBNET, RESIDES_IN_SUBNET, USES_SECURITY_GROUP, ATTACHED_TO_VPC, RESIDES_IN_AZ | Region → availability zone reference topology (parent→child); the Organizations tree (child→parent) |
 | Network attachment | ATTACHED_TO_TRANSIT_GATEWAY, ATTACHES_VPC, PEERS_WITH_TRANSIT_GATEWAY, ATTACHES_DX_GATEWAY, CARRIED_ON_CONNECTION, ATTACHED_TO_DX_GATEWAY, TERMINATES_AT_CUSTOMER_DEVICE, CONSUMES_ENDPOINT_SERVICE | Transit gateway attachments, Direct Connect, and PrivateLink |
 | Operational | INVOKES_LAMBDA, ROUTES_TRAFFIC, WRITES_LOGS, RETRIEVES_CONTENT_FROM, RETRIEVES_CERT_FROM, RETRIEVES_SOURCE_FROM, RETRIEVES_SECRET_FROM, RUNS_BUILD, WRITES_OBJECT | Runtime actions, traffic, and data retrieval (`_FROM` = data-backwards) |
-| Access/Security | ASSUMES_ROLE, FEDERATES_INTO_ROLE, ATTACHED_TO_TARGET, TRUSTS_IDENTITY_SOURCE, FILTERS_VPC_DNS, ISSUED_BY_CA | IAM role assumption and federated identity; SCP attachment; Identity Center's external identity provider |
+| Access/Security | ASSUMES_ROLE, FEDERATES_INTO_ROLE, TRUSTS_ACCOUNT, PERMITS_ACCOUNT, ATTACHED_TO_TARGET, TRUSTS_IDENTITY_SOURCE, FILTERS_VPC_DNS, ISSUED_BY_CA | IAM role assumption and federated identity; SCP attachment; Identity Center's external identity provider |
 
 Edge types use explicit `sources` and `targets` constraints where the relationship is well-defined (e.g. `ASSUMES_ROLE` from IAM users/roles, Lambda functions, and EventBridge rules to IAM roles; `RETRIEVES_CONTENT_FROM` from CloudFront distributions to S3 buckets). Where one end is genuinely open, only the other is constrained (e.g. `INVOKES_LAMBDA` fixes its target to `aws_lambda` and leaves the source open).
 
@@ -2301,6 +2302,7 @@ so they are not listed.
 | `APPLIES_TO_TARGET` | enabled control / baseline → OU / account | `ListEnabledControls` → `enabledControls[].targetIdentifier`; `ListEnabledBaselines` → `enabledBaselines[].targetIdentifier` | ends with its source (`UpdateEnabledControl` and `UpdateEnabledBaseline` take no target) | — |
 | `GRANTS_PERMISSION_SET`, `GRANTS_ACCESS_TO_ACCOUNT`, `GRANTED_TO_GROUP` | assignment → permission set / account / group | `ListAccountAssignments` → `AccountAssignments[].PermissionSetArn`, `.AccountId`, `.PrincipalId` | ends with its source (all three are in the key) | — |
 | `REPORTS_TO_ADMINISTRATOR` | GuardDuty detector / Security Hub hub → account | `GetAdministratorAccount` → `Administrator.AccountId` | **last seen** | `DisassociateFromAdministratorAccount` |
+| `PERMITS_ACCOUNT` | Lambda function / alias / published version → account | that entry's `value_path` `_resource_policy_account_ids`, derived from `GetPolicy` → `Policy` (`req-aws-core-lambda-policy`) | **last seen** | `RemovePermission`, `AddPermission` |
 
 #### Target keys
 
@@ -2385,3 +2387,75 @@ provisioned-product requirement and no `CreateGovCloudAccount` workflow model.
 | req-aws-core-partition-pairing-2 | No Partition Dimension | Proposed | No dimension key is added or changed by this requirement. | Ruling 2026-09-30. |
 | req-aws-core-partition-pairing-3 | Pairing Edge | Proposed | `PAIRED_WITH_ACCOUNT` declares GovCloud account → commercial account, reference, and the spec states it is declared, not collected, from the GovCloud side. | Ruling 2026-10-01: declared as data in highbar's design. |
 | req-aws-core-partition-pairing-4 | No Vending Model | Proposed | No model or requirement here represents account vending (Service Catalog provisioned product, `CreateGovCloudAccount` request). | Ruling 2026-09-30. |
+
+### Lambda Resource Policy
+----
+RID: `req-aws-core-lambda-policy`
+
+Status: `Implemented`
+
+`INVOKES_LAMBDA` shows the invokers aws_core found by reading the other side (an API Gateway integration, an
+EventBridge target, a target group). It cannot show an invoker that is not on the grid: another account, a service
+principal with no source condition, or `Principal: "*"`. The function's resource-based policy is what bounds those,
+and until aws-core-tap#290 it was never read. `INVOKES_LAMBDA` is unchanged.
+
+#### Status Details
+
+Ruled by the maintainer on 2026-11-24 (aws-core-tap#290): the operation is `lambda:GetPolicy`, not the newer
+`GetResourcePolicy` (botocore API version 2026-07-09), whose GovCloud coverage is not established; `GetPolicy` is
+long-standing, takes a `Qualifier`, and is in the AWS managed read policies. The policy is read on the function and
+on each alias and published version, since each carries its own; an alias-scoped grant is invisible on the function.
+
+#### Implementation
+
+- **Where it is read.** The three Lambda entries (`aws_core__aws_lambda`, `aws_core__aws_lambda_alias`,
+  `aws_core__aws_lambda_function_version`) are `custom_fn` readers (`lambda_functions_described`,
+  `lambda_aliases_described`, `lambda_function_versions_described`) that list as before (`ListFunctions`;
+  `ListAliases` per function; `ListFunctions(FunctionVersion=ALL)`) and run the manifest's one `hydrate` op,
+  `GetPolicy`, per item: unqualified for a function, `Qualifier` = the alias name or the version number. The
+  `custom_fn` pattern of `iam_roles_described` and `s3_buckets_hydrated` was chosen over extending `enrich`: `enrich`
+  is a single detail slot attached after projection, so neither typed fields nor edge rules can read from it, and it
+  has no reclassify hook. A reader declares its listed item's own edge sources (`Role`, `LoggingConfig`) complete, as
+  the engine judged them when the entry was an `aws_op`.
+- **`$LATEST` is not read.** `ListFunctions(FunctionVersion=ALL)` lists the unpublished version beside the published
+  ones; Lambda attaches no policy to it ("Lambda does not support adding policies to version $LATEST", botocore
+  `AddPermission`). No call is made for it: its summary fields stay null (not read), and its `PERMITS_ACCOUNT` read is
+  `partial`, never a "no policy" nobody asked AWS for.
+- **Stored raw.** The `GetPolicy` answer is the `policy` hydrate slot, `configuration._hydrate.policy.data.Policy`
+  (the JSON string AWS returns) and `RevisionId`, declared `access_policy` in each entry's sensitivity block and not
+  redacted, as an S3 bucket policy is.
+- **Summarised** (`iam_trust.summarize_resource_policy`, the trust-policy summary of `req-aws-core-reconcile-containment-5`
+  generalised to a policy on a resource) into four nullable typed fields on each of the three models:
+  `resource_policy_account_ids` (the OTHER accounts an `Allow` statement's `Principal.AWS` names, never the
+  resource's own, from a bare id, a root ARN or a role or user ARN), `resource_policy_services` (service
+  principals), `resource_policy_wildcard_principal` (an `Allow` names `*`, conditioned or not) and
+  `resource_policy_unconditioned` (an `Allow` names another account, a service or `*` and carries no `Condition`; any
+  non-empty `Condition` makes the statement conditioned and is not evaluated, so a function URL with auth type
+  `NONE`, written as `*` with a `lambda:FunctionUrlAuthType` condition, reads wildcard `true`, unconditioned
+  `false`). Only `Allow` statements grant. Principal ARNs are read whatever their partition. A document that cannot
+  be read with certainty (unparseable, no statement list, `NotPrincipal`, a principal member other than `AWS` /
+  `Service`, or an `AWS` principal that names no account, such as the opaque unique id IAM leaves for a deleted
+  principal, whose account is unknown) gives no summary: Lambda builds policies only from `AddPermission` statements, so none is expected, and
+  nothing is guessed if one appears.
+- **No policy is not not read.** `GetPolicy` answers `ResourceNotFoundException` for a resource with no policy, which
+  the hydrate template's own rule would call `error`. A reviewed row of `error_outcomes.json` (outcome `absent`,
+  `req-aws-collector-outcome-7`) records it `absent`; its `why` notes the same code comes back if the resource was
+  deleted between the listing and the read. Then every summary field is `[]` or `false`. A denied, errored or
+  unreadable read leaves every summary field null. `AccessDeniedException` stays `denied`.
+- **`PERMITS_ACCOUNT__aws_core`** (function, alias or version → `aws_core__aws_account`), from
+  `_resource_policy_account_ids`, resolved by account id exactly as `TRUSTS_ACCOUNT__aws_core`'s target is. A
+  reference. Its authority read is `complete` for a read policy or no policy, `partial` for an unreadable document
+  or `$LATEST`, `failed` for a refused or errored read.
+- **Grant.** `lambda:GetPolicy` reaches the generated collector policy through the manifest's `hydrate` op
+  (`iam_policy.py`). The coverage ledger's `AWS::Lambda::Permission` and `AWS::Lambda::ResourcePolicy` rows stay
+  excluded, now as collected on the function.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-lambda-policy-1 | Read On Every Qualifier | Implemented | `GetPolicy` is called for each function (unqualified), each alias (`Qualifier` = name) and each published version (`Qualifier` = version); never for `$LATEST`. | `tests/test_lambda_resource_policy.py::TestFunctionReader`, `::TestAliasReader`, `::TestVersionReader` |
+| req-aws-core-lambda-policy-2 | Stored Raw As An Access Policy | Implemented | The answer is stored at `_hydrate.policy`, declared `access_policy`, not redacted. | `::TestFunctionReader::test_the_stored_configuration_keeps_the_raw_policy`, `::TestDeclarations` |
+| req-aws-core-lambda-policy-3 | Summary Fields | Implemented | `resource_policy_account_ids`, `resource_policy_services`, `resource_policy_wildcard_principal`, `resource_policy_unconditioned` as stated above, over `Allow` statements only, partition-aware; an unreadable document gives no summary. Migration `0061_lambda_resource_policy`. | `::TestSummary` |
+| req-aws-core-lambda-policy-4 | No Policy Distinct From Not Read | Implemented | `ResourceNotFoundException` is `absent` through its reviewed outcome row and reads `[]`/`false` on every field; denied, errored or unreadable reads null on every field. | `::TestOutcomeRow`, `::TestFunctionReader` |
+| req-aws-core-lambda-policy-5 | Permits Account Edge | Implemented | `PERMITS_ACCOUNT__aws_core` runs from each of the three types to every other account its policy names, keyed as `TRUSTS_ACCOUNT`'s target is; its read is never `complete` for a policy that was not read. | `::TestPermitsAccountEdge` |
