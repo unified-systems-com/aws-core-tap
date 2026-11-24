@@ -249,6 +249,8 @@ class TestEdges:
             ("PARTITIONED_INTO_SUBNET__aws_core", t("vpc"), t("subnet")),
             ("RESIDES_IN_SUBNET__aws_core", t("ecs_service"), t("subnet")),
             ("RESIDES_IN_SUBNET__aws_core", t("vpc_endpoint"), t("subnet")),
+            ("USES_SECURITY_GROUP__aws_core", t("ec2_instance"), t("security_group")),
+            ("USES_SECURITY_GROUP__aws_core", t("ec2_network_interface"), t("security_group")),
             ("ATTACHED_TO_VPC__aws_core", t("internet_gateway"), t("vpc")),
             ("RESIDES_IN_AZ__aws_core", t("subnet"), t("az")),
             ("CARRIED_ON_CONNECTION__aws_core", t("dx_virtual_interface"), t("dx_connection")),
@@ -275,6 +277,8 @@ class TestEdges:
             ("RESIDES_IN_VPC__aws_core", t("subnet"), t("vpc")),  # a subnet is PARTITIONED_INTO_SUBNET's
             ("RESIDES_IN_VPC__aws_core", t("ec2_instance"), t("vpc")),  # placed in a subnet instead
             ("PARTITIONED_INTO_SUBNET__aws_core", t("subnet"), t("vpc")),
+            ("USES_SECURITY_GROUP__aws_core", t("security_group"), t("ec2_instance")),
+            ("USES_SECURITY_GROUP__aws_core", t("subnet"), t("security_group")),
             ("ATTACHED_TO_VPC__aws_core", t("nat_gateway"), t("vpc")),
             ("RESIDES_IN_AZ__aws_core", t("ec2_instance"), t("az")),  # reaches its zone through its subnet
             ("RESIDES_IN_AZ__aws_core", t("az"), t("subnet")),

@@ -240,7 +240,7 @@ The categories (representative; the manifest is the canonical, enforced list):
 
 | Category | Edge Types | Description |
 | --- | --- | --- |
-| Structural | DIVIDED_INTO_AZ, NESTED_UNDER_PARENT, BELONGS_TO_ACCOUNT, RESIDES_IN_VPC, PARTITIONED_INTO_SUBNET, RESIDES_IN_SUBNET, ATTACHED_TO_VPC, RESIDES_IN_AZ | Region → availability zone reference topology (parent→child); the Organizations tree (child→parent) |
+| Structural | DIVIDED_INTO_AZ, NESTED_UNDER_PARENT, BELONGS_TO_ACCOUNT, RESIDES_IN_VPC, PARTITIONED_INTO_SUBNET, RESIDES_IN_SUBNET, USES_SECURITY_GROUP, ATTACHED_TO_VPC, RESIDES_IN_AZ | Region → availability zone reference topology (parent→child); the Organizations tree (child→parent) |
 | Network attachment | ATTACHED_TO_TRANSIT_GATEWAY, ATTACHES_VPC, PEERS_WITH_TRANSIT_GATEWAY, ATTACHES_DX_GATEWAY, CARRIED_ON_CONNECTION, ATTACHED_TO_DX_GATEWAY, TERMINATES_AT_CUSTOMER_DEVICE, CONSUMES_ENDPOINT_SERVICE | Transit gateway attachments, Direct Connect, and PrivateLink |
 | Operational | INVOKES_LAMBDA, ROUTES_TRAFFIC, WRITES_LOGS, RETRIEVES_CONTENT_FROM, RETRIEVES_CERT_FROM, RETRIEVES_SOURCE_FROM, RETRIEVES_SECRET_FROM, RUNS_BUILD, WRITES_OBJECT | Runtime actions, traffic, and data retrieval (`_FROM` = data-backwards) |
 | Access/Security | ASSUMES_ROLE, FEDERATES_INTO_ROLE, ATTACHED_TO_TARGET, TRUSTS_IDENTITY_SOURCE, FILTERS_VPC_DNS, ISSUED_BY_CA | IAM role assumption and federated identity; SCP attachment; Identity Center's external identity provider |
@@ -1227,6 +1227,9 @@ a networked resource sits in, so a page can nest account → VPC → subnet → 
   OpenSearch, NAT gateway, ALB, ELB, network firewall, VPC endpoint, SageMaker endpoint → subnet):
   one edge per subnet. A resource in subnets reaches its VPC through the subnet, so its VPC is never
   recorded twice.
+- `USES_SECURITY_GROUP` (EC2 instance, network interface → security group): one edge per group the resource
+  uses. The groups guard its traffic, so this is the edge a reachability question follows. A reference, not
+  containment. Other resources that use groups (Lambda, RDS, ALB, ECS awsvpc) are added as sources on purpose.
 - `ATTACHED_TO_VPC` (internet gateway → VPC): kept apart from `RESIDES_IN_VPC` because an internet
   gateway exists on its own and can be detached and attached elsewhere.
 - `RESIDES_IN_AZ` (subnet → `aws_az`): the zone a subnet was created in. A subnet lives in exactly one
@@ -1252,7 +1255,8 @@ a networked resource sits in, so a page can nest account → VPC → subnet → 
   mostly do not carry. `BELONGS_TO_ACCOUNT` comes from the item's owner field (`OwnerId`,
   `OwnerAccountId`, `ownerAccount`), and is written only when that owner is not the run's account. `RESIDES_IN_VPC` comes from
   `VpcId`. `PARTITIONED_INTO_SUBNET` comes from the subnet's `VpcId`. `RESIDES_IN_SUBNET` comes from
-  `SubnetId` or each entry of the item's subnet list. `ATTACHED_TO_VPC` comes from
+  `SubnetId` or each entry of the item's subnet list. `USES_SECURITY_GROUP` comes from the instance's
+  `SecurityGroups[].GroupId` or the interface's `Groups[].GroupId`. `ATTACHED_TO_VPC` comes from
   `Attachments[].VpcId`. `RESIDES_IN_AZ` comes from the subnet's `AvailabilityZone`.
   These are manifest `edges` entries like the existing ones.
 
@@ -1264,6 +1268,7 @@ a networked resource sits in, so a page can nest account → VPC → subnet → 
 | req-aws-core-placement-2 | VPC And Subnet Placement | Implemented | `RESIDES_IN_VPC`, `RESIDES_IN_SUBNET` and `ATTACHED_TO_VPC` declare the pairs above and no others; a subnet-placed resource is not a `RESIDES_IN_VPC` source. | |
 | req-aws-core-placement-3 | VPC Contains Its Subnets | Implemented | `Vpc.CONTAINMENT_EDGES == ("PARTITIONED_INTO_SUBNET__aws_core",)`; a contained cascade from a VPC retires its subnets and leaves a security group that `RESIDES_IN_VPC` live. | Cascade test skips on a core without `cascade`. |
 | req-aws-core-placement-4 | Owner Not Duplicated | Implemented | The network-plane types added with these edges carry no `owner_account_id`; ownership is the edge. | The transit gateway types keep the AWS-reported owner field from `req-aws-core-transit-gateway`. |
+| req-aws-core-placement-6 | Security Group Use | Proposed | `USES_SECURITY_GROUP` declares the EC2 instance and the network interface as its only sources and `aws_security_group` as its only target; no model lists it in `CONTAINMENT_EDGES`. | `test_network_plane_vocabulary.py::TestEdges`. |
 | req-aws-core-placement-5 | Subnet Zone Edge | Implemented | `RESIDES_IN_AZ` declares `aws_subnet` as its only source and `aws_az` as its only target; no model lists it in `CONTAINMENT_EDGES`, so a contained cascade from a VPC retires its subnets and leaves their zones live. | Exactly-one per subnet is stated, not enforced (unified-systems-com/tap#794). |
 
 ### Account Membership Is A Dimension
