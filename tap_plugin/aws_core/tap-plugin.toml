@@ -1,5 +1,5 @@
 manifest_version = "0"
-plugin_version = "0.8.6" # x-release-please-version
+plugin_version = "0.8.7" # x-release-please-version
 # 0.2.1 (2026-09-22): the first core release the [falsifiers] table + tap_grid.falsifiers /
 # tap_grid.falsifier_testing (Candidate, Expected, Falsifier, Probe, Verdict, verdict_from_probe,
 # run_four_cases) resolve against — 0.1.6, the release before it, refuses the [falsifiers] key at
@@ -26,7 +26,13 @@ plugin_version = "0.8.6" # x-release-please-version
 # 0.4.6: the first core release with event time on the spine (req-grid-entity-event-time: tap_grid.event_time's
 # Interval and NO_EVENT_TIME, which the models here import). On an older core the import fails and no model loads
 # (aws-core-tap#283).
-requires_tap = ">=0.4.6"
+# 0.4.7: the first core release with member paths into a JSON field and reader functions on an event-time
+# declaration (unified-systems-com/tap PR 1340, req-grid-entity-event-time rules 23 to 30: Interval's member,
+# end_member, reader and end_reader, and tap_grid.event_time's from_epoch_seconds and from_epoch_milliseconds), which
+# the 512 types that read their creation time from configuration declare (aws-core-tap#287). On an older core the
+# Interval keywords are unknown and no model loads. Plugin CI tests against the core tag at this floor, and the
+# plugin-ci.yml pin in .github/workflows/ci.yml moves to that tag's commit with it.
+requires_tap = ">=0.4.7"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
@@ -1012,6 +1018,7 @@ BELONGS_TO_ACCOUNT__aws_core = "edges/BELONGS_TO_ACCOUNT.edge.json"
 RESIDES_IN_VPC__aws_core = "edges/RESIDES_IN_VPC.edge.json"
 PARTITIONED_INTO_SUBNET__aws_core = "edges/PARTITIONED_INTO_SUBNET.edge.json"
 RESIDES_IN_SUBNET__aws_core = "edges/RESIDES_IN_SUBNET.edge.json"
+USES_SECURITY_GROUP__aws_core = "edges/USES_SECURITY_GROUP.edge.json"
 ATTACHED_TO_VPC__aws_core = "edges/ATTACHED_TO_VPC.edge.json"
 RESIDES_IN_AZ__aws_core = "edges/RESIDES_IN_AZ.edge.json"
 CARRIED_ON_CONNECTION__aws_core = "edges/CARRIED_ON_CONNECTION.edge.json"
@@ -1220,4 +1227,4 @@ pages = "grift/pages.grift.json"
 [[boot.records]]
 name = "ci"
 description = "RESERVED NAME (req-boot-bootstrap-ci-record): the stack this plugin's own tests run in — depends_on closure + self, offline, credential-free. The consumer flips self to editable."
-sha256 = "85975795a213de1eb508846846e1e81edf1a0b609619b15926371e12af07c52b"
+sha256 = "881ed2ee1381b38fe22d86f0f33bf17be7540ec60bbbd91bf49a20d9a15c14cc"

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.7](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.6...v0.8.7) (2026-11-23)
+
+
+### Features
+
+* **models:** declare core's event time on aws_core's models ([be42b8a](https://github.com/unified-systems-com/aws-core-tap/commit/be42b8aeceff5c0f9bfc769f3dc136faa4c716c2))
+* **models:** declare core's event time on aws_core's models ([69dcb65](https://github.com/unified-systems-com/aws-core-tap/commit/69dcb65a8e3671934c26f7a1269a93e75bc19c8c))
+
+
+### Bug Fixes
+
+* **models:** leave types with an unreadable AWS time undeclared, not timeless ([f0146e2](https://github.com/unified-systems-com/aws-core-tap/commit/f0146e2b5e1fcb6647ec34ddf8db64a9c8d94cb9))
+* **models:** read each type's event time from its own record, not a parent's ([68ee354](https://github.com/unified-systems-com/aws-core-tap/commit/68ee354134c3481fb262b2d329f0b8fb5ed4866a))
+
 ## [0.8.6](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.5...v0.8.6) (2026-11-22)
 
 

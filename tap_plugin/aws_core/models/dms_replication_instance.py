@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,13 +19,10 @@ class DmsReplicationInstance(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's ARN (ReplicationInstanceArn): unique across accounts and regions.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("dms_replication_instance_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "dms:ReplicationInstance"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (DescribeReplicationInstances ReplicationInstances[].InstanceCreateTime, a "
-        "botocore timestamp), held only inside configuration. Undeclared until a declaration can read it through a "
-        "reader function (unified-systems-com/tap#1284)."
-    )
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it (DescribeReplicationInstances
+    # ReplicationInstances[].InstanceCreateTime, a botocore timestamp), read from configuration['InstanceCreateTime'],
+    # where the collector stores it as AWS sent it. AWS states no end for it.
+    EVENT_TIME: ClassVar[Interval] = Interval(start="configuration", kind="created", member="InstanceCreateTime")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

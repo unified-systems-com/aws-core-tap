@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,12 +19,11 @@ class IamRole(BaseModel):
     # Identity (req-grid-entity-natural-key): The role's ARN, the boto3 collector's identity for it.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("role_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:role"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (GetRole CreateDate, a botocore timestamp), held only inside configuration; its"
-        " typed last_used_at is a last-seen time, which stays off the spine (core rule 14). Undeclared until a "
-        "declaration can read it through a reader function (unified-systems-com/tap#1284)."
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it (GetRole CreateDate, a
+    # botocore timestamp), read from configuration['_hydrate']['role']['data']['Role']['CreateDate'], where the
+    # collector stores it as AWS sent it. AWS states no end for it.
+    EVENT_TIME: ClassVar[Interval] = Interval(
+        start="configuration", kind="created", member=("_hydrate", "role", "data", "Role", "CreateDate")
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

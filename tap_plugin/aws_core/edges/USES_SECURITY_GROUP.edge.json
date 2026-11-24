@@ -1,0 +1,18 @@
+{
+  "slug": "USES_SECURITY_GROUP__aws_core",
+  "name": "Uses Security Group",
+  "description": "An EC2 instance or a network interface uses a security group (resource -> security group): one edge per entry of the instance's SecurityGroups or the interface's Groups. The groups guard the resource's traffic, so this is the edge a reachability question follows. A reference, not containment: a group exists on its own, in its VPC, and is used by many resources.",
+  "sources": [
+    "aws_core__aws_ec2_instance",
+    "aws_core__aws_ec2_network_interface"
+  ],
+  "targets": [
+    "aws_core__aws_security_group"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

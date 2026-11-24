@@ -31,12 +31,11 @@ class AwsConfigAggregator(BaseModel):
 
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("aggregator_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "config:ConfigurationAggregator"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (DescribeConfigurationAggregators CreationTime, a botocore timestamp), and the "
-        "collector stores it in no field of this model yet. Undeclared until a declaration can read it through a reader"
-        " function (unified-systems-com/tap#1284)."
+        "AWS states when it was created (DescribeConfigurationAggregators CreationTime), but the collector stores it "
+        "in no field of this model and no configuration. Not declared (unified-systems-com/aws-core-tap#287)."
     )
 
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {

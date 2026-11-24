@@ -18,12 +18,13 @@ class RdsEventSubscription(BaseModel):
     # Identity (req-grid-entity-natural-key): The subscription's ARN: a name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("event_subscription_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "rds:es"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
         "AWS states when it was created (DescribeEventSubscriptions EventSubscriptionsList[].SubscriptionCreationTime, "
-        "text), held only inside configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
+        "text), but AWS writes it as text with a time of day and no zone (AWS's example: 2018-07-31 23:22:01.893), and "
+        "documents no zone, so no reader may assume one (core rule 24). Not declared "
+        "(unified-systems-com/aws-core-tap#287)."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
