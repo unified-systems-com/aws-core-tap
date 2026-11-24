@@ -1063,6 +1063,7 @@ GRANTS_APPLICATION_ACCESS__aws_core = "edges/GRANTS_APPLICATION_ACCESS.edge.json
 ALIASES_KEY__aws_core = "edges/ALIASES_KEY.edge.json"
 OWNS_BUCKET__aws_core = "edges/OWNS_BUCKET.edge.json"
 TRUSTS_ACCOUNT__aws_core = "edges/TRUSTS_ACCOUNT.edge.json"
+PERMITS_ACCOUNT__aws_core = "edges/PERMITS_ACCOUNT.edge.json"
 ATTACHES_POLICY__aws_core = "edges/ATTACHES_POLICY.edge.json"
 HOSTS_VPC__aws_core = "edges/HOSTS_VPC.edge.json"
 HOSTS_SUBNET__aws_core = "edges/HOSTS_SUBNET.edge.json"

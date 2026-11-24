@@ -1729,6 +1729,12 @@ first is a failure:
 - **`throttled`** — the service rate-limited past the client's retries. A distinct `ENTRY_THROTTLED`
   warning; never read as empty.
 
+A per-resource read (a hydrate slot) has one named result of its own: **`absent`** — a reviewed row says the error
+is AWS answering that the resource has no such configuration, under a code the hydrate template's
+`NoSuch*` / `*NotFound*` rule does not recognise (`lambda:GetPolicy`'s `ResourceNotFoundException` for a function,
+alias or version with no policy, aws-core-tap#290). The slot is recorded `absent`, a fact, never `error`, and raises
+no `HYDRATE_GAP`. It never names a listing's result.
+
 #### Implementation
 
 - **Data, not code, not a broad catch.** `error_outcomes.json` (schema `error_outcomes.schema.json`,
@@ -1765,6 +1771,7 @@ first is a failure:
 | req-aws-collector-outcome-4 | Throttling Is Named | Approved for Development | A throttling error that outlasts the client's retries is `throttled`: an `ENTRY_THROTTLED` warning and an incomplete surface, never an empty one. | `::TestCollectorRun::test_a_throttled_listing_is_a_named_warning_and_not_an_empty_one` |
 | req-aws-collector-outcome-5 | Unreachable Learned Once | Approved for Development | An unreachable endpoint (outside commercial) is recorded `unsupported_in_partition` and the service's remaining entries in that region are settled without a call. | `::TestCollectorRun::test_an_unreachable_service_is_learned_once_not_once_per_entry` |
 | req-aws-collector-outcome-6 | One Client Config | Approved for Development | Every collection client has an explicit connect timeout, read timeout and finite adaptive retry budget from `credentials.client_config`; no module builds its own retry `Config`. | `::TestClientConfig` |
+| req-aws-collector-outcome-7 | Absent Hydrate Read Is Data | Approved for Development | A hydrate read whose error a row with outcome `absent` matches (service, operation, error code; the row must name all three) is recorded `absent` through `hydrate_item`'s `reclassify` hook (`outcomes.classify_hydrate_read`), and `classify` never returns such a row for a listing. A refusal stays `denied`. | `tests/test_lambda_resource_policy.py::TestOutcomeRow` |
 
 ### GRIFT Batch Assembly
 ----

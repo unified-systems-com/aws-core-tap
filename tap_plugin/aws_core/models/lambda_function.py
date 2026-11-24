@@ -44,6 +44,10 @@ class LambdaFunction(BaseModel):
         "timeout": {"type": ["integer", "null"]},
         "vpc_subnet_ids": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
         "vpc_security_group_ids": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
+        "resource_policy_account_ids": {"type": ["array", "null"], "items": {"type": "string", "pattern": "^[0-9]{12}$"}},
+        "resource_policy_services": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
+        "resource_policy_wildcard_principal": {"type": ["boolean", "null"]},
+        "resource_policy_unconditioned": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -57,6 +61,10 @@ class LambdaFunction(BaseModel):
         "timeout": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
         "vpc_subnet_ids": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}}},
         "vpc_security_group_ids": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}}},
+        "resource_policy_account_ids": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "pattern": "^[0-9]{12}$"}}},
+        "resource_policy_services": {"validation": "jsonschema", "schema": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}}},
+        "resource_policy_wildcard_principal": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "resource_policy_unconditioned": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -76,6 +84,17 @@ class LambdaFunction(BaseModel):
     # when VpcConfig is absent).
     vpc_subnet_ids = models.JSONField(null=True, blank=True, default=None)
     vpc_security_group_ids = models.JSONField(null=True, blank=True, default=None)
+    # The function's own resource-based policy (lambda:GetPolicy), summarised over its Allow
+    # statements; the document itself is stored in configuration['_hydrate']['policy'] (aws-core-tap#290). NULL on every
+    # field = the policy was not read (denied, errored, unreadable); [] or false = read, and no such grant (a policy that
+    # does not exist, ResourceNotFoundException recorded absent, reads [] and false on every field). resource_policy_account_ids are the OTHER accounts
+    # (never this one) its principals name: the source of PERMITS_ACCOUNT. resource_policy_services are service
+    # principals. resource_policy_wildcard_principal: an Allow names Principal "*", conditioned or not.
+    # resource_policy_unconditioned: an Allow grants another account, a service or "*" with no Condition at all.
+    resource_policy_account_ids = models.JSONField(null=True, blank=True, default=None)
+    resource_policy_services = models.JSONField(null=True, blank=True, default=None)
+    resource_policy_wildcard_principal = models.BooleanField(null=True, blank=True, default=None)
+    resource_policy_unconditioned = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 
