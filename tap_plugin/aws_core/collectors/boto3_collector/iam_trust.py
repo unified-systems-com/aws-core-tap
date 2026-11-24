@@ -20,12 +20,17 @@ evaluate IAM. ``NotPrincipal`` is treated as no information rather than as a gra
 
 ARN parsing is partition-aware (``aws``, ``aws-us-gov``, ``aws-cn``, ...): the account segment is
 matched, never the partition, so a GovCloud role's trust is read the same way as a commercial one.
+
+The same reading, generalised to a policy on a resource (:func:`summarize_resource_policy`, a Lambda
+function's, alias's or version's ``lambda:GetPolicy`` document, aws-core-tap#290), adds one fact the trust
+summary does not carry: whether an outside grant has no ``Condition`` at all.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import unquote
 
@@ -101,6 +106,61 @@ def trust_policy_document(raw: Any) -> dict[str, Any] | None:
     return None
 
 
+@dataclass
+class _Named:
+    """Who one ``Principal`` element names, read the same way for a trust policy and a resource policy."""
+
+    accounts: set[str] = field(default_factory=set)
+    services: set[str] = field(default_factory=set)
+    wildcard: bool = False
+    #: A member this reader does not know (``Federated`` in a resource policy, a non-string entry): the caller
+    #: decides whether that makes the document unreadable.
+    unread: bool = False
+    #: An ``AWS`` entry that is neither ``*`` nor an account id nor an ARN with an account (an opaque unique id such
+    #: as ``AROA...``, which IAM writes back when the named principal was deleted): it names someone, but not which
+    #: account. The caller decides whether that makes the account list unknown.
+    opaque: bool = False
+
+    @property
+    def outside(self) -> bool:
+        """The element names someone outside the resource's own account: any principal, another account, or a
+        service (a service principal acts for whichever account owns the calling resource)."""
+        return self.wildcard or bool(self.accounts) or bool(self.services)
+
+
+def _named_principals(principal: Any, *, own_account: str | None, members: tuple[str, ...] = ("AWS", "Service")) -> _Named:
+    """Read one ``Principal`` element: ``"*"``, or a map whose ``AWS`` / ``Service`` values are each a string or a
+    list. ``own_account`` is never listed in ``accounts``. A map member outside ``members`` sets ``unread``."""
+    named = _Named()
+    if principal == "*":
+        named.wildcard = True
+        return named
+    if not isinstance(principal, dict):
+        named.unread = True
+        return named
+    for member in principal:
+        if member not in members:
+            named.unread = True
+    for entry in _as_list(principal.get("AWS")):
+        if not isinstance(entry, str):
+            named.unread = True
+            continue
+        if entry.strip() == "*":
+            named.wildcard = True
+            continue
+        account = _principal_account(entry)
+        if account is None:
+            named.opaque = True
+        elif account != own_account:
+            named.accounts.add(account)
+    for entry in _as_list(principal.get("Service")):
+        if isinstance(entry, str) and entry.strip():
+            named.services.add(entry.strip())
+        else:
+            named.unread = True
+    return named
+
+
 def summarize_trust_policy(raw: Any, *, own_account: str | None) -> dict[str, Any] | None:
     """Summarise who a role's trust policy names. None when the document cannot be read at all.
 
@@ -118,25 +178,100 @@ def summarize_trust_policy(raw: Any, *, own_account: str | None) -> dict[str, An
         if not isinstance(statement, dict) or statement.get("Effect") != "Allow":
             continue
         principal = statement.get("Principal")
-        if principal == "*":
-            wildcard = True
+        if principal != "*" and not isinstance(principal, dict):
             continue
-        if not isinstance(principal, dict):
-            continue
-        for entry in _as_list(principal.get("AWS")):
-            if not isinstance(entry, str):
-                continue
-            if entry.strip() == "*":
-                wildcard = True
-                continue
-            account = _principal_account(entry)
-            if account is not None and account != own_account:
-                accounts.add(account)
-        for entry in _as_list(principal.get("Service")):
-            if isinstance(entry, str) and entry.strip():
-                services.add(entry.strip())
+        # A trust policy may also name Federated principals, which FEDERATES_INTO_ROLE reads; they are not
+        # summarised here, so an unknown member is simply not counted.
+        named = _named_principals(principal, own_account=own_account, members=("AWS", "Service", "Federated"))
+        accounts |= named.accounts
+        services |= named.services
+        wildcard = wildcard or named.wildcard
     return {
         "trusted_account_ids": sorted(accounts),
         "trusted_services": sorted(services),
         "trusts_wildcard_principal": wildcard,
+    }
+
+
+#: arn:<partition>:<service>:<region>:<account>:<resource> — any ARN whose account segment is a 12-digit id.
+_ACCOUNT_ARN = re.compile(r"^arn:[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]*:(?P<account>[0-9]{12}):")
+
+
+def account_of_arn(arn: object) -> str | None:
+    """The 12-digit account segment of any ARN (``arn:aws-us-gov:lambda:us-gov-west-1:<account>:function:f``),
+    whatever its partition, or None."""
+    if not isinstance(arn, str):
+        return None
+    match = _ACCOUNT_ARN.match(arn.strip())
+    return match.group("account") if match else None
+
+
+def resource_policy_document(raw: Any) -> dict[str, Any] | None:
+    """A resource policy as a dict. ``lambda:GetPolicy`` returns it as a JSON string (not URL-encoded)."""
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+        except ValueError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+def summarize_resource_policy(raw: Any, *, own_account: str | None) -> dict[str, Any] | None:
+    """Summarise who a resource-based policy (a Lambda function's, alias's or version's) lets in.
+
+    The trust-policy summary, generalised to a policy on a resource, plus one more fact:
+
+    - ``account_ids`` - the OTHER accounts an ``Allow`` statement names (never ``own_account``);
+    - ``services`` - service principals an ``Allow`` statement names;
+    - ``wildcard_principal`` - an ``Allow`` statement names ``*``, conditioned or not;
+    - ``unconditioned`` - an ``Allow`` statement names someone outside ``own_account`` (any principal,
+      another account or a service) and carries no ``Condition``. Any non-empty ``Condition`` makes the
+      statement conditioned: the condition is not evaluated, so a ``SourceArn`` naming the account's own
+      bucket and an ``aws:PrincipalOrgID`` are both "conditioned", and ``false`` says only that every
+      outside grant has some condition on it.
+
+    Only ``Effect: Allow`` statements grant; a ``Deny`` is not summarised (the stored document keeps it).
+    ARNs are read whatever their partition. ``None`` when the document cannot be read with certainty: it
+    does not parse, has no statement list, or an ``Allow`` statement uses ``NotPrincipal``, a principal
+    member other than ``AWS`` / ``Service``, an ``AWS`` principal that names no account (an opaque unique id left
+    by a deleted principal: its account is unknown, so the account list would not be complete), or a principal
+    shape this reader does not know. Lambda builds
+    its policies only from ``AddPermission`` statements, so none of those is expected; nothing is guessed if
+    one appears. Lists are sorted so the same policy always yields the same output.
+    """
+    document = resource_policy_document(raw)
+    if document is None:
+        return None
+    statements = document.get("Statement")
+    if isinstance(statements, dict):
+        statements = [statements]
+    if not isinstance(statements, list):
+        return None
+    accounts: set[str] = set()
+    services: set[str] = set()
+    wildcard = False
+    unconditioned = False
+    for statement in statements:
+        if not isinstance(statement, dict):
+            return None
+        if statement.get("Effect") != "Allow":
+            continue
+        if "NotPrincipal" in statement:
+            return None
+        named = _named_principals(statement.get("Principal"), own_account=own_account)
+        if named.unread or named.opaque:
+            return None
+        accounts |= named.accounts
+        services |= named.services
+        wildcard = wildcard or named.wildcard
+        if named.outside and not statement.get("Condition"):
+            unconditioned = True
+    return {
+        "account_ids": sorted(accounts),
+        "services": sorted(services),
+        "wildcard_principal": wildcard,
+        "unconditioned": unconditioned,
     }

@@ -458,11 +458,11 @@
     },
     "AWS::Lambda::Permission": {
       "state": "excluded",
-      "reason": "A policy document or permission statement attached to another resource, identified by FunctionName, Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is content of the resource it is attached to, not a resource."
+      "reason": "One permission statement of a Lambda function's, alias's or version's resource-based policy, identified by FunctionName, Id, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. Collected on the function: the boto3 collector reads each function's, alias's and published version's policy with lambda:GetPolicy and stores it on that node, summarised into resource_policy_* fields and PERMITS_ACCOUNT edges (aws-core-tap#290)."
     },
     "AWS::Lambda::ResourcePolicy": {
       "state": "excluded",
-      "reason": "The resource-based policy of one Lambda function or layer, identified by the target's ARN (ResourceArn) with no ARN of its own. GetResourcePolicy reads one policy by that ARN and there is no operation that lists policies. A property of the function or layer it is attached to."
+      "reason": "The resource-based policy of one Lambda function or layer, identified by the target's ARN (ResourceArn) with no ARN of its own; no operation lists policies. Collected on the function: the boto3 collector reads each function's, alias's and published version's policy with lambda:GetPolicy (not GetResourcePolicy, whose GovCloud coverage is not established) and stores it on that node, summarised into resource_policy_* fields and PERMITS_ACCOUNT edges (aws-core-tap#290). A layer version's policy is not read (AWS::Lambda::LayerVersionPermission)."
     },
     "AWS::Lambda::WebFunction": {
       "state": "not-enumerable",
