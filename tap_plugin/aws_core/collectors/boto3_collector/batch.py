@@ -169,10 +169,16 @@ def node_key(envelope: Mapping[str, Any]) -> dict[str, Any]:
     so the collector and the importer agree on what the key is. The one place the collector reads
     a node's key: the identity :func:`address_batch` dedupes on and the anchor an authority claim
     names (:func:`node_anchor`) are both this value. A hole reads ``None``; it is not refused here.
+
+    A key entry naming a dimension (``dimension:<name>``, a form-3 key such as computing_core's host,
+    unified-systems-com/tap#1355) is read from the envelope's own ``entity.dimensions``, as the importer
+    reads it, never from the payload. The map the collector sends is keyed by name, so no vocabulary
+    lookup is needed to read it.
     """
     from tap_grid.natural_key import constituting_properties
 
-    return constituting_properties(declared_key(str(envelope["entity"]["entity_type"])), envelope["node"])
+    entity = envelope["entity"]
+    return constituting_properties(declared_key(str(entity["entity_type"])), envelope["node"], entity.get("dimensions"))
 
 
 def node_anchor(envelope: Mapping[str, Any]) -> dict[str, Any]:

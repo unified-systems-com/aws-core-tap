@@ -494,7 +494,7 @@ are built to the model and tested with `botocore.stub.Stubber`, every request an
   the function by its unqualified ARN, a `:$LATEST` qualifier removed (Inspector scans `$LATEST`; any other
   qualifier names a version aws_core does not model, so no edge). `AWS_ECR_REPOSITORY`: the repository by its
   ARN. `AWS_ECR_CONTAINER_IMAGE` (`arn:…:repository/<name>/sha256:<hex>`): the repository by the ARN with the
-  digest removed, **and** the image as computing_core's image host, `computing_core__host` realm `oci-digest`
+  digest removed, **and** the image as computing_core's image host, `computing_core__host` of host type `oci-digest`
   keyed by the digest, written by aws_core exactly as the ECS reader writes one (`req-aws-collector-ecs-21`): a
   host the grid already holds is sent with its key and kind only. Any other resource type gets no edge and keeps
   its id in `resource_id`. The edge is `CONCERNS_RESOURCE`, a reference, emitted by natural key whether or not

@@ -1,6 +1,13 @@
 {
   "metadata": {
-    "grift_version": "0"
+    "grift_version": "1",
+    "spine_version": 1,
+    "type_versions": {
+      "DIVIDED_INTO_AZ__aws_core": 1,
+      "aws_core__aws_az": 1,
+      "aws_core__aws_region": 1,
+      "batch": 1
+    }
   },
   "_reserved": {},
   "batches": [

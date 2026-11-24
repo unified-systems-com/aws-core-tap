@@ -372,7 +372,7 @@
       "reader": "landing_zone",
       "sensitivity": {
         "status": "reviewed_none_known",
-        "basis": "Read the fields inspector.py sends for an ECR image's host through ecs._host_envelope (2026-11-20, aws-core-tap#261): realm (the constant oci-digest), stable_id (the sha256 digest read from the finding's resource id) and kind (the constant container). No name is sent from an Inspector finding (the image references live in resources[].details, which is not read), and no other host field is written."
+        "basis": "Read the fields inspector.py sends for an ECR image's host through ecs._host_envelope (2026-11-20, aws-core-tap#261; re-read 2026-11-24 for the identity dimensions, unified-systems-com/tap#1355): the tap.computing.host_type dimension on the envelope (the constant oci-digest, not a field), stable_id (the sha256 digest read from the finding's resource id) and kind (the constant container). No name is sent from an Inspector finding (the image references live in resources[].details, which is not read), and no other host field is written."
       }
     },
     {
@@ -380,7 +380,7 @@
       "reader": "ecs",
       "sensitivity": {
         "status": "reviewed_none_known",
-        "basis": "Read the fields ecs.py image_writes sends for an image host (2026-11-20): realm (the constant oci-digest), stable_id (DescribeTasks containers[].imageDigest, a sha256 digest), kind (the constant container) and name (containers[].image, the image reference the task definition names, already stored verbatim as aws_ecs_container.image). No other host field is written."
+        "basis": "Read the fields ecs.py image_writes sends for an image host (2026-11-20; re-read 2026-11-24 for the identity dimensions, unified-systems-com/tap#1355): the tap.computing.host_type dimension on the envelope (the constant oci-digest, not a field), stable_id (DescribeTasks containers[].imageDigest, a sha256 digest), kind (the constant container) and name (containers[].image, the image reference the task definition names, already stored verbatim as aws_ecs_container.image). No other host field is written."
       }
     },
     {

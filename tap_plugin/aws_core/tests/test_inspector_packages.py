@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 from tap_plugin.aws_core.collectors.boto3_collector.compliance import CARRIES, finding_ref, project
 from tap_plugin.aws_core.collectors.boto3_collector.identity import composite_natural_key, node_ref
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE, HOST_TYPE_ENTRY
 from tap_plugin.aws_core.collectors.boto3_collector.inspector import (
     IMAGE_HOST,
     INSPECTOR_FINDING,
@@ -85,7 +86,7 @@ def test_the_image_host_installs_each_keyed_package_sent_with_its_key_only() -> 
     assert "AMAZON_LINUX" not in repr(rows), "the platform is read in memory, never stored"
     [package] = [n for n in reader.result.nodes if n["entity"]["entity_type"] == PACKAGE]
     assert package["node"] == key and "name" not in package["entity"]
-    host = node_ref(IMAGE_HOST, composite_natural_key({"realm": "oci-digest", "stable_id": DIGEST}))
+    host = node_ref(IMAGE_HOST, composite_natural_key({HOST_TYPE_ENTRY: "oci-digest", "stable_id": DIGEST}))
     [edge] = [e["edge"] for e in reader.result.edges if e["edge"]["edge_type"] == INSTALLS_PACKAGE]
     assert (edge["from_ref"], edge["to_ref"]) == (host, node_ref(PACKAGE, composite_natural_key(key)))
 
@@ -121,13 +122,13 @@ def test_reach_walks_from_the_neutral_finding_to_the_container_running_the_image
     if not _loaded():
         pytest.skip("compliance_core is not loaded on this stack")
 
-    def node(entity_type: str, fields: dict[str, Any]) -> Any:
-        result = create_node(entity_type, fields)
+    def node(entity_type: str, fields: dict[str, Any], dimensions: dict[str, str] | None = None) -> Any:
+        result = create_node(entity_type, fields, dimensions=dimensions)
         assert result.success, result.errors
         return get_node(result.entity_id)
 
     key = {"ecosystem": "rpm", "name": "openssl", "version": "1:3.0.2-1.amzn2023"}
-    host = node(IMAGE_HOST, {"realm": "oci-digest", "stable_id": DIGEST, "kind": "container"})
+    host = node(IMAGE_HOST, {"stable_id": DIGEST, "kind": "container"}, {HOST_TYPE: "oci-digest"})
     package = node(PACKAGE, dict(key))
     container = node("aws_core__aws_ecs_container", {"name": "web", "container_arn": "arn:aws-us-gov:ecs:us-gov-west-1:111122223333:container/c/1"})
     create_edge(host.entity, package.entity, INSTALLS_PACKAGE)

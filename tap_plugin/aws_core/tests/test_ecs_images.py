@@ -10,6 +10,7 @@ whole collector over the vertical slice's canned AWS and import the batch throug
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -21,7 +22,7 @@ from botocore.stub import Stubber
 from tap_plugin.aws_core.collectors.boto3_collector.ecs import (
     CONTAINER_TYPE,
     HOST_TYPE,
-    IMAGE_REALM,
+    IMAGE_HOST_TYPE,
     IMAGE_TAG_TYPE,
     READER,
     RUNS_IMAGE,
@@ -36,6 +37,8 @@ from tap_plugin.aws_core.collectors.boto3_collector.identity import node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 from tap_plugin.aws_core.tests.grid_keys import find_node_id, live_edges, node_id
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE as HOST_TYPE_DIMENSION
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE_ENTRY, HOST_TYPES, OCI_DIGEST
 
 from tap_cares.collectors.config import CollectorConfig
 
@@ -191,7 +194,10 @@ class TestRunsImage:
         walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web")])])
         writes = image_writes([walk], _carried(walk), host_held=_holding())
         (host,) = _of_type(writes, HOST_TYPE)
-        assert host["node"]["realm"] == IMAGE_REALM == "oci-digest"
+        # The host type is the envelope's dimension, one of computing_core's conventions, and never a payload field.
+        assert host["entity"]["dimensions"] == {HOST_TYPE_DIMENSION: IMAGE_HOST_TYPE}
+        assert IMAGE_HOST_TYPE == OCI_DIGEST == "oci-digest" and IMAGE_HOST_TYPE in HOST_TYPES
+        assert "realm" not in host["node"] and "host_type" not in host["node"]
         assert host["node"]["stable_id"] == _DIGEST
         assert host["node"]["kind"] == "container"
         (edge,) = _edges(writes, RUNS_IMAGE)
@@ -199,7 +205,8 @@ class TestRunsImage:
         assert edge["edge"]["to_ref"] == host["entity"]["ref"] == host_ref(_DIGEST)
         assert edge["edge"]["properties"] == {}
         assert edge["entity"]["dimensions"] == _DIMS  # the container's own, as its RUNS_CONTAINER edge carries
-        assert host["entity"]["dimensions"] == {}  # an image is in no account or region: its type's defaults
+        # An image is in no account or region: beside its host type, the host takes its type's defaults.
+        assert set(host["entity"]["dimensions"]) == {HOST_TYPE_DIMENSION}
 
     @pytest.mark.parametrize(
         "digest",
@@ -245,7 +252,12 @@ class TestRunsImage:
         walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web")])])
         (host,) = _of_type(image_writes([walk], _carried(walk), host_held=_holding()), HOST_TYPE)
         jsonschema.validate(host["node"], _create_schema(HOST_TYPE))
-        get_model_class(HOST_TYPE)(**host["node"]).validate()  # the oci-digest stable_id shape (host-4)
+        # The oci-digest stable_id shape (host-4), which computing_core reads from the host type dimension the host is
+        # written with; the write itself is held to it in TestImportedThroughCore.
+        from tap_plugin.computing_core.models.host import STABLE_ID_PATTERNS
+
+        assert set(get_model_class(HOST_TYPE).CREATE_REQUIRED) <= set(host["node"])
+        assert re.fullmatch(STABLE_ID_PATTERNS[host["entity"]["dimensions"][HOST_TYPE_DIMENSION]], host["node"]["stable_id"])
 
     def test_the_container_keeps_its_digest_verbatim_beside_the_host(self):
         """req-aws-collector-ecs-23: the digest stays on the container, and one computing_core refuses stays
@@ -265,7 +277,8 @@ class TestHostWrittenWithoutOverwriting:
         walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web")])])
         held = _holding()
         (host,) = _of_type(image_writes([walk], _carried(walk), host_held=held), HOST_TYPE)
-        assert host["node"] == {"realm": "oci-digest", "stable_id": _DIGEST, "kind": "container", "name": _ECR_IMAGE}
+        assert host["node"] == {"stable_id": _DIGEST, "kind": "container", "name": _ECR_IMAGE}
+        assert host["entity"]["dimensions"] == {HOST_TYPE_DIMENSION: "oci-digest"}
         assert host["entity"]["name"] == _ECR_IMAGE
         assert held.asked == [_DIGEST]
 
@@ -274,7 +287,8 @@ class TestHostWrittenWithoutOverwriting:
         omits, as another producer wrote them."""
         walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web")])])
         (host,) = _of_type(image_writes([walk], _carried(walk), host_held=_holding(_DIGEST)), HOST_TYPE)
-        assert host["node"] == {"realm": "oci-digest", "stable_id": _DIGEST, "kind": "container"}
+        assert host["node"] == {"stable_id": _DIGEST, "kind": "container"}
+        assert host["entity"]["dimensions"] == {HOST_TYPE_DIMENSION: "oci-digest"}  # the key, sent unchanged
         assert "name" not in host["entity"]
 
     def test_a_failed_lookup_sends_the_safe_write_and_says_so(self):
@@ -284,7 +298,8 @@ class TestHostWrittenWithoutOverwriting:
         walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web")])])
         writes = image_writes([walk], _carried(walk), host_held=broken)
         (host,) = _of_type(writes, HOST_TYPE)
-        assert host["node"] == {"realm": "oci-digest", "stable_id": _DIGEST, "kind": "container"}
+        assert host["node"] == {"stable_id": _DIGEST, "kind": "container"}
+        assert host["entity"]["dimensions"] == {HOST_TYPE_DIMENSION: "oci-digest"}  # the key, sent unchanged
         assert [code for code, _ in writes.notices] == ["ECS_IMAGE_HOST_LOOKUP_FAILED"]
         assert _edges(writes, RUNS_IMAGE)  # the edge still names the host
 
@@ -479,9 +494,25 @@ class TestTagsImage:
         from tap_plugin.aws_core.collectors.boto3_collector.batch import address_batch
         from tap_plugin.aws_core.collectors.boto3_collector.identity import IdentityError
 
-        bad = {"entity": {"ref": "h", "entity_type": HOST_TYPE, "dimensions": {}}, "node": {"realm": "", "stable_id": _DIGEST}}
+        bad = {
+            "entity": {"ref": "h", "entity_type": HOST_TYPE, "dimensions": {HOST_TYPE_DIMENSION: ""}},
+            "node": {"stable_id": _DIGEST},
+        }
         with pytest.raises(IdentityError):
             address_batch([bad], [])
+
+    def test_a_host_without_its_host_type_dimension_is_a_hole(self):
+        """The host type is read from the envelope's dimensions, as core reads it: a host sending it anywhere else
+        (the retired realm field, or a payload field) has a hole in its key and is not sent."""
+        from tap_plugin.aws_core.collectors.boto3_collector.batch import address_batch, node_key
+        from tap_plugin.aws_core.collectors.boto3_collector.identity import IdentityError
+
+        for node in ({"stable_id": _DIGEST}, {"realm": "oci-digest", "stable_id": _DIGEST}, {"host_type": "oci-digest", "stable_id": _DIGEST}):
+            with pytest.raises(IdentityError):
+                address_batch([{"entity": {"ref": "h", "entity_type": HOST_TYPE, "dimensions": {}}, "node": node}], [])
+        walk = _stubbed_walk([_task(_TASK_1, [_container(_TASK_1, "web")])])
+        (host,) = _of_type(image_writes([walk], _carried(walk), host_held=_holding()), HOST_TYPE)
+        assert node_key(host) == {HOST_TYPE_ENTRY: "oci-digest", "stable_id": _DIGEST}
 
     def test_a_moved_tag_points_at_each_image_it_was_seen_on(self):
         walk = _stubbed_walk(
@@ -533,7 +564,7 @@ _stub_aws = slice_tests._stub_aws
 _SLICE_CONTAINER = slice_tests._ECS_CONTAINER
 _SLICE_DIGEST = slice_tests._ECS_DIGEST
 _SLICE_IMAGE = "registry.example/app:latest"  # the slice's container image
-_HOST_KEY = {"realm": "oci-digest", "stable_id": _SLICE_DIGEST}
+_HOST_KEY = {HOST_TYPE_ENTRY: "oci-digest", "stable_id": _SLICE_DIGEST}  # key_dimensions.HOST_TYPE_ENTRY, as declared
 _TAG_KEY = {"registry": "registry.example", "repository": "app", "tag": "latest"}
 
 
@@ -561,7 +592,7 @@ class TestImportedThroughCore:
 
         _run()
         host = get_node(node_id(HOST_TYPE, _HOST_KEY))
-        assert (host.realm, host.stable_id, host.kind, host.name) == ("oci-digest", _SLICE_DIGEST, "container", _SLICE_IMAGE)
+        assert (host.host_type(), host.stable_id, host.kind, host.name) == ("oci-digest", _SLICE_DIGEST, "container", _SLICE_IMAGE)
         container = node_id(CONTAINER_TYPE, _SLICE_CONTAINER)
         assert len(live_edges(RUNS_IMAGE, container, host.entity_id)) == 1
         tag = node_id(IMAGE_TAG_TYPE, _TAG_KEY)
@@ -599,10 +630,10 @@ class TestImportedThroughCore:
                                 "ref": "image",
                                 "entity_type": HOST_TYPE,
                                 "name": "ghcr.io/org/app:1.0",
-                                "dimensions": {"tap.computing": "host"},
+                                "dimensions": {"tap.computing": "host", HOST_TYPE_DIMENSION: "oci-digest"},
                             },
                             "node": {
-                                **_HOST_KEY,
+                                "stable_id": _SLICE_DIGEST,
                                 "kind": "container",
                                 "name": "ghcr.io/org/app:1.0",
                                 "os": "alpine 3.20",
@@ -648,7 +679,8 @@ class TestImportedThroughCore:
         _run()
         (batch,) = submitted[0]["batches"]
         (host,) = [n for n in batch["nodes"] if n["entity"]["entity_type"] == HOST_TYPE]
-        assert host["node"] == {**_HOST_KEY, "kind": "container"}
+        assert host["node"] == {"stable_id": _SLICE_DIGEST, "kind": "container"}
+        assert host["entity"]["dimensions"].get(HOST_TYPE_DIMENSION) == "oci-digest"  # the key, sent unchanged
         assert "name" not in host["entity"]
 
     def test_a_failed_image_write_keeps_the_containers_and_is_not_a_clean_run(self, monkeypatch):
@@ -752,6 +784,8 @@ def test_ecs_names_no_github_core_and_imports_no_other_plugin():
         for alias in node.names
     ]
     # computing_core's tag canonicalisation is the one rule both plugins apply, so aws_core uses its function
-    # rather than a copy (a declared, downward dependency); nothing else of another plugin is imported.
-    others = [m for m in imported if m and m.startswith("tap_plugin.") and not m.startswith("tap_plugin.aws_core")]
-    assert others == ["tap_plugin.computing_core.image_reference"]
+    # rather than a copy, and its key_dimensions names the host type dimension and the entry a host's key spells
+    # it by (unified-systems-com/tap#1355). Both are declared, downward dependencies; nothing else of another
+    # plugin is imported.
+    others = {m for m in imported if m and m.startswith("tap_plugin.") and not m.startswith("tap_plugin.aws_core")}
+    assert others == {"tap_plugin.computing_core.image_reference", "tap_plugin.computing_core.key_dimensions"}
