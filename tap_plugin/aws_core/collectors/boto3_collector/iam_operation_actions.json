@@ -3204,6 +3204,12 @@
    ],
    "dropped": []
   },
+  "iam:get_ssh_public_key": {
+   "actions": [
+    "iam:GetSSHPublicKey"
+   ],
+   "dropped": []
+  },
   "iam:get_user": {
    "actions": [
     "iam:GetUser"

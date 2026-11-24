@@ -9,14 +9,16 @@ from tap_grid.models import BaseModel
 
 
 class IamSshPublicKey(BaseModel):
-    """An SSH public key an IAM user has uploaded, for AWS CodeCommit: its id, status and upload time.
+    """An SSH public key an IAM user has uploaded, for AWS CodeCommit: its id, status, upload time and fingerprint.
 
-    Metadata only (ruling Q142a, 2026-11-23): the key body is never requested and is never a field."""
+    The fingerprint comes from ``GetSSHPublicKey`` (``Encoding="SSH"``); the key body that call returns beside it is
+    removed before storage and is never a field (ruling Q150a, 2026-11-24)."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_iam_ssh_public_key"
     ENTITY_NAME: ClassVar[str] = "IAM SSH Public Key"
     ENTITY_DESCRIPTION: ClassVar[str] = (
-        "An SSH public key an IAM user has uploaded (for CodeCommit): id, status and upload time, never the key body."
+        "An SSH public key an IAM user has uploaded (for CodeCommit): id, status, upload time and fingerprint, "
+        "never the key body."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
     # The type's dimensions, declared in this one place: aws_core's cloud default and computing_core's standard
@@ -47,6 +49,7 @@ class IamSshPublicKey(BaseModel):
         "user_arn": {"type": ["string", "null"]},
         "status": {"type": ["string", "null"]},
         "upload_date": {"type": ["string", "null"]},
+        "fingerprint": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -60,6 +63,7 @@ class IamSshPublicKey(BaseModel):
         "user_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "status": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "upload_date": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "fingerprint": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -78,6 +82,8 @@ class IamSshPublicKey(BaseModel):
     status = models.CharField(max_length=32, null=True, blank=True, default=None)
     # ISO 8601 UTC time the key was uploaded, as AWS states it; NULL = not observed.
     upload_date = models.CharField(max_length=64, null=True, blank=True, default=None)
+    # The key's fingerprint as GetSSHPublicKey states it (the MD5 of the key, colon-separated hex); NULL = not read.
+    fingerprint = models.CharField(max_length=128, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     # AWS has no tagging operation for this credential: always {} once collected.
     tags = models.JSONField(null=True, blank=True, default=None)

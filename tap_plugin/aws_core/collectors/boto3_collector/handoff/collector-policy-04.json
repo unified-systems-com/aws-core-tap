@@ -234,6 +234,7 @@
         "iam:GetCredentialReport",
         "iam:GetLoginProfile",
         "iam:GetRole",
+        "iam:GetSSHPublicKey",
         "iam:GetUser",
         "iam:ListAccessKeys",
         "iam:ListAttachedGroupPolicies",

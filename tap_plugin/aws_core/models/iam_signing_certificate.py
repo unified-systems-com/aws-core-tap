@@ -3,6 +3,7 @@
 from typing import Any, ClassVar
 
 from django.db import models
+from tap_plugin.aws_core.times import certificate_not_after
 
 from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
@@ -11,13 +12,13 @@ from tap_grid.models import BaseModel
 class IamSigningCertificate(BaseModel):
     """An X.509 signing certificate an IAM user has uploaded (for the SOAP-era APIs that sign with one).
 
-    Metadata only (ruling Q142a, 2026-11-23): ListSigningCertificates returns the certificate body with every row; the
-    reader removes it, and it is never a field or stored."""
+    ListSigningCertificates returns the certificate body (public PEM text) with every row, and it is kept in
+    ``configuration`` as AWS sent it (ruling Q150b, 2026-11-24): it holds the certificate's expiry."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_iam_signing_certificate"
     ENTITY_NAME: ClassVar[str] = "IAM Signing Certificate"
     ENTITY_DESCRIPTION: ClassVar[str] = (
-        "An X.509 signing certificate an IAM user has uploaded: id, status and upload time, never the certificate body."
+        "An X.509 signing certificate an IAM user has uploaded: id, status, upload time and the public certificate."
     )
     ENTITY_ICON: ClassVar[str] = "aws-iam"
     # The type's dimensions, declared in this one place: aws_core's cloud default and computing_core's standard
@@ -28,10 +29,16 @@ class IamSigningCertificate(BaseModel):
     # the id AWS generates, scoped by partition and account (ruling Q142a).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("partition", "account_id", "certificate_id")
     # Event time (req-grid-entity-event-time, req-aws-core-models-5).
-    # UploadDate (ListSigningCertificates), when the certificate was uploaded to
-    # IAM. The certificate's own expiry is inside its body, which AWS returns as PEM text, not as a field, and which is
-    # never kept, so no end is declared (core rule 8: an end only where AWS states one).
-    EVENT_TIME: ClassVar[Interval] = Interval(start="upload_date", kind="created")
+    # UploadDate (ListSigningCertificates), when the certificate was uploaded to IAM, until the certificate's notAfter,
+    # the end it states (core rule 8). AWS returns the certificate as PEM text, kept in configuration['CertificateBody'],
+    # and times.certificate_not_after reads its notAfter (ruling Q150b, 2026-11-24).
+    EVENT_TIME: ClassVar[Interval] = Interval(
+        start="upload_date",
+        kind="created",
+        end="configuration",
+        end_member=("CertificateBody",),
+        end_reader=certificate_not_after,
+    )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

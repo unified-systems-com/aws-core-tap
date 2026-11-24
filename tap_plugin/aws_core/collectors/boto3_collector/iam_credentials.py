@@ -7,15 +7,18 @@ service-specific credentials. Each is its own node type (ruling Q142a/b, 2026-11
 its own edge type, so a key the user no longer holds is a retirement candidate rather than a row that stays
 ``Active`` on the grid. :func:`walk_credentials` lists the account's users once and then, per user, the four
 listings (``ListAccessKeys``, ``ListSSHPublicKeys``, ``ListSigningCertificates``,
-``ListServiceSpecificCredentials``), plus ``GetAccessKeyLastUsed`` per access key. :func:`shared_walk` makes those
+``ListServiceSpecificCredentials``), plus ``GetAccessKeyLastUsed`` per access key and ``GetSSHPublicKey`` per SSH
+public key (for its fingerprint). :func:`shared_walk` makes those
 calls once per run and the four readers in :mod:`.customfns` each take their slice, so the calls are not made four
 times. Every listing is recorded per user as a completeness surface after import (:class:`UserCredentialListing`);
 a user with none of a kind records a complete, empty surface, and a denied, failed or short listing records an
 incomplete one and contributes no items (``req-aws-core-contained-type-triple``).
 
-Metadata only: never key material, a secret, a password or a key or certificate body. AWS returns a secret access
-key or a service-specific password only from the Create/Reset calls, which are never made; ``ListSigningCertificates``
-returns the certificate body with every row, and :data:`DROPPED` removes it here, before the item leaves this module.
+Never a secret: AWS returns a secret access key or a service-specific password only from the Create/Reset calls,
+which are never made. Public material is kept only where a ruling keeps it: ``ListSigningCertificates`` returns the
+certificate body with every row, and it is kept (ruling Q150b, 2026-11-24: it is public, and its notAfter is the
+certificate's end); ``GetSSHPublicKey`` returns the key body beside its fingerprint, and :func:`_fingerprint` keeps
+the fingerprint and removes the body here, before the item leaves this module (ruling Q150a, 2026-11-24).
 
 **The credential report.** ``GetCredentialReport`` is the only source of the root user's password, key and
 certificate use. The report is read, never generated, unless the operator turns on ``generate_credential_report``
@@ -66,6 +69,7 @@ PAGINATED_OPERATIONS: tuple[tuple[str, str], ...] = (
 )
 SINGLE_OPERATIONS: tuple[tuple[str, str], ...] = (
     ("iam", "get_access_key_last_used"),
+    ("iam", "get_ssh_public_key"),
     ("iam", "get_credential_report"),
     ("iam", "generate_credential_report"),
     ("iam", "get_account_password_policy"),
@@ -113,8 +117,9 @@ KINDS: dict[str, CredentialKind] = {
 #: (``req-aws-core-contained-type-triple-1``; a test holds the two equal).
 CONTAINMENT_SURFACES: dict[str, tuple[str, ...]] = {USER_TYPE: tuple(kind.edge_type for kind in KINDS.values())}
 
-#: Members a listing returns that are never kept: the signing certificate's body (metadata only, ruling Q142a).
-DROPPED: frozenset[str] = frozenset({"CertificateBody"})
+#: The member of ``GetSSHPublicKey``'s answer that is never kept: the key body (ruling Q150a, 2026-11-24). The call is
+#: made with ``Encoding="SSH"`` for the key's fingerprint, and AWS returns the body with it.
+SSH_KEY_BODY = "SSHPublicKeyBody"
 
 
 @dataclass
@@ -172,7 +177,7 @@ def _timestamp(value: Any) -> str:
 
 def _item(kind: CredentialKind, record: Mapping[str, Any], user: Mapping[str, Any]) -> dict[str, Any]:
     """One listed credential, metadata only, with the owning user and the typed values the manifest projects."""
-    item = {key: value for key, value in record.items() if key not in DROPPED}
+    item = dict(record)
     item["_user_name"] = str(user.get("UserName") or "")
     item["_user_arn"] = str(user.get("Arn") or "")
     item["_created"] = _timestamp(record.get(kind.created_member))
@@ -194,6 +199,20 @@ def _last_used(envelope: dict[str, Any]) -> None:
     envelope["_last_used_region"] = str(used.get("Region") or "")
 
 
+def _fingerprint(envelope: dict[str, Any]) -> None:
+    """``GetSSHPublicKey``'s answer with the key body removed, and its fingerprint as a typed value: the
+    fingerprint AWS states (the MD5 of the key, as ``Encoding="SSH"`` returns it), ``None`` when the call did not
+    answer. The body leaves the envelope here, before anything stores it (ruling Q150a)."""
+    slot = (envelope.get("_hydrate") or {}).get("public_key") or {}
+    key = (slot.get("data") or {}).get("SSHPublicKey")
+    if isinstance(key, dict):
+        key.pop(SSH_KEY_BODY, None)
+    if slot.get("status") != "ok" or not isinstance(key, dict):
+        envelope["_fingerprint"] = None
+        return
+    envelope["_fingerprint"] = str(key.get("Fingerprint") or "") or None
+
+
 def walk_credentials(client: Any) -> CredentialWalk:
     """List every user, then each user's four credential listings to the end.
 
@@ -205,6 +224,7 @@ def walk_credentials(client: Any) -> CredentialWalk:
     walk = CredentialWalk()
     walk.users = list(iter_listing(client, "list_users", "Users[]", ListingWalk()))
     last_used_ops = _hydrate_ops(ACCESS_KEY_TYPE)
+    public_key_ops = _hydrate_ops(SSH_PUBLIC_KEY_TYPE)
     for user in walk.users:
         name, arn = user.get("UserName"), user.get("Arn")
         if not name or not arn:
@@ -232,6 +252,10 @@ def walk_credentials(client: Any) -> CredentialWalk:
                 if kind.entity_type == ACCESS_KEY_TYPE:
                     item = hydrate_item(client, item, last_used_ops, call_kwargs={"AccessKeyId": credential_id})
                     _last_used(item)
+                elif kind.entity_type == SSH_PUBLIC_KEY_TYPE:
+                    call = {"UserName": name, "SSHPublicKeyId": credential_id, "Encoding": "SSH"}
+                    item = hydrate_item(client, item, public_key_ops, call_kwargs=call)
+                    _fingerprint(item)
                 walk.items[kind.entity_type].append(item)
     return walk
 

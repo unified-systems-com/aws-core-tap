@@ -48,7 +48,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (
 from tap_plugin.aws_core.collectors.boto3_collector.listing import ListingWalk
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
-from tap_plugin.aws_core.times import offset_without_colon
+from tap_plugin.aws_core.times import certificate_not_after, offset_without_colon
 from tap_plugins.validate.service import validate_plugin
 
 PLUGIN_ROOT = find_plugin_source_root(__file__)
@@ -66,7 +66,13 @@ DECLARED: dict[str, Interval] = {
     "aws_core__aws_iam_root_user": Interval(start="created_at", kind="created"),
     "aws_core__aws_iam_saml_provider": Interval(start="created_at", kind="created", end="valid_until"),
     "aws_core__aws_iam_service_specific_credential": Interval(start="create_date", kind="created", end="expiration_date"),
-    "aws_core__aws_iam_signing_certificate": Interval(start="upload_date", kind="created"),
+    "aws_core__aws_iam_signing_certificate": Interval(
+        start="upload_date",
+        kind="created",
+        end="configuration",
+        end_member=("CertificateBody",),
+        end_reader=certificate_not_after,
+    ),
     "aws_core__aws_iam_ssh_public_key": Interval(start="upload_date", kind="created"),
     "aws_core__aws_iam_server_certificate": Interval(start="upload_date", kind="created", end="expiration"),
     "aws_core__aws_identity_center_permission_set": Interval(start="created_at", kind="created"),
@@ -817,7 +823,7 @@ def test_every_type_is_declared_timeless_or_pending_and_only_one() -> None:
     assert declared == expected
     assert _pending() == set(PENDING)
     timeless = [m for m in models if m.__dict__.get("EVENT_TIME") is NO_EVENT_TIME]
-    assert (len(declared), len(PENDING), len(timeless), len(models)) == (526, 36, 368, 930)
+    assert (len(declared), len(PENDING), len(timeless), len(models)) == (531, 36, 368, 935)
     for model in models:
         declaration = model.__dict__.get("EVENT_TIME")
         reason = model.__dict__.get("EVENT_TIME_REASON")
@@ -1077,6 +1083,31 @@ def test_an_sqs_queues_creation_seconds_go_from_the_custom_fn_to_the_spine() -> 
     assert node.configuration["CreatedTimestamp"] == "1767225600"
     row = _create("aws_core__aws_sqs_queue", {**node.fields, "configuration": node.configuration})
     assert (row.event_start, row.event_end, _kind(row)) == (datetime(2026, 1, 1, tzinfo=UTC), None, "created")
+
+
+@pytest.mark.django_db
+def test_a_signing_certificate_holds_from_its_upload_until_its_not_after() -> None:
+    """Ruling Q150b: the certificate's body is kept in configuration, and the plugin's reader reads its notAfter."""
+    from tap_plugin.aws_core.tests.grid_dimensions import declare_credential_dimension
+    from tap_plugin.aws_core.tests.test_times import TEST_CERTIFICATE
+
+    declare_credential_dimension()  # the type writes computing_core's tap.computing.credential (ruling Q146)
+    row = _create(
+        "aws_core__aws_iam_signing_certificate",
+        {
+            "name": "FAKECERTIFICATEID0001",
+            "partition": "aws",
+            "account_id": "111122223333",
+            "certificate_id": "FAKECERTIFICATEID0001",
+            "upload_date": "2026-10-01T12:30:00Z",
+            "configuration": {"CertificateId": "FAKECERTIFICATEID0001", "CertificateBody": TEST_CERTIFICATE},
+        },
+    )
+    assert (row.event_start, row.event_end, _kind(row)) == (
+        datetime(2026, 10, 1, 12, 30, tzinfo=UTC),
+        datetime(2030, 1, 2, 3, 4, 5, tzinfo=UTC),
+        "created",
+    )
 
 
 @pytest.mark.django_db

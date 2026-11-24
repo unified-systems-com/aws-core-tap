@@ -2292,12 +2292,12 @@
       "source": {
         "custom_fn": "iam_ssh_public_keys_listed"
       },
-      "why": "Enumerate every IAM user's SSH public keys (CodeCommit access over SSH): status and upload time. Metadata only: the key body is never requested (ListSSHPublicKeys returns none; GetSSHPublicKey, which would, is never called). The run lists every user's SSH public keys once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a key the listing stops naming is a question for its falsifier, not a deletion.",
+      "why": "Enumerate every IAM user's SSH public keys (CodeCommit access over SSH): status, upload time and fingerprint. GetSSHPublicKey (Encoding SSH) is called per key for its fingerprint, and the key body it returns beside it is removed by the reader before the item is yielded, so it is never stored (ruling Q150a, 2026-11-24). The run lists every user's SSH public keys once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a key the listing stops naming is a question for its falsifier, not a deletion.",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). SSHPublicKeyBody is removed by the reader from GetSSHPublicKey's answer before the item is yielded, so it is never stored.",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore iam ListSSHPublicKeys output shape (SSHPublicKeys: UserName, SSHPublicKeyId, Status, UploadDate) and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait, and the listing returns no key body or fingerprint.",
+        "basis": "Read botocore iam ListSSHPublicKeys output shape (SSHPublicKeys: UserName, SSHPublicKeyId, Status, UploadDate), GetSSHPublicKey output shape (SSHPublicKey: UserName, SSHPublicKeyId, Fingerprint, SSHPublicKeyBody, Status, UploadDate) and iam_credentials.walk_credentials, 2026-11-24. No member carries botocore's sensitive trait. SSHPublicKeyBody (a public key) is removed by the reader (iam_credentials._fingerprint), so it is never in the item, the configuration or a field (ruling Q150a); the fingerprint is kept.",
         "locations": [
           {
             "path": "UserName",
@@ -2315,6 +2315,12 @@
             "path": "_user_arn",
             "category": "personal_data",
             "reason": "The holding user's ARN embeds the user name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.public_key.data.SSHPublicKey.UserName",
+            "category": "personal_data",
+            "reason": "GetSSHPublicKey repeats the user name inside the hydrate slot.",
             "evidence": "reviewer_judgement"
           }
         ]
@@ -2338,8 +2344,16 @@
         "user_name": "_user_name",
         "user_arn": "_user_arn",
         "status": "Status",
-        "upload_date": "_created"
+        "upload_date": "_created",
+        "fingerprint": "_fingerprint"
       },
+      "hydrate": [
+        {
+          "key": "public_key",
+          "op": "GetSSHPublicKey",
+          "why": "The key's fingerprint, which names the key without its body: the body is removed before storage (ruling Q150a)."
+        }
+      ],
       "tags": {
         "source": "none",
         "why": "AWS has no tagging operation for SSH public keys: the iam service model defines Tag and Untag operations for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates, and none for SSH public keys (botocore 1.44.7)."
@@ -2361,12 +2375,12 @@
       "source": {
         "custom_fn": "iam_signing_certificates_listed"
       },
-      "why": "Enumerate every IAM user's X.509 signing certificates: status and upload time. Metadata only: ListSigningCertificates returns each certificate's body with its row, and the reader removes it before the item is yielded. The run lists every user's signing certificates once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a certificate the listing stops naming is a question for its falsifier, not a deletion.",
+      "why": "Enumerate every IAM user's X.509 signing certificates: status, upload time and the certificate itself. ListSigningCertificates returns each certificate's public body with its row, and it is kept in configuration (ruling Q150b, 2026-11-24): its notAfter is the certificate's end, read by tap_plugin.aws_core.times.certificate_not_after. The run lists every user's signing certificates once (iam_credentials.py), and each user's listing, read to its end, is recorded as that user's surface: a certificate the listing stops naming is a question for its falsifier, not a deletion.",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). CertificateBody is removed by the reader before the item is yielded, so it is never stored.",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). CertificateBody, the public PEM certificate, is kept (ruling Q150b).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore iam ListSigningCertificates output shape (Certificates: UserName, CertificateId, CertificateBody, Status, UploadDate) and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait. CertificateBody (the public PEM certificate) is removed by the reader (iam_credentials.DROPPED), so it is never in the item, the configuration or a field (metadata only, ruling Q142a).",
+        "basis": "Read botocore iam ListSigningCertificates output shape (Certificates: UserName, CertificateId, CertificateBody, Status, UploadDate) and iam_credentials.walk_credentials, 2026-11-23. No member carries botocore's sensitive trait. CertificateBody is the public PEM certificate, with no private key, and is kept in configuration (ruling Q150b); its subject may name a person.",
         "locations": [
           {
             "path": "UserName",
@@ -2384,6 +2398,12 @@
             "path": "_user_arn",
             "category": "personal_data",
             "reason": "The holding user's ARN embeds the user name.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "CertificateBody",
+            "category": "personal_data",
+            "reason": "The certificate's subject and issuer are whatever its maker wrote, often a person's name or email address. Public, and kept (ruling Q150b).",
             "evidence": "reviewer_judgement"
           }
         ]

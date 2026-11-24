@@ -59,6 +59,9 @@ SSH_KEY = "APKAFAKEFAKEFAKE0001"
 CERT_ID = "FAKECERTIFICATEID0001"
 SVC_ID = "ACCAFAKEFAKEFAKE0001"
 BODY_CANARY = "-----BEGIN CERTIFICATE-----TAPCANARYCERTBODY"
+#: A key body planted in GetSSHPublicKey's answer: it must never leave the walk (ruling Q150a).
+SSH_BODY_CANARY = "ssh-ed25519 TAPCANARYSSHKEYBODY"
+FINGERPRINT = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
 
 ACCESS_KEY = ic.ACCESS_KEY_TYPE
 SSH = ic.SSH_PUBLIC_KEY_TYPE
@@ -142,6 +145,16 @@ def _iam(**over: Any) -> _Iam:
         "list_ssh_public_keys": _per_user(
             {"alice": {"SSHPublicKeys": [{"UserName": "alice", "SSHPublicKeyId": SSH_KEY, "Status": "Active", "UploadDate": WHEN}]}}
         ),
+        "get_ssh_public_key": lambda UserName, SSHPublicKeyId, Encoding: {
+            "SSHPublicKey": {
+                "UserName": UserName,
+                "SSHPublicKeyId": SSHPublicKeyId,
+                "Fingerprint": FINGERPRINT,
+                "SSHPublicKeyBody": SSH_BODY_CANARY,
+                "Status": "Active",
+                "UploadDate": WHEN,
+            }
+        },
         "list_signing_certificates": _per_user(
             {
                 "alice": {
@@ -297,21 +310,41 @@ class TestWalk:
         assert walk.items[SSH] == []
         assert _surfaces(walk)[(ALICE, "HOLDS_SSH_PUBLIC_KEY__aws_core")]["admitted"] is False
 
-    @pytest.mark.spec("req-aws-core-iam-credentials-2")
-    def test_a_signing_certificate_body_never_leaves_the_walk(self) -> None:
-        iam = _iam()
-        walk = ic.walk_credentials(iam)
-        (item,) = walk.items[CERT]
-        assert "CertificateBody" not in item
-        assert BODY_CANARY not in json.dumps(item, default=str)
+    @pytest.mark.spec("req-aws-core-iam-credentials-11")
+    def test_a_signing_certificates_public_body_is_kept_in_configuration(self) -> None:
+        """Ruling Q150b: the certificate is public, and its notAfter is the certificate's end."""
+        (item,) = ic.walk_credentials(_iam()).items[CERT]
+        assert item["CertificateBody"] == BODY_CANARY
         payload = _payload(CERT, _items(CERT, _iam())[0])
-        assert BODY_CANARY not in json.dumps(payload, default=str)
+        assert payload["configuration"]["CertificateBody"] == BODY_CANARY
+
+    @pytest.mark.spec("req-aws-core-iam-credentials-2", "req-aws-core-iam-credentials-10")
+    def test_an_ssh_key_body_never_leaves_the_walk_and_its_fingerprint_does(self) -> None:
+        """Ruling Q150a: GetSSHPublicKey (Encoding SSH) per key; the fingerprint is kept, the body never stored."""
+        iam = _iam()
+        (item,) = ic.walk_credentials(iam).items[SSH]
+        assert iam.called("get_ssh_public_key") == [{"UserName": "alice", "SSHPublicKeyId": SSH_KEY, "Encoding": "SSH"}]
+        assert SSH_BODY_CANARY not in json.dumps(item, default=str)
+        assert item["_fingerprint"] == FINGERPRINT
+        payload = _payload(SSH, _items(SSH, _iam())[0])
+        assert SSH_BODY_CANARY not in json.dumps(payload, default=str)
+        assert payload["fingerprint"] == FINGERPRINT
+        assert payload["configuration"]["_hydrate"]["public_key"]["data"]["SSHPublicKey"]["Fingerprint"] == FINGERPRINT
+
+    @pytest.mark.spec("req-aws-core-iam-credentials-10")
+    def test_an_unanswered_ssh_key_read_leaves_the_fingerprint_unread(self) -> None:
+        walk = ic.walk_credentials(_iam(get_ssh_public_key=_error("AccessDenied", "GetSSHPublicKey")))
+        (item,) = walk.items[SSH]
+        assert item["_fingerprint"] is None
+        assert item["_hydrate"]["public_key"]["status"] == "denied"
+        # The listing still answered: the key is a node and the user's surface is complete.
+        assert _surfaces(walk)[(ALICE, "HOLDS_SSH_PUBLIC_KEY__aws_core")]["enumeration_complete"] is True
 
     @pytest.mark.spec("req-aws-core-iam-credentials-2")
     def test_no_create_or_reset_call_is_made(self) -> None:
         iam = _iam()
         ic.walk_credentials(iam)
-        assert not [m for m, _ in iam.calls if m.startswith(("create_", "reset_", "update_", "delete_", "get_ssh"))]
+        assert not [m for m, _ in iam.calls if m.startswith(("create_", "reset_", "update_", "delete_", "upload_"))]
 
     def test_an_access_keys_last_use_is_read_and_never_used_is_an_answer(self) -> None:
         walk = ic.walk_credentials(_iam())
@@ -380,7 +413,11 @@ class TestReaders:
 
     def test_the_other_three_project_their_ids_and_times(self) -> None:
         ssh = project_item(_entry(SSH), _items(SSH, _iam())[0])
-        assert (ssh.fields["ssh_public_key_id"], ssh.fields["upload_date"]) == (SSH_KEY, WHEN_TEXT)
+        assert (ssh.fields["ssh_public_key_id"], ssh.fields["upload_date"], ssh.fields["fingerprint"]) == (
+            SSH_KEY,
+            WHEN_TEXT,
+            FINGERPRINT,
+        )
         cert = project_item(_entry(CERT), _items(CERT, _iam())[0])
         assert (cert.fields["certificate_id"], cert.fields["upload_date"]) == (CERT_ID, WHEN_TEXT)
         svc = project_item(_entry(SVC), _items(SVC, _iam())[0])
@@ -660,6 +697,7 @@ class TestPolicy:
             "iam:ListAccessKeys",
             "iam:GetAccessKeyLastUsed",
             "iam:ListSSHPublicKeys",
+            "iam:GetSSHPublicKey",
             "iam:ListSigningCertificates",
             "iam:ListServiceSpecificCredentials",
             "iam:GetLoginProfile",

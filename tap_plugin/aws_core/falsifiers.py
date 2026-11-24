@@ -2063,8 +2063,8 @@ class IamAccessKeyFalsifier(_IamUserCredentialFalsifier):
 
 
 class IamSshPublicKeyFalsifier(_IamUserCredentialFalsifier):
-    """``iam:ListSSHPublicKeys(UserName)``; absent from the user's complete listing -> gone. ``GetSSHPublicKey`` is
-    never called: it returns the key body."""
+    """``iam:ListSSHPublicKeys(UserName)``; absent from the user's complete listing -> gone. The listing names the key
+    by id, which is all the probe needs; ``GetSSHPublicKey`` (the collector's call, for the fingerprint) is not made."""
 
     id_field = "ssh_public_key_id"
     method = "list_ssh_public_keys"
@@ -2075,7 +2075,7 @@ class IamSshPublicKeyFalsifier(_IamUserCredentialFalsifier):
 
 class IamSigningCertificateFalsifier(_IamUserCredentialFalsifier):
     """``iam:ListSigningCertificates(UserName)``; absent from the user's complete listing -> gone. The listing returns
-    each certificate's body; only the ids are read, and nothing of a body is kept."""
+    each certificate's body; the probe reads only the ids."""
 
     id_field = "certificate_id"
     method = "list_signing_certificates"

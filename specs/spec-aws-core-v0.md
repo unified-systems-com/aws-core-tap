@@ -973,8 +973,8 @@ Status: `Proposed`
 aws-core-tap#282 (omissions row U5), part 1. aws_core collected IAM users, roles, groups, policies and virtual
 MFA devices, but none of the credential facts that FedRAMP and CIS checks rest on: a user's access keys and their
 last use, SSH public keys, signing certificates, service-specific credentials, the console login profile, the
-account password policy, and the root user's credential use. George's rulings of 2026-11-23 (Q142, Q143) settle
-the shape below. Built and tested against fake sources; the live trial waits on the seeder's permissions.
+account password policy, and the root user's credential use. George's rulings of 2026-11-23 (Q142, Q143) and
+2026-11-24 (Q150) settle the shape below. Built and tested against fake sources; the live trial waits on the seeder's permissions.
 
 #### Implementation
 
@@ -989,10 +989,13 @@ also carries `GetAccessKeyLastUsed`'s date, service and region (`""` when AWS re
 when the call did not answer). The service-specific credential carries its service, service user name, alias and
 expiry. AWS has no tag operation for any of the four (botocore 1.44.7), so `tags` is always `{}`.
 
-**Metadata only.** Never key material, a secret, a password, or a key or certificate body. AWS returns a secret
-access key or service password only from the Create/Reset calls, which are never made. `ListSigningCertificates`
-returns each certificate's body with its row; the reader removes it (`iam_credentials.DROPPED`) before the item
-leaves the walk. `GetSSHPublicKey` would return the key body and is never called, so no fingerprint is collected.
+**No secret; public material only where ruled.** Never a secret, a password or a private key. AWS returns a secret
+access key or service password only from the Create/Reset calls, which are never made. The SSH public key carries
+its `fingerprint`, from `GetSSHPublicKey` called per key with `Encoding="SSH"` (a hydrate op, slot `public_key`;
+`null` when the call did not answer); the key body that call returns beside it is removed by the reader
+(`iam_credentials._fingerprint`) before the item leaves the walk, and is never stored (ruling Q150a, 2026-11-24).
+`ListSigningCertificates` returns each certificate's body (public PEM text) with its row, and it is kept in
+`configuration` as AWS sent it (ruling Q150b, 2026-11-24): its notAfter is the certificate's end.
 
 **Containment and retirement.** `aws_iam_user` holds each credential through its own edge type:
 `HOLDS_ACCESS_KEY`, `HOLDS_SSH_PUBLIC_KEY`, `HOLDS_SIGNING_CERTIFICATE`, `HOLDS_SERVICE_CREDENTIAL`, all in the
@@ -1054,9 +1057,12 @@ cloud default (`tap.computing.cloud: aws`) and computing_core's standard credent
 the dimension; aws_core only writes it. The root user, the IAM user, and the password-policy and login-profile
 fields carry no credential dimension.
 
-**Event time** (`req-aws-core-models-5`). The access key starts at `create_date` and the SSH key and signing
-certificate at `upload_date` (kind `created`, no end: AWS states none; a signing certificate's own expiry is inside
-its body, which is not kept). The service-specific credential runs from `create_date` to `expiration_date`, the end
+**Event time** (`req-aws-core-models-5`). The access key starts at `create_date` and the SSH key at `upload_date`
+(kind `created`, no end: AWS states none). The signing certificate runs from `upload_date` to the certificate's own
+notAfter: the end is the `configuration` member `CertificateBody`, read by the plugin reader
+`tap_plugin.aws_core.times.certificate_not_after` (pure, module-level; it parses the PEM with `cryptography`, which
+every tap install already carries, and returns a zoned datetime, or None when the text holds no readable
+certificate, so the row has no end rather than a guessed one; ruling Q150b). The service-specific credential runs from `create_date` to `expiration_date`, the end
 AWS states for a credential created with one. The root user starts at the report's `created_at`. Last-used and
 rotation times are other times and stay typed fields.
 
@@ -1065,13 +1071,15 @@ rotation times are other times and stay typed fields.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-iam-credentials-1 | Four Credential Types | Proposed | Access keys, SSH public keys, signing certificates and service-specific credentials are four node types, each keyed by `(partition, account_id, <credential id>)`, each carrying its holding user, status and creation time, collected for every user the account lists. | `tests/test_iam_credentials.py::TestReaders`. |
-| req-aws-core-iam-credentials-2 | Metadata Only | Proposed | No secret, password, key body or certificate body reaches an item, the batch, a field or the stored configuration; a certificate body planted in the listing is absent from the node. | `tests/test_iam_credentials.py::TestWalk::test_a_signing_certificate_body_never_leaves_the_walk`. |
+| req-aws-core-iam-credentials-2 | No Secret, No SSH Key Body | Proposed | No secret, password or SSH key body reaches an item, the batch, a field or the stored configuration; an SSH key body planted in `GetSSHPublicKey`'s answer is absent from the node. The signing certificate's public body is kept (`-11`). | `tests/test_iam_credentials.py::TestWalk::test_an_ssh_key_body_never_leaves_the_walk_and_its_fingerprint_does`. Rulings Q142a, Q150a. |
 | req-aws-core-iam-credentials-3 | Contained Per User, Surface Per Listing | Proposed | The user contains each credential through that type's `HOLDS_*` edge; every observed user records one surface per edge type; a user with none is complete-empty; a denied, failed or short listing is incomplete and contributes no items; a reader that did not finish leaves its surfaces not admitted. | `tests/test_iam_credentials.py::TestContainment`, `::TestWalk`. |
 | req-aws-core-iam-credentials-4 | A Falsifier Per Type | Proposed | Each type's falsifier answers present, dropped and forbidden from the user's listing, refuses before any call when the row's user name, ARN or account disagree, treats a deleted user as undetermined, and reaches the GovCloud endpoint for a GovCloud ARN. | `tests/test_iam_credentials.py::TestFalsifiers`. |
 | req-aws-core-iam-credentials-5 | Credential Report Read, Generated Only When Asked | Proposed | With the option absent or false the run never calls `GenerateCredentialReport`; with it true the run calls it before reading. "No report", "expired" and "in progress" are states, distinct from "not read". | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143a. |
 | req-aws-core-iam-credentials-6 | Password Policy On The Account | Proposed | The account carries the password policy's settings; "no policy" (`NoSuchEntity`) is `password_policy_present: false`, and a denied or failed read leaves it `null`. | `tests/test_iam_credentials.py::TestAccountPosture`, `tests/test_boto3_collector_customfns.py`. Ruling Q143c. |
 | req-aws-core-iam-credentials-7 | Login Profile On The User | Proposed | The user carries whether a login profile exists, when it was created and whether a reset is required; `NoSuchEntity` is "no console password", a denied read is `null`. | `tests/test_iam_credentials.py::TestLoginProfile`. Ruling Q143d. |
 | req-aws-core-iam-credentials-8 | Root User From The Report | Proposed | The report's root row becomes one `aws_iam_root_user` node keyed on the ARN the report states, its flags and times taken from the row; no report yields no root node; an unreadable report fails the entry. | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143b. |
+| req-aws-core-iam-credentials-10 | SSH Key Fingerprint | Proposed | Each SSH public key carries the `fingerprint` `GetSSHPublicKey` (`Encoding="SSH"`) states; a denied or failed call leaves it `null` and the key is still a node of a complete listing. `iam:GetSSHPublicKey` is in the read policy. | `tests/test_iam_credentials.py::TestWalk`, `::TestPolicy`. Ruling Q150a. |
+| req-aws-core-iam-credentials-11 | Signing Certificate Kept, Ends At Its notAfter | Proposed | The certificate body is stored in `configuration`; the type's event time ends at the certificate's notAfter, read by `times.certificate_not_after`, which returns a zoned datetime or None and never raises. | `tests/test_iam_credentials.py::TestWalk::test_a_signing_certificates_public_body_is_kept_in_configuration`, `tests/test_times.py`, `tests/test_event_time.py::test_a_signing_certificate_holds_from_its_upload_until_its_not_after`. Ruling Q150b. |
 | req-aws-core-iam-credentials-9 | Credential Dimension | Proposed | The four credential types carry `tap.computing.credential` (`access_key`, `ssh_key`, `certificate`, `password`) beside the cloud default; the root user, the user and the account do not. | `tests/test_iam_credentials.py::TestReaders::test_each_credential_type_carries_its_kind_on_the_credential_dimension`, `tests/test_dimension_seed.py`. Ruling Q146. Needs computing_core's seed of the dimension. |
 
 ### Transit Gateway
