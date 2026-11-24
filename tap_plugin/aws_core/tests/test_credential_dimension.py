@@ -2,6 +2,8 @@
 
 George ruled on 2026-11-23 (aws-build Q146) that one dimension, computing_core's
 ``tap.computing.credential``, marks every credential type across all plugins, its value naming the kind.
+On 2026-11-24 (Q151) he made the dimension open, its kinds a documented vocabulary rather than a bound,
+and added ``mfa_device``.
 A type is tagged by what the thing IS: identities, policies, issuers and things that only reference a
 credential are not. This pins the exact set, so a type gained or lost is a decision someone made here.
 """
@@ -11,8 +13,19 @@ from __future__ import annotations
 import pytest
 
 CREDENTIAL = "tap.computing.credential"
-# computing_core's declared kinds (Q146b); its seed bounds the dimension to these.
-KINDS = {"access_key", "password", "ssh_key", "certificate", "api_key", "token", "crypto_key", "secret_store"}
+# computing_core's documented kinds (Q146b, plus mfa_device from Q151d). The dimension is open (Q151a), so these
+# are a vocabulary its seed's description documents, not a bound; aws_core uses only documented kinds.
+KINDS = {
+    "access_key",
+    "password",
+    "ssh_key",
+    "certificate",
+    "api_key",
+    "token",
+    "crypto_key",
+    "secret_store",
+    "mfa_device",
+}
 
 TAGGED = {
     "aws_core__aws_kms_key": "crypto_key",
@@ -30,6 +43,7 @@ TAGGED = {
     "aws_core__aws_transfer_host_key": "ssh_key",
     "aws_core__aws_ec2_key_pair": "ssh_key",
     "aws_core__aws_certificatemanager_acme_external_account_binding": "access_key",
+    "aws_core__aws_iam_virtual_mfa_device": "mfa_device",
 }
 
 # Near misses, decided not to be credentials: each would be wrong to find in a credential filter.
@@ -64,9 +78,8 @@ NOT_CREDENTIALS = {
     "aws_core__aws_ec2_ipam_external_resource_verification_token",
     # a database namespace, not a key
     "aws_core__aws_cassandra_keyspace",
-    # an MFA authenticator: no kind in Q146b fits it, so it waits for a ruling
-    "aws_core__aws_iam_virtual_mfa_device",
-    # only a SecureString instance is a credential, so the type carries no default
+    # only a SecureString instance is a credential, so the type carries no default; the collector is to stamp
+    # secret_store per SecureString parameter (Q151b)
     "aws_core__aws_ssm_parameter",
 }
 
@@ -88,7 +101,7 @@ def test_exactly_the_credential_types_are_tagged_with_their_kind() -> None:
 
 
 @pytest.mark.spec("req-aws-core-credential-dimension-1")
-def test_every_value_is_a_declared_kind_and_the_cloud_stays() -> None:
+def test_every_value_is_a_documented_kind_and_the_cloud_stays() -> None:
     defaults = _defaults()
     for slug, kind in TAGGED.items():
         assert kind in KINDS, slug
@@ -103,8 +116,8 @@ def test_the_near_misses_exist_and_are_not_tagged() -> None:
 
 
 @pytest.mark.spec("req-aws-core-credential-dimension-2")
-def test_computing_core_declares_the_dimension_with_these_kinds() -> None:
-    """The installed computing_core seeds the dimension, bounded to the kinds this plugin uses."""
+def test_computing_core_declares_the_dimension_open_with_these_kinds_documented() -> None:
+    """The installed computing_core seeds the dimension open (no values) and documents every kind this plugin uses."""
     import json
     from importlib import resources
 
@@ -112,4 +125,6 @@ def test_computing_core_declares_the_dimension_with_these_kinds() -> None:
         resources.files("tap_plugin.computing_core").joinpath("grift/dimension.grift.json").read_text(encoding="utf-8")
     )
     (node,) = [n["node"] for b in seed["batches"] for n in b["nodes"] if n["node"]["name"] == CREDENTIAL]
-    assert set(node["values"]) == KINDS
+    assert "values" not in node
+    for kind in KINDS:
+        assert f"{kind} (" in node["description"], kind
