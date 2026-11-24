@@ -1,0 +1,19 @@
+{
+  "slug": "PERMITS_ACCOUNT__aws_core",
+  "name": "Permits Account",
+  "description": "A Lambda function's, alias's or published version's own resource-based policy allows principals of another AWS account (resource -> permitted account): the cross-account grant on the resource side, as TRUSTS_ACCOUNT is for a role. Derived from the Allow statements of the policy lambda:GetPolicy returns for that resource (a Principal.AWS naming an account id, an account root ARN, or a role or user ARN in that account), read whatever the ARN's partition. The resource's own account is never a target, so every edge of this type crosses an account boundary; a Principal '*' names no account and produces no edge (it is recorded as resource_policy_wildcard_principal), and a service principal is recorded as resource_policy_services. The target account node may not be in the grid yet: it resolves by identity when that account is collected, as TRUSTS_ACCOUNT's does. It records that the grant is written, not that a principal in that account can use it: the statement's Condition and the other account's own IAM policies decide that, and resource_policy_unconditioned says whether some outside grant has no Condition at all. A reference, not containment. Changed by AddPermission and RemovePermission; it lasts until a run reads the policy without that account.",
+  "sources": [
+    "aws_core__aws_lambda",
+    "aws_core__aws_lambda_alias",
+    "aws_core__aws_lambda_function_version"
+  ],
+  "targets": [
+    "aws_core__aws_account"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

@@ -38,6 +38,10 @@ class LambdaFunctionVersion(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "lambda_function_version_arn": {"type": "string"},
+        "resource_policy_account_ids": {"type": ["array", "null"], "items": {"type": "string", "pattern": "^[0-9]{12}$"}},
+        "resource_policy_services": {"type": ["array", "null"], "items": {"type": "string", "minLength": 1}},
+        "resource_policy_wildcard_principal": {"type": ["boolean", "null"]},
+        "resource_policy_unconditioned": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -49,6 +53,18 @@ class LambdaFunctionVersion(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     lambda_function_version_arn = models.CharField(max_length=2048, blank=True, default="")
+    # The published version's own resource-based policy (lambda:GetPolicy, Qualifier), summarised over its Allow
+    # statements; the document itself is stored in configuration['_hydrate']['policy'] (aws-core-tap#290). NULL on every
+    # field = the policy was not read (denied, errored, unreadable); [] or false = read, and no such grant (a policy that
+    # does not exist, ResourceNotFoundException recorded absent, reads [] and false on every field). $LATEST stays NULL:
+    # Lambda attaches no policy to the unpublished version, so none is read for it. resource_policy_account_ids are the OTHER accounts
+    # (never this one) its principals name: the source of PERMITS_ACCOUNT. resource_policy_services are service
+    # principals. resource_policy_wildcard_principal: an Allow names Principal "*", conditioned or not.
+    # resource_policy_unconditioned: an Allow grants another account, a service or "*" with no Condition at all.
+    resource_policy_account_ids = models.JSONField(null=True, blank=True, default=None)
+    resource_policy_services = models.JSONField(null=True, blank=True, default=None)
+    resource_policy_wildcard_principal = models.BooleanField(null=True, blank=True, default=None)
+    resource_policy_unconditioned = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

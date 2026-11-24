@@ -275,6 +275,17 @@ _TRUST_DOC = {
 }
 
 
+def _lambda_item(function: dict[str, Any]) -> dict[str, Any]:
+    """One function as the Lambda reader yields it, its policy answered "no policy" (ResourceNotFoundException)."""
+    client = _Client(
+        {
+            "list_functions": {"Functions": [function]},
+            "get_policy": ClientError({"Error": {"Code": "ResourceNotFoundException", "Message": "none"}}, "GetPolicy"),
+        }
+    )
+    return next(iter(customfns.lambda_functions_described(None, client_for=lambda _svc: client)))
+
+
 def _role_item(attached: Any, *, trust: Any = None) -> dict[str, Any]:
     trust = _TRUST_DOC if trust is None else trust
     role = {"RoleName": "worker", "Arn": _ROLE_ARN, "AssumeRolePolicyDocument": trust}
@@ -493,16 +504,27 @@ class TestS3Reads:
 
 class TestJudgingRules:
     def test_an_aws_op_item_is_its_own_record(self):
-        fn = {
-            "FunctionName": "worker",
-            "FunctionArn": _LAMBDA_ARN,
-            "Role": _ROLE_ARN,
-            "LoggingConfig": {"LogGroup": "/aws/lambda/worker"},
+        proxy = {
+            "DBProxyName": "p",
+            "DBProxyArn": f"arn:aws:rds:us-east-1:{_ACCOUNT}:db-proxy:prx-1",
+            "RoleArn": _ROLE_ARN,
+            "VpcSubnetIds": ["subnet-1"],
         }
-        reads = _reads("aws_core__aws_lambda", fn)
+        reads = _reads("aws_core__aws_rds_db_proxy", proxy)
+        assert reads == {
+            ("ASSUMES_ROLE__aws_core", "outbound"): COMPLETE,
+            ("RESIDES_IN_SUBNET__aws_core", "outbound"): COMPLETE,
+        }
+
+    def test_the_lambda_reader_declares_its_listed_fields_as_an_aws_op_item_would_be(self):
+        # The Lambda entry is a custom_fn since it reads each function's policy (aws-core-tap#290); the listed item
+        # is still ListFunctions' own record, so the reader declares the keys its rules read complete.
+        fn = {**TestFieldPresence._FN, "LoggingConfig": {"LogGroup": "/aws/lambda/worker"}}
+        reads = _reads("aws_core__aws_lambda", _lambda_item(fn))
         assert reads == {
             ("ASSUMES_ROLE__aws_core", "outbound"): COMPLETE,
             ("WRITES_LOGS__aws_core", "outbound"): COMPLETE,
+            ("PERMITS_ACCOUNT__aws_core", "outbound"): COMPLETE,
         }
 
     def test_a_transform_that_cannot_map_a_reference_makes_it_partial(self):
@@ -562,13 +584,13 @@ class TestFieldPresence:
     _DIST = "aws_core__aws_cloudfront_distribution"
 
     def test_lambda_without_logging_config_drops_to_partial(self):
-        reads = _reads("aws_core__aws_lambda", dict(self._FN))
+        reads = _reads("aws_core__aws_lambda", _lambda_item(dict(self._FN)))
         assert reads[self._WRITES_LOGS] == PARTIAL
         assert reads[_ASSUMES] == COMPLETE
 
     def test_lambda_with_logging_config_stays_complete(self):
         fn = {**self._FN, "LoggingConfig": {"LogFormat": "Text", "LogGroup": "/aws/lambda/worker"}}
-        assert _reads("aws_core__aws_lambda", fn)[self._WRITES_LOGS] == COMPLETE
+        assert _reads("aws_core__aws_lambda", _lambda_item(fn))[self._WRITES_LOGS] == COMPLETE
 
     def test_an_unencrypted_log_group_is_partial(self):
         group = {"logGroupName": "g", "logGroupArn": f"arn:aws:logs:us-east-1:{_ACCOUNT}:log-group:g"}

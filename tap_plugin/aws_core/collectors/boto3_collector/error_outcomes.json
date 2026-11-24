@@ -1,5 +1,5 @@
 {
-  "description": "Reviewed rows naming an AWS error as a result other than a failed call (req-aws-collector-outcome). not_taggable and not_readable rows apply to tag reads only (req-aws-collector-tags): not_taggable means the resource cannot hold tags, so the answer is no tags; not_readable means its tags are another account's to read, so they stay unread; they were authored from a live GovCloud probe on 2026-11-06. not_configured: the feature is not set up in this account, so the listing is empty-by-absence and is NOT an authoritative complete-empty observation (it licenses no retirement). unsupported_in_partition: the partition does not offer the service or operation. Rows were authored from the 2026-11-01 GovCloud (us-gov-west-1) wave-0 smoke run. A not_configured row must name its service, error code and operation or entity type: it is never a broad catch. The unsupported_in_partition rows are a stopgap until availability is derived from data; replace them, do not extend them casually.",
+  "description": "Reviewed rows naming an AWS error as a result other than a failed call (req-aws-collector-outcome). not_taggable and not_readable rows apply to tag reads only (req-aws-collector-tags): not_taggable means the resource cannot hold tags, so the answer is no tags; not_readable means its tags are another account's to read, so they stay unread; they were authored from a live GovCloud probe on 2026-11-06. absent rows apply to per-resource hydrate reads only (req-aws-collector-hydrate): the error is AWS answering that the resource has no such configuration, so the slot is recorded absent, a fact, and never error or denied. not_configured: the feature is not set up in this account, so the listing is empty-by-absence and is NOT an authoritative complete-empty observation (it licenses no retirement). unsupported_in_partition: the partition does not offer the service or operation. Rows were authored from the 2026-11-01 GovCloud (us-gov-west-1) wave-0 smoke run. A not_configured row must name its service, error code and operation or entity type: it is never a broad catch. The unsupported_in_partition rows are a stopgap until availability is derived from data; replace them, do not extend them casually.",
   "rows": [
     {
       "outcome": "not_configured",
@@ -553,6 +553,15 @@
       "entity_types": [
         "aws_core__aws_athena_data_catalog"
       ]
+    },
+    {
+      "outcome": "absent",
+      "service": "lambda",
+      "operations": [
+        "GetPolicy"
+      ],
+      "error_code": "ResourceNotFoundException",
+      "why": "lambda:GetPolicy answers ResourceNotFoundException for a function, alias or published version that has no resource-based policy: Lambda's way of saying 'no policy', recorded as absent, not as a failed read (aws-core-tap#290). The same code comes back if the function, alias or version was deleted between the listing and this read; the node then carries 'no policy' for a resource that is gone, and the next run's listing no longer names it. A refused read (AccessDeniedException) is not matched here and stays denied."
     }
   ]
 }
