@@ -9,7 +9,7 @@ from tap_grid.models import BaseModel
 
 
 class Ec2NetworkInsightsPath(BaseModel):
-    """An AWS EC2 Network Insights Path, listed by DescribeNetworkInsightsPaths. Only its identity, name and tags are collected; the rest of the response has not been reviewed for sensitive values, so none of it is stored."""
+    """An AWS EC2 Network Insights Path, listed by DescribeNetworkInsightsPaths: the source and destination a Reachability Analyzer analysis checks. Its source and destination are typed fields, as AWS returns them; the whole response is kept in configuration."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ec2_network_insights_path"
     ENTITY_NAME: ClassVar[str] = "AWS EC2 Network Insights Path"
@@ -35,6 +35,11 @@ class Ec2NetworkInsightsPath(BaseModel):
     FIELD_CRUD_SCHEMA: ClassVar[dict[str, Any]] = {
         "name": {"type": "string"},
         "network_insights_path_arn": {"type": "string"},
+        # Null is unobserved (req-aws-core-fields-10). Each is AWS's own value, as sent (req-aws-core-fields-11).
+        "source": {"type": ["string", "null"]},
+        "source_arn": {"type": ["string", "null"]},
+        "destination": {"type": ["string", "null"]},
+        "destination_arn": {"type": ["string", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -46,6 +51,13 @@ class Ec2NetworkInsightsPath(BaseModel):
 
     name = models.CharField(max_length=255, blank=True, default="")
     network_insights_path_arn = models.CharField(max_length=2048, blank=True, default="")
+    # Source and Destination as AWS returns them (documented on the path as the ID; CreateNetworkInsightsPath takes
+    # an ID or an ARN); SourceArn and DestinationArn are the ARNs. Source is required on create; Destination is not,
+    # so a path created with only a destination address or filter has none.
+    source = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    source_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    destination = models.CharField(max_length=2048, null=True, blank=True, default=None)
+    destination_arn = models.CharField(max_length=2048, null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

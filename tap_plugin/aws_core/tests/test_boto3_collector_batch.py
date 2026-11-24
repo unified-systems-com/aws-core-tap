@@ -71,6 +71,22 @@ class TestNodeEnvelope:
         # derivation) still see the full envelope on the ProjectedNode.
         assert node.configuration["_source"] == {"op": "Op", "why": "w"}
 
+    def test_a_typed_field_read_off_a_botocore_timestamp_is_iso_utc_text(self):
+        """A datetime in a typed field would make the batch invalid JSON and reject it whole (aws-core-tap#213)."""
+        node = ProjectedNode(
+            entity_type="aws_core__aws_ec2_network_insights_analysis",
+            natural_key="arn:a",
+            name="a",
+            fields={"name": "a", "start_date": FIXED_NOW, "network_path_found": False, "status": None},
+            configuration={"StartDate": FIXED_NOW},
+            raw_item={},
+        )
+        env = node_envelope(node, {}, persist_configuration=True)["node"]
+        assert (env["start_date"], env["network_path_found"], env["status"]) == ("2026-01-02T03:04:05Z", False, None)
+        assert env["start_date"] == env["configuration"]["StartDate"]
+        # The projected node keeps what boto3 returned; only the envelope is rendered.
+        assert node.fields["start_date"] is FIXED_NOW
+
     def test_flag_has_no_default(self):
         with pytest.raises(TypeError):
             node_envelope(_projected("aws_core__aws_lambda", "arn:fn"), {})  # type: ignore[call-arg]

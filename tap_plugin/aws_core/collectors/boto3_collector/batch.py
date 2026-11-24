@@ -111,7 +111,10 @@ def node_envelope(
     passes the manifest entry's ``persist_configuration`` flag, so there is
     no path that emits a node without that decision having been made.
     """
-    payload: dict[str, Any] = {**node.fields}
+    # A typed field read straight off a botocore timestamp member (a network analysis's StartDate) holds a
+    # ``datetime``; it is rendered as ISO 8601 UTC text, the form a custom_fn's time field already has, and every
+    # other value is passed as it is (req-aws-collector-field-projection-4).
+    payload: dict[str, Any] = jsonable(dict(node.fields))
     if isinstance(tags, Unread):
         # Whatever a projector put under `tags` is not a read: the resolver is the only source.
         payload.pop("tags", None)
