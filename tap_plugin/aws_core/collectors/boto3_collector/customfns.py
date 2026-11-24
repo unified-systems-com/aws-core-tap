@@ -3433,14 +3433,15 @@ def _ssm_walk(session: Any, client_for: Any) -> ssm_patch.SsmWalk:
 
 
 def ssm_managed_instances_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """SSM managed instances (regional), each with its last patch operation and the patches, compliance summaries
-    and non-Patch compliance items it reports, from the region's shared SSM walk (req-aws-core-ssm-patch-state)."""
+    """SSM managed instances (regional), each with its last patch operation, the patches that need action on it,
+    and its compliance summaries and non-Patch compliance items, from the region's shared SSM walk
+    (req-aws-core-ssm-patch-state)."""
     yield from _ssm_walk(session, client_for).instances
 
 
 def ssm_patches_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
-    """The patches the region's managed instances report, one per (partition, operating system, KBId), each sent
-    once per run however many regions report it, from the shared SSM walk."""
+    """The patches that are a gap on some managed instance of the region (Q147 option 3), one per (partition,
+    operating system, KBId), each sent once per run however many regions report it, from the shared SSM walk."""
     yield from ssm_patch.new_patches(session, _ssm_walk(session, client_for))
 
 

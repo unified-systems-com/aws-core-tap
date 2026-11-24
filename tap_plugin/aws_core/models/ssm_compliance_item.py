@@ -9,7 +9,7 @@ from tap_grid.models import BaseModel
 
 
 class SsmComplianceItem(BaseModel):
-    """One ListComplianceItems row of a type other than Patch (whose items are the instance's REPORTS_PATCH edges). Held by its managed instance (HOLDS_COMPLIANCE_ITEM); an Association item concerns its association (CONCERNS_ASSOCIATION)."""
+    """One ListComplianceItems row of a type other than Patch (whose items are read from DescribeInstancePatches: the ones that need action are the instance's REPORTS_PATCH edges). Held by its managed instance (HOLDS_COMPLIANCE_ITEM); an Association item concerns its association (CONCERNS_ASSOCIATION)."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ssm_compliance_item"
     ENTITY_NAME: ClassVar[str] = "SSM Compliance Item"

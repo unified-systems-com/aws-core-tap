@@ -171,7 +171,7 @@ class _FakeSsm:
         shared = _patch("openssl-libs.x86_64:1:3.0.8-1.amzn2023", "MISSING", cves="CVE-2026-0001, CVE-2026-0002,CVE-2026-0001")
         self.patches = patches if patches is not None else {
             EC2_ID: [shared, _patch("kernel.x86_64:0:6.1.100-1.amzn2023", "INSTALLED", installed=WHEN)],
-            EC2_ID_2: [{**shared, "State": "INSTALLED", "InstalledTime": WHEN}],
+            EC2_ID_2: [{**shared, "State": "INSTALLED_PENDING_REBOOT", "InstalledTime": WHEN}],
             HYBRID_ID: [_patch("KB5034441", "FAILED")],
         }
         self.summaries = summaries if summaries is not None else [
@@ -352,7 +352,8 @@ def test_a_patch_two_instances_report_is_one_node_with_an_edge_from_each() -> No
     session = _Session()
     patches = _by_key(_nodes(PATCH, ssm_patches_described, ssm, session))
     shared = f"{PARTITION}:AMAZON_LINUX_2023:openssl-libs.x86_64:1:3.0.8-1.amzn2023"
-    assert set(patches) == {shared, f"{PARTITION}:AMAZON_LINUX_2023:kernel.x86_64:0:6.1.100-1.amzn2023", f"{PARTITION}:WINDOWS:KB5034441"}
+    # The kernel patch is INSTALLED wherever it is reported: no node (Q147 option 3).
+    assert set(patches) == {shared, f"{PARTITION}:WINDOWS:KB5034441"}
     fields = patches[shared].fields
     assert (fields["partition"], fields["operating_system"], fields["kb_id"]) == (PARTITION, "AMAZON_LINUX_2023", "openssl-libs.x86_64:1:3.0.8-1.amzn2023")
     assert fields["cve_ids"] == ["CVE-2026-0001", "CVE-2026-0002"]  # split, order kept, the repeat dropped
@@ -363,7 +364,8 @@ def test_a_patch_two_instances_report_is_one_node_with_an_edge_from_each() -> No
     }
     ref = f"{PATCH}:{shared}"
     assert reports[EC2_ID][ref] == {"state": "MISSING", "severity": "Critical", "installed_time": None}  # epoch: never
-    assert reports[EC2_ID_2][ref] == {"state": "INSTALLED", "severity": "Critical", "installed_time": "2026-11-20T03:00:00Z"}
+    assert reports[EC2_ID_2][ref] == {"state": "INSTALLED_PENDING_REBOOT", "severity": "Critical", "installed_time": "2026-11-20T03:00:00Z"}
+    assert len(reports[EC2_ID]) == 1  # the INSTALLED kernel row is no edge
     # The walk was made once and shared by both entries.
     assert sum(1 for c in ssm.calls if c[0] == "describe_instance_information") == 1
 
@@ -375,7 +377,7 @@ def test_a_patch_is_sent_once_per_run_however_many_regions_report_it() -> None:
     west = _FakeSsm(region=REGION)
     first = [p["_key"] for p in _items(PATCH, west, session)]
     second = [p["_key"] for p in _items(PATCH, east, session)]
-    assert len(first) == 3 and second == []
+    assert len(first) == 2 and second == []
     east_instances = {i["InstanceId"]: i for i in ssm_managed_instances_described(session, client_for=_clients(east))}
     assert next(e["key"] for e in east_instances[EC2_ID]["_patches"]) in first  # still named from the second region
 
@@ -503,6 +505,64 @@ def test_the_walk_names_a_patch_exactly_as_the_patch_entry_derives_it() -> None:
     assert named == keys
 
 
+# --- only the rows that need action are edges (Q147 option 3) ----------------------------------------------------
+
+
+@pytest.mark.spec("req-aws-core-ssm-patch-state-5")
+@pytest.mark.parametrize("state", sorted(ssm_patch.GAP_STATES))
+def test_a_row_that_needs_action_is_an_edge_and_its_patch_a_node(state: str) -> None:
+    ssm = _FakeSsm(patches={EC2_ID: [_patch("pkg-gap", state)]})
+    session = _Session()
+    [patch] = _items(PATCH, ssm, session)
+    item = next(i for i in _items(MI, ssm, session) if i["InstanceId"] == EC2_ID)
+    assert [e["key"] for e in item["_patches"]] == [patch["_key"]]
+    assert item["_patches"][0]["properties"]["state"] == state
+
+
+@pytest.mark.spec("req-aws-core-ssm-patch-state-5")
+@pytest.mark.parametrize("state", ["INSTALLED", "INSTALLED_OTHER", "NOT_APPLICABLE"])
+def test_a_row_that_needs_no_action_is_neither_edge_nor_node_and_never_partial(state: str) -> None:
+    # No KBId either: a row that is no gap is never keyed, so it cannot make the read partial.
+    row = {k: v for k, v in _patch("pkg-done", state).items() if k != "KBId"}
+    ssm = _FakeSsm(patches={EC2_ID: [row, _patch("pkg-done-2", state)]})
+    session = _Session()
+    assert list(ssm_patches_described(session, client_for=_clients(ssm))) == []
+    item = next(i for i in _items(MI, ssm, session) if i["InstanceId"] == EC2_ID)
+    assert item["_patches"] == [] and item[EDGE_READS]["_patches"] == COMPLETE
+
+
+def test_the_gap_states_are_the_ruled_five_and_cover_every_exposed_state() -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector.ssm_compliance import EXPOSED_STATES
+
+    assert ssm_patch.GAP_STATES == {
+        "MISSING", "FAILED", "INSTALLED_PENDING_REBOOT", "INSTALLED_REJECTED", "AVAILABLE_SECURITY_UPDATE"
+    }
+    assert EXPOSED_STATES <= ssm_patch.GAP_STATES  # a finding is only ever read from an edge the walk keeps
+    states = set(_SSM.shape_for("PatchComplianceDataState").enum)
+    assert ssm_patch.GAP_STATES <= states  # every ruled state is one AWS defines
+
+
+@pytest.mark.spec("req-aws-core-ssm-patch-state-2", "req-aws-core-ssm-patch-state-5")
+def test_the_patch_list_is_not_stored_and_a_note_names_where_aws_lists_it() -> None:
+    entry = _entry(MI)
+    assert entry["edge_only"]["keys"] == ["_patches"]
+    assert any(r["value_path"] == "_patches" and r["edge_type"] == "REPORTS_PATCH__aws_core" for r in entry["edges"])
+    nodes = _by_key(_nodes(MI, ssm_managed_instances_described, _FakeSsm()))
+    node = nodes[EC2_ID]
+    assert node.raw_item["_patches"]  # the edge pass still reads it
+    stored = node_envelope(node, {}, {}, persist_configuration=entry["persist_configuration"])["node"]["configuration"]
+    assert "_patches" not in stored and "openssl-libs" not in json.dumps(stored)
+    assert stored["_patch_list"]["op"] == "DescribeInstancePatches"
+    assert {e["edge_type"] for e in _edges(node)} >= {"REPORTS_PATCH__aws_core"}
+
+
+@pytest.mark.spec("req-aws-core-ssm-patch-state-5")
+def test_an_instance_with_no_patch_state_has_no_note_and_an_empty_complete_read() -> None:
+    ssm = _FakeSsm(states=[_state(EC2_ID, AWS_BASELINE)])
+    item = next(i for i in _items(MI, ssm) if i["InstanceId"] == HYBRID_ID)
+    assert "_patch_list" not in item and item["_patches"] == [] and item[EDGE_READS]["_patches"] == COMPLETE
+
+
 # --- declarations ------------------------------------------------------------------------------------------------
 
 
@@ -590,9 +650,9 @@ def _stub_ssm(monkeypatch):
         def client(self, service: str, **_kwargs: object) -> Any:
             return {"ssm": ssm, "sts": sts}.get(service, _Empty())
 
-    session = _FakeSession()
     monkeypatch.setattr(cred, "resolve_secret", lambda _ref: secret)
-    monkeypatch.setattr(collector_mod, "build_session", lambda _data: session)
+    # A new session per run, as a real run builds one: the SSM walk is shared within a run, never across two.
+    monkeypatch.setattr(collector_mod, "build_session", lambda _data: _FakeSession())
     monkeypatch.setattr(
         collector_mod, "client_factory", lambda _s, _r: (lambda svc: {"ssm": ssm, "sts": sts}.get(svc, _Empty()))
     )
@@ -614,6 +674,7 @@ def test_a_collector_run_lands_the_instances_patches_and_compliance_on_the_grid(
     instance = get_node(node_id(MI, EC2_ID))
     assert (instance.patch_missing_count, instance.patch_baseline_id) == (2, AWS_BASELINE)
     assert OWNER_CANARY not in json.dumps(instance.configuration)
+    assert "_patches" not in instance.configuration and instance.configuration["_patch_list"]["op"] == "DescribeInstancePatches"
     assert instance.tags is None  # an EC2 node's tags are the EC2 instance's
     assert get_node(node_id(MI, HYBRID_ID)).tags == {"team": "lab"}
     patch = {"partition": PARTITION, "operating_system": "AMAZON_LINUX_2023", "kb_id": "openssl-libs.x86_64:1:3.0.8-1.amzn2023"}
@@ -621,6 +682,8 @@ def test_a_collector_run_lands_the_instances_patches_and_compliance_on_the_grid(
     edge = edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID, PATCH, patch)
     assert edge.properties == {"state": "MISSING", "severity": "Critical", "installed_time": None}
     edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID_2, PATCH, patch)
+    kernel = {"partition": PARTITION, "operating_system": "AMAZON_LINUX_2023", "kb_id": "kernel.x86_64:0:6.1.100-1.amzn2023"}
+    assert find_node_id(PATCH, kernel) is None  # installed wherever reported: no node, no edge (Q147 option 3)
     summary = {"account_id": ACCOUNT, "region": REGION, "resource_type": "ManagedInstance", "resource_id": EC2_ID, "compliance_type": "Patch"}
     edge_between("HOLDS_COMPLIANCE_SUMMARY__aws_core", MI, EC2_ID, SUMMARY, summary)
     item = {"account_id": ACCOUNT, "region": REGION, "resource_type": "ManagedInstance", "resource_id": EC2_ID,
@@ -633,3 +696,57 @@ def test_a_collector_run_lands_the_instances_patches_and_compliance_on_the_grid(
     assert find_node_id("aws_core__aws_ssm_patch_baseline", AWS_BASELINE) is None
     assert _stub_ssm.unfiltered_baseline_reads == 1  # the walk's lookup, once for the region
     assert OWNER_CANARY not in json.dumps([get_node(node_id(MI, i)).__dict__ for i in (EC2_ID, EC2_ID_2, HYBRID_ID)], default=str)
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-core-ssm-patch-state-5")
+def test_a_closed_gap_is_a_complete_surface_absence_and_its_edge_is_proposed_for_removal(_stub_ssm) -> None:
+    """The instance installs the patch: the next run sends no edge for it and claims the instance's REPORTS_PATCH
+    scope complete, so core records the stale edge as a removal proposal (tap req-grid-reconcile-edge-authority);
+    the instance's other gap keeps its edge. Applying the proposal is reconcile's, under armed authority."""
+    from tap_cares.collectors.config import CollectorConfig
+    from tap_grid.batch import create_batch
+    from tap_grid.caller_context import CallerContext, get_caller_context, set_caller_context
+    from tap_grid.models import BatchEvent, BatchEventType
+    from tap_grid.reconcile import RUN_CONFIG_KEY, run_config
+    from tap_plugin.aws_core.collectors.boto3_collector import authority
+    from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
+
+    if not authority.importer_accepts_edge_cases():
+        pytest.skip("this tap's importer predates edge_cases")
+    _stub_ssm.patches[EC2_ID] = [*_stub_ssm.patches[EC2_ID], _patch("glibc.x86_64:0:2.34-1.amzn2023", "MISSING")]
+
+    def _run() -> None:
+        collector = Boto3Collector(CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7()))
+        collector.run()
+        assert collector.results["error"] == []
+
+    _run()
+    openssl = {"partition": PARTITION, "operating_system": "AMAZON_LINUX_2023", "kb_id": "openssl-libs.x86_64:1:3.0.8-1.amzn2023"}
+    glibc = {**openssl, "kb_id": "glibc.x86_64:0:2.34-1.amzn2023"}
+    closed = edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID, PATCH, openssl)
+    edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID, PATCH, glibc)
+
+    _stub_ssm.patches[EC2_ID][0] = {**_stub_ssm.patches[EC2_ID][0], "State": "INSTALLED", "InstalledTime": WHEN}
+    # A claim is weighed only inside a collection run, whose lifecycle batch is its read boundary (tap
+    # req-grid-reconcile-edge-authority-8); bind one as run_collection does, with authority off.
+    run = create_batch(
+        source="t:ssm-second-run", name="second run", description="the run after the patch was installed",
+        metadata={RUN_CONFIG_KEY: run_config(authority=False, budget=None, collector="test")},
+    )
+    ambient = get_caller_context()
+    set_caller_context(CallerContext(user=ambient.user if ambient else None, batch_id=str(run.entity_id)))
+    try:
+        _run()
+    finally:
+        set_caller_context(ambient)
+    proposals = BatchEvent.objects.filter(
+        event_type=BatchEventType.AUTHORITY_PROPOSED, metadata__record="proposal", entity_id=closed.entity_id
+    )
+    [proposal] = list(proposals)
+    assert proposal.metadata["outcome"] == "proposed" and proposal.metadata["claim"]["read"] == COMPLETE
+    assert proposal.metadata["identity"]["edge_type"] == "REPORTS_PATCH__aws_core"
+    still = edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID, PATCH, glibc)
+    assert not BatchEvent.objects.filter(
+        event_type=BatchEventType.AUTHORITY_PROPOSED, metadata__record="proposal", entity_id=still.entity_id
+    ).exists()

@@ -1,7 +1,8 @@
 """SSM managed instances, their patch state, the patches they report, and their compliance: one walk, four node types.
 
 Spec: specs/spec-aws-core-v0.md (req-aws-core-ssm-patch-state), aws-core-tap#281. George's rulings Q116b and Q137a
-(build it), Q124a (collect everything, no cap), and the SSM design rulings A1 and B2 (2026-11-22).
+(build it), Q124a (collect everything, no cap), the SSM design rulings A1 and B2 (2026-11-22), and Q147 option 3
+(only the patches that need action are edges).
 
 A manifest entry yields one node type, but the four types come from one fan-out per region, so :func:`shared_walk`
 makes the calls once per (run, region) and the four ``custom_fn`` wrappers in :mod:`.customfns` each take their slice:
@@ -15,9 +16,14 @@ makes the calls once per (run, region) and the four ``custom_fn`` wrappers in :m
 - ``DescribePatchBaselines`` with no filter, read only when some instance has a patch state: which operating system
   each baseline patches, so a patch can be keyed by operating system. Nothing from it is emitted; the baseline entry
   in the manifest still lists ``OWNER=Self`` only.
-- ``DescribeInstancePatches`` per instance with a patch state: every patch that instance reports, each a shared
-  ``aws_ssm_patch`` node keyed (partition, operating system, KBId), reached from the instance by ``REPORTS_PATCH``
-  carrying the instance's state, severity and install time (B2).
+- ``DescribeInstancePatches`` per instance with a patch state, read to its end. A row whose state needs action
+  (:data:`GAP_STATES`) is a ``REPORTS_PATCH`` from the instance, carrying its state, severity and install time, to a
+  shared ``aws_ssm_patch`` node keyed (partition, operating system, KBId) (B2). Any other row (``INSTALLED``,
+  ``INSTALLED_OTHER``, ``NOT_APPLICABLE``) is neither an edge nor a node: the instance's count fields carry it, and
+  its stored ``_patch_list`` note names this call as where AWS lists every patch (Q147 option 3). The edge list is
+  ``edge_only`` in the manifest, so it is not in the instance's stored configuration. The read stays ``complete``,
+  so the authority claim retires the edge of a gap that closed (the patch now installed) as a complete-surface
+  absence.
 - ``ListResourceComplianceSummaries``: one ``aws_ssm_compliance_summary`` node per (resource, compliance type).
 - ``ListComplianceItems`` per instance, ``ComplianceType`` not ``Patch``: the Association and Custom items, each an
   ``aws_ssm_compliance_item`` node. Patch items are not read twice: ``DescribeInstancePatches`` is their source.
@@ -28,8 +34,9 @@ edge rule), and the walk names each patch with the patch entry's own template (:
 
 A denied or failed per-instance call never reads as an empty answer: the instance's item carries a ``_hydrate`` slot
 (the collector records it as ``HYDRATE_GAP``), and the edge reads it fed are ``failed`` (authority.py), so no claim is
-made over edges the run could not see. A patch that is reported but cannot be keyed (its baseline's operating system
-is unknown, or it has no KBId) makes that instance's ``REPORTS_PATCH`` read ``partial``.
+made over edges the run could not see. A gap row that cannot be keyed (its baseline's operating system is unknown,
+or it has no KBId) makes that instance's ``REPORTS_PATCH`` read ``partial``; a row that is not a gap is never an edge,
+so it does not.
 """
 
 from __future__ import annotations
@@ -64,6 +71,22 @@ ASSOCIATION_COMPLIANCE_TYPE = "Association"
 EC2_RESOURCE_TYPE = "EC2Instance"
 #: The ``ResourceTypes`` value ``ListComplianceItems`` takes for a managed node.
 COMPLIANCE_RESOURCE_TYPE = "ManagedInstance"
+
+#: The ``DescribeInstancePatches`` states that need action on the instance, the only rows that are a ``REPORTS_PATCH``
+#: edge and the only patches that are nodes (ruling Q147 option 3). ``INSTALLED``, ``INSTALLED_OTHER`` and
+#: ``NOT_APPLICABLE`` rows are counted by the instance's fields and listed by AWS, not stored.
+GAP_STATES: frozenset[str] = frozenset(
+    {"MISSING", "FAILED", "INSTALLED_PENDING_REBOOT", "INSTALLED_REJECTED", "AVAILABLE_SECURITY_UPDATE"}
+)
+#: The note stored on every instance with a patch state, in place of the per-patch list (Q147 option 3).
+PATCH_LIST_NOTE: dict[str, str] = {
+    "op": "DescribeInstancePatches",
+    "note": (
+        "Only patches that need action (MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED, "
+        "AVAILABLE_SECURITY_UPDATE) are REPORTS_PATCH edges, and the per-patch list is not stored. The patch_*_count "
+        "fields count every state; DescribeInstancePatches with this InstanceId lists every patch AWS holds for it."
+    ),
+}
 
 _SPLIT = re.compile(r"[\s,]+")
 
@@ -164,7 +187,7 @@ def _patch_states(client: Any, ids: list[str]) -> tuple[dict[str, dict[str, Any]
 def _instance_patches(
     client: Any, instance_id: str, operating_system: str, partition: str, walk: SsmWalk
 ) -> tuple[list[dict[str, Any]], str, dict[str, Any] | None]:
-    """The instance's ``REPORTS_PATCH`` values, how the read went, and its slot when it failed."""
+    """The instance's ``REPORTS_PATCH`` values (its gap rows only), how the read went, and its slot when it failed."""
     try:
         reported = _pages(client, "describe_instance_patches", "Patches", InstanceId=instance_id)
     except (BotoCoreError, ClientError) as exc:
@@ -172,6 +195,8 @@ def _instance_patches(
     edges: list[dict[str, Any]] = []
     read = COMPLETE
     for patch in reported:
+        if patch.get("State") not in GAP_STATES:
+            continue  # counted by the instance's fields, listed by AWS; not an edge (Q147 option 3)
         kb_id = str(patch.get("KBId") or "")
         if not kb_id or not operating_system:
             read = PARTIAL  # reported, but nothing to key it by
@@ -305,6 +330,8 @@ def walk_ssm(client: Any, *, partition: str) -> SsmWalk:
             "_patch_last_no_reboot_install_at": _instant((state or {}).get("LastNoRebootInstallOperationTime")),
             "_patches": patches,
         }
+        if state:
+            record["_patch_list"] = dict(PATCH_LIST_NOTE)
         if info.get("ResourceType") == EC2_RESOURCE_TYPE:
             # An EC2 node's tags are the EC2 instance's, on that node; SSM has none of its own to read.
             record["_tags_unread"] = True

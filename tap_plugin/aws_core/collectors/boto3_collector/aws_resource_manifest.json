@@ -29274,9 +29274,15 @@
       "source": {
         "custom_fn": "ssm_managed_instances_described"
       },
-      "why": "Enumerate SSM managed instances (DescribeInstanceInformation), EC2 and hybrid, each with its last patch operation (DescribeInstancePatchStates) held in typed fields, the baseline that operation used, the patches it reports (DescribeInstancePatches), and its compliance summaries and Association and Custom compliance items: per-instance patch and compliance state for vulnerability and compliance evidence (aws-core-tap#281, rulings Q116b, Q137a, A1, B2).",
+      "why": "Enumerate SSM managed instances (DescribeInstanceInformation), EC2 and hybrid, each with its last patch operation (DescribeInstancePatchStates) held in typed fields, the baseline that operation used, the patches that need action on it (DescribeInstancePatches rows MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED and AVAILABLE_SECURITY_UPDATE, as REPORTS_PATCH edges; ruling Q147 option 3), and its compliance summaries and Association and Custom compliance items: per-instance patch and compliance state for vulnerability and compliance evidence (aws-core-tap#281, rulings Q116b, Q137a, A1, B2, Q147).",
       "persist_configuration": true,
-      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). Not stored by ruling, not as secret material: the per-patch list the REPORTS_PATCH edges come from (edge_only).",
+      "edge_only": {
+        "keys": [
+          "_patches"
+        ],
+        "why": "Ruling Q147 option 3 (George): the per-patch list is not kept in the instance's stored configuration. Its rows that need action are the instance's REPORTS_PATCH edges, every state is counted by the patch_*_count fields, and the stored _patch_list note names DescribeInstancePatches as where AWS lists every patch."
+      },
       "sensitivity": {
         "status": "reviewed_may_contain",
         "basis": "Walked botocore 1.44.7 ssm output shapes for DescribeInstanceInformation, DescribeInstancePatchStates, DescribePatchBaselines, DescribeInstancePatches, ListResourceComplianceSummaries and ListComplianceItems for the sensitive trait, and read custom_fn walk_ssm (ssm_patch.py), 2026-11-22. Flagged: InstanceInformation.IPAddress and InstancePatchState.OwnerInformation; the walk drops OwnerInformation as the response is read, so it is in no item (ruling A1).",
@@ -29415,7 +29421,7 @@
       "source": {
         "custom_fn": "ssm_patches_described"
       },
-      "why": "Enumerate the patches SSM managed instances report (DescribeInstancePatches), one node per patch shared by every instance that reports it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the patch's KBId (ruling B2). Each instance reaches it by REPORTS_PATCH, which carries that instance's state, severity and install time. CVEIds are kept on the node as a list; with ssm_compliance_findings on, the run's last step links the patch to compliance_core's vulnerability for each (RESOLVES_VULNERABILITY, ssm_compliance.py).",
+      "why": "Enumerate the patches that are a gap on some SSM managed instance (a DescribeInstancePatches row MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED or AVAILABLE_SECURITY_UPDATE; ruling Q147 option 3), one node per patch shared by every instance that reports it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the patch's KBId (ruling B2). Each instance reaches it by REPORTS_PATCH, which carries that instance's state, severity and install time. CVEIds are kept on the node as a list; with ssm_compliance_findings on, the run's last step links the patch to compliance_core's vulnerability for each (RESOLVES_VULNERABILITY, ssm_compliance.py).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {

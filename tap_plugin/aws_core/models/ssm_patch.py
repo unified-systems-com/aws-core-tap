@@ -1,4 +1,4 @@
-"""SSM Patch — a vendor patch managed instances report (req-aws-core-ssm-patch-state, ruling B2)."""
+"""SSM Patch — a vendor patch that is a gap on some managed instance (req-aws-core-ssm-patch-state, rulings B2, Q147)."""
 
 from typing import Any, ClassVar
 
@@ -9,11 +9,11 @@ from tap_grid.models import BaseModel
 
 
 class SsmPatch(BaseModel):
-    """One patch, as DescribeInstancePatches names it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the KBId (a Windows KB number, or a Linux package name, epoch, version and release). One node serves every instance that reports it; each instance's state, severity and install time are on its REPORTS_PATCH edge. cve_ids is the CVE list AWS gives the patch, split from its comma-separated string. With ssm_compliance_findings on, each CVE also links the patch to compliance_core's vulnerability by RESOLVES_VULNERABILITY."""
+    """One patch, as DescribeInstancePatches names it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the KBId (a Windows KB number, or a Linux package name, epoch, version and release). Made only for a patch that needs action on some instance (MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED or AVAILABLE_SECURITY_UPDATE; ruling Q147 option 3). One node serves every instance that reports it; each such instance's state, severity and install time are on its REPORTS_PATCH edge. cve_ids is the CVE list AWS gives the patch, split from its comma-separated string. With ssm_compliance_findings on, each CVE also links the patch to compliance_core's vulnerability by RESOLVES_VULNERABILITY."""
 
     ENTITY_TYPE: ClassVar[str] = "aws_core__aws_ssm_patch"
     ENTITY_NAME: ClassVar[str] = "SSM Patch"
-    ENTITY_DESCRIPTION: ClassVar[str] = "A patch SSM managed instances report, shared by every instance that reports it."
+    ENTITY_DESCRIPTION: ClassVar[str] = "A patch that needs action on some SSM managed instance, shared by every instance that reports it."
     ENTITY_ICON: ClassVar[str] = "aws-generic"
     DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
     # Identity (req-grid-entity-natural-key): Partition, SSM operating system and KBId: a patch has no ARN and is not an account's resource.

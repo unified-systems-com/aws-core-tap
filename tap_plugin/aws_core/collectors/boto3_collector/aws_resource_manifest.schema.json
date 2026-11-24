@@ -89,6 +89,21 @@
           "propertyNames": { "pattern": "^_[A-Za-z][A-Za-z0-9_]*$" },
           "additionalProperties": { "type": "string", "minLength": 1 }
         },
+        "edge_only": {
+          "description": "Item keys a custom_fn adds for the entry's edge rules only, left out of the stored configuration (req-aws-collector-source-12). Each key starts with an underscore, so it is never a member AWS returns, and is the first segment of a value_path of one of this entry's edge rules; the edges, their properties and the authority claims are read from the in-memory item as before. For a per-resource list that would make the stored item grow with what it references, when a ruling says the list is carried by the edges and counts alone. 'why' names the ruling and where AWS lists what was left out.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["keys", "why"],
+          "properties": {
+            "keys": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^_[A-Za-z][A-Za-z0-9_]*$" }
+            },
+            "why": { "type": "string", "minLength": 1 }
+          }
+        },
         "not_offered": {
           "description": "Partitions in which the collector does not call this entry, because its service or the endpoint that serves it is not offered there (req-aws-collector-partition-7). Keyed by partition (aws, aws-us-gov); an entry absent from a partition is called there. Each partition carries why it is listed, how that was established (ran: a live call or a DNS lookup found no endpoint; web: an AWS page; read: offline data such as botocore's endpoint rules; inferred), the evidence and the date it was established. A service is marked on every one of its entries only when none is served; a service served in part marks only the entries it does not serve. A block may be limited to some regions of the partition (`regions`) or to FIPS runs on or off (`fips`); the collector then skips the entry only in those regions or that setting (req-aws-collector-partition-15).",
           "type": "object",

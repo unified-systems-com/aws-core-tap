@@ -60,7 +60,8 @@ EC2_INSTANCE = "aws_core__aws_ec2_instance"
 ACCOUNT_DIMENSION = "aws.account"
 
 #: The DescribeInstancePatches states in which the patch that resolves a CVE is not in effect on the instance, so the
-#: instance is exposed to the CVE. MISSING and FAILED are ruled (Q141b). INSTALLED_PENDING_REBOOT: the patch is on
+#: instance is exposed to the CVE. MISSING and FAILED are ruled (Q141b); the other two in, and INSTALLED_REJECTED out,
+#: are ruled Q148b. INSTALLED_PENDING_REBOOT: the patch is on
 #: disk but AWS says it may not be in effect until the reboot, and Patch Manager reports the node non-compliant for
 #: it. AVAILABLE_SECURITY_UPDATE: a security patch the baseline has not approved is available and not installed, so
 #: the CVE is as present as with MISSING; only the baseline's approval differs. Not exposure: INSTALLED and
@@ -119,9 +120,9 @@ def patch_ref(report: Report) -> str:
 
 
 def carrier_of(instance_id: str, resource_type: str | None) -> tuple[str, str]:
-    """``(entity type, natural key)`` of the instance that carries the finding: the EC2 instance for an EC2-backed node,
-    the node Inspector's finding for the same host is carried by; the managed instance for a hybrid one, which has no
-    other node."""
+    """``(entity type, natural key)`` of the instance that carries the finding (Q148a): the EC2 instance for an
+    EC2-backed node, the node Inspector's finding for the same host is carried by; the managed instance for a hybrid
+    one, which has no other node."""
     if resource_type == EC2_RESOURCE_TYPE:
         return EC2_INSTANCE, instance_id
     return MANAGED_INSTANCE_TYPE, instance_id

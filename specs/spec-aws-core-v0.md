@@ -64,7 +64,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-contained-type-triple | [Every Contained Type Has Its Three Parts](#every-contained-type-has-its-three-parts) | Proposed | Every (parent, edge type) the epic adds has containment, a completeness surface and a falsifier; empty parents are complete-empty; unfinished listings are incomplete |
 | req-aws-core-reference-derivation | [Reference Edges Declare What They Derive From](#reference-edges-declare-what-they-derive-from) | Proposed | Every emitted reference edge names its source payload, ready for core edge re-derivation; last-seen edges listed |
 | req-aws-core-partition-pairing | [Account Partition And GovCloud Pairing](#account-partition-and-govcloud-pairing) | Proposed | `AwsAccount.partition`; `PAIRED_WITH_ACCOUNT` GovCloud → commercial, declared (not discoverable from the GovCloud side); no vending model (ruling 2026-09-30) |
-| req-aws-core-ssm-patch-state | [SSM Patch And Compliance State](#ssm-patch-and-compliance-state) | Implemented | Managed instances with their last patch operation as typed fields, the EC2 instance and baseline they link to, shared patch nodes reached by `REPORTS_PATCH`, compliance summaries and non-Patch items as nodes; no cap (aws-core-tap#281) |
+| req-aws-core-ssm-patch-state | [SSM Patch And Compliance State](#ssm-patch-and-compliance-state) | Implemented | Managed instances with their last patch operation as typed fields, the EC2 instance and baseline they link to, shared patch nodes reached by `REPORTS_PATCH` for the patches that need action only (Q147), compliance summaries and non-Patch items as nodes; no cap (aws-core-tap#281) |
 | req-aws-core-ssm-compliance | [SSM Patch State In compliance_core](#ssm-patch-state-in-compliance_core) | Implemented | Behind its own off-by-default switch `ssm_compliance_findings`, the run's last step links each patch to compliance_core's vulnerability for every CVE it names (`RESOLVES_VULNERABILITY`) and writes a neutral finding per exposed (instance, CVE), carried by the instance, from the stored patch state (aws-core-tap#281, Q141a to c) |
 
 ### Plugin Scope
@@ -2398,7 +2398,10 @@ and how each stands on every compliance type. This is evidence for vulnerability
 this, aws_core called none of the calls below, and no patch state was on the grid. Raised as Issue# 281 -
 aws-core-tap (https://github.com/unified-systems-com/aws-core-tap/issues/281). Ruled for build by George (Q116b,
 reaffirmed Q137a). Design rulings, 2026-11-22: patch state is typed fields on the managed instance (A1); a patch
-is a node shared by every instance that reports it, with the per-instance facts on the edge (B2).
+is a node shared by every instance that reports it, with the per-instance facts on the edge (B2). Ruled by George,
+Q147 option 3: only the patches that need action on an instance are edges and nodes (`MISSING`, `FAILED`,
+`INSTALLED_PENDING_REBOOT`, `INSTALLED_REJECTED`, `AVAILABLE_SECURITY_UPDATE`); the rest are counted on the instance,
+and the per-patch list is not stored.
 
 #### Implementation
 
@@ -2409,7 +2412,8 @@ is a node shared by every instance that reports it, with the per-instance facts 
   - `DescribeInstancePatchStates` reads 50 instances per call, the API's maximum.
   - `DescribePatchBaselines` is read with no filter, only to learn each baseline's operating system. It emits
     nothing.
-  - `DescribeInstancePatches` is read per instance that has a patch state.
+  - `DescribeInstancePatches` is read per instance that has a patch state, to its end. Only its rows that need
+    action become edges (below).
   - `ListResourceComplianceSummaries` is read once per region.
   - `ListComplianceItems` is read per instance, with `ComplianceType` `NOT_EQUAL` `Patch`.
   - `ListTagsForResource` (`ManagedInstance`) is read per hybrid node.
@@ -2424,7 +2428,8 @@ is a node shared by every instance that reports it, with the per-instance facts 
   - `IPAddress` is botocore-sensitive. It is declared and not projected.
   - A hybrid node's tags are SSM's. An EC2 node's tags are the EC2 instance's, so on this node they stay unread
     (null).
-- **`aws_ssm_patch`**, keyed by (`partition`, `operating_system`, `kb_id`).
+- **`aws_ssm_patch`**, keyed by (`partition`, `operating_system`, `kb_id`). A patch is a node only when it is a gap on
+  some instance the run read: a row in one of the five states that need action (Q147 option 3).
   - The operating system is the SSM `OperatingSystem` of the baseline the instance's last operation used, so a
     package name or KB number names one patch per operating system.
   - One node serves every instance, region and account that reports the patch. A run sends it once; its
@@ -2443,7 +2448,17 @@ is a node shared by every instance that reports it, with the per-instance facts 
   - `REPRESENTS_EC2_INSTANCE` (managed instance → EC2 instance), only when `ResourceType` is `EC2Instance`.
   - `USES_PATCH_BASELINE` (managed instance → patch baseline): the `BaselineId` of the last operation.
   - `REPORTS_PATCH` (managed instance → patch), carrying `state`, `severity` and `installed_time`. AWS's epoch
-    means not installed and is stored as null.
+    means not installed and is stored as null. Only a row whose state needs action is an edge: `MISSING`, `FAILED`,
+    `INSTALLED_PENDING_REBOOT`, `INSTALLED_REJECTED` and `AVAILABLE_SECURITY_UPDATE` (Q147 option 3, `GAP_STATES`).
+    An `INSTALLED`, `INSTALLED_OTHER` or `NOT_APPLICABLE` row is no edge and makes no node; the instance's
+    `patch_installed_count`, `patch_installed_other_count` and `patch_not_applicable_count` carry them.
+  - **A closed gap retires.** The instance's `REPORTS_PATCH` read stays `complete` when only gaps are kept, so every
+    run claims the instance's outbound `REPORTS_PATCH` scope whole (`req-aws-collector-edge-authority`). A patch the
+    instance has since installed is sent as no edge, and core records the edge left from the earlier run as a removal
+    proposal: a complete-surface absence, not a stale fact. Core applies the proposal when reconcile authority is
+    armed (off by default), and holds a claim that asserts none of three or more live edges (an instance that closed
+    all its gaps at once) until a later run supersedes it or an operator releases it (tap
+    `req-grid-reconcile-edge-authority`). Until then the old edge stays live with its last state.
   - `HOLDS_COMPLIANCE_SUMMARY` and `HOLDS_COMPLIANCE_ITEM` (managed instance → summary or item), written from the
     summary's or item's `ResourceId`.
   - `CONCERNS_ASSOCIATION` (Association item → `aws_ssm_association`, by `AssociationId`).
@@ -2453,11 +2468,14 @@ is a node shared by every instance that reports it, with the per-instance facts 
   instance's `patch_baseline_id` keeps the id.
 - **Degradation.** A denied or failed per-instance call is a `_hydrate` slot, which the run records as
   `HYDRATE_GAP`. The edge reads it fed are `failed`, so no authority claim covers edges the run could not see. A
-  patch reported without a known operating system or a KBId makes that instance's `REPORTS_PATCH` read `partial`.
+  gap row reported without a known operating system or a KBId makes that instance's `REPORTS_PATCH` read `partial`;
+  a row that needs no action is never keyed, so it does not.
 - **Stored, as every entry is** (`req-aws-collector-redaction-1`). `OwnerInformation` is never in an item, so it
   is never stored. `IPAddress` is declared under its real category and stored, as `req-aws-collector-redaction-2`
-  rules for a botocore-sensitive member that is not secret material. The managed instance's stored item carries the
-  per-patch list its `REPORTS_PATCH` edges come from, so it grows with the number of patches the instance reports.
+  rules for a botocore-sensitive member that is not secret material. The per-patch list the `REPORTS_PATCH` edges
+  are read from is not in the managed instance's stored configuration (Q147 option 3): the entry declares it
+  `edge_only` (`req-aws-collector-source-12`). In its place an instance with a patch state stores `_patch_list`, a note
+  naming `DescribeInstancePatches` as where AWS lists every patch of the instance with its state.
 - **Event time** (`req-aws-core-models-5`), each type judged by its own record. The managed instance declares
   `Interval(start="registration_date", kind="created")`: `RegistrationDate` is when the node was registered as a
   managed node, which AWS states for a hybrid node; an EC2 node's record states none, and the EC2 instance's
@@ -2485,7 +2503,7 @@ is a node shared by every instance that reports it, with the per-instance facts 
 | req-aws-core-ssm-patch-state-2 | Patch State On The Instance | Implemented | The last patch operation's group, baseline, operation, times and counts are typed nullable fields of the instance (ruling A1). `OwnerInformation` reaches no item, field or stored configuration; the IP address reaches no field. | |
 | req-aws-core-ssm-patch-state-3 | Linked To Its EC2 Instance And Baseline | Implemented | An EC2-backed instance has `REPRESENTS_EC2_INSTANCE` to the EC2 instance, a hybrid one does not. `USES_PATCH_BASELINE` names the baseline by the `BaselineId` AWS returns, an AWS-provided ARN included. | |
 | req-aws-core-ssm-patch-state-4 | Tags From The Right Surface | Implemented | A hybrid node's tags are read by `ListTagsForResource` (`ManagedInstance`). An EC2 node's are left unread, because they are the EC2 instance's. | |
-| req-aws-core-ssm-patch-state-5 | Shared Patch Nodes | Implemented | A patch is one `aws_ssm_patch` per (partition, operating system, KBId), sent once per run. Each reporting instance reaches it by `REPORTS_PATCH` carrying its own `state`, `severity` and `installed_time` (null for not installed) (ruling B2). | |
+| req-aws-core-ssm-patch-state-5 | Shared Patch Nodes, Gaps Only | Implemented | A patch is one `aws_ssm_patch` per (partition, operating system, KBId), sent once per run, and made only when it is a gap on some instance. An instance reaches it by `REPORTS_PATCH` carrying its own `state`, `severity` and `installed_time` (null for not installed) only for a row in `MISSING`, `FAILED`, `INSTALLED_PENDING_REBOOT`, `INSTALLED_REJECTED` or `AVAILABLE_SECURITY_UPDATE`; an `INSTALLED`, `INSTALLED_OTHER` or `NOT_APPLICABLE` row is neither edge nor node and is carried by the instance's count fields. The per-patch list is not in the instance's stored configuration, which instead carries a note naming `DescribeInstancePatches`. A gap that closes is sent as no edge under a complete `REPORTS_PATCH` claim, so its old edge is a removal proposal, not left as a live claim the run made. | Rulings B2 and Q147 option 3. |
 | req-aws-core-ssm-patch-state-6 | CVE Ids As A Property | Implemented | `cve_ids` is a list of the CVE ids AWS gives the patch. The walk emits no edge to a vulnerability node. | The link is `req-aws-core-ssm-compliance` (Q141a). |
 | req-aws-core-ssm-patch-state-7 | Compliance Summaries | Implemented | Each `ListResourceComplianceSummaries` row is one `aws_ssm_compliance_summary`, scoped by account and region, held by its managed instance. | |
 | req-aws-core-ssm-patch-state-8 | Non-Patch Compliance Items | Implemented | `ListComplianceItems` is read per instance with `ComplianceType` not `Patch`. Each item is an `aws_ssm_compliance_item` held by its instance, and an Association item has `CONCERNS_ASSOCIATION` to its association. | |
@@ -2504,7 +2522,10 @@ state, so a VDR method reads which CVEs each instance is exposed to from SSM as 
 George, 2026-11-23: each patch links to the vulnerability record of each CVE in its `cve_ids`, creating the record when
 absent, in an optional config-gated last step built like the Inspector projection (Q141a); a patch that is MISSING or
 FAILED on an instance also writes the neutral finding per (instance, CVE), carried by the instance, as Inspector does
-(Q141b); the switch is its own, independent of Inspector's, and off by default as Inspector's is (Q141c).
+(Q141b); the switch is its own, independent of Inspector's, and off by default as Inspector's is (Q141c). Ruled by
+George, Q148: (a) the finding is carried by the EC2 instance for an EC2-backed host and by the managed instance for a
+hybrid one; (b) `INSTALLED_PENDING_REBOOT` and `AVAILABLE_SECURITY_UPDATE` are exposure, as `MISSING` and `FAILED`
+are, and `INSTALLED_REJECTED` is not.
 
 **The cross-plugin dependency** is the one `req-aws-landing-zone-inspector-compliance` names: compliance_core is an
 optional `depends_on` at `min_version = "0.8.13"`, written by slug and read through the registries, never imported.
@@ -2530,19 +2551,20 @@ same.
   `SSM_COMPLIANCE_PROJECTION_FAILED` as an error with the reason, also named in the run summary. A rejected projection
   batch is recorded the same way.
 - **The patch link (Q141a).** Each stored patch has one `RESOLVES_VULNERABILITY` (patch → vulnerability) for each CVE
-  id in its `cve_ids`; AWS describes `CVEIds` as the CVEs the patch resolves. Every patch any of the account's instances
-  reports is linked, whatever its state there. The vulnerability is looked up by the CVE id as a `vuln_id` or an alias
+  id in its `cve_ids`; AWS describes `CVEIds` as the CVEs the patch resolves. Every patch a live `REPORTS_PATCH` of
+  the account's instances reaches is linked, whatever its state there; since Q147 option 3 those are the patches that
+  are a gap on some instance. The vulnerability is looked up by the CVE id as a `vuln_id` or an alias
   of a live vulnerability, as the Inspector projection does: one found is linked to and keeps its `vuln_id`; two found
   is ambiguous, so that CVE is not projected and a warning names it; none found is created with `vuln_id` = the CVE id
   and `aliases` = `[]`. SSM states no CVSS, so the projection writes none and never touches a held vulnerability's
   fields. A token in `cve_ids` that is not a CVE id is skipped with a warning. `cve_ids` stays on the patch.
-- **Which states are exposure (Q141b, and this spec's decision for the three the ruling left open).** A finding is
+- **Which states are exposure (Q141b for `MISSING` and `FAILED`; Q148b for the three Q141b left open).** A finding is
   open for an (instance, CVE) pair while at least one patch the instance reports for that CVE is in one of:
   - `MISSING` and `FAILED`, as ruled.
   - `INSTALLED_PENDING_REBOOT`: the patch is installed, but AWS says it may not be in effect until the node reboots,
     and Patch Manager reports the node non-compliant for it. Until the reboot the vulnerable code can still be what
-    runs, so the CVE is not yet remediated; the finding resolves on the first read after the reboot reports the patch
-    `INSTALLED`.
+    runs, so the CVE is not yet remediated. (That the finding resolves once the reboot reports the patch `INSTALLED`
+    is open since Q147 option 3; see below.)
   - `AVAILABLE_SECURITY_UPDATE`: a security patch the baseline has not approved is available and not installed. The
     CVE is as present as with `MISSING`; only the baseline's approval differs, and a VDR question is about exposure,
     not about the baseline.
@@ -2561,7 +2583,13 @@ same.
   when an open `aws_ssm_patch` finding for it is already held: the stored states then say the fix is in effect. A pair
   that is no longer reported at all (the patch left the instance's list, or the instance was retired) is left as it was,
   the rule Inspector's projection follows for a row a read did not return.
-- **The carrier (Q141b, "as Inspector does").** `CARRIES_COMPLIANCE_FINDING` comes from the EC2 instance for an
+- **Open since Q147 option 3, not ruled.** An installed patch is no longer an edge, so a pair whose patch the instance
+  installed is "no longer reported" by the rule above and its finding is never resolved. Before core applies the
+  removal proposal, the old edge is still live with its exposed state, so the finding stays open; after, the pair is
+  absent and the finding is left open. Only `INSTALLED_REJECTED`, a gap that is not exposure, still resolves a
+  finding. `tests/test_ssm_compliance.py::test_stored_patch_state_is_projected_and_a_patched_pair_resolves` is a
+  strict expected failure until this is ruled.
+- **The carrier (Q141b, "as Inspector does"; Q148a).** `CARRIES_COMPLIANCE_FINDING` comes from the EC2 instance for an
   EC2-backed managed instance, the node that carries Inspector's finding for the same host, and from the
   `aws_ssm_managed_instance` for a hybrid (`mi-`) node, which has no other node. Like Inspector's, the edge names the
   EC2 instance by its id and is written whether or not that instance was collected; the permissive import skips it
@@ -2581,6 +2609,6 @@ same.
 | req-aws-core-ssm-compliance-2 | Readiness Fails Loud | Implemented | With the switch on, the self-test fails when compliance_core is missing, too old or short of the contract; at run time the same failure collects the AWS data, skips the projection and records the reason as an error. | |
 | req-aws-core-ssm-compliance-3 | Projected From Stored Rows | Implemented | The projection reads the account's stored managed instances, `REPORTS_PATCH` edges and patches, so state collected before the switch was on is projected on the first run after. | |
 | req-aws-core-ssm-compliance-4 | Every Patch Links Its CVEs | Implemented | Each reported patch has one `RESOLVES_VULNERABILITY` per CVE id in `cve_ids` to the vulnerability found by id or alias, or created with the CVE id; an ambiguous CVE and a token that is not a CVE id are skipped and said; `cve_ids` stays on the patch. | Q141a. |
-| req-aws-core-ssm-compliance-5 | A Finding Per Exposed Instance And CVE | Implemented | An (instance, CVE) pair with a patch in `MISSING`, `FAILED`, `INSTALLED_PENDING_REBOOT` or `AVAILABLE_SECURITY_UPDATE` is one open `compliance_finding` (`aws_ssm_patch`, `<account>:<instance>:<CVE>`) with `CONCERNS_COMPLIANCE_VULNERABILITY` (`fix_state` `fixed`) and one carrier edge; a pair whose patches are only `INSTALLED`, `INSTALLED_OTHER`, `INSTALLED_REJECTED` or `NOT_APPLICABLE` writes no new finding. | Q141b; the three open states decided above. |
-| req-aws-core-ssm-compliance-6 | Resolved Only On A Positive Record | Implemented | A held open finding whose pair is still reported with no exposed patch is written `resolved`; a pair no longer reported is not written. | |
-| req-aws-core-ssm-compliance-7 | Carried By The Instance | Implemented | An EC2-backed instance's finding is carried by `aws_ec2_instance` (its instance id), a hybrid one's by its `aws_ssm_managed_instance`. | As Inspector's EC2 finding is carried. |
+| req-aws-core-ssm-compliance-5 | A Finding Per Exposed Instance And CVE | Implemented | An (instance, CVE) pair with a patch in `MISSING`, `FAILED`, `INSTALLED_PENDING_REBOOT` or `AVAILABLE_SECURITY_UPDATE` is one open `compliance_finding` (`aws_ssm_patch`, `<account>:<instance>:<CVE>`) with `CONCERNS_COMPLIANCE_VULNERABILITY` (`fix_state` `fixed`) and one carrier edge; a pair whose patches are only `INSTALLED`, `INSTALLED_OTHER`, `INSTALLED_REJECTED` or `NOT_APPLICABLE` writes no new finding. | Q141b; Q148b for `INSTALLED_PENDING_REBOOT`, `AVAILABLE_SECURITY_UPDATE` and `INSTALLED_REJECTED`. |
+| req-aws-core-ssm-compliance-6 | Resolved Only On A Positive Record | Implemented | A held open finding whose pair is still reported with no exposed patch is written `resolved`; a pair no longer reported is not written. | Open since Q147 option 3: an installed patch is no longer reported, so this resolves only through `INSTALLED_REJECTED` (see above). |
+| req-aws-core-ssm-compliance-7 | Carried By The Instance | Implemented | An EC2-backed instance's finding is carried by `aws_ec2_instance` (its instance id), a hybrid one's by its `aws_ssm_managed_instance`. | Q148a; as Inspector's EC2 finding is carried. |
