@@ -133,6 +133,8 @@ def _plain_fields_only(operations: list[Any], kind: type, name: str) -> list[Any
     return list(operations)
 
 
+# WORKAROUND(unified-systems-com/tap#1359): core has no bulk add/remove-field operation yet; drop this for core's
+# once it ships.
 class BulkAddFields(Operation):
     """Add many non-relational fields in one step; ``operations`` are plain ``AddField`` operations.
 
@@ -192,6 +194,8 @@ class BulkAddFields(Operation):
         return "bulk_add_fields"
 
 
+# WORKAROUND(unified-systems-com/tap#1359): core has no bulk add/remove-field operation yet; drop this for core's
+# once it ships.
 class BulkRemoveFields(Operation):
     """Remove many non-relational fields in one step; ``operations`` are plain ``RemoveField`` operations.
 
