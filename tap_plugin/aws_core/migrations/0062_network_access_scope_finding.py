@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_core', '0060_inspector2_reachability'),
+        ('aws_core', '0061_lambda_resource_policy'),
         ('tap_grid', '0015_entity_type_track_history'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
