@@ -9,8 +9,8 @@
         "source": {
           "type": "git",
           "url": "https://github.com/unified-systems-com/computing-core-tap",
-          "rev": "v0.10.9",
-          "commit": "9995fe301e27ea41e7fe1faae93bfc1f1291371e"
+          "rev": "v0.11.0",
+          "commit": "e80e953802aac9974a4d33bf9c140dd9f1bb9dfe"
         }
       },
       {
