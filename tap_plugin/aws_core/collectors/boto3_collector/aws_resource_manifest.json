@@ -29448,7 +29448,7 @@
         "source_id": "SourceId",
         "source_type": "SourceType",
         "patch_group": "_patch_state.PatchGroup",
-        "patch_baseline_id": "_patch_baseline_id",
+        "patch_baseline_id": "_patch_state.BaselineId",
         "patch_operation": "_patch_state.Operation",
         "patch_operation_start_at": "_patch_operation_start_at",
         "patch_operation_end_at": "_patch_operation_end_at",

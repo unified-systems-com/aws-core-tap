@@ -28,7 +28,7 @@ patch (``req-aws-collector-runtime-3``).
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -98,7 +98,7 @@ from .credentials import (
     resolve_partition,
     resolve_regions,
 )
-from . import compliance, ssm_compliance
+from . import compliance, ssm_compliance, ssm_patch
 from .customfns import build_custom_fn_registry
 from .edges import EdgeError, account_ref, emit_containment, emit_edges
 from .ecs import CONTAINER_TYPE as ECS_CONTAINER_TYPE
@@ -1372,7 +1372,14 @@ class Boto3Collector(CollectorBase):
         projection_failed = self._project_inspector_findings(data, account_id) if compliance.enabled(data) else None
         # --- SSM patch state into compliance_core (req-aws-core-ssm-compliance): its own gate (Q141c), same shape ---
         ssm_projection_failed = (
-            self._project_ssm_compliance(data, account_id) if ssm_compliance.enabled(data) else None
+            self._project_ssm_compliance(
+                data,
+                account_id,
+                # Q161a: this run's complete REPORTS_PATCH reads, only once the collection batch they fed imported.
+                walks=ssm_patch.walks_of(session) if result.imported_batches else [],
+            )
+            if ssm_compliance.enabled(data)
+            else None
         )
 
         imported = result.counts.batches_imported
@@ -1452,13 +1459,18 @@ class Boto3Collector(CollectorBase):
         )
         return None
 
-    def _project_ssm_compliance(self, data: Mapping[str, Any], account_id: str) -> str | None:
+    def _project_ssm_compliance(
+        self, data: Mapping[str, Any], account_id: str, *, walks: Iterable[Any] = ()
+    ) -> str | None:
         """Write the account's stored SSM patch state into compliance_core, in a batch of its own.
 
         The Inspector projection's twin (:meth:`_project_inspector_findings`), behind ``ssm_compliance_findings``:
         each patch links to the vulnerability of every CVE it names, and each (instance, CVE) pair a patch leaves
         exposed is a neutral finding carried by the instance. Returns None when written, else why not, which is also
         an entry in ``results["error"]``. The collection batch has already imported, so the AWS data stands.
+
+        ``walks`` are this run's SSM walks: an instance whose ``REPORTS_PATCH`` read in them was complete is projected
+        from that read, and its held open findings the read asserted nothing exposed for are resolved (Q161a).
         """
 
         def failed(reason: str) -> str:
@@ -1474,12 +1486,20 @@ class Boto3Collector(CollectorBase):
         if reason is not None:
             return failed(reason)
         try:
-            reports = ssm_compliance.stored_reports(account_id)
+            complete = ssm_compliance.complete_reads(walks)
+            reports = ssm_compliance.merged_reports(ssm_compliance.stored_reports(account_id), complete)
+            held_open = ssm_compliance.held_open_findings(
+                ssm_compliance.resolvable_keys(account_id, reports)
+            ) | ssm_compliance.held_open_for_instances(account_id, complete)
+            names = ssm_compliance.names_of(reports) | {
+                parsed[1] for key in held_open if (parsed := ssm_compliance.parse_source_key(account_id, key))
+            }
             projection = ssm_compliance.project(
                 reports,
-                compliance.held_vulnerabilities(ssm_compliance.names_of(reports)),
+                compliance.held_vulnerabilities(names),
                 account_id=account_id,
-                held_open=ssm_compliance.held_open_findings(ssm_compliance.resolvable_keys(account_id, reports)),
+                held_open=held_open,
+                complete=complete,
             )
             for code, message in projection.notices:
                 self.record_warn(_SITE_SSM_COMPLIANCE_NOTICE, code, message)

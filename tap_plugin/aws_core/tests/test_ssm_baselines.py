@@ -27,6 +27,7 @@ from tap_plugin.aws_core.tests.grid_keys import edge_between, node_id
 from tap_plugin.aws_core.tests.test_ssm_patch_state import (  # noqa: F401 — _stub_ssm is a fixture
     ACCOUNT,
     AWS_BASELINE,
+    AWS_BASELINE_ID,
     EC2_ID,
     EC2_ID_2,
     HYBRID_ID,
@@ -59,7 +60,8 @@ class _Ssm(_FakeSsm):
     def __init__(self, *, groups: list[dict[str, Any]] | None = None, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.groups = groups if groups is not None else [
-            {"PatchGroup": "prod", "BaselineIdentity": {"BaselineId": AWS_BASELINE, "BaselineName": "AWS-AmazonLinux2023DefaultPatchBaseline",
+            # Named by the bare id, as the patch state names it; the group still reaches the ARN-keyed node.
+            {"PatchGroup": "prod", "BaselineIdentity": {"BaselineId": AWS_BASELINE_ID, "BaselineName": "AWS-AmazonLinux2023DefaultPatchBaseline",
                                                         "OperatingSystem": "AMAZON_LINUX_2023", "DefaultBaseline": True}},
             {"PatchGroup": "prod", "BaselineIdentity": {"BaselineId": OWN_BASELINE, "BaselineName": "lab-windows",
                                                         "OperatingSystem": "WINDOWS", "DefaultBaseline": False}},
@@ -158,7 +160,7 @@ def test_each_default_is_a_node_per_operating_system_naming_its_baseline() -> No
 def test_a_patch_group_names_its_baselines_and_its_instances() -> None:
     from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 
-    ssm = _Ssm(states=[_state(EC2_ID, AWS_BASELINE), _state(EC2_ID_2, AWS_BASELINE), {**_state(HYBRID_ID, OWN_BASELINE), "PatchGroup": "lab"}])
+    ssm = _Ssm(states=[_state(EC2_ID, AWS_BASELINE_ID), _state(EC2_ID_2, AWS_BASELINE_ID), {**_state(HYBRID_ID, OWN_BASELINE), "PatchGroup": "lab"}])
     session = _Session()
     [group] = _items(GROUP, ssm, session)  # "lab" is no registered group: no node
     assert group["_key"] == f"{PARTITION}:{ACCOUNT}:{REGION}:prod"

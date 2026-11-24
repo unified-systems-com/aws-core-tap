@@ -43,7 +43,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads
 from .envelope import jsonable, without_response_metadata
 from .source import SourceError
-from .ssm_patch import _pages, _slot, shared_walk
+from .ssm_patch import _pages, _slot, bare_baseline_id, shared_walk
 
 DEFAULT_BASELINE_TYPE = "aws_core__aws_ssm_default_patch_baseline"
 PATCH_GROUP_TYPE = "aws_core__aws_ssm_patch_group"
@@ -66,6 +66,8 @@ class BaselineWalk:
     #: The ``DescribePatchGroups`` failure, raised by the group entry only, so the baselines are still collected.
     groups_error: BaseException | None = None
     groups: list[dict[str, Any]] = field(default_factory=list)
+    #: Bare ``pb-`` id -> the ``BaselineId`` the listing names the baseline by (its node's key).
+    keys: dict[str, str] = field(default_factory=dict)
 
 
 def _own_tags(client: Any, baseline_id: str) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
@@ -81,6 +83,7 @@ def _baselines(client: Any, walk: BaselineWalk) -> None:
         baseline_id = str(identity.get("BaselineId") or "")
         if not baseline_id:
             continue
+        walk.keys[bare_baseline_id(baseline_id)] = baseline_id
         if identity.get("DefaultBaseline") is True and identity.get("OperatingSystem"):
             walk.defaults.append(
                 with_edge_reads(
@@ -139,7 +142,14 @@ def _groups(
         record: dict[str, Any] = {
             "PatchGroup": group,
             "BaselineIdentities": identities,
-            "_baseline_ids": sorted({str(i["BaselineId"]) for i in identities if i.get("BaselineId")}),
+            # Each baseline by its node's key, whichever spelling the mapping uses (a bare pb- id or the ARN).
+            "_baseline_ids": sorted(
+                {
+                    walk.keys.get(bare_baseline_id(str(i["BaselineId"])), str(i["BaselineId"]))
+                    for i in identities
+                    if i.get("BaselineId")
+                }
+            ),
             "_members": sorted(named.get(group, [])),
         }
         if slot:

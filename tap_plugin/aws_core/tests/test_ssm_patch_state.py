@@ -44,6 +44,9 @@ HYBRID_ID = "mi-0123456789abcdef0"
 OWN_BASELINE = "pb-0123456789abcdef0"
 #: An AWS-provided baseline's id is an ARN under AWS's own account; a documentation placeholder stands in for it.
 AWS_BASELINE = f"arn:{PARTITION}:ssm:{REGION}:999988887777:patchbaseline/pb-0fedcba9876543210"
+#: The same baseline as DescribeInstancePatchStates names it: the bare pb- id (AWS's own spelling, which the live trial
+#: of 4603045 showed; DescribePatchBaselines gives the ARN above).
+AWS_BASELINE_ID = AWS_BASELINE.rsplit("/", 1)[1]
 OWNER_CANARY = "canary-owner-information-4c1d"
 WHEN = datetime(2026, 11, 20, 3, 0, tzinfo=UTC)
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
@@ -164,8 +167,8 @@ class _FakeSsm:
             _info(HYBRID_ID, "ManagedInstance", Name="lab-box", ActivationId="a1b2c3d4-0000-1111-2222-abcdefabcdef"),
         ]
         self.states = states if states is not None else [
-            _state(EC2_ID, AWS_BASELINE),
-            _state(EC2_ID_2, AWS_BASELINE, missing=0, critical=0),
+            _state(EC2_ID, AWS_BASELINE_ID),
+            _state(EC2_ID_2, AWS_BASELINE_ID, missing=0, critical=0),
             _state(HYBRID_ID, OWN_BASELINE),
         ]
         shared = _patch("openssl-libs.x86_64:1:3.0.8-1.amzn2023", "MISSING", cves="CVE-2026-0001, CVE-2026-0002,CVE-2026-0001")
@@ -297,7 +300,7 @@ def test_each_managed_instance_holds_its_last_patch_operation_in_typed_fields() 
     ec2 = nodes[EC2_ID].fields
     assert ec2["instance_id"] == EC2_ID and ec2["resource_type"] == "EC2Instance" and ec2["ping_status"] == "Online"
     assert ec2["last_ping_at"] == "2026-11-20T03:00:00Z"
-    assert (ec2["patch_operation"], ec2["patch_group"], ec2["patch_baseline_id"]) == ("Scan", "prod", AWS_BASELINE)
+    assert (ec2["patch_operation"], ec2["patch_group"], ec2["patch_baseline_id"]) == ("Scan", "prod", AWS_BASELINE_ID)
     assert (ec2["patch_installed_count"], ec2["patch_missing_count"], ec2["patch_critical_non_compliant_count"]) == (40, 2, 1)
     assert ec2["patch_operation_end_at"] == "2026-11-20T03:00:00Z"
     assert ec2["patch_installed_other_count"] is None  # AWS did not report it: unobserved, not zero
@@ -436,7 +439,7 @@ def test_association_and_custom_items_are_nodes_and_patch_items_are_not_read_twi
 @pytest.mark.spec("req-aws-core-ssm-patch-state-9")
 def test_every_instance_is_read_with_no_cap_in_chunks_the_api_accepts() -> None:
     many = [_info(f"i-{n:017x}", "EC2Instance") for n in range(120)]
-    ssm = _FakeSsm(instances=many, states=[_state(i["InstanceId"], AWS_BASELINE) for i in many],
+    ssm = _FakeSsm(instances=many, states=[_state(i["InstanceId"], AWS_BASELINE_ID) for i in many],
                    patches={i["InstanceId"]: [_patch(f"pkg-{k}", "MISSING") for k in range(30)] for i in many}, summaries=[], items={})
     instances = list(ssm_managed_instances_described(None, client_for=_clients(ssm)))
     assert len(instances) == 120 and all(len(i["_patches"]) == 30 for i in instances)
@@ -473,6 +476,20 @@ def test_patches_that_cannot_be_keyed_make_the_read_partial_and_no_node() -> Non
     item = next(i for i in ssm_managed_instances_described(session, client_for=_clients(ssm)) if i["InstanceId"] == EC2_ID)
     assert item["_patches"] == [] and item[EDGE_READS]["_patches"] == PARTIAL
     assert item["_hydrate"]["baseline_systems"]["status"] == "denied"
+    # The bare id the state gives cannot be matched to the baseline's ARN-keyed node: kept as given, read partial.
+    assert item["_patch_baseline_id"] == AWS_BASELINE_ID and item[EDGE_READS]["_patch_baseline_id"] == PARTIAL
+
+
+@pytest.mark.spec("req-aws-core-ssm-patch-state-3")
+def test_the_bare_id_a_patch_state_gives_reaches_the_aws_baseline_by_its_arn() -> None:
+    """DescribeInstancePatchStates names an AWS-provided baseline by its bare pb- id, DescribePatchBaselines by its
+    ARN, which keys the node (Q139a): the edge names the ARN; the field keeps the id as stated. The live trial of
+    4603045 skipped this edge (GRIFT_EDGES_SKIPPED) because the edge named the bare id."""
+    node = _by_key(_nodes(MI, ssm_managed_instances_described, _FakeSsm()))[EC2_ID]
+    assert node.fields["patch_baseline_id"] == AWS_BASELINE_ID
+    uses = [e["to_ref"] for e in _edges(node) if e["edge_type"] == "USES_PATCH_BASELINE__aws_core"]
+    assert uses == [f"aws_core__aws_ssm_patch_baseline:{AWS_BASELINE}"]
+    assert ssm_patch.bare_baseline_id(AWS_BASELINE) == AWS_BASELINE_ID == ssm_patch.bare_baseline_id(AWS_BASELINE_ID)
 
 
 @pytest.mark.spec("req-aws-core-ssm-patch-state-10")
@@ -555,7 +572,7 @@ def test_the_patch_list_is_not_stored_and_a_note_names_where_aws_lists_it() -> N
 
 @pytest.mark.spec("req-aws-core-ssm-patch-state-5")
 def test_an_instance_with_no_patch_state_has_no_note_and_an_empty_complete_read() -> None:
-    ssm = _FakeSsm(states=[_state(EC2_ID, AWS_BASELINE)])
+    ssm = _FakeSsm(states=[_state(EC2_ID, AWS_BASELINE_ID)])
     item = next(i for i in _items(MI, ssm) if i["InstanceId"] == HYBRID_ID)
     assert "_patch_list" not in item and item["_patches"] == [] and item[EDGE_READS]["_patches"] == COMPLETE
 
@@ -669,7 +686,7 @@ def test_a_collector_run_lands_the_instances_patches_and_compliance_on_the_grid(
     assert collector.results["error"] == []
 
     instance = get_node(node_id(MI, EC2_ID))
-    assert (instance.patch_missing_count, instance.patch_baseline_id) == (2, AWS_BASELINE)
+    assert (instance.patch_missing_count, instance.patch_baseline_id) == (2, AWS_BASELINE_ID)
     assert OWNER_CANARY not in json.dumps(instance.configuration)
     assert "_patches" not in instance.configuration and instance.configuration["_patch_list"]["op"] == "DescribeInstancePatches"
     assert instance.tags is None  # an EC2 node's tags are the EC2 instance's

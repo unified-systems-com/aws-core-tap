@@ -29,6 +29,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from .authority import COMPLETE, EDGE_READS
 from .compliance import (
     CARRIES,
     CONCERNS,
@@ -133,18 +134,35 @@ def names_of(reports: Iterable[Report]) -> set[str]:
     return {cve for report in reports for cve in report.cve_ids if cve}
 
 
+@dataclass(frozen=True)
+class CompleteRead:
+    """One managed instance's ``REPORTS_PATCH`` read in this run, when it was ``complete``: every edge it asserted, as
+    reports. A failed or partial read is never one (Q161a)."""
+
+    resource_type: str | None
+    reports: tuple[Report, ...]
+
+
 def project(
     reports: Iterable[Report],
     held: Iterable[HeldVulnerability],
     *,
     account_id: str,
     held_open: Iterable[str] = (),
+    complete: Mapping[str, CompleteRead] | None = None,
 ) -> Projection:
     """The patch links, vulnerabilities, findings and edges for ``reports``.
 
-    ``held_open`` is the ``source_key`` of every ``aws_ssm_patch`` finding the grid holds that is not resolved: a
-    pair none of whose patches is exposed is written ``resolved`` only when it is among them, so a resolution is
-    always a positive record (a stored state that is not exposure), never the absence of a report.
+    ``held_open`` is the ``source_key`` of every ``aws_ssm_patch`` finding the grid holds that is not resolved. A held
+    open finding is written ``resolved`` on a positive record only, never on the mere absence of a report:
+
+    - its pair is reported with no exposed patch (a stored state that is not exposure, such as ``INSTALLED_REJECTED``);
+    - or (George's ruling Q161 option a) its instance is in ``complete``, the instances whose ``REPORTS_PATCH`` read
+      was ``complete`` in this run, and that read asserted no exposed patch for the CVE. Since Q147 an installed patch
+      is no edge, so a closed gap is the pair's absence from a complete read. The caller passes, for those instances,
+      the read's own reports in ``reports`` rather than the stored edges, so an edge the read left behind (a removal
+      proposal not yet applied) is not read as exposure. An instance with no complete read in this run, whether its
+      read failed or was partial or the instance is no longer reported at all, resolves nothing by absence.
 
     A CVE token that is not a CVE id, or longer than ``vuln_id`` holds, is skipped and said; so is a CVE that names
     two held vulnerabilities (ambiguous, not guessed between), with its patch link and its findings.
@@ -161,29 +179,35 @@ def project(
     linked: set[tuple[str, str]] = set()
     refused: set[str] = set()
     pairs: dict[tuple[str, str], _Pair] = {}
+
+    def vulnerability_of(cve: str, named_by: str) -> str | None:
+        """The vuln_id a CVE resolves to (found by id or alias, else staged), or None when it is refused."""
+        if cve in refused:
+            return None
+        if not _CVE.match(cve) or len(cve) > VULN_ID_LIMIT:
+            refused.add(cve)
+            out.notices.append(("SSM_COMPLIANCE_CVE_SKIPPED", f"{named_by}: {cve!r} is not a CVE id; not linked"))
+            return None
+        found = index.get(cve, set())
+        if len(found) > 1:
+            refused.add(cve)
+            out.notices.append(
+                ("SSM_COMPLIANCE_VULNERABILITY_AMBIGUOUS", f"{cve} names {len(found)} vulnerabilities; not projected")
+            )
+            return None
+        if found:
+            return by_id[next(iter(found))].vuln_id
+        if cve not in staged:
+            staged.add(cve)
+            out.nodes.append(_vulnerability(cve, None, aliases=[]))
+        return cve
+
     ordered = sorted(reports, key=lambda r: (r.instance_id, r.operating_system, r.kb_id))
     for report in ordered:
         for cve in report.cve_ids:
-            if cve in refused:
+            vuln_id = vulnerability_of(cve, report.kb_id)
+            if vuln_id is None:
                 continue
-            if not _CVE.match(cve) or len(cve) > VULN_ID_LIMIT:
-                refused.add(cve)
-                out.notices.append(("SSM_COMPLIANCE_CVE_SKIPPED", f"{report.kb_id}: {cve!r} is not a CVE id; not linked"))
-                continue
-            found = index.get(cve, set())
-            if len(found) > 1:
-                refused.add(cve)
-                out.notices.append(
-                    ("SSM_COMPLIANCE_VULNERABILITY_AMBIGUOUS", f"{cve} names {len(found)} vulnerabilities; not projected")
-                )
-                continue
-            if found:
-                vuln_id = by_id[next(iter(found))].vuln_id
-            else:
-                vuln_id = cve
-                if vuln_id not in staged:
-                    staged.add(vuln_id)
-                    out.nodes.append(_vulnerability(vuln_id, None, aliases=[]))
             ref = patch_ref(report)
             if (ref, vuln_id) not in linked:
                 linked.add((ref, vuln_id))
@@ -202,7 +226,30 @@ def project(
         if not exposed and key not in held_keys:
             continue
         _finding(out, key, instance_id, cve, pair, exposed)
+    # Q161a: a held open finding whose instance's complete read this run asserted nothing for its CVE.
+    for key in sorted(held_keys):
+        parsed = parse_source_key(account_id, key)
+        if parsed is None:
+            continue
+        instance_id, cve = parsed
+        read = (complete or {}).get(instance_id)
+        if read is None or (instance_id, cve) in pairs:
+            continue  # no complete read this run, or the pair is reported and was decided above
+        vuln_id = vulnerability_of(cve, key)
+        if vuln_id is None:
+            continue
+        _finding(out, key, instance_id, cve, _Pair(vuln_id, read.resource_type), [])
     return out
+
+
+def parse_source_key(account_id: str, key: str) -> tuple[str, str] | None:
+    """``(instance id, CVE id)`` of an ``aws_ssm_patch`` finding key of ``account_id``, or None for another account's.
+    A CVE id has no colon, so the CVE is the last segment and the instance id what lies between."""
+    prefix = f"{account_id}:"
+    if not key.startswith(prefix) or key.count(":") < 2:
+        return None
+    instance_id, _, cve = key[len(prefix) :].rpartition(":")
+    return (instance_id, cve) if instance_id and cve else None
 
 
 def _finding(out: Projection, key: str, instance_id: str, cve: str, pair: _Pair, exposed: list[Report]) -> None:
@@ -212,6 +259,8 @@ def _finding(out: Projection, key: str, instance_id: str, cve: str, pair: _Pair,
     kb_ids = sorted({r.kb_id for r in shown})
     summary = " ".join(p for p in (", ".join(severities) or None, cve, ", ".join(kb_ids)) if p)[:SUMMARY_LIMIT]
     states = sorted({f"{r.kb_id} {r.state}" for r in pair.reports})
+    if not pair.reports:  # resolved by a complete read that asserted no exposed patch for the CVE (Q161a)
+        states = ["no exposed patch in the instance's latest complete DescribeInstancePatches read"]
     titles = sorted({r.title for r in shown if r.title})
     fields: dict[str, Any] = {
         "source": SOURCE,
@@ -289,6 +338,67 @@ def stored_reports(account_id: str) -> list[Report]:
     return out
 
 
+def complete_reads(walks: Iterable[Any]) -> dict[str, CompleteRead]:
+    """Instance id -> its ``REPORTS_PATCH`` read in this run's SSM walks (``ssm_patch.SsmWalk``), for every instance
+    whose read was ``complete``; each asserted edge becomes a report, its patch read from the same walk (Q161a)."""
+    out: dict[str, CompleteRead] = {}
+    for walk in walks:
+        for instance in walk.instances:
+            if (instance.get(EDGE_READS) or {}).get("_patches") != COMPLETE:
+                continue
+            instance_id = str(instance.get("InstanceId") or "")
+            if not instance_id:
+                continue
+            reports: list[Report] = []
+            for edge in instance.get("_patches") or []:
+                patch = walk.patches.get(edge["key"])
+                if patch is None:
+                    continue
+                properties = edge.get("properties") or {}
+                reports.append(
+                    Report(
+                        instance_id=instance_id,
+                        resource_type=instance.get("ResourceType"),
+                        partition=str(edge["key"]).split(":", 1)[0],
+                        operating_system=str(patch["OperatingSystem"]),
+                        kb_id=str(patch["KBId"]),
+                        title=patch.get("Title"),
+                        cve_ids=tuple(str(c) for c in patch.get("_cve_ids") or () if c),
+                        state=properties.get("state"),
+                        severity=properties.get("severity"),
+                    )
+                )
+            out[instance_id] = CompleteRead(instance.get("ResourceType"), tuple(reports))
+    return out
+
+
+def merged_reports(stored: Iterable[Report], complete: Mapping[str, CompleteRead]) -> list[Report]:
+    """The stored reports of every instance with no complete read this run, and this run's own reports for those with
+    one, so an edge a complete read left behind is never read as exposure (Q161a)."""
+    kept = [r for r in stored if r.instance_id not in complete]
+    return kept + [r for read in complete.values() for r in read.reports]
+
+
+def held_open_for_instances(account_id: str, instance_ids: Iterable[str]) -> set[str]:
+    """The ``source_key`` of every live, unresolved ``aws_ssm_patch`` finding of the account on any of
+    ``instance_ids``, read by slug: the findings a complete read may resolve by asserting nothing (Q161a)."""
+    from django.db.models import Q
+    from tap_grid.registry import get_model_class
+
+    wanted = sorted({i for i in instance_ids if i})
+    if not wanted:
+        return set()
+    model = get_model_class(FINDING)
+    found: set[str] = set()
+    for start in range(0, len(wanted), 200):
+        clause = Q()
+        for instance_id in wanted[start : start + 200]:
+            clause |= Q(source_key__startswith=source_key(account_id, instance_id, ""))
+        rows = model.objects.filter(clause, source=SOURCE).exclude(status="resolved")
+        found.update(str(k) for k in rows.values_list("source_key", flat=True))
+    return {k for k in found if (parsed := parse_source_key(account_id, k)) is not None and parsed[0] in wanted}
+
+
 def held_open_findings(keys: Iterable[str]) -> set[str]:
     """The ``source_key`` of every live ``aws_ssm_patch`` finding among ``keys`` that is not resolved, read by slug."""
     from tap_grid.registry import get_model_class
@@ -319,6 +429,11 @@ def resolvable_keys(account_id: str, reports: Iterable[Report]) -> set[str]:
 
 __all__ = [
     "EXPOSED_STATES",
+    "CompleteRead",
+    "complete_reads",
+    "held_open_for_instances",
+    "merged_reports",
+    "parse_source_key",
     "OPTION",
     "RESOLVES",
     "SOURCE",

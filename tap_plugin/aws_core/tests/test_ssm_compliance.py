@@ -18,6 +18,8 @@ from tap_plugin.aws_core.collectors.boto3_collector.compliance import CARRIES, C
 from tap_plugin.aws_core.collectors.boto3_collector.identity import composite_natural_key, endpoint_key, node_ref
 from tap_plugin.aws_core.collectors.boto3_collector.ssm_compliance import (
     EXPOSED_STATES,
+    CompleteRead,
+    REPORTS,
     RESOLVES,
     Report,
     finding_ref,
@@ -190,6 +192,73 @@ def test_a_finding_is_resolved_only_on_a_positive_record() -> None:
     assert resolvable_keys(SCOPE, mixed) == {source_key(SCOPE, EC2_ID_2, "CVE-2026-0001")}
 
 
+def _complete(instance_id: str, *reports_: Report, resource_type: str = "EC2Instance") -> dict[str, CompleteRead]:
+    return {instance_id: CompleteRead(resource_type, tuple(reports_))}
+
+
+@pytest.mark.spec("req-aws-core-ssm-compliance-6")
+def test_a_complete_read_that_asserts_nothing_exposed_for_the_cve_resolves_its_finding() -> None:
+    """Q161a: since Q147 an installed patch is no edge, so a closed gap is the pair's absence from a complete read."""
+    closed = source_key(SCOPE, EC2_ID, "CVE-2026-0001")
+    out = project([], [], account_id=SCOPE, held_open=[closed], complete=_complete(EC2_ID))
+    findings = _findings(out)
+    assert findings[closed]["status"] == "resolved"
+    assert "latest complete DescribeInstancePatches read" in findings[closed]["description"]
+    assert _edges(out, CARRIES) == {(node_ref(EC2, EC2_ID), finding_ref(closed))}
+    assert _edges(out, CONCERNS) == {(finding_ref(closed), node_ref(VULNERABILITY, "CVE-2026-0001"))}
+    # The same read with the CVE still exposed by another patch keeps it open.
+    still = project([report(EC2_ID, "MISSING", kb_id="other")], [], account_id=SCOPE, held_open=[closed],
+                    complete=_complete(EC2_ID, report(EC2_ID, "MISSING", kb_id="other")))
+    assert _findings(still)[closed]["status"] == "open"
+    # A hybrid node's resolution is carried by the managed instance, as its finding was.
+    hybrid = source_key(SCOPE, "mi-0123456789abcdef0", "CVE-2026-0001")
+    out = project([], [], account_id=SCOPE, held_open=[hybrid],
+                  complete=_complete("mi-0123456789abcdef0", resource_type="ManagedInstance"))
+    assert _edges(out, CARRIES) == {(node_ref(MI, "mi-0123456789abcdef0"), finding_ref(hybrid))}
+
+
+@pytest.mark.spec("req-aws-core-ssm-compliance-6")
+def test_no_complete_read_resolves_nothing_by_absence() -> None:
+    """A failed or partial read is not in ``complete``; nor is an instance no longer reported at all."""
+    held = source_key(SCOPE, EC2_ID, "CVE-2026-0001")
+    for complete in (None, {}, _complete(EC2_ID_2)):
+        assert _findings(project([], [], account_id=SCOPE, held_open=[held], complete=complete)) == {}, complete
+    other_account = source_key("1111", EC2_ID, "CVE-2026-0001")
+    assert _findings(project([], [], account_id=SCOPE, held_open=[other_account], complete=_complete(EC2_ID))) == {}
+    # INSTALLED_REJECTED still resolves on its own record, with or without a complete read.
+    rejected = project([report(EC2_ID, "INSTALLED_REJECTED")], [], account_id=SCOPE, held_open=[held])
+    assert _findings(rejected)[held]["status"] == "resolved"
+
+
+@pytest.mark.spec("req-aws-core-ssm-compliance-6")
+def test_only_complete_reads_are_taken_from_the_run_and_they_replace_the_stored_edges() -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector import ssm_patch
+    from tap_plugin.aws_core.collectors.boto3_collector.authority import COMPLETE, EDGE_READS, FAILED, PARTIAL
+
+    walk = ssm_patch.SsmWalk()
+    key = ssm_patch.patch_key(PARTITION, "AMAZON_LINUX_2023", "glibc")
+    walk.patches[key] = {"OperatingSystem": "AMAZON_LINUX_2023", "KBId": "glibc", "Title": "glibc", "_cve_ids": ["CVE-2026-0007"]}
+    edge = {"key": key, "properties": {"state": "MISSING", "severity": "Important", "installed_time": None}}
+    walk.instances = [
+        {"InstanceId": EC2_ID, "ResourceType": "EC2Instance", "_patches": [edge], EDGE_READS: {"_patches": COMPLETE}},
+        {"InstanceId": EC2_ID_2, "ResourceType": "EC2Instance", "_patches": [], EDGE_READS: {"_patches": PARTIAL}},
+        {"InstanceId": "i-0000000000000000f", "ResourceType": "EC2Instance", "_patches": [], EDGE_READS: {"_patches": FAILED}},
+    ]
+    reads = ssm_compliance.complete_reads([walk])
+    assert set(reads) == {EC2_ID}
+    [current] = reads[EC2_ID].reports
+    assert (current.partition, current.kb_id, current.cve_ids, current.state) == (PARTITION, "glibc", ("CVE-2026-0007",), "MISSING")
+    stale = report(EC2_ID, "MISSING")  # an edge the complete read left behind, its removal not yet applied
+    kept = report(EC2_ID_2, "MISSING")
+    assert ssm_compliance.merged_reports([stale, kept], reads) == [kept, current]
+
+
+def test_a_finding_key_parses_back_to_its_instance_and_cve() -> None:
+    assert ssm_compliance.parse_source_key(SCOPE, source_key(SCOPE, EC2_ID, "CVE-2026-0001")) == (EC2_ID, "CVE-2026-0001")
+    assert ssm_compliance.parse_source_key(SCOPE, source_key("1111", EC2_ID, "CVE-2026-0001")) is None
+    assert ssm_compliance.parse_source_key(SCOPE, f"{SCOPE}:CVE-2026-0001") is None
+
+
 def test_the_patch_endpoint_names_the_stored_patch_by_its_declared_key() -> None:
     """The patch is not in the projection batch, so its endpoint is a key core resolves against the live grid."""
     import tap_plugin.aws_core.models  # noqa: F401 — registers the models
@@ -311,34 +380,74 @@ def test_a_run_with_the_switch_off_never_looks_for_compliance_core(_stub_ssm, mo
 # --- writing into compliance_core (only where it is loaded) -----------------------------------------------------------
 
 
-@pytest.mark.django_db
-@requires_compliance_core
-@pytest.mark.xfail(
-    strict=True,
-    reason="Open, not ruled: under Q147 option 3 an installed patch is no longer an edge, so its pair is no longer "
-    "reported and the finding is never resolved (req-aws-core-ssm-compliance-6); the stale edge stays live until "
-    "reconcile applies its removal proposal.",
-)
-@pytest.mark.spec("req-aws-core-ssm-compliance-3", "req-aws-core-ssm-compliance-4", "req-aws-core-ssm-compliance-6")
-def test_stored_patch_state_is_projected_and_a_patched_pair_resolves(_stub_ssm) -> None:  # noqa: F811
-    from tap_grid.models import Edge
+def _switched_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
+
+    from tap_cares.secrets.models import Secret
+
+    base = cred.resolve_secret(None)
+    monkeypatch.setattr(cred, "resolve_secret", lambda _ref: Secret(**{**base.__dict__, "data": {**base.data, "ssm_compliance_findings": True}}))
+
+
+def _statuses() -> dict[str, str]:
     from tap_grid.registry import get_model_class
 
-    _collector().run()
+    rows = get_model_class(FINDING).objects.filter(source="aws_ssm_patch").values_list("source_key", "status")
+    return dict(rows)
+
+
+def _run_on() -> Any:
     collector = _collector()
-    assert collector._project_ssm_compliance({"ssm_compliance_findings": True}, ACCOUNT) is None
-    assert collector.results["error"] == []
-    findings = {f.source_key: f for f in get_model_class(FINDING).objects.filter(source="aws_ssm_patch")}
-    assert set(findings) == {
-        source_key(ACCOUNT, iid, cve) for iid in (EC2_ID, EC2_ID_2) for cve in ("CVE-2026-0001", "CVE-2026-0002")
-    }
-    assert {f.status for f in findings.values()} == {"open"}
+    collector.run()
+    assert not [e for e in collector.results["error"] if e["message_code"] == "SSM_COMPLIANCE_PROJECTION_FAILED"]
+    return collector
+
+
+EXPOSED_PAIRS = {source_key(ACCOUNT, iid, cve) for iid in (EC2_ID, EC2_ID_2) for cve in ("CVE-2026-0001", "CVE-2026-0002")}
+
+
+@pytest.mark.django_db
+@requires_compliance_core
+@pytest.mark.spec("req-aws-core-ssm-compliance-3", "req-aws-core-ssm-compliance-4", "req-aws-core-ssm-compliance-6")
+def test_stored_patch_state_is_projected_and_a_patched_pair_resolves(_stub_ssm, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
+    """Q161a: the instances install the patch; the next run's complete reads assert nothing for its CVEs, and the
+    findings resolve, though the old edges are still live (reconcile authority is off)."""
+    from tap_grid.models import Edge
+
+    _switched_on(monkeypatch)
+    _run_on()
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "open")
     assert Edge.objects.filter(edge_type=RESOLVES, entity__deleted_at__isnull=True).count() == 2
-    # The instance installs the patch: its finding resolves on the next projection; a second one writes nothing new.
-    _stub_ssm.patches[EC2_ID][0] = {**_stub_ssm.patches[EC2_ID][0], "State": "INSTALLED"}
-    _stub_ssm.patches[EC2_ID_2][0] = {**_stub_ssm.patches[EC2_ID_2][0], "State": "INSTALLED"}
-    _collector().run()
-    assert collector._project_ssm_compliance({"ssm_compliance_findings": True}, ACCOUNT) is None
-    statuses = set(get_model_class(FINDING).objects.filter(source="aws_ssm_patch").values_list("status", flat=True))
-    assert statuses == {"resolved"}
-    assert get_model_class(FINDING).objects.filter(source="aws_ssm_patch").count() == 4
+    for iid in (EC2_ID, EC2_ID_2):
+        _stub_ssm.patches[iid][0] = {**_stub_ssm.patches[iid][0], "State": "INSTALLED"}
+    _run_on()
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "resolved")
+    assert Edge.objects.filter(edge_type=REPORTS, from_entity__deleted_at__isnull=True,
+                               entity__deleted_at__isnull=True).count() >= 2, "the stale edges are live, and not read"
+    _run_on()
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "resolved"), "a later run writes nothing new"
+
+
+@pytest.mark.django_db
+@requires_compliance_core
+@pytest.mark.spec("req-aws-core-ssm-compliance-6")
+@pytest.mark.parametrize("failure", ["partial", "failed", "vanished"])
+def test_a_read_that_is_not_complete_resolves_nothing(_stub_ssm, monkeypatch: pytest.MonkeyPatch, failure: str) -> None:  # noqa: F811
+    """A partial read (the baseline lookup refused, so a gap cannot be keyed), a failed one (DescribeInstancePatches
+    refused) and an instance no longer reported at all leave the held open findings as they were."""
+    _switched_on(monkeypatch)
+    _run_on()
+    for iid in (EC2_ID, EC2_ID_2):
+        installed = {**_stub_ssm.patches[iid][0], "State": "INSTALLED"}
+        # A new gap on each instance: with the baseline lookup refused it cannot be keyed, so the read is partial.
+        _stub_ssm.patches[iid] = [installed, *_stub_ssm.patches[iid][1:], {**installed, "KBId": "zlib", "State": "MISSING", "CVEIds": "CVE-2026-0005"}]
+    if failure == "partial":
+        _stub_ssm.fail["describe_patch_baselines"] = True
+    elif failure == "failed":
+        _stub_ssm.fail["describe_instance_patches"] = True
+    else:
+        _stub_ssm.instances = [i for i in _stub_ssm.instances if i["InstanceId"] not in (EC2_ID, EC2_ID_2)]
+    collector = _collector()
+    collector.run()
+    assert not [e for e in collector.results["error"] if e["message_code"] == "SSM_COMPLIANCE_PROJECTION_FAILED"]
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "open"), failure

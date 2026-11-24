@@ -109,7 +109,9 @@ class SsmManagedInstance(BaseModel):
     source_type = models.CharField(max_length=64, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
     # The Patch Group tag value the last operation ran under; a registered group is also a node (IN_PATCH_GROUP, Q139b).
     patch_group = models.CharField(max_length=256, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
-    # The baseline the last operation used: pb-... for the account's own, an ARN for an AWS-provided one.
+    # The baseline the last operation used, as DescribeInstancePatchStates states it: the bare pb- id, for an
+    # AWS-provided baseline too (whose node is keyed by the ARN DescribePatchBaselines gives; USES_PATCH_BASELINE
+    # matches the two).
     patch_baseline_id = models.CharField(max_length=2048, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"
     # Scan or Install.
     patch_operation = models.CharField(max_length=16, null=True, blank=True, default=None)  # noqa: DJ001 — null is "not observed"

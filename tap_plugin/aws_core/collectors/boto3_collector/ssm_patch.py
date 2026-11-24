@@ -157,13 +157,25 @@ def _hybrid_tags(client: Any, instance_id: str) -> tuple[list[dict[str, Any]], d
     return list(jsonable(without_response_metadata(response)).get("TagList") or []), None
 
 
-def _baseline_systems(client: Any) -> tuple[dict[str, str], dict[str, Any] | None]:
-    """BaselineId -> OperatingSystem for every baseline the region lists, the account's and AWS's."""
+def bare_baseline_id(baseline_id: str) -> str:
+    """The ``pb-`` id of a baseline id in either of AWS's spellings: ``DescribePatchBaselines`` names an AWS-provided
+    baseline by its ARN (``arn:<partition>:ssm:<region>:<AWS's account>:patchbaseline/pb-...``), while
+    ``DescribeInstancePatchStates`` and ``GetDefaultPatchBaseline`` name the same baseline by the bare ``pb-`` id."""
+    return baseline_id.rsplit("/", 1)[-1] if baseline_id.startswith("arn:") else baseline_id
+
+
+def listed_baselines(client: Any) -> tuple[dict[str, tuple[str, str]], dict[str, Any] | None]:
+    """Every baseline the region lists, the account's and AWS's, as bare ``pb-`` id -> (the ``BaselineId`` the
+    listing names it by, which is its node's key, and its OperatingSystem); and the slot of a failed listing."""
     try:
         listed = _pages(client, "describe_patch_baselines", "BaselineIdentities")
     except (BotoCoreError, ClientError) as exc:
         return {}, _slot("DescribePatchBaselines", exc)
-    return {str(b["BaselineId"]): str(b.get("OperatingSystem") or "") for b in listed if b.get("BaselineId")}, None
+    return {
+        bare_baseline_id(str(b["BaselineId"])): (str(b["BaselineId"]), str(b.get("OperatingSystem") or ""))
+        for b in listed
+        if b.get("BaselineId")
+    }, None
 
 
 def _patch_states(client: Any, ids: list[str]) -> tuple[dict[str, dict[str, Any]], set[str], dict[str, Any] | None]:
@@ -292,10 +304,10 @@ def walk_ssm(client: Any, *, partition: str) -> SsmWalk:
     _summaries(summaries_raw, walk)
     ids = [str(i["InstanceId"]) for i in instances if i.get("InstanceId")]
     states, state_failed, state_slot = _patch_states(client, ids) if ids else ({}, set(), None)
-    systems: dict[str, str] = {}
+    systems: dict[str, tuple[str, str]] = {}
     systems_slot: dict[str, Any] | None = None
     if states:
-        systems, systems_slot = _baseline_systems(client)
+        systems, systems_slot = listed_baselines(client)
     for info in instances:
         instance_id = str(info.get("InstanceId") or "")
         if not instance_id:
@@ -303,12 +315,17 @@ def walk_ssm(client: Any, *, partition: str) -> SsmWalk:
         hydrate: dict[str, Any] = {}
         state = states.get(instance_id)
         baseline_read = FAILED if instance_id in state_failed else COMPLETE
+        stated = str((state or {}).get("BaselineId") or "")
+        baseline_key: str | None = systems.get(bare_baseline_id(stated), (stated, ""))[0] if stated else None
+        # Named, but not matched to a listed baseline: the edge cannot name its node.
+        unmatched = bool(stated) and bare_baseline_id(stated) not in systems
+        uses_read = worst([baseline_read, PARTIAL]) if unmatched else baseline_read
         if instance_id in state_failed and state_slot:
             hydrate["patch_state"] = state_slot
         patches: list[dict[str, Any]] = []
         patches_read = baseline_read
         if state:
-            operating_system = systems.get(str(state.get("BaselineId") or ""), "")
+            operating_system = systems.get(bare_baseline_id(str(state.get("BaselineId") or "")), ("", ""))[1]
             if not operating_system and systems_slot:
                 hydrate["baseline_systems"] = systems_slot
             patches, read, slot = _instance_patches(client, instance_id, operating_system, partition, walk)
@@ -324,7 +341,9 @@ def walk_ssm(client: Any, *, partition: str) -> SsmWalk:
             "_name": info.get("Name") or info.get("ComputerName") or instance_id,
             "_ec2_instance_id": instance_id if info.get("ResourceType") == EC2_RESOURCE_TYPE else None,
             "_patch_state": state or {},
-            "_patch_baseline_id": (state or {}).get("BaselineId"),
+            # The baseline's node key: the listing's spelling, an ARN for AWS's own, where the patch state names it by
+            # the bare pb- id. Unmatched (the listing failed, or does not name it), the id as the state gives it.
+            "_patch_baseline_id": baseline_key,
             "_patch_operation_start_at": _instant((state or {}).get("OperationStartTime")),
             "_patch_operation_end_at": _instant((state or {}).get("OperationEndTime")),
             "_patch_last_no_reboot_install_at": _instant((state or {}).get("LastNoRebootInstallOperationTime")),
@@ -348,7 +367,7 @@ def walk_ssm(client: Any, *, partition: str) -> SsmWalk:
                 record,
                 {
                     "_ec2_instance_id": COMPLETE,
-                    "_patch_baseline_id": baseline_read,
+                    "_patch_baseline_id": uses_read,
                     "_patches": patches_read,
                 },
             )
@@ -386,6 +405,15 @@ def shared_walk(session: Any, client_for: Any, *, partition: str) -> SsmWalk:
     if memo is not None:
         memo[region] = walk
     return walk
+
+
+def walks_of(session: Any) -> list[SsmWalk]:
+    """Every region's walk this run's session made, leaving out a region whose walk failed (its reads are none)."""
+    try:
+        memo = _WALKS.get(session) or {}
+    except TypeError:
+        return []
+    return [walk for walk in memo.values() if isinstance(walk, SsmWalk)]
 
 
 def new_patches(session: Any, walk: SsmWalk) -> Iterator[dict[str, Any]]:
