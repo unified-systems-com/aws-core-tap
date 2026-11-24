@@ -12,7 +12,7 @@ The digest ECS reports per container (``imageDigest``) is the join key to a buil
 stored as ECS reports it. This module makes no registry call and never resolves a tag (``-4``); a container
 with no ``imageDigest`` has none in its item, which projects to null, never an empty string (``-5``).
 
-The image a container runs (``-20``..``-23``). computing_core's image is a ``computing_core__host`` of realm
+The image a container runs (``-20``..``-23``). computing_core's image is a ``computing_core__host`` of host type
 ``oci-digest`` keyed by the digest, and a container points at it with ``RUNS_IMAGE__computing_core``. ECS
 reported the digest, so :func:`image_writes` stages that host and edge for every container the batch carries
 with a well-formed ``imageDigest``, and, where the container's ``image`` names a registry, repository and tag,
@@ -49,6 +49,8 @@ from weakref import WeakKeyDictionary
 
 from botocore.exceptions import BotoCoreError, ClientError
 from tap_plugin.computing_core.image_reference import canonical_repository
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE as HOST_TYPE_DIMENSION
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE_ENTRY
 
 from .authority import COMPLETE, PARTIAL, with_edge_reads
 from .edges import edge_envelope
@@ -520,9 +522,11 @@ HOST_TYPE = "computing_core__host"
 IMAGE_TAG_TYPE = "computing_core__image_tag"
 RUNS_IMAGE = "RUNS_IMAGE__computing_core"
 TAGS_IMAGE = "TAGS_IMAGE__computing_core"
-#: computing_core's realm for an image host: ``stable_id`` is the image manifest digest.
-IMAGE_REALM = "oci-digest"
-#: The ``stable_id`` shape computing_core accepts for that realm (``req-computing-core-host-4``); any other
+#: computing_core's host type for an image host (``tap.computing.host_type``, one of its conventions in
+#: ``key_dimensions.HOST_TYPES``): ``stable_id`` is the image manifest digest. Stamped on the envelope's dimensions,
+#: never the payload, and fixed on the row once written (unified-systems-com/tap#1355).
+IMAGE_HOST_TYPE = "oci-digest"
+#: The ``stable_id`` shape computing_core accepts for that host type (``req-computing-core-host-4``); any other
 #: ``imageDigest`` is refused on write, so it makes no host and no edge here.
 _DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}")
 #: The custom-reader name the image types' rows carry in ``reader_sensitivity.json``.
@@ -546,10 +550,11 @@ def host_held_on_grid(digest: str) -> bool:
 
 
 def host_key(digest: str) -> dict[str, str]:
-    """An image host's natural key."""
+    """An image host's natural key, in its declared spelling: ``{"dimension:tap.computing.host_type": "oci-digest",
+    "stable_id": digest}`` (``key_dimensions.HOST_TYPE_ENTRY``)."""
     # TAP-KNOWN-DUPE(ecs-image-digest): the digest is also aws_ecs_container.image_digest (models/ecs_container.py),
     # ECS's verbatim observation, which stays on the container when no host can be made (req-aws-collector-ecs-23).
-    return {"realm": IMAGE_REALM, "stable_id": digest}
+    return {HOST_TYPE_ENTRY: IMAGE_HOST_TYPE, "stable_id": digest}
 
 
 def host_ref(digest: str) -> str:
@@ -619,9 +624,17 @@ def _host_envelope(digest: str, references: set[str], held: bool) -> dict[str, A
     A held host's envelope names no ``name``: the importer leaves the stored name as it is when the envelope
     omits one, and its keep-absent replace leaves every field the payload omits. ``kind`` is ``container``,
     what computing_core gives an image host and what every other producer of one writes.
+
+    The host type is the envelope's ``tap.computing.host_type`` dimension, not a payload field: core reads a keyed
+    dimension from the envelope only, refuses a create without it, and refuses a replace that changes it. A held host
+    is sent with the same value, so its replace leaves the key as it is.
     """
-    fields: dict[str, Any] = {**host_key(digest), "kind": "container"}
-    entity: dict[str, Any] = {"ref": host_ref(digest), "entity_type": HOST_TYPE, "dimensions": {}}
+    fields: dict[str, Any] = {"stable_id": digest, "kind": "container"}
+    entity: dict[str, Any] = {
+        "ref": host_ref(digest),
+        "entity_type": HOST_TYPE,
+        "dimensions": {HOST_TYPE_DIMENSION: IMAGE_HOST_TYPE},
+    }
     if not held:
         # One stable choice when several containers name the digest differently: the first, sorted.
         name = next((r for r in sorted(references) if len(r) <= _MAX_HOST_NAME), None)

@@ -32,14 +32,20 @@ plugin_version = "0.8.7" # x-release-please-version
 # the 512 types that read their creation time from configuration declare (aws-core-tap#287). On an older core the
 # Interval keywords are unknown and no model loads. Plugin CI tests against the core tag at this floor, and the
 # plugin-ci.yml pin in .github/workflows/ci.yml moves to that tag's commit with it.
-requires_tap = ">=0.4.7"
+# 0.4.9: the first core release with form-3 natural keys (a NATURAL_KEY entry naming a usable_in_keys dimension,
+# unified-systems-com/tap PR 1356, tap#1355), which computing_core's host key now is: the image host this plugin writes
+# is keyed (tap.computing.host_type, stable_id), read from the envelope's dimensions. On an older core the
+# "dimension:" entry is an unknown column and no host is found or written.
+requires_tap = ">=0.4.9"
 slug = "aws_core"
 name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
 
 depends_on = [
     { slug = "compliance_core", optional = true, min_version = "0.8.13", note = "req-aws-landing-zone-inspector-compliance: when the credential's inspector_compliance_findings is true, the run's last step writes compliance_core's neutral finding, vulnerability, CONCERNS_COMPLIANCE_VULNERABILITY and CARRIES_COMPLIANCE_FINDING from the stored Inspector rows. Written by slug and read through the registries, never imported; no pyproject dependency. 0.8.13 is the first release with fix_state (0.8.8), the dimension declarations (0.8.12) and one CARRIES edge per pair (0.8.13). Absent or too old, the self-test fails when the option is on and the run collects the AWS data and records the projection as failed." },
-    { slug = "computing_core", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and only computing_core's [grift] dimension bundle declares it. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin." },
+    # TODO(computing-core-tap#103): 0.11.0 is the release expected to carry PR 103 (a breaking feat on 0.x with
+    # bump-minor-pre-major); confirm against the tag release-please cuts before this merges.
+    { slug = "computing_core", min_version = "0.11.0", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and only computing_core's [grift] dimension bundle declares it. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin. 0.11.0 is the first release whose host is keyed on the tap.computing.host_type dimension (computing-core-tap PR 103, tap#1355): the image host aws_core writes stamps it on the envelope and names the host by that key; against an older computing_core the key names a realm column that the write leaves empty." },
 ]
 
 [models]
