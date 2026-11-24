@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,12 +19,15 @@ class SagemakerInferenceExperiment(BaseModel):
     # Identity (req-grid-entity-natural-key): The ARN DescribeInferenceExperiment returns (Arn), read for each resource ListInferenceExperiments names; it is never built, because AWS returns it (aws-core-tap#251).
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("sagemaker_inference_experiment_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "sagemaker:inference-experiment"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (DescribeInferenceExperiment CreationTime, a botocore timestamp), held only "
-        "inside configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it (DescribeInferenceExperiment
+    # CreationTime, a botocore timestamp), read from configuration['CreationTime'], where the collector stores it as AWS
+    # sent it. It holds until configuration['Schedule']['EndTime'], the end AWS states.
+    EVENT_TIME: ClassVar[Interval] = Interval(
+        start="configuration",
+        kind="created",
+        member="CreationTime",
+        end="configuration",
+        end_member=("Schedule", "EndTime"),
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {

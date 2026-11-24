@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 
 from django.db import models
 
+from tap_grid.event_time import Interval
 from tap_grid.models import BaseModel
 
 
@@ -18,13 +19,10 @@ class EventbridgeEventBus(BaseModel):
     # Identity (req-grid-entity-natural-key): The bus's ARN: a bus name is unique only within an account and region.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("bus_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "events:event-bus"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
-    EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (ListEventBuses EventBuses[].CreationTime, a botocore timestamp), held only "
-        "inside configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
-    )
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it (ListEventBuses
+    # EventBuses[].CreationTime, a botocore timestamp), read from configuration['CreationTime'], where the collector
+    # stores it as AWS sent it. AWS states no end for it.
+    EVENT_TIME: ClassVar[Interval] = Interval(start="configuration", kind="created", member="CreationTime")
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
         "tap_viz": {

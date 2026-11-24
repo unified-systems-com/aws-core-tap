@@ -18,12 +18,12 @@ class Ec2ClientVpnEndpoint(BaseModel):
     # Identity (req-grid-entity-natural-key): The object's own id (ClientVpnEndpointId), assigned by AWS and unique within its type.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("ec2_client_vpn_endpoint_id",)
     ARN_RESOURCE: ClassVar[str | None] = "ec2:client-vpn-endpoint"
-    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not decided yet, on purpose. AWS states
-    # one, in a place or form core cannot read today; EVENT_TIME_PENDING says where.
+    # Event time (req-grid-entity-event-time, req-aws-core-models-5): not declared, on purpose. AWS states
+    # one, and EVENT_TIME_PENDING says why it cannot be read truthfully today.
     EVENT_TIME_PENDING: ClassVar[str] = (
-        "AWS states when it was created (DescribeClientVpnEndpoints ClientVpnEndpoints[].CreationTime, text), held only"
-        " inside configuration. Undeclared until a declaration can read it through a reader function "
-        "(unified-systems-com/tap#1284)."
+        "AWS states when it was created (DescribeClientVpnEndpoints ClientVpnEndpoints[].CreationTime, text), but AWS "
+        "writes it as text with a time of day and no zone (AWS's example: 2020-11-13T11:37:27), and documents no zone, "
+        "so no reader may assume one (core rule 24). Not declared (unified-systems-com/aws-core-tap#287)."
     )
 
     DEFAULT_DISPLAY: ClassVar[dict[str, Any]] = {
