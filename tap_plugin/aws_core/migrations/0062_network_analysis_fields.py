@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('aws_core', '0060_inspector2_reachability'),
+        ('aws_core', '0061_lambda_resource_policy'),
     ]
 
     operations = [
