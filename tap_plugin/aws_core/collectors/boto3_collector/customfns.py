@@ -3777,8 +3777,9 @@ def build_custom_fn_registry() -> CustomFnRegistry:
     classifies-and-skips rather than crashing the run.
     """
     from .customfns_longtail import LONGTAIL_FNS  # imported here: that module imports helpers from this one
+    from .network_insights import NETWORK_INSIGHTS_FNS  # likewise
 
     registry = CustomFnRegistry()
-    for name, fn in {**_CUSTOM_FNS, **LONGTAIL_FNS}.items():
+    for name, fn in {**_CUSTOM_FNS, **LONGTAIL_FNS, **NETWORK_INSIGHTS_FNS}.items():
         registry.register(name, fn)
     return registry

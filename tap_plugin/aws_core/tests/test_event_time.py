@@ -63,6 +63,9 @@ DECLARED: dict[str, Moment | Interval] = {
     # The whole configuration, read by a reader: REST and HTTP/WebSocket stages spell the member differently.
     "aws_core__aws_apigateway_stage": Interval(start="configuration", kind="created", reader=either_created_date),
     "aws_core__aws_delegated_administration": Interval(start="delegation_enabled_at", kind="created"),
+    "aws_core__aws_ec2_network_access_scope_finding": Interval(
+        start="analysis_start_date", kind="occurred", end="analysis_end_date"
+    ),
     "aws_core__aws_ec2_network_insights_access_scope_analysis": Interval(
         start="start_date", kind="occurred", end="end_date"
     ),
@@ -819,7 +822,7 @@ def test_every_type_is_declared_timeless_or_pending_and_only_one() -> None:
     assert declared == expected
     assert _pending() == set(PENDING)
     timeless = [m for m in models if m.__dict__.get("EVENT_TIME") is NO_EVENT_TIME]
-    assert (len(declared), len(PENDING), len(timeless), len(models)) == (530, 35, 371, 936)
+    assert (len(declared), len(PENDING), len(timeless), len(models)) == (531, 35, 371, 937)
     for model in models:
         declaration = model.__dict__.get("EVENT_TIME")
         reason = model.__dict__.get("EVENT_TIME_REASON")
@@ -1168,6 +1171,27 @@ def test_a_managed_instance_starts_at_its_registration_and_an_ec2_node_states_no
 
 
 @pytest.mark.django_db
+@pytest.mark.spec("req-aws-collector-network-analyzer-5")
+def test_a_network_access_finding_is_dated_by_the_analysis_run_that_found_it() -> None:
+    """A finding carries no time of its own (botocore AccessScopeAnalysisFinding); AWS dates the analysis run."""
+    row = _create(
+        "aws_core__aws_ec2_network_access_scope_finding",
+        {
+            "name": "f-1",
+            "analysis_arn": f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-access-scope-analysis/nisa-1",
+            "finding_id": "f-1",
+            "analysis_start_date": "2026-01-02T03:04:05Z",
+            "analysis_end_date": "2026-01-02T03:09:00Z",
+        },
+    )
+    assert (row.event_start, row.event_end, _kind(row)) == (
+        datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC),
+        datetime(2026, 1, 2, 3, 9, 0, tzinfo=UTC),
+        "occurred",
+    )
+
+
+@pytest.mark.django_db
 def test_a_type_with_no_event_time_has_none_on_the_spine() -> None:
     row = _create("aws_core__aws_vpc", {"name": "main", "vpc_id": "vpc-1"})
     assert (row.event_start, row.event_end, row.event_precision, _kind(row)) == (None, None, None, None)
@@ -1245,7 +1269,14 @@ def test_a_network_analysis_time_field_is_read_off_a_botocore_timestamp(entity_t
     """The typed field is mapped to the member as AWS names it, and botocore types that member a timestamp."""
     entry = _entry(entity_type)
     assert entry["fields"][field] == member
-    (leaf,) = _leaves(entity_type, (member,))
+    if "custom_fn" in entry["source"]:
+        # The Reachability Analyzer reader yields DescribeNetworkInsightsAnalyses's own items, plus its compound-edge
+        # slots (network_insights.reachability_analysis_item, aws-core-tap#248); CUSTOM_FN_ITEMS lists only the types
+        # that read a member of configuration.
+        assert entry["source"]["custom_fn"] == "ec2_network_insights_analyses_described"
+        leaf = _step(_item("ec2", "DescribeNetworkInsightsAnalyses", "NetworkInsightsAnalyses[]"), member)
+    else:
+        (leaf,) = _leaves(entity_type, (member,))
     assert leaf.type_name == "timestamp"
 
 

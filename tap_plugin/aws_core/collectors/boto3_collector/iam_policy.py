@@ -54,7 +54,7 @@ MAX_PARTS = 10
 CODE_MODULES = (
     "customfns.py", "customfns_longtail.py", "landing_zone.py", "organizations.py", "identity.py", "regions.py",
     "rgta.py", "ecs.py", "iam_trust.py", "policy_documents.py", "credentials.py", "authority.py", "hydrate.py",
-    "elb_topology.py",
+    "elb_topology.py", "network_insights.py",
     "ssm_patch.py", "ssm_baselines.py",
 )  # fmt: skip
 #: Modules whose reads go through a shared reader helper (``self.r.walk("inspector2", ...)``), which the per-function

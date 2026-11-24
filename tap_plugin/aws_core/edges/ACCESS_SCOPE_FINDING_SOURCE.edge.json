@@ -1,0 +1,23 @@
+{
+  "slug": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+  "name": "Access Scope Finding Source",
+  "description": "The source role of the Network Access Analyzer compound edge (req-grid-edge-compound): the first component of a finding's path, in SequenceNumber order -> the finding, the middle node. A role name, the official exception to <ACTION>_<OBJECT>. The sources are the types the Network Access Analyzer guide says a finding's path can start or end at, each named by its resource id or ARN. The finding retires with this end (COMPOUND_EDGE retires_with). Collected by collectors/boto3_collector/network_insights.py (aws-core-tap#212, #248).",
+  "sources": [
+    "aws_core__aws_internet_gateway",
+    "aws_core__aws_ec2_network_interface",
+    "aws_core__aws_transit_gateway_attachment",
+    "aws_core__aws_vpc_endpoint",
+    "aws_core__aws_vpc_endpoint_service",
+    "aws_core__aws_ec2_vpc_peering_connection",
+    "aws_core__aws_ec2_vpn_gateway"
+  ],
+  "targets": [
+    "aws_core__aws_ec2_network_access_scope_finding"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}
