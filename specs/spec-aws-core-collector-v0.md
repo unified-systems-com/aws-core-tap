@@ -378,7 +378,9 @@ it is engine-level, not a manifest transform:
   not a per-field transform. It covers a typed field mapped straight to a
   `timestamp` member (a network analysis's `StartDate`, `req-aws-core-fields-11`)
   as it covers the blob: one such value would make the batch invalid JSON and
-  reject it whole (aws-core-tap#213).
+  reject it whole (aws-core-tap#213). Only a typed field's `datetime` or `date`
+  is rendered; any other value is sent as projected, so an object no field
+  should hold still fails the batch loudly.
 - The raw `configuration` blob otherwise keeps AWS's value verbatim, including
   the two known non-`timestamp` date shapes (epoch-millis `long` — CloudWatch
   Logs `creationTime`; offset-string — Lambda `LastModified`). The blob is for

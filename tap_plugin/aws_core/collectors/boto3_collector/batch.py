@@ -26,7 +26,7 @@ import json
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 from uuid import uuid7
 
@@ -112,9 +112,12 @@ def node_envelope(
     no path that emits a node without that decision having been made.
     """
     # A typed field read straight off a botocore timestamp member (a network analysis's StartDate) holds a
-    # ``datetime``; it is rendered as ISO 8601 UTC text, the form a custom_fn's time field already has, and every
-    # other value is passed as it is (req-aws-collector-field-projection-4).
-    payload: dict[str, Any] = jsonable(dict(node.fields))
+    # ``datetime``; only a ``datetime`` or ``date`` is rendered, as ISO 8601 UTC text (the form a custom_fn's time
+    # field already has). Every other value is passed exactly as projected (req-aws-collector-field-projection-4), so
+    # an object no field should hold still makes the batch invalid and rejected, never a quiet ``str()``.
+    payload: dict[str, Any] = {
+        name: jsonable(value) if isinstance(value, date) else value for name, value in node.fields.items()
+    }
     if isinstance(tags, Unread):
         # Whatever a projector put under `tags` is not a read: the resolver is the only source.
         payload.pop("tags", None)

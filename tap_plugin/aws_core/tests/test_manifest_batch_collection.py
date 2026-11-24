@@ -2566,7 +2566,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
             'name': 'gen-1',
             'status': 'succeeded',
             'findings_found': 'unknown',
-            'analyzed_resource_count': 0,
+            'analyzed_eni_count': 0,
             'start_date': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
             'end_date': datetime(2026, 11, 2, 9, 4, 30, tzinfo=UTC),
             'access_scope_id': 'nis-0a1b2c3d4e5f60718',

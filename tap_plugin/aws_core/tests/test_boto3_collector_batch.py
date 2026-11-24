@@ -6,6 +6,7 @@ recorded, no deletion content, GRIFT document root shape.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -86,6 +87,23 @@ class TestNodeEnvelope:
         assert env["start_date"] == env["configuration"]["StartDate"]
         # The projected node keeps what boto3 returned; only the envelope is rendered.
         assert node.fields["start_date"] is FIXED_NOW
+
+    @pytest.mark.parametrize("value", [object(), b"raw", {"at": FIXED_NOW}, [FIXED_NOW]])
+    def test_any_other_typed_field_value_is_passed_as_projected_and_still_fails_json(self, value):
+        """Only a top-level datetime or date is rendered: anything else reaches the batch as it was projected, so a
+        value that is not JSON still makes the batch invalid and rejected (aws-core-tap#213) rather than a str()."""
+        node = ProjectedNode(
+            entity_type="aws_core__aws_lambda",
+            natural_key="arn:fn",
+            name="fn",
+            fields={"name": "fn", "odd": value},
+            configuration={},
+            raw_item={},
+        )
+        env = node_envelope(node, {}, persist_configuration=True)["node"]
+        assert env["odd"] is value
+        with pytest.raises(TypeError):
+            json.dumps(env)
 
     def test_flag_has_no_default(self):
         with pytest.raises(TypeError):

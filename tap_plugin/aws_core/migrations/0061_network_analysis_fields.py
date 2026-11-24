@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='ec2networkinsightsaccessscopeanalysis',
-            name='analyzed_resource_count',
+            name='analyzed_eni_count',
             field=models.IntegerField(blank=True, default=None, null=True),
         ),
         migrations.AddField(
@@ -87,7 +87,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='historicalec2networkinsightsaccessscopeanalysis',
-            name='analyzed_resource_count',
+            name='analyzed_eni_count',
             field=models.IntegerField(blank=True, default=None, null=True),
         ),
         migrations.AddField(

@@ -25448,7 +25448,7 @@
         "ec2_network_insights_access_scope_analysis_arn": "NetworkInsightsAccessScopeAnalysisArn",
         "status": "Status",
         "findings_found": "FindingsFound",
-        "analyzed_resource_count": "AnalyzedEniCount",
+        "analyzed_eni_count": "AnalyzedEniCount",
         "start_date": "StartDate",
         "end_date": "EndDate",
         "access_scope_id": "NetworkInsightsAccessScopeId"

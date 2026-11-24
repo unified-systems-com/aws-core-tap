@@ -39,7 +39,7 @@ class Ec2NetworkInsightsAccessScopeAnalysis(BaseModel):
         # Null is unobserved (req-aws-core-fields-10). Each is AWS's own value, as sent (req-aws-core-fields-11).
         "status": {"type": ["string", "null"]},
         "findings_found": {"type": ["string", "null"]},
-        "analyzed_resource_count": {"type": ["integer", "null"]},
+        "analyzed_eni_count": {"type": ["integer", "null"]},
         "start_date": {"type": ["string", "null"]},
         "end_date": {"type": ["string", "null"]},
         "access_scope_id": {"type": ["string", "null"]},
@@ -59,7 +59,7 @@ class Ec2NetworkInsightsAccessScopeAnalysis(BaseModel):
     # FindingsFound: AWS's own three-valued text, "true", "false" or "unknown", kept as text so "unknown" is not lost.
     findings_found = models.CharField(max_length=16, null=True, blank=True, default=None)
     # AnalyzedEniCount: the number of network interfaces the analysis examined (AWS counts only those).
-    analyzed_resource_count = models.IntegerField(null=True, blank=True, default=None)
+    analyzed_eni_count = models.IntegerField(null=True, blank=True, default=None)
     # StartDate and EndDate as ISO 8601 UTC text, as the envelope renders a botocore timestamp; no EndDate while running.
     start_date = models.CharField(max_length=64, null=True, blank=True, default=None)
     end_date = models.CharField(max_length=64, null=True, blank=True, default=None)
