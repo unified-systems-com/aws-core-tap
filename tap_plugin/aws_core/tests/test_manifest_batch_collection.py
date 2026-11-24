@@ -2000,7 +2000,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_lambda_alias": (
-        {'AliasArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'AliasArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', '_resource_policy_account_ids': ['444455556666']},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_msk_channel": (
@@ -2746,7 +2746,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'inspectorv2_code_security_scan_configuration_arn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_lambda_function_version": (
-        {'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
+        {'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1', '_resource_policy_account_ids': ['444455556666']},
         {'lambda_function_version_arn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
     ),
     "aws_core__aws_licensemanager_license_asset_rule_set": (

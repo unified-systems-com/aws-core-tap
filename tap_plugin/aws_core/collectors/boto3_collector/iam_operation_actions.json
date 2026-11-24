@@ -4072,6 +4072,12 @@
    "actions": [],
    "dropped": []
   },
+  "lambda:get_policy": {
+   "actions": [
+    "lambda:GetPolicy"
+   ],
+   "dropped": []
+  },
   "lambda:list_aliases": {
    "actions": [
     "lambda:ListAliases"
