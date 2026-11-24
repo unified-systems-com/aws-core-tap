@@ -340,12 +340,18 @@ def stored_reports(account_id: str) -> list[Report]:
 
 def complete_reads(walks: Iterable[Any]) -> dict[str, CompleteRead]:
     """Instance id -> its ``REPORTS_PATCH`` read in this run's SSM walks (``ssm_patch.SsmWalk``), for every instance
-    whose read was ``complete``; each asserted edge becomes a report, its patch read from the same walk (Q161a)."""
+    whose read was ``complete``; each asserted edge becomes a report, its patch read from the same walk (Q161a).
+
+    An instance with no patch state (``DescribeInstancePatchStates`` holds no scan result for it: never scanned, or the
+    state aged out) is left out: its empty read is an absence of evidence, not a scan showing its gaps gone, so like
+    a vanished instance it resolves nothing."""
     out: dict[str, CompleteRead] = {}
     for walk in walks:
         for instance in walk.instances:
             if (instance.get(EDGE_READS) or {}).get("_patches") != COMPLETE:
                 continue
+            if not instance.get("_patch_state"):
+                continue  # no scan result: nothing positive to resolve by
             instance_id = str(instance.get("InstanceId") or "")
             if not instance_id:
                 continue

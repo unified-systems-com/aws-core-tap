@@ -2673,8 +2673,10 @@ same.
     complete read left behind (a removal proposal reconcile has not applied, `req-aws-core-ssm-patch-state-5`) is
     never read as exposure.
 
-  Nothing else resolves a finding. A failed or partial read resolves nothing, and neither does an instance no longer
-  reported at all (not in this run's walk): its findings retire with the instance. A run whose projection did not run
+  Nothing else resolves a finding. A failed or partial read resolves nothing. Nor does an instance with no patch state
+  (`DescribeInstancePatchStates` holds no scan result for it: never scanned, or the state aged out): its empty read is
+  an absence of evidence, not a scan showing its gaps gone, so it is treated as a vanished instance. Nor does an
+  instance no longer reported at all (not in this run's walk): its findings retire with the instance. A run whose projection did not run
   (switch off, readiness failed) resolves nothing, and the next run's complete read does it.
 - **The carrier (Q141b, "as Inspector does"; Q148a).** `CARRIES_COMPLIANCE_FINDING` comes from the EC2 instance for an
   EC2-backed managed instance, the node that carries Inspector's finding for the same host, and from the
@@ -2697,7 +2699,7 @@ same.
 | req-aws-core-ssm-compliance-3 | Projected From Stored Rows | Implemented | The projection reads the account's stored managed instances, `REPORTS_PATCH` edges and patches, so state collected before the switch was on is projected on the first run after; an instance whose read in this run was complete is projected from that read instead (Q161a). | |
 | req-aws-core-ssm-compliance-4 | Every Patch Links Its CVEs | Implemented | Each reported patch has one `RESOLVES_VULNERABILITY` per CVE id in `cve_ids` to the vulnerability found by id or alias, or created with the CVE id; an ambiguous CVE and a token that is not a CVE id are skipped and said; `cve_ids` stays on the patch. | Q141a. |
 | req-aws-core-ssm-compliance-5 | A Finding Per Exposed Instance And CVE | Implemented | An (instance, CVE) pair with a patch in `MISSING`, `FAILED`, `INSTALLED_PENDING_REBOOT` or `AVAILABLE_SECURITY_UPDATE` is one open `compliance_finding` (`aws_ssm_patch`, `<account>:<instance>:<CVE>`) with `CONCERNS_COMPLIANCE_VULNERABILITY` (`fix_state` `fixed`) and one carrier edge; a pair whose patches are only `INSTALLED`, `INSTALLED_OTHER`, `INSTALLED_REJECTED` or `NOT_APPLICABLE` writes no new finding. | Q141b; Q148b for `INSTALLED_PENDING_REBOOT`, `AVAILABLE_SECURITY_UPDATE` and `INSTALLED_REJECTED`. |
-| req-aws-core-ssm-compliance-6 | Resolved Only On A Positive Record | Implemented | A held open finding is written `resolved` when its pair is still reported with no exposed patch, or when the instance's `REPORTS_PATCH` read in this run was complete and asserted no exposed patch for the CVE; a failed or partial read, and an instance no longer reported at all, resolve nothing. | George's ruling Q161 option a (2026-11-24). `tests/test_ssm_compliance.py` (pure rules; the grid cases need compliance_core loaded). |
+| req-aws-core-ssm-compliance-6 | Resolved Only On A Positive Record | Implemented | A held open finding is written `resolved` when its pair is still reported with no exposed patch, or when the instance's `REPORTS_PATCH` read in this run was complete and asserted no exposed patch for the CVE; a failed or partial read, an instance with no patch state, and an instance no longer reported at all resolve nothing. | George's ruling Q161 option a (2026-11-24). `tests/test_ssm_compliance.py` (pure rules; the grid cases need compliance_core loaded). |
 | req-aws-core-ssm-compliance-7 | Carried By The Instance | Implemented | An EC2-backed instance's finding is carried by `aws_ec2_instance` (its instance id), a hybrid one's by its `aws_ssm_managed_instance`. | Q148a; as Inspector's EC2 finding is carried. |
 
 ### Lambda Resource Policy

@@ -243,7 +243,11 @@ def test_only_complete_reads_are_taken_from_the_run_and_they_replace_the_stored_
         {"InstanceId": EC2_ID, "ResourceType": "EC2Instance", "_patches": [edge], EDGE_READS: {"_patches": COMPLETE}},
         {"InstanceId": EC2_ID_2, "ResourceType": "EC2Instance", "_patches": [], EDGE_READS: {"_patches": PARTIAL}},
         {"InstanceId": "i-0000000000000000f", "ResourceType": "EC2Instance", "_patches": [], EDGE_READS: {"_patches": FAILED}},
+        # Complete and empty, but with no patch state: no scan result exists, so it is no positive record.
+        {"InstanceId": "i-0000000000000000e", "ResourceType": "EC2Instance", "_patch_state": {}, "_patches": [],
+         EDGE_READS: {"_patches": COMPLETE}},
     ]
+    walk.instances[0]["_patch_state"] = {"InstanceId": EC2_ID, "BaselineId": "pb-0123456789abcdef0"}
     reads = ssm_compliance.complete_reads([walk])
     assert set(reads) == {EC2_ID}
     [current] = reads[EC2_ID].reports
@@ -431,10 +435,11 @@ def test_stored_patch_state_is_projected_and_a_patched_pair_resolves(_stub_ssm, 
 @pytest.mark.django_db
 @requires_compliance_core
 @pytest.mark.spec("req-aws-core-ssm-compliance-6")
-@pytest.mark.parametrize("failure", ["partial", "failed", "vanished"])
+@pytest.mark.parametrize("failure", ["partial", "failed", "vanished", "unscanned"])
 def test_a_read_that_is_not_complete_resolves_nothing(_stub_ssm, monkeypatch: pytest.MonkeyPatch, failure: str) -> None:  # noqa: F811
     """A partial read (the baseline lookup refused, so a gap cannot be keyed), a failed one (DescribeInstancePatches
-    refused) and an instance no longer reported at all leave the held open findings as they were."""
+    refused), an instance no longer reported at all, and one with no patch state (no scan result exists) leave the held
+    open findings as they were."""
     _switched_on(monkeypatch)
     _run_on()
     for iid in (EC2_ID, EC2_ID_2):
@@ -445,8 +450,10 @@ def test_a_read_that_is_not_complete_resolves_nothing(_stub_ssm, monkeypatch: py
         _stub_ssm.fail["describe_patch_baselines"] = True
     elif failure == "failed":
         _stub_ssm.fail["describe_instance_patches"] = True
-    else:
+    elif failure == "vanished":
         _stub_ssm.instances = [i for i in _stub_ssm.instances if i["InstanceId"] not in (EC2_ID, EC2_ID_2)]
+    else:
+        _stub_ssm.states = [s for s in _stub_ssm.states if s["InstanceId"] not in (EC2_ID, EC2_ID_2)]
     collector = _collector()
     collector.run()
     assert not [e for e in collector.results["error"] if e["message_code"] == "SSM_COMPLIANCE_PROJECTION_FAILED"]
