@@ -35,7 +35,10 @@ plugin_version = "0.8.7" # x-release-please-version
 # 0.4.9: the first core release with form-3 natural keys (a NATURAL_KEY entry naming a usable_in_keys dimension,
 # unified-systems-com/tap PR 1356, tap#1355), which computing_core's host key now is: the image host this plugin writes
 # is keyed (tap.computing.host_type, stable_id), read from the envelope's dimensions. On an older core the
-# "dimension:" entry is an unknown column and no host is found or written.
+# "dimension:" entry is an unknown column and no host is found or written. It is also the base-model release (tap PR 1352,
+# spine version 2): the typed batch_id is gone and every typed table carries the spine copies, which migration 0064
+# follows (it depends on tap_grid 0023_spine_copies). Plugin CI tests against this tag, and the plugin-ci.yml pin in
+# .github/workflows/ci.yml is that tag's commit.
 requires_tap = ">=0.4.9"
 slug = "aws_core"
 name = "TAP AWS Core"

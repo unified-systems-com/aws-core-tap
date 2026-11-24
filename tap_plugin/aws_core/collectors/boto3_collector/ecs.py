@@ -50,7 +50,7 @@ from weakref import WeakKeyDictionary
 from botocore.exceptions import BotoCoreError, ClientError
 from tap_plugin.computing_core.image_reference import canonical_repository
 from tap_plugin.computing_core.key_dimensions import HOST_TYPE as HOST_TYPE_DIMENSION
-from tap_plugin.computing_core.key_dimensions import HOST_TYPE_ENTRY
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE_ENTRY, OCI_DIGEST
 
 from .authority import COMPLETE, PARTIAL, with_edge_reads
 from .edges import edge_envelope
@@ -522,10 +522,10 @@ HOST_TYPE = "computing_core__host"
 IMAGE_TAG_TYPE = "computing_core__image_tag"
 RUNS_IMAGE = "RUNS_IMAGE__computing_core"
 TAGS_IMAGE = "TAGS_IMAGE__computing_core"
-#: computing_core's host type for an image host (``tap.computing.host_type``, one of its conventions in
-#: ``key_dimensions.HOST_TYPES``): ``stable_id`` is the image manifest digest. Stamped on the envelope's dimensions,
+#: computing_core's host type for an image host (``tap.computing.host_type``, its convention
+#: ``key_dimensions.OCI_DIGEST``): ``stable_id`` is the image manifest digest. Stamped on the envelope's dimensions,
 #: never the payload, and fixed on the row once written (unified-systems-com/tap#1355).
-IMAGE_HOST_TYPE = "oci-digest"
+IMAGE_HOST_TYPE = OCI_DIGEST
 #: The ``stable_id`` shape computing_core accepts for that host type (``req-computing-core-host-4``); any other
 #: ``imageDigest`` is refused on write, so it makes no host and no edge here.
 _DIGEST_RE = re.compile(r"sha256:[0-9a-f]{64}")

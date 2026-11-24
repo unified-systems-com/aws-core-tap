@@ -38,7 +38,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_ent
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 from tap_plugin.aws_core.tests.grid_keys import find_node_id, live_edges, node_id
 from tap_plugin.computing_core.key_dimensions import HOST_TYPE as HOST_TYPE_DIMENSION
-from tap_plugin.computing_core.key_dimensions import HOST_TYPE_ENTRY, HOST_TYPES
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE_ENTRY, HOST_TYPES, OCI_DIGEST
 
 from tap_cares.collectors.config import CollectorConfig
 
@@ -196,7 +196,7 @@ class TestRunsImage:
         (host,) = _of_type(writes, HOST_TYPE)
         # The host type is the envelope's dimension, one of computing_core's conventions, and never a payload field.
         assert host["entity"]["dimensions"] == {HOST_TYPE_DIMENSION: IMAGE_HOST_TYPE}
-        assert IMAGE_HOST_TYPE == "oci-digest" and IMAGE_HOST_TYPE in HOST_TYPES
+        assert IMAGE_HOST_TYPE == OCI_DIGEST == "oci-digest" and IMAGE_HOST_TYPE in HOST_TYPES
         assert "realm" not in host["node"] and "host_type" not in host["node"]
         assert host["node"]["stable_id"] == _DIGEST
         assert host["node"]["kind"] == "container"
