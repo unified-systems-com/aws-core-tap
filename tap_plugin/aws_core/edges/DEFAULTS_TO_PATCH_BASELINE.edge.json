@@ -1,0 +1,17 @@
+{
+  "slug": "DEFAULTS_TO_PATCH_BASELINE__aws_core",
+  "name": "Defaults To Patch Baseline",
+  "description": "An account's default for one operating system in one region names its patch baseline (default -> baseline): the DescribePatchBaselines row whose DefaultBaseline is true, matched to the baseline's natural key, an AWS-owned baseline's ARN or the account's own pb- id (ruling Q139a option 2). A reference, not containment. Collected by the SSM baseline walk (collectors/boto3_collector/ssm_baselines.py, aws-core-tap#281, req-aws-core-ssm-baselines).",
+  "sources": [
+    "aws_core__aws_ssm_default_patch_baseline"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_patch_baseline"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

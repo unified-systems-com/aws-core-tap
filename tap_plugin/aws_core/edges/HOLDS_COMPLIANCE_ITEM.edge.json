@@ -1,0 +1,17 @@
+{
+  "slug": "HOLDS_COMPLIANCE_ITEM__aws_core",
+  "name": "Holds Compliance Item",
+  "description": "An SSM managed instance holds an Association or Custom compliance item (managed instance -> item): ListComplianceItems for the instance, ComplianceType not Patch. Collected by the SSM walk (collectors/boto3_collector/ssm_patch.py, aws-core-tap#281, req-aws-core-ssm-patch-state).",
+  "sources": [
+    "aws_core__aws_ssm_managed_instance"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_compliance_item"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

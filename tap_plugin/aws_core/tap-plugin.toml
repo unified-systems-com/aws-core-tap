@@ -45,8 +45,8 @@ name = "TAP AWS Core"
 description = "Resource-type models and edge types for AWS cloud infrastructure."
 
 depends_on = [
-    { slug = "compliance_core", optional = true, min_version = "0.8.13", note = "req-aws-landing-zone-inspector-compliance: when the credential's inspector_compliance_findings is true, the run's last step writes compliance_core's neutral finding, vulnerability, CONCERNS_COMPLIANCE_VULNERABILITY and CARRIES_COMPLIANCE_FINDING from the stored Inspector rows. Written by slug and read through the registries, never imported; no pyproject dependency. 0.8.13 is the first release with fix_state (0.8.8), the dimension declarations (0.8.12) and one CARRIES edge per pair (0.8.13). Absent or too old, the self-test fails when the option is on and the run collects the AWS data and records the projection as failed." },
-    { slug = "computing_core", min_version = "0.11.0", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and tap.computing.credential on its credential types, and only computing_core's [grift] dimension bundle declares them. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin. 0.11.0 is the first release whose host is keyed on the tap.computing.host_type dimension (computing-core-tap PR 103, tap#1355): the image host aws_core writes stamps it on the envelope and names the host by that key; against an older computing_core the key names a realm column that the write leaves empty. tap.computing.credential is declared from 0.10.11 (computing-core-tap#97, aws-build Q146), so the 0.11.0 floor covers it." },
+    { slug = "compliance_core", optional = true, min_version = "0.8.13", note = "req-aws-landing-zone-inspector-compliance: when the credential's inspector_compliance_findings is true, the run's last step writes compliance_core's neutral finding, vulnerability, CONCERNS_COMPLIANCE_VULNERABILITY and CARRIES_COMPLIANCE_FINDING from the stored Inspector rows. Written by slug and read through the registries, never imported; no pyproject dependency. 0.8.13 is the first release with fix_state (0.8.8), the dimension declarations (0.8.12) and one CARRIES edge per pair (0.8.13). Absent or too old, the self-test fails when the option is on and the run collects the AWS data and records the projection as failed. req-aws-core-ssm-compliance: ssm_compliance_findings, a switch of its own (Q141c), writes the same contract from the stored SSM patch state (finding per exposed instance and CVE, its CONCERNS and CARRIES edges, and the vulnerability), plus aws_core's own RESOLVES_VULNERABILITY from each patch to the vulnerability of each CVE it names." },
+    { slug = "computing_core", min_version = "0.11.0", note = "The neutral computing vocabulary: aws_core stamps the tap.computing.cloud dimension on the nodes it writes, and tap.computing.credential on its credential types, and only computing_core's [grift] dimension bundle declares them. On a core that resolves dimension names to live Dimension nodes (tap#1196) aws_core without computing_core has most writes refused (aws-build Q73). Type dependency, downward-only; computing_core imports nothing from this plugin. 0.11.0 is the first release whose host is keyed on the tap.computing.host_type dimension (computing-core-tap PR 103, tap#1355): the image host aws_core writes stamps it on the envelope and names the host by that key. tap.computing.credential is declared from 0.10.11 (computing-core-tap#97, aws-build Q146), so the 0.11.0 floor covers it." },
 ]
 
 [models]
@@ -334,6 +334,12 @@ aws_core__aws_servicecatalog_tag_option = "tap_plugin.aws_core.models.servicecat
 aws_core__aws_servicecatalog_service_action = "tap_plugin.aws_core.models.servicecatalog_service_action.ServicecatalogServiceAction"
 aws_core__aws_servicecatalog_provisioned_product = "tap_plugin.aws_core.models.servicecatalog_provisioned_product.ServicecatalogProvisionedProduct"
 aws_core__aws_ssm_patch_baseline = "tap_plugin.aws_core.models.ssm_patch_baseline.SsmPatchBaseline"
+aws_core__aws_ssm_managed_instance = "tap_plugin.aws_core.models.ssm_managed_instance.SsmManagedInstance"
+aws_core__aws_ssm_patch = "tap_plugin.aws_core.models.ssm_patch.SsmPatch"
+aws_core__aws_ssm_compliance_summary = "tap_plugin.aws_core.models.ssm_compliance_summary.SsmComplianceSummary"
+aws_core__aws_ssm_compliance_item = "tap_plugin.aws_core.models.ssm_compliance_item.SsmComplianceItem"
+aws_core__aws_ssm_default_patch_baseline = "tap_plugin.aws_core.models.ssm_default_patch_baseline.SsmDefaultPatchBaseline"
+aws_core__aws_ssm_patch_group = "tap_plugin.aws_core.models.ssm_patch_group.SsmPatchGroup"
 aws_core__aws_ssm_maintenance_window = "tap_plugin.aws_core.models.ssm_maintenance_window.SsmMaintenanceWindow"
 aws_core__aws_ssm_cloud_connector = "tap_plugin.aws_core.models.ssm_cloud_connector.SsmCloudConnector"
 aws_core__aws_ssm_association = "tap_plugin.aws_core.models.ssm_association.SsmAssociation"
@@ -1104,6 +1110,16 @@ GRANTS_PERMISSION_SET__aws_core = "edges/GRANTS_PERMISSION_SET.edge.json"
 GRANTS_ACCESS_TO_ACCOUNT__aws_core = "edges/GRANTS_ACCESS_TO_ACCOUNT.edge.json"
 GRANTED_TO_GROUP__aws_core = "edges/GRANTED_TO_GROUP.edge.json"
 REPORTS_TO_ADMINISTRATOR__aws_core = "edges/REPORTS_TO_ADMINISTRATOR.edge.json"
+REPRESENTS_EC2_INSTANCE__aws_core = "edges/REPRESENTS_EC2_INSTANCE.edge.json"
+USES_PATCH_BASELINE__aws_core = "edges/USES_PATCH_BASELINE.edge.json"
+REPORTS_PATCH__aws_core = "edges/REPORTS_PATCH.edge.json"
+RESOLVES_VULNERABILITY__aws_core = "edges/RESOLVES_VULNERABILITY.edge.json"
+HOLDS_COMPLIANCE_SUMMARY__aws_core = "edges/HOLDS_COMPLIANCE_SUMMARY.edge.json"
+HOLDS_COMPLIANCE_ITEM__aws_core = "edges/HOLDS_COMPLIANCE_ITEM.edge.json"
+CONCERNS_ASSOCIATION__aws_core = "edges/CONCERNS_ASSOCIATION.edge.json"
+DEFAULTS_TO_PATCH_BASELINE__aws_core = "edges/DEFAULTS_TO_PATCH_BASELINE.edge.json"
+REGISTERED_TO_PATCH_BASELINE__aws_core = "edges/REGISTERED_TO_PATCH_BASELINE.edge.json"
+IN_PATCH_GROUP__aws_core = "edges/IN_PATCH_GROUP.edge.json"
 HOLDS_GUARDDUTY_FINDING__aws_core = "edges/HOLDS_GUARDDUTY_FINDING.edge.json"
 HOLDS_SECURITYHUB_FINDING__aws_core = "edges/HOLDS_SECURITYHUB_FINDING.edge.json"
 HOLDS_STANDARDS_SUBSCRIPTION__aws_core = "edges/HOLDS_STANDARDS_SUBSCRIPTION.edge.json"

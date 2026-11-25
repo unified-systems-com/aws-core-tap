@@ -1,0 +1,17 @@
+{
+  "slug": "USES_PATCH_BASELINE__aws_core",
+  "name": "Uses Patch Baseline",
+  "description": "An SSM managed instance's last patch operation used this patch baseline (managed instance -> baseline): DescribeInstancePatchStates' BaselineId, matched to the baseline's natural key. An AWS-provided baseline (its BaselineId is an ARN) is collected as one node per region shared by every account (ruling Q139a option 2), so the edge reaches it too. A reference, not containment. Collected by the SSM walk (collectors/boto3_collector/ssm_patch.py, aws-core-tap#281, req-aws-core-ssm-patch-state).",
+  "sources": [
+    "aws_core__aws_ssm_managed_instance"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_patch_baseline"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

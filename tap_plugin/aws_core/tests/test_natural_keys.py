@@ -28,6 +28,18 @@ def test_every_model_declares_a_natural_key_on_its_own_fields() -> None:
         assert all(k in fields for k in key), (model.ENTITY_TYPE, key)
 
 
+#: A multi-column type that belongs to no account, so its batch ref is scoped by partition only: (prefix, reason).
+SHARED_ACROSS_ACCOUNTS: dict[str, tuple[str, str]] = {
+    "aws_core__aws_ssm_patch": (
+        "{partition}:",
+        (
+            "a vendor patch, keyed (partition, operating system, KBId), one node for every instance, region and account "
+            "that reports it (ruling B2, aws-core-tap#281)"
+        ),
+    ),
+}
+
+
 def test_collected_types_key_on_what_the_collector_keys_on() -> None:
     """req-aws-core-fields-7: where the boto3 manifest collects a type, the model's key is the field the manifest's
     natural_key path projects to, so the model and the collector name the same fact."""
@@ -41,7 +53,8 @@ def test_collected_types_key_on_what_the_collector_keys_on() -> None:
             assert entry["natural_key"] not in entry["fields"].values(), entry["entity_type"]
             # A global entry puts the literal ``global`` in the region place (req-aws-collector-identity-8): the IAM
             # credentials of aws-core-tap#282.
-            scope = "{partition}:{account}:global:" if entry["scope"] == "global" else "{partition}:{account}:{region}:"
+            regional = "{partition}:{account}:global:" if entry["scope"] == "global" else "{partition}:{account}:{region}:"
+            scope = SHARED_ACROSS_ACCOUNTS.get(entry["entity_type"], (regional, ""))[0]
             assert entry["derive"][entry["natural_key"]].startswith(scope), entry["entity_type"]
             continue
         projected = [field for field, path in entry["fields"].items() if path == entry["natural_key"]]

@@ -93,6 +93,7 @@ DECLARED: dict[str, Moment | Interval] = {
     "aws_core__aws_rds_db_snapshot": Interval(start="created_at", kind="created"),
     "aws_core__aws_securityhub_finding": Interval(start="created_at", kind="created"),
     "aws_core__aws_securityhub_hub": Interval(start="subscribed_at", kind="created"),
+    "aws_core__aws_ssm_managed_instance": Interval(start="registration_date", kind="created"),
 }
 
 
@@ -832,7 +833,7 @@ def test_every_type_is_declared_timeless_or_pending_and_only_one() -> None:
     assert declared == expected
     assert _pending() == set(PENDING)
     timeless = [m for m in models if m.__dict__.get("EVENT_TIME") is NO_EVENT_TIME]
-    assert (len(declared), len(PENDING), len(timeless), len(models)) == (535, 35, 366, 936)
+    assert (len(declared), len(PENDING), len(timeless), len(models)) == (536, 35, 371, 942)
     for model in models:
         declaration = model.__dict__.get("EVENT_TIME")
         reason = model.__dict__.get("EVENT_TIME_REASON")
@@ -1188,6 +1189,19 @@ def test_a_stopped_ecs_task_is_the_interval_it_ran() -> None:
         datetime(2026, 1, 2, 4, 0, 0, tzinfo=UTC),
         "occurred",
     )
+
+
+@pytest.mark.django_db
+def test_a_managed_instance_starts_at_its_registration_and_an_ec2_node_states_none() -> None:
+    """A hybrid node's RegistrationDate is when its record came to exist; an EC2 node's record states no such time,
+    and the EC2 instance's LaunchTime is not read onto it (each type from its own record)."""
+    hybrid = _create(
+        "aws_core__aws_ssm_managed_instance",
+        {"name": "lab", "instance_id": "mi-0123456789abcdef0", "registration_date": "2026-01-02T03:04:05Z"},
+    )
+    assert (hybrid.event_start, hybrid.event_end, _kind(hybrid)) == (datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC), None, "created")
+    ec2 = _create("aws_core__aws_ssm_managed_instance", {"name": "web", "instance_id": "i-0abc1234def567890"})
+    assert (ec2.event_start, ec2.event_end, _kind(ec2)) == (None, None, None)
 
 
 @pytest.mark.django_db

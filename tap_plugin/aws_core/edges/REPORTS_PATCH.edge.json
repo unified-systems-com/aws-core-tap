@@ -1,0 +1,43 @@
+{
+  "slug": "REPORTS_PATCH__aws_core",
+  "name": "Reports Patch",
+  "description": "An SSM managed instance reports a patch that needs action on it (managed instance -> patch): one DescribeInstancePatches row whose state is MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED or AVAILABLE_SECURITY_UPDATE, carrying that instance's state, severity and install time. INSTALLED, INSTALLED_OTHER and NOT_APPLICABLE rows are not edges: the instance's count fields carry them (ruling Q147 option 3), and the edge retires when its gap closes. The patch node is shared by every instance that reports it (ruling B2). A reference, not containment. Collected by the SSM walk (collectors/boto3_collector/ssm_patch.py, aws-core-tap#281, req-aws-core-ssm-patch-state).",
+  "sources": [
+    "aws_core__aws_ssm_managed_instance"
+  ],
+  "targets": [
+    "aws_core__aws_ssm_patch"
+  ],
+  "property_schema": {
+    "type": "object",
+    "properties": {
+      "state": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The patch's state on this instance as DescribeInstancePatches reports it, one of the states that need action: MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED or AVAILABLE_SECURITY_UPDATE (ruling Q147 option 3). Changes in place run to run among them; not part of the key."
+      },
+      "severity": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "The patch's severity as DescribeInstancePatches reports it for this instance (Critical, Important and so on)."
+      },
+      "installed_time": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "When the patch was installed on this instance, ISO 8601 UTC; null when it is not installed (AWS reports the Unix epoch)."
+      }
+    }
+  },
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

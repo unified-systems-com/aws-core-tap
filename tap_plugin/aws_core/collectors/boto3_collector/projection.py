@@ -45,15 +45,22 @@ class ProjectionError(Exception):
     """
 
 
+def edge_only_keys(entry: dict[str, Any]) -> tuple[str, ...]:
+    """The item keys an entry declares ``edge_only``: read by its edge rules, never stored
+    (``req-aws-collector-source-12``)."""
+    return tuple((entry.get("edge_only") or {}).get("keys") or ())
+
+
 def _without_parent(entry: dict[str, Any], item: Any) -> Any:
     """The item as AWS returned it: what the engine added for ``fields`` to read is not stored.
 
     A fan-out's ``_parent`` slot (only a ``per`` entry has it) and the keys a ``derive`` block built
-    are for ``natural_key``, ``fields`` and the tags lane; any other entry's item is stored whole.
+    are for ``natural_key``, ``fields`` and the tags lane, and an ``edge_only`` key is for the edge
+    rules; any other entry's item is stored whole. ``raw_item`` keeps them all for the edge pass.
     """
     if not isinstance(item, dict):
         return item
-    added = set(derived_keys(entry))
+    added = set(derived_keys(entry)) | set(edge_only_keys(entry))
     if "per" in entry["source"]:
         added.add(PARENT_SLOT)
     if not added & item.keys():

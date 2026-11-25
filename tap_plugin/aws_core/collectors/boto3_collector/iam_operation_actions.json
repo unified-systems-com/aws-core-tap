@@ -6596,6 +6596,24 @@
    ],
    "dropped": []
   },
+  "ssm:describe_instance_information": {
+   "actions": [
+    "ssm:DescribeInstanceInformation"
+   ],
+   "dropped": []
+  },
+  "ssm:describe_instance_patch_states": {
+   "actions": [
+    "ssm:DescribeInstancePatchStates"
+   ],
+   "dropped": []
+  },
+  "ssm:describe_instance_patches": {
+   "actions": [
+    "ssm:DescribeInstancePatches"
+   ],
+   "dropped": []
+  },
   "ssm:describe_maintenance_windows": {
    "actions": [
     "ssm:DescribeMaintenanceWindows"
@@ -6614,6 +6632,12 @@
    ],
    "dropped": []
   },
+  "ssm:describe_patch_groups": {
+   "actions": [
+    "ssm:DescribePatchGroups"
+   ],
+   "dropped": []
+  },
   "ssm:list_associations": {
    "actions": [
     "ssm:ListAssociations"
@@ -6626,9 +6650,21 @@
    ],
    "dropped": []
   },
+  "ssm:list_compliance_items": {
+   "actions": [
+    "ssm:ListComplianceItems"
+   ],
+   "dropped": []
+  },
   "ssm:list_documents": {
    "actions": [
     "ssm:ListDocuments"
+   ],
+   "dropped": []
+  },
+  "ssm:list_resource_compliance_summaries": {
+   "actions": [
+    "ssm:ListResourceComplianceSummaries"
    ],
    "dropped": []
   },

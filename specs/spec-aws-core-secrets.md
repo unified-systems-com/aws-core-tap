@@ -26,7 +26,7 @@ concrete instance of the consumer-owned-shape contract.
 | req-aws-core-secret-aws-assumed-role | [AWS Assumed-Role Kind (cross-account)](#aws-assumed-role-kind-cross-account) | Proposed | `aws_assumed_role` `data` shape; STS AssumeRole + mandatory External ID for cross-account read-only collection; supersedes the deferral in `req-aws-core-secret-aws-static-3` |
 | req-aws-core-secret-member-fanout | [Member Fan-Out Settings](#member-fan-out-settings) | Proposed | Optional `data.member_fanout` block on the static kind: the dedicated member role's name, its required External ID, an exclude list and a cap; consumed by `req-aws-collector-fanout` |
 | req-aws-core-secret-selection | [Collection Selection Settings](#collection-selection-settings) | Proposed | Optional `data.include_types`, `data.exclude_types` and `data.accounts_allowed` on both kinds: which types and which accounts a run collects; consumed by `req-aws-collector-selection` |
-| req-aws-core-secret-findings-settings | [Findings Settings](#findings-settings) | Proposed | Optional keys on both kinds that trim what the findings readers collect, all off by default: `inspector_compliance_findings` (project Inspector rows into compliance_core), `inspector_finding_types` (down-select Inspector's finding types), `findings_max_per_region` and `findings_read_budget_seconds` (limit the findings reads); consumed by `req-aws-landing-zone-inspector` and `req-aws-landing-zone-findings-3` |
+| req-aws-core-secret-findings-settings | [Findings Settings](#findings-settings) | Proposed | Optional keys on both kinds that trim what the findings readers collect, all off by default: `inspector_compliance_findings` (project Inspector rows into compliance_core), `ssm_compliance_findings` (project the SSM patch state into compliance_core, its own switch), `inspector_finding_types` (down-select Inspector's finding types), `findings_max_per_region` and `findings_read_budget_seconds` (limit the findings reads); consumed by `req-aws-landing-zone-inspector`, `req-aws-landing-zone-findings-3` and `req-aws-core-ssm-compliance` |
 | req-aws-core-secret-credential-report | [Credential Report Setting](#credential-report-setting) | Proposed | Optional `data.generate_credential_report` on both kinds, default off: when true the run calls `iam:GenerateCredentialReport` before reading the report, the one state-changing call aws_core makes; consumed by `req-aws-core-iam-credentials` |
 
 ## AWS Static Access Key Kind
@@ -309,6 +309,11 @@ shared schema fragment (`_FINDINGS_PROPS`) for both kinds:
   compliance_core as its last step, and the self-test checks that compliance_core is installed, at least 0.8.13,
   and carries the types, fields and edges the projection writes
   (`spec-aws-core-landing-zone.md`, `req-aws-landing-zone-inspector-compliance`).
+- `data.ssm_compliance_findings` — boolean, a switch of its own, independent of `inspector_compliance_findings`
+  (ruling Q141c, 2026-11-23). Absent or `false`: no compliance_core node or edge is written from the SSM patch state
+  and compliance_core is not looked for. `true`: the run links its account's stored SSM patches to compliance_core's
+  vulnerabilities and writes a neutral finding per exposed (instance, CVE) as its last step, and the self-test makes
+  the same compliance_core check (`spec-aws-core-v0.md`, `req-aws-core-ssm-compliance`).
 - `data.inspector_finding_types` — non-empty array of distinct values from `PACKAGE_VULNERABILITY`,
   `CODE_VULNERABILITY` and `NETWORK_REACHABILITY`. Absent means all three (`req-aws-landing-zone-inspector-7`).
 - `data.findings_max_per_region` — integer, at least 1. Absent means no limit: every findings read (GuardDuty,
@@ -326,7 +331,7 @@ configuration.
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
 | req-aws-core-secret-findings-settings-1 | Optional, Everything By Default | Proposed | A secret without any of the keys validates and runs exactly as before the keys existed, except that nothing is capped: every finding type is read, every read runs to its end, and no compliance_core data is written. | |
-| req-aws-core-secret-findings-settings-2 | One Fragment, Both Kinds | Proposed | Both kinds accept the four keys from one shared fragment; a non-boolean toggle, an unknown or repeated finding type, an empty type list, and a limit or budget below 1 are refused at validation. | |
+| req-aws-core-secret-findings-settings-2 | One Fragment, Both Kinds | Proposed | Both kinds accept the five keys from one shared fragment; a non-boolean toggle, an unknown or repeated finding type, an empty type list, and a limit or budget below 1 are refused at validation. | |
 
 ## Credential Report Setting
 ----

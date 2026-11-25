@@ -30415,59 +30415,541 @@
       "service": "ssm",
       "scope": "regional",
       "source": {
-        "aws_op": "DescribePatchBaselines",
-        "params": {
-          "Filters": [
-            {
-              "Key": "OWNER",
-              "Values": [
-                "Self"
-              ]
-            }
-          ]
-        }
+        "custom_fn": "ssm_patch_baselines_described"
       },
-      "why": "Enumerate SSM Patch Baseline objects with DescribePatchBaselines at OWNER Self (the customer's own baselines; the AWS-provided ones are not the account's resources) — an inventory of the account's patch baselines and how each is tagged.",
+      "why": "Enumerate SSM patch baselines with DescribePatchBaselines and no filter (req-aws-core-ssm-baselines, ruling Q139a option 2): the account's own baselines, with their tags, and AWS's, each one node per region shared by every account that lists it, keyed by the ARN AWS names it by, whose account segment is AWS's and becomes its aws.account dimension. Managed instances, defaults and patch groups reach them.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore ssm DescribePatchBaselines item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Walked botocore 1.44.7 ssm DescribePatchBaselines (PatchBaselineIdentity) and ListTagsForResource output shapes for the sensitive trait (none) and read custom_fn walk_baselines (ssm_baselines.py), 2026-11-24. An AWS-owned baseline's DefaultBaseline, the listing account's choice, is dropped from its item as it is read.",
         "locations": [
           {
-            "path": "_hydrate.tags",
+            "path": "BaselineName",
             "category": "customer_content",
-            "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "reason": "An own baseline's name is whatever its creator chose.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "BaselineDescription",
+            "category": "customer_content",
+            "reason": "An own baseline's description is free text its creator wrote.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values of an own baseline: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "The error code of a failed tag read (AccessDenied and the like).",
             "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "BaselineIdentities[]",
+      "items_path": "[]",
       "natural_key": "BaselineId",
       "identity": {
         "cfn_type": "AWS::SSM::PatchBaseline",
-        "key": { "ssm_patch_baseline_id": "Id" },
-        "arn_key": { "ssm_patch_baseline_id": "${PatchBaselineIdResourceId}" }
+        "key": {
+          "ssm_patch_baseline_id": "Id"
+        },
+        "arn_key": {
+          "ssm_patch_baseline_id": "${PatchBaselineIdResourceId}"
+        }
       },
       "fields": {
         "name": "BaselineName",
-        "ssm_patch_baseline_id": "BaselineId"
+        "ssm_patch_baseline_id": "BaselineId",
+        "operating_system": "OperatingSystem",
+        "description": "BaselineDescription",
+        "aws_owned": "_aws_owned"
       },
       "tags": {
-        "source": "service",
-        "op": "ListTagsForResource",
-        "params": {
-          "ResourceType": {
-            "literal": "PatchBaseline"
-          },
-          "ResourceId": {
-            "from": "BaselineId"
-          }
-        },
-        "path": "TagList",
+        "source": "field",
+        "from": "_tags",
         "shape": "list_kv",
-        "why": "Resource tags — ListTagsForResource by the object's own identifier; the listing carries none."
+        "why": "An own baseline's tags are read by ListTagsForResource (ResourceType PatchBaseline) in the walk; an AWS-owned baseline's are AWS's, not read, and stay unread (null)."
       }
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_managed_instance",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_managed_instances_described"
+      },
+      "why": "Enumerate SSM managed instances (DescribeInstanceInformation), EC2 and hybrid, each with its last patch operation (DescribeInstancePatchStates) held in typed fields, the baseline that operation used, the patches that need action on it (DescribeInstancePatches rows MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED and AVAILABLE_SECURITY_UPDATE, as REPORTS_PATCH edges; ruling Q147 option 3), and its compliance summaries and Association and Custom compliance items: per-instance patch and compliance state for vulnerability and compliance evidence (aws-core-tap#281, rulings Q116b, Q137a, A1, B2, Q147).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token). Not stored by ruling, not as secret material: the per-patch list the REPORTS_PATCH edges come from (edge_only).",
+      "edge_only": {
+        "keys": [
+          "_patches"
+        ],
+        "why": "Ruling Q147 option 3 (George): the per-patch list is not kept in the instance's stored configuration. Its rows that need action are the instance's REPORTS_PATCH edges, every state is counted by the patch_*_count fields, and the stored _patch_list note names DescribeInstancePatches as where AWS lists every patch."
+      },
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm output shapes for DescribeInstanceInformation, DescribeInstancePatchStates, DescribePatchBaselines, DescribeInstancePatches, ListResourceComplianceSummaries and ListComplianceItems for the sensitive trait, and read custom_fn walk_ssm (ssm_patch.py), 2026-11-22. Flagged: InstanceInformation.IPAddress and InstancePatchState.OwnerInformation; the walk drops OwnerInformation as the response is read, so it is in no item (ruling A1).",
+        "locations": [
+          {
+            "path": "IPAddress",
+            "category": "other",
+            "reason": "The managed node's IP address as the agent reports it; botocore marks it sensitive. Not secret material, so it is stored (req-aws-collector-redaction-2) and not projected to a field.",
+            "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "ComputerName",
+            "category": "other",
+            "reason": "The host name the agent reports, which can name a person or team.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Name",
+            "category": "customer_content",
+            "reason": "The name an operator gave a hybrid node at activation, an arbitrary string.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "IamRole",
+            "category": "other",
+            "reason": "The role name the node's credentials come from: an identifier, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_patch_state.InstallOverrideList",
+            "category": "other",
+            "reason": "An https or s3:// URL of the patch list an install was told to use; a location, not its contents. An https URL can be presigned, its signature in the query string, so the reader reduces it to scheme, host and path before the item is built.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_tags",
+            "category": "customer_content",
+            "reason": "Operator-set tag values of a hybrid node: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "Per-slot error codes from the walk (AccessDenied and the like).",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "InstanceId",
+      "identity": {
+        "cfn_type": null,
+        "arn_key": {
+          "instance_id": "${InstanceId}"
+        },
+        "reason": "CloudFormation has no managed-instance type and DescribeInstanceInformation returns no ARN; the node is named by the id AWS generates for it, the EC2 instance id for an EC2 node and the mi- id SSM generates for a hybrid one, as AWS's managed-instance ARN names it (managed-instance/${InstanceId})."
+      },
+      "fields": {
+        "name": "_name",
+        "instance_id": "InstanceId",
+        "resource_type": "ResourceType",
+        "ping_status": "PingStatus",
+        "last_ping_at": "LastPingDateTime",
+        "agent_version": "AgentVersion",
+        "is_latest_version": "IsLatestVersion",
+        "platform_type": "PlatformType",
+        "platform_name": "PlatformName",
+        "platform_version": "PlatformVersion",
+        "computer_name": "ComputerName",
+        "iam_role": "IamRole",
+        "activation_id": "ActivationId",
+        "registration_date": "RegistrationDate",
+        "association_status": "AssociationStatus",
+        "last_association_execution_at": "LastAssociationExecutionDate",
+        "last_successful_association_execution_at": "LastSuccessfulAssociationExecutionDate",
+        "source_id": "SourceId",
+        "source_type": "SourceType",
+        "patch_group": "_patch_state.PatchGroup",
+        "patch_baseline_id": "_patch_state.BaselineId",
+        "patch_operation": "_patch_state.Operation",
+        "patch_operation_start_at": "_patch_operation_start_at",
+        "patch_operation_end_at": "_patch_operation_end_at",
+        "patch_last_no_reboot_install_at": "_patch_last_no_reboot_install_at",
+        "patch_reboot_option": "_patch_state.RebootOption",
+        "patch_snapshot_id": "_patch_state.SnapshotId",
+        "patch_install_override_list": "_patch_state.InstallOverrideList",
+        "patch_installed_count": "_patch_state.InstalledCount",
+        "patch_installed_other_count": "_patch_state.InstalledOtherCount",
+        "patch_installed_pending_reboot_count": "_patch_state.InstalledPendingRebootCount",
+        "patch_installed_rejected_count": "_patch_state.InstalledRejectedCount",
+        "patch_missing_count": "_patch_state.MissingCount",
+        "patch_failed_count": "_patch_state.FailedCount",
+        "patch_unreported_not_applicable_count": "_patch_state.UnreportedNotApplicableCount",
+        "patch_not_applicable_count": "_patch_state.NotApplicableCount",
+        "patch_available_security_update_count": "_patch_state.AvailableSecurityUpdateCount",
+        "patch_critical_non_compliant_count": "_patch_state.CriticalNonCompliantCount",
+        "patch_security_non_compliant_count": "_patch_state.SecurityNonCompliantCount",
+        "patch_other_non_compliant_count": "_patch_state.OtherNonCompliantCount"
+      },
+      "tags": {
+        "source": "field",
+        "from": "_tags",
+        "shape": "list_kv",
+        "why": "A hybrid node's tags are SSM's (ListTagsForResource, ResourceType ManagedInstance); an EC2 node's are the EC2 instance's own and live on that node, so the walk reads none for it and its tags stay unread (null)."
+      },
+      "edges": [
+        {
+          "value_path": "_ec2_instance_id",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "REPRESENTS_EC2_INSTANCE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_patch_baseline_id",
+          "target_type": "aws_core__aws_ssm_patch_baseline",
+          "key_kind": "id",
+          "edge_type": "USES_PATCH_BASELINE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_patches",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ssm_patch",
+          "key_kind": "id",
+          "edge_type": "REPORTS_PATCH__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_patch",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_patches_described"
+      },
+      "why": "Enumerate the patches that are a gap on some SSM managed instance (a DescribeInstancePatches row MISSING, FAILED, INSTALLED_PENDING_REBOOT, INSTALLED_REJECTED or AVAILABLE_SECURITY_UPDATE; ruling Q147 option 3), one node per patch shared by every instance that reports it, keyed by partition, the SSM operating system of the baseline that evaluated the instance, and the patch's KBId (ruling B2). Each instance reaches it by REPORTS_PATCH, which carries that instance's state, severity and install time. CVEIds are kept on the node as a list; with ssm_compliance_findings on, the run's last step links the patch to compliance_core's vulnerability for each (RESOLVES_VULNERABILITY, ssm_compliance.py).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_none_known",
+        "basis": "Walked botocore 1.44.7 ssm DescribeInstancePatches output shape (PatchComplianceData) for the sensitive trait (none) and read custom_fn walk_ssm (ssm_patch.py), 2026-11-22: the item is the vendor's patch identity, title, classification and CVE ids, which name no customer resource."
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{OperatingSystem}:{KBId}",
+        "_partition": "{partition}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A patch is the vendor's, not an account's resource: AWS gives it no ARN and CloudFormation no type. It is named by the KBId DescribeInstancePatches returns, under the SSM operating system that KBId belongs to, in one partition (ruling B2)."
+      },
+      "fields": {
+        "name": "KBId",
+        "partition": "_partition",
+        "operating_system": "OperatingSystem",
+        "kb_id": "KBId",
+        "title": "Title",
+        "classification": "Classification",
+        "cve_ids": "_cve_ids"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A patch reported by an instance is not a taggable resource: the ssm service model's AddTagsToResource and ListTagsForResource take a document, managed instance, maintenance window, parameter, patch baseline, OpsItem, OpsMetadata, automation or association, never a patch (botocore 1.44.7)."
+      }
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_compliance_summary",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_compliance_summaries_described"
+      },
+      "why": "Enumerate SSM compliance summaries (ListResourceComplianceSummaries): one node per resource and compliance type (Patch, Association, Custom:*), with its status, overall severity and compliant and non-compliant counts by severity, held by its managed instance (HOLDS_COMPLIANCE_SUMMARY).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm ListResourceComplianceSummaries output shape for the sensitive trait (none) and read custom_fn walk_ssm (ssm_patch.py), 2026-11-22.",
+        "locations": [
+          {
+            "path": "ComplianceType",
+            "category": "customer_content",
+            "reason": "A Custom compliance type's name (Custom:<name>) is whatever the caller of PutComplianceItems chose.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{ResourceType}/{ResourceId}/{ComplianceType}",
+        "_account_id": "{account}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A compliance summary has no ARN and no CloudFormation type; AWS names it by the resource and compliance type it summarises, scoped here by account and region."
+      },
+      "fields": {
+        "name": "_name",
+        "account_id": "_account_id",
+        "region": "$region",
+        "resource_type": "ResourceType",
+        "resource_id": "ResourceId",
+        "compliance_type": "ComplianceType",
+        "status": "Status",
+        "overall_severity": "OverallSeverity",
+        "execution_time": "_execution_time",
+        "execution_id": "ExecutionSummary.ExecutionId",
+        "execution_type": "ExecutionSummary.ExecutionType",
+        "compliant_count": "CompliantSummary.CompliantCount",
+        "compliant_critical_count": "CompliantSummary.SeveritySummary.CriticalCount",
+        "compliant_high_count": "CompliantSummary.SeveritySummary.HighCount",
+        "compliant_medium_count": "CompliantSummary.SeveritySummary.MediumCount",
+        "compliant_low_count": "CompliantSummary.SeveritySummary.LowCount",
+        "compliant_informational_count": "CompliantSummary.SeveritySummary.InformationalCount",
+        "compliant_unspecified_count": "CompliantSummary.SeveritySummary.UnspecifiedCount",
+        "non_compliant_count": "NonCompliantSummary.NonCompliantCount",
+        "non_compliant_critical_count": "NonCompliantSummary.SeveritySummary.CriticalCount",
+        "non_compliant_high_count": "NonCompliantSummary.SeveritySummary.HighCount",
+        "non_compliant_medium_count": "NonCompliantSummary.SeveritySummary.MediumCount",
+        "non_compliant_low_count": "NonCompliantSummary.SeveritySummary.LowCount",
+        "non_compliant_informational_count": "NonCompliantSummary.SeveritySummary.InformationalCount",
+        "non_compliant_unspecified_count": "NonCompliantSummary.SeveritySummary.UnspecifiedCount"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A compliance summary is not a taggable resource: the ssm service model's tagging operations take no compliance summary (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "ResourceId",
+          "target_type": "aws_core__aws_ssm_managed_instance",
+          "key_kind": "id",
+          "edge_type": "HOLDS_COMPLIANCE_SUMMARY__aws_core",
+          "direction": "inbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_compliance_item",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_compliance_items_described"
+      },
+      "why": "Enumerate each managed instance's Association and Custom compliance items (ListComplianceItems with ComplianceType not Patch; DescribeInstancePatches is the Patch items' source), held by the instance (HOLDS_COMPLIANCE_ITEM); an Association item concerns its association (CONCERNS_ASSOCIATION).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm ListComplianceItems output shape for the sensitive trait (none) and read custom_fn walk_ssm (ssm_patch.py), 2026-11-22.",
+        "locations": [
+          {
+            "path": "Title",
+            "category": "customer_content",
+            "reason": "A Custom item's title is whatever the caller of PutComplianceItems wrote.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Details",
+            "category": "customer_content",
+            "reason": "A free key-value map; for a Custom item, anything the caller of PutComplianceItems put there. Projected to the typed details field, so the reader removes any value whose key names a secret before the item is built (the configuration scrub does not reach a typed field) and lists it under _redacted.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ComplianceType",
+            "category": "customer_content",
+            "reason": "A Custom compliance type's name is the caller's choice.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{ResourceType}/{ResourceId}/{ComplianceType}/{_item_id}",
+        "_account_id": "{account}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A compliance item has no ARN and no CloudFormation type; AWS names it by its resource, compliance type and Id (the Title when a Custom item has no Id), scoped here by account and region."
+      },
+      "fields": {
+        "name": "_item_id",
+        "account_id": "_account_id",
+        "region": "$region",
+        "resource_type": "ResourceType",
+        "resource_id": "ResourceId",
+        "compliance_type": "ComplianceType",
+        "item_id": "_item_id",
+        "title": "Title",
+        "status": "Status",
+        "severity": "Severity",
+        "execution_time": "_execution_time",
+        "execution_id": "ExecutionSummary.ExecutionId",
+        "execution_type": "ExecutionSummary.ExecutionType",
+        "details": "Details"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A compliance item is not a taggable resource: the ssm service model's tagging operations take no compliance item (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "ResourceId",
+          "target_type": "aws_core__aws_ssm_managed_instance",
+          "key_kind": "id",
+          "edge_type": "HOLDS_COMPLIANCE_ITEM__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_association_id",
+          "target_type": "aws_core__aws_ssm_association",
+          "key_kind": "id",
+          "edge_type": "CONCERNS_ASSOCIATION__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_default_patch_baseline",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_default_patch_baselines_described"
+      },
+      "why": "Enumerate the account's default patch baseline for each operating system in the region (ruling Q139a option 2): the DescribePatchBaselines rows whose DefaultBaseline is true, one node per (partition, account, region, operating system) with DEFAULTS_TO_PATCH_BASELINE to the baseline it names, AWS-owned or the account's own. Read from the baseline listing, so no GetDefaultPatchBaseline call is made.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm DescribePatchBaselines (PatchBaselineIdentity) output shape for the sensitive trait (none) and read custom_fn walk_baselines (ssm_baselines.py), 2026-11-24. The item is the default row's operating system, baseline id and name.",
+        "locations": [
+          {
+            "path": "BaselineName",
+            "category": "customer_content",
+            "reason": "An own default baseline's name is whatever its creator chose.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{OperatingSystem}",
+        "_account_id": "{account}",
+        "_partition": "{partition}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A default baseline setting has no ARN and no CloudFormation type (AWS::SSM::PatchBaseline's DefaultBaseline property sets it from the baseline's side); AWS names it by the operating system, scoped here by partition, account and region."
+      },
+      "fields": {
+        "name": "_name",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "region": "$region",
+        "operating_system": "OperatingSystem",
+        "baseline_id": "BaselineId",
+        "baseline_name": "BaselineName",
+        "aws_owned": "_aws_owned"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A default baseline setting is not a taggable resource: the ssm service model's tagging operations take no such resource type (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "BaselineId",
+          "target_type": "aws_core__aws_ssm_patch_baseline",
+          "key_kind": "id",
+          "edge_type": "DEFAULTS_TO_PATCH_BASELINE__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ssm_patch_group",
+      "service": "ssm",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ssm_patch_groups_described"
+      },
+      "why": "Enumerate the region's patch groups (DescribePatchGroups, ruling Q139b): one node per (partition, account, region, group) with REGISTERED_TO_PATCH_BASELINE to every baseline registered for it, and IN_PATCH_GROUP from each managed instance whose last patch operation names it. The mapping names the baseline, so no GetPatchBaselineForPatchGroup call is made.",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Walked botocore 1.44.7 ssm DescribePatchGroups output shape for the sensitive trait (none) and read custom_fn walk_baselines (ssm_baselines.py), 2026-11-24.",
+        "locations": [
+          {
+            "path": "PatchGroup",
+            "category": "customer_content",
+            "reason": "A patch group's name is the value operators put in the instances' Patch Group tag.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "BaselineIdentities[].BaselineName",
+            "category": "customer_content",
+            "reason": "An own baseline's name is whatever its creator chose.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "BaselineIdentities[].BaselineDescription",
+            "category": "customer_content",
+            "reason": "An own baseline's description is free text its creator wrote.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate",
+            "category": "diagnostic",
+            "reason": "The error code of a failed managed-instance read the group's members come from.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{PatchGroup}",
+        "_account_id": "{account}",
+        "_partition": "{partition}"
+      },
+      "natural_key": "_key",
+      "identity": {
+        "cfn_type": null,
+        "reason": "A patch group has no ARN and no CloudFormation type of its own (AWS::SSM::PatchBaseline's PatchGroups property registers it from the baseline's side); AWS names it by the group's name, scoped here by partition, account and region."
+      },
+      "fields": {
+        "name": "PatchGroup",
+        "partition": "_partition",
+        "account_id": "_account_id",
+        "region": "$region",
+        "patch_group": "PatchGroup",
+        "baseline_ids": "_baseline_ids"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A patch group is a tag value, not a taggable resource: the ssm service model's tagging operations take no patch group (botocore 1.44.7)."
+      },
+      "edges": [
+        {
+          "value_path": "_baseline_ids",
+          "target_type": "aws_core__aws_ssm_patch_baseline",
+          "key_kind": "id",
+          "edge_type": "REGISTERED_TO_PATCH_BASELINE__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_members",
+          "target_type": "aws_core__aws_ssm_managed_instance",
+          "key_kind": "id",
+          "edge_type": "IN_PATCH_GROUP__aws_core",
+          "direction": "inbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_servicecatalog_provisioned_product",
