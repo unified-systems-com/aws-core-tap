@@ -322,7 +322,7 @@ def test_owner_information_reaches_nothing_and_the_ip_address_no_field() -> None
 
 @pytest.mark.spec("req-aws-core-ssm-patch-state-2")
 def test_a_presigned_install_override_list_keeps_its_location_and_loses_its_signature() -> None:
-    presigned = ("https://patch-lists.s3.amazonaws.com/al2023.yaml?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+    presigned = ("https://patch-lists.s3.amazonaws.com/al2023.yaml?AWSAccessKeyId=example-key-id"
                  "&Expires=1795600000&Signature=c2lnbmF0dXJlLWNhbmFyeQ%3D%3D")
     states = [{**_state(EC2_ID, AWS_BASELINE_ID), "InstallOverrideList": presigned},
               {**_state(EC2_ID_2, AWS_BASELINE_ID), "InstallOverrideList": "s3://patch-lists/al2023.yaml"}]
@@ -447,6 +447,18 @@ def test_association_and_custom_items_are_nodes_and_patch_items_are_not_read_twi
         ("CONCERNS_ASSOCIATION__aws_core", f"{ITEM}:{association}", "aws_core__aws_ssm_association:8dfe3659-4309-493a-8755-0123456789ab"),
     }
     assert [(e["edge_type"], e["from_ref"], e["to_ref"]) for e in _edges(items[custom])] == [(*held, f"{ITEM}:{custom}")]
+
+
+@pytest.mark.spec("req-aws-core-ssm-patch-state-8")
+def test_a_secret_named_value_in_an_items_details_reaches_neither_the_field_nor_the_configuration() -> None:
+    canary = "details-secret-canary"
+    custom = {"ComplianceType": "Custom:CIS", "ResourceType": "ManagedInstance", "ResourceId": EC2_ID, "Title": "1.1.2",
+              "Status": "COMPLIANT", "Severity": "LOW", "ExecutionSummary": {"ExecutionTime": WHEN},
+              "Details": {"Benchmark": "CIS", "auth_token": canary}}
+    [node] = _nodes(ITEM, ssm_compliance_items_described, _FakeSsm(items={EC2_ID: [custom]}))
+    assert node.fields["details"] == {"Benchmark": "CIS", "_redacted": ["auth_token"]}
+    payload = node_envelope(node, {}, {}, persist_configuration=True)["node"]
+    assert canary not in json.dumps(node.raw_item, default=str) and canary not in json.dumps(payload, default=str)
 
 
 # --- no cap, degradation, and the empty region ------------------------------------------------------------------

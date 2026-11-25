@@ -30353,7 +30353,7 @@
           {
             "path": "Details",
             "category": "customer_content",
-            "reason": "A free key-value map; for a Custom item, anything the caller of PutComplianceItems put there. Projected to the typed details field.",
+            "reason": "A free key-value map; for a Custom item, anything the caller of PutComplianceItems put there. Projected to the typed details field, so the reader removes any value whose key names a secret before the item is built (the configuration scrub does not reach a typed field) and lists it under _redacted.",
             "evidence": "reviewer_judgement"
           },
           {

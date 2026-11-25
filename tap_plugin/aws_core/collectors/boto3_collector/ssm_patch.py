@@ -51,7 +51,7 @@ from weakref import WeakKeyDictionary
 from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads, worst
-from .envelope import jsonable, without_credentials, without_response_metadata
+from .envelope import jsonable, redact_configuration, without_credentials, without_response_metadata
 from .hydrate import _classify
 from .listing import error_code
 from .source import SourceError
@@ -262,6 +262,12 @@ def _compliance_items(client: Any, instance_id: str, walk: SsmWalk) -> dict[str,
         item_id = str(item.get("Id") or item.get("Title") or "")
         if not compliance_type or not item_id:
             continue
+        details = item.get("Details")
+        if isinstance(details, dict):
+            # A free map (anything PutComplianceItems was given) that becomes the typed details field, which the
+            # configuration's secret-name scrub never reaches: scrub it here, so a value under a key that names a secret
+            # is in neither, and the map lists what was removed under _redacted.
+            item = {**item, "Details": redact_configuration(details)}
         walk.items.append(
             with_edge_reads(
                 {

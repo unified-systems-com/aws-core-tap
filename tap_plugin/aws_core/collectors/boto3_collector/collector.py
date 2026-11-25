@@ -1375,7 +1375,8 @@ class Boto3Collector(CollectorBase):
             self._project_ssm_compliance(
                 data,
                 account_id,
-                # Q161a: this run's complete REPORTS_PATCH reads, only once the collection batch they fed imported, and
+                # Q161a: this run's complete REPORTS_PATCH reads, only once the collection batch they fed imported (the
+                # run's one batch, batch.py assemble_batch; a rejected batch aborted the run at submit_grift above), and
                 # only when the run wrote what they read: a run that left out the instance or patch type may still
                 # have walked SSM for the patch groups, but its reads landed no edge.
                 walks=ssm_patch.walks_of(session)

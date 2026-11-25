@@ -2510,7 +2510,9 @@ and the per-patch list is not stored.
 - **`aws_ssm_compliance_item`**, keyed by (`account_id`, `region`, `resource_type`, `resource_id`,
   `compliance_type`, `item_id`). These are Association and Custom items only: an instance's Patch items are its
   `REPORTS_PATCH` edges, read from `DescribeInstancePatches`. `item_id` is AWS's `Id`, or the `Title` when a
-  Custom item has none. `details` is the item's `Details` map.
+  Custom item has none. `details` is the item's `Details` map, with any value whose key names a secret removed as the
+  item is read and listed under `_redacted` (the configuration's scrub, `req-aws-collector-redaction`, does not reach a
+  typed field).
 - **Edges.** None of them is containment.
   - `REPRESENTS_EC2_INSTANCE` (managed instance → EC2 instance), only when `ResourceType` is `EC2Instance`.
   - `USES_PATCH_BASELINE` (managed instance → patch baseline): the `BaselineId` of the last operation, matched to
