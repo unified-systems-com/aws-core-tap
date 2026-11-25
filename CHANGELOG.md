@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.1](https://github.com/unified-systems-com/aws-core-tap/compare/v0.9.0...v0.9.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **grift:** write the format "1" header from core's build_header ([94b67f6](https://github.com/unified-systems-com/aws-core-tap/commit/94b67f66204a29615490da3873f07c1678c10bbb))
+* **grift:** write the format "1" header from core's build_header ([42cebb0](https://github.com/unified-systems-com/aws-core-tap/commit/42cebb0d4f45d41b583fb073170a4b7f72e61318))
+
 ## [0.9.0](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.7...v0.9.0) (2026-11-24)
 
 
