@@ -102,12 +102,12 @@ def test_rows_written_under_uuid5_ids_are_found_not_duplicated() -> None:
     """The cut-over: a grid collected before this change holds uuid5 ids. Found by natural key and by
     edge identity, they keep their ids; nothing is added beside them."""
     from tap_grid.grift import grift_import
+    from tap_grid.grift.upgrade import build_header
 
     fn_id = _legacy_id(f"{LAMBDA}:{_FN_ARN}")
     role_id = _legacy_id(f"{ROLE}:{_ROLE_ARN}")
     edge_id = _legacy_id(f"edge:{ASSUMES_ROLE}:{_FN_ARN}->{_ROLE_ARN}")
     legacy = {
-        "metadata": {"grift_version": "0"},
         "_reserved": {},
         "batches": [
             {
@@ -152,6 +152,7 @@ def test_rows_written_under_uuid5_ids_are_found_not_duplicated() -> None:
             }
         ],
     }
+    legacy["metadata"] = build_header(legacy)
     imported = grift_import(legacy)
     assert imported.success, [(i.code, i.message) for i in imported.errors]
 

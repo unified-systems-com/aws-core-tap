@@ -757,6 +757,7 @@ class TestClaims:
         )
         assert sorted((c["direction"], c["read"]) for c in merged) == [("inbound", COMPLETE), ("outbound", FAILED)]
 
+    @pytest.mark.django_db
     def test_batch_carries_the_section_only_when_there_are_claims(self):
         claim = {
             "edge_type": "T",

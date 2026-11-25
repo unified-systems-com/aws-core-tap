@@ -454,10 +454,10 @@ def test_an_end_a_later_batch_does_not_list_retires_nothing() -> None:
     import uuid
 
     from tap_grid.grift import grift_import
+    from tap_grid.grift.upgrade import build_header
 
     nodes = _reachability_graph()
     later = {
-        "metadata": {"grift_version": "0"},
         "_reserved": {},
         "batches": [
             {
@@ -478,6 +478,7 @@ def test_an_end_a_later_batch_does_not_list_retires_nothing() -> None:
             }
         ],
     }
+    later["metadata"] = build_header(later)
     imported = grift_import(later)
     assert imported.success, [(i.code, i.message) for i in imported.errors]
     assert all(_live(node) for node in nodes.values())
