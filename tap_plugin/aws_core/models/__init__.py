@@ -799,6 +799,12 @@ from tap_plugin.aws_core.models.ssm_document import SsmDocument
 from tap_plugin.aws_core.models.ssm_maintenance_window import SsmMaintenanceWindow
 from tap_plugin.aws_core.models.ssm_parameter import SsmParameter
 from tap_plugin.aws_core.models.ssm_patch_baseline import SsmPatchBaseline
+from tap_plugin.aws_core.models.ssm_managed_instance import SsmManagedInstance
+from tap_plugin.aws_core.models.ssm_patch import SsmPatch
+from tap_plugin.aws_core.models.ssm_compliance_summary import SsmComplianceSummary
+from tap_plugin.aws_core.models.ssm_compliance_item import SsmComplianceItem
+from tap_plugin.aws_core.models.ssm_default_patch_baseline import SsmDefaultPatchBaseline
+from tap_plugin.aws_core.models.ssm_patch_group import SsmPatchGroup
 from tap_plugin.aws_core.models.ssm_resource_data_sync import SsmResourceDataSync
 from tap_plugin.aws_core.models.stepfunctions_activity import StepfunctionsActivity
 from tap_plugin.aws_core.models.stepfunctions_state_machine import StepfunctionsStateMachine
@@ -1795,6 +1801,12 @@ __all__ = [
     "SsmMaintenanceWindow",
     "SsmParameter",
     "SsmPatchBaseline",
+    "SsmManagedInstance",
+    "SsmPatch",
+    "SsmComplianceSummary",
+    "SsmComplianceItem",
+    "SsmDefaultPatchBaseline",
+    "SsmPatchGroup",
     "SsmResourceDataSync",
     "StepfunctionsActivity",
     "StepfunctionsStateMachine",

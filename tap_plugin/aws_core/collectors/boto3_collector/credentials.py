@@ -118,6 +118,9 @@ _FINDINGS_PROPS: dict[str, Any] = {
     # Write compliance_core findings from the stored Inspector rows (req-aws-landing-zone-inspector-compliance); absent or
     # false: nothing is written into compliance_core and it is not looked for.
     "inspector_compliance_findings": {"type": "boolean"},
+    # Write compliance_core findings and vulnerability links from the stored SSM patch state (req-aws-core-ssm-compliance);
+    # its own switch (Q141c). Absent or false: nothing is written into compliance_core and it is not looked for.
+    "ssm_compliance_findings": {"type": "boolean"},
     # The Inspector finding types a run reads; absent means every type (ruling Q124a).
     "inspector_finding_types": {
         "type": "array",

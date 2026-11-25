@@ -107,6 +107,30 @@
    "reason": "A finding Security Hub reports; no CloudFormation resource type."
   },
   {
+   "entity_type": "aws_core__aws_ssm_compliance_item",
+   "reason": "One Association or Custom compliance item SSM records for a managed instance (ListComplianceItems); no CloudFormation resource type."
+  },
+  {
+   "entity_type": "aws_core__aws_ssm_compliance_summary",
+   "reason": "One resource's SSM compliance summary for one compliance type (ListResourceComplianceSummaries); no CloudFormation resource type."
+  },
+  {
+   "entity_type": "aws_core__aws_ssm_default_patch_baseline",
+   "reason": "An account's default SSM patch baseline for one operating system in one region (a DescribePatchBaselines DefaultBaseline row); no CloudFormation resource type (AWS::SSM::PatchBaseline's DefaultBaseline property sets it from the baseline)."
+  },
+  {
+   "entity_type": "aws_core__aws_ssm_managed_instance",
+   "reason": "A node SSM manages, registered by its agent (DescribeInstanceInformation); no CloudFormation resource type (an EC2 one is AWS::EC2::Instance, modelled by aws_ec2_instance)."
+  },
+  {
+   "entity_type": "aws_core__aws_ssm_patch",
+   "reason": "A vendor patch a managed instance reports (DescribeInstancePatches), not an account's resource; no CloudFormation resource type."
+  },
+  {
+   "entity_type": "aws_core__aws_ssm_patch_group",
+   "reason": "An SSM patch group registered with a baseline (DescribePatchGroups); no CloudFormation resource type (AWS::SSM::PatchBaseline's PatchGroups property registers it from the baseline)."
+  },
+  {
    "entity_type": "aws_core__aws_tag_policy_rule",
    "reason": "One key's entry in a tag policy document, not an AWS resource; only the policy can be tagged."
   }

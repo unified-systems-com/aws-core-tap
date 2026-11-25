@@ -28,6 +28,7 @@ import copy
 import re
 from collections.abc import Iterable
 from datetime import UTC, date, datetime
+from urllib.parse import urlsplit, urlunsplit
 from typing import Any
 
 
@@ -154,3 +155,14 @@ def redact_configuration(config: dict[str, Any], paths: Iterable[str] = ()) -> d
     if removed:
         out["_redacted"] = sorted(removed)
     return out
+
+
+def without_credentials(url: str) -> str:
+    """``url`` as scheme, host and path only: the user info, query string and fragment are where a token or a
+    password goes in a URL (a presigned S3 URL's signature among them), and none of them is needed to know which
+    location is named."""
+    parts = urlsplit(url)
+    host = parts.hostname or ""
+    if parts.port:
+        host = f"{host}:{parts.port}"
+    return urlunsplit((parts.scheme, host, parts.path, "", ""))

@@ -117,3 +117,27 @@ class TestSourceOpLabel:
 
     def test_custom_fn_label(self):
         assert source_op_label({"source": {"custom_fn": "route53_zones"}}) == "route53_zones"
+
+
+class TestEdgeOnlyKeys:
+    """req-aws-collector-source-12: an ``edge_only`` key feeds the edge pass and is never stored."""
+
+    @pytest.mark.spec("req-aws-collector-source-12")
+    def test_an_edge_only_key_is_left_out_of_configuration_and_kept_for_the_edges(self):
+        entry = {**LAMBDA_ENTRY, "edge_only": {"keys": ["_refs"], "why": "test"}}
+        item = {**_lambda_item(), "_refs": [{"key": "a"}], "_note": "kept"}
+        node = project_item(entry, item, {})
+        assert "_refs" not in node.configuration and node.configuration["_note"] == "kept"
+        assert node.raw_item["_refs"] == [{"key": "a"}]
+        assert "_refs" in project_item(LAMBDA_ENTRY, item, {}).configuration  # undeclared: stored whole
+
+    @pytest.mark.spec("req-aws-collector-source-12")
+    def test_every_edge_only_key_feeds_an_edge_rule_of_its_entry(self):
+        from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+
+        declared = [e for e in manifest_entries() if e.get("edge_only")]
+        assert declared, "the SSM managed instance declares one"
+        for entry in declared:
+            roots = {rule["value_path"].split(".")[0].split("[")[0] for rule in entry.get("edges", [])}
+            assert set(entry["edge_only"]["keys"]) <= roots, entry["entity_type"]
+            assert entry["edge_only"]["why"].strip()
