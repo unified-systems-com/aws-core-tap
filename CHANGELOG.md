@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.9.2](https://github.com/unified-systems-com/aws-core-tap/compare/v0.9.1...v0.9.2) (2026-11-25)
+
+
+### Features
+
+* **iam:** credential hygiene — access keys, SSH keys, signing certificates, service credentials, root user, password policy ([f508109](https://github.com/unified-systems-com/aws-core-tap/commit/f5081095a01b1c19c0dd0f93637c3c4958ccb86e))
+* **models:** tag the credential types with tap.computing.credential ([b0a9384](https://github.com/unified-systems-com/aws-core-tap/commit/b0a9384ed48cd76e4d8d7d309bed3cda1c3c5800))
+* **ssm:** patch and compliance state, baselines, defaults and patch groups, compliance_core projection ([01f6de2](https://github.com/unified-systems-com/aws-core-tap/commit/01f6de237ff495b9eaa883ba67d3e66c9b1a4c52))
+
+
+### Bug Fixes
+
+* **ssm:** a presigned InstallOverrideList keeps its location, not its signature ([a5b9ff9](https://github.com/unified-systems-com/aws-core-tap/commit/a5b9ff97798b67a1b25b1962ff6bcf8e19c45a93))
+* **ssm:** a secret-named value in a compliance item's Details reaches no field ([60e7e94](https://github.com/unified-systems-com/aws-core-tap/commit/60e7e9409c94027b30ed067707c387a09ae3288e))
+* **ssm:** an unscanned instance claims no scope whole; a run that wrote no instances resolves nothing ([fbca5ea](https://github.com/unified-systems-com/aws-core-tap/commit/fbca5eac0ad4c474fc0fec17d6bc557b9e70f024))
+
+
+### Documentation
+
+* **iam:** the managed policies already grant GenerateCredentialReport ([62ecf63](https://github.com/unified-systems-com/aws-core-tap/commit/62ecf6395a7ed4d315fdda0610ab620b0a7e1ce1))
+
 ## [0.9.1](https://github.com/unified-systems-com/aws-core-tap/compare/v0.9.0...v0.9.1) (2026-11-25)
 
 
