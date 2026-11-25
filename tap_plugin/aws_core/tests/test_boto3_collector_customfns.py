@@ -271,8 +271,8 @@ class TestRoute53RecordSets:
 class _FakeSts:
     def get_caller_identity(self, **_kw):
         return {
-            "Account": "180731181784",
-            "Arn": "arn:aws:iam::180731181784:computing_core__user/collector",
+            "Account": "444455556666",
+            "Arn": "arn:aws:iam::444455556666:computing_core__user/collector",
             "UserId": "AIDAEXAMPLE",
             "ResponseMetadata": {"RequestId": "strip-me"},
         }
@@ -333,7 +333,7 @@ class TestAwsAccountSingleton:
         items = list(aws_account_singleton(_FakeAccountSession(aliases=["sbtf-tech"])))
         assert len(items) == 1
         # Account id is at "Account" — the manifest natural_key.
-        assert items[0]["Account"] == "180731181784"
+        assert items[0]["Account"] == "444455556666"
         # ResponseMetadata stripped.
         assert "ResponseMetadata" not in items[0]
 
@@ -344,7 +344,7 @@ class TestAwsAccountSingleton:
 
     def test_name_falls_back_to_id_form_when_no_alias(self):
         item = next(iter(aws_account_singleton(_FakeAccountSession(aliases=[]))))
-        assert item["_account_name"] == "AWS Account 180731181784"
+        assert item["_account_name"] == "AWS Account 444455556666"
 
     def test_email_and_status_are_unread_when_organizations_will_not_say(self):
         item = next(iter(aws_account_singleton(_FakeAccountSession(aliases=[]))))
@@ -359,7 +359,7 @@ class TestAwsAccountSingleton:
         # A denied/failed ListAccountAliases must not fail the account node —
         # the name just falls back to the id form.
         item = next(iter(aws_account_singleton(_FakeAccountSession(iam_raises=True))))
-        assert item["_account_name"] == "AWS Account 180731181784"
+        assert item["_account_name"] == "AWS Account 444455556666"
         assert item["_account_aliases"] == []
 
     @pytest.mark.spec("req-aws-core-iam-credentials-6", "req-aws-core-iam-credentials-5")
@@ -630,8 +630,8 @@ from tap_plugin.aws_core.collectors.boto3_collector.customfns import (  # noqa: 
     eventbridge_rules_with_targets,
 )
 
-_LAMBDA_ARN = "arn:aws:lambda:us-east-2:180731181784:function:samsite-prod-1-opa-compliance"
-_SQS_ARN = "arn:aws:sqs:us-east-2:180731181784:some-queue"
+_LAMBDA_ARN = "arn:aws:lambda:us-east-2:444455556666:function:samsite-prod-1-opa-compliance"
+_SQS_ARN = "arn:aws:sqs:us-east-2:444455556666:some-queue"
 
 
 class _FakeEvents:
@@ -667,7 +667,7 @@ class TestEventbridgeRulesWithTargets:
     def test_lambda_target_resolved(self):
         rule = {
             "Name": "samsite-prod-1-opa-compliance",
-            "Arn": "arn:aws:events:us-east-2:180731181784:rule/samsite-prod-1-opa-compliance",
+            "Arn": "arn:aws:events:us-east-2:444455556666:rule/samsite-prod-1-opa-compliance",
             "State": "ENABLED",
             "ScheduleExpression": "rate(1 day)",
             "EventBusName": "default",
