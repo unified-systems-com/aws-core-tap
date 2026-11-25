@@ -9,6 +9,7 @@ manifest entry is written for.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ import jsonschema
 from django.apps import apps
 from tap_plugin.aws_core.collectors.boto3_collector.batch import node_envelope
 from tap_plugin.aws_core.collectors.boto3_collector.manifest import manifest_entries
+from tap_plugin.aws_core.collectors.boto3_collector.network_insights import access_scope_finding_item, reachability_analysis_item
 from tap_plugin.aws_core.collectors.boto3_collector.paths import eval_path
 from tap_plugin.aws_core.collectors.boto3_collector.projection import project_item
 from tap_plugin.aws_core.collectors.boto3_collector.tags import normalize_tags
@@ -25,6 +27,18 @@ from tap_plugin.aws_core.tests.test_trial_run_live import _create_verb_schema, _
 ACCOUNT = "123456789012"
 KEY_ARN = f"arn:aws:kms:us-east-1:{ACCOUNT}:key/1234abcd-12ab-34cd-56ef-1234567890ab"
 TAGS = [{"Key": "owner", "Value": "net-team"}]
+
+# A path from an internet gateway through a security group to a network interface, as a Reachability Analyzer analysis
+# and a Network Access Analyzer finding list it (aws-core-tap#212, #248).
+_FOUND_PATH: dict[str, Any] = {
+    "Status": "succeeded",
+    "NetworkPathFound": True,
+    "ForwardPathComponents": [
+        {"SequenceNumber": 1, "Component": {"Id": "igw-0a1b2c3d"}},
+        {"SequenceNumber": 2, "Component": {"Id": "sg-0a1b2c3d"}},
+        {"SequenceNumber": 3, "Component": {"Id": "eni-0a1b2c3d"}},
+    ],
+}
 
 # Edge types whose source (or target) list is open by design, with the ends left open.
 OPEN_ENDED_EDGES: dict[str, tuple[str, ...]] = {"INVOKES_LAMBDA__aws_core": ("sources",)}
@@ -1291,8 +1305,21 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_ec2_network_insights_path": (
-        {'NetworkInsightsPathArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
-        {},
+        {
+            'NetworkInsightsPathArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'Source': 'igw-0a1b2c3d4e5f60718',
+            'SourceArn': 'arn:aws:ec2:us-east-1:123456789012:internet-gateway/igw-0a1b2c3d4e5f60718',
+            'Destination': 'i-0a1b2c3d4e5f60718',
+            'DestinationArn': 'arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f60718',
+            'CreatedDate': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'Tags': [{'Key': 'owner', 'Value': 'net-team'}],
+        },
+        {
+            'source': 'igw-0a1b2c3d4e5f60718',
+            'source_arn': 'arn:aws:ec2:us-east-1:123456789012:internet-gateway/igw-0a1b2c3d4e5f60718',
+            'destination': 'i-0a1b2c3d4e5f60718',
+            'destination_arn': 'arn:aws:ec2:us-east-1:123456789012:instance/i-0a1b2c3d4e5f60718',
+        },
     ),
     "aws_core__aws_ec2_placement_group": (
         {'GroupArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'GroupName': 'gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}]},
@@ -1987,7 +2014,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "aws_core__aws_lambda_alias": (
-        {'AliasArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1'},
+        {'AliasArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1', 'Name': 'gen-1', '_resource_policy_account_ids': ['444455556666']},
         {'name': 'gen-1'},
     ),
     "aws_core__aws_msk_channel": (
@@ -2536,13 +2563,70 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'LocalGatewayRouteTableVirtualInterfaceGroupAssociationId': 'loc-0a1b2c3d4e5f60718', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
         {'ec2_lgw_route_table_vif_group_association_id': 'loc-0a1b2c3d4e5f60718', 'name': 'gen-1'},
     ),
+    "aws_core__aws_ec2_network_access_scope_finding": (
+        {
+            **access_scope_finding_item(
+                {
+                    "NetworkInsightsAccessScopeAnalysisId": "nsa-0a1b2c3d4e5f60718",
+                    "NetworkInsightsAccessScopeId": "nis-0a1b2c3d4e5f60718",
+                    "FindingId": "f-0a1b2c3d",
+                    "FindingComponents": _FOUND_PATH["ForwardPathComponents"],
+                },
+                {"NetworkInsightsAccessScopeAnalysisArn": f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-access-scope-analysis/nsa-0a1b2c3d4e5f60718"},
+            ),
+            "_key": f"aws:{ACCOUNT}:us-east-1:nsa-0a1b2c3d4e5f60718/f-0a1b2c3d",
+        },
+        {
+            "name": "f-0a1b2c3d",
+            "analysis_arn": f"arn:aws:ec2:us-east-1:{ACCOUNT}:network-insights-access-scope-analysis/nsa-0a1b2c3d4e5f60718",
+            "finding_id": "f-0a1b2c3d",
+            "access_scope_id": "nis-0a1b2c3d4e5f60718",
+            "component_count": 3,
+            "source_component_id": "igw-0a1b2c3d",
+            "destination_component_id": "eni-0a1b2c3d",
+        },
+    ),
     "aws_core__aws_ec2_network_insights_access_scope_analysis": (
-        {'NetworkInsightsAccessScopeAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
-        {'ec2_network_insights_access_scope_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        {
+            'NetworkInsightsAccessScopeAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'NetworkInsightsAccessScopeId': 'nis-0a1b2c3d4e5f60718',
+            'Status': 'succeeded',
+            'FindingsFound': 'unknown',
+            'AnalyzedEniCount': 0,
+            'StartDate': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'EndDate': datetime(2026, 11, 2, 9, 4, 30, tzinfo=UTC),
+            'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}],
+        },
+        {
+            'ec2_network_insights_access_scope_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'name': 'gen-1',
+            'status': 'succeeded',
+            'findings_found': 'unknown',
+            'analyzed_eni_count': 0,
+            'start_date': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'end_date': datetime(2026, 11, 2, 9, 4, 30, tzinfo=UTC),
+            'access_scope_id': 'nis-0a1b2c3d4e5f60718',
+        },
     ),
     "aws_core__aws_ec2_network_insights_analysis": (
-        {'NetworkInsightsAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
-        {'ec2_network_insights_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
+        # The custom_fn's item: AWS's analysis plus the compound edge's slots (aws-core-tap#248), here with a found path.
+        reachability_analysis_item(
+            {
+                'NetworkInsightsAnalysisArn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+                'NetworkInsightsPathId': 'nip-0a1b2c3d4e5f60718',
+                'StartDate': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+                'Tags': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}],
+                **_FOUND_PATH,
+            }
+        ),
+        {
+            'ec2_network_insights_analysis_arn': 'arn:aws:ec2:us-east-1:123456789012:res/gen-1',
+            'name': 'gen-1',
+            'status': 'succeeded',
+            'network_path_found': True,
+            'start_date': datetime(2026, 11, 2, 9, 0, tzinfo=UTC),
+            'network_insights_path_id': 'nip-0a1b2c3d4e5f60718',
+        },
     ),
     "aws_core__aws_ec2_network_interface": (
         {'NetworkInterfaceId': 'net-0a1b2c3d4e5f60718', 'SubnetId': 'subnet-0a1b2c3d4e5f60718', 'TagSet': [{'Key': 'owner', 'Value': 'net-team'}, {'Key': 'Name', 'Value': 'gen-1'}]},
@@ -2709,7 +2793,7 @@ CASES: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {'inspectorv2_code_security_scan_configuration_arn': 'arn:aws:inspector2:us-east-1:123456789012:res/gen-1', 'name': 'gen-1'},
     ),
     "aws_core__aws_lambda_function_version": (
-        {'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
+        {'FunctionArn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1', '_resource_policy_account_ids': ['444455556666']},
         {'lambda_function_version_arn': 'arn:aws:lambda:us-east-1:123456789012:res/gen-1'},
     ),
     "aws_core__aws_licensemanager_license_asset_rule_set": (
@@ -3828,10 +3912,12 @@ def _check_every_edge_rule_names_an_edge_that_allows_the_pair_and_the_item_resol
         # Most edge types name both ends. The few that leave one open on purpose (a source that any service
         # type may be) are listed here; any other edge type must declare its ends.
         open_ends = OPEN_ENDED_EDGES.get(rule["edge_type"], ())
+        # An inbound rule points from its target type to the entry's type (a compound edge's source role).
+        source, target = (rule["target_type"], entity_type) if rule["direction"] == "inbound" else (entity_type, rule["target_type"])
         if "sources" not in open_ends:
-            assert entity_type in edge["sources"], (entity_type, rule["edge_type"])
+            assert source in edge["sources"], (entity_type, rule["edge_type"])
         if "targets" not in open_ends:
-            assert rule["target_type"] in edge["targets"], (entity_type, rule["edge_type"])
+            assert target in edge["targets"], (entity_type, rule["edge_type"])
     # A rule may be conditional on a sibling (a transit gateway attachment's VPC id exists only for a VPC
     # attachment), so the canned item need only resolve some rule, not all.
     assert not rules or any(eval_path(item, rule["value_path"]) for rule in rules)

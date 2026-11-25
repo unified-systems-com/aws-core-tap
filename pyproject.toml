@@ -19,11 +19,13 @@ dynamic = ["version"]
 # resolution (tap#1196) aws_core without it has most writes refused (aws-build Q73).
 # 0.10.9: the first release that stores an image tag's registry and repository in Docker's canonical
 # form (computing-core-tap#88); the ECS image-tag writer sends a Docker Hub reference's parts as written.
+# 0.11.0: the first release that keys host on the tap.computing.host_type dimension (computing-core-tap PR 103,
+# tap#1355), published 2026-11-24.
 # Our own *-tap packages stay ranges; it resolves through the boot record's git source.
 dependencies = [
     "boto3==1.44.7",
     "botocore==1.44.7",
-    "computing-core-tap>=0.10.9,<0.11",
+    "computing-core-tap>=0.11.0,<0.12",
 ]
 
 [project.entry-points."tap.plugins"]

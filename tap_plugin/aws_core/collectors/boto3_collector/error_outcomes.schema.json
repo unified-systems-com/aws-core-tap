@@ -16,8 +16,8 @@
         "required": ["outcome", "service", "why"],
         "properties": {
           "outcome": {
-            "enum": ["not_configured", "unsupported_in_partition", "not_taggable", "not_readable"],
-            "description": "not_configured: the feature is not set up in this account. unsupported_in_partition: the partition does not offer the service or operation. not_taggable: a tag read the service refuses because the resource cannot hold tags (AWS-owned, or shared from another account); the resource has no tags, which is an answer and not a failed read. not_readable: a tag read refused because the resource is shared in from another account and its owner alone may read its tags; the tags stay unread (not none) and no gap is raised."
+            "enum": ["not_configured", "unsupported_in_partition", "not_taggable", "not_readable", "absent"],
+            "description": "not_configured: the feature is not set up in this account. unsupported_in_partition: the partition does not offer the service or operation. not_taggable: a tag read the service refuses because the resource cannot hold tags (AWS-owned, or shared from another account); the resource has no tags, which is an answer and not a failed read. not_readable: a tag read refused because the resource is shared in from another account and its owner alone may read its tags; the tags stay unread (not none) and no gap is raised. absent: a per-resource read (a hydrate slot) whose error is AWS's answer that the resource has no such configuration, under a code the hydrate template's NoSuch*/*NotFound* rule does not recognise; the slot is recorded absent (a fact, not an error). Hydrate reads only, never a listing."
           },
           "service": {
             "type": "string",
@@ -77,6 +77,13 @@
               "required": ["partitions"],
               "properties": { "service": { "not": { "const": "*" } } },
               "anyOf": [{ "required": ["operations"] }, { "required": ["entity_types"] }, { "required": ["exception"] }]
+            }
+          },
+          {
+            "if": { "properties": { "outcome": { "const": "absent" } }, "required": ["outcome"] },
+            "then": {
+              "required": ["error_code", "operations"],
+              "properties": { "service": { "not": { "const": "*" } } }
             }
           }
         ]

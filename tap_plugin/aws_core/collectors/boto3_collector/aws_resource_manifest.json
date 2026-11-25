@@ -46,13 +46,13 @@
       "entity_type": "aws_core__aws_lambda",
       "service": "lambda",
       "scope": "regional",
-      "source": { "aws_op": "ListFunctions" },
-      "why": "Enumerate Lambda functions — serverless compute and a common runtime/compliance surface.",
+      "source": { "custom_fn": "lambda_functions_described" },
+      "why": "Enumerate Lambda functions — serverless compute and a common runtime/compliance surface. ListFunctions lists them; each function's resource-based policy is read with GetPolicy, because the policy is what bounds who may invoke it beyond the invokers the grid sees (aws-core-tap#290).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Read botocore lambda ListFunctions output shape (FunctionConfiguration), 2026-09-23. Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed.",
+        "basis": "Read botocore lambda ListFunctions output shape (FunctionConfiguration), 2026-09-23. Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed. Read botocore lambda GetPolicy output shape (Policy, RevisionId: no member marked sensitive) and custom_fn lambda_functions_described, 2026-11-24 (aws-core-tap#290).",
         "locations": [
           {
             "path": "Environment.Variables",
@@ -83,10 +83,16 @@
             "category": "free_text",
             "reason": "Operator-authored description.",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.policy.data.Policy",
+            "category": "access_policy",
+            "reason": "The function's resource-based policy document: the accounts, services and principals allowed to invoke or manage it, and the conditions on them. Stored, as an S3 bucket policy is.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Functions[]",
+      "items_path": "[]",
       "natural_key": "FunctionArn",
       "fields": {
         "name": "FunctionName",
@@ -96,8 +102,19 @@
         "memory_size": "MemorySize",
         "timeout": "Timeout",
         "vpc_subnet_ids": "VpcConfig.SubnetIds[]",
-        "vpc_security_group_ids": "VpcConfig.SecurityGroupIds[]"
+        "vpc_security_group_ids": "VpcConfig.SecurityGroupIds[]",
+        "resource_policy_account_ids": "_resource_policy_account_ids",
+        "resource_policy_services": "_resource_policy_services",
+        "resource_policy_wildcard_principal": "_resource_policy_wildcard_principal",
+        "resource_policy_unconditioned": "_resource_policy_unconditioned"
       },
+      "hydrate": [
+        {
+          "key": "policy",
+          "op": "GetPolicy",
+          "why": "The function's resource-based policy (unqualified): who may invoke it beyond the invokers the grid sees. ResourceNotFoundException means no policy and is recorded absent by its reviewed outcome row (error_outcomes.json)."
+        }
+      ],
       "tags": {
         "source": "rgta",
         "resource_type_filter": "lambda:function",
@@ -118,6 +135,13 @@
           "edge_type": "WRITES_LOGS__aws_core",
           "direction": "outbound",
           "transform": "log_group_arn"
+        },
+        {
+          "value_path": "_resource_policy_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "PERMITS_ACCOUNT__aws_core",
+          "direction": "outbound"
         }
       ]
     },
@@ -14223,7 +14247,11 @@
       "items_path": "NetworkInsightsPaths[]",
       "natural_key": "NetworkInsightsPathArn",
       "fields": {
-        "network_insights_path_arn": "NetworkInsightsPathArn"
+        "network_insights_path_arn": "NetworkInsightsPathArn",
+        "source": "Source",
+        "source_arn": "SourceArn",
+        "destination": "Destination",
+        "destination_arn": "DestinationArn"
       },
       "tags": {
         "source": "field",
@@ -22451,40 +22479,60 @@
       "service": "lambda",
       "scope": "regional",
       "source": {
-        "aws_op": "ListAliases",
-        "per": {
-          "aws_op": "ListFunctions",
-          "items_path": "Functions[]"
-        },
-        "bind": {
-          "FunctionName": "FunctionName"
-        }
+        "custom_fn": "lambda_aliases_described"
       },
-      "why": "Enumerate Lambda Alias objects with ListAliases — an inventory of the account's aliass and how each is tagged.",
+      "why": "Enumerate Lambda Alias objects with ListAliases (for each function ListFunctions names) — an inventory of the account's aliases. Each alias carries its own resource-based policy, read with GetPolicy and the alias name as Qualifier: an alias-scoped grant is invisible on the function's own policy (aws-core-tap#290).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore lambda ListAliases item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Mechanical scan, no reviewer pass (2026-10-29): the botocore lambda ListAliases item shape has no member marked sensitive. Free-text members were not judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Read botocore lambda GetPolicy output shape (Policy, RevisionId: no member marked sensitive) and custom_fn lambda_aliases_described, 2026-11-24 (aws-core-tap#290).",
         "locations": [
           {
             "path": "_hydrate.tags",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "_hydrate.policy.data.Policy",
+            "category": "access_policy",
+            "reason": "The alias's own resource-based policy document: the accounts, services and principals allowed to invoke the function through this alias, and the conditions on them. Stored, as an S3 bucket policy is.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Aliases[]",
+      "items_path": "[]",
       "natural_key": "AliasArn",
       "fields": {
         "name": "Name",
-        "lambda_alias_arn": "AliasArn"
+        "lambda_alias_arn": "AliasArn",
+        "resource_policy_account_ids": "_resource_policy_account_ids",
+        "resource_policy_services": "_resource_policy_services",
+        "resource_policy_wildcard_principal": "_resource_policy_wildcard_principal",
+        "resource_policy_unconditioned": "_resource_policy_unconditioned"
       },
+      "hydrate": [
+        {
+          "key": "policy",
+          "op": "GetPolicy",
+          "why": "The alias's own resource-based policy (Qualifier: the alias name), separate from the function's. ResourceNotFoundException means no policy and is recorded absent by its reviewed outcome row (error_outcomes.json)."
+        }
+      ],
+
       "tags": {
         "source": "none",
         "why": "Lambda does not support tags on function aliases: the lambda ListTags operation documents its Resource parameter as 'Lambda does not support adding tags to function aliases or versions' (botocore 1.43.121)."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "_resource_policy_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "PERMITS_ACCOUNT__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_msk_channel",
@@ -25441,7 +25489,13 @@
       "natural_key": "NetworkInsightsAccessScopeAnalysisArn",
       "name_tag": "Name",
       "fields": {
-        "ec2_network_insights_access_scope_analysis_arn": "NetworkInsightsAccessScopeAnalysisArn"
+        "ec2_network_insights_access_scope_analysis_arn": "NetworkInsightsAccessScopeAnalysisArn",
+        "status": "Status",
+        "findings_found": "FindingsFound",
+        "analyzed_eni_count": "AnalyzedEniCount",
+        "start_date": "StartDate",
+        "end_date": "EndDate",
+        "access_scope_id": "NetworkInsightsAccessScopeId"
       },
       "tags": {
         "source": "field",
@@ -25451,39 +25505,761 @@
       }
     },
     {
-      "entity_type": "aws_core__aws_ec2_network_insights_analysis",
+      "entity_type": "aws_core__aws_ec2_network_access_scope_finding",
       "service": "ec2",
       "scope": "regional",
       "source": {
-        "aws_op": "DescribeNetworkInsightsAnalyses"
+        "custom_fn": "ec2_network_access_scope_findings_described"
       },
-      "why": "Enumerate EC2 Network Insights Analysis objects with DescribeNetworkInsightsAnalyses — an inventory of the account's ec2 network insights analysis objects and how each is tagged.",
+      "why": "Collect what each VPC Network Access Analyzer analysis found: one node per finding GetNetworkInsightsAccessScopeAnalysisFindings returns for a succeeded analysis, the middle node of a compound edge from the path's first component to its last, through the components between (aws-core-tap#212, #248).",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan, no reviewer pass (2026-10-31): the botocore ec2 DescribeNetworkInsightsAnalyses item shape has no member marked sensitive. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1).",
+        "basis": "Read botocore ec2 DescribeNetworkInsightsAccessScopeAnalyses and GetNetworkInsightsAccessScopeAnalysisFindings output shapes (AccessScopeAnalysisFinding, PathComponent, AnalysisComponent, AnalysisPacketHeader) and custom_fn ec2_network_access_scope_findings_described, 2026-11-24. botocore marks no member sensitive. A finding is a network path: addresses, CIDRs, ports and resource names, no secret material.",
+        "locations": [
+          {
+            "path": "FindingComponents[].OutboundHeader",
+            "category": "other",
+            "reason": "The packet header the path carries: source and destination addresses, ports and protocol. Internal network topology, not a credential; reconnaissance value if the grid were broadly readable.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FindingComponents[].InboundHeader",
+            "category": "other",
+            "reason": "The packet header as it arrives: addresses, ports and protocol. Internal network topology, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FindingComponents[].SecurityGroupRule",
+            "category": "other",
+            "reason": "The security group rule the path uses: its CIDR or prefix list and port range. Internal network topology, as a security group's own IpPermissions is.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FindingComponents[].AclRule",
+            "category": "other",
+            "reason": "The network ACL rule the path uses: its CIDR, port range and action. Internal network topology.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FindingComponents[].RouteTableRoute",
+            "category": "other",
+            "reason": "The route the path takes: destination CIDR and next hop. Internal network topology.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "FindingComponents[].Component",
+            "category": "customer_content",
+            "reason": "Each component's Name is an operator-chosen name (often a Name tag), arbitrary text AWS does not constrain.",
+            "evidence": "reviewer_judgement"
+          }
+        ]
+      },
+      "items_path": "[]",
+      "natural_key": "_key",
+      "derive": {
+        "_key": "{partition}:{account}:{region}:{NetworkInsightsAccessScopeAnalysisId}/{FindingId}"
+      },
+      "identity": {
+        "cfn_type": null,
+        "reason": "Not a CloudFormation resource and AWS gives it no ARN: a finding is addressed only through its analysis (GetNetworkInsightsAccessScopeAnalysisFindings), so it is keyed natively by the analysis's ARN and the FindingId, both as AWS returns them. _key, a scoped composite of the analysis id and FindingId, is the batch ref only."
+      },
+      "fields": {
+        "name": "FindingId",
+        "analysis_arn": "_analysis_arn",
+        "finding_id": "FindingId",
+        "analysis_id": "NetworkInsightsAccessScopeAnalysisId",
+        "access_scope_id": "NetworkInsightsAccessScopeId",
+        "analysis_start_date": "_analysis_start_date",
+        "analysis_end_date": "_analysis_end_date",
+        "component_count": "_component_count",
+        "source_component_id": "_source_component_id",
+        "source_component_arn": "_source_component_arn",
+        "destination_component_id": "_destination_component_id",
+        "destination_component_arn": "_destination_component_arn",
+        "unmatched_components": "_unmatched_components"
+      },
+      "tags": {
+        "source": "none",
+        "why": "A finding is not an AWS resource and cannot be tagged: AccessScopeAnalysisFinding has no Tags member, and no ec2 tag operation names a finding (botocore 1.44.7); CloudFormation has no resource type for it."
+      },
+      "edges": [
+        {
+          "value_path": "_analysis_arn",
+          "target_type": "aws_core__aws_ec2_network_insights_access_scope_analysis",
+          "key_kind": "arn",
+          "edge_type": "REPORTS_ACCESS_SCOPE_FINDING__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_internet_gateway[]",
+          "target_type": "aws_core__aws_internet_gateway",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_ec2_network_interface[]",
+          "target_type": "aws_core__aws_ec2_network_interface",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_transit_gateway_attachment[]",
+          "target_type": "aws_core__aws_transit_gateway_attachment",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_vpc_endpoint[]",
+          "target_type": "aws_core__aws_vpc_endpoint",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_vpc_endpoint_service[]",
+          "target_type": "aws_core__aws_vpc_endpoint_service",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_ec2_vpc_peering_connection[]",
+          "target_type": "aws_core__aws_ec2_vpc_peering_connection",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_ec2_vpn_gateway[]",
+          "target_type": "aws_core__aws_ec2_vpn_gateway",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_destination_internet_gateway[]",
+          "target_type": "aws_core__aws_internet_gateway",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_ec2_network_interface[]",
+          "target_type": "aws_core__aws_ec2_network_interface",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_transit_gateway_attachment[]",
+          "target_type": "aws_core__aws_transit_gateway_attachment",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_vpc_endpoint[]",
+          "target_type": "aws_core__aws_vpc_endpoint",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_vpc_endpoint_service[]",
+          "target_type": "aws_core__aws_vpc_endpoint_service",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_ec2_vpc_peering_connection[]",
+          "target_type": "aws_core__aws_ec2_vpc_peering_connection",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_ec2_vpn_gateway[]",
+          "target_type": "aws_core__aws_ec2_vpn_gateway",
+          "key_kind": "id",
+          "edge_type": "ACCESS_SCOPE_FINDING_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_internet_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_internet_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_alb[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_alb",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_nat_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_nat_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_network_acl[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_network_acl",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_network_firewall[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_network_firewall",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_network_interface[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_network_interface",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_route_table[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_route_table",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_security_group[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_security_group",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_target_group[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_target_group",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_transit_gateway_route_table[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_transit_gateway_route_table",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_transit_gateway_attachment[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_transit_gateway_attachment",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_vpc_endpoint[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_vpc_endpoint",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_vpc_endpoint_service[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_vpc_endpoint_service",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_vpc_peering_connection[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_vpc_peering_connection",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_vpn_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_vpn_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        }
+      ]
+    },
+    {
+      "entity_type": "aws_core__aws_ec2_network_insights_analysis",
+      "service": "ec2",
+      "scope": "regional",
+      "source": {
+        "custom_fn": "ec2_network_insights_analyses_described"
+      },
+      "why": "Enumerate Reachability Analyzer analyses with DescribeNetworkInsightsAnalyses — each analysis is the middle node of a compound edge from its forward path's first component to its last, through the components between, when it found a path (aws-core-tap#248).",
+      "persist_configuration": true,
+      "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
+      "sensitivity": {
+        "status": "reviewed_may_contain",
+        "basis": "Read botocore ec2 DescribeNetworkInsightsAnalyses output shape (NetworkInsightsAnalysis, PathComponent, Explanation, AnalysisPacketHeader) and custom_fn ec2_network_insights_analyses_described, 2026-11-24. botocore marks no member sensitive. The path components and explanations are network topology: addresses, CIDRs, ports and resource names, no secret material.",
         "locations": [
           {
             "path": "Tags[]",
             "category": "customer_content",
             "reason": "Operator-set tag values: arbitrary strings AWS does not constrain. The canonical tags field is persisted separately, by design (req-aws-collector-tags).",
             "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ForwardPathComponents[].OutboundHeader",
+            "category": "other",
+            "reason": "The packet header the path carries: source and destination addresses, ports and protocol. Internal network topology, not a credential; reconnaissance value if the grid were broadly readable.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ForwardPathComponents[].InboundHeader",
+            "category": "other",
+            "reason": "The packet header as it arrives: addresses, ports and protocol. Internal network topology, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ForwardPathComponents[].SecurityGroupRule",
+            "category": "other",
+            "reason": "The security group rule the path uses: its CIDR or prefix list and port range. Internal network topology, as a security group's own IpPermissions is.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ForwardPathComponents[].AclRule",
+            "category": "other",
+            "reason": "The network ACL rule the path uses: its CIDR, port range and action. Internal network topology.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ForwardPathComponents[].RouteTableRoute",
+            "category": "other",
+            "reason": "The route the path takes: destination CIDR and next hop. Internal network topology.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ForwardPathComponents[].Component",
+            "category": "customer_content",
+            "reason": "Each component's Name is an operator-chosen name (often a Name tag), arbitrary text AWS does not constrain.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ReturnPathComponents[].OutboundHeader",
+            "category": "other",
+            "reason": "The packet header the path carries: source and destination addresses, ports and protocol. Internal network topology, not a credential; reconnaissance value if the grid were broadly readable.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ReturnPathComponents[].InboundHeader",
+            "category": "other",
+            "reason": "The packet header as it arrives: addresses, ports and protocol. Internal network topology, not a credential.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ReturnPathComponents[].SecurityGroupRule",
+            "category": "other",
+            "reason": "The security group rule the path uses: its CIDR or prefix list and port range. Internal network topology, as a security group's own IpPermissions is.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ReturnPathComponents[].AclRule",
+            "category": "other",
+            "reason": "The network ACL rule the path uses: its CIDR, port range and action. Internal network topology.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ReturnPathComponents[].RouteTableRoute",
+            "category": "other",
+            "reason": "The route the path takes: destination CIDR and next hop. Internal network topology.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "ReturnPathComponents[].Component",
+            "category": "customer_content",
+            "reason": "Each component's Name is an operator-chosen name (often a Name tag), arbitrary text AWS does not constrain.",
+            "evidence": "reviewer_judgement"
+          },
+          {
+            "path": "Explanations[]",
+            "category": "other",
+            "reason": "Why a path is or is not reachable: the components, addresses, CIDRs and ports involved. Internal network topology, not a credential.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "NetworkInsightsAnalyses[]",
+      "items_path": "[]",
       "natural_key": "NetworkInsightsAnalysisArn",
       "name_tag": "Name",
       "fields": {
-        "ec2_network_insights_analysis_arn": "NetworkInsightsAnalysisArn"
+        "ec2_network_insights_analysis_arn": "NetworkInsightsAnalysisArn",
+        "status": "Status",
+        "network_path_found": "NetworkPathFound",
+        "start_date": "StartDate",
+        "network_insights_path_id": "NetworkInsightsPathId"
       },
       "tags": {
         "source": "field",
         "from": "Tags[]",
         "shape": "list_kv",
         "why": "The list answer carries the tags inline; no extra call."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "_source_ec2_instance[]",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_internet_gateway[]",
+          "target_type": "aws_core__aws_internet_gateway",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_ec2_network_interface[]",
+          "target_type": "aws_core__aws_ec2_network_interface",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_transit_gateway[]",
+          "target_type": "aws_core__aws_transit_gateway",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_transit_gateway_attachment[]",
+          "target_type": "aws_core__aws_transit_gateway_attachment",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_ec2_vpn_gateway[]",
+          "target_type": "aws_core__aws_ec2_vpn_gateway",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_vpc_endpoint_service[]",
+          "target_type": "aws_core__aws_vpc_endpoint_service",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_vpc_endpoint[]",
+          "target_type": "aws_core__aws_vpc_endpoint",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_source_ec2_vpc_peering_connection[]",
+          "target_type": "aws_core__aws_ec2_vpc_peering_connection",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_SOURCE__aws_core",
+          "direction": "inbound"
+        },
+        {
+          "value_path": "_destination_ec2_instance[]",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_internet_gateway[]",
+          "target_type": "aws_core__aws_internet_gateway",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_ec2_network_interface[]",
+          "target_type": "aws_core__aws_ec2_network_interface",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_transit_gateway[]",
+          "target_type": "aws_core__aws_transit_gateway",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_transit_gateway_attachment[]",
+          "target_type": "aws_core__aws_transit_gateway_attachment",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_ec2_vpn_gateway[]",
+          "target_type": "aws_core__aws_ec2_vpn_gateway",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_vpc_endpoint_service[]",
+          "target_type": "aws_core__aws_vpc_endpoint_service",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_vpc_endpoint[]",
+          "target_type": "aws_core__aws_vpc_endpoint",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_destination_ec2_vpc_peering_connection[]",
+          "target_type": "aws_core__aws_ec2_vpc_peering_connection",
+          "key_kind": "id",
+          "edge_type": "REACHABILITY_ANALYSIS_DESTINATION__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_instance[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_instance",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_internet_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_internet_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_alb[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_alb",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_nat_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_nat_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_network_acl[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_network_acl",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_network_firewall[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_network_firewall",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_network_interface[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_network_interface",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_prefix_list[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_prefix_list",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_route_table[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_route_table",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_security_group[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_security_group",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_subnet[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_subnet",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_target_group[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_target_group",
+          "key_kind": "arn",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_transit_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_transit_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_transit_gateway_attachment[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_transit_gateway_attachment",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_transit_gateway_route_table[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_transit_gateway_route_table",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_vpn_gateway[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_vpn_gateway",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_vpc_endpoint_service[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_vpc_endpoint_service",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_vpc_endpoint[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_vpc_endpoint",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_vpc_peering_connection[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_vpc_peering_connection",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_vpc[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_vpc",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        },
+        {
+          "value_path": "_hops_ec2_vpn_connection[]",
+          "key_path": "key",
+          "properties_path": "properties",
+          "target_type": "aws_core__aws_ec2_vpn_connection",
+          "key_kind": "id",
+          "edge_type": "TRAVERSES_COMPONENT__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_ec2_network_interface",
@@ -27166,17 +27942,14 @@
       "service": "lambda",
       "scope": "regional",
       "source": {
-        "aws_op": "ListFunctions",
-        "params": {
-          "FunctionVersion": "ALL"
-        }
+        "custom_fn": "lambda_function_versions_described"
       },
-      "why": "Enumerate Lambda Function Version objects with ListFunctions — an inventory of the account's lambda function version objects and how each is tagged.",
+      "why": "Enumerate Lambda Function Version objects with ListFunctions (FunctionVersion ALL) — an inventory of the account's lambda function version objects. Each published version carries its own resource-based policy, read with GetPolicy and the version as Qualifier (aws-core-tap#290); $LATEST is listed but carries no policy of its own, so none is read for it.",
       "persist_configuration": true,
       "persist_configuration_why": "On: the whole response is stored, so the grid keeps everything AWS returns for this type (collect everything, exclude only obvious secret material: req-aws-collector-redaction). Removed before storage: none declared; and any string whose key names a secret (password, secret, private key, API key, token).",
       "sensitivity": {
         "status": "reviewed_may_contain",
-        "basis": "Mechanical scan (2026-10-31): botocore marks Environment.Variables, Environment.Error.Message, ImageConfigResponse.Error.Message, RuntimeVersionConfig.Error.Message sensitive in the lambda ListFunctions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed.",
+        "basis": "Mechanical scan (2026-10-31): botocore marks Environment.Variables, Environment.Error.Message, ImageConfigResponse.Error.Message, RuntimeVersionConfig.Error.Message sensitive in the lambda ListFunctions item shape; those are declared. Free-text members were not otherwise judged; the whole response is stored with the declared secret paths removed (req-aws-collector-redaction-1). Maintainer ruling 2026-11-20 (aws-core-tap#264, Q114d): Environment.Variables is stored, as an ECS task definition's environment is; a value under a secret-named key is still scrubbed. Read botocore lambda GetPolicy output shape (Policy, RevisionId: no member marked sensitive) and custom_fn lambda_function_versions_described, 2026-11-24 (aws-core-tap#290).",
         "locations": [
           {
             "path": "Environment.Variables",
@@ -27201,18 +27974,44 @@
             "category": "customer_content",
             "reason": "botocore marks this member sensitive: operator-set content.",
             "evidence": "botocore_sensitive"
+          },
+          {
+            "path": "_hydrate.policy.data.Policy",
+            "category": "access_policy",
+            "reason": "The published version's own resource-based policy document: the accounts, services and principals allowed to invoke this version by its qualified ARN, and the conditions on them. Stored, as an S3 bucket policy is.",
+            "evidence": "reviewer_judgement"
           }
         ]
       },
-      "items_path": "Functions[]",
+      "items_path": "[]",
       "natural_key": "FunctionArn",
       "fields": {
-        "lambda_function_version_arn": "FunctionArn"
+        "lambda_function_version_arn": "FunctionArn",
+        "resource_policy_account_ids": "_resource_policy_account_ids",
+        "resource_policy_services": "_resource_policy_services",
+        "resource_policy_wildcard_principal": "_resource_policy_wildcard_principal",
+        "resource_policy_unconditioned": "_resource_policy_unconditioned"
       },
+      "hydrate": [
+        {
+          "key": "policy",
+          "op": "GetPolicy",
+          "why": "The published version's own resource-based policy (Qualifier: the version number), separate from the function's. ResourceNotFoundException means no policy and is recorded absent by its reviewed outcome row (error_outcomes.json). Not read for $LATEST, which Lambda does not let carry a policy."
+        }
+      ],
       "tags": {
         "source": "none",
         "why": "The CloudFormation schema says tagging.taggable is false, and botocore 1.43.121 lambda ListTags documents its Resource parameter: 'Lambda does not support adding tags to function aliases or versions'."
-      }
+      },
+      "edges": [
+        {
+          "value_path": "_resource_policy_account_ids",
+          "target_type": "aws_core__aws_account",
+          "key_kind": "id",
+          "edge_type": "PERMITS_ACCOUNT__aws_core",
+          "direction": "outbound"
+        }
+      ]
     },
     {
       "entity_type": "aws_core__aws_licensemanager_license_asset_rule_set",

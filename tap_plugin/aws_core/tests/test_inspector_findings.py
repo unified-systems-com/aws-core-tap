@@ -30,6 +30,7 @@ from tap_plugin.aws_core.collectors.boto3_collector.inspector import (
 )
 from tap_plugin.aws_core.collectors.boto3_collector.landing_zone import FOOTPRINT, _Reader
 from tap_plugin.aws_core.collectors.boto3_collector.regions import STATUS_ENABLED, RegionFacts
+from tap_plugin.computing_core.key_dimensions import HOST_TYPE, HOST_TYPE_ENTRY
 
 ACCOUNT = "111122223333"
 REGION = "us-gov-west-1"
@@ -281,12 +282,15 @@ def test_package_findings_are_read_through_the_real_model(package_only: None) ->
 
     concerns = _edges(reader, CONCERNS_RESOURCE)
     assert (node_ref(INSPECTOR_FINDING, finding_arn(1)), node_ref(ECR_REPOSITORY, REPO_ARN)) in concerns
-    host = node_ref(IMAGE_HOST, composite_natural_key({"realm": "oci-digest", "stable_id": DIGEST}))
+    host = node_ref(IMAGE_HOST, composite_natural_key({HOST_TYPE_ENTRY: "oci-digest", "stable_id": DIGEST}))
     assert (node_ref(INSPECTOR_FINDING, finding_arn(1)), host) in concerns
     assert (node_ref(INSPECTOR_FINDING, finding_arn(2)), node_ref(EC2_INSTANCE, INSTANCE_ID)) in concerns
     assert (node_ref(INSPECTOR_FINDING, finding_arn(3)), node_ref(LAMBDA_FUNCTION, FUNCTION_ARN)) in concerns
     [host_node] = _nodes(reader, IMAGE_HOST)
-    assert host_node == {"realm": "oci-digest", "stable_id": DIGEST, "kind": "container"}
+    assert host_node == {"stable_id": DIGEST, "kind": "container"}
+    [host_envelope] = [n for n in reader.result.nodes if n["entity"]["entity_type"] == IMAGE_HOST]
+    assert host_envelope["entity"]["dimensions"] == {HOST_TYPE: "oci-digest"}, "the host type is the envelope's dimension"
+
 
     footprint = node_ref(FOOTPRINT, footprint_key(ACCOUNT, REGION))
     assert len(_edges(reader, HOSTS_INSPECTOR2_FINDING)) == 4
@@ -315,7 +319,8 @@ def test_a_held_image_host_is_sent_with_its_key_and_kind_only(package_only: None
         reader = _reader(aws, held=True)
         reader.inspector.read(REGION)
     [envelope] = [n for n in reader.result.nodes if n["entity"]["entity_type"] == IMAGE_HOST]
-    assert envelope["node"] == {"realm": "oci-digest", "stable_id": DIGEST, "kind": "container"}
+    assert envelope["node"] == {"stable_id": DIGEST, "kind": "container"}
+    assert envelope["entity"]["dimensions"] == {HOST_TYPE: "oci-digest"}, "the key, sent unchanged"
     assert "name" not in envelope["entity"]
 
 

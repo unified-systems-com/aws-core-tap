@@ -1,13 +1,14 @@
-"""``BulkCreateModels`` and ``BulkAlterFields`` leave the same state and run the same SQL as the plain operations."""
+"""``BulkCreateModels``, ``BulkAlterFields``, ``BulkAddFields`` and ``BulkRemoveFields`` leave the same state and run the
+same SQL as the plain operations."""
 
 from __future__ import annotations
 
 import pytest
 from django.db import connection, models
-from django.db.migrations.operations.fields import AlterField
+from django.db.migrations.operations.fields import AddField, AlterField, RemoveField
 from django.db.migrations.operations.models import CreateModel
 from django.db.migrations.state import ProjectState
-from tap_plugin.aws_core.migrations._bulk import BulkAlterFields, BulkCreateModels
+from tap_plugin.aws_core.migrations._bulk import BulkAddFields, BulkAlterFields, BulkCreateModels, BulkRemoveFields
 
 APP = "bulkprobe"
 
@@ -170,3 +171,118 @@ def test_two_fields_of_one_table_both_change_when_the_alteration_is_really_appli
     with connection.schema_editor(atomic=False) as editor:
         bulk.database_backwards(APP, editor, after, base)
     assert _columns(table) == {"id": "NO", "a": "NO", "b": "NO", "c": "NO"}
+
+
+# --- BulkAddFields / BulkRemoveFields (core's spine copies and typed batch_id, unified-systems-com/tap PR 1352) ---
+
+
+def _adds() -> list[AddField]:
+    return [
+        AddField("Probe", "copied_at", models.DateTimeField(null=True, blank=True, editable=False)),
+        AddField("Probe", "copied", models.JSONField(default=dict, blank=True, editable=False)),
+        AddField("Other", "copied", models.JSONField(default=dict, blank=True, editable=False)),
+        AddField("Other", "once", models.IntegerField(default=7), preserve_default=False),
+    ]
+
+
+def _removes() -> list[RemoveField]:
+    return [RemoveField("Probe", "a"), RemoveField("Probe", "c"), RemoveField("Other", "d")]
+
+
+def _fields(state: ProjectState) -> dict[str, list[tuple[str, object]]]:
+    return {m: [(f, fld.deconstruct()[1:]) for f, fld in ms.fields.items()] for (_a, m), ms in state.models.items()}
+
+
+def _plain(ops: list, base: ProjectState) -> tuple[ProjectState, list[str]]:
+    state, sql = base.clone(), []
+    for op in ops:
+        before = state.clone()
+        op.state_forwards(APP, state)
+        with connection.schema_editor(collect_sql=True, atomic=False) as editor:
+            op.database_forwards(APP, editor, before, state)
+        sql += editor.collected_sql
+    return state, sql
+
+
+def _bulk(op, base: ProjectState) -> tuple[ProjectState, list[str]]:
+    state = base.clone()
+    op.state_forwards(APP, state)
+    with connection.schema_editor(collect_sql=True, atomic=False) as editor:
+        op.database_forwards(APP, editor, base, state)
+    return state, list(editor.collected_sql)
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("bulk", "plain"), [(BulkAddFields, _adds), (BulkRemoveFields, _removes)], ids=["add", "remove"])
+def test_adding_or_removing_fields_in_bulk_gives_the_same_sql_and_state(bulk, plain):
+    base = _base_state()
+    plain_state, plain_sql = _plain(plain(), base)
+    bulk_state, bulk_sql = _bulk(bulk(plain()), base)
+    assert sorted(bulk_sql) == sorted(plain_sql) and bulk_sql
+    assert _fields(bulk_state) == _fields(plain_state)
+    assert _fields(base) != _fields(bulk_state), "the base state is not changed in place"
+    # the bulk state renders, with the fields the plain operations leave
+    probe = bulk_state.apps.get_model(APP, "Probe")
+    assert {f.name for f in probe._meta.get_fields()} == {f for f, _ in _fields(plain_state)["probe"]}
+
+
+@pytest.mark.django_db
+def test_a_default_not_preserved_is_used_for_the_column_and_dropped_from_the_state():
+    state, sql = _bulk(BulkAddFields(_adds()), _base_state())
+    assert state.models[APP, "other"].fields["once"].default is models.NOT_PROVIDED
+    assert any("once" in s and "DEFAULT 7" in s for s in sql), sql
+
+
+@pytest.mark.django_db
+def test_fields_added_and_removed_in_bulk_are_really_applied_and_reversed():
+    """Executed, not collected: the columns are read back after each direction."""
+    base = ProjectState()
+    with connection.schema_editor(atomic=False) as editor:
+        for op in [
+            CreateModel("Probe", [("id", models.AutoField(primary_key=True)), ("a", models.CharField(max_length=9, default="")),
+                                  ("c", models.IntegerField(default=0))]),
+        ]:
+            before = base.clone()
+            op.state_forwards(APP, base)
+            op.database_forwards(APP, editor, before, base)
+    table = f"{APP}_probe"
+    removed = base.clone()
+    remove = BulkRemoveFields([RemoveField("Probe", "a")])
+    remove.state_forwards(APP, removed)
+    added = removed.clone()
+    add = BulkAddFields(_adds()[:2])
+    add.state_forwards(APP, added)
+    with connection.schema_editor(atomic=False) as editor:
+        remove.database_forwards(APP, editor, base, removed)
+        add.database_forwards(APP, editor, removed, added)
+    assert _columns(table) == {"id": "NO", "c": "NO", "copied_at": "YES", "copied": "NO"}
+    with connection.schema_editor(atomic=False) as editor:
+        add.database_backwards(APP, editor, added, removed)
+        remove.database_backwards(APP, editor, removed, base)
+    assert _columns(table) == {"id": "NO", "a": "NO", "c": "NO"}
+
+
+def test_only_plain_non_relational_field_operations_are_accepted_in_bulk():
+    with pytest.raises(TypeError):
+        BulkAddFields([RemoveField("X", "a")])  # type: ignore[list-item]
+    with pytest.raises(TypeError):
+        BulkRemoveFields([AddField("X", "a", models.IntegerField())])  # type: ignore[list-item]
+    with pytest.raises(TypeError):
+        BulkAddFields([AddField("X", "p", models.ForeignKey(f"{APP}.other", on_delete=models.CASCADE))])
+
+
+@pytest.mark.django_db
+def test_removing_a_relational_field_in_bulk_is_refused():
+    state = _base_state()
+    state.models[APP, "probe"].fields["other"] = models.ForeignKey(f"{APP}.other", on_delete=models.CASCADE)
+    with pytest.raises(TypeError):
+        BulkRemoveFields([RemoveField("Probe", "other")]).state_forwards(APP, state)
+
+
+def test_the_spine_migration_uses_the_bulk_operations():
+    """aws_core 0064 (tap PR 1352) runs 4,629 field changes; one at a time each re-renders the whole state."""
+    import importlib
+
+    migration = importlib.import_module("tap_plugin.aws_core.migrations.0064_spine_copies").Migration
+    assert [type(op).__name__ for op in migration.operations] == ["BulkRemoveFields", "BulkAddFields"]
+    assert ("tap_grid", "0023_spine_copies") in migration.dependencies

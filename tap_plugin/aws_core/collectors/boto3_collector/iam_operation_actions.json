@@ -2140,6 +2140,12 @@
    ],
    "dropped": []
   },
+  "ec2:get_network_insights_access_scope_analysis_findings": {
+   "actions": [
+    "ec2:GetNetworkInsightsAccessScopeAnalysisFindings"
+   ],
+   "dropped": []
+  },
   "ecr-public:describe_repositories": {
    "actions": [
     "ecr-public:DescribeRepositories"
@@ -4064,6 +4070,12 @@
   },
   "lakeformation:list_resources": {
    "actions": [],
+   "dropped": []
+  },
+  "lambda:get_policy": {
+   "actions": [
+    "lambda:GetPolicy"
+   ],
    "dropped": []
   },
   "lambda:list_aliases": {
