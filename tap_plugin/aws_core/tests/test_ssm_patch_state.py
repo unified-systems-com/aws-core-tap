@@ -570,11 +570,16 @@ def test_the_patch_list_is_not_stored_and_a_note_names_where_aws_lists_it() -> N
     assert {e["edge_type"] for e in _edges(node)} >= {"REPORTS_PATCH__aws_core"}
 
 
-@pytest.mark.spec("req-aws-core-ssm-patch-state-5")
-def test_an_instance_with_no_patch_state_has_no_note_and_an_empty_complete_read() -> None:
+@pytest.mark.spec("req-aws-core-ssm-patch-state-5", "req-aws-core-ssm-patch-state-10")
+def test_an_instance_with_no_patch_state_has_no_note_and_its_reads_are_partial() -> None:
+    """No patch state is no scan result: the patch list and the baseline were never observed, so neither read may
+    claim the instance's scope whole (an empty complete read would propose removing what an earlier scan wrote)."""
     ssm = _FakeSsm(states=[_state(EC2_ID, AWS_BASELINE_ID)])
     item = next(i for i in _items(MI, ssm) if i["InstanceId"] == HYBRID_ID)
-    assert "_patch_list" not in item and item["_patches"] == [] and item[EDGE_READS]["_patches"] == COMPLETE
+    assert "_patch_list" not in item and item["_patches"] == []
+    assert item[EDGE_READS]["_patches"] == PARTIAL and item[EDGE_READS]["_patch_baseline_id"] == PARTIAL
+    scanned = next(i for i in _items(MI, ssm) if i["InstanceId"] == EC2_ID)
+    assert scanned[EDGE_READS]["_patches"] == COMPLETE and scanned[EDGE_READS]["_patch_baseline_id"] == COMPLETE
 
 
 # --- declarations ------------------------------------------------------------------------------------------------
@@ -763,4 +768,50 @@ def test_a_closed_gap_is_a_complete_surface_absence_and_its_edge_is_proposed_for
     still = edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID, PATCH, glibc)
     assert not BatchEvent.objects.filter(
         event_type=BatchEventType.AUTHORITY_PROPOSED, metadata__record="proposal", entity_id=still.entity_id
+    ).exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.spec("req-aws-core-ssm-patch-state-5", "req-aws-core-ssm-patch-state-10")
+def test_an_instance_whose_patch_state_is_gone_keeps_its_edges(_stub_ssm) -> None:
+    """The instance's patch state ages out (or it was never scanned again): the next run has no scan result for it, so
+    its REPORTS_PATCH and USES_PATCH_BASELINE reads are partial and core proposes removing neither edge. A closed gap
+    is a scan showing it gone (the test above); an unscanned instance is no evidence either way."""
+    from tap_cares.collectors.config import CollectorConfig
+    from tap_grid.batch import create_batch
+    from tap_grid.caller_context import CallerContext, get_caller_context, set_caller_context
+    from tap_grid.models import BatchEvent, BatchEventType
+    from tap_grid.reconcile import RUN_CONFIG_KEY, run_config
+    from tap_plugin.aws_core.collectors.boto3_collector import authority
+    from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector
+
+    if not authority.importer_accepts_edge_cases():
+        pytest.skip("this tap's importer predates edge_cases")
+
+    def _run() -> None:
+        collector = Boto3Collector(CollectorConfig(collector_entity_id=uuid.uuid7(), collection_job_entity_id=uuid.uuid7()))
+        collector.run()
+        assert collector.results["error"] == []
+
+    _run()
+    openssl = {"partition": PARTITION, "operating_system": "AMAZON_LINUX_2023", "kb_id": "openssl-libs.x86_64:1:3.0.8-1.amzn2023"}
+    reported = edge_between("REPORTS_PATCH__aws_core", MI, EC2_ID, PATCH, openssl)
+
+    _stub_ssm.states = [state for state in _stub_ssm.states if state["InstanceId"] != EC2_ID]
+    run = create_batch(
+        source="t:ssm-unscanned-run", name="unscanned run", description="the run after the patch state aged out",
+        metadata={RUN_CONFIG_KEY: run_config(authority=False, budget=None, collector="test")},
+    )
+    ambient = get_caller_context()
+    set_caller_context(CallerContext(user=ambient.user if ambient else None, batch_id=str(run.entity_id)))
+    try:
+        _run()
+    finally:
+        set_caller_context(ambient)
+    assert not BatchEvent.objects.filter(
+        event_type=BatchEventType.AUTHORITY_PROPOSED, metadata__record="proposal", entity_id=reported.entity_id
+    ).exists()
+    assert not BatchEvent.objects.filter(
+        event_type=BatchEventType.AUTHORITY_PROPOSED, metadata__record="proposal",
+        metadata__identity__edge_type="USES_PATCH_BASELINE__aws_core",
     ).exists()

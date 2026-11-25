@@ -458,3 +458,31 @@ def test_a_read_that_is_not_complete_resolves_nothing(_stub_ssm, monkeypatch: py
     collector.run()
     assert not [e for e in collector.results["error"] if e["message_code"] == "SSM_COMPLIANCE_PROJECTION_FAILED"]
     assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "open"), failure
+
+
+@pytest.mark.django_db
+@requires_compliance_core
+@pytest.mark.spec("req-aws-core-ssm-compliance-6")
+def test_a_run_that_did_not_write_the_instances_resolves_nothing(_stub_ssm, monkeypatch: pytest.MonkeyPatch) -> None:  # noqa: F811
+    """A run that left out the managed-instance type still walks SSM for the patch groups, so its walk holds complete
+    reads; but they landed no REPORTS_PATCH edge, so they resolve nothing (Q161a). The next full run resolves."""
+    from tap_plugin.aws_core.collectors.boto3_collector import credentials as cred
+
+    from tap_cares.secrets.models import Secret
+
+    base = cred.resolve_secret(None)
+
+    def _with(**data: Any) -> None:
+        monkeypatch.setattr(cred, "resolve_secret", lambda _ref: Secret(**{**base.__dict__, "data": {**base.data, "ssm_compliance_findings": True, **data}}))
+
+    _with()
+    _run_on()
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "open")
+    for iid in (EC2_ID, EC2_ID_2):
+        _stub_ssm.patches[iid][0] = {**_stub_ssm.patches[iid][0], "State": "INSTALLED"}
+    _with(exclude_types=["ssm:ssm_managed_instance"])
+    _run_on()
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "open")
+    _with()
+    _run_on()
+    assert _statuses() == dict.fromkeys(EXPOSED_PAIRS, "resolved")

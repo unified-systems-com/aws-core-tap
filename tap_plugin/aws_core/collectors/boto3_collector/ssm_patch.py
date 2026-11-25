@@ -314,7 +314,9 @@ def walk_ssm(client: Any, *, partition: str) -> SsmWalk:
             continue
         hydrate: dict[str, Any] = {}
         state = states.get(instance_id)
-        baseline_read = FAILED if instance_id in state_failed else COMPLETE
+        # No patch state (never scanned, or the state aged out) is no scan result: neither a baseline nor an empty patch
+        # list was observed, so both reads are partial and no claim proposes removing an edge an earlier scan wrote.
+        baseline_read = FAILED if instance_id in state_failed else (COMPLETE if state else PARTIAL)
         stated = str((state or {}).get("BaselineId") or "")
         baseline_key: str | None = systems.get(bare_baseline_id(stated), (stated, ""))[0] if stated else None
         # Named, but not matched to a listed baseline: the edge cannot name its node.

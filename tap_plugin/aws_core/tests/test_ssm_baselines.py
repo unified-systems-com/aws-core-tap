@@ -187,6 +187,10 @@ def test_members_the_run_could_not_see_are_never_read_as_none() -> None:
     [group] = list(ssm_patch_groups_described(_Session(), client_for=_clients(failed)))
     assert group[EDGE_READS]["_members"] == FAILED and group["_hydrate"]["members"]["status"] == "denied"
     assert group[EDGE_READS]["_baseline_ids"] == COMPLETE
+    # An instance with no patch state (never scanned, or the state aged out): its group is not known either.
+    unscanned = _Ssm(states=[_state(EC2_ID, AWS_BASELINE_ID), _state(EC2_ID_2, AWS_BASELINE_ID)])
+    [group] = list(ssm_patch_groups_described(_Session(), client_for=_clients(unscanned)))
+    assert group["_members"] == [EC2_ID, EC2_ID_2] and group[EDGE_READS]["_members"] == PARTIAL
 
 
 @pytest.mark.spec("req-aws-core-ssm-baselines-5")
@@ -256,7 +260,7 @@ def test_every_projected_payload_passes_the_create_schema() -> None:
 
 @pytest.mark.django_db
 @pytest.mark.spec("req-aws-core-ssm-baselines-6", "req-aws-core-ssm-baselines-1", "req-aws-core-ssm-baselines-4")
-def test_a_collector_run_lands_the_baselines_defaults_and_groups(_stub_ssm, monkeypatch) -> None:
+def test_a_collector_run_lands_the_baselines_defaults_and_groups(_stub_ssm, monkeypatch) -> None:  # noqa: F811
     from tap_cares.collectors.config import CollectorConfig
     from tap_grid.services import get_node
     from tap_plugin.aws_core.collectors.boto3_collector.collector import Boto3Collector

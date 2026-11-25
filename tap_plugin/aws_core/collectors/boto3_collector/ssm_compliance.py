@@ -56,6 +56,9 @@ SOURCE = "aws_ssm_patch"
 RESOLVES = "RESOLVES_VULNERABILITY__aws_core"
 #: The edge the stored patch state is read from.
 REPORTS = "REPORTS_PATCH__aws_core"
+#: The types a run must have written for its own SSM walk to stand as the projection's complete reads (Q161a): the
+#: instance, whose REPORTS_PATCH edges the reads are, and the patch they reach.
+READ_TYPES = frozenset({"aws_core__aws_ssm_managed_instance", "aws_core__aws_ssm_patch"})
 EC2_INSTANCE = "aws_core__aws_ec2_instance"
 #: The dimension that names the account owning a managed instance (collector.py stamps it on every node).
 ACCOUNT_DIMENSION = "aws.account"

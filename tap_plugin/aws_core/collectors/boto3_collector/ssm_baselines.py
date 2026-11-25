@@ -121,8 +121,8 @@ def _members(session: Any, client_for: Any, partition: str) -> tuple[dict[str, l
     members: dict[str, list[str]] = {}
     read = COMPLETE
     for instance in ssm.instances:
-        if "patch_state" in (instance.get("_hydrate") or {}):
-            read = PARTIAL  # this instance's group is unknown
+        if "patch_state" in (instance.get("_hydrate") or {}) or not instance.get("_patch_state"):
+            read = PARTIAL  # this instance's group is unknown: its patch state was not read, or holds no scan result
         group = str((instance.get("_patch_state") or {}).get("PatchGroup") or "")
         if group:
             members.setdefault(group, []).append(str(instance["InstanceId"]))

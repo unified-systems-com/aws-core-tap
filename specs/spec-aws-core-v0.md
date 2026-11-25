@@ -2478,7 +2478,10 @@ and the per-patch list is not stored.
 - **Degradation.** A denied or failed per-instance call is a `_hydrate` slot, which the run records as
   `HYDRATE_GAP`. The edge reads it fed are `failed`, so no authority claim covers edges the run could not see. A
   gap row reported without a known operating system or a KBId makes that instance's `REPORTS_PATCH` read `partial`;
-  a row that needs no action is never keyed, so it does not.
+  a row that needs no action is never keyed, so it does not. An instance with no patch state
+  (`DescribeInstancePatchStates` holds no scan result for it: never scanned, or the state aged out) makes its
+  `REPORTS_PATCH` and `USES_PATCH_BASELINE` reads `partial`: no scan was observed, so the run claims neither scope
+  whole and proposes removing no edge an earlier scan wrote (PR 302 review; the principle of Q161 below).
 - **Stored, as every entry is** (`req-aws-collector-redaction-1`). `OwnerInformation` is never in an item, so it
   is never stored. `IPAddress` is declared under its real category and stored, as `req-aws-collector-redaction-2`
   rules for a botocore-sensitive member that is not secret material. The per-patch list the `REPORTS_PATCH` edges
@@ -2517,7 +2520,7 @@ and the per-patch list is not stored.
 | req-aws-core-ssm-patch-state-7 | Compliance Summaries | Implemented | Each `ListResourceComplianceSummaries` row is one `aws_ssm_compliance_summary`, scoped by account and region, held by its managed instance. | |
 | req-aws-core-ssm-patch-state-8 | Non-Patch Compliance Items | Implemented | `ListComplianceItems` is read per instance with `ComplianceType` not `Patch`. Each item is an `aws_ssm_compliance_item` held by its instance, and an Association item has `CONCERNS_ASSOCIATION` to its association. | |
 | req-aws-core-ssm-patch-state-9 | No Cap | Implemented | Every instance, patch, summary and item is read. Patch states are read in chunks of 50. A region with nothing managed makes only the two listings, and the walk never calls STS. | Ruling Q124a. |
-| req-aws-core-ssm-patch-state-10 | A Failed Read Is Never Empty | Implemented | A denied per-instance call is a `_hydrate` gap, and the edge reads it fed are `failed`. A patch that cannot be keyed makes the read `partial`. A failed `DescribeInstanceInformation` fails the listing. | |
+| req-aws-core-ssm-patch-state-10 | A Failed Read Is Never Empty | Implemented | A denied per-instance call is a `_hydrate` gap, and the edge reads it fed are `failed`. A patch that cannot be keyed makes the read `partial`, and an instance with no patch state makes its `REPORTS_PATCH` and `USES_PATCH_BASELINE` reads `partial`. A failed `DescribeInstanceInformation` fails the listing. | |
 | req-aws-core-ssm-patch-state-11 | Declared And Importable | Implemented | The four entries are registered `custom_fn` entries that store their configuration, with a reviewed sensitivity naming the botocore-sensitive members. Every payload passes the create schema, and a collector run imports the nodes and edges into the grid. | |
 
 ### SSM Patch Baselines, Defaults And Patch Groups
@@ -2563,8 +2566,8 @@ registered for the group and an edge from each managed instance in it.
 - **`IN_PATCH_GROUP`** (managed instance → patch group), written from the group's side: each instance of the region
   whose last patch operation (`DescribeInstancePatchStates`) names the group as `PatchGroup`. An instance naming a group
   no baseline is registered for has no node to reach; its `patch_group` field keeps the name. A failed SSM walk makes
-  the read `failed`, and a walk whose patch-state read failed for some instance makes it `partial`, so no authority
-  claim covers members the run could not see.
+  the read `failed`, and a walk whose patch-state read failed for some instance, or that has an instance with no patch
+  state, makes it `partial`, so no authority claim covers members the run could not see.
 - **Keys and identity.** The default and group entries build their batch refs with `derive` from the run's scope; the
   walk makes no STS call. Neither has an ARN or a CloudFormation type of its own: CloudFormation sets both from the
   baseline's side (`AWS::SSM::PatchBaseline` `DefaultBaseline`, `PatchGroups`).
@@ -2589,7 +2592,7 @@ registered for the group and an edge from each managed instance in it.
 | req-aws-core-ssm-baselines-1 | Every Baseline, AWS's Shared | Implemented | `DescribePatchBaselines` is read with no filter. An own baseline is keyed by its `pb-` id and carries its tags; an AWS-owned one is keyed by its ARN, has no tags read and no `DefaultBaseline` in its item, and its `aws.account` dimension is the ARN's account, not the collecting account's. | Q139a option 2. `tests/test_ssm_baselines.py` |
 | req-aws-core-ssm-baselines-2 | Default Baseline Per Operating System | Implemented | Each `DefaultBaseline` row is one `aws_ssm_default_patch_baseline` keyed (partition, account, region, operating system) with `DEFAULTS_TO_PATCH_BASELINE` to the baseline it names, AWS-owned or own. No `GetDefaultPatchBaseline` call is made. | Q139a. |
 | req-aws-core-ssm-baselines-3 | Patch Groups | Implemented | Each group `DescribePatchGroups` lists is one `aws_ssm_patch_group` keyed (partition, account, region, group) with `REGISTERED_TO_PATCH_BASELINE` to every baseline registered for it. | Q139b. |
-| req-aws-core-ssm-baselines-4 | Instances In Their Group | Implemented | Each managed instance whose patch state names a listed group has `IN_PATCH_GROUP` to it; the read is `failed` when the SSM walk failed and `partial` when some instance's patch state was not read. | Q139b. |
+| req-aws-core-ssm-baselines-4 | Instances In Their Group | Implemented | Each managed instance whose patch state names a listed group has `IN_PATCH_GROUP` to it; the read is `failed` when the SSM walk failed and `partial` when some instance's patch state was not read or holds no scan result. | Q139b. |
 | req-aws-core-ssm-baselines-5 | A Failed Read Is Never Empty | Implemented | A failed baseline listing skips the baseline and default entries, a failed group listing skips the group entry, and a failed own-baseline tag read is a `_hydrate` gap with the tags unread. | |
 | req-aws-core-ssm-baselines-6 | Declared And Importable | Implemented | The three entries are registered `custom_fn` entries that store their configuration with a reviewed sensitivity; `ssm:DescribePatchGroups` is in the catalog and the generated policy; every payload passes the create schema, and a collector run imports the nodes and edges into the grid. | |
 
@@ -2669,7 +2672,8 @@ same.
     exposed patch for the CVE. Since Q147 an installed patch is no edge, so a closed gap is the pair's absence from a
     complete read. "Complete" is the instance's patch read status in this run (its `_edge_reads`), not failed, not
     partial, not denied. The run's complete reads are taken from its own SSM walk once the collection batch they fed
-    has imported, and for those instances they replace the stored edges as the projection's input, so an edge a
+    has imported, and only when the run selected both the managed-instance and patch types (a run that left either
+    out may still walk SSM for the patch groups, but its reads landed no edge); for those instances they replace the stored edges as the projection's input, so an edge a
     complete read left behind (a removal proposal reconcile has not applied, `req-aws-core-ssm-patch-state-5`) is
     never read as exposure.
 
@@ -2699,7 +2703,7 @@ same.
 | req-aws-core-ssm-compliance-3 | Projected From Stored Rows | Implemented | The projection reads the account's stored managed instances, `REPORTS_PATCH` edges and patches, so state collected before the switch was on is projected on the first run after; an instance whose read in this run was complete is projected from that read instead (Q161a). | |
 | req-aws-core-ssm-compliance-4 | Every Patch Links Its CVEs | Implemented | Each reported patch has one `RESOLVES_VULNERABILITY` per CVE id in `cve_ids` to the vulnerability found by id or alias, or created with the CVE id; an ambiguous CVE and a token that is not a CVE id are skipped and said; `cve_ids` stays on the patch. | Q141a. |
 | req-aws-core-ssm-compliance-5 | A Finding Per Exposed Instance And CVE | Implemented | An (instance, CVE) pair with a patch in `MISSING`, `FAILED`, `INSTALLED_PENDING_REBOOT` or `AVAILABLE_SECURITY_UPDATE` is one open `compliance_finding` (`aws_ssm_patch`, `<account>:<instance>:<CVE>`) with `CONCERNS_COMPLIANCE_VULNERABILITY` (`fix_state` `fixed`) and one carrier edge; a pair whose patches are only `INSTALLED`, `INSTALLED_OTHER`, `INSTALLED_REJECTED` or `NOT_APPLICABLE` writes no new finding. | Q141b; Q148b for `INSTALLED_PENDING_REBOOT`, `AVAILABLE_SECURITY_UPDATE` and `INSTALLED_REJECTED`. |
-| req-aws-core-ssm-compliance-6 | Resolved Only On A Positive Record | Implemented | A held open finding is written `resolved` when its pair is still reported with no exposed patch, or when the instance's `REPORTS_PATCH` read in this run was complete and asserted no exposed patch for the CVE; a failed or partial read, an instance with no patch state, and an instance no longer reported at all resolve nothing. | George's ruling Q161 option a (2026-11-24). `tests/test_ssm_compliance.py` (pure rules; the grid cases need compliance_core loaded). |
+| req-aws-core-ssm-compliance-6 | Resolved Only On A Positive Record | Implemented | A held open finding is written `resolved` when its pair is still reported with no exposed patch, or when the instance's `REPORTS_PATCH` read in this run was complete and asserted no exposed patch for the CVE; a failed or partial read, an instance with no patch state, an instance no longer reported at all, and a run that did not select the managed-instance and patch types resolve nothing. | George's ruling Q161 option a (2026-11-24). `tests/test_ssm_compliance.py` (pure rules; the grid cases need compliance_core loaded). |
 | req-aws-core-ssm-compliance-7 | Carried By The Instance | Implemented | An EC2-backed instance's finding is carried by `aws_ec2_instance` (its instance id), a hybrid one's by its `aws_ssm_managed_instance`. | Q148a; as Inspector's EC2 finding is carried. |
 
 ### Lambda Resource Policy
