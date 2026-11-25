@@ -24,7 +24,6 @@ from functools import lru_cache
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlsplit, urlunsplit
 
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -36,7 +35,7 @@ from .elb_topology import shared_walk as shared_listener_walk
 from . import ssm_baselines, ssm_patch
 from .route53_records import bare_zone_id, record_set_key
 from .route53_records import shared_walk as shared_records_walk
-from .envelope import jsonable, without_response_metadata
+from .envelope import jsonable, without_credentials, without_response_metadata
 from .hydrate import hydrate_item
 from .iam_trust import account_of_arn, account_of_iam_arn, summarize_resource_policy, summarize_trust_policy
 from .listing import ListingWalk, error_code, page_says_more
@@ -1866,22 +1865,12 @@ def eventbridge_connections_described(session: Any, *, client_for: Any) -> Itera
     yield from _eventbridge_items(client_for, "list_connections", "Connections")
 
 
-def _without_credentials(url: str) -> str:
-    """``url`` as scheme, host and path only: the user info, query string and fragment are where a token or a
-    password goes in a URL, and none of them is needed to know which endpoint is called."""
-    parts = urlsplit(url)
-    host = parts.hostname or ""
-    if parts.port:
-        host = f"{host}:{parts.port}"
-    return urlunsplit((parts.scheme, host, parts.path, "", ""))
-
-
 def eventbridge_api_destinations_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:
     """Enumerate EventBridge API destinations (regional). The endpoint URL is reduced to scheme, host and path
-    (:func:`_without_credentials`): a token in a query string or user info never leaves the reader."""
+    (:func:`without_credentials`): a token in a query string or user info never leaves the reader."""
     for destination in _eventbridge_items(client_for, "list_api_destinations", "ApiDestinations"):
         endpoint = destination.get("InvocationEndpoint")
-        yield {**destination, "InvocationEndpoint": _without_credentials(endpoint) if endpoint else endpoint}
+        yield {**destination, "InvocationEndpoint": without_credentials(endpoint) if endpoint else endpoint}
 
 
 def lambda_function_urls_described(session: Any, *, client_for: Any) -> Iterator[dict[str, Any]]:

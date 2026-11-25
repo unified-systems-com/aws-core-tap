@@ -320,6 +320,22 @@ def test_owner_information_reaches_nothing_and_the_ip_address_no_field() -> None
     assert _entry(MI)["persist_configuration"] is True
 
 
+@pytest.mark.spec("req-aws-core-ssm-patch-state-2")
+def test_a_presigned_install_override_list_keeps_its_location_and_loses_its_signature() -> None:
+    presigned = ("https://patch-lists.s3.amazonaws.com/al2023.yaml?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE"
+                 "&Expires=1795600000&Signature=c2lnbmF0dXJlLWNhbmFyeQ%3D%3D")
+    states = [{**_state(EC2_ID, AWS_BASELINE_ID), "InstallOverrideList": presigned},
+              {**_state(EC2_ID_2, AWS_BASELINE_ID), "InstallOverrideList": "s3://patch-lists/al2023.yaml"}]
+    nodes = _by_key(_nodes(MI, ssm_managed_instances_described, _FakeSsm(states=states)))
+    for instance_id, stored in ((EC2_ID, "https://patch-lists.s3.amazonaws.com/al2023.yaml"),
+                                (EC2_ID_2, "s3://patch-lists/al2023.yaml")):
+        node = nodes[instance_id]
+        payload = node_envelope(node, {}, {}, persist_configuration=True)["node"]
+        assert payload["patch_install_override_list"] == stored
+        assert "Signature" not in json.dumps(node.raw_item, default=str)
+        assert "Signature" not in json.dumps(payload, default=str)
+
+
 @pytest.mark.spec("req-aws-core-ssm-patch-state-3")
 def test_a_managed_instance_links_to_its_ec2_instance_and_the_baseline_its_last_operation_used() -> None:
     nodes = _by_key(_nodes(MI, ssm_managed_instances_described, _FakeSsm()))

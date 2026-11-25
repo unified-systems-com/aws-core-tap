@@ -30119,7 +30119,7 @@
           {
             "path": "_patch_state.InstallOverrideList",
             "category": "other",
-            "reason": "An S3 URL of the patch list an install was told to use; a location, not its contents.",
+            "reason": "An https or s3:// URL of the patch list an install was told to use; a location, not its contents. An https URL can be presigned, its signature in the query string, so the reader reduces it to scheme, host and path before the item is built.",
             "evidence": "reviewer_judgement"
           },
           {

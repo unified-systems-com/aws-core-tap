@@ -51,7 +51,7 @@ from weakref import WeakKeyDictionary
 from botocore.exceptions import BotoCoreError, ClientError
 
 from .authority import COMPLETE, FAILED, PARTIAL, with_edge_reads, worst
-from .envelope import jsonable, without_response_metadata
+from .envelope import jsonable, without_credentials, without_response_metadata
 from .hydrate import _classify
 from .listing import error_code
 from .source import SourceError
@@ -188,6 +188,9 @@ def _patch_states(client: Any, ids: list[str]) -> tuple[dict[str, dict[str, Any]
         try:
             for state in _pages(client, "describe_instance_patch_states", "InstancePatchStates", InstanceIds=chunk):
                 state.pop("OwnerInformation", None)  # botocore-sensitive; never kept (ruling A1)
+                if isinstance(state.get("InstallOverrideList"), str):
+                    # An https URL may be presigned: its query string is a credential, the location is not.
+                    state["InstallOverrideList"] = without_credentials(state["InstallOverrideList"])
                 if state.get("InstanceId"):
                     states[str(state["InstanceId"])] = state
         except (BotoCoreError, ClientError) as exc:

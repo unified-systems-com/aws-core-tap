@@ -2429,6 +2429,9 @@ and the per-patch list is not stored.
     end, reboot option, snapshot, and the twelve counts.
   - Null means not observed: never scanned, or the read failed.
   - `OwnerInformation` is botocore-sensitive. It is dropped as the response is read and is in no item.
+  - `InstallOverrideList` is an https or `s3://` URL. An https URL can be presigned, with its signature and any
+    session token in the query string, so it is reduced to scheme, host and path as the response is read (as
+    EventBridge's `InvocationEndpoint` is).
   - `IPAddress` is botocore-sensitive. It is declared and not projected.
   - A hybrid node's tags are SSM's. An EC2 node's tags are the EC2 instance's, so on this node they stay unread
     (null).
