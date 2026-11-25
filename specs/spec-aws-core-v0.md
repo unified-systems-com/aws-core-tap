@@ -1305,6 +1305,66 @@ Which account a resource is in is recorded **once**, as the `aws_account` dimens
 | req-aws-core-account-dimension-9 | aws.account Is The Owning Account | Implemented | George 2026-11-12 (aws-build Q57). `aws.account` names the account that OWNS a resource, filled in order: the account segment of the resource's own ARN when its natural key is one (`aws` for AWS-managed resources); else an explicit owner field (the entry's `containment.owner_path`, or a projected `owner_account_id` / `resource_owner_account_id`); else the account whose credential listed it (`containment.resource_owner`). Organizations: an account node carries its own id; the organization, roots, OUs, policies and every edge of the tree carry the management account (`organizations._Reader._owned_by`). No second, observing-account dimension (the run records that), and no data migration of values: the next collection re-stamps. The falsifiers' scope check now compares with the owner, which closes the RAM-share misread; the Organizations falsifiers' reach is organization membership, not the dimension. | `tests/test_owner_account.py` |
 | req-aws-core-account-dimension-10 | AWS-Managed Resources Are Outside Deletion Checking | Implemented | George 2026-11-12 (aws-build Q60b). A resource AWS itself owns carries `aws.account = "aws"` (its ARN's account segment), which never equals a customer credential's account: `_scope_check` answers `scope_unknown` for it, and `_AwsFalsifier.batch_falsify` declines it before any credential is resolved or AWS call made, so every falsifier, including one added later, refuses it the same way. `IamPolicyFalsifier` also declines AWS-managed policies by `is_aws_managed`, by design. A new falsifier for a type that can be AWS-owned must decide this explicitly. | `tests/test_aws_managed_guard.py` |
 
+### Credential Types Carry tap.computing.credential
+----
+RID: `req-aws-core-credential-dimension`
+
+Status: `Implemented`
+
+Every aws_core type whose instances **are** credentials declares `tap.computing.credential` in its
+`DEFAULT_DIMENSIONS`, valued by the kind of credential it is, beside `tap.computing.cloud: aws`. The
+dimension is computing_core's (George 2026-11-23, aws-build Q146a). It is open (Q151a): its seed declares
+no `values`, and its description documents the kinds `access_key`, `password`, `ssh_key`, `certificate`,
+`api_key`, `token`, `crypto_key`, `secret_store` (Q146b) and `mfa_device` (Q151d). aws_core uses only
+documented kinds, so one filter finds every credential across all plugins and the value splits the kinds.
+
+#### Implementation
+
+The type is tagged by what the thing is, read from its description and the AWS resource behind it:
+
+| Type | Kind | Why |
+| --- | --- | --- |
+| `aws_kms_key` | `crypto_key` | A key that encrypts and signs (Q146b names KMS keys). |
+| `aws_acm_certificate` | `certificate` | An X.509 TLS certificate. |
+| `aws_iam_server_certificate` | `certificate` | An X.509 server certificate stored in IAM. |
+| `aws_iot_certificate` | `certificate` | The X.509 certificate a device authenticates with. |
+| `aws_iot_ca_certificate` | `certificate` | A CA certificate registered to verify device certificates; a certificate is a credential even when not secret (Q146). |
+| `aws_dms_certificate` | `certificate` | A certificate (PEM or Oracle wallet) DMS presents for SSL endpoints. |
+| `aws_transfer_certificate` | `certificate` | A signing, encryption or TLS certificate a Transfer Family profile uses, optionally imported with its private key. |
+| `aws_apigateway_client_certificate` | `certificate` | The client certificate API Gateway presents to a backend. |
+| `aws_apigateway_api_key` | `api_key` | A key callers present to an API Gateway stage. |
+| `aws_location_api_key` | `api_key` | A key callers present to Amazon Location Service. |
+| `aws_secrets_manager_secret` | `secret_store` | A container whose value is a credential (Q146b names it). |
+| `aws_codebuild_source_credential` | `token` | The credential CodeBuild uses to reach a source provider: an OAuth token, a personal access token, a CodeConnections connection or a Secrets Manager secret holding one. Bitbucket's `BASIC_AUTH` form is a username and app password; the type cannot be split per instance, and most forms are tokens. |
+| `aws_transfer_host_key` | `ssh_key` | The SSH host key an SFTP server proves itself with; `ssh_key` names the SSH use, which is what a reader filters on, where `crypto_key` would hide it among KMS keys. |
+| `aws_ec2_key_pair` | `ssh_key` | The SSH key pair an instance is launched with. |
+| `aws_certificatemanager_acme_external_account_binding` | `access_key` | An ACME external account binding: a key id and an HMAC key a client presents to bind an ACME account, the same id-and-secret shape as an access key (kept as `access_key`, Q151c). |
+| `aws_iam_virtual_mfa_device` | `mfa_device` | A virtual MFA device: the second factor an IAM user authenticates with (Q151d). |
+
+Not tagged: identities (`aws_iam_user`, `aws_iam_role`, the account root, `aws_elasticache_user`,
+`aws_memorydb_user`, `aws_transfer_user`, `aws_cognito_user_pool_client`), policies and configuration
+(`aws_iam_policy`, `aws_lambda_code_signing_config`, `aws_signer_signing_profile`,
+`aws_redshift_snapshot_copy_grant`), issuers and trust anchors (`aws_acm_private_ca`,
+`aws_eks_certificate_authority`, `aws_rolesanywhere_trust_anchor`,
+`aws_elasticloadbalancingv2_trust_store`), things that only reference a credential (`aws_kms_alias`,
+`aws_eventbridge_connection`, `aws_glue_connection`, `aws_codestarconnections_connection`,
+`aws_iot_role_alias`, `aws_iot_certificate_provider`), challenges and endpoints
+(`aws_certificatemanager_acme_domain_validation`, `aws_certificatemanager_acme_endpoint`,
+`aws_ec2_ipam_external_resource_verification_token`), a Keyspaces keyspace (`aws_cassandra_keyspace`, a
+database namespace), and `aws_ssm_parameter`, whose instances are
+credentials only when their `type` is `SecureString`: a type default would tag every `String` and
+`StringList` parameter too, so the type carries none and a reader filters SecureString parameters on
+`type` until the collector stamps `secret_store` per SecureString parameter (ruled Q151b, not built
+yet: unified-systems-com/aws-core-tap#295). IAM credential types not yet in
+aws_core are tagged when they are added.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-credential-dimension-1 | The Credential Types Are Tagged | Implemented | Exactly the sixteen types in the table above declare `tap.computing.credential`, each with the value shown, and every value is one of the kinds computing_core's seed documents. | `tests/test_credential_dimension.py` |
+| req-aws-core-credential-dimension-2 | computing_core Declares The Dimension | Implemented | aws_core does not seed `tap.computing.credential`; computing_core does, open (no `values`) with every kind aws_core uses documented in its description, so a computing_core release carrying it precedes this change and the `depends_on` entry names that release as its floor. | `tests/test_dimension_seed.py` |
+
 ### Direct Connect
 ----
 RID: `req-aws-core-direct-connect`
