@@ -25,11 +25,10 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    # tap#365 / PR# 373 - tap: plugin-ci fails closed and tests the declared floor. Move
-    # this pin to the SHA of tap main once PR# 373 merges (Renovate does not track it).
-    # 86f9d918 is tap v0.4.9, this plugin's requires_tap floor: its plugin-ci runs `makemigrations --check` over the
-    # plugin's app labels, so a model change without its migration fails here (unified-systems-com/tap#1284).
-    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@86f9d918ad5ac2cce52225d3c5a4dd0596aab68e
+    # af6c940e is tap v0.5.0, this plugin's requires_tap floor (0067_history_event_time depends on its tap_grid
+    # 0024): its plugin-ci runs `makemigrations --check` over the plugin's app labels, so a model change without its
+    # migration fails here (unified-systems-com/tap#1284). Renovate does not track this pin: move it on purpose.
+    uses: unified-systems-com/tap/.github/workflows/plugin-ci.yml@af6c940e52bc68b50add3b9ff63e600da8265e58
     with:
       plugin_slug: aws_core
       # The test database is built by applying every migration, and each generated type adds a live and
