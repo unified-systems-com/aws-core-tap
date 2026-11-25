@@ -3,9 +3,9 @@
 Spec: plugins/aws_core/specs/spec-aws-core-collector-v0.md
 (req-aws-collector-grift-batch).
 
-A pure document-shaper: it turns the run's node + edge envelopes plus
+A document-shaper: it turns the run's node + edge envelopes plus
 provenance into the GRIFT document root, mirroring the KSI reference
-collector's shape in ``aws_core``'s own format. It performs no I/O and never
+collector's shape in ``aws_core``'s own format. It never
 submits — submission via ``self.submit_grift`` is the runtime integration's
 job (``req-aws-collector-grift-batch-3``). The batch carries no deletion or
 tombstone content (``req-aws-collector-grift-batch-4``); v0 has no
@@ -16,8 +16,10 @@ minted: core finds each one's live row by its declared identity, or assigns a UU
 sight. :func:`address_batch` is the last step before assembly: it refuses a node whose declared
 key has a hole, keeps one envelope per identity, and names each edge endpoint the batch carries
 no node for by type and natural key. Only the per-run ``batch_entity`` id is minted here (``uuid7``).
-The one grid read is :func:`withhold_retired_undeclared_edges`, a liveness lookup of fixed edge ids
-through the grid's read service; everything else here is pure shaping.
+Two reads touch the grid: :func:`withhold_retired_undeclared_edges`, a liveness lookup of fixed edge ids
+through the grid's read service, and the document header, which core's ``build_header`` derives from the
+versions this grid records (GRIFT format ``"1"``: the spine version and every carried type's version).
+Everything else here is pure shaping.
 """
 
 from __future__ import annotations
@@ -45,11 +47,6 @@ from .projection import ProjectedNode
 # The description_json format tag for this collector's provenance payload —
 # aws_core's own format, parallel to the KSI collector's.
 COLLECTION_FORMAT = "tap.aws_core.collection-v0"
-
-# GRIFT document format version. A literal at the producer, exactly as the
-# KSI reference collector does (it is the document's format version, not the
-# collector's to derive).
-_GRIFT_VERSION = "0"
 
 
 def entry_redact_paths(entry: Mapping[str, Any]) -> list[str]:
@@ -410,8 +407,9 @@ def assemble_batch(
     }
     if authority:
         batch["edge_cases"] = {"authority": authority}
-    return {
-        "metadata": {"grift_version": _GRIFT_VERSION},
-        "_reserved": {},
-        "batches": [batch],
-    }
+    from tap_grid.grift.upgrade import build_header
+
+    document: dict[str, Any] = {"_reserved": {}, "batches": [batch]}
+    # GRIFT format "1": core states the spine and every carried type at the versions this grid
+    # records, read once the batch is complete (tap 0.5.0 refuses a format "0" document by default).
+    return {"metadata": build_header(document), **document}

@@ -15,7 +15,7 @@ What one trial does, per approved type:
    (name prefix ``tap-trial-``, tags below).
 2. COLLECT through the real engine path that produced the bug — manifest entry →
    ``iter_source`` → ``project_item`` → ``resolve_node_tags`` → ``node_envelope``
-   → ``assemble_batch`` (document build; no grid required).
+   → ``assemble_batch`` (document build; its format "1" header reads type versions from the test database).
 3. ASSERT the emitted node payload validates against the model's create-verb
    schema exactly as core's GRIFT import applies it (``additionalProperties:
    false`` + ``CREATE_REQUIRED``, with core's null-preparation semantics), and
@@ -429,6 +429,7 @@ def _assert_payload_imports(entity_type: str, payload: dict[str, Any]) -> None:
 
 
 @pytest.mark.skipif(not _trial_run_enabled(), reason=_GATE_REASON)
+@pytest.mark.django_db
 @pytest.mark.parametrize("spec", TRIAL_SPECS, ids=lambda spec: spec.short_name)
 def test_trial_type_collects_and_validates(spec: TrialTypeSpec) -> None:
     """Provision → collect via the real path → payload validates → tags round-trip → teardown."""

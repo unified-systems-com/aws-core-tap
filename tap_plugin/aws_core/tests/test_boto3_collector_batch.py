@@ -1,7 +1,9 @@
-"""GRIFT batch-assembly unit tests for the boto3 collector (no DB).
+"""GRIFT batch-assembly unit tests for the boto3 collector.
 
 Covers req-aws-collector-grift-batch: one batch per run, provenance
-recorded, no deletion content, GRIFT document root shape.
+recorded, no deletion content, GRIFT document root shape. ``assemble_batch``
+reads the format "1" header's versions from the grid, so its tests use the
+test database; the envelope tests need none.
 """
 
 from __future__ import annotations
@@ -25,6 +27,8 @@ from tap_plugin.aws_core.collectors.boto3_collector.identity import (
     undeclared_edge_id,
 )
 from tap_plugin.aws_core.collectors.boto3_collector.projection import ProjectedNode
+
+from tap_grid.grift.upgrade import build_header
 
 FIXED_NOW = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
 FIXED_BATCH_ID = "00000000-0000-7000-8000-000000000000"
@@ -110,6 +114,7 @@ class TestNodeEnvelope:
             node_envelope(_projected("aws_core__aws_lambda", "arn:fn"), {})  # type: ignore[call-arg]
 
 
+@pytest.mark.django_db
 class TestAssembleBatch:
     def _doc(self, nodes, edges):
         return assemble_batch(
@@ -125,9 +130,21 @@ class TestAssembleBatch:
 
     def test_document_root_shape(self):
         doc = self._doc([], [])
-        assert doc["metadata"] == {"grift_version": "0"}
+        assert doc["metadata"]["grift_version"] == "1"
+        assert doc["metadata"] == build_header(doc)
         assert doc["_reserved"] == {}
         assert len(doc["batches"]) == 1  # one batch per run
+
+    def test_header_states_every_carried_type_at_its_recorded_version(self):
+        """Format "1": the header is core's, read from the grid once the batch is complete, and names
+        every type the document carries (tap 0.5.0 refuses a format "0" document by default)."""
+        n = node_envelope(_projected("aws_core__aws_lambda", "a"), {}, persist_configuration=True)
+        doc = self._doc([n], [])
+        header = doc["metadata"]
+        assert header["grift_version"] == "1"
+        assert header == build_header(doc)
+        assert header["type_versions"]["aws_core__aws_lambda"] >= 1
+        assert header["spine_version"] >= 1
 
     def test_batch_entity_and_provenance(self):
         n1 = node_envelope(_projected("aws_core__aws_lambda", "a"), {}, persist_configuration=True)

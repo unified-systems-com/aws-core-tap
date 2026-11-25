@@ -614,11 +614,11 @@ class TestImportedThroughCore:
         """An image host Anchore wrote first (its name, operating system and image facts) is joined, not
         rewritten: aws_core sends the key and kind only."""
         from tap_grid.grift import grift_import
+        from tap_grid.grift.upgrade import build_header
         from tap_grid.models import Entity
         from tap_grid.services import get_node
 
         anchore = {
-            "metadata": {"grift_version": "0"},
             "_reserved": {},
             "batches": [
                 {
@@ -646,6 +646,7 @@ class TestImportedThroughCore:
                 }
             ],
         }
+        anchore["metadata"] = build_header(anchore)
         imported = grift_import(anchore)
         assert imported.success, [(i.code, i.message) for i in imported.errors]
         before = node_id(HOST_TYPE, _HOST_KEY)
@@ -718,11 +719,11 @@ class TestImportedThroughCore:
         """computing_core 0.10.9 stores nginx:1.25 as docker.io/library/nginx:1.25, so ECS's short spelling and a
         scanner's expanded one are one image_tag node."""
         from tap_grid.grift import grift_import
+        from tap_grid.grift.upgrade import build_header
         from tap_grid.services import get_node
 
         canonical = {"registry": "docker.io", "repository": "library/nginx", "tag": "1.25"}
         scanner = {
-            "metadata": {"grift_version": "0"},
             "_reserved": {},
             "batches": [
                 {
@@ -733,6 +734,7 @@ class TestImportedThroughCore:
                 }
             ],
         }
+        scanner["metadata"] = build_header(scanner)
         assert grift_import(scanner).success
         before = node_id(IMAGE_TAG_TYPE, canonical)
 
