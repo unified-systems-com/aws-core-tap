@@ -237,6 +237,28 @@ class TestEdgesToUnselectedTypes:
 
 
 @pytest.mark.django_db
+class TestIncludeOneCredentialType:
+    @pytest.mark.spec("req-aws-collector-selection-2")
+    def test_only_the_access_key_selected_makes_only_its_iam_calls(self, monkeypatch):
+        """Codex, aws-core-tap PR 307: the shared IAM credential walk lists only the credential kinds a run selected,
+        so selecting the access key reaches ListUsers, ListAccessKeys and GetAccessKeyLastUsed and no other IAM call
+        beyond the account anchor's own."""
+        monkeypatch.setitem(
+            _CANNED, "list_users", {"Users": [{"UserName": "alice", "Arn": f"arn:aws:iam::{_ACCOUNT}:user/alice"}]}
+        )
+        monkeypatch.setitem(
+            _CANNED, "list_access_keys", {"AccessKeyMetadata": [{"AccessKeyId": "AKIAEXAMPLEKEYA", "Status": "Active"}]}
+        )
+        _install(monkeypatch, include_types=["iam:iam_access_key"])
+        _run()
+        iam_ops = {op for service, op in _RecordingClient.calls if service == "iam"}
+        # The account anchor is never filtered (`-3`) and reads its own IAM posture: the alias, the password policy
+        # and the credential report's state. Everything else is the credential walk, narrowed to the access key.
+        anchor_ops = {"list_account_aliases", "get_account_password_policy", "get_credential_report"}
+        assert iam_ops - anchor_ops == {"list_users", "list_access_keys", "get_access_key_last_used"}, iam_ops
+
+
+@pytest.mark.django_db
 class TestFailClosed:
     @pytest.mark.spec("req-aws-collector-selection-4")
     @pytest.mark.parametrize("key", ["include_types", "exclude_types"])

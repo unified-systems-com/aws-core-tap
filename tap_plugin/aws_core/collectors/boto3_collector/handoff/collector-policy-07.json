@@ -2,6 +2,27 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadRedshift",
+      "Effect": "Allow",
+      "Action": [
+        "redshift:DescribeClusterParameterGroups",
+        "redshift:DescribeClusterSecurityGroups",
+        "redshift:DescribeClusterSnapshots",
+        "redshift:DescribeClusterSubnetGroups",
+        "redshift:DescribeClusters",
+        "redshift:DescribeEndpointAccess",
+        "redshift:DescribeEventSubscriptions",
+        "redshift:DescribeIntegrations",
+        "redshift:DescribeQev2IdcApplications",
+        "redshift:DescribeRedshiftIdcApplications",
+        "redshift:DescribeScheduledActions",
+        "redshift:DescribeSnapshotCopyGrants",
+        "redshift:DescribeSnapshotSchedules",
+        "redshift:DescribeUsageLimits"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadRedshiftServerless",
       "Effect": "Allow",
       "Action": [
@@ -153,112 +174,6 @@
         "s3-outposts:ListEndpoints",
         "s3-outposts:ListOutpostsWithS3",
         "s3-outposts:ListRegionalBuckets"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadSagemaker",
-      "Effect": "Allow",
-      "Action": [
-        "sagemaker:DescribeAIWorkloadConfig",
-        "sagemaker:DescribeAlgorithm",
-        "sagemaker:DescribeCluster",
-        "sagemaker:DescribeClusterSchedulerConfig",
-        "sagemaker:DescribeComputeQuota",
-        "sagemaker:DescribeDeviceFleet",
-        "sagemaker:DescribeDomain",
-        "sagemaker:DescribeEndpoint",
-        "sagemaker:DescribeEndpointConfig",
-        "sagemaker:DescribeExperiment",
-        "sagemaker:DescribeFeatureGroup",
-        "sagemaker:DescribeInferenceComponent",
-        "sagemaker:DescribeInferenceExperiment",
-        "sagemaker:DescribeMlflowApp",
-        "sagemaker:DescribeMlflowTrackingServer",
-        "sagemaker:DescribeModel",
-        "sagemaker:DescribeModelCard",
-        "sagemaker:DescribeModelPackage",
-        "sagemaker:DescribeNotebookInstance",
-        "sagemaker:DescribePartnerApp",
-        "sagemaker:DescribePipeline",
-        "sagemaker:DescribeProcessingJob",
-        "sagemaker:DescribeProject",
-        "sagemaker:DescribeSpace",
-        "sagemaker:DescribeTrialComponent",
-        "sagemaker:DescribeUserProfile",
-        "sagemaker:ListAIWorkloadConfigs",
-        "sagemaker:ListAlgorithms",
-        "sagemaker:ListAppImageConfigs",
-        "sagemaker:ListClusterSchedulerConfigs",
-        "sagemaker:ListClusters",
-        "sagemaker:ListCodeRepositories",
-        "sagemaker:ListComputeQuotas",
-        "sagemaker:ListDataQualityJobDefinitions",
-        "sagemaker:ListDeviceFleets",
-        "sagemaker:ListDevices",
-        "sagemaker:ListDomains",
-        "sagemaker:ListEndpointConfigs",
-        "sagemaker:ListEndpoints",
-        "sagemaker:ListExperiments",
-        "sagemaker:ListFeatureGroups",
-        "sagemaker:ListHubs",
-        "sagemaker:ListHumanTaskUis",
-        "sagemaker:ListImageVersions",
-        "sagemaker:ListImages",
-        "sagemaker:ListInferenceComponents",
-        "sagemaker:ListInferenceExperiments",
-        "sagemaker:ListMlflowApps",
-        "sagemaker:ListMlflowTrackingServers",
-        "sagemaker:ListModelBiasJobDefinitions",
-        "sagemaker:ListModelCards",
-        "sagemaker:ListModelExplainabilityJobDefinitions",
-        "sagemaker:ListModelPackageGroups",
-        "sagemaker:ListModelPackages",
-        "sagemaker:ListModelQualityJobDefinitions",
-        "sagemaker:ListModels",
-        "sagemaker:ListMonitoringSchedules",
-        "sagemaker:ListNotebookInstanceLifecycleConfigs",
-        "sagemaker:ListNotebookInstances",
-        "sagemaker:ListPartnerApps",
-        "sagemaker:ListPipelines",
-        "sagemaker:ListProcessingJobs",
-        "sagemaker:ListProjects",
-        "sagemaker:ListSpaces",
-        "sagemaker:ListStudioLifecycleConfigs",
-        "sagemaker:ListTags",
-        "sagemaker:ListTrialComponents",
-        "sagemaker:ListUserProfiles",
-        "sagemaker:ListWorkforces",
-        "sagemaker:ListWorkteams"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadScheduler",
-      "Effect": "Allow",
-      "Action": [
-        "scheduler:GetSchedule",
-        "scheduler:ListScheduleGroups",
-        "scheduler:ListSchedules",
-        "scheduler:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadSchemas",
-      "Effect": "Allow",
-      "Action": [
-        "schemas:ListDiscoverers",
-        "schemas:ListRegistries",
-        "schemas:ListSchemas"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadSecretsmanager",
-      "Effect": "Allow",
-      "Action": [
-        "secretsmanager:ListSecrets"
       ],
       "Resource": "*"
     }

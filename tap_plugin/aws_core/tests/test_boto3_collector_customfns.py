@@ -291,6 +291,16 @@ class _FakeIam:
             )
         return {"AccountAliases": self._aliases, "ResponseMetadata": {"RequestId": "x"}}
 
+    def get_account_password_policy(self, **_kw):
+        if self._raise:
+            raise ClientError({"Error": {"Code": "AccessDenied", "Message": "denied"}}, "GetAccountPasswordPolicy")
+        raise ClientError({"Error": {"Code": "NoSuchEntity", "Message": "no policy"}}, "GetAccountPasswordPolicy")
+
+    def get_credential_report(self, **_kw):
+        if self._raise:
+            raise ClientError({"Error": {"Code": "AccessDenied", "Message": "denied"}}, "GetCredentialReport")
+        raise ClientError({"Error": {"Code": "ReportNotPresent", "Message": "none"}}, "GetCredentialReport")
+
 
 class _FakeOrganizations:
     def __init__(self, account):
@@ -351,6 +361,18 @@ class TestAwsAccountSingleton:
         item = next(iter(aws_account_singleton(_FakeAccountSession(iam_raises=True))))
         assert item["_account_name"] == "AWS Account 180731181784"
         assert item["_account_aliases"] == []
+
+    @pytest.mark.spec("req-aws-core-iam-credentials-6", "req-aws-core-iam-credentials-5")
+    def test_no_policy_and_no_report_are_answers_not_unread(self):
+        item = next(iter(aws_account_singleton(_FakeAccountSession(aliases=[]))))
+        assert (item["_password_policy_present"], item["_password_policy"]) == (False, None)
+        assert (item["_credential_report_state"], item["_credential_report_generated_at"]) == ("not_present", "")
+
+    @pytest.mark.spec("req-aws-core-iam-credentials-6", "req-aws-core-iam-credentials-5")
+    def test_a_denied_policy_and_report_are_unread(self):
+        item = next(iter(aws_account_singleton(_FakeAccountSession(iam_raises=True))))
+        assert (item["_password_policy_present"], item["_password_policy"]) == (None, None)
+        assert (item["_credential_report_state"], item["_credential_report_generated_at"]) == (None, None)
 
 
 # ---------------------------------------------------------------------------

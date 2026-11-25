@@ -1976,6 +1976,125 @@ class IamServerCertificateFalsifier(_IamAccountListedFalsifier):
         )
 
 
+class _IamUserCredentialFalsifier(_IamFalsifier):
+    """Shared shape for an IAM user's credentials (aws-core-tap#282): an access key, an SSH public key, a signing
+    certificate and a service-specific credential.
+
+    A credential is gone when a complete listing of its user's credentials of that kind (``ListAccessKeys`` and its
+    siblings, read to the last page) no longer names its id. None of the four has a ``Get`` call that answers by id
+    alone without returning key material (``GetSSHPublicKey`` returns the key body), so the listing is the probe; it
+    is looked up by the user and matched by the id, so ``REIDENTIFIED`` cannot occur. The user's stored name is bound
+    to its own ARN, and the ARN's account to the row's, before any call (the ``IamUserFalsifier`` discipline): the
+    listing takes only a bare user name.
+
+    ``NoSuchEntity`` (the user itself is gone) is ``UNDETERMINED``, not absence: the user's own falsifier retires the
+    user, and a contained cascade takes its credentials with it; the next run, which no longer observes the user,
+    derives no candidate under it (``Route53RecordSetFalsifier`` makes the same call for a deleted zone).
+
+    Subclasses name the row's id field, the listing, its items key and the id member in each item.
+    """
+
+    id_field: str = ""
+    method: str = ""
+    items_key: str = ""
+    id_member: str = ""
+    noun: str = "IAM credential"
+
+    def judge(self, session: ProbeSession, account_id: str, candidate: Candidate) -> Verdict:
+        row = _row_of(candidate.entity_id)
+        if row is None:
+            return _undetermined(candidate, "errored", "the grid row could not be read")
+        credential_id = str(getattr(row, self.id_field, "") or "")
+        user_name = str(getattr(row, "user_name", "") or "")
+        user_arn = str(getattr(row, "user_arn", "") or "")
+        if not credential_id or not user_name or not user_arn:
+            return _undetermined(
+                candidate, "scope_unknown", f"the grid holds no id, user name or user ARN for this {self.noun}"
+            )
+        expected_account = _dimensions_of(row).get("aws.account") or None
+        scoped = self._scope_check(candidate, account_id, expected_account)
+        if scoped is not None:
+            return scoped
+        if account_of_iam_arn(user_arn) != expected_account:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's user ARN ({user_arn!r}) names a different account than the one this {self.noun} was "
+                f"observed in ({expected_account}); a name-keyed listing here would ask about another account's user",
+            )
+        if _arn_resource_name(user_arn) != user_name:
+            return _undetermined(
+                candidate,
+                "scope_unknown",
+                f"the grid's stored user name ({user_name!r}) does not match the resource name in its own user ARN "
+                f"({user_arn!r}); listing by name would ask about a different user than the one this ARN claims",
+            )
+        expected = Expected(source_id=credential_id, owner=None, name=None)
+        client = session.client("iam", region_name=iam_endpoint_region(user_arn))
+        try:
+            listed = _probe_all(getattr(client, self.method), self.items_key, token="Marker", UserName=user_name)
+        except ClientError as exc:
+            if error_code_of(exc) == "NoSuchEntity":
+                return _undetermined(
+                    candidate,
+                    "errored",
+                    f"the user {user_name} is gone; its credentials go with the user's own retirement, not this falsifier",
+                )
+            return _failed_probe(candidate, expected, exc)
+        except (BotoCoreError, _ProbePagesExceeded) as exc:
+            return _failed_probe(candidate, expected, exc)
+        if credential_id not in {str(item.get(self.id_member) or "") for item in listed if isinstance(item, dict)}:
+            return verdict_from_probe(
+                candidate,
+                expected,
+                Probe(status="not_found", detail=f"{NOT_FOUND_DETAIL} (the complete {self.items_key} listing of the user no longer names it)"),
+            )
+        return _finish(candidate, expected, Probe(status="found", source_id=credential_id, detail=f"{self.method} names it"))
+
+
+class IamAccessKeyFalsifier(_IamUserCredentialFalsifier):
+    """``iam:ListAccessKeys(UserName)``; absent from the user's complete listing -> gone."""
+
+    id_field = "access_key_id"
+    method = "list_access_keys"
+    items_key = "AccessKeyMetadata"
+    id_member = "AccessKeyId"
+    noun = "IAM access key"
+
+
+class IamSshPublicKeyFalsifier(_IamUserCredentialFalsifier):
+    """``iam:ListSSHPublicKeys(UserName)``; absent from the user's complete listing -> gone. The listing names the key
+    by id, which is all the probe needs; ``GetSSHPublicKey`` (the collector's call, for the fingerprint) is not made."""
+
+    id_field = "ssh_public_key_id"
+    method = "list_ssh_public_keys"
+    items_key = "SSHPublicKeys"
+    id_member = "SSHPublicKeyId"
+    noun = "IAM SSH public key"
+
+
+class IamSigningCertificateFalsifier(_IamUserCredentialFalsifier):
+    """``iam:ListSigningCertificates(UserName)``; absent from the user's complete listing -> gone. The listing returns
+    each certificate's body; the probe reads only the ids."""
+
+    id_field = "certificate_id"
+    method = "list_signing_certificates"
+    items_key = "Certificates"
+    id_member = "CertificateId"
+    noun = "IAM signing certificate"
+
+
+class IamServiceSpecificCredentialFalsifier(_IamUserCredentialFalsifier):
+    """``iam:ListServiceSpecificCredentials(UserName)`` (every service); absent from the user's complete listing ->
+    gone."""
+
+    id_field = "service_specific_credential_id"
+    method = "list_service_specific_credentials"
+    items_key = "ServiceSpecificCredentials"
+    id_member = "ServiceSpecificCredentialId"
+    noun = "IAM service-specific credential"
+
+
 # ---------------------------------------------------------------------------
 # Landing zone (aws-core-tap#66, spec-aws-core-landing-zone.md): Control Tower, Identity Center and
 # the per-region security services. Registered, not armed: reconcile authority stays off, so none of
@@ -3005,6 +3124,7 @@ __all__ = [
     "PermissionSetFalsifier",
     "SecurityHubHubFalsifier",
     "Ec2InstanceFalsifier",
+    "IamAccessKeyFalsifier",
     "IamGroupFalsifier",
     "IamInstanceProfileFalsifier",
     "IamOidcProviderFalsifier",
@@ -3012,6 +3132,9 @@ __all__ = [
     "IamRoleFalsifier",
     "IamSamlProviderFalsifier",
     "IamServerCertificateFalsifier",
+    "IamServiceSpecificCredentialFalsifier",
+    "IamSigningCertificateFalsifier",
+    "IamSshPublicKeyFalsifier",
     "IamUserFalsifier",
     "OrganizationalUnitFalsifier",
     "S3BucketFalsifier",

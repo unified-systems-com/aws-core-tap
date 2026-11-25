@@ -360,10 +360,6 @@
       "state": "excluded",
       "reason": "A setting or sub-configuration of an account, a region or another resource, identified by CatalogId, with no ARN of its own: the CloudFormation schema exposes no ARN property for it. It is a property of what it configures, not a resource."
     },
-    "AWS::IAM::AccessKey": {
-      "state": "excluded",
-      "reason": "An access key has no ARN and is a credential: the id is an identifier under its user and the secret is returned only at creation. Key age and status are properties of the user, to be added to aws_iam_user under their own type work, not a node."
-    },
     "AWS::IAM::GroupPolicy": {
       "state": "excluded",
       "reason": "An inline group policy has no ARN of its own: it is identified by the group and a policy name, and exists only as part of the group. Its document is content of the group, not a resource."
@@ -2812,6 +2808,27 @@
       "cfn": [
         "AWS::IAM::VirtualMFADevice"
       ]
+    },
+    "aws_core__aws_iam_access_key": {
+      "cfn": [
+        "AWS::IAM::AccessKey"
+      ]
+    },
+    "aws_core__aws_iam_ssh_public_key": {
+      "cfn": [],
+      "reason": "An SSH public key an IAM user uploads (for CodeCommit); CloudFormation has no resource type for it."
+    },
+    "aws_core__aws_iam_signing_certificate": {
+      "cfn": [],
+      "reason": "An X.509 signing certificate an IAM user uploads; CloudFormation has no resource type for it."
+    },
+    "aws_core__aws_iam_service_specific_credential": {
+      "cfn": [],
+      "reason": "A credential an IAM user holds for one AWS service (CodeCommit, Keyspaces, Bedrock); CloudFormation has no resource type for it."
+    },
+    "aws_core__aws_iam_root_user": {
+      "cfn": [],
+      "reason": "The account's root user, described only by the credential report; it is not a CloudFormation resource."
     },
     "aws_core__aws_identity_center_account_assignment": {
       "cfn": [
@@ -6044,6 +6061,10 @@
     "AWS::IAM::VirtualMFADevice": {
       "taggable": true,
       "citation": "botocore 1.43.121 service model iam defines TagMFADevice, UntagMFADevice and ListMFADeviceTags, so a virtual MFA device has tags; the CloudFormation schema is silent"
+    },
+    "AWS::IAM::AccessKey": {
+      "taggable": false,
+      "citation": "botocore 1.44.7 service model iam defines no Tag, Untag or List*Tags operation for an access key (it defines them for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates)"
     },
     "AWS::Lambda::Alias": {
       "taggable": false,

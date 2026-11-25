@@ -2,6 +2,37 @@
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "ReadLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeDeliveries",
+        "logs:DescribeDeliveryDestinations",
+        "logs:DescribeDeliverySources",
+        "logs:DescribeDestinations",
+        "logs:DescribeLogGroups",
+        "logs:DescribeMetricFilters",
+        "logs:DescribeQueryDefinitions",
+        "logs:DescribeSubscriptionFilters",
+        "logs:ListIntegrations",
+        "logs:ListLogAnomalyDetectors",
+        "logs:ListScheduledQueries",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ReadM2",
+      "Effect": "Allow",
+      "Action": [
+        "m2:GetApplication",
+        "m2:GetEnvironment",
+        "m2:ListApplications",
+        "m2:ListEnvironments",
+        "m2:ListTagsForResource"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "ReadManagedblockchain",
       "Effect": "Allow",
       "Action": [
@@ -261,27 +292,6 @@
         "rds:DescribeIntegrations",
         "rds:DescribeOptionGroups",
         "rds:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadRedshift",
-      "Effect": "Allow",
-      "Action": [
-        "redshift:DescribeClusterParameterGroups",
-        "redshift:DescribeClusterSecurityGroups",
-        "redshift:DescribeClusterSnapshots",
-        "redshift:DescribeClusterSubnetGroups",
-        "redshift:DescribeClusters",
-        "redshift:DescribeEndpointAccess",
-        "redshift:DescribeEventSubscriptions",
-        "redshift:DescribeIntegrations",
-        "redshift:DescribeQev2IdcApplications",
-        "redshift:DescribeRedshiftIdcApplications",
-        "redshift:DescribeScheduledActions",
-        "redshift:DescribeSnapshotCopyGrants",
-        "redshift:DescribeSnapshotSchedules",
-        "redshift:DescribeUsageLimits"
       ],
       "Resource": "*"
     }

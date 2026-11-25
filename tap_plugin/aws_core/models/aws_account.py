@@ -114,6 +114,26 @@ class AwsAccount(BaseModel):
         "s3_ignore_public_acls": {"type": ["boolean", "null"]},
         "s3_block_public_policy": {"type": ["boolean", "null"]},
         "s3_restrict_public_buckets": {"type": ["boolean", "null"]},
+        # The account password policy (iam:GetAccountPasswordPolicy; ruling Q143c, 2026-11-23). present is true
+        # when AWS returned a policy, false when it answered NoSuchEntity (the account has none), null when the read
+        # was denied or failed. Each setting is AWS's value, null when there is no policy, the read failed, or AWS
+        # left the member out (HardExpiry, MaxPasswordAge when passwords do not expire).
+        "password_policy_present": {"type": ["boolean", "null"]},
+        "password_minimum_length": {"type": ["integer", "null"]},
+        "password_require_symbols": {"type": ["boolean", "null"]},
+        "password_require_numbers": {"type": ["boolean", "null"]},
+        "password_require_uppercase": {"type": ["boolean", "null"]},
+        "password_require_lowercase": {"type": ["boolean", "null"]},
+        "password_allow_users_to_change": {"type": ["boolean", "null"]},
+        "password_expire_passwords": {"type": ["boolean", "null"]},
+        "password_max_age_days": {"type": ["integer", "null"]},
+        "password_reuse_prevention": {"type": ["integer", "null"]},
+        "password_hard_expiry": {"type": ["boolean", "null"]},
+        # The credential report (iam:GetCredentialReport; ruling Q143a): present, not_present (AWS has none),
+        # expired or in_progress; null when the read was denied or failed. generated_at is when AWS built it;
+        # "" when there is none to date.
+        "credential_report_state": {"type": ["string", "null"]},
+        "credential_report_generated_at": {"type": ["string", "null"]},
     }
 
     FIELD_VALIDATION_SCHEMA: ClassVar[dict[str, Any]] = {
@@ -127,6 +147,19 @@ class AwsAccount(BaseModel):
         "s3_ignore_public_acls": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "s3_block_public_policy": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "s3_restrict_public_buckets": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_policy_present": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_minimum_length": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
+        "password_require_symbols": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_require_numbers": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_require_uppercase": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_require_lowercase": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_allow_users_to_change": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_expire_passwords": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "password_max_age_days": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
+        "password_reuse_prevention": {"validation": "jsonschema", "schema": {"type": ["integer", "null"]}},
+        "password_hard_expiry": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "credential_report_state": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "credential_report_generated_at": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
     }
     # account_id is NOT required at create: a designed account (dcom=design) exists on the grid
     # before AWS has minted it, so its id is not observed yet. Blank (the field default) means
@@ -144,6 +177,19 @@ class AwsAccount(BaseModel):
     s3_ignore_public_acls = models.BooleanField(null=True, blank=True, default=None)
     s3_block_public_policy = models.BooleanField(null=True, blank=True, default=None)
     s3_restrict_public_buckets = models.BooleanField(null=True, blank=True, default=None)
+    password_policy_present = models.BooleanField(null=True, blank=True, default=None)
+    password_minimum_length = models.IntegerField(null=True, blank=True, default=None)
+    password_require_symbols = models.BooleanField(null=True, blank=True, default=None)
+    password_require_numbers = models.BooleanField(null=True, blank=True, default=None)
+    password_require_uppercase = models.BooleanField(null=True, blank=True, default=None)
+    password_require_lowercase = models.BooleanField(null=True, blank=True, default=None)
+    password_allow_users_to_change = models.BooleanField(null=True, blank=True, default=None)
+    password_expire_passwords = models.BooleanField(null=True, blank=True, default=None)
+    password_max_age_days = models.IntegerField(null=True, blank=True, default=None)
+    password_reuse_prevention = models.IntegerField(null=True, blank=True, default=None)
+    password_hard_expiry = models.BooleanField(null=True, blank=True, default=None)
+    credential_report_state = models.CharField(max_length=64, null=True, blank=True, default=None)
+    credential_report_generated_at = models.CharField(max_length=64, null=True, blank=True, default=None)
 
     class Meta(BaseModel.Meta):
         db_table = "aws_core__aws_account"

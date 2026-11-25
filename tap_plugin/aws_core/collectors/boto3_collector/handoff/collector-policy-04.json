@@ -229,8 +229,14 @@
       "Sid": "ReadIam",
       "Effect": "Allow",
       "Action": [
+        "iam:GetAccessKeyLastUsed",
+        "iam:GetAccountPasswordPolicy",
+        "iam:GetCredentialReport",
+        "iam:GetLoginProfile",
         "iam:GetRole",
+        "iam:GetSSHPublicKey",
         "iam:GetUser",
+        "iam:ListAccessKeys",
         "iam:ListAttachedGroupPolicies",
         "iam:ListAttachedRolePolicies",
         "iam:ListAttachedUserPolicies",
@@ -240,8 +246,12 @@
         "iam:ListOpenIDConnectProviderTags",
         "iam:ListPolicyTags",
         "iam:ListRoleTags",
+        "iam:ListSSHPublicKeys",
         "iam:ListServerCertificateTags",
-        "iam:ListUserTags"
+        "iam:ListServiceSpecificCredentials",
+        "iam:ListSigningCertificates",
+        "iam:ListUserTags",
+        "iam:ListUsers"
       ],
       "Resource": "*"
     },
@@ -263,22 +273,6 @@
         "inspector:ListAssessmentTargets",
         "inspector:ListAssessmentTemplates",
         "inspector:ListTagsForResource"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "ReadInspector2",
-      "Effect": "Allow",
-      "Action": [
-        "inspector2:BatchGetAccountStatus",
-        "inspector2:ListCisScanConfigurations",
-        "inspector2:ListCodeSecurityIntegrations",
-        "inspector2:ListCodeSecurityScanConfigurations",
-        "inspector2:ListConnectors",
-        "inspector2:ListFilters",
-        "inspector2:ListFindingAggregations",
-        "inspector2:ListFindings",
-        "inspector2:ListTagsForResource"
       ],
       "Resource": "*"
     }

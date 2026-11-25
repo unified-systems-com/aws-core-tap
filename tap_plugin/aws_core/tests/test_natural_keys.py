@@ -51,7 +51,10 @@ def test_collected_types_key_on_what_the_collector_keys_on() -> None:
             # column is projected by the entry, and its natural_key is a scoped composite of them, the batch ref only.
             assert set(model.NATURAL_KEY) <= set(entry["fields"]), (entry["entity_type"], model.NATURAL_KEY)
             assert entry["natural_key"] not in entry["fields"].values(), entry["entity_type"]
-            scope = SHARED_ACROSS_ACCOUNTS.get(entry["entity_type"], ("{partition}:{account}:{region}:", ""))[0]
+            # A global entry puts the literal ``global`` in the region place (req-aws-collector-identity-8): the IAM
+            # credentials of aws-core-tap#282.
+            regional = "{partition}:{account}:global:" if entry["scope"] == "global" else "{partition}:{account}:{region}:"
+            scope = SHARED_ACROSS_ACCOUNTS.get(entry["entity_type"], (regional, ""))[0]
             assert entry["derive"][entry["natural_key"]].startswith(scope), entry["entity_type"]
             continue
         projected = [field for field, path in entry["fields"].items() if path == entry["natural_key"]]

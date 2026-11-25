@@ -1,0 +1,17 @@
+{
+  "slug": "HOLDS_SIGNING_CERTIFICATE__aws_core",
+  "name": "Holds Signing Certificate",
+  "description": "An IAM user holds an X.509 signing certificate (user -> credential), as the user's ListSigningCertificates names it. Containment: the credential belongs to exactly one user and goes when the user does; when a complete listing of the user no longer names it, it is a retirement candidate for its falsifier, so a deleted credential does not stay Active on the grid (aws-core-tap#282).",
+  "sources": [
+    "aws_core__aws_iam_user"
+  ],
+  "targets": [
+    "aws_core__aws_iam_signing_certificate"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

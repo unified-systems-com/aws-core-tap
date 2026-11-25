@@ -1,0 +1,17 @@
+{
+  "slug": "HOLDS_ACCESS_KEY__aws_core",
+  "name": "Holds Access Key",
+  "description": "An IAM user holds an access key (user -> credential), as the user's ListAccessKeys names it. Containment: the credential belongs to exactly one user and goes when the user does; when a complete listing of the user no longer names it, it is a retirement candidate for its falsifier, so a deleted credential does not stay Active on the grid (aws-core-tap#282).",
+  "sources": [
+    "aws_core__aws_iam_user"
+  ],
+  "targets": [
+    "aws_core__aws_iam_access_key"
+  ],
+  "identity": {
+    "discriminators": []
+  },
+  "default_dimensions": {
+    "tap.computing.cloud": "aws"
+  }
+}

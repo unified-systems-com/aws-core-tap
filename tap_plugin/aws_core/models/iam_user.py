@@ -20,6 +20,31 @@ class IamUser(BaseModel):
     # account.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("user_arn",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:user"
+    # Containment (req-aws-core-iam-credentials, aws-core-tap#282): the user holds its credentials, one edge type per
+    # credential type, so each listing's completeness is stated on its own (a run can say "access keys were read to
+    # the end" without saying anything about SSH keys). A credential a complete listing of its user no longer names is
+    # a retirement candidate, judged by that type's falsifier.
+    OUTBOUND_EDGES: ClassVar[list[dict[str, Any]]] = [
+        {"nodes": [{"type": "aws_core__aws_iam_access_key"}], "edges": [{"type": "HOLDS_ACCESS_KEY__aws_core"}]},
+        {
+            "nodes": [{"type": "aws_core__aws_iam_ssh_public_key"}],
+            "edges": [{"type": "HOLDS_SSH_PUBLIC_KEY__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_iam_signing_certificate"}],
+            "edges": [{"type": "HOLDS_SIGNING_CERTIFICATE__aws_core"}],
+        },
+        {
+            "nodes": [{"type": "aws_core__aws_iam_service_specific_credential"}],
+            "edges": [{"type": "HOLDS_SERVICE_CREDENTIAL__aws_core"}],
+        },
+    ]
+    CONTAINMENT_EDGES: ClassVar[tuple[str, ...]] = (
+        "HOLDS_ACCESS_KEY__aws_core",
+        "HOLDS_SSH_PUBLIC_KEY__aws_core",
+        "HOLDS_SIGNING_CERTIFICATE__aws_core",
+        "HOLDS_SERVICE_CREDENTIAL__aws_core",
+    )
     # Event time (req-grid-entity-event-time, req-aws-core-models-5): when AWS created it (GetUser User.CreateDate, a
     # botocore timestamp), read from configuration['_hydrate']['user']['data']['User']['CreateDate'], where the
     # collector stores it as AWS sent it. AWS states no end for it.
@@ -43,6 +68,9 @@ class IamUser(BaseModel):
         "permissions_boundary_arn": {"type": ["string", "null"]},
         "password_last_used": {"type": ["string", "null"]},
         "attached_policy_arns": {"type": ["array", "null"]},
+        "login_profile_exists": {"type": ["boolean", "null"]},
+        "login_profile_created_at": {"type": ["string", "null"]},
+        "password_reset_required": {"type": ["boolean", "null"]},
         "configuration": {"type": "object"},
         "tags": {"type": ["object", "null"]},
     }
@@ -56,6 +84,9 @@ class IamUser(BaseModel):
         "permissions_boundary_arn": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "password_last_used": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
         "attached_policy_arns": {"validation": "jsonschema", "schema": {"type": ["array", "null"]}},
+        "login_profile_exists": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
+        "login_profile_created_at": {"validation": "jsonschema", "schema": {"type": ["string", "null"]}},
+        "password_reset_required": {"validation": "jsonschema", "schema": {"type": ["boolean", "null"]}},
         "configuration": {"validation": "jsonschema", "schema": {"type": "object"}},
         "tags": {"validation": "jsonschema", "schema": {"type": ["object", "null"]}},
     }
@@ -76,6 +107,14 @@ class IamUser(BaseModel):
     password_last_used = models.CharField(max_length=32, null=True, blank=True, default=None)
     # Managed policies attached directly to the user. NULL = not observed; [] = observed, none.
     attached_policy_arns = models.JSONField(blank=True, null=True, default=None)
+    # The console login profile (GetLoginProfile; ruling Q143d, 2026-11-23): never the password, which AWS does not
+    # return. True = the user has a console password; False = AWS answered NoSuchEntity, no console password; NULL =
+    # not read (denied or failed).
+    login_profile_exists = models.BooleanField(null=True, blank=True, default=None)
+    # ISO 8601 UTC time the login profile was created; "" = no login profile; NULL = not read.
+    login_profile_created_at = models.CharField(max_length=64, null=True, blank=True, default=None)
+    # Whether the user must set a new password at next sign-in; NULL when there is no login profile or it was not read.
+    password_reset_required = models.BooleanField(null=True, blank=True, default=None)
     configuration = models.JSONField(default=dict, blank=True)
     tags = models.JSONField(null=True, blank=True, default=None)
 

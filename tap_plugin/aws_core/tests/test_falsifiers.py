@@ -421,6 +421,11 @@ class TestFalsifierManifestWiring:
             IAM_INSTANCE_PROFILE: "tap_plugin.aws_core.falsifiers.IamInstanceProfileFalsifier",
             IAM_SAML_PROVIDER: "tap_plugin.aws_core.falsifiers.IamSamlProviderFalsifier",
             IAM_SERVER_CERTIFICATE: "tap_plugin.aws_core.falsifiers.IamServerCertificateFalsifier",
+            # aws-core-tap#282: a user's credentials, each contained by the user (HOLDS_*).
+            "aws_core__aws_iam_access_key": "tap_plugin.aws_core.falsifiers.IamAccessKeyFalsifier",
+            "aws_core__aws_iam_ssh_public_key": "tap_plugin.aws_core.falsifiers.IamSshPublicKeyFalsifier",
+            "aws_core__aws_iam_signing_certificate": "tap_plugin.aws_core.falsifiers.IamSigningCertificateFalsifier",
+            "aws_core__aws_iam_service_specific_credential": "tap_plugin.aws_core.falsifiers.IamServiceSpecificCredentialFalsifier",
             # aws-core-tap#65 (Organizations completeness): the organization's delegations and
             # customer-managed policies, a policy's statements and a tag policy's rules.
             "aws_core__aws_delegated_administration": "tap_plugin.aws_core.falsifiers.DelegatedAdministrationFalsifier",
@@ -494,6 +499,10 @@ class TestFalsifierManifestWiring:
             "IamInstanceProfileFalsifier",
             "IamSamlProviderFalsifier",
             "IamServerCertificateFalsifier",
+            "IamAccessKeyFalsifier",
+            "IamSshPublicKeyFalsifier",
+            "IamSigningCertificateFalsifier",
+            "IamServiceSpecificCredentialFalsifier",
         ):
             cls = import_string(f"tap_plugin.aws_core.falsifiers.{name}")
             assert isinstance(cls, type) and issubclass(cls, Falsifier)

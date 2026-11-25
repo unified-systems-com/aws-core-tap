@@ -7,7 +7,8 @@ nothing here writes. Core calls the function with the stored value each time it 
 returns with its one reader, so a function cannot put a form on the spine that core does not take (core rule 24).
 
 Each function is pure (core rule 25): it reads its argument and nothing else. A value it cannot read raises, and core
-then stores no event time for the row and reports the field. Epoch counts need nothing here: core ships
+then stores no event time for the row and reports the field; :func:`certificate_not_after` instead returns None, as
+ruled (Q150b), and core stores no end. Epoch counts need nothing here: core ships
 ``from_epoch_seconds`` and ``from_epoch_milliseconds`` (core rule 27), and the models name those directly.
 
 Changing what a function here returns changes what stored spine values mean with no change of type definition, which
@@ -18,9 +19,15 @@ re-derive pass.
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from typing import Any, Final
 
-__all__ = ["either_created_date", "offset_without_colon"]
+# The X.509 parser: cryptography, which every tap install already carries (tap's own dependencies pull it in through
+# django-allauth[socialaccount] and webauthn, tap/fips.py imports it, and tap's pyproject builds it against the
+# system OpenSSL). aws_core adds no dependency for it. Parsing a certificate's validity reads it and computes nothing.
+from cryptography import x509
+
+__all__ = ["certificate_not_after", "either_created_date", "offset_without_colon"]
 
 # A date and time to the second, an optional fraction, and a UTC offset written as four digits with no colon:
 # Lambda's form, ``2018-11-27T15:10:45.123+0000`` (botocore lambda shape ``Timestamp``, documented with that example
@@ -55,6 +62,26 @@ def offset_without_colon(value: Any) -> str:
     if _WITH_ZONE.fullmatch(value):
         return value
     raise ValueError("not a Lambda timestamp: a date and time to the second, with Z or a UTC offset")
+
+
+def certificate_not_after(value: Any) -> datetime | None:
+    """The end of an X.509 certificate's validity (its notAfter), read from the certificate's PEM text.
+
+    An IAM signing certificate's expiry is not a member of ``ListSigningCertificates``' answer: it is inside the
+    certificate, which AWS returns as PEM text (``CertificateBody``) and the collector stores as AWS sent it (ruling
+    Q150b, 2026-11-24). The instant is the certificate's own, stated in UTC, and returned as a zoned datetime.
+
+    Returns None when the value is not text or holds no certificate this can parse, so the row has no end rather than
+    a guessed one. When the text holds more than one certificate, the first is read: IAM stores one per signing
+    certificate.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        certificate = x509.load_pem_x509_certificate(value.encode("ascii"))
+    except (ValueError, UnicodeEncodeError):
+        return None
+    return certificate.not_valid_after_utc
 
 
 # The member that holds an API Gateway stage's creation time, by service: REST (``apigateway`` GetStages ``item[]``)
