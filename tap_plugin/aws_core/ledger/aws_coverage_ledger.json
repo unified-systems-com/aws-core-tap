@@ -7,9 +7,9 @@
   "botocore_only_services": 132,
   "botocore_services": 435,
   "by_state": {
-   "collected-unverified": 946,
+   "collected-unverified": 947,
    "collected-verified": 0,
-   "excluded": 282,
+   "excluded": 281,
    "modeled": 0,
    "not-enumerable": 17,
    "unclassified": 624
@@ -41,7 +41,7 @@
    "AWS::CloudFront::Distribution"
   ],
   "services": 306,
-  "tags_not_found": 115,
+  "tags_not_found": 114,
   "tier_unknown_unclassified": 242,
   "types": 1869
  },
@@ -85,6 +85,22 @@
   {
    "entity_type": "aws_core__aws_guardduty_finding",
    "reason": "A finding GuardDuty reports; no CloudFormation resource type."
+  },
+  {
+   "entity_type": "aws_core__aws_iam_root_user",
+   "reason": "The account's root user, described only by the credential report; it is not a CloudFormation resource."
+  },
+  {
+   "entity_type": "aws_core__aws_iam_service_specific_credential",
+   "reason": "A credential an IAM user holds for one AWS service (CodeCommit, Keyspaces, Bedrock); CloudFormation has no resource type for it."
+  },
+  {
+   "entity_type": "aws_core__aws_iam_signing_certificate",
+   "reason": "An X.509 signing certificate an IAM user uploads; CloudFormation has no resource type for it."
+  },
+  {
+   "entity_type": "aws_core__aws_iam_ssh_public_key",
+   "reason": "An SSH public key an IAM user uploads (for CodeCommit); CloudFormation has no resource type for it."
   },
   {
    "entity_type": "aws_core__aws_inspector2_finding",
@@ -1162,7 +1178,7 @@
   {"botocore_services": ["medical-imaging"], "cfn": {"has_list_handler": true, "has_tagging_block": true, "primary_identifier": ["/properties/DatastoreId"]}, "entity_types": [], "enumerable_by_botocore": true, "partitions": {"aws": null, "aws-us-gov": null}, "reason": null, "service": "HealthImaging", "state": "unclassified", "tags": {"citation": "CloudFormation schema: tagging.taggable is true", "evidence": "confirmed", "tag_property": "/properties/Tags", "taggable": true, "treatment": null}, "tier": "unknown", "type_name": "AWS::HealthImaging::Datastore"},
   {"botocore_services": ["healthlake"], "cfn": {"has_list_handler": true, "has_tagging_block": true, "primary_identifier": ["/properties/Arn"]}, "entity_types": [], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": false}, "reason": null, "service": "HealthLake", "state": "unclassified", "tags": {"citation": "CloudFormation schema: tagging.taggable is true", "evidence": "confirmed", "tag_property": "/properties/Tags", "taggable": true, "treatment": null}, "tier": "commercial-only", "type_name": "AWS::HealthLake::DataTransformationProfile"},
   {"botocore_services": ["healthlake"], "cfn": {"has_list_handler": true, "has_tagging_block": true, "primary_identifier": ["/properties/DatastoreId"]}, "entity_types": [], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": false}, "reason": null, "service": "HealthLake", "state": "unclassified", "tags": {"citation": "CloudFormation schema: tagging.taggable is true", "evidence": "confirmed", "tag_property": "/properties/Tags", "taggable": true, "treatment": null}, "tier": "commercial-only", "type_name": "AWS::HealthLake::FHIRDatastore"},
-  {"botocore_services": ["iam"], "cfn": {"has_list_handler": false, "has_tagging_block": false, "primary_identifier": ["/properties/Id"]}, "entity_types": [], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": true}, "reason": "An access key has no ARN and is a credential: the id is an identifier under its user and the secret is returned only at creation. Key age and status are properties of the user, to be added to aws_iam_user under their own type work, not a node.", "service": "IAM", "state": "excluded", "tags": {"citation": null, "evidence": "not-found", "tag_property": null, "taggable": null, "treatment": null}, "tier": "both", "type_name": "AWS::IAM::AccessKey"},
+  {"botocore_services": ["iam"], "cfn": {"has_list_handler": false, "has_tagging_block": false, "primary_identifier": ["/properties/Id"]}, "entity_types": ["aws_core__aws_iam_access_key"], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": true}, "reason": null, "service": "IAM", "state": "collected-unverified", "tags": {"citation": "botocore 1.44.7 service model iam defines no Tag, Untag or List*Tags operation for an access key (it defines them for users, roles, policies, instance profiles, MFA devices, OIDC and SAML providers and server certificates)", "evidence": "confirmed", "tag_property": null, "taggable": false, "treatment": "none"}, "tier": "both", "type_name": "AWS::IAM::AccessKey"},
   {"botocore_services": ["iam"], "cfn": {"has_list_handler": true, "has_tagging_block": true, "primary_identifier": ["/properties/GroupName"]}, "entity_types": ["aws_core__aws_iam_group"], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": true}, "reason": null, "service": "IAM", "state": "collected-unverified", "tags": {"citation": "CloudFormation schema: tagging.taggable is false", "evidence": "confirmed", "tag_property": null, "taggable": false, "treatment": "none"}, "tier": "both", "type_name": "AWS::IAM::Group"},
   {"botocore_services": ["iam"], "cfn": {"has_list_handler": false, "has_tagging_block": true, "primary_identifier": ["/properties/PolicyName", "/properties/GroupName"]}, "entity_types": [], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": true}, "reason": "An inline group policy has no ARN of its own: it is identified by the group and a policy name, and exists only as part of the group. Its document is content of the group, not a resource.", "service": "IAM", "state": "excluded", "tags": {"citation": "CloudFormation schema: tagging.taggable is false", "evidence": "confirmed", "tag_property": null, "taggable": false, "treatment": "none"}, "tier": "both", "type_name": "AWS::IAM::GroupPolicy"},
   {"botocore_services": ["iam"], "cfn": {"has_list_handler": true, "has_tagging_block": true, "primary_identifier": ["/properties/InstanceProfileName"]}, "entity_types": ["aws_core__aws_iam_instance_profile"], "enumerable_by_botocore": true, "partitions": {"aws": true, "aws-us-gov": true}, "reason": null, "service": "IAM", "state": "collected-unverified", "tags": {"citation": "botocore 1.43.121 service model iam defines TagInstanceProfile, UntagInstanceProfile and ListInstanceProfileTags, so an instance profile has tags; the CloudFormation schema is silent (overrides the CloudFormation schema, which says taggable is false)", "evidence": "confirmed", "tag_property": "/properties/Tags", "taggable": true, "treatment": "side-call"}, "tier": "both", "type_name": "AWS::IAM::InstanceProfile"},

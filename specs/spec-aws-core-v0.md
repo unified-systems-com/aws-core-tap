@@ -33,6 +33,7 @@ v0 is intentionally scoped to the "meat and potatoes" AWS resources common to mo
 | req-aws-core-organizations | [Organizations Tree](#organizations-tree) | Implemented | Organization (as its own root), OU and SCP design vocabulary; the tree and SCP attachment edges |
 | req-aws-core-organizations-collect | [Organizations Tree Collection And Reconciliation](#organizations-tree-collection-and-reconciliation) | Implemented | A collector for the Organizations tree; two new parent -> child containment edges with completeness surfaces; `OrganizationalUnitFalsifier` / `AccountFalsifier` |
 | req-aws-core-identity-center | [IAM Identity Center](#iam-identity-center) | Implemented | Identity Center instance design vocabulary and its open edge to an external identity provider |
+| req-aws-core-iam-credentials | [IAM Credential Hygiene](#iam-credential-hygiene) | Proposed | Access keys, SSH public keys, signing certificates and service-specific credentials as nodes contained by their user, each with a surface per user and a falsifier; the root user from the credential report; the password policy on the account; the login profile on the user. `GenerateCredentialReport` only behind an operator option, a written exception to the read-only invariant (aws-core-tap#282) |
 | req-aws-core-transit-gateway | [Transit Gateway](#transit-gateway) | Implemented | Transit gateway and attachment design vocabulary; attachment, VPC and peering edges |
 | req-aws-core-placement | [Resource Placement](#resource-placement) | Implemented | Account, VPC and subnet placement edges; a VPC contains its subnets |
 | req-aws-core-account-dimension | [Account Membership Is A Dimension](#account-membership-is-a-dimension) | Implemented | A resource's account is the `aws_account` dimension; `BELONGS_TO_ACCOUNT` is written only for a different owner (aws-core-tap#81) |
@@ -86,7 +87,7 @@ The plugin covers:
 - storage (S3, EBS)
 - databases (RDS, DynamoDB, ElastiCache, Elasticsearch/OpenSearch)
 - networking (VPC, Subnet, Security Group, Network ACL, Internet Gateway, NAT Gateway, Elastic IP, Route Table, ALB, ELB, Target Group, Route 53, Network Firewall, Transit Gateway, Transit Gateway Attachment, Direct Connect connection / gateway / virtual interface, VPC endpoint and endpoint service, Route 53 Resolver DNS Firewall rule group)
-- identity and access (IAM User, IAM Role, IAM Policy, IAM OIDC Provider, IAM Identity Center instance)
+- identity and access (IAM User, IAM Role, IAM Policy, IAM OIDC Provider, IAM Identity Center instance, and an IAM user's access keys, SSH public keys, signing certificates and service-specific credentials, and the root user)
 - organization structure (Organization, Organizational Unit, Service Control Policy)
 - security and configuration (ACM Certificate, ACM Private CA, Secrets Manager, SSM Parameter Store)
 - developer tools (CodePipeline pipeline, CodeBuild project)
@@ -130,7 +131,7 @@ drifts on every model added; the manifest + validator own "which models exist").
 | Storage | S3Bucket, EbsVolume |
 | Database | RdsInstance, DynamoDbTable, ElasticsearchDomain, ElasticacheCluster |
 | Networking | Vpc, Subnet, SecurityGroup, NetworkAcl, InternetGateway, NatGateway, ElasticIp, RouteTable, Alb, Elb, TargetGroup, Route53HostedZone, NetworkFirewall, CloudfrontDistribution, TransitGateway, TransitGatewayAttachment, DxConnection, DxGateway, DxVirtualInterface, VpcEndpointService, VpcEndpoint, Route53ResolverFirewallRuleGroup |
-| Identity/Security | IamUser, IamRole, IamPolicy, AcmCertificate, SecretsManagerSecret, SsmParameter, AwsIdentityCenterInstance, AcmPrivateCa |
+| Identity/Security | IamUser, IamRole, IamPolicy, IamAccessKey, IamSshPublicKey, IamSigningCertificate, IamServiceSpecificCredential, IamRootUser, AcmCertificate, SecretsManagerSecret, SsmParameter, AwsIdentityCenterInstance, AcmPrivateCa |
 | AI | BedrockModel, SagemakerEndpoint |
 | Observability | CloudwatchLogGroup |
 | Integration | EventbridgeRule |
@@ -968,6 +969,126 @@ workforce users from (for example Okta). Design vocabulary, as above.
 | req-aws-core-identity-center-2 | Designable Before AWS Mints Ids | Implemented | The instance creates with only `name`. | |
 | req-aws-core-identity-center-3 | Open Identity-Source Edge | Implemented | `TRUSTS_IDENTITY_SOURCE` declares only an Identity Center instance as its source, and leaves its target open. | aws_core stays dependency-free. |
 
+### IAM Credential Hygiene
+----
+RID: `req-aws-core-iam-credentials`
+
+Status: `Proposed`
+
+aws-core-tap#282 (omissions row U5), part 1. aws_core collected IAM users, roles, groups, policies and virtual
+MFA devices, but none of the credential facts that FedRAMP and CIS checks rest on: a user's access keys and their
+last use, SSH public keys, signing certificates, service-specific credentials, the console login profile, the
+account password policy, and the root user's credential use. George's rulings of 2026-11-23 (Q142, Q143) and
+2026-11-24 (Q150) settle the shape below. Built and tested against fake sources; the live trial waits on the seeder's permissions.
+
+#### Implementation
+
+**Four credential types, each its own node** (Q142a, Q142b). `aws_iam_access_key`, `aws_iam_ssh_public_key`,
+`aws_iam_signing_certificate` and `aws_iam_service_specific_credential`. None has an ARN, so each is keyed by
+`(partition, account_id, <credential id>)`: AWS's own id for it (`AccessKeyId`, `SSHPublicKeyId`, `CertificateId`,
+`ServiceSpecificCredentialId`), scoped by partition and account. The access key follows CloudFormation's
+`AWS::IAM::AccessKey` identifier (the coverage ledger's former exclusion, "a property of the user", is flipped);
+the other three have no CloudFormation type and say so in their identity declaration. Each carries its holding
+user's name and ARN, its status (`Active`, `Inactive`, `Expired`) and its creation or upload time. The access key
+also carries `GetAccessKeyLastUsed`'s date, service and region (`""` when AWS reports the key never used, `null`
+when the call did not answer). The service-specific credential carries its service, service user name, alias and
+expiry. AWS has no tag operation for any of the four (botocore 1.44.7), so `tags` is always `{}`.
+
+**No secret; public material only where ruled.** Never a secret, a password or a private key. AWS returns a secret
+access key or service password only from the Create/Reset calls, which are never made. The SSH public key carries
+its `fingerprint`, from `GetSSHPublicKey` called per key with `Encoding="SSH"` (a hydrate op, slot `public_key`;
+`null` when the call did not answer); the key body that call returns beside it is removed by the reader
+(`iam_credentials._fingerprint`) before the item leaves the walk, and is never stored (ruling Q150a, 2026-11-24).
+`ListSigningCertificates` returns each certificate's body (public PEM text) with its row, and it is kept in
+`configuration` as AWS sent it (ruling Q150b, 2026-11-24): its notAfter is the certificate's end.
+
+**Containment and retirement.** `aws_iam_user` holds each credential through its own edge type:
+`HOLDS_ACCESS_KEY`, `HOLDS_SSH_PUBLIC_KEY`, `HOLDS_SIGNING_CERTIFICATE`, `HOLDS_SERVICE_CREDENTIAL`, all in the
+user's `CONTAINMENT_EDGES`. One edge type per credential type, so a run can say "access keys were read to the
+end" without saying anything about SSH keys. `collectors/boto3_collector/iam_credentials.py` lists the account's
+users once per run and, per user, the four listings (`ListAccessKeys`, `ListSSHPublicKeys`,
+`ListSigningCertificates`, `ListServiceSpecificCredentials` with no service filter), each read to its last page.
+A run that selected only some of the four types (`req-aws-collector-selection-2`) shares `ListUsers` but lists,
+and hydrates (`GetAccessKeyLastUsed`, `GetSSHPublicKey`), only the selected kinds.
+Each (user, edge type) is recorded as a completeness surface after import, the user node as the subject
+(`req-aws-core-contained-type-triple`): a user with none of a kind is complete and empty; a denied, failed or
+short listing is incomplete with its reason and contributes no items. Each type has a falsifier
+(`IamAccessKeyFalsifier` and its siblings) that lists the user's credentials of that kind and looks for the id. The
+virtual MFA device, the precedent for a credential-like node linked to a user, has neither containment nor a
+falsifier (it has no Get call and no per-user listing); these four do, so a deleted key does not stay `Active`.
+
+**The credential report** (Q143a). `GetCredentialReport` is the only source of the root user's password, key and
+certificate use. The run reads an existing report and never generates one, unless the operator sets
+`data.generate_credential_report` to `true` (`spec-aws-core-secrets.md`, `req-aws-core-secret-credential-report`;
+default off). Then, and only then, it calls `GenerateCredentialReport` first and waits a bounded time for it.
+
+> **Written exception to the read-only invariant.** aws_core's collector reads; its generated policy grants no
+> write verb (`req-aws-collector-iam-policy-1`). `iam:GenerateCredentialReport` is the one call it can make that
+> changes state in the account: it makes AWS build a new credential report (it changes no configuration and no
+> access). The exception applies only when the operator enables `generate_credential_report`. The call is never
+> in the read policy; it is granted by its own document, `handoff/gated-generate-credential-report-policy.json`,
+> which no handoff template attaches by default (`req-aws-collector-iam-policy-2`). A run with the option on says
+> so in its run record (`CREDENTIAL_REPORT_GENERATION_ON`).
+
+The account records the report's state: `credential_report_state` is `present`, `not_present` (AWS has none),
+`expired` or `in_progress`, and `null` only when the read was denied or failed, so "no report" is never "not
+read". `credential_report_generated_at` is when AWS built it.
+
+**The root user** (Q143b). `aws_iam_root_user`, keyed on the root ARN the report's `arn` column states
+(`req-aws-collector-identity-12`: read, never built). Its fields are the report's root row: creation time,
+password enabled and last used, MFA active, and each of the two access keys' and two signing certificates' state,
+rotation and use, as of `report_generated_at`. A report time the report gives as `N/A`, `no_information` or
+`not_supported` is `""`, and the raw row in `configuration` keeps which. No report, an expired one or one in
+progress yields no root node; a report that could not be read fails the entry. The root user has no containment
+edge: it exists as long as the account does, and the account is its `aws_account` dimension
+(`req-aws-core-account-dimension`).
+
+**The password policy** (Q143c) is fields on the account: `password_policy_present` (`true`, `false` when AWS
+answers `NoSuchEntity`, `null` when the read was denied or failed) and each setting AWS returns
+(`password_minimum_length`, `password_require_symbols`, `_numbers`, `_uppercase`, `_lowercase`,
+`password_allow_users_to_change`, `password_expire_passwords`, `password_max_age_days`,
+`password_reuse_prevention`, `password_hard_expiry`), `null` when AWS leaves a member out.
+
+**The login profile** (Q143d) is fields on the user, from a `GetLoginProfile` hydrate op: `login_profile_exists`
+(`false` on `NoSuchEntity`, `null` when not read), `login_profile_created_at` and `password_reset_required`. Never
+the password, which AWS does not return.
+
+**Configuration and personal data** (Q143e). Every new entry stores its configuration (metadata only), and declares
+the user name wherever it appears (`UserName`, the reader's `_user_name` and `_user_arn`, the hydrate slots, the
+service user name) as `personal_data`, as the existing IAM user entry does.
+
+**Dimensions** (ruling Q146, 2026-11-23). Each of the four types declares, in its `DEFAULT_DIMENSIONS`, aws_core's
+cloud default (`tap.computing.cloud: aws`) and computing_core's standard credential dimension,
+`tap.computing.credential`, whose value is the kind of credential: `access_key`, `ssh_key`, `certificate`, and
+`password` for a service-specific credential (a generated user name and password). computing_core owns and seeds
+the dimension; aws_core only writes it. The root user, the IAM user, and the password-policy and login-profile
+fields carry no credential dimension.
+
+**Event time** (`req-aws-core-models-5`). The access key starts at `create_date` and the SSH key at `upload_date`
+(kind `created`, no end: AWS states none). The signing certificate runs from `upload_date` to the certificate's own
+notAfter: the end is the `configuration` member `CertificateBody`, read by the plugin reader
+`tap_plugin.aws_core.times.certificate_not_after` (pure, module-level; it parses the PEM with `cryptography`, which
+every tap install already carries, and returns a zoned datetime, or None when the text holds no readable
+certificate, so the row has no end rather than a guessed one; ruling Q150b). The service-specific credential runs from `create_date` to `expiration_date`, the end
+AWS states for a credential created with one. The root user starts at the report's `created_at`. Last-used and
+rotation times are other times and stay typed fields.
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-iam-credentials-1 | Four Credential Types | Proposed | Access keys, SSH public keys, signing certificates and service-specific credentials are four node types, each keyed by `(partition, account_id, <credential id>)`, each carrying its holding user, status and creation time, collected for every user the account lists. | `tests/test_iam_credentials.py::TestReaders`. |
+| req-aws-core-iam-credentials-2 | No Secret, No SSH Key Body | Proposed | No secret, password or SSH key body reaches an item, the batch, a field or the stored configuration; an SSH key body planted in `GetSSHPublicKey`'s answer is absent from the node. The signing certificate's public body is kept (`-11`). | `tests/test_iam_credentials.py::TestWalk::test_an_ssh_key_body_never_leaves_the_walk_and_its_fingerprint_does`. Rulings Q142a, Q150a. |
+| req-aws-core-iam-credentials-3 | Contained Per User, Surface Per Listing | Proposed | The user contains each credential through that type's `HOLDS_*` edge; every observed user records one surface per edge type; a user with none is complete-empty; a denied, failed or short listing is incomplete and contributes no items; a reader that did not finish leaves its surfaces not admitted. A run that selected some of the four types lists and hydrates only those. | `tests/test_iam_credentials.py::TestContainment`, `::TestWalk`, `::TestSelectedKinds`, `tests/test_boto3_collector_selection_run.py::TestIncludeOneCredentialType`. |
+| req-aws-core-iam-credentials-4 | A Falsifier Per Type | Proposed | Each type's falsifier answers present, dropped and forbidden from the user's listing, refuses before any call when the row's user name, ARN or account disagree, treats a deleted user as undetermined, and reaches the GovCloud endpoint for a GovCloud ARN. | `tests/test_iam_credentials.py::TestFalsifiers`. |
+| req-aws-core-iam-credentials-5 | Credential Report Read, Generated Only When Asked | Proposed | With the option absent or false the run never calls `GenerateCredentialReport`; with it true the run calls it before reading. "No report", "expired" and "in progress" are states, distinct from "not read". | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143a. |
+| req-aws-core-iam-credentials-6 | Password Policy On The Account | Proposed | The account carries the password policy's settings; "no policy" (`NoSuchEntity`) is `password_policy_present: false`, and a denied or failed read leaves it `null`. | `tests/test_iam_credentials.py::TestAccountPosture`, `tests/test_boto3_collector_customfns.py`. Ruling Q143c. |
+| req-aws-core-iam-credentials-7 | Login Profile On The User | Proposed | The user carries whether a login profile exists, when it was created and whether a reset is required; `NoSuchEntity` is "no console password", a denied read is `null`. | `tests/test_iam_credentials.py::TestLoginProfile`. Ruling Q143d. |
+| req-aws-core-iam-credentials-8 | Root User From The Report | Proposed | The report's root row becomes one `aws_iam_root_user` node keyed on the ARN the report states, its flags and times taken from the row; no report yields no root node; an unreadable report fails the entry. | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143b. |
+| req-aws-core-iam-credentials-10 | SSH Key Fingerprint | Proposed | Each SSH public key carries the `fingerprint` `GetSSHPublicKey` (`Encoding="SSH"`) states; a denied or failed call leaves it `null` and the key is still a node of a complete listing. `iam:GetSSHPublicKey` is in the read policy. | `tests/test_iam_credentials.py::TestWalk`, `::TestPolicy`. Ruling Q150a. |
+| req-aws-core-iam-credentials-11 | Signing Certificate Kept, Ends At Its notAfter | Proposed | The certificate body is stored in `configuration`; the type's event time ends at the certificate's notAfter, read by `times.certificate_not_after`, which returns a zoned datetime or None and never raises. | `tests/test_iam_credentials.py::TestWalk::test_a_signing_certificates_public_body_is_kept_in_configuration`, `tests/test_times.py`, `tests/test_event_time.py::test_a_signing_certificate_holds_from_its_upload_until_its_not_after`. Ruling Q150b. |
+| req-aws-core-iam-credentials-9 | Credential Dimension | Proposed | The four credential types carry `tap.computing.credential` (`access_key`, `ssh_key`, `certificate`, `password`) beside the cloud default; the root user, the user and the account do not. | `tests/test_iam_credentials.py::TestReaders::test_each_credential_type_carries_its_kind_on_the_credential_dimension`, `tests/test_credential_dimension.py`, `tests/test_dimension_seed.py`. Ruling Q146; computing_core seeds the dimension from 0.10.11 (`req-aws-core-credential-dimension`). |
+
 ### Transit Gateway
 ----
 RID: `req-aws-core-transit-gateway`
@@ -1343,8 +1464,12 @@ The type is tagged by what the thing is, read from its description and the AWS r
 | `aws_ec2_key_pair` | `ssh_key` | The SSH key pair an instance is launched with. |
 | `aws_certificatemanager_acme_external_account_binding` | `access_key` | An ACME external account binding: a key id and an HMAC key a client presents to bind an ACME account, the same id-and-secret shape as an access key (kept as `access_key`, Q151c). |
 | `aws_iam_virtual_mfa_device` | `mfa_device` | A virtual MFA device: the second factor an IAM user authenticates with (Q151d). |
+| `aws_iam_access_key` | `access_key` | An IAM user's long-term access key id and secret (`req-aws-core-iam-credentials`). |
+| `aws_iam_ssh_public_key` | `ssh_key` | The SSH public key an IAM user authenticates to CodeCommit with. |
+| `aws_iam_signing_certificate` | `certificate` | An X.509 signing certificate an IAM user signs requests with. |
+| `aws_iam_service_specific_credential` | `password` | A generated user name and password (or API key) an IAM user holds for one AWS service. |
 
-Not tagged: identities (`aws_iam_user`, `aws_iam_role`, the account root, `aws_elasticache_user`,
+Not tagged: identities (`aws_iam_user`, `aws_iam_role`, the account root (`aws_iam_root_user`), `aws_elasticache_user`,
 `aws_memorydb_user`, `aws_transfer_user`, `aws_cognito_user_pool_client`), policies and configuration
 (`aws_iam_policy`, `aws_lambda_code_signing_config`, `aws_signer_signing_profile`,
 `aws_redshift_snapshot_copy_grant`), issuers and trust anchors (`aws_acm_private_ca`,
@@ -1358,14 +1483,13 @@ database namespace), and `aws_ssm_parameter`, whose instances are
 credentials only when their `type` is `SecureString`: a type default would tag every `String` and
 `StringList` parameter too, so the type carries none and a reader filters SecureString parameters on
 `type` until the collector stamps `secret_store` per SecureString parameter (ruled Q151b, not built
-yet: unified-systems-com/aws-core-tap#295). IAM credential types not yet in
-aws_core are tagged when they are added.
+yet: unified-systems-com/aws-core-tap#295).
 
 #### Acceptance Criteria
 
 | ACID | Title | Status | Description | Notes |
 | --- | --- | :---: | --- | --- |
-| req-aws-core-credential-dimension-1 | The Credential Types Are Tagged | Implemented | Exactly the sixteen types in the table above declare `tap.computing.credential`, each with the value shown, and every value is one of the kinds computing_core's seed documents. | `tests/test_credential_dimension.py` |
+| req-aws-core-credential-dimension-1 | The Credential Types Are Tagged | Implemented | Exactly the twenty types in the table above declare `tap.computing.credential`, each with the value shown, and every value is one of the kinds computing_core's seed documents. | `tests/test_credential_dimension.py` |
 | req-aws-core-credential-dimension-2 | computing_core Declares The Dimension | Implemented | aws_core does not seed `tap.computing.credential`; computing_core does, open (no `values`) with every kind aws_core uses documented in its description, so a computing_core release carrying it precedes this change and the `depends_on` entry names that release as its floor. | `tests/test_dimension_seed.py` |
 
 ### Direct Connect

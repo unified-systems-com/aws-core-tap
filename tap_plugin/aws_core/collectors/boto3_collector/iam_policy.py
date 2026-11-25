@@ -6,6 +6,11 @@ region facts. This module collects them into one set of (botocore service, opera
 actions that authorise it, and writes the result as a few customer-managed policy documents small enough to attach to
 one role, plus an explicit deny for the actions that return secret material or read what a resource holds.
 
+An operation that changes state in the account is never in those documents. The one the collector can make, behind an
+operator's option, is named in ``iam_policy_overrides.json`` ``gated`` with its option: it is left out of the read
+policy and written as a document of its own (``GATED_NAME``), which an operator attaches only when turning the option
+on (``iam:GenerateCredentialReport``, ``generate_credential_report``, aws-core-tap#282).
+
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --write      # regenerate the documents
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh    # rebuild the action data
     uv run python -m tap_plugin.aws_core.collectors.boto3_collector.iam_policy --refresh-arns   # rebuild the ARN formats only
@@ -45,6 +50,9 @@ ARN_FORMATS = HERE / "arn_formats.json"
 MODELS_DIR = HERE.parent.parent / "models"
 OUT_DIR = HERE / "handoff"
 PART_NAME = "collector-policy-{n:02d}.json"
+#: The document granting the gated operations; not matched by ``collector-policy-*.json``, so no handoff template
+#: attaches it by default.
+GATED_NAME = "gated-generate-credential-report-policy.json"
 REFERENCE = "https://servicereference.us-east-1.amazonaws.com/v1/"
 #: IAM counts the characters of a managed policy without whitespace; the limit is 6,144.
 PART_LIMIT = 6000
@@ -60,7 +68,7 @@ CODE_MODULES = (
 #: Modules whose reads go through a shared reader helper (``self.r.walk("inspector2", ...)``), which the per-function
 #: scan cannot see, and which therefore declare every operation they make as module-level literal tuples
 #: ``PAGINATED_OPERATIONS`` / ``SINGLE_OPERATIONS`` of ``(service, snake_operation)`` (aws-core-tap#261).
-DECLARED_OPERATION_MODULES = ("inspector.py",)
+DECLARED_OPERATION_MODULES = ("inspector.py", "iam_credentials.py")
 _DECLARED_OPERATION_NAMES = frozenset({"PAGINATED_OPERATIONS", "SINGLE_OPERATIONS"})
 _CLIENT_CALLS = {"client_for", "client", "get_client", "_client", "make_client"}
 _OP_WORD = re.compile(r"^([a-z]+(_[a-z0-9]+)+|[A-Z][A-Za-z0-9]+)$")
@@ -211,11 +219,22 @@ def catalog() -> dict[str, Any]:
     return json.loads(CATALOG.read_text())
 
 
+def _all_pairs() -> set[tuple[str, str]]:
+    return _manifest_pairs() | _code_pairs() | _declared_operation_pairs()
+
+
 def inventory() -> set[tuple[str, str]]:
-    """Every (botocore service, operation) the collector can make, except those that need no permission."""
+    """Every (botocore service, operation) the collector can make, except those that need no permission and the
+    gated ones, which only an operator's option turns on and which get a document of their own."""
     ov = overrides()
-    pairs = _manifest_pairs() | _code_pairs() | _declared_operation_pairs()
-    return {p for p in pairs if f"{p[0]}:{p[1]}" not in ov["no_permission_needed"]}
+    skip = set(ov["no_permission_needed"]) | set(ov.get("gated", {}))
+    return {p for p in _all_pairs() if f"{p[0]}:{p[1]}" not in skip}
+
+
+def gated_inventory() -> set[tuple[str, str]]:
+    """The gated (botocore service, operation) pairs the collector can make; each must be named in ``gated``."""
+    gated = set(overrides().get("gated", {}))
+    return {p for p in _all_pairs() if f"{p[0]}:{p[1]}" in gated}
 
 
 def _key(service: str, operation: str) -> str:
@@ -309,6 +328,22 @@ def render() -> dict[str, str]:
     return {PART_NAME.format(n=i + 1): json.dumps(p, indent=2) + "\n" for i, p in enumerate(build_parts())}
 
 
+def gated_document() -> dict[str, Any]:
+    """The policy granting the gated operations, one statement per operation, its Sid naming the option."""
+    ov, cat = overrides(), catalog()
+    statements = []
+    for service, operation in sorted(gated_inventory()):
+        option = ov["gated"][f"{service}:{operation}"]["option"]
+        sid = "Gated" + re.sub(r"[^A-Za-z0-9]", "", option.title())
+        statements.append(_statement(sid, sorted(iam_actions(service, operation, ov, cat))))
+    return _doc(statements)
+
+
+def render_gated() -> dict[str, str]:
+    """File name to file text for the gated document."""
+    return {GATED_NAME: json.dumps(gated_document(), indent=2) + "\n"}
+
+
 # --- refreshing AWS's reference data (network) ---------------------------------------------------------------------
 
 
@@ -326,7 +361,7 @@ def _fetch(url: str) -> Any:
 
 def refresh() -> dict[str, Any]:
     """Rebuild ``iam_operation_actions.json`` from the Service Authorization Reference, for the collector's operations."""
-    wanted = {_key(s, o): (s, o) for s, o in inventory()}
+    wanted = {_key(s, o): (s, o) for s, o in inventory() | gated_inventory()}
     services = _fetch(REFERENCE + "service-list.json")
     with concurrent.futures.ThreadPoolExecutor(4) as pool:
         docs = list(pool.map(lambda s: _fetch(s["url"]), services))
@@ -439,9 +474,9 @@ def main(argv: list[str]) -> int:
         files = render()
         for old in OUT_DIR.glob("collector-policy-*.json"):
             old.unlink()
-        for name, text in files.items():
+        for name, text in {**files, **render_gated()}.items():
             (OUT_DIR / name).write_text(text)
-        print(f"wrote {len(files)} policy documents, {len(actions())} actions")
+        print(f"wrote {len(files)} policy documents, {len(actions())} actions, and {GATED_NAME}")
     if not argv:
         print(f"{len(render())} policy documents, {len(actions())} actions, {len(inventory())} operations, {len(unverified())} unverified")
     return 0

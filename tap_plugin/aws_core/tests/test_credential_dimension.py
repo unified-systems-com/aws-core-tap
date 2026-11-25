@@ -44,6 +44,11 @@ TAGGED = {
     "aws_core__aws_ec2_key_pair": "ssh_key",
     "aws_core__aws_certificatemanager_acme_external_account_binding": "access_key",
     "aws_core__aws_iam_virtual_mfa_device": "mfa_device",
+    # the IAM user credentials (req-aws-core-iam-credentials-9)
+    "aws_core__aws_iam_access_key": "access_key",
+    "aws_core__aws_iam_ssh_public_key": "ssh_key",
+    "aws_core__aws_iam_signing_certificate": "certificate",
+    "aws_core__aws_iam_service_specific_credential": "password",
 }
 
 # Near misses, decided not to be credentials: each would be wrong to find in a credential filter.
@@ -51,6 +56,7 @@ NOT_CREDENTIALS = {
     # identities that hold or use credentials
     "aws_core__aws_iam_user",
     "aws_core__aws_iam_role",
+    "aws_core__aws_iam_root_user",
     "aws_core__aws_elasticache_user",
     "aws_core__aws_memorydb_user",
     "aws_core__aws_transfer_user",

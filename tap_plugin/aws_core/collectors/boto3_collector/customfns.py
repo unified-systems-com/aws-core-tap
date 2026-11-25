@@ -37,6 +37,7 @@ from .route53_records import bare_zone_id, record_set_key
 from .route53_records import shared_walk as shared_records_walk
 from .envelope import jsonable, without_credentials, without_response_metadata
 from .hydrate import hydrate_item
+from . import iam_credentials
 from .iam_trust import account_of_arn, account_of_iam_arn, summarize_resource_policy, summarize_trust_policy
 from .listing import ListingWalk, error_code, page_says_more
 from .manifest import manifest_entries
@@ -581,14 +582,19 @@ def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[d
     directly), ``_run_client`` falls back to the session's own region, then the
     partition's home region — never a bare literal (never reached by
     ``Boto3Collector.run``).
+
+    The account's IAM posture rides on it (aws-core-tap#282): the password policy
+    (:func:`.iam_credentials.read_password_policy`) and the credential report's
+    state, read once per run through :func:`.iam_credentials.shared_report`
+    (generated first only when the operator turned on ``generate_credential_report``).
     """
     sts = _run_client(session, client_for, "sts")
     identity = without_response_metadata(sts.get_caller_identity())
     account_id = identity.get("Account") or ""
 
     aliases: list[str] = []
+    iam = _run_client(session, client_for, "iam")
     try:
-        iam = _run_client(session, client_for, "iam")
         alias_resp = without_response_metadata(iam.list_account_aliases())
         aliases = list(alias_resp.get("AccountAliases", []) or [])
     except BotoCoreError, ClientError:
@@ -608,9 +614,15 @@ def aws_account_singleton(session: Any, *, client_for: Any = None) -> Iterator[d
     except BotoCoreError, ClientError:
         pass
 
+    present, policy = iam_credentials.read_password_policy(iam)
+    report = iam_credentials.shared_report(session, iam)
     yield {
         "_email": email,
         "_status": status,
+        "_password_policy_present": present,
+        "_password_policy": policy,
+        "_credential_report_state": report.state,
+        "_credential_report_generated_at": report.generated_at,
         "Account": account_id,
         "Arn": identity.get("Arn"),
         "UserId": identity.get("UserId"),
@@ -950,7 +962,29 @@ def iam_users_described(
         envelope["_password_last_used"] = jsonable(password_last_used) if password_last_used else ""
         envelope["_attached_policy_arns"] = _attached_policy_arns(_hydrated_slot(envelope, "attached_policies"))
         envelope["_mfa_enabled"] = bool(devices.get("MFADevices")) if isinstance(devices, dict) else None
+        _login_profile(envelope)
         yield with_edge_reads(envelope, {"_attached_policy_arns": _attached_policies_read(envelope)})
+
+
+def _login_profile(envelope: dict[str, Any]) -> None:
+    """The ``login_profile`` hydrate slot as typed values (ruling Q143d): ``absent`` (``NoSuchEntity``) is "no console
+    password", never "not read"; a denied or failed read leaves all three ``None``. The password is never returned."""
+    slot = (envelope.get("_hydrate") or {}).get("login_profile") or {}
+    status = slot.get("status")
+    if status == "absent":
+        envelope["_login_profile_exists"], envelope["_login_profile_created_at"] = False, ""
+        envelope["_password_reset_required"] = None
+        return
+    profile = (slot.get("data") or {}).get("LoginProfile") if status == "ok" else None
+    if not isinstance(profile, dict):
+        envelope["_login_profile_exists"] = envelope["_login_profile_created_at"] = None
+        envelope["_password_reset_required"] = None
+        return
+    created = profile.get("CreateDate")
+    reset = profile.get("PasswordResetRequired")
+    envelope["_login_profile_exists"] = True
+    envelope["_login_profile_created_at"] = jsonable(created) if created else ""
+    envelope["_password_reset_required"] = reset if isinstance(reset, bool) else None
 
 
 def iam_customer_policies_listed(
@@ -1160,6 +1194,51 @@ def iam_virtual_mfa_devices_listed(
             },
             {"_user_arn": COMPLETE},
         )
+
+
+def _user_credentials(session: Any, client_for: Any, entity_type: str) -> Iterator[dict[str, Any]]:
+    """One credential kind's items from the run's one IAM credential walk (:mod:`.iam_credentials`), each declaring
+    its holding user read in full (the listing that named it was per user and read to its end). Once every item has
+    been yielded the kind is marked projected, which is what lets the users' surfaces for it say they were carried."""
+    walk = iam_credentials.shared_walk(session, _iam_client(session, client_for))
+    for item in walk.items[entity_type]:
+        yield with_edge_reads(item, {"_user_arn": COMPLETE})
+    walk.projected.add(entity_type)
+
+
+def iam_access_keys_listed(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """Every IAM user's access keys (global), with ``GetAccessKeyLastUsed`` per key; never the secret."""
+    yield from _user_credentials(session, client_for, iam_credentials.ACCESS_KEY_TYPE)
+
+
+def iam_ssh_public_keys_listed(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """Every IAM user's SSH public keys (global); never the key body."""
+    yield from _user_credentials(session, client_for, iam_credentials.SSH_PUBLIC_KEY_TYPE)
+
+
+def iam_signing_certificates_listed(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """Every IAM user's signing certificates (global); the certificate body is removed by the walk."""
+    yield from _user_credentials(session, client_for, iam_credentials.SIGNING_CERTIFICATE_TYPE)
+
+
+def iam_service_specific_credentials_listed(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """Every IAM user's service-specific credentials (global); never the password."""
+    yield from _user_credentials(session, client_for, iam_credentials.SERVICE_CREDENTIAL_TYPE)
+
+
+def iam_root_user_from_credential_report(session: Any, *, client_for: Any = None) -> Iterator[dict[str, Any]]:
+    """The root user's row of the account's credential report (ruling Q143b).
+
+    The report is the run's one read (:func:`.iam_credentials.shared_report`). No report, an expired one or one in
+    progress yields nothing (the account's ``credential_report_state`` says which); a report that could not be read
+    raises what AWS answered, so the entry is reported as not read rather than as an account with no root user.
+    """
+    report = iam_credentials.shared_report(session, _iam_client(session, client_for))
+    if report.error is not None:
+        raise report.error
+    item = iam_credentials.root_item(report)
+    if item is not None:
+        yield item
 
 
 # DescribeTags on the load balancer APIs and on Direct Connect takes at most this many ids per call.
@@ -3735,6 +3814,11 @@ _CUSTOM_FNS = {
     "iam_saml_providers_described": iam_saml_providers_described,
     "iam_server_certificates_listed": iam_server_certificates_listed,
     "iam_virtual_mfa_devices_listed": iam_virtual_mfa_devices_listed,
+    "iam_access_keys_listed": iam_access_keys_listed,
+    "iam_ssh_public_keys_listed": iam_ssh_public_keys_listed,
+    "iam_signing_certificates_listed": iam_signing_certificates_listed,
+    "iam_service_specific_credentials_listed": iam_service_specific_credentials_listed,
+    "iam_root_user_from_credential_report": iam_root_user_from_credential_report,
     "apigateway_http_apis_detailed": apigateway_http_apis_detailed,
     "cognito_user_pools_described": cognito_user_pools_described,
     "iam_roles_described": iam_roles_described,

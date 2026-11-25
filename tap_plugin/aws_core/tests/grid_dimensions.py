@@ -39,3 +39,4 @@ def dimensions_of(row: Any) -> dict[str, Any]:
     """A row's dimensions as ``{name: value}``. ``row`` is a typed grid row, an ``Entity``, or a stored map."""
     stored = row if isinstance(row, dict) else getattr(getattr(row, "entity", row), "dimensions", None)
     return view(stored)
+

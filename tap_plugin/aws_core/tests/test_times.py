@@ -83,6 +83,73 @@ def test_it_is_a_module_level_function_core_accepts_by_function_and_by_path() ->
     assert event_time.reader_name(times.offset_without_colon) == "tap_plugin.aws_core.times:offset_without_colon"
 
 
+# --- certificate_not_after (ruling Q150b, 2026-11-24) -------------------------------------------------------------------
+
+#: A self-signed EC P-256 certificate made for these tests alone (no key was kept): notBefore 2026-01-01T00:00:00Z,
+#: notAfter 2030-01-02T03:04:05Z.
+TEST_CERTIFICATE = """-----BEGIN CERTIFICATE-----
+MIIBKjCB0aADAgECAgEBMAoGCCqGSM49BAMCMB8xHTAbBgNVBAMMFHRhcCB0ZXN0
+IGNlcnRpZmljYXRlMB4XDTI2MDEwMTAwMDAwMFoXDTMwMDEwMjAzMDQwNVowHzEd
+MBsGA1UEAwwUdGFwIHRlc3QgY2VydGlmaWNhdGUwWTATBgcqhkjOPQIBBggqhkjO
+PQMBBwNCAARyfnxHopwDM4FFaDd2vqyyeMUisFofzLpa3d+3kPz+lUZh5NEs9O15
+YLkV0IgLr4MZKXMqIhmNsqz208ZxevmZMAoGCCqGSM49BAMCA0gAMEUCIQCAdRpF
+e9ejOCAfbYEuQd2tbG5LIQ33a+uBt92+6QlBbQIgGepyaghC2Yu9vK9cSWl1oQo9
+4CL+Eh3glAoVhkaheOU=
+-----END CERTIFICATE-----
+"""
+
+
+def test_certificate_not_after_reads_the_certificates_own_end_as_a_zoned_datetime() -> None:
+    read = times.certificate_not_after(TEST_CERTIFICATE)
+    assert read == datetime(2030, 1, 2, 3, 4, 5, tzinfo=UTC)
+    assert read is not None and read.utcoffset() is not None
+    reading = event_time.read_value(read)
+    assert reading is not None and (reading.start, reading.level) == (datetime(2030, 1, 2, 3, 4, 5, tzinfo=UTC), "second")
+
+
+def test_certificate_not_after_reads_the_first_of_several_and_ignores_surrounding_space() -> None:
+    assert times.certificate_not_after("\n" + TEST_CERTIFICATE + TEST_CERTIFICATE) == datetime(2030, 1, 2, 3, 4, 5, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(
+    "stored",
+    [
+        None,
+        "",
+        "   ",
+        b"not text",
+        1893553445,
+        {"CertificateBody": "x"},
+        "-----BEGIN CERTIFICATE-----TAPCANARYCERTBODY",
+        "-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n",
+        TEST_CERTIFICATE.replace("MIIBKjCB", "MIIBKjCC"),
+        "certificate: é",
+    ],
+)
+def test_certificate_not_after_is_none_for_anything_but_a_readable_certificate(stored: Any) -> None:
+    assert times.certificate_not_after(stored) is None
+
+
+def test_certificate_not_after_is_a_reader_core_accepts() -> None:
+    declaration = event_time.Interval(
+        start="upload_date",
+        kind="created",
+        end="configuration",
+        end_member=("CertificateBody",),
+        end_reader="tap_plugin.aws_core.times:certificate_not_after",
+    )
+    assert event_time.resolve_reader(declaration.end_reader) is times.certificate_not_after
+    derived = event_time.derive(
+        declaration,
+        {"upload_date": "2026-10-01T12:30:00Z", "configuration": {"CertificateBody": TEST_CERTIFICATE}}.get,
+    )
+    assert (derived.event_start, derived.event_end, derived.warnings) == (
+        datetime(2026, 10, 1, 12, 30, tzinfo=UTC),
+        datetime(2030, 1, 2, 3, 4, 5, tzinfo=UTC),
+        (),
+    )
+
+
 # --- either_created_date: an API Gateway stage's configuration, under either service's spelling -------------------
 
 
