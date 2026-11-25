@@ -17,7 +17,8 @@ class IamVirtualMfaDevice(BaseModel):
     ENTITY_NAME: ClassVar[str] = "IAM Virtual MFA Device"
     ENTITY_DESCRIPTION: ClassVar[str] = "A virtual multi-factor authentication device registered in AWS IAM."
     ENTITY_ICON: ClassVar[str] = "aws-iam"
-    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws"}
+    # A credential: tap.computing.credential names its kind (George 2026-11-23, aws-build Q146; mfa_device, Q151d).
+    DEFAULT_DIMENSIONS: ClassVar[dict[str, str]] = {"tap.computing.cloud": "aws", "tap.computing.credential": "mfa_device"}
     # Identity (req-grid-entity-natural-key): The device's serial number, an ARN that embeds the user name for a virtual device.
     NATURAL_KEY: ClassVar[tuple[str, ...]] = ("serial_number",)
     ARN_RESOURCE: ClassVar[str | None] = "iam:mfa"

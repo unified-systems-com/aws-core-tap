@@ -1005,6 +1005,8 @@ user's `CONTAINMENT_EDGES`. One edge type per credential type, so a run can say 
 end" without saying anything about SSH keys. `collectors/boto3_collector/iam_credentials.py` lists the account's
 users once per run and, per user, the four listings (`ListAccessKeys`, `ListSSHPublicKeys`,
 `ListSigningCertificates`, `ListServiceSpecificCredentials` with no service filter), each read to its last page.
+A run that selected only some of the four types (`req-aws-collector-selection-2`) shares `ListUsers` but lists,
+and hydrates (`GetAccessKeyLastUsed`, `GetSSHPublicKey`), only the selected kinds.
 Each (user, edge type) is recorded as a completeness surface after import, the user node as the subject
 (`req-aws-core-contained-type-triple`): a user with none of a kind is complete and empty; a denied, failed or
 short listing is incomplete with its reason and contributes no items. Each type has a falsifier
@@ -1074,7 +1076,7 @@ rotation times are other times and stay typed fields.
 | --- | --- | :---: | --- | --- |
 | req-aws-core-iam-credentials-1 | Four Credential Types | Proposed | Access keys, SSH public keys, signing certificates and service-specific credentials are four node types, each keyed by `(partition, account_id, <credential id>)`, each carrying its holding user, status and creation time, collected for every user the account lists. | `tests/test_iam_credentials.py::TestReaders`. |
 | req-aws-core-iam-credentials-2 | No Secret, No SSH Key Body | Proposed | No secret, password or SSH key body reaches an item, the batch, a field or the stored configuration; an SSH key body planted in `GetSSHPublicKey`'s answer is absent from the node. The signing certificate's public body is kept (`-11`). | `tests/test_iam_credentials.py::TestWalk::test_an_ssh_key_body_never_leaves_the_walk_and_its_fingerprint_does`. Rulings Q142a, Q150a. |
-| req-aws-core-iam-credentials-3 | Contained Per User, Surface Per Listing | Proposed | The user contains each credential through that type's `HOLDS_*` edge; every observed user records one surface per edge type; a user with none is complete-empty; a denied, failed or short listing is incomplete and contributes no items; a reader that did not finish leaves its surfaces not admitted. | `tests/test_iam_credentials.py::TestContainment`, `::TestWalk`. |
+| req-aws-core-iam-credentials-3 | Contained Per User, Surface Per Listing | Proposed | The user contains each credential through that type's `HOLDS_*` edge; every observed user records one surface per edge type; a user with none is complete-empty; a denied, failed or short listing is incomplete and contributes no items; a reader that did not finish leaves its surfaces not admitted. A run that selected some of the four types lists and hydrates only those. | `tests/test_iam_credentials.py::TestContainment`, `::TestWalk`, `::TestSelectedKinds`, `tests/test_boto3_collector_selection_run.py::TestIncludeOneCredentialType`. |
 | req-aws-core-iam-credentials-4 | A Falsifier Per Type | Proposed | Each type's falsifier answers present, dropped and forbidden from the user's listing, refuses before any call when the row's user name, ARN or account disagree, treats a deleted user as undetermined, and reaches the GovCloud endpoint for a GovCloud ARN. | `tests/test_iam_credentials.py::TestFalsifiers`. |
 | req-aws-core-iam-credentials-5 | Credential Report Read, Generated Only When Asked | Proposed | With the option absent or false the run never calls `GenerateCredentialReport`; with it true the run calls it before reading. "No report", "expired" and "in progress" are states, distinct from "not read". | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143a. |
 | req-aws-core-iam-credentials-6 | Password Policy On The Account | Proposed | The account carries the password policy's settings; "no policy" (`NoSuchEntity`) is `password_policy_present: false`, and a denied or failed read leaves it `null`. | `tests/test_iam_credentials.py::TestAccountPosture`, `tests/test_boto3_collector_customfns.py`. Ruling Q143c. |
@@ -1082,7 +1084,7 @@ rotation times are other times and stay typed fields.
 | req-aws-core-iam-credentials-8 | Root User From The Report | Proposed | The report's root row becomes one `aws_iam_root_user` node keyed on the ARN the report states, its flags and times taken from the row; no report yields no root node; an unreadable report fails the entry. | `tests/test_iam_credentials.py::TestCredentialReport`. Ruling Q143b. |
 | req-aws-core-iam-credentials-10 | SSH Key Fingerprint | Proposed | Each SSH public key carries the `fingerprint` `GetSSHPublicKey` (`Encoding="SSH"`) states; a denied or failed call leaves it `null` and the key is still a node of a complete listing. `iam:GetSSHPublicKey` is in the read policy. | `tests/test_iam_credentials.py::TestWalk`, `::TestPolicy`. Ruling Q150a. |
 | req-aws-core-iam-credentials-11 | Signing Certificate Kept, Ends At Its notAfter | Proposed | The certificate body is stored in `configuration`; the type's event time ends at the certificate's notAfter, read by `times.certificate_not_after`, which returns a zoned datetime or None and never raises. | `tests/test_iam_credentials.py::TestWalk::test_a_signing_certificates_public_body_is_kept_in_configuration`, `tests/test_times.py`, `tests/test_event_time.py::test_a_signing_certificate_holds_from_its_upload_until_its_not_after`. Ruling Q150b. |
-| req-aws-core-iam-credentials-9 | Credential Dimension | Proposed | The four credential types carry `tap.computing.credential` (`access_key`, `ssh_key`, `certificate`, `password`) beside the cloud default; the root user, the user and the account do not. | `tests/test_iam_credentials.py::TestReaders::test_each_credential_type_carries_its_kind_on_the_credential_dimension`, `tests/test_dimension_seed.py`. Ruling Q146. Needs computing_core's seed of the dimension. |
+| req-aws-core-iam-credentials-9 | Credential Dimension | Proposed | The four credential types carry `tap.computing.credential` (`access_key`, `ssh_key`, `certificate`, `password`) beside the cloud default; the root user, the user and the account do not. | `tests/test_iam_credentials.py::TestReaders::test_each_credential_type_carries_its_kind_on_the_credential_dimension`, `tests/test_credential_dimension.py`, `tests/test_dimension_seed.py`. Ruling Q146; computing_core seeds the dimension from 0.10.11 (`req-aws-core-credential-dimension`). |
 
 ### Transit Gateway
 ----
@@ -1423,6 +1425,69 @@ Which account a resource is in is recorded **once**, as the `aws_account` dimens
 | req-aws-core-account-dimension-8 | aws_core's Dimension Keys Are Renamed, cloud Retired | Implemented | George 2026-11-12 (aws-build Q55a, Q56): computing_core owns the cloud dimension as `tap.computing.cloud`, keeping the id of aws_core's former `tap.cloud` node, so every aws_core model's `DEFAULT_DIMENSIONS` and every edge type's `default_dimensions` stamp `tap.computing.cloud: aws` and aws_core's seed no longer declares that id. `aws_account` and `aws_region` are renamed `aws.account` and `aws.region`, keeping their node ids. `cloud`, which duplicated the cloud dimension, is retired: never stamped, still declared so old rows resolve. Migration `0055_rename_aws_dimensions` renames `tap.cloud` and `aws_region` and drops `cloud` and `aws_account` (Q60a: old `aws_account` values named the observer, not the owner, so a migrated row has no `aws.account` until the next collection stamps the owner, and falsifiers answer `scope_unknown` until then) on aws_core's own spine rows (node rows whose entity type starts `aws_core__`, edge rows whose `tap_edge.edge_type` ends `__aws_core`), idempotently, keeping a new key already present. Seed v0.4.0, new batch id. | `tests/test_dimension_seed.py` |
 | req-aws-core-account-dimension-9 | aws.account Is The Owning Account | Implemented | George 2026-11-12 (aws-build Q57). `aws.account` names the account that OWNS a resource, filled in order: the account segment of the resource's own ARN when its natural key is one (`aws` for AWS-managed resources); else an explicit owner field (the entry's `containment.owner_path`, or a projected `owner_account_id` / `resource_owner_account_id`); else the account whose credential listed it (`containment.resource_owner`). Organizations: an account node carries its own id; the organization, roots, OUs, policies and every edge of the tree carry the management account (`organizations._Reader._owned_by`). No second, observing-account dimension (the run records that), and no data migration of values: the next collection re-stamps. The falsifiers' scope check now compares with the owner, which closes the RAM-share misread; the Organizations falsifiers' reach is organization membership, not the dimension. | `tests/test_owner_account.py` |
 | req-aws-core-account-dimension-10 | AWS-Managed Resources Are Outside Deletion Checking | Implemented | George 2026-11-12 (aws-build Q60b). A resource AWS itself owns carries `aws.account = "aws"` (its ARN's account segment), which never equals a customer credential's account: `_scope_check` answers `scope_unknown` for it, and `_AwsFalsifier.batch_falsify` declines it before any credential is resolved or AWS call made, so every falsifier, including one added later, refuses it the same way. `IamPolicyFalsifier` also declines AWS-managed policies by `is_aws_managed`, by design. A new falsifier for a type that can be AWS-owned must decide this explicitly. | `tests/test_aws_managed_guard.py` |
+
+### Credential Types Carry tap.computing.credential
+----
+RID: `req-aws-core-credential-dimension`
+
+Status: `Implemented`
+
+Every aws_core type whose instances **are** credentials declares `tap.computing.credential` in its
+`DEFAULT_DIMENSIONS`, valued by the kind of credential it is, beside `tap.computing.cloud: aws`. The
+dimension is computing_core's (George 2026-11-23, aws-build Q146a). It is open (Q151a): its seed declares
+no `values`, and its description documents the kinds `access_key`, `password`, `ssh_key`, `certificate`,
+`api_key`, `token`, `crypto_key`, `secret_store` (Q146b) and `mfa_device` (Q151d). aws_core uses only
+documented kinds, so one filter finds every credential across all plugins and the value splits the kinds.
+
+#### Implementation
+
+The type is tagged by what the thing is, read from its description and the AWS resource behind it:
+
+| Type | Kind | Why |
+| --- | --- | --- |
+| `aws_kms_key` | `crypto_key` | A key that encrypts and signs (Q146b names KMS keys). |
+| `aws_acm_certificate` | `certificate` | An X.509 TLS certificate. |
+| `aws_iam_server_certificate` | `certificate` | An X.509 server certificate stored in IAM. |
+| `aws_iot_certificate` | `certificate` | The X.509 certificate a device authenticates with. |
+| `aws_iot_ca_certificate` | `certificate` | A CA certificate registered to verify device certificates; a certificate is a credential even when not secret (Q146). |
+| `aws_dms_certificate` | `certificate` | A certificate (PEM or Oracle wallet) DMS presents for SSL endpoints. |
+| `aws_transfer_certificate` | `certificate` | A signing, encryption or TLS certificate a Transfer Family profile uses, optionally imported with its private key. |
+| `aws_apigateway_client_certificate` | `certificate` | The client certificate API Gateway presents to a backend. |
+| `aws_apigateway_api_key` | `api_key` | A key callers present to an API Gateway stage. |
+| `aws_location_api_key` | `api_key` | A key callers present to Amazon Location Service. |
+| `aws_secrets_manager_secret` | `secret_store` | A container whose value is a credential (Q146b names it). |
+| `aws_codebuild_source_credential` | `token` | The credential CodeBuild uses to reach a source provider: an OAuth token, a personal access token, a CodeConnections connection or a Secrets Manager secret holding one. Bitbucket's `BASIC_AUTH` form is a username and app password; the type cannot be split per instance, and most forms are tokens. |
+| `aws_transfer_host_key` | `ssh_key` | The SSH host key an SFTP server proves itself with; `ssh_key` names the SSH use, which is what a reader filters on, where `crypto_key` would hide it among KMS keys. |
+| `aws_ec2_key_pair` | `ssh_key` | The SSH key pair an instance is launched with. |
+| `aws_certificatemanager_acme_external_account_binding` | `access_key` | An ACME external account binding: a key id and an HMAC key a client presents to bind an ACME account, the same id-and-secret shape as an access key (kept as `access_key`, Q151c). |
+| `aws_iam_virtual_mfa_device` | `mfa_device` | A virtual MFA device: the second factor an IAM user authenticates with (Q151d). |
+| `aws_iam_access_key` | `access_key` | An IAM user's long-term access key id and secret (`req-aws-core-iam-credentials`). |
+| `aws_iam_ssh_public_key` | `ssh_key` | The SSH public key an IAM user authenticates to CodeCommit with. |
+| `aws_iam_signing_certificate` | `certificate` | An X.509 signing certificate an IAM user signs requests with. |
+| `aws_iam_service_specific_credential` | `password` | A generated user name and password (or API key) an IAM user holds for one AWS service. |
+
+Not tagged: identities (`aws_iam_user`, `aws_iam_role`, the account root (`aws_iam_root_user`), `aws_elasticache_user`,
+`aws_memorydb_user`, `aws_transfer_user`, `aws_cognito_user_pool_client`), policies and configuration
+(`aws_iam_policy`, `aws_lambda_code_signing_config`, `aws_signer_signing_profile`,
+`aws_redshift_snapshot_copy_grant`), issuers and trust anchors (`aws_acm_private_ca`,
+`aws_eks_certificate_authority`, `aws_rolesanywhere_trust_anchor`,
+`aws_elasticloadbalancingv2_trust_store`), things that only reference a credential (`aws_kms_alias`,
+`aws_eventbridge_connection`, `aws_glue_connection`, `aws_codestarconnections_connection`,
+`aws_iot_role_alias`, `aws_iot_certificate_provider`), challenges and endpoints
+(`aws_certificatemanager_acme_domain_validation`, `aws_certificatemanager_acme_endpoint`,
+`aws_ec2_ipam_external_resource_verification_token`), a Keyspaces keyspace (`aws_cassandra_keyspace`, a
+database namespace), and `aws_ssm_parameter`, whose instances are
+credentials only when their `type` is `SecureString`: a type default would tag every `String` and
+`StringList` parameter too, so the type carries none and a reader filters SecureString parameters on
+`type` until the collector stamps `secret_store` per SecureString parameter (ruled Q151b, not built
+yet: unified-systems-com/aws-core-tap#295).
+
+#### Acceptance Criteria
+
+| ACID | Title | Status | Description | Notes |
+| --- | --- | :---: | --- | --- |
+| req-aws-core-credential-dimension-1 | The Credential Types Are Tagged | Implemented | Exactly the twenty types in the table above declare `tap.computing.credential`, each with the value shown, and every value is one of the kinds computing_core's seed documents. | `tests/test_credential_dimension.py` |
+| req-aws-core-credential-dimension-2 | computing_core Declares The Dimension | Implemented | aws_core does not seed `tap.computing.credential`; computing_core does, open (no `values`) with every kind aws_core uses documented in its description, so a computing_core release carrying it precedes this change and the `depends_on` entry names that release as its floor. | `tests/test_dimension_seed.py` |
 
 ### Direct Connect
 ----

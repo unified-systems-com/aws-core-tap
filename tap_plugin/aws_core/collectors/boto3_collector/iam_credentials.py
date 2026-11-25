@@ -10,7 +10,8 @@ listings (``ListAccessKeys``, ``ListSSHPublicKeys``, ``ListSigningCertificates``
 ``ListServiceSpecificCredentials``), plus ``GetAccessKeyLastUsed`` per access key and ``GetSSHPublicKey`` per SSH
 public key (for its fingerprint). :func:`shared_walk` makes those
 calls once per run and the four readers in :mod:`.customfns` each take their slice, so the calls are not made four
-times. Every listing is recorded per user as a completeness surface after import (:class:`UserCredentialListing`);
+times. A run that selected only some of the four types (``req-aws-collector-selection-2``) shares ``ListUsers`` but
+lists and hydrates only the selected kinds: :func:`configure` records them on the run's session. Every listing is recorded per user as a completeness surface after import (:class:`UserCredentialListing`);
 a user with none of a kind records a complete, empty surface, and a denied, failed or short listing records an
 incomplete one and contributes no items (``req-aws-core-contained-type-triple``).
 
@@ -33,7 +34,7 @@ from __future__ import annotations
 import csv
 import io
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 from weakref import WeakKeyDictionary
@@ -213,8 +214,10 @@ def _fingerprint(envelope: dict[str, Any]) -> None:
     envelope["_fingerprint"] = str(key.get("Fingerprint") or "") or None
 
 
-def walk_credentials(client: Any) -> CredentialWalk:
-    """List every user, then each user's four credential listings to the end.
+def walk_credentials(client: Any, kinds: Iterable[str] | None = None) -> CredentialWalk:
+    """List every user, then each user's credential listings to the end: the four kinds, or only those of ``kinds``
+    (credential entity types; ``None`` is all four). An unselected kind is neither listed nor hydrated and records no
+    listing (``req-aws-collector-selection-2``).
 
     A listing that fails or stops short keeps its walk (so the user's surface says why it is not an answer) and
     contributes no items: a partial listing would make the credentials it missed look absent. ``ListUsers`` failing
@@ -222,6 +225,7 @@ def walk_credentials(client: Any) -> CredentialWalk:
     the run can name).
     """
     walk = CredentialWalk()
+    wanted = [kind for kind in KINDS.values() if kinds is None or kind.entity_type in kinds]
     walk.users = list(iter_listing(client, "list_users", "Users[]", ListingWalk()))
     last_used_ops = _hydrate_ops(ACCESS_KEY_TYPE)
     public_key_ops = _hydrate_ops(SSH_PUBLIC_KEY_TYPE)
@@ -229,7 +233,7 @@ def walk_credentials(client: Any) -> CredentialWalk:
         name, arn = user.get("UserName"), user.get("Arn")
         if not name or not arn:
             continue
-        for kind in KINDS.values():
+        for kind in wanted:
             listing = ListingWalk()
             walk.listings.append(UserCredentialListing(user_arn=str(arn), kind=kind, walk=listing))
             try:
@@ -286,7 +290,11 @@ def shared_walk(session: Any, client: Any) -> CredentialWalk:
     if cached is not None:
         return cached
     try:
-        walk = walk_credentials(client)
+        kinds = _SELECTED.get(session) if session is not None else None
+    except TypeError:
+        kinds = None
+    try:
+        walk = walk_credentials(client, kinds)
     except (BotoCoreError, ClientError) as exc:
         if session is not None:
             _WALKS[session] = exc
@@ -374,9 +382,11 @@ def read_credential_report(client: Any, *, generate: bool, sleep: Callable[[floa
     return report
 
 
-#: Per session: whether the operator turned the option on, and the report once read.
+#: Per session: whether the operator turned the option on, the report once read, and the credential kinds the run
+#: selected (absent: all four).
 _OPTIONS: WeakKeyDictionary[Any, bool] = WeakKeyDictionary()
 _REPORTS: WeakKeyDictionary[Any, CredentialReport] = WeakKeyDictionary()
+_SELECTED: WeakKeyDictionary[Any, frozenset[str]] = WeakKeyDictionary()
 
 
 def generate_enabled(data: Mapping[str, Any]) -> bool:
@@ -384,11 +394,17 @@ def generate_enabled(data: Mapping[str, Any]) -> bool:
     return data.get(GENERATE_OPTION) is True
 
 
-def configure(session: Any, *, generate: bool) -> None:
-    """Record the run's option on its session, before any reader asks for the report."""
+def configure(session: Any, *, generate: bool, selected_types: Iterable[str] | None = None) -> None:
+    """Record the run's option, and the entity types it selected, on its session before any reader asks for the
+    report or the walk. ``selected_types`` narrows the walk to the credential kinds among them; ``None`` walks all
+    four (``req-aws-collector-selection-2``)."""
     try:
         _OPTIONS[session] = generate
-    except TypeError:  # a session that cannot be weakly referenced: the option stays off
+        if selected_types is None:
+            _SELECTED.pop(session, None)
+        else:
+            _SELECTED[session] = frozenset(selected_types) & frozenset(KINDS)
+    except TypeError:  # a session that cannot be weakly referenced: the option stays off and every kind is walked
         pass
 
 

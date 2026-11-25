@@ -654,7 +654,10 @@ class Boto3Collector(CollectorBase):
         # (req-aws-core-secret-credential-report): the one call this collector can make that changes state in the
         # account, so it is named in the run record whenever it is allowed.
         generate_report = iam_credentials.generate_enabled(data)
-        iam_credentials.configure(session, generate=generate_report)
+        # The credential walk lists only the credential kinds this run selected (req-aws-collector-selection-2).
+        iam_credentials.configure(
+            session, generate=generate_report, selected_types={e["entity_type"] for e in entries}
+        )
         if generate_report:
             self.record_info(
                 _SITE_CREDENTIAL_REPORT_GENERATION,

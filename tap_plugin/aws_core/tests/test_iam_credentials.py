@@ -52,12 +52,13 @@ BOB = f"arn:aws:iam::{ACCOUNT}:user/eng/bob"
 WHEN = datetime(2026, 10, 1, 12, 30, tzinfo=UTC)
 WHEN_TEXT = "2026-10-01T12:30:00Z"
 LATER = datetime(2027, 10, 1, 12, 30, tzinfo=UTC)
-#: Obviously fake ids, in AWS's shapes.
-KEY_A = "AKIAFAKEFAKEFAKE0001"
-KEY_B = "AKIAFAKEFAKEFAKE0002"
+#: Obviously fake ids. The access key and service-specific credential ids keep AWS's prefixes but are shorter than
+#: AWS's 20 characters, so no secret scanner can take them for a real key (the repo's other fixtures do the same).
+KEY_A = "AKIAEXAMPLEKEYA"
+KEY_B = "AKIAEXAMPLEKEYB"
 SSH_KEY = "APKAFAKEFAKEFAKE0001"
 CERT_ID = "FAKECERTIFICATEID0001"
-SVC_ID = "ACCAFAKEFAKEFAKE0001"
+SVC_ID = "ACCAEXAMPLESVC1"
 BODY_CANARY = "-----BEGIN CERTIFICATE-----TAPCANARYCERTBODY"
 #: A key body planted in GetSSHPublicKey's answer: it must never leave the walk (ruling Q150a).
 SSH_BODY_CANARY = "ssh-ed25519 TAPCANARYSSHKEYBODY"
@@ -391,6 +392,38 @@ class TestWalk:
         admitted = {(listing.user_arn, listing.edge_type): listing.walk.admitted for listing in walk.surface_listings()}
         assert admitted[(BOB, "HOLDS_ACCESS_KEY__aws_core")] is True
         assert admitted[(BOB, "HOLDS_SSH_PUBLIC_KEY__aws_core")] is False
+
+
+@pytest.mark.spec("req-aws-collector-selection-2")
+class TestSelectedKinds:
+    """A run that selected only some credential types lists and hydrates only those (Codex, PR 307 round 1)."""
+
+    def test_the_walk_lists_only_the_kinds_asked_for(self) -> None:
+        iam = _iam()
+        walk = ic.walk_credentials(iam, {ACCESS_KEY})
+        assert {method for method, _ in iam.calls} == {"list_users", "list_access_keys", "get_access_key_last_used"}
+        assert {listing.kind.entity_type for listing in walk.listings} == {ACCESS_KEY}
+        assert [i["AccessKeyId"] for i in walk.items[ACCESS_KEY]] == [KEY_A, KEY_B]
+        assert walk.items[SSH] == walk.items[CERT] == walk.items[SVC] == []
+
+    def test_only_the_access_key_selected_reaches_only_its_iam_calls(self) -> None:
+        class _Session:
+            pass
+
+        session, iam = _Session(), _iam()
+        ic.configure(session, generate=False, selected_types={ACCESS_KEY, USER, "aws_core__aws_vpc"})
+        assert len(_items(ACCESS_KEY, iam, session=session)) == 2
+        assert {method for method, _ in iam.calls} == {"list_users", "list_access_keys", "get_access_key_last_used"}
+
+    def test_a_session_configured_with_no_selection_walks_all_four(self) -> None:
+        class _Session:
+            pass
+
+        session, iam = _Session(), _iam()
+        ic.configure(session, generate=False, selected_types=None)
+        _items(SSH, iam, session=session)
+        assert {"list_access_keys", "list_ssh_public_keys", "get_ssh_public_key", "list_signing_certificates",
+                "list_service_specific_credentials"} <= {method for method, _ in iam.calls}  # fmt: skip
 
 
 # --- the readers and their entries --------------------------------------------------------------------------------------
