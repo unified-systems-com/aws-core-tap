@@ -352,9 +352,14 @@ collector's existing configuration beside the findings keys and for the same rea
   reads the report; a denied or failed generation is not fatal, and the run reads whatever report exists.
 
 This is the one written exception to the collector's read-only invariant, and it applies only when the operator
-sets the key. The action is never in the generated read policy: the operator who sets the key also attaches
+sets the key. The action is never in the generated read policy: on the least-privilege path (the
+`collector-policy-NN.json` documents) the operator who sets the key also attaches
 `handoff/gated-generate-credential-report-policy.json` (`spec-aws-core-collector-v0.md`,
-`req-aws-collector-iam-policy-2`). A run with the key set says so in its run record (`CREDENTIAL_REPORT_GENERATION_ON`).
+`req-aws-collector-iam-policy-2`), so that document gates the call only there. The AWS-managed policies the other
+handoff templates attach already grant the action: `SecurityAudit` names `iam:GenerateCredentialReport`, and
+`ReadOnlyAccess` covers it with `iam:Generate*`. On that managed-policy path the key is the only gate: it is off by
+default, and only an explicit `true` lets the run call `GenerateCredentialReport`. A run with the key set says so in
+its run record (`CREDENTIAL_REPORT_GENERATION_ON`).
 It is scope, not secret material, and moves with the other non-credential keys when the collector gains its own
 configuration.
 

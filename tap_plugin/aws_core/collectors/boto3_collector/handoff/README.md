@@ -142,6 +142,13 @@ the secret sets `data.generate_credential_report: true` (default off; `spec-aws-
 (`iam:GetCredentialReport`, in the read documents) and records "no report" on the account when there is none. Attach
 this document by hand only when you turn the option on.
 
+This document gates the call only on the least-privilege path, a role holding just the `collector-policy-NN.json`
+documents. The AWS-managed policies already grant the action: `SecurityAudit`, which `cross-account-role.tf` and
+`cross-account-role.yaml` attach, names `iam:GenerateCredentialReport`, and `ReadOnlyAccess` covers it with
+`iam:Generate*`. On a role built from either, IAM does not stop the call, and the secret's
+`generate_credential_report` option is the only gate: it is off by default, and the collector calls
+`GenerateCredentialReport` only when the option is explicitly `true`.
+
 ### Residual access the policy cannot remove
 
 Two services authorise their control-plane reads with an action that also covers data, and IAM has no separate action
