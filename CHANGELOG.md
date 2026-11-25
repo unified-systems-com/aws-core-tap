@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.3](https://github.com/unified-systems-com/aws-core-tap/compare/v0.9.2...v0.9.3) (2026-11-25)
+
+
+### Bug Fixes
+
+* ship the history event-time migration on the tap v0.5.0 floor ([fd83bc0](https://github.com/unified-systems-com/aws-core-tap/commit/fd83bc0c2ee77ba34be85019d1550fa598b80988))
+* ship the history event-time migration on the tap v0.5.0 floor ([85fcc79](https://github.com/unified-systems-com/aws-core-tap/commit/85fcc7972914fc29fc47686a1127c675578719cf))
+
 ## [0.9.2](https://github.com/unified-systems-com/aws-core-tap/compare/v0.9.1...v0.9.2) (2026-11-25)
 
 
