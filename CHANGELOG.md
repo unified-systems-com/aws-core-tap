@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.9.1](https://github.com/unified-systems-com/aws-core-tap/compare/v0.9.0...v0.9.1) (2026-11-25)
+
+
+### Bug Fixes
+
+* **grift:** write the format "1" header from core's build_header ([94b67f6](https://github.com/unified-systems-com/aws-core-tap/commit/94b67f66204a29615490da3873f07c1678c10bbb))
+* **grift:** write the format "1" header from core's build_header ([42cebb0](https://github.com/unified-systems-com/aws-core-tap/commit/42cebb0d4f45d41b583fb073170a4b7f72e61318))
+
+## [0.9.0](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.7...v0.9.0) (2026-11-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **aws_core:** spine version 2 on tap 0.4.9: spine copies, no typed batch_id, GRIFT format 1
+* **aws_core:** image host keyed on computing_core's tap.computing.host_type dimension, not the retired realm
+
+### Features
+
+* **aws_core:** image host keyed on computing_core's tap.computing.host_type dimension, not the retired realm ([6fc4f9d](https://github.com/unified-systems-com/aws-core-tap/commit/6fc4f9d15629c3a7cabaed0df1fdb0453e7c9405))
+* **aws_core:** spine version 2 on tap 0.4.9: spine copies, no typed batch_id, GRIFT format 1 ([faebde2](https://github.com/unified-systems-com/aws-core-tap/commit/faebde20910466d777ab826b49bd743871284b5f))
+* **edges:** USES_SECURITY_GROUP, EC2 instance or network interface to security group ([0ba5dcf](https://github.com/unified-systems-com/aws-core-tap/commit/0ba5dcf252891765ff74e5b0c1a42b34d343bf14))
+* **edges:** USES_SECURITY_GROUP, EC2 instance or network interface to security group ([cccb37d](https://github.com/unified-systems-com/aws-core-tap/commit/cccb37d97c2b3df75b519a0cf0536a36d1c641cb))
+* **lambda:** read each function's, alias's and version's resource policy (lambda:GetPolicy) ([b57567d](https://github.com/unified-systems-com/aws-core-tap/commit/b57567d8d207e6443699b221a64c943f713181a9))
+* **lambda:** read each function's, alias's and version's resource policy (lambda:GetPolicy) ([608cfd7](https://github.com/unified-systems-com/aws-core-tap/commit/608cfd771937118938598c63f6e9de4596c671f5))
+* **models:** an API Gateway stage reads its creation time under either service's spelling ([3a66f71](https://github.com/unified-systems-com/aws-core-tap/commit/3a66f71688637a515dd38e9dc39d86e95819d6f8))
+* **models:** an API Gateway stage reads its creation time under either service's spelling ([a69ee7c](https://github.com/unified-systems-com/aws-core-tap/commit/a69ee7c8c2c032fab2a43d262362033aa24a677e))
+* **models:** declare event time on the pending types through core's member paths and readers ([455eeba](https://github.com/unified-systems-com/aws-core-tap/commit/455eeba9935028d97bb2d59e342bca861c5a61ab))
+* **models:** declare event time on the pending types through core's member paths and readers ([631b4b7](https://github.com/unified-systems-com/aws-core-tap/commit/631b4b79106d3b854c0a9912b44b2ceddc317da7))
+* **models:** typed results for Network Access Analyzer and Reachability Analyzer runs ([2b58ca0](https://github.com/unified-systems-com/aws-core-tap/commit/2b58ca0a083bccc2ce57ae2ddcf01b9850b42a4e))
+* **models:** typed results for Network Access Analyzer and Reachability Analyzer runs ([89008a5](https://github.com/unified-systems-com/aws-core-tap/commit/89008a5006672d3dd08d8532e6a35259305c2025))
+* **network:** Network Access Analyzer findings and Reachability Analyzer paths as compound edges ([db6cecb](https://github.com/unified-systems-com/aws-core-tap/commit/db6cecbc5895cd8294520aec9d413370b17c7a3b))
+* **network:** Network Access Analyzer findings and Reachability Analyzer paths as compound edges ([9d9ba92](https://github.com/unified-systems-com/aws-core-tap/commit/9d9ba92729f04bde35587f0a220d25bf733e69df))
+
+
+### Bug Fixes
+
+* **collector:** render only a typed field's datetime; name the ENI count as AWS does ([86eec48](https://github.com/unified-systems-com/aws-core-tap/commit/86eec48b5bb35184733f02dd4bc6467fe4acace1))
+* **lambda:** a principal that names no account leaves the policy summary unread ([7414be0](https://github.com/unified-systems-com/aws-core-tap/commit/7414be0e404dbfb55e6f6abcece6ca8d2d95f577))
+* **migrations:** 0062 depends on 0061_lambda_resource_policy, not 0060 ([f7ec3d9](https://github.com/unified-systems-com/aws-core-tap/commit/f7ec3d918573aa792b08c10012b75db219157bed))
+* **migrations:** renumber the finding table's migration to 0062, after main's 0061 ([5e8485f](https://github.com/unified-systems-com/aws-core-tap/commit/5e8485f4281ee4ed87970719a6a436f9093594d8))
+
 ## [0.8.7](https://github.com/unified-systems-com/aws-core-tap/compare/v0.8.6...v0.8.7) (2026-11-23)
 
 
